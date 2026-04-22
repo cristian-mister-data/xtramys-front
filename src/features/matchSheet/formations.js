@@ -1,0 +1,199 @@
+// Formaciones disponibles por número de jugadores. Coordenadas en %
+// (x: 0..100 horizontal; y: 0..100 vertical) sobre un campo orientado al
+// portero abajo (y=92) y los delanteros arriba (y~22).
+
+export const FORMATIONS_11 = {
+  '1-4-4-2': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'LD',  x: 85, y: 75, label: 'LD'  },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'LI',  x: 15, y: 75, label: 'LI'  },
+    { pos: 'MD',  x: 85, y: 50, label: 'MD'  },
+    { pos: 'MC',  x: 62, y: 55, label: 'MC'  },
+    { pos: 'MC',  x: 38, y: 55, label: 'MC'  },
+    { pos: 'MI',  x: 15, y: 50, label: 'MI'  },
+    { pos: 'DC',  x: 62, y: 22, label: 'DC'  },
+    { pos: 'DC',  x: 38, y: 22, label: 'DC'  },
+  ],
+  '1-4-3-3': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'LD',  x: 85, y: 75, label: 'LD'  },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'LI',  x: 15, y: 75, label: 'LI'  },
+    { pos: 'MC',  x: 70, y: 55, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 58, label: 'MC'  },
+    { pos: 'MC',  x: 30, y: 55, label: 'MC'  },
+    { pos: 'ED',  x: 80, y: 25, label: 'ED'  },
+    { pos: 'DC',  x: 50, y: 20, label: 'DC'  },
+    { pos: 'EI',  x: 20, y: 25, label: 'EI'  },
+  ],
+  '1-4-2-3-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'LD',  x: 85, y: 75, label: 'LD'  },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'LI',  x: 15, y: 75, label: 'LI'  },
+    { pos: 'MCD', x: 62, y: 60, label: 'MCD' },
+    { pos: 'MCD', x: 38, y: 60, label: 'MCD' },
+    { pos: 'MD',  x: 80, y: 38, label: 'MD'  },
+    { pos: 'MCO', x: 50, y: 35, label: 'MCO' },
+    { pos: 'MI',  x: 20, y: 38, label: 'MI'  },
+    { pos: 'DC',  x: 50, y: 18, label: 'DC'  },
+  ],
+  '1-3-5-2': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 70, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 50, y: 80, label: 'DFC' },
+    { pos: 'DFC', x: 30, y: 78, label: 'DFC' },
+    { pos: 'CAD', x: 88, y: 55, label: 'CAD' },
+    { pos: 'MC',  x: 65, y: 58, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 55, label: 'MC'  },
+    { pos: 'MC',  x: 35, y: 58, label: 'MC'  },
+    { pos: 'CAI', x: 12, y: 55, label: 'CAI' },
+    { pos: 'DC',  x: 60, y: 22, label: 'DC'  },
+    { pos: 'DC',  x: 40, y: 22, label: 'DC'  },
+  ],
+  '1-3-4-3': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 70, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 50, y: 80, label: 'DFC' },
+    { pos: 'DFC', x: 30, y: 78, label: 'DFC' },
+    { pos: 'MD',  x: 85, y: 55, label: 'MD'  },
+    { pos: 'MC',  x: 60, y: 58, label: 'MC'  },
+    { pos: 'MC',  x: 40, y: 58, label: 'MC'  },
+    { pos: 'MI',  x: 15, y: 55, label: 'MI'  },
+    { pos: 'ED',  x: 80, y: 25, label: 'ED'  },
+    { pos: 'DC',  x: 50, y: 20, label: 'DC'  },
+    { pos: 'EI',  x: 20, y: 25, label: 'EI'  },
+  ],
+  '1-4-5-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'LD',  x: 85, y: 75, label: 'LD'  },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'LI',  x: 15, y: 75, label: 'LI'  },
+    { pos: 'MD',  x: 85, y: 45, label: 'MD'  },
+    { pos: 'MC',  x: 65, y: 52, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 50, label: 'MC'  },
+    { pos: 'MC',  x: 35, y: 52, label: 'MC'  },
+    { pos: 'MI',  x: 15, y: 45, label: 'MI'  },
+    { pos: 'DC',  x: 50, y: 18, label: 'DC'  },
+  ],
+  '1-4-1-4-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'LD',  x: 85, y: 75, label: 'LD'  },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'LI',  x: 15, y: 75, label: 'LI'  },
+    { pos: 'MCD', x: 50, y: 62, label: 'MCD' },
+    { pos: 'MD',  x: 85, y: 42, label: 'MD'  },
+    { pos: 'MC',  x: 62, y: 45, label: 'MC'  },
+    { pos: 'MC',  x: 38, y: 45, label: 'MC'  },
+    { pos: 'MI',  x: 15, y: 42, label: 'MI'  },
+    { pos: 'DC',  x: 50, y: 18, label: 'DC'  },
+  ],
+};
+
+export const FORMATIONS_8 = {
+  '1-3-3-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 75, y: 75, label: 'DFC' },
+    { pos: 'DFC', x: 50, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 25, y: 75, label: 'DFC' },
+    { pos: 'MC',  x: 75, y: 50, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 53, label: 'MC'  },
+    { pos: 'MC',  x: 25, y: 50, label: 'MC'  },
+    { pos: 'DC',  x: 50, y: 20, label: 'DC'  },
+  ],
+  '1-2-3-2': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 65, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 78, label: 'DFC' },
+    { pos: 'MC',  x: 75, y: 50, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 53, label: 'MC'  },
+    { pos: 'MC',  x: 25, y: 50, label: 'MC'  },
+    { pos: 'DC',  x: 65, y: 22, label: 'DC'  },
+    { pos: 'DC',  x: 35, y: 22, label: 'DC'  },
+  ],
+  '1-3-2-2': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 75, y: 75, label: 'DFC' },
+    { pos: 'DFC', x: 50, y: 78, label: 'DFC' },
+    { pos: 'DFC', x: 25, y: 75, label: 'DFC' },
+    { pos: 'MC',  x: 65, y: 50, label: 'MC'  },
+    { pos: 'MC',  x: 35, y: 50, label: 'MC'  },
+    { pos: 'DC',  x: 65, y: 22, label: 'DC'  },
+    { pos: 'DC',  x: 35, y: 22, label: 'DC'  },
+  ],
+};
+
+export const FORMATIONS_7 = {
+  '1-3-2-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 75, y: 72, label: 'DFC' },
+    { pos: 'DFC', x: 50, y: 75, label: 'DFC' },
+    { pos: 'DFC', x: 25, y: 72, label: 'DFC' },
+    { pos: 'MC',  x: 65, y: 45, label: 'MC'  },
+    { pos: 'MC',  x: 35, y: 45, label: 'MC'  },
+    { pos: 'DC',  x: 50, y: 20, label: 'DC'  },
+  ],
+  '1-2-3-1': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 65, y: 75, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 75, label: 'DFC' },
+    { pos: 'MC',  x: 75, y: 48, label: 'MC'  },
+    { pos: 'MC',  x: 50, y: 50, label: 'MC'  },
+    { pos: 'MC',  x: 25, y: 48, label: 'MC'  },
+    { pos: 'DC',  x: 50, y: 20, label: 'DC'  },
+  ],
+  '1-2-2-2': [
+    { pos: 'POR', x: 50, y: 92, label: 'POR' },
+    { pos: 'DFC', x: 65, y: 72, label: 'DFC' },
+    { pos: 'DFC', x: 35, y: 72, label: 'DFC' },
+    { pos: 'MC',  x: 65, y: 48, label: 'MC'  },
+    { pos: 'MC',  x: 35, y: 48, label: 'MC'  },
+    { pos: 'DC',  x: 65, y: 22, label: 'DC'  },
+    { pos: 'DC',  x: 35, y: 22, label: 'DC'  },
+  ],
+};
+
+export const FORMATIONS_BY_PLAYER_COUNT = {
+  11: FORMATIONS_11,
+  8: FORMATIONS_8,
+  7: FORMATIONS_7,
+};
+
+export const ALINEACIONES_BY_PLAYER_COUNT = {
+  11: Object.keys(FORMATIONS_11),
+  8: Object.keys(FORMATIONS_8),
+  7: Object.keys(FORMATIONS_7),
+};
+
+export const POSITION_COLORS = {
+  POR: '#10b981',
+  DFC: '#3b82f6', LI: '#3b82f6', LD: '#3b82f6',
+  CAI: '#3b82f6', CAD: '#3b82f6',
+  MC: '#f59e0b', MCO: '#f59e0b', MCD: '#f59e0b',
+  MI: '#f59e0b', MD: '#f59e0b',
+  DC: '#ef4444', EI: '#ef4444', ED: '#ef4444', SD: '#ef4444',
+};
+
+export function getFormationSlots(playerCount, formation) {
+  const map = FORMATIONS_BY_PLAYER_COUNT[playerCount];
+  if (!map) return [];
+  return map[formation] || Object.values(map)[0] || [];
+}
+
+export function getDefaultFormation(playerCount) {
+  const list = ALINEACIONES_BY_PLAYER_COUNT[playerCount] || [];
+  return list[0] || '';
+}
+
+export function normalizeFormation(str) {
+  if (!str) return '';
+  let s = String(str).trim().toLowerCase();
+  if (!s.startsWith('1-')) s = `1-${s}`;
+  return s;
+}

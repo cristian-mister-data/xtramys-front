@@ -1,0 +1,8 @@
+import api from './client';
+
+export const getSession = (id) => api.get(`/session/${id}`);
+export const getSessionsByTeam = (teamId) => api.get(`/session/team/${teamId}`);
+export const createSession = (payload) => api.post('/session/create', payload);
+export const createSessionsBulk = (payload) => api.post('/session/team/create', payload);
+export const updateSession = (id, payload) => api.post(`/session/${id}`, payload);
+export const deleteSession = (id) => api.delete(`/session/${id}`);

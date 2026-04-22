@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a237e" />
+    <title>Xtramys</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Silenciar warnings cosméticos de react-native-web ANTES de que
+      // cualquier módulo capture console.warn en su closure.
+      (function () {
+        var SILENCE = [
+          /shadow\*/i,
+          /textShadow\*/i,
+          /props\.pointerEvents is deprecated/i,
+          /style\.resizeMode is deprecated/i,
+          /useNativeDriver/i,
+          /Unexpected text node/i,
+          /A text node cannot be a child/i,
+          /accessibilityLabel/i,
+          /\bDownload the React DevTools\b/i,
+        ];
+        function shouldSilence(args) {
+          var m = args && args[0];
+          if (typeof m !== 'string') return false;
+          for (var i = 0; i < SILENCE.length; i++) if (SILENCE[i].test(m)) return true;
+          return false;
+        }
+        var ow = console.warn.bind(console);
+        var oe = console.error.bind(console);
+        var ol = console.log.bind(console);
+        console.warn = function () { if (shouldSilence(arguments)) return; return ow.apply(null, arguments); };
+        console.error = function () { if (shouldSilence(arguments)) return; return oe.apply(null, arguments); };
+        console.log = function () { if (shouldSilence(arguments)) return; return ol.apply(null, arguments); };
+      })();
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

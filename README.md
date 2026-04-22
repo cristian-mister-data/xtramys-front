@@ -1,93 +1,118 @@
-# Xtramys Front Web
+# xtramys-front-web
 
+Aplicación web (React + Vite) migrada desde la app móvil **misterdata** (React Native / Expo).
 
+## Stack
 
-## Getting started
+- **Build:** Vite 5
+- **UI:** React 18 + styled-components
+- **Estado:** Redux Toolkit + react-redux
+- **Routing:** React Router 6
+- **Pizarra táctica:** konva + react-konva
+- **Vídeo:** MediaRecorder + ffmpeg.wasm (`@ffmpeg/ffmpeg`)
+- **i18n:** i18next + react-i18next
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Requisitos
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- Node 18+
+- Backend `misterdata-back` corriendo en local (por defecto en `http://localhost:4000`).
 
-## Add your files
+## Variables de entorno
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+Copia `.env.example` a `.env`:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/misterdata-group/xtramys-front-web.git
-git branch -M main
-git push -uf origin main
+VITE_BACKEND_URL=http://localhost:4000
+VITE_AUTH_MODE=cookie       # cookie | bearer
 ```
 
-## Integrate with your tools
+- `cookie` (recomendado web): la sesión la mantiene el backend con una cookie httpOnly. El cliente axios envía `withCredentials: true`. El backend ya soporta este modo (ver migración cookie-parser + setAuthCookie).
+- `bearer`: usa `Authorization: Bearer <token>` desde `localStorage` (modo legacy / móvil).
 
-* [Set up project integrations](https://gitlab.com/misterdata-group/xtramys-front-web/-/settings/integrations)
+> El backend acepta **ambos** simultáneamente, así que la app móvil sigue funcionando.
 
-## Collaborate with your team
+## Scripts
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+```bash
+npm install
+npm run dev        # arranca Vite en http://localhost:5173
+npm run build
+npm run preview
+npm run lint
+```
 
-## Test and Deploy
+> El servidor de desarrollo emite las cabeceras `Cross-Origin-Embedder-Policy: require-corp` y `Cross-Origin-Opener-Policy: same-origin` que ffmpeg.wasm necesita para `SharedArrayBuffer`.
 
-Use the built-in continuous integration in GitLab.
+## Estructura
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```
+src/
+  api/              # Servicios HTTP (axios) — uno por dominio
+  auth/             # Persistencia local de token / usuario
+  store/            # Redux: store, rootReducer y 13 slices/thunks
+    slices/<dominio>/{...Slice.js, ...Thunks.js}
+  router/           # AppRouter + ProtectedRoute
+  layouts/          # AuthLayout, AppLayout, Header, Sidebar
+  pages/            # Páginas auth + páginas app (muchas son stubs)
+    auth/           # Welcome, Login, Register, VerifyEmail, ForgotPassword, ResetPassword
+    public/         # WellnessForm / PreWellnessForm (sin auth, vía token)
+  features/
+    tacticalBoard/  # Pizarra táctica (konva)
+    video/          # Hook MediaRecorder + ffmpeg.wasm
+  ui/               # Primitivos y Stub
+  locales/          # es.json / en.json
+  config.js theme.js GlobalStyles.js i18n.js main.jsx App.jsx
+```
 
-***
+## Estado de la migración
 
-# Editing this README
+### ✅ Hecho
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+- Scaffolding Vite + alias `@`
+- Cliente axios con interceptores (auth, errores, polling de jobs de vídeo)
+- 15 servicios HTTP (auth, user, season, team, player, exercise, strategy, session, injury, matchSheet, rival, anthropometry, nutritionMethodology, wellness, tournament, video)
+- Store Redux con 13 slices (todos los nombres y action types portados literalmente):
+  `temporada`, `equipo`, `jugador`, `ejercicio`, `entrenamiento`, `injury`, `matchSheet`, `rivalAnalysis`, `anthropometry`, `estrategia`, `rival`, `tournament`, `usuario`
+- Router protegido + layouts (Sidebar con las 4 secciones del drawer móvil: Principal / Herramientas / Gestión / Análisis)
+- Páginas de autenticación: Welcome, Login, Register, VerifyEmail, ForgotPassword, ResetPassword
+- Página Home con tiles
+- Pizarra táctica básica (campo FIFA completo, 11 vs 11 arrastrables)
+- Módulo de vídeo: hook `useStageRecorder` + panel demo + conversión a MP4 vía ffmpeg.wasm
+- Formularios públicos de wellness y pre-wellness
+- Backend cookie auth: `/auth/me`, `/auth/logout`, middleware con cookie OR Bearer, `setAuthCookie` en login/verifyEmail/google/apple
 
-## Suggestions for a good README
+### ⏳ TODO
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Las siguientes páginas son **stubs** que apuntan al fichero original a portar:
 
-## Name
-Choose a self-explaining name for your project.
+- Season, CreateSeason, Tournaments, Players, PlayerProfile
+- Exercises (+ subrutas), Strategies (+ subrutas)
+- Training (sesiones), MyVideos
+- Statistics, Injuries, InjuryStatistics, InjuryPrevention
+- MatchSheets, RivalAnalysis (incl. plantillas), Rivals
+- Anthropometry, Nutrition, Methodology, GoalkeeperMethodology
+- WellnessTemplates, WellnessManagement, Profile (edición)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Pizarra táctica:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+- Vistas (`halfLeft`, `halfRight`, `halfUp`, `halfDown`)
+- Iconos de balón / conos / formas (líneas, flechas)
+- Color picker por jugador
+- Captura del Stage konva a vídeo (integrar `useStageRecorder` con la `Stage` ref)
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Vídeo:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+- Pipeline completo "pizarra → grabación → upload" (ver `misterdata-source/src/components/tacticalBoard/videoRecorder.js`)
+- Subida al backend (endpoint `video/*` ya cubierto por `src/api/video.js`)
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Backend
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Cambios aplicados en `misterdata-back` (rama actual):
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- Añadida dependencia `cookie-parser` (instalar con `npm install` en el backend).
+- `index.js`: `app.use(cookieParser())`, `localhost:5173` añadido a CORS por defecto.
+- `middleware/auth.js`: lee token de cookie `token` o `Authorization: Bearer ...`.
+- `controllers/auth.js`: helper `setAuthCookie` (httpOnly, `secure` en prod, `sameSite=none` en prod / `lax` en dev, 7 días); usado en login, verifyEmail, googleAuth, appleAuth. Añadidos `me` y `logout`.
+- `routes/auth.js`: `GET /auth/me` (protegida) y `POST /auth/logout`.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+> En producción asegúrate de servir el frontend bajo HTTPS y configurar `ALLOWED_ORIGINS` en el backend con el dominio real para que la cookie (`SameSite=None; Secure`) viaje en cross-site.

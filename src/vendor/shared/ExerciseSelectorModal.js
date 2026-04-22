@@ -1,0 +1,825 @@
+// ExerciseSelectorModal.js
+// Selector de ejercicios con navegación por carpetas idéntica al listado principal
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
+  TextInput, Image, ActivityIndicator, Alert, useWindowDimensions, Platform,
+} from 'react-native';
+import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
+import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
+import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getReadyDownloadUrl } from '@/utils/api';
+import { getFieldById } from '@/utils/fieldTypes';
+import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
+import { fetchExerciseFolders, fetchExerciseFoldersFlat, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
+
+const THEME = {
+  primary: '#2474E5', primaryLight: '#5b93ea', primaryDark: '#1a5bb8',
+  success: '#10b981', warning: '#f59e0b', danger: '#ef4444',
+  bg: '#f8fafc', surface: '#ffffff', text: '#1e293b',
+  textSec: '#64748b', textMuted: '#94a3b8', border: '#e2e8f0',
+};
+
+/* ======================== MAIN COMPONENT ======================== */
+export default function ExerciseSelectorModal({
+  visible, onClose, ejercicios, selectedIds, setSelectedIds,
+  multiSelect = true, onSelectSingle = null,
+}) {
+  const { t, i18n } = useTranslation();
+  const dispatch = useDispatch();
+  const { width, height } = useWindowDimensions();
+  const isPortrait = height >= width;
+  const isWide = width > 900;
+  const isMobile = width < 500;
+
+  // ── Redux folder data (igual que el listado principal) ──
+  const reduxFolders = useSelector(s => s.exercise.folders) || [];
+  const reduxFoldersFlat = useSelector(s => s.exercise.foldersFlat) || [];
+  const globalExercises = useSelector(s => s.exercise.globalExercises) || [];
+
+  // ── States ──
+  const [search, setSearch] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [titleFilter, setTitleFilter] = useState('');
+  const [playersFilter, setPlayersFilter] = useState('');
+  const [teamsFilter, setTeamsFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all'); // 'all' | 'mine' | 'global'
+
+  // Navegación carpetas
+  const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [folderPath, setFolderPath] = useState([]); // [{_id, nombre, color}]
+
+  // Video
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [exerciseForVideo, setExerciseForVideo] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [videoAvailability, setVideoAvailability] = useState({});
+
+  // ── Cargar folders y globales al abrir ──
+  useEffect(() => {
+    if (visible) {
+      const lang = i18n.language;
+      dispatch(fetchExerciseFolders({ lang }));
+      dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchGlobalExercises({ lang }));
+    }
+  }, [visible, dispatch, i18n.language]);
+
+  // ── Reset al cerrar ──
+  useEffect(() => {
+    if (!visible) {
+      setSearch(''); setShowFilters(false);
+      setTitleFilter(''); setPlayersFilter(''); setTeamsFilter('');
+      setSourceFilter('all');
+      setCurrentFolderId(null); setFolderPath([]);
+      closeVideoModal(); setVideoAvailability({});
+    }
+  }, [visible]);
+
+  // ── Cargar disponibilidad video ──
+  useEffect(() => {
+    const allEx = [...(ejercicios || []), ...globalExercises];
+    if (!visible || !allEx.length) return;
+    const load = async () => {
+      const avail = {};
+      const batch = 10;
+      for (let i = 0; i < allEx.length; i += batch) {
+        const slice = allEx.slice(i, i + batch);
+        await Promise.all(slice.map(async ej => {
+          try {
+            const vids = await getVideosByExercise(ej._id);
+            avail[ej._id] = vids && vids.length > 0;
+          } catch { avail[ej._id] = false; }
+        }));
+        setVideoAvailability(prev => ({ ...prev, ...avail }));
+      }
+    };
+    load();
+  }, [visible, ejercicios, globalExercises]);
+
+  // ═══════════════════════════════════════════════
+  //  Lista combinada de ejercicios (usuario + globales sin duplicados)
+  // ═══════════════════════════════════════════════
+  const allExercises = useMemo(() => {
+    const userIds = new Set((ejercicios || []).map(e => e._id));
+    const uniqueGlobals = globalExercises.filter(g => !userIds.has(g._id));
+    return [...(ejercicios || []), ...uniqueGlobals];
+  }, [ejercicios, globalExercises]);
+
+  // ═══════════════════════════════════════════════
+  //  Contar ejercicios y subcarpetas por carpeta
+  //  (usa datos del servidor cuando están disponibles)
+  // ═══════════════════════════════════════════════
+  const exerciseCountByFolder = useMemo(() => {
+    if (reduxFolders.length > 0) {
+      const counts = {};
+      reduxFolders.forEach(f => { if (f.exerciseCount !== undefined) counts[f._id] = f.exerciseCount; });
+      return counts;
+    }
+    const counts = {};
+    (ejercicios || []).forEach(e => {
+      const fId = typeof e.folder === 'object' ? e.folder?._id : e.folder;
+      if (fId) counts[fId] = (counts[fId] || 0) + 1;
+    });
+    return counts;
+  }, [ejercicios, reduxFolders]);
+
+  const subfolderCountByFolder = useMemo(() => {
+    if (reduxFolders.length > 0) {
+      const counts = {};
+      reduxFolders.forEach(f => { if (f.subfolderCount !== undefined) counts[f._id] = f.subfolderCount; });
+      return counts;
+    }
+    const counts = {};
+    const all = reduxFoldersFlat.length > 0 ? reduxFoldersFlat : reduxFolders;
+    all.forEach(f => {
+      const pid = typeof f.parentFolder === 'object' ? (f.parentFolder?._id || f.parentFolder) : f.parentFolder;
+      if (pid) counts[pid] = (counts[pid] || 0) + 1;
+    });
+    return counts;
+  }, [reduxFolders, reduxFoldersFlat]);
+
+  // Helper: nombre limpio (flat endpoint añade prefijo └─)
+  const getFolderName = useCallback((folder) => {
+    return folder.displayName || (folder.nombre || '').replace(/^\s*└─\s*/, '');
+  }, []);
+
+  // ═══════════════════════════════════════════════
+  //  CARPETAS — usando Redux (igual que exerciseList)
+  //  Filtra por sourceFilter: global→solo isGlobal, mine→solo !isGlobal
+  // ═══════════════════════════════════════════════
+  const currentLevelFolders = useMemo(() => {
+    const all = reduxFoldersFlat.length > 0 ? reduxFoldersFlat : reduxFolders;
+    let candidates;
+    if (!currentFolderId) {
+      candidates = all.filter(f => !f.parentFolder);
+    } else {
+      candidates = all.filter(f => {
+        const pid = typeof f.parentFolder === 'object' ? (f.parentFolder?._id || f.parentFolder) : f.parentFolder;
+        return pid === currentFolderId;
+      });
+    }
+    if (sourceFilter === 'global') {
+      candidates = candidates.filter(f => f.isGlobal);
+    } else if (sourceFilter === 'mine') {
+      candidates = candidates.filter(f => !f.isGlobal);
+    }
+    return candidates.sort((a, b) => (getFolderName(a)).localeCompare(getFolderName(b)));
+  }, [reduxFolders, reduxFoldersFlat, currentFolderId, getFolderName, sourceFilter]);
+
+  // ═══════════════════════════════════════════════
+  //  EJERCICIOS del nivel actual (respetando sourceFilter)
+  //  Los globales también navegan por carpetas
+  // ═══════════════════════════════════════════════
+  const currentLevelExercises = useMemo(() => {
+    let source;
+    if (sourceFilter === 'global') {
+      source = globalExercises;
+    } else if (sourceFilter === 'mine') {
+      source = ejercicios || [];
+    } else {
+      source = allExercises;
+    }
+
+    if (!currentFolderId) {
+      return source.filter(e => !e.folder);
+    }
+    return source.filter(e => {
+      if (!e.folder) return false;
+      const fId = typeof e.folder === 'object' ? e.folder._id : e.folder;
+      return fId === currentFolderId;
+    });
+  }, [ejercicios, globalExercises, allExercises, currentFolderId, sourceFilter]);
+
+  // Filtros avanzados
+  const uniquePlayers = useMemo(() => {
+    const s = new Set();
+    currentLevelExercises.forEach(e => { if (e.numeroJugadores) s.add(e.numeroJugadores); });
+    return Array.from(s).sort((a, b) => a - b);
+  }, [currentLevelExercises]);
+
+  const uniqueTeams = useMemo(() => {
+    const s = new Set();
+    currentLevelExercises.forEach(e => { if (e.equipos) s.add(e.equipos); });
+    return Array.from(s).sort();
+  }, [currentLevelExercises]);
+
+  const lower = search.trim().toLowerCase();
+  const titleLower = titleFilter.trim().toLowerCase();
+  const isSearching = !!(lower || titleLower || playersFilter || teamsFilter);
+
+  // Lista final filtrada — cuando se busca, buscar en TODOS los ejercicios (global)
+  const baseList = useMemo(() => {
+    const allSource = sourceFilter === 'global' ? globalExercises
+      : sourceFilter === 'mine' ? (ejercicios || [])
+      : allExercises;
+    let source = isSearching ? allSource : currentLevelExercises;
+    let filtered = source.slice();
+    if (lower) filtered = filtered.filter(e => (e.nombre || '').toLowerCase().includes(lower));
+    if (titleLower) filtered = filtered.filter(e => (e.nombre || '').toLowerCase().includes(titleLower));
+    if (playersFilter) filtered = filtered.filter(e => e.numeroJugadores && e.numeroJugadores.toString() === playersFilter);
+    if (teamsFilter) filtered = filtered.filter(e => e.equipos && e.equipos === teamsFilter);
+    return filtered.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+  }, [ejercicios, globalExercises, allExercises, currentLevelExercises, lower, titleLower, playersFilter, teamsFilter, isSearching, sourceFilter]);
+
+  const selectedObjs = useMemo(
+    () => allExercises.filter(e => selectedIds.includes(e._id)).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '')),
+    [selectedIds, allExercises]
+  );
+
+  const videoPlayer = useVideoPlayer(videoUrl, p => { if (videoUrl) { p.loop = false; p.play(); } });
+
+  // ── Navegación ──
+  const navigateToFolder = useCallback((folder) => {
+    setFolderPath(prev => [...prev, { _id: folder._id, nombre: getFolderName(folder), color: folder.color }]);
+    setCurrentFolderId(folder._id);
+    setSearch('');
+  }, [getFolderName]);
+
+  const navigateBack = useCallback(() => {
+    if (folderPath.length > 0) {
+      const np = folderPath.slice(0, -1);
+      setFolderPath(np);
+      setCurrentFolderId(np.length > 0 ? np[np.length - 1]._id : null);
+    }
+    setSearch('');
+  }, [folderPath]);
+
+  const navigateToRoot = useCallback(() => {
+    setFolderPath([]); setCurrentFolderId(null); setSearch('');
+  }, []);
+
+  const navigateToBreadcrumb = useCallback((index) => {
+    if (index < 0) { navigateToRoot(); return; }
+    const np = folderPath.slice(0, index + 1);
+    setFolderPath(np);
+    setCurrentFolderId(np[np.length - 1]._id);
+    setSearch('');
+  }, [folderPath, navigateToRoot]);
+
+  // ── Video ──
+  const handlePlayVideo = async (exercise) => {
+    setExerciseForVideo(exercise); setShowVideoModal(true); setIsGeneratingVideo(true);
+    try {
+      const videos = await getVideosByExercise(exercise._id);
+      if (videos?.length > 0) {
+        const video = videos[0]; setSelectedVideo(video);
+        const field = getFieldById(video.fieldType);
+        let fieldImgData = null;
+        if (field?.image) {
+          try {
+            const uri = Image.resolveAssetSource(field.image).uri;
+            const resp = await fetch(uri); const blob = await resp.blob();
+            const reader = new FileReader();
+            fieldImgData = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob); });
+          } catch (e) { console.warn('Error campo:', e); }
+        }
+        const r = await regenerateVideoWithField(video._id, fieldImgData);
+        if (r.success && r.videoId) setVideoUrl(getVideoStreamUrl(r.videoId));
+      } else { Alert.alert(t('message.info'), t('exercise.noVideos')); setShowVideoModal(false); }
+    } catch (err) { console.error(err); Alert.alert(t('message.error'), t('exercise.videoPlayError')); setShowVideoModal(false); }
+    finally { setIsGeneratingVideo(false); }
+  };
+  const closeVideoModal = () => { setShowVideoModal(false); setSelectedVideo(null); setVideoUrl(null); setExerciseForVideo(null); };
+  const downloadVideo = async () => {
+    if (!selectedVideo?._id) return;
+    try {
+      setIsDownloading(true);
+      const url = await getReadyDownloadUrl(selectedVideo._id);
+      const fileUri = FileSystem.documentDirectory + `video_${Date.now()}.mp4`;
+      const dl = FileSystem.createDownloadResumable(url, fileUri, {}, () => {});
+      const result = await dl.downloadAsync();
+      if (!result?.uri) throw new Error('Download failed');
+      if (Platform.OS === 'android') {
+        try { const a = await MediaLibrary.createAssetAsync(result.uri); await MediaLibrary.createAlbumAsync('xtramys', a, false); Alert.alert(t('message.success'), t('video.savedToGallery')); }
+        catch { const ok = await Sharing.isAvailableAsync(); if (ok) await Sharing.shareAsync(result.uri, { mimeType: 'video/mp4' }); }
+      } else { await MediaLibrary.requestPermissionsAsync(); const a = await MediaLibrary.createAssetAsync(result.uri); await MediaLibrary.createAlbumAsync('xtramys', a, false); Alert.alert(t('message.success'), t('video.savedToGallery')); }
+    } catch { Alert.alert(t('message.error'), t('video.saveFailed')); }
+    finally { setIsDownloading(false); }
+  };
+
+  // ── Selección ──
+  const toggle = useCallback((id) => {
+    if (!multiSelect && onSelectSingle) { onSelectSingle(id); onClose(); }
+    else setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }, [setSelectedIds, multiSelect, onSelectSingle, onClose]);
+  const deselect = useCallback((id) => { setSelectedIds(prev => prev.filter(x => x !== id)); }, [setSelectedIds]);
+
+  const clearFilters = () => { setTitleFilter(''); setPlayersFilter(''); setTeamsFilter(''); };
+  const hasActiveFilters = [titleFilter, playersFilter, teamsFilter].filter(Boolean).length;
+
+  if (!visible) return null;
+
+  const showFolders = !isSearching && currentLevelFolders.length > 0;
+
+  // ══════════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════════
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={currentFolderId ? navigateBack : onClose}>
+      <View style={s.backdrop}>
+        <View style={[s.container, isWide && { alignSelf: 'center', maxWidth: 1100 }]}>
+
+          {/* ─── HEADER ─── */}
+          <View style={s.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              {currentFolderId ? (
+                <TouchableOpacity onPress={navigateBack} style={s.backBtn}>
+                  <Ionicons name="arrow-back" size={20} color={THEME.primary} />
+                </TouchableOpacity>
+              ) : null}
+              <View>
+                <Text style={s.title}>{t('exercise.selectExercises')}</Text>
+                {currentFolderId && folderPath.length > 0 && (
+                  <Text style={s.subtitle} numberOfLines={1}>
+                    {folderPath[folderPath.length - 1].nombre}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+              <Ionicons name="close" size={22} color="#374151" />
+            </TouchableOpacity>
+          </View>
+
+          {/* ─── BREADCRUMBS ─── */}
+          {folderPath.length > 0 && (
+            <View style={s.breadcrumbs}>
+              <TouchableOpacity onPress={navigateToRoot} style={s.crumbItem}>
+                <Ionicons name="home" size={14} color={THEME.primary} />
+                <Text style={s.crumbText}>{t('folders.root')}</Text>
+              </TouchableOpacity>
+              {folderPath.map((c, i) => (
+                <View key={c._id} style={s.crumbItem}>
+                  <Ionicons name="chevron-forward" size={12} color="#94a3b8" />
+                  <TouchableOpacity
+                    onPress={() => i < folderPath.length - 1 ? navigateToBreadcrumb(i) : null}
+                    disabled={i === folderPath.length - 1}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
+                  >
+                    <Ionicons name="folder" size={12} color={c.color || THEME.primary} />
+                    <Text style={[s.crumbText, i === folderPath.length - 1 && s.crumbActive]} numberOfLines={1}>{c.nombre}</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* ─── SEARCH + FILTER BAR ─── */}
+          <View style={s.searchBar}>
+            <View style={[s.searchInputWrap, { flex: 1 }]}>
+              <Ionicons name="search" size={16} color="#94a3b8" style={{ marginRight: 6 }} />
+              <TextInput
+                style={s.searchInput}
+                placeholder={t('common.search') + '...'}
+                placeholderTextColor="#94a3b8"
+                value={search} onChangeText={setSearch}
+                returnKeyType="search"
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity style={[s.filterBtn, hasActiveFilters > 0 && s.filterBtnActive]} onPress={() => setShowFilters(!showFilters)}>
+              <MaterialIcons name="filter-list" size={18} color={hasActiveFilters > 0 ? '#fff' : THEME.primary} />
+              {hasActiveFilters > 0 && <Text style={s.filterBtnBadge}>{hasActiveFilters}</Text>}
+            </TouchableOpacity>
+          </View>
+
+          {/* ─── FILTROS EXPANDIBLES ─── */}
+          {showFilters && (
+            <View style={s.filtersPanel}>
+              <View style={s.filtersPanelHeader}>
+                <Text style={s.filtersPanelTitle}>{t('session.advancedFilters')}</Text>
+                {hasActiveFilters > 0 && (
+                  <TouchableOpacity onPress={clearFilters} style={s.clearFiltersBtn}>
+                    <Text style={s.clearFiltersTxt}>{t('common.clear')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={s.filtersRow}>
+                <View style={s.filterField}>
+                  <Text style={s.filterLabel}>{t('common.title')}</Text>
+                  <TextInput style={s.filterInput} placeholder={t('session.searchByTitle')} placeholderTextColor="#94a3b8" value={titleFilter} onChangeText={setTitleFilter} />
+                </View>
+                <View style={s.filterField}>
+                  <Text style={s.filterLabel}>{t('session.playersLabel')}</Text>
+                  <TextInput style={s.filterInput} placeholder={t('common.all')} placeholderTextColor="#94a3b8" value={playersFilter} onChangeText={setPlayersFilter} keyboardType="number-pad" autoComplete="off" />
+                </View>
+                <View style={s.filterField}>
+                  <Text style={s.filterLabel}>{t('session.teamsLabel')}</Text>
+                  <TextInput style={s.filterInput} placeholder={t('common.all')} placeholderTextColor="#94a3b8" value={teamsFilter} onChangeText={setTeamsFilter} />
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* ─── SOURCE FILTER TABS ─── */}
+          <View style={s.sourceFilterBar}>
+            {[
+              { key: 'all', label: t('exercise.allExercises') },
+              { key: 'mine', label: t('exercise.myExercises') },
+              { key: 'global', label: t('exercise.appExercises') },
+            ].map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[s.sourceTab, sourceFilter === tab.key && s.sourceTabActive]}
+                onPress={() => { setSourceFilter(tab.key); setCurrentFolderId(null); setFolderPath([]); }}
+              >
+                <Text style={[s.sourceTabTxt, sourceFilter === tab.key && s.sourceTabTxtActive]}>{tab.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* ─── INFO BAR ─── */}
+          <View style={s.infoBar}>
+            <Text style={s.infoText}>
+              {isSearching
+                ? `${baseList.length} ${t('session.results').toLowerCase()}`
+                : `${baseList.length} ${t('folders.items')}${showFolders ? ` · ${currentLevelFolders.length} ${t('folders.subfolders')}` : ''}`}
+            </Text>
+            {multiSelect && selectedIds.length > 0 && (
+              <View style={s.selBadge}>
+                <Text style={s.selBadgeTxt}>{t('session.selectedCount', { count: selectedIds.length })}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* ══════════ MOBILE ══════════ */}
+          {isMobile ? (
+            <View style={{ flex: 1 }}>
+              {/* Selected chips */}
+              {multiSelect && selectedIds.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsScroll} contentContainerStyle={{ gap: 6, paddingRight: 8 }}>
+                  {selectedObjs.map(e => (
+                    <TouchableOpacity key={e._id} style={s.chip} onPress={() => deselect(e._id)}>
+                      <Text style={s.chipTxt} numberOfLines={1}>{e.nombre}</Text>
+                      <Ionicons name="close" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator>
+                {/* Carpetas */}
+                {showFolders && (
+                  <View style={s.folderListMobile}>
+                    {currentLevelFolders.map(folder => (
+                      <TouchableOpacity key={folder._id} style={s.folderRowMobile} onPress={() => navigateToFolder(folder)} activeOpacity={0.7}>
+                        <View style={[s.folderIcon, { backgroundColor: (folder.color || '#2196F3') + '18' }]}>
+                          <Ionicons name="folder" size={22} color={folder.color || '#2196F3'} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.folderName} numberOfLines={1}>{getFolderName(folder)}</Text>
+                          <Text style={s.folderMeta}>
+                            {exerciseCountByFolder[folder._id] || 0} {t('folders.items')}
+                            {(subfolderCountByFolder[folder._id] || 0) > 0 ? ` · ${subfolderCountByFolder[folder._id]} ${t('folders.subfolders')}` : ''}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#ccc" />
+                      </TouchableOpacity>
+                    ))}
+                    {baseList.length > 0 && <View style={s.divider} />}
+                  </View>
+                )}
+                {/* Ejercicios */}
+                {baseList.length === 0 && !showFolders ? (
+                  <View style={s.emptyState}>
+                    <Ionicons name={isSearching ? 'search' : 'folder-open-outline'} size={48} color="#cbd5e1" />
+                    <Text style={s.emptyTxt}>{isSearching ? t('common.noResults') : (currentFolderId ? t('folders.emptyFolder') : t('exercise.noExercises'))}</Text>
+                  </View>
+                ) : baseList.map(e => {
+                  const sel = selectedIds.includes(e._id);
+                  const hasVid = videoAvailability[e._id] === true;
+                  const folderName = isSearching && e.folder && typeof e.folder === 'object' ? e.folder.nombre : null;
+                  return (
+                    <TouchableOpacity key={e._id} style={[s.exRowMobile, sel && s.exRowMobileSel]} onPress={() => toggle(e._id)} activeOpacity={0.7}>
+                      <View style={[s.exCheck, sel && s.exCheckSel]}>
+                        {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
+                      </View>
+                      {e.imagen ? (
+                        <View style={s.exThumb}><Base64ImagePreview imageUrl={e.imagen} forceWidth={46} forceHeight={46} /></View>
+                      ) : (
+                        <View style={s.exThumbEmpty}><Ionicons name="fitness" size={22} color="#94a3b8" /></View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Text style={[s.exName, sel && s.exNameSel]} numberOfLines={2}>{e.nombre}</Text>
+                          {e.isGlobal && <Ionicons name="globe-outline" size={13} color={THEME.primary} />}
+                        </View>
+                        {folderName && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                            <Ionicons name="folder" size={10} color={e.folder?.color || '#64748b'} />
+                            <Text style={s.exFolderTag}>{folderName}</Text>
+                          </View>
+                        )}
+                      </View>
+                      {hasVid && (
+                        <TouchableOpacity onPress={(ev) => { ev.stopPropagation(); handlePlayVideo(e); }} style={{ padding: 6 }}>
+                          <Feather name="play-circle" size={22} color="#E91E63" />
+                        </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : (
+            /* ══════════ TABLET / DESKTOP ══════════ */
+            <View style={[{ flex: 1, flexDirection: isPortrait ? 'column' : 'row', gap: 12 }]}>
+              {/* Panel seleccionados */}
+              {multiSelect && (
+                <View style={[s.selPanel, isPortrait ? { maxHeight: 120 } : { width: isWide ? 200 : 160 }]}>
+                  <Text style={s.selPanelTitle}>{t('session.selectedCount', { count: selectedIds.length })}</Text>
+                  <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator>
+                    {selectedObjs.length === 0 && <Text style={s.selPanelEmpty}>{t('common.empty')}</Text>}
+                    {selectedObjs.map(e => (
+                      <View key={e._id} style={s.selItem}>
+                        <TouchableOpacity onPress={() => deselect(e._id)} style={s.selItemRemove}>
+                          <Ionicons name="close" size={12} color="#fff" />
+                        </TouchableOpacity>
+                        {e.imagen ? <Base64ImagePreview imageUrl={e.imagen} forceWidth={36} forceHeight={36} />
+                          : <View style={s.selItemImgEmpty} />}
+                        <Text style={s.selItemName} numberOfLines={1}>{e.nombre}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              {/* Main area */}
+              <View style={[s.mainArea, { flex: 1 }]}>
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator>
+                  {/* Carpetas */}
+                  {showFolders && (
+                    <View style={{ marginBottom: 12 }}>
+                      <View style={s.folderSectionHeader}>
+                        <Ionicons name="folder" size={15} color={THEME.primary} />
+                        <Text style={s.folderSectionTitle}>{t('folders.folders')}</Text>
+                      </View>
+                      <View style={s.foldersGrid}>
+                        {currentLevelFolders.map(folder => (
+                          <TouchableOpacity key={folder._id} style={s.folderCard} onPress={() => navigateToFolder(folder)} activeOpacity={0.7}>
+                            <View style={[s.folderCardIcon, { backgroundColor: (folder.color || '#2196F3') + '18' }]}>
+                              <Ionicons name="folder" size={24} color={folder.color || '#2196F3'} />
+                            </View>
+                            <View style={s.folderCardInfo}>
+                              <Text style={s.folderCardName} numberOfLines={1}>{getFolderName(folder)}</Text>
+                              <Text style={s.folderCardMeta}>
+                                {exerciseCountByFolder[folder._id] || 0} {t('folders.items')}
+                                {(subfolderCountByFolder[folder._id] || 0) > 0 ? ` · ${subfolderCountByFolder[folder._id]} ${t('folders.subfolders')}` : ''}
+                              </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      {baseList.length > 0 && <View style={s.divider} />}
+                    </View>
+                  )}
+                  {/* Ejercicios grid */}
+                  {baseList.length === 0 && !showFolders ? (
+                    <View style={s.emptyState}>
+                      <Ionicons name={isSearching ? 'search' : 'folder-open-outline'} size={56} color="#cbd5e1" />
+                    <Text style={s.emptyTxt}>{isSearching ? t('common.noResults') : (currentFolderId ? t('folders.emptyFolder') : t('exercise.noExercises'))}</Text>
+                    </View>
+                  ) : (
+                    <View style={s.exGrid}>
+                      {baseList.map(e => {
+                        const sel = selectedIds.includes(e._id);
+                        const hasVid = videoAvailability[e._id] === true;
+                        const folderName = isSearching && e.folder && typeof e.folder === 'object' ? e.folder.nombre : null;
+                        return (
+                          <TouchableOpacity key={e._id} style={[s.exCard, sel && s.exCardSel]} onPress={() => toggle(e._id)} activeOpacity={0.75}>
+                            {hasVid && (
+                              <TouchableOpacity style={s.exVidBadge}
+                                onPress={(ev) => { ev.stopPropagation(); handlePlayVideo(e); }}
+                                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                                <Feather name="play-circle" size={16} color="#fff" />
+                              </TouchableOpacity>
+                            )}
+                            {sel && <View style={s.exSelBadge}><Ionicons name="checkmark" size={12} color="#fff" /></View>}
+                            {e.imagen ? <Base64ImagePreview imageUrl={e.imagen} forceWidth={56} forceHeight={56} />
+                              : <View style={s.exCardImgEmpty}><Ionicons name="fitness" size={28} color="#cbd5e1" /></View>}
+                            <Text style={[s.exCardName, sel && s.exCardNameSel]} numberOfLines={2}>{e.nombre}</Text>
+                            {e.isGlobal && (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                                <Ionicons name="globe-outline" size={9} color={THEME.primary} />
+                                <Text style={{ fontSize: 9, color: THEME.primary, fontWeight: '600' }}>{t('exercise.globalExercise')}</Text>
+                              </View>
+                            )}
+                            {folderName && (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                                <Ionicons name="folder" size={9} color={e.folder?.color || '#94a3b8'} />
+                                <Text style={{ fontSize: 9, color: '#94a3b8' }} numberOfLines={1}>{folderName}</Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          )}
+
+          {/* ─── FOOTER ─── */}
+          <View style={s.footer}>
+            <TouchableOpacity style={s.doneBtn} onPress={onClose}>
+              <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={s.doneTxt}>{t('common.done')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ─── VIDEO MODAL ─── */}
+          <Modal visible={showVideoModal} transparent animationType="fade" onRequestClose={closeVideoModal}>
+            <View style={s.vidBg}>
+              <View style={s.vidContent}>
+                <View style={s.vidHeader}>
+                  <Text style={s.vidTitle} numberOfLines={1}>{exerciseForVideo?.nombre || t('exercise.video')}</Text>
+                  <TouchableOpacity onPress={closeVideoModal}><Feather name="x" size={24} color="#fff" /></TouchableOpacity>
+                </View>
+                {isGeneratingVideo ? (
+                  <View style={s.vidLoading}><ActivityIndicator size="large" color="#E91E63" /><Text style={s.vidLoadTxt}>{t('exercise.generatingVideo')}</Text></View>
+                ) : videoUrl ? (
+                  <>
+                    <View style={{ aspectRatio: 16 / 9, width: '100%' }}><VideoView player={videoPlayer} style={{ flex: 1 }} contentFit="contain" nativeControls /></View>
+                    <TouchableOpacity style={s.vidDlBtn} onPress={downloadVideo} disabled={isDownloading}>
+                      {isDownloading ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="download" size={18} color="#fff" />}
+                      <Text style={s.vidDlTxt}>{isDownloading ? t('video.downloading') : t('video.download')}</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STYLES
+   ═══════════════════════════════════════════════════════════ */
+const s = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, width: '100%', backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 50 : 12, paddingBottom: 12 },
+
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#bfdbfe' },
+  title: { fontSize: 18, fontWeight: '800', color: '#1e293b', letterSpacing: -0.3 },
+  subtitle: { fontSize: 12, color: THEME.primary, fontWeight: '600', marginTop: 1 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+
+  // Breadcrumbs
+  breadcrumbs: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#f8fafc', borderRadius: 10, marginBottom: 6, gap: 2 },
+  crumbItem: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 3 },
+  crumbText: { fontSize: 12, color: THEME.primary, fontWeight: '600' },
+  crumbActive: { color: '#1e293b', fontWeight: '700' },
+
+  // Search bar
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingHorizontal: 12, height: 42 },
+  searchInput: { flex: 1, fontSize: 14, color: '#1e293b', paddingVertical: 0 },
+  filterBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#f0f9ff', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#bfdbfe' },
+  filterBtnActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  filterBtnBadge: { fontSize: 10, color: '#fff', fontWeight: '700', marginTop: -2 },
+
+  // Filters panel
+  filtersPanel: { backgroundColor: '#f8fafc', borderRadius: 14, padding: 14, marginBottom: 6, borderWidth: 1, borderColor: '#e2e8f0' },
+  filtersPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  filtersPanelTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
+  clearFiltersBtn: { paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#ef4444', borderRadius: 8 },
+  clearFiltersTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  filtersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  filterField: { flex: 1, minWidth: 120 },
+  filterLabel: { fontSize: 11, fontWeight: '700', color: '#475569', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
+  filterInput: { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: '#1e293b', backgroundColor: '#fff' },
+
+  // Source filter tabs
+  sourceFilterBar: { flexDirection: 'row', gap: 6, marginBottom: 8, paddingHorizontal: 2 },
+  sourceTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1.5, borderColor: '#e2e8f0' },
+  sourceTabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  sourceTabTxt: { fontSize: 12, fontWeight: '600', color: '#64748b' },
+  sourceTabTxtActive: { color: '#fff' },
+
+  // Info bar
+  infoBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  infoText: { fontSize: 11, color: '#64748b', fontWeight: '600' },
+  selBadge: { backgroundColor: THEME.primary + '15', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
+  selBadgeTxt: { fontSize: 11, color: THEME.primary, fontWeight: '700' },
+
+  // Chips (mobile selected)
+  chipsScroll: { maxHeight: 36, marginBottom: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 5, paddingHorizontal: 10, gap: 5 },
+  chipTxt: { fontSize: 11, color: '#fff', fontWeight: '500', maxWidth: 90 },
+
+  // ── Folder cards (mobile) ──
+  folderListMobile: { marginBottom: 4 },
+  folderRowMobile: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 14, marginBottom: 6,
+    borderWidth: 1.5, borderColor: '#e2e8f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+  },
+  folderIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  folderName: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
+  folderMeta: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+
+  // ── Folder cards (desktop) ──
+  folderSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  folderSectionTitle: { fontSize: 12, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.4 },
+  foldersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  folderCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12,
+    padding: 12, minWidth: 200, maxWidth: 280,
+    borderWidth: 1.5, borderColor: '#e2e8f0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 2,
+  },
+  folderCardIcon: { width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  folderCardInfo: { flex: 1 },
+  folderCardName: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
+  folderCardMeta: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 10 },
+
+  // Empty state
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, flex: 1 },
+  emptyTxt: { fontSize: 14, color: '#94a3b8', fontWeight: '600', marginTop: 10, textAlign: 'center' },
+
+  // ── Exercise rows (mobile) ──
+  exRowMobile: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 12, marginBottom: 6,
+    borderWidth: 1, borderColor: '#e2e8f0', gap: 10,
+  },
+  exRowMobileSel: { backgroundColor: '#eff6ff', borderColor: THEME.primary },
+  exCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
+  exCheckSel: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  exThumb: { width: 46, height: 46, borderRadius: 8, overflow: 'hidden' },
+  exThumbEmpty: { width: 46, height: 46, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  exName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  exNameSel: { color: THEME.primary },
+  exFolderTag: { fontSize: 10, color: '#64748b' },
+
+  // ── Exercise grid cards (desktop) ──
+  exGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  exCard: {
+    width: 130, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#e2e8f0',
+    padding: 10, alignItems: 'center', position: 'relative',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
+  },
+  exCardSel: { backgroundColor: '#eff6ff', borderColor: THEME.primary, borderWidth: 2 },
+  exCardImgEmpty: { width: 56, height: 56, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  exCardName: { fontSize: 11, fontWeight: '600', textAlign: 'center', color: '#1e293b', marginTop: 4 },
+  exCardNameSel: { color: '#1e40af', fontWeight: '700' },
+  exVidBadge: {
+    position: 'absolute', top: 6, left: 6, backgroundColor: '#E91E63', width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', zIndex: 10,
+  },
+  exSelBadge: {
+    position: 'absolute', top: 6, right: 6, backgroundColor: THEME.primary, width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center', zIndex: 10,
+  },
+
+  // Selected panel (desktop)
+  selPanel: { backgroundColor: '#f8fafc', borderRadius: 14, padding: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  selPanelTitle: { fontSize: 11, fontWeight: '700', color: '#374151', marginBottom: 6 },
+  selPanelEmpty: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 12 },
+  selItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 4, marginBottom: 4, gap: 6 },
+  selItemRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' },
+  selItemImgEmpty: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#e2e8f0' },
+  selItemName: { flex: 1, fontSize: 11, color: '#1e293b', fontWeight: '600' },
+
+  // Main area (desktop)
+  mainArea: { backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' },
+
+  // Footer
+  footer: { marginTop: 8, alignItems: 'flex-end' },
+  doneBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: THEME.primary, paddingVertical: 11, paddingHorizontal: 22, borderRadius: 12,
+    shadowColor: THEME.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
+  },
+  doneTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
+  // Video modal
+  vidBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  vidContent: { width: '95%', maxWidth: 800, backgroundColor: '#1a1a1a', borderRadius: 16, overflow: 'hidden' },
+  vidHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#2a2a2a' },
+  vidTitle: { fontSize: 16, fontWeight: '600', color: '#fff', flex: 1 },
+  vidLoading: { padding: 40, alignItems: 'center' },
+  vidLoadTxt: { marginTop: 12, color: '#fff', fontSize: 14 },
+  vidDlBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2196F3', paddingVertical: 12, paddingHorizontal: 20, marginHorizontal: 16, marginVertical: 12, borderRadius: 10, gap: 8 },
+  vidDlTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
+});

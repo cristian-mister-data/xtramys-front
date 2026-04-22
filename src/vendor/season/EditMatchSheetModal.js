@@ -1,0 +1,3945 @@
+// components/pages/season/EditMatchSheetModal.js
+// Modal para editar fichas de partido desde temporadas
+import { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Platform,
+  Image,
+  Dimensions,
+} from 'react-native';
+
+// Detectar si es móvil
+const isMobileDevice = () => {
+  const { width, height } = Dimensions.get('window');
+  return Math.min(width, height) < 768;
+};
+import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import { useTranslation } from 'react-i18next';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useDispatch, useSelector } from 'react-redux';
+import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+import LineupEditor from '@/vendor/matchSheet/LineupEditor';
+import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
+import { getPlayerFullName } from '@/utils/playerHelpers';
+import RivalSelector from '@/vendor/shared/RivalSelector';
+import { PlayerSelectionModal } from '@/vendor/shared/training';
+
+// Tema consistente con el resto de la aplicación
+const THEME = {
+  primary: '#3578e5',
+  primaryLight: '#5b93ea',
+  primaryDark: '#2856a2',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  background: '#f8fafc',
+  surface: '#ffffff',
+  text: '#1e293b',
+  textSecondary: '#64748b',
+  textMuted: '#94a3b8',
+  border: '#e2e8f0',
+  inputBg: '#f8fafc',
+  gradient: ['#3578e5', '#2856a2'],
+};
+
+// Componente PlayerSelectionModal importado desde ../../shared/training
+
+// Modal para eventos (goles, tarjetas, cambios)
+function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
+  const { t } = useTranslation();
+  const [minuto, setMinuto] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [asistente, setAsistente] = useState(null); // Jugador que da la asistencia
+  const [tipoTarjeta, setTipoTarjeta] = useState('amarilla');
+  const [motivo, setMotivo] = useState('');
+  const [partidosSancionRoja, setPartidosSancionRoja] = useState('1');
+  const [jugadorSale, setJugadorSale] = useState(null);
+  const [jugadorEntra, setJugadorEntra] = useState(null);
+  const [showMinuteModal, setShowMinuteModal] = useState(false);
+
+  const isEditing = !!editingEvent;
+
+  // Generar opciones de minutos basadas en tiempo por parte y descuentos
+  const generateMinuteOptions = () => {
+    const options = [];
+    const tpp = tiempoPorParte || 45;
+    const dPT = Number(descuentoPT) || 0;
+    const dST = Number(descuentoST) || 0;
+    
+    // Primera parte: 1 hasta tiempoPorParte
+    for (let i = 1; i <= tpp; i++) {
+      options.push({ label: `${i}'`, value: String(i), half: 1 });
+    }
+    
+    // Tiempo de descuento primera parte
+    if (dPT > 0) {
+      for (let i = 1; i <= dPT; i++) {
+        options.push({ label: `${tpp}+${i}'`, value: `${tpp}+${i}`, half: 1, isAddedTime: true });
+      }
+    }
+    
+    // Segunda parte: tiempoPorParte+1 hasta tiempoPorParte*2
+    for (let i = tpp + 1; i <= tpp * 2; i++) {
+      options.push({ label: `${i}'`, value: String(i), half: 2 });
+    }
+    
+    // Tiempo de descuento segunda parte
+    if (dST > 0) {
+      for (let i = 1; i <= dST; i++) {
+        options.push({ label: `${tpp * 2}+${i}'`, value: `${tpp * 2}+${i}`, half: 2, isAddedTime: true });
+      }
+    }
+    
+    return options;
+  };
+
+  const minuteOptions = generateMinuteOptions();
+
+  // Obtener jugadores disponibles para "sale" (jugadores en campo menos expulsados)
+  const getJugadoresQuePuedenSalir = () => {
+    const enCampo = jugadoresEnCampo.length > 0 ? jugadoresEnCampo : titulares;
+    return enCampo
+      .filter(playerId => !jugadoresExpulsados.includes(playerId))
+      .map(playerId => players.find(p => p._id === playerId))
+      .filter(p => p);
+  };
+
+  // Obtener jugadores disponibles para "entra" (suplentes que no han entrado, o que salieron del campo después de entrar)
+  const getJugadoresQuePuedenEntrar = () => {
+    const yaEntraron = cambiosRealizados.map(c => typeof c.entra === 'object' ? c.entra._id : c.entra).filter(Boolean);
+    const yaSalieron = cambiosRealizados.map(c => typeof c.sale === 'object' ? c.sale._id : c.sale).filter(Boolean);
+    // Suplentes que nunca entraron
+    const suplentesDisponibles = suplentes
+      .filter(playerId => !yaEntraron.includes(playerId));
+    // Jugadores que entraron como suplentes pero luego fueron sustituidos
+    const reEntrantesPosibles = yaEntraron.filter(id => 
+      yaSalieron.includes(id) && !(jugadoresEnCampo.length > 0 ? jugadoresEnCampo : titulares).includes(id) && !jugadoresExpulsados.includes(id)
+    );
+    return [...suplentesDisponibles, ...reEntrantesPosibles]
+      .map(playerId => players.find(p => p._id === playerId))
+      .filter(p => p);
+  };
+
+  useEffect(() => {
+    if (visible) {
+      if (editingEvent) {
+        // Pre-fill with existing event data
+        setMinuto(editingEvent.minuto || '');
+        const jugadorId = typeof editingEvent.jugador === 'object' ? editingEvent.jugador._id : editingEvent.jugador;
+        setSelectedPlayer(jugadorId || null);
+        if (eventType === 'gol') {
+          const asistenteId = editingEvent.asistente ? (typeof editingEvent.asistente === 'object' ? editingEvent.asistente._id : editingEvent.asistente) : null;
+          setAsistente(asistenteId);
+        }
+        if (eventType === 'tarjeta') {
+          setTipoTarjeta(editingEvent.tipo || 'amarilla');
+          setMotivo(editingEvent.motivo || '');
+          setPartidosSancionRoja(String(editingEvent.partidosSancion || 1));
+        }
+        if (eventType === 'cambio') {
+          setJugadorSale(typeof editingEvent.sale === 'object' ? editingEvent.sale._id : editingEvent.sale);
+          setJugadorEntra(typeof editingEvent.entra === 'object' ? editingEvent.entra._id : editingEvent.entra);
+        }
+      } else {
+        setMinuto('');
+        setSelectedPlayer(null);
+        setAsistente(null);
+        setTipoTarjeta('amarilla');
+        setMotivo('');
+        setPartidosSancionRoja('1');
+        setJugadorSale(null);
+        setJugadorEntra(null);
+      }
+      setShowMinuteModal(false);
+    }
+  }, [visible, editingEvent]);
+
+  const handleAdd = () => {
+    if (!minuto) {
+      Alert.alert(t('common.error'), t('matchSheet.minuteRequired'));
+      return;
+    }
+    if (eventType === 'gol' && !selectedPlayer) {
+      Alert.alert(t('common.error'), t('matchSheet.selectScorerError'));
+      return;
+    }
+    if (eventType === 'tarjeta' && !selectedPlayer) {
+      Alert.alert(t('common.error'), t('matchSheet.selectPlayerError'));
+      return;
+    }
+    if (eventType === 'cambio' && (!jugadorSale || !jugadorEntra)) {
+      Alert.alert(t('common.error'), t('matchSheet.selectSubstitutionError'));
+      return;
+    }
+
+    let event;
+    if (eventType === 'gol') {
+      event = { jugador: selectedPlayer, minuto, asistente: asistente || undefined };
+    } else if (eventType === 'tarjeta') {
+      event = { jugador: selectedPlayer, minuto, tipo: tipoTarjeta, motivo: motivo || undefined };
+      if (tipoTarjeta === 'roja') {
+        event.partidosSancion = parseInt(partidosSancionRoja) || 1;
+        console.log('[EventModal CONFIRM] partidosSancionRoja state:', partidosSancionRoja, '→ event.partidosSancion:', event.partidosSancion);
+      }
+    } else if (eventType === 'cambio') {
+      event = { sale: jugadorSale, entra: jugadorEntra, minuto };
+    } else if (eventType === 'golRival') {
+      event = { minuto };
+    }
+
+    onAdd(event);
+  };
+
+  // Obtener el label del minuto seleccionado
+  const getMinuteLabel = () => {
+    if (!minuto) return t('schedule.selectMinute');
+    const option = minuteOptions.find(opt => opt.value === minuto);
+    return option ? option.label : `${minuto}'`;
+  };
+
+  if (!visible) return null;
+
+  const tpp = tiempoPorParte || 45;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.container}>
+          <View style={modalStyles.header}>
+            <Text style={modalStyles.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <KeyboardAwareScrollView style={modalStyles.list}>
+            {/* Minuto - Selector visual */}
+            <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.minuteRequired')}</Text>
+            <TouchableOpacity
+              style={modalStyles.minuteSelector}
+              onPress={() => setShowMinuteModal(true)}
+            >
+              <Ionicons name="time-outline" size={20} color={THEME.primary} />
+              <Text style={[modalStyles.minuteSelectorText, minuto && { color: THEME.text, fontWeight: '600' }]}>
+                {getMinuteLabel()}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+            </TouchableOpacity>
+
+            {eventType === 'gol' && (
+              <>
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerRequired')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.playerChipsRow}>
+                  {players.map(p => (
+                    <TouchableOpacity
+                      key={p._id}
+                      style={[
+                        modalStyles.playerChip,
+                        selectedPlayer === p._id && modalStyles.playerChipSelected
+                      ]}
+                      onPress={() => setSelectedPlayer(p._id)}
+                    >
+                      <Text style={[
+                        modalStyles.playerChipText,
+                        selectedPlayer === p._id && modalStyles.playerChipTextSelected
+                      ]}>
+                        {getPlayerFullName(p)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.assistOptional')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.playerChipsRow}>
+                  <TouchableOpacity
+                    style={[
+                      modalStyles.playerChip,
+                      !asistente && modalStyles.playerChipSelected
+                    ]}
+                    onPress={() => setAsistente(null)}
+                  >
+                    <Text style={[
+                      modalStyles.playerChipText,
+                      !asistente && modalStyles.playerChipTextSelected
+                    ]}>
+                      {t('matchSheet.modals.noAssist')}
+                    </Text>
+                  </TouchableOpacity>
+                  {players.filter(p => p._id !== selectedPlayer).map(p => (
+                    <TouchableOpacity
+                      key={p._id}
+                      style={[
+                        modalStyles.playerChip,
+                        asistente === p._id && modalStyles.playerChipSelected,
+                        { borderColor: asistente === p._id ? '#8b5cf6' : THEME.border, backgroundColor: asistente === p._id ? '#8b5cf6' : THEME.surface }
+                      ]}
+                      onPress={() => setAsistente(p._id)}
+                    >
+                      <Text style={[
+                        modalStyles.playerChipText,
+                        asistente === p._id && modalStyles.playerChipTextSelected
+                      ]}>
+                        {getPlayerFullName(p)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            {eventType === 'tarjeta' && (
+              <>
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerRequired')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.playerChipsRow}>
+                  {players.map(p => (
+                    <TouchableOpacity
+                      key={p._id}
+                      style={[
+                        modalStyles.playerChip,
+                        selectedPlayer === p._id && modalStyles.playerChipSelected
+                      ]}
+                      onPress={() => setSelectedPlayer(p._id)}
+                    >
+                      <Text style={[
+                        modalStyles.playerChipText,
+                        selectedPlayer === p._id && modalStyles.playerChipTextSelected
+                      ]}>
+                        {getPlayerFullName(p)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.cardTypeLabel')}</Text>
+                <View style={modalStyles.cardTypeRow}>
+                  <TouchableOpacity
+                    style={[
+                      modalStyles.cardTypeBtn,
+                      tipoTarjeta === 'amarilla' && { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }
+                    ]}
+                    onPress={() => setTipoTarjeta('amarilla')}
+                  >
+                    <View style={[modalStyles.cardIcon, { backgroundColor: '#f59e0b' }]} />
+                    <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.yellow')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      modalStyles.cardTypeBtn,
+                      tipoTarjeta === 'roja' && { backgroundColor: '#fee2e2', borderColor: '#ef4444' }
+                    ]}
+                    onPress={() => setTipoTarjeta('roja')}
+                  >
+                    <View style={[modalStyles.cardIcon, { backgroundColor: '#ef4444' }]} />
+                    <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.red')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {tipoTarjeta === 'roja' && (
+                  <>
+                    <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.banMatches')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                      <TouchableOpacity
+                        onPress={() => setPartidosSancionRoja(prev => String(Math.max(1, (parseInt(prev) || 1) - 1)))}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Ionicons name="remove" size={20} color="#ef4444" />
+                      </TouchableOpacity>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: '#ef4444', minWidth: 30, textAlign: 'center' }}>{partidosSancionRoja}</Text>
+                      <TouchableOpacity
+                        onPress={() => setPartidosSancionRoja(prev => String(Math.min(20, (parseInt(prev) || 1) + 1)))}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Ionicons name="add" size={20} color="#ef4444" />
+                      </TouchableOpacity>
+                      <Text style={{ fontSize: 12, color: THEME.textSecondary }}>{t('matchSheet.modals.banMatchesHint')}</Text>
+                    </View>
+                  </>
+                )}
+
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.reasonOptional')}</Text>
+                <TextInput
+                  style={modalStyles.input}
+                  value={motivo}
+                  onChangeText={setMotivo}
+                  placeholder={t('matchSheet.modals.reasonPlaceholder')}
+                  placeholderTextColor={THEME.textMuted}
+                />
+              </>
+            )}
+
+            {eventType === 'cambio' && (
+              <>
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerLeaving')} * ({getJugadoresQuePuedenSalir().length} {t('matchSheet.modals.available')})</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.playerChipsRow}>
+                  {getJugadoresQuePuedenSalir().map(p => (
+                    <TouchableOpacity
+                      key={p._id}
+                      style={[
+                        modalStyles.playerChip,
+                        jugadorSale === p._id && { backgroundColor: '#ef4444', borderColor: '#ef4444' }
+                      ]}
+                      onPress={() => setJugadorSale(p._id)}
+                    >
+                      <Ionicons name="arrow-down" size={12} color={jugadorSale === p._id ? '#fff' : '#ef4444'} />
+                      <Text style={[
+                        modalStyles.playerChipText,
+                        jugadorSale === p._id && { color: '#fff' }
+                      ]}>
+                        {getPlayerFullName(p)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerEntering')} * ({getJugadoresQuePuedenEntrar().length} {t('matchSheet.modals.available')})</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={modalStyles.playerChipsRow}>
+                  {getJugadoresQuePuedenEntrar().map(p => (
+                    <TouchableOpacity
+                      key={p._id}
+                      style={[
+                        modalStyles.playerChip,
+                        jugadorEntra === p._id && { backgroundColor: '#10b981', borderColor: '#10b981' }
+                      ]}
+                      onPress={() => setJugadorEntra(p._id)}
+                    >
+                      <Ionicons name="arrow-up" size={12} color={jugadorEntra === p._id ? '#fff' : '#10b981'} />
+                      <Text style={[
+                        modalStyles.playerChipText,
+                        jugadorEntra === p._id && { color: '#fff' }
+                      ]}>
+                        {getPlayerFullName(p)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+          </KeyboardAwareScrollView>
+
+          <TouchableOpacity style={modalStyles.confirmBtn} onPress={handleAdd}>
+            <Text style={modalStyles.confirmBtnText}>{isEditing ? t('common.save') : t('matchSheet.actions.add')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Modal de selección de minuto */}
+      <Modal visible={showMinuteModal} transparent animationType="fade" onRequestClose={() => setShowMinuteModal(false)}>
+        <View style={modalStyles.overlay}>
+          <View style={[modalStyles.container, { maxHeight: '70%' }]}>
+            <View style={modalStyles.header}>
+              <Text style={modalStyles.title}>{t('matchSheet.modals.selectMinute')}</Text>
+              <TouchableOpacity onPress={() => setShowMinuteModal(false)}>
+                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={modalStyles.list}>
+              {/* Primera parte */}
+              <Text style={modalStyles.minuteSectionTitle}>{t('matchSheet.modals.firstHalfRange', { max: tpp })}</Text>
+              <View style={modalStyles.minuteGrid}>
+                {minuteOptions.filter(opt => opt.half === 1).map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      modalStyles.minuteOption,
+                      minuto === opt.value && modalStyles.minuteOptionSelected,
+                      opt.isAddedTime && modalStyles.minuteOptionAddedTime
+                    ]}
+                    onPress={() => {
+                      setMinuto(opt.value);
+                      setShowMinuteModal(false);
+                    }}
+                  >
+                    <Text style={[
+                      modalStyles.minuteOptionText,
+                      minuto === opt.value && modalStyles.minuteOptionTextSelected,
+                      opt.isAddedTime && modalStyles.minuteOptionTextAddedTime
+                    ]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Segunda parte */}
+              <Text style={modalStyles.minuteSectionTitle}>{t('matchSheet.modals.secondHalfRange', { min: tpp + 1, max: tpp * 2 })}</Text>
+              <View style={modalStyles.minuteGrid}>
+                {minuteOptions.filter(opt => opt.half === 2).map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      modalStyles.minuteOption,
+                      minuto === opt.value && modalStyles.minuteOptionSelected,
+                      opt.isAddedTime && modalStyles.minuteOptionAddedTime
+                    ]}
+                    onPress={() => {
+                      setMinuto(opt.value);
+                      setShowMinuteModal(false);
+                    }}
+                  >
+                    <Text style={[
+                      modalStyles.minuteOptionText,
+                      minuto === opt.value && modalStyles.minuteOptionTextSelected,
+                      opt.isAddedTime && modalStyles.minuteOptionTextAddedTime
+                    ]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </Modal>
+  );
+}
+
+// Estilos para modales auxiliares
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: isMobileDevice() ? 8 : 12,
+  },
+  container: {
+    backgroundColor: THEME.surface,
+    borderRadius: isMobileDevice() ? 12 : 14,
+    width: '100%',
+    maxWidth: isMobileDevice() ? '100%' : 450,
+    maxHeight: isMobileDevice() ? '90%' : '85%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: isMobileDevice() ? 14 : 16,
+    paddingVertical: isMobileDevice() ? 12 : 14,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  title: {
+    fontSize: isMobileDevice() ? 16 : 18,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  selectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+    gap: 12,
+  },
+  selectAllBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: THEME.primary + '15',
+    borderRadius: 8,
+  },
+  selectAllText: {
+    fontSize: 13,
+    color: THEME.primary,
+    fontWeight: '500',
+  },
+  countText: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+    marginLeft: 'auto',
+  },
+  list: {
+    padding: 12,
+    maxHeight: 400,
+  },
+  playerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: THEME.border,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxSelected: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  playerName: {
+    flex: 1,
+    fontSize: 15,
+    color: THEME.text,
+  },
+  playerDorsal: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+    fontWeight: '500',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: THEME.textMuted,
+    padding: 20,
+  },
+  confirmBtn: {
+    margin: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: THEME.text,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: THEME.text,
+  },
+  playerChipsRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  playerChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: THEME.inputBg,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  playerChipSelected: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  playerChipText: {
+    fontSize: 13,
+    color: THEME.text,
+  },
+  playerChipTextSelected: {
+    color: '#fff',
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: THEME.inputBg,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  optionChipSelected: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  optionChipText: {
+    fontSize: 13,
+    color: THEME.text,
+  },
+  optionChipTextSelected: {
+    color: '#fff',
+  },
+  cardTypeRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cardTypeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    gap: 8,
+  },
+  cardIcon: {
+    width: 20,
+    height: 28,
+    borderRadius: 3,
+  },
+  cardTypeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: THEME.text,
+  },
+  // Estilos para selector de minuto
+  minuteSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 10,
+    padding: 12,
+    gap: 10,
+  },
+  minuteSelectorText: {
+    flex: 1,
+    fontSize: 15,
+    color: THEME.textMuted,
+  },
+  minuteSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  minuteGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  minuteOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: THEME.inputBg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  minuteOptionSelected: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  minuteOptionAddedTime: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  minuteOptionText: {
+    fontSize: 13,
+    color: THEME.text,
+    fontWeight: '500',
+  },
+  minuteOptionTextSelected: {
+    color: '#fff',
+  },
+  minuteOptionTextAddedTime: {
+    color: '#d97706',
+  },
+});
+
+export default function EditMatchSheetModal({
+  visible,
+  matchSheet,
+  rivals = [],
+  players = [],
+  injuries = [],
+  team,
+  onClose,
+  onSave,
+  onCreate,           // callback para crear (modo crear)
+  matchSheets = [],   // para validación de duplicados
+  trainingSessions = [], // para validación de fechas
+  selectedDate = null,   // fecha preseleccionada al crear
+  sanctionedPlayerIds = [], // IDs de jugadores sancionados en torneo actual
+}) {
+  const { t, i18n } = useTranslation();
+  const isCreateMode = !matchSheet?._id;
+  const [loading, setLoading] = useState(false);
+  
+  // Estados del formulario básico
+  const [rival, setRival] = useState('');
+  const [rivalId, setRivalId] = useState(null);
+  const [rivalEscudo, setRivalEscudo] = useState(null);
+  const [fechaHora, setFechaHora] = useState(new Date());
+  const [jornada, setJornada] = useState('');
+  const [ubicacion, setUbicacion] = useState('local');
+  const [competicion, setCompeticion] = useState('torneo');
+  const [torneoId, setTorneoId] = useState(null);
+  const [selectedCompetitionOption, setSelectedCompetitionOption] = useState(null); // 'amistoso' | tournamentId
+  // Campos adaptativos según formato de torneo
+  const [fase, setFase] = useState(null); // 'liga' | 'grupos' | 'eliminatoria'
+  const [ronda, setRonda] = useState(null); // 'final' | 'semifinal' | 'cuartos' | etc.
+  const [grupo, setGrupo] = useState(null); // '1'-'32' (string for selector)
+  const [pierna, setPierna] = useState(null); // 'unico' | 'ida' | 'vuelta'
+  const [golesFavor, setGolesFavor] = useState('');
+  const [golesContra, setGolesContra] = useState('');
+  const [notasEntrenador, setNotasEntrenador] = useState('');
+  const [alineacion, setAlineacion] = useState('1-4-4-2');
+  const [alineacionRival, setAlineacionRival] = useState('');
+  
+  // Estados para jugadores
+  const [convocados, setConvocados] = useState([]);
+  const [noConvocados, setNoConvocados] = useState([]);
+  const [alineacionTitulares, setAlineacionTitulares] = useState([]);
+  const [alineacionSuplentes, setAlineacionSuplentes] = useState([]);
+  
+  // Estados para eventos
+  const [goles, setGoles] = useState([]);
+  const [tarjetasAmarillas, setTarjetasAmarillas] = useState([]);
+  const [tarjetasRojas, setTarjetasRojas] = useState([]);
+  const [cambios, setCambios] = useState([]);
+  const [golesRival, setGolesRival] = useState([]);
+  
+  // Estados para tracking de jugadores en campo
+  const [jugadoresEnCampo, setJugadoresEnCampo] = useState([]);
+  const [jugadoresExpulsados, setJugadoresExpulsados] = useState([]);
+  
+  // Estados para descuento (tiempo añadido)
+  const [descuentoPrimerTiempo, setDescuentoPrimerTiempo] = useState('0');
+  const [descuentoSegundoTiempo, setDescuentoSegundoTiempo] = useState('0');
+
+  // Estados para edición de eventos  
+  const [editingGoalIndex, setEditingGoalIndex] = useState(null);
+  const [editingCardIndex, setEditingCardIndex] = useState(null);
+  const [editingCardType, setEditingCardType] = useState(null); // 'amarilla' | 'roja'
+  
+  // Pickers y modales
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showRivalSelector, setShowRivalSelector] = useState(false);
+  const [showConvocadosModal, setShowConvocadosModal] = useState(false);
+  const [showNoConvocadosModal, setShowNoConvocadosModal] = useState(false);
+  const [showTitularesModal, setShowTitularesModal] = useState(false);
+  const [showSuplentesModal, setShowSuplentesModal] = useState(false);
+  const [showGolesModal, setShowGolesModal] = useState(false);
+  const [showTarjetasModal, setShowTarjetasModal] = useState(false);
+  const [showCambiosModal, setShowCambiosModal] = useState(false);
+  const [showGolesRivalModal, setShowGolesRivalModal] = useState(false);
+  const [showAlineacionModal, setShowAlineacionModal] = useState(false);
+  const [showAlineacionRivalModal, setShowAlineacionRivalModal] = useState(false);
+  const [showJornadaModal, setShowJornadaModal] = useState(false);
+  const [showUbicacionModal, setShowUbicacionModal] = useState(false);
+  const [showCompeticionModal, setShowCompeticionModal] = useState(false);
+  const [showTorneoModal, setShowTorneoModal] = useState(false);
+  const [showFaseModal, setShowFaseModal] = useState(false);
+  const [showRondaModal, setShowRondaModal] = useState(false);
+  const [showGrupoModal, setShowGrupoModal] = useState(false);
+  const [showPiernaModal, setShowPiernaModal] = useState(false);
+
+  // Estados para crear nuevo rival
+  const [showCreateRivalModal, setShowCreateRivalModal] = useState(false);
+  const [newRivalName, setNewRivalName] = useState('');
+  const [newRivalEscudo, setNewRivalEscudo] = useState('');
+  const [savingRival, setSavingRival] = useState(false);
+  const [searchRivalText, setSearchRivalText] = useState('');
+  const tournaments = useSelector(state => state.tournament?.tournaments) || [];
+  const dispatch = useDispatch();
+
+  // ─── Torneo seleccionado y lógica de formato ───
+  const selectedTournament = useMemo(() => tournaments.find(t => t._id === torneoId), [tournaments, torneoId]);
+  const torneoFormato = competicion === 'amistoso' ? null : (selectedTournament?.formato || null);
+
+  // Orden de rondas de mayor a menor
+  const ROUND_ORDER = ['treintaydosavos', 'dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final'];
+  const ROUND_KEYS = {
+    final: 'tournaments.roundFinal',
+    semifinal: 'tournaments.roundSemifinal',
+    cuartos: 'tournaments.roundQuarters',
+    octavos: 'tournaments.roundRound16',
+    dieciseisavos: 'tournaments.roundRound32',
+    treintaydosavos: 'tournaments.roundRound64',
+  };
+
+  // Rondas disponibles basadas en el torneo seleccionado
+  const availableRounds = useMemo(() => {
+    if (!selectedTournament?.rondasEliminatorias) return [];
+    const maxRoundIdx = ROUND_ORDER.indexOf(selectedTournament.rondasEliminatorias);
+    if (maxRoundIdx === -1) return [];
+    return ROUND_ORDER.slice(maxRoundIdx).reverse(); // de final a la ronda más lejana del torneo
+  }, [selectedTournament]);
+
+  // Determinar si la ronda seleccionada usa ida y vuelta
+  const roundUsesLegs = useMemo(() => {
+    if (!selectedTournament || !ronda) return false;
+    const formatoPartido = selectedTournament.formatoPartido || 'unico';
+    if (formatoPartido === 'unico') return false;
+    // formatoPartido === 'idayvuelta'
+    if (ronda === 'final') {
+      return (selectedTournament.formatoFinal || 'unico') === 'idayvuelta';
+    }
+    const idaYvueltaDesde = selectedTournament.idaYvueltaDesde || 'todas';
+    if (idaYvueltaDesde === 'todas') return true;
+    const roundIdx = ROUND_ORDER.indexOf(ronda);
+    const desdeIdx = ROUND_ORDER.indexOf(idaYvueltaDesde);
+    return roundIdx >= desdeIdx;
+  }, [selectedTournament, ronda]);
+
+  // Opciones de grupo basadas en el torneo
+  const grupoOptions = useMemo(() => {
+    if (!selectedTournament?.numGrupos) return [];
+    return Array.from({ length: selectedTournament.numGrupos }, (_, i) => String(i + 1));
+  }, [selectedTournament]);
+
+  // Opciones de jornada: dinámicas para fase de grupos, 1-100 para liga
+  const jornadaOptions = useMemo(() => {
+    if (torneoFormato === 'grupos+eliminatoria' && fase === 'grupos' && selectedTournament?.equiposPorGrupo) {
+      // En fase de grupos, máximo partidos = equiposPorGrupo - 1 (ida), o *2 si hay ida y vuelta en grupos
+      const maxJornada = (selectedTournament.equiposPorGrupo - 1) * 2; // generoso
+      return Array.from({ length: maxJornada }, (_, i) => String(i + 1));
+    }
+    return Array.from({ length: 100 }, (_, i) => String(i + 1));
+  }, [torneoFormato, fase, selectedTournament]);
+
+  // Auto-set fase cuando cambia el torneo
+  useEffect(() => {
+    if (!torneoFormato) {
+      setFase(null);
+      setRonda(null);
+      setGrupo(null);
+      setPierna(null);
+      return;
+    }
+    if (torneoFormato === 'liga') {
+      setFase('liga');
+      setRonda(null);
+      setGrupo(null);
+      setPierna(null);
+    } else if (torneoFormato === 'eliminatoria') {
+      setFase('eliminatoria');
+      setGrupo(null);
+    } else if (torneoFormato === 'grupos+eliminatoria') {
+      // Keep user's current choice if valid, otherwise default to grupos
+      if (fase !== 'grupos' && fase !== 'eliminatoria') {
+        setFase('grupos');
+      }
+    }
+  }, [torneoFormato]);
+
+  // Auto-set pierna cuando cambia ronda o formaato
+  useEffect(() => {
+    if (fase === 'eliminatoria') {
+      if (roundUsesLegs) {
+        if (!pierna || pierna === 'unico') setPierna('ida');
+      } else {
+        setPierna('unico');
+      }
+    }
+  }, [ronda, roundUsesLegs, fase]);
+
+  // Alineaciones disponibles según cantidad de jugadores del equipo
+  const jugadoresPorEquipo = team?.jugadoresPorEquipo || 11;
+  const alineacionesDisponibles = ALINEACIONES_BY_PLAYER_COUNT[jugadoresPorEquipo] || ALINEACIONES;
+
+  // Calcular resultado automático (mantener valores internos en español para BD)
+  const isMatchPast = useMemo(() => {
+    if (!fechaHora) return false;
+    const matchDate = new Date(fechaHora);
+    const now = new Date();
+    return matchDate < now;
+  }, [fechaHora]);
+
+  const resultado = useMemo(() => {
+    const gf = parseInt(golesFavor) || 0;
+    const gc = parseInt(golesContra) || 0;
+    // Si la fecha es pasada, siempre calculamos resultado (0-0 = Empate)
+    if (isMatchPast) {
+      if (gf > gc) return 'Victoria';
+      if (gf < gc) return 'Derrota';
+      return 'Empate';
+    }
+    // Si la fecha es futura, solo calculamos si hay goles ingresados
+    if (golesFavor === '' && golesContra === '') return '';
+    if (gf > gc) return 'Victoria';
+    if (gf < gc) return 'Derrota';
+    return 'Empate';
+  }, [golesFavor, golesContra, isMatchPast]);
+
+  // Traducir resultado para mostrar en UI
+  const translateResult = (result) => {
+    if (!result) return '';
+    switch(result) {
+      case 'Victoria': return t('matchSheet.fields.win');
+      case 'Empate': return t('matchSheet.fields.draw');
+      case 'Derrota': return t('matchSheet.fields.loss');
+      default: return result;
+    }
+  };
+
+  // Cargar datos al abrir
+  useEffect(() => {
+    if (visible && matchSheet) {
+      // Datos básicos
+      setRival(matchSheet.rival || '');
+      setRivalId(matchSheet.rivalId?._id || matchSheet.rivalId || null);
+      setRivalEscudo(matchSheet.rivalId?.escudo || matchSheet.rivalEscudo || null);
+      const matchDate = matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date();
+      setFechaHora(matchDate);
+      setJornada(matchSheet.jornada ? String(matchSheet.jornada) : '');
+      setUbicacion(matchSheet.ubicacion || 'local');
+      // Campos adaptativos de fase/ronda/grupo/pierna
+      setRonda(matchSheet.ronda || null);
+      setGrupo(matchSheet.grupo ? String(matchSheet.grupo) : null);
+      setPierna(matchSheet.pierna || null);
+      const mTorneoId = matchSheet.torneoId?._id || matchSheet.torneoId || null;
+      if (matchSheet.competicion === 'amistoso' || !mTorneoId) {
+        setCompeticion('amistoso');
+        setTorneoId(null);
+        setSelectedCompetitionOption('amistoso');
+        setFase(matchSheet.fase || null);
+      } else {
+        setCompeticion('torneo');
+        setTorneoId(mTorneoId);
+        setSelectedCompetitionOption(mTorneoId);
+        // Set fase based on tournament format to avoid stale auto-set effect
+        const foundTournament = tournaments.find(t => t._id === mTorneoId);
+        const format = foundTournament?.formato;
+        if (matchSheet.fase) {
+          setFase(matchSheet.fase);
+        } else if (format === 'eliminatoria') {
+          setFase('eliminatoria');
+        } else if (format === 'liga') {
+          setFase('liga');
+        } else if (format === 'grupos+eliminatoria') {
+          setFase('grupos');
+        } else {
+          setFase(null);
+        }
+      }
+      
+      // Si la fecha es pasada y no hay goles, inicializar en 0
+      const isPast = matchDate < new Date();
+      setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
+      setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
+      setNotasEntrenador(matchSheet.notasEntrenador || '');
+      setAlineacion(matchSheet.alineacion || '1-4-4-2');
+      setAlineacionRival(matchSheet.alineacionRival || '');
+      
+      // Jugadores - extraer IDs
+      const getIds = (arr) => (arr || []).map(j => typeof j === 'object' ? j._id : j);
+      setConvocados(getIds(matchSheet.convocados));
+      setNoConvocados(getIds(matchSheet.noConvocados));
+      setAlineacionTitulares(getIds(matchSheet.alineacionTitulares));
+      setAlineacionSuplentes(getIds(matchSheet.alineacionSuplentes));
+      
+      // Eventos
+      setGoles(matchSheet.goles || []);
+      setTarjetasAmarillas(matchSheet.tarjetasAmarillas || []);
+      setTarjetasRojas(matchSheet.tarjetasRojas || []);
+      setCambios(matchSheet.cambios || []);
+      setGolesRival(matchSheet.golesRival || []);
+      
+      // Descuento (tiempo añadido)
+      setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo !== undefined ? String(matchSheet.descuentoPrimerTiempo) : '0');
+      setDescuentoSegundoTiempo(matchSheet.descuentoSegundoTiempo !== undefined ? String(matchSheet.descuentoSegundoTiempo) : '0');
+    } else if (visible && !matchSheet) {
+      // Modo crear: resetear todo
+      setRival('');
+      setRivalId(null);
+      setRivalEscudo(null);
+      const date = selectedDate ? new Date(selectedDate) : new Date();
+      setFechaHora(date);
+      setJornada('');
+      setUbicacion('local');
+      // Reset campos adaptativos
+      setFase(null);
+      setRonda(null);
+      setGrupo(null);
+      setPierna(null);
+      const defaultTournament = tournaments.find(tt => tt.estado === 'activo' && tt.porDefecto);
+      if (defaultTournament) {
+        setCompeticion('torneo');
+        setTorneoId(defaultTournament._id);
+        setSelectedCompetitionOption(defaultTournament._id);
+      } else {
+        setCompeticion('amistoso');
+        setTorneoId(null);
+        setSelectedCompetitionOption('amistoso');
+      }
+      const isPast = date < new Date();
+      setGolesFavor(isPast ? '0' : '');
+      setGolesContra(isPast ? '0' : '');
+      setNotasEntrenador('');
+      setAlineacion('1-4-4-2');
+      setAlineacionRival('');
+      setConvocados([]);
+      setNoConvocados([]);
+      setAlineacionTitulares([]);
+      setAlineacionSuplentes([]);
+      setGoles([]);
+      setTarjetasAmarillas([]);
+      setTarjetasRojas([]);
+      setCambios([]);
+      setGolesRival([]);
+      setJugadoresEnCampo([]);
+      setJugadoresExpulsados([]);
+      setDescuentoPrimerTiempo('0');
+      setDescuentoSegundoTiempo('0');
+    }
+  }, [visible, matchSheet]);
+
+  // Recalcular jugadores en campo siempre que cambien titulares, cambios o tarjetas rojas
+  useEffect(() => {
+    let enCampo = [...alineacionTitulares];
+    (cambios || []).forEach(cambio => {
+      const saleId = typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale;
+      const entraId = typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra;
+      enCampo = enCampo.filter(id => id !== saleId);
+      if (entraId) enCampo.push(entraId);
+    });
+    setJugadoresEnCampo(enCampo);
+    const rojasIds = (tarjetasRojas || []).map(t => typeof t.jugador === 'object' ? t.jugador._id : t.jugador).filter(Boolean);
+    setJugadoresExpulsados(rojasIds);
+  }, [alineacionTitulares, cambios, tarjetasRojas]);
+
+  // Helper para obtener nombre de jugador
+  const getPlayerName = (playerId) => {
+    const player = players.find(p => p._id === playerId);
+    // fallback text should also be localizable
+    return player ? getPlayerFullName(player) : t('common.player');
+  };
+
+  // Formatear fecha
+  const formatDate = (date) => {
+    if (!date) return '';
+    const locale = i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Formatear hora
+  const formatTime = (date) => {
+    if (!date) return '';
+    const locale = i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US';
+    return date.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Cancelar y resetear todos los cambios
+  const handleCancel = () => {
+    if (matchSheet) {
+      // Modo edición: restaurar datos originales
+      const getIds = (arr) => (arr || []).map(j => typeof j === 'object' ? j._id : j);
+      setRival(matchSheet.rival || '');
+      setRivalId(matchSheet.rivalId?._id || matchSheet.rivalId || null);
+      setRivalEscudo(matchSheet.rivalId?.escudo || matchSheet.rivalEscudo || null);
+      setFechaHora(matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date());
+      setJornada(matchSheet.jornada ? String(matchSheet.jornada) : '');
+      setUbicacion(matchSheet.ubicacion || 'local');
+      setFase(matchSheet.fase || null);
+      setRonda(matchSheet.ronda || null);
+      setGrupo(matchSheet.grupo ? String(matchSheet.grupo) : null);
+      setPierna(matchSheet.pierna || null);
+      const mTorneoId = matchSheet.torneoId?._id || matchSheet.torneoId || null;
+      if (matchSheet.competicion === 'amistoso' || !mTorneoId) {
+        setCompeticion('amistoso');
+        setTorneoId(null);
+        setSelectedCompetitionOption('amistoso');
+      } else {
+        setCompeticion('torneo');
+        setTorneoId(mTorneoId);
+        setSelectedCompetitionOption(mTorneoId);
+      }
+      const matchDate = matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date();
+      const isPast = matchDate < new Date();
+      setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
+      setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
+      setNotasEntrenador(matchSheet.notasEntrenador || '');
+      setAlineacion(matchSheet.alineacion || '1-4-4-2');
+      setAlineacionRival(matchSheet.alineacionRival || '');
+      setConvocados(getIds(matchSheet.convocados));
+      setNoConvocados(getIds(matchSheet.noConvocados));
+      setAlineacionTitulares(getIds(matchSheet.alineacionTitulares));
+      setAlineacionSuplentes(getIds(matchSheet.alineacionSuplentes));
+      setGoles(matchSheet.goles || []);
+      setTarjetasAmarillas(matchSheet.tarjetasAmarillas || []);
+      setTarjetasRojas(matchSheet.tarjetasRojas || []);
+      setCambios(matchSheet.cambios || []);
+      setGolesRival(matchSheet.golesRival || []);
+      setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo !== undefined ? String(matchSheet.descuentoPrimerTiempo) : '0');
+      setDescuentoSegundoTiempo(matchSheet.descuentoSegundoTiempo !== undefined ? String(matchSheet.descuentoSegundoTiempo) : '0');
+    } else {
+      // Modo crear: limpiar todo
+      setRival('');
+      setRivalId(null);
+      setRivalEscudo(null);
+      setFechaHora(selectedDate ? new Date(selectedDate) : new Date());
+      setJornada('');
+      setUbicacion('local');
+      setFase(null);
+      setRonda(null);
+      setGrupo(null);
+      setPierna(null);
+      const defaultTournament = tournaments.find(tt => tt.estado === 'activo' && tt.porDefecto);
+      if (defaultTournament) {
+        setCompeticion('torneo');
+        setTorneoId(defaultTournament._id);
+        setSelectedCompetitionOption(defaultTournament._id);
+      } else {
+        setCompeticion('amistoso');
+        setTorneoId(null);
+        setSelectedCompetitionOption('amistoso');
+      }
+      setGolesFavor('');
+      setGolesContra('');
+      setNotasEntrenador('');
+      setAlineacion('1-4-4-2');
+      setAlineacionRival('');
+      setConvocados([]);
+      setNoConvocados([]);
+      setAlineacionTitulares([]);
+      setAlineacionSuplentes([]);
+      setGoles([]);
+      setTarjetasAmarillas([]);
+      setTarjetasRojas([]);
+      setCambios([]);
+      setGolesRival([]);
+      setJugadoresEnCampo([]);
+      setJugadoresExpulsados([]);
+      setDescuentoPrimerTiempo('0');
+      setDescuentoSegundoTiempo('0');
+    }
+    onClose();
+  };
+
+  // Handler para fecha
+  const handleDateChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      const newDate = new Date(date);
+      newDate.setHours(fechaHora.getHours(), fechaHora.getMinutes());
+      setFechaHora(newDate);
+    }
+  };
+
+  // Handler para hora
+  const handleTimeChange = (event, date) => {
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    if (date) {
+      const newDate = new Date(fechaHora);
+      newDate.setHours(date.getHours(), date.getMinutes());
+      setFechaHora(newDate);
+    }
+  };
+
+  // Filtrar rivales por búsqueda
+  const filteredRivals = useMemo(() => {
+    if (!searchRivalText.trim()) return rivals;
+    const search = searchRivalText.toLowerCase().trim();
+    return rivals.filter(r => 
+      r.nombre?.toLowerCase().includes(search)
+    );
+  }, [rivals, searchRivalText]);
+
+  // Seleccionar imagen del escudo para nuevo rival
+  const pickRivalImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert(t('common.error'), t('rivals.permissionDenied'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setNewRivalEscudo(base64Image);
+    }
+  };
+
+  // Crear nuevo rival
+  const handleCreateRival = async () => {
+    if (!newRivalName.trim()) {
+      Alert.alert(t('common.error'), t('rivals.nameRequired'));
+      return;
+    }
+
+    if (!team?._id) {
+      Alert.alert(t('common.error'), t('rivals.noTeamSelected'));
+      return;
+    }
+
+    // Obtener userId del AsyncStorage
+    let userId = '';
+    try {
+      const storedUser = await AsyncStorage.getItem('usuario');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user._id;
+      }
+    } catch (e) {
+      console.error('Error getting user:', e);
+    }
+
+    if (!userId) {
+      Alert.alert(t('common.error'), t('message.noUserIdentified'));
+      return;
+    }
+
+    setSavingRival(true);
+    try {
+      const rivalData = {
+        nombre: newRivalName.trim(),
+        escudo: newRivalEscudo || '',
+        equipo: team._id,
+        usuario: userId,
+      };
+
+      const result = await dispatch(createRival(rivalData)).unwrap();
+      
+      // Refrescar la lista de rivales
+      await dispatch(fetchRivalsByTeam({ teamId: team._id })).unwrap();
+      
+      // Seleccionar el rival recién creado
+      setRival(result.nombre);
+      setRivalId(result._id);
+      setRivalEscudo(result.escudo || null);
+      
+      // Cerrar modales y limpiar estados
+      setShowCreateRivalModal(false);
+      setShowRivalSelector(false);
+      setNewRivalName('');
+      setNewRivalEscudo('');
+      setSearchRivalText('');
+      
+      Alert.alert(t('common.success'), t('rivals.createSuccess'));
+    } catch (error) {
+      console.error('Error creating rival:', error);
+      Alert.alert(t('common.error'), error.message || t('rivals.saveError'));
+    } finally {
+      setSavingRival(false);
+    }
+  };
+
+  // Abrir modal de crear rival
+  const openCreateRivalModal = () => {
+    setNewRivalName(searchRivalText.trim());
+    setNewRivalEscudo('');
+    setShowRivalSelector(false);
+    setTimeout(() => {
+      setShowCreateRivalModal(true);
+    }, 100);
+  };
+
+  // Guardar cambios
+  const handleSave = async () => {
+    if (!rival.trim()) {
+      Alert.alert(t('common.error'), t('matchSheet.rivalRequired'));
+      return;
+    }
+
+    if (competicion !== 'amistoso' && !torneoId) {
+      Alert.alert(t('common.error'), t('tournaments.tournamentRequired'));
+      return;
+    }
+
+    // Validación de jornada + torneo duplicados
+    if (matchSheets.length > 0 && jornada && torneoId) {
+      const jornadaNum = Number(jornada);
+      if (isNaN(jornadaNum)) {
+        Alert.alert(t('common.error'), t('matchSheet.validation.matchdayOnlyNumbers'));
+        return;
+      }
+      const partidoConMismaJornada = matchSheets.find(ms => {
+        if (matchSheet && ms._id === matchSheet._id) return false;
+        const msTorneoId = ms.torneoId && typeof ms.torneoId === 'object' ? ms.torneoId._id : ms.torneoId;
+        return msTorneoId === torneoId && ms.jornada && Number(ms.jornada) === jornadaNum;
+      });
+      if (partidoConMismaJornada) {
+        Alert.alert(
+          t('matchSheet.validation.duplicateMatchday'),
+          t('matchSheet.validation.duplicateMatchdayMessage', {
+            matchday: jornada,
+            rival: partidoConMismaJornada.rival || '',
+          }),
+        );
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      // Normalizar cambios: extraer IDs de objetos populados
+      const cambiosNormalizados = cambios.map(c => ({
+        minuto: c.minuto,
+        sale: typeof c.sale === 'object' ? c.sale._id : c.sale,
+        entra: typeof c.entra === 'object' ? c.entra._id : c.entra,
+      }));
+
+      // Normalizar goles: extraer IDs de objetos populados
+      const golesNormalizados = goles.map(g => ({
+        minuto: g.minuto,
+        jugador: typeof g.jugador === 'object' ? g.jugador._id : g.jugador,
+        asistente: g.asistente ? (typeof g.asistente === 'object' ? g.asistente._id : g.asistente) : undefined,
+        tipo: g.tipo,
+      }));
+
+      // Normalizar tarjetas: extraer IDs de objetos populados
+      const tarjetasAmarillasNorm = tarjetasAmarillas.map(t => ({
+        minuto: t.minuto,
+        jugador: typeof t.jugador === 'object' ? t.jugador._id : t.jugador,
+        motivo: t.motivo,
+      }));
+      const tarjetasRojasNorm = tarjetasRojas.map(t => ({
+        minuto: t.minuto,
+        jugador: typeof t.jugador === 'object' ? t.jugador._id : t.jugador,
+        motivo: t.motivo,
+        partidosSancion: (t.motivo === 'Doble amarilla') ? (t.partidosSancion || 1) : Math.max(1, t.partidosSancion || 1),
+      }));
+      console.log('[EditMatchSheet SAVE] tarjetasRojasNorm:', JSON.stringify(tarjetasRojasNorm.map(t => ({ jugador: t.jugador, partidosSancion: t.partidosSancion, motivo: t.motivo }))));
+
+      const matchData = {
+        rival: rival.trim(),
+        rivalId: rivalId,
+        rivalEscudo: rivalEscudo,
+        fechaHora: fechaHora.toISOString(),
+        jornada: jornada ? Number(jornada) : null,
+        ubicacion,
+        competicion: competicion,
+        torneoId: competicion === 'amistoso' ? null : torneoId,
+        // Campos adaptativos de torneo
+        fase: competicion === 'amistoso' ? null : fase,
+        ronda: fase === 'eliminatoria' ? ronda : null,
+        grupo: fase === 'grupos' ? (grupo ? Number(grupo) : null) : null,
+        pierna: fase === 'eliminatoria' ? pierna : null,
+        golesFavor: isMatchPast ? Number(golesFavor || 0) : (golesFavor !== '' && golesFavor !== null && golesFavor !== undefined ? Number(golesFavor) : null),
+        golesContra: isMatchPast ? Number(golesContra || 0) : (golesContra !== '' && golesContra !== null && golesContra !== undefined ? Number(golesContra) : null),
+        resultado,
+        alineacion,
+        alineacionRival,
+        notasEntrenador,
+        convocados,
+        noConvocados,
+        alineacionTitulares,
+        alineacionSuplentes,
+        goles: golesNormalizados,
+        tarjetasAmarillas: tarjetasAmarillasNorm,
+        tarjetasRojas: tarjetasRojasNorm,
+        cambios: cambiosNormalizados,
+        golesRival: golesRival.length > 0 ? golesRival : undefined,
+        descuentoPrimerTiempo: parseInt(descuentoPrimerTiempo) || 0,
+        descuentoSegundoTiempo: parseInt(descuentoSegundoTiempo) || 0,
+      };
+
+      if (isCreateMode && onCreate) {
+        // Modo crear
+        await onCreate(matchData);
+      } else {
+        // Modo editar
+        await onSave({
+          _id: matchSheet._id,
+          equipo: typeof matchSheet.equipo === 'object' ? matchSheet.equipo._id : matchSheet.equipo,
+          ...matchData,
+        });
+      }
+      onClose();
+    } catch (error) {
+      if (error?.code === 'DUPLICATE_TOURNAMENT_MATCHDAY') {
+        Alert.alert(
+          t('matchSheet.validation.duplicateMatchday'),
+          t('matchSheet.validation.duplicateMatchdayMessage', {
+            matchday: jornada,
+            rival: error?.rival || '',
+          }),
+        );
+      } else {
+        Alert.alert(t('common.error'), t('matchSheet.saveChangesError'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Solo número
+  const filterNumeric = (text) => text.replace(/[^0-9]/g, '');
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalBg}>
+        <View style={styles.modalContent}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{matchSheet?._id ? t('matchSheet.editMatch') : t('matchSheet.fields.createMatchSheet')}</Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <KeyboardAwareScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            {/* Fila de escudos - orden según ubicación */}
+            <View style={styles.escudosRow}>
+              {/* Primer escudo - mi equipo si local, rival si visitante */}
+              <View style={styles.escudoContainer}>
+                <Text style={styles.escudoLabel}>
+                  {ubicacion === 'visitante' 
+                    ? t('matchSheet.fields.rivalShield') 
+                    : t('matchSheet.fields.myTeamShield')}
+                </Text>
+                <View style={styles.escudoButton}>
+                  {ubicacion === 'visitante' ? (
+                    // Mostrar rival si visitante
+                    rivalEscudo ? (
+                      <Image source={{ uri: rivalEscudo }} style={styles.escudoImage} />
+                    ) : (
+                      <View style={styles.escudoPlaceholder}>
+                        <Ionicons name="shield-outline" size={28} color={THEME.textMuted} />
+                        <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{rival || t('matchSheet.fields.selectRival')}</Text>
+                      </View>
+                    )
+                  ) : (
+                    // Mostrar mi equipo si local o neutral
+                    team?.escudo ? (
+                      <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
+                    ) : (
+                      <View style={styles.escudoPlaceholder}>
+                        <Ionicons name="shield-outline" size={28} color={THEME.primary} />
+                        <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{team?.nombre || ''}</Text>
+                      </View>
+                    )
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.vsContainer}>
+                <Text style={styles.vsText}>{t('matchSheet.fields.vs')}</Text>
+              </View>
+
+              {/* Segundo escudo - rival si local, mi equipo si visitante */}
+              <View style={styles.escudoContainer}>
+                <Text style={styles.escudoLabel}>
+                  {ubicacion === 'visitante' 
+                    ? t('matchSheet.fields.myTeamShield') 
+                    : t('matchSheet.fields.rivalShield')}
+                </Text>
+                <View style={styles.escudoButton}>
+                  {ubicacion === 'visitante' ? (
+                    // Mostrar mi equipo si visitante
+                    team?.escudo ? (
+                      <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
+                    ) : (
+                      <View style={styles.escudoPlaceholder}>
+                        <Ionicons name="shield-outline" size={28} color={THEME.primary} />
+                        <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{team?.nombre || ''}</Text>
+                      </View>
+                    )
+                  ) : (
+                    // Mostrar rival si local o neutral
+                    rivalEscudo ? (
+                      <Image source={{ uri: rivalEscudo }} style={styles.escudoImage} />
+                    ) : (
+                      <View style={styles.escudoPlaceholder}>
+                        <Ionicons name="shield-outline" size={28} color={THEME.textMuted} />
+                        <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{rival || t('matchSheet.fields.selectRival')}</Text>
+                      </View>
+                    )
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Rival - Usando componente reutilizable */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('matchSheet.fields.rivalRequired')}</Text>
+              <RivalSelector
+                selectedRivalId={rivalId}
+                selectedRivalName={rival}
+                onSelectRival={(id, nombre, escudo) => {
+                  setRivalId(id);
+                  setRival(nombre);
+                  setRivalEscudo(escudo);
+                }}
+                teamId={team?._id}
+                placeholder={t('schedule.selectRival')}
+              />
+            </View>
+
+            {/* Fecha */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('schedule.date')}</Text>
+              <TouchableOpacity
+                style={styles.selectInput}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.selectText}>{formatDate(fechaHora)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Hora */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('schedule.time')}</Text>
+              <TouchableOpacity
+                style={styles.selectInput}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Ionicons name="time" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.selectText}>{formatTime(fechaHora)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* ─── Campos adaptativos según formato de torneo ─── */}
+            {competicion !== 'amistoso' && torneoFormato && (
+              <>
+                {/* Fase selector: solo para grupos+eliminatoria */}
+                {torneoFormato === 'grupos+eliminatoria' && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>{t('matchSheet.fields.phase')}</Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                          fase === 'grupos' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                        onPress={() => { setFase('grupos'); setRonda(null); setPierna(null); }}
+                      >
+                        <Text style={[styles.selectText, fase === 'grupos' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                          {t('matchSheet.fields.groupPhase')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                          fase === 'eliminatoria' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                        onPress={() => { setFase('eliminatoria'); setGrupo(null); setJornada(''); }}
+                      >
+                        <Text style={[styles.selectText, fase === 'eliminatoria' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                          {t('matchSheet.fields.knockoutPhase')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* Grupo selector: solo en fase de grupos */}
+                {fase === 'grupos' && torneoFormato === 'grupos+eliminatoria' && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>{t('matchSheet.fields.group')}</Text>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setShowGrupoModal(true)}
+                    >
+                      <Text style={grupo ? styles.selectText : styles.selectPlaceholder}>
+                        {grupo ? t('matchSheet.fields.groupN', { n: grupo }) : t('matchSheet.fields.selectGroup')}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Jornada: para liga o fase de grupos */}
+                {(torneoFormato === 'liga' || (torneoFormato === 'grupos+eliminatoria' && fase === 'grupos')) && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>
+                      {torneoFormato === 'liga' ? t('schedule.matchday') : t('matchSheet.fields.matchdayInGroup')}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setShowJornadaModal(true)}
+                    >
+                      <Text style={jornada ? styles.selectText : styles.selectPlaceholder}>
+                        {jornada ? `${t('matchSheet.fields.matchday')} ${jornada}` : t('matchSheet.fields.selectMatchday')}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Ronda: para eliminatoria (pura o fase eliminatoria de grupos+eliminatoria) */}
+                {fase === 'eliminatoria' && (torneoFormato === 'eliminatoria' || torneoFormato === 'grupos+eliminatoria') && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>{t('matchSheet.fields.round')}</Text>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setShowRondaModal(true)}
+                    >
+                      <Text style={ronda ? styles.selectText : styles.selectPlaceholder}>
+                        {ronda ? t(ROUND_KEYS[ronda] || ronda) : t('matchSheet.fields.selectRound')}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Pierna (ida/vuelta): para eliminatoria cuando la ronda lo requiere */}
+                {fase === 'eliminatoria' && ronda && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>{t('matchSheet.fields.leg')}</Text>
+                    {roundUsesLegs ? (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                            pierna === 'ida' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                          onPress={() => setPierna('ida')}
+                        >
+                          <Text style={[styles.selectText, pierna === 'ida' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                            {t('matchSheet.fields.legFirst')}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                            pierna === 'vuelta' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                          onPress={() => setPierna('vuelta')}
+                        >
+                          <Text style={[styles.selectText, pierna === 'vuelta' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                            {t('matchSheet.fields.legSecond')}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={[styles.selectInput, { backgroundColor: THEME.bgLight }]}>
+                        <Text style={styles.selectText}>{t('matchSheet.fields.legSingle')}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* Ubicación */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('schedule.location')}</Text>
+              <TouchableOpacity
+                style={styles.selectInput}
+                onPress={() => setShowUbicacionModal(true)}
+              >
+                <Text style={styles.selectText}>
+                  {ubicacion === 'local' ? t('matchSheet.modals.home') : 
+                   ubicacion === 'visitante' ? t('matchSheet.modals.away') : 
+                   ubicacion === 'neutral' ? t('matchSheet.modals.neutral') : 
+                   t('matchSheet.modals.selectLocation')}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Competición / Torneo */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('matchSheet.competition')} *</Text>
+              <TouchableOpacity
+                style={styles.selectInput}
+                onPress={() => setShowTorneoModal(true)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <MaterialIcons name={competicion === 'amistoso' ? 'sports-soccer' : 'emoji-events'} size={20} color={competicion === 'amistoso' ? '#10b981' : '#8B5CF6'} />
+                  <Text style={styles.selectText}>
+                    {competicion === 'amistoso'
+                      ? (t('matchSheet.friendly') || 'Amistoso')
+                      : (tournaments.find(tr => tr._id === torneoId)?.nombre || t('tournaments.selectTournament'))}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Resultado */}
+            <View style={styles.resultSection}>
+              <Text style={styles.sectionTitle}>{t('schedule.result')}</Text>
+              
+              <View style={styles.scoreRow}>
+                {/* Primer marcador - según ubicación */}
+                <View style={styles.scoreItem}>
+                  <Text style={styles.scoreLabel}>
+                    {ubicacion === 'visitante' ? t('matchSheet.fields.goalsAgainst') : t('matchSheet.fields.goalsFor')}
+                  </Text>
+                  <View style={styles.descuentoSelector}>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => {
+                        if (ubicacion === 'visitante') {
+                          setGolesContra(String(Math.max(0, Number(golesContra || 0) - 1)));
+                        } else {
+                          setGolesFavor(String(Math.max(0, Number(golesFavor || 0) - 1)));
+                        }
+                      }}
+                    >
+                      <Ionicons name="remove" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.descuentoValue}>
+                      {ubicacion === 'visitante' ? (golesContra || '0') : (golesFavor || '0')}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => {
+                        if (ubicacion === 'visitante') {
+                          setGolesContra(String(Math.min(99, Number(golesContra || 0) + 1)));
+                        } else {
+                          setGolesFavor(String(Math.min(99, Number(golesFavor || 0) + 1)));
+                        }
+                      }}
+                    >
+                      <Ionicons name="add" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                <View style={styles.scoreDivider}>
+                  <Text style={styles.scoreDividerText}>-</Text>
+                </View>
+                
+                {/* Segundo marcador - según ubicación */}
+                <View style={styles.scoreItem}>
+                  <Text style={styles.scoreLabel}>
+                    {ubicacion === 'visitante' ? t('matchSheet.fields.goalsFor') : t('matchSheet.fields.goalsAgainst')}
+                  </Text>
+                  <View style={styles.descuentoSelector}>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => {
+                        if (ubicacion === 'visitante') {
+                          setGolesFavor(String(Math.max(0, Number(golesFavor || 0) - 1)));
+                        } else {
+                          setGolesContra(String(Math.max(0, Number(golesContra || 0) - 1)));
+                        }
+                      }}
+                    >
+                      <Ionicons name="remove" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.descuentoValue}>
+                      {ubicacion === 'visitante' ? (golesFavor || '0') : (golesContra || '0')}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => {
+                        if (ubicacion === 'visitante') {
+                          setGolesFavor(String(Math.min(99, Number(golesFavor || 0) + 1)));
+                        } else {
+                          setGolesContra(String(Math.min(99, Number(golesContra || 0) + 1)));
+                        }
+                      }}
+                    >
+                      <Ionicons name="add" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {resultado && (
+                <View style={[
+                  styles.resultBadge,
+                  resultado === 'Victoria' && { backgroundColor: THEME.success + '20', borderColor: THEME.success },
+                  resultado === 'Empate' && { backgroundColor: THEME.warning + '20', borderColor: THEME.warning },
+                  resultado === 'Derrota' && { backgroundColor: THEME.danger + '20', borderColor: THEME.danger },
+                ]}>
+                  <Text style={[
+                    styles.resultBadgeText,
+                    resultado === 'Victoria' && { color: THEME.success },
+                    resultado === 'Empate' && { color: THEME.warning },
+                    resultado === 'Derrota' && { color: THEME.danger },
+                  ]}>
+                    {translateResult(resultado)}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Descuento (Tiempo añadido) */}
+            <View style={styles.resultSection}>
+              <Text style={styles.descuentoTitle}>{t('matchSheet.addedTime.titleAlt')}</Text>
+              <View style={styles.descuentoRow}>
+                <View style={styles.descuentoItem}>
+                  <Text style={styles.scoreLabel}>{t('matchSheet.addedTime.firstHalf')}</Text>
+                  <View style={styles.descuentoSelector}>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => setDescuentoPrimerTiempo(String(Math.max(0, parseInt(descuentoPrimerTiempo || '0') - 1)))}
+                    >
+                      <Ionicons name="remove" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.descuentoValue}>{descuentoPrimerTiempo || '0'}'</Text>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => setDescuentoPrimerTiempo(String(parseInt(descuentoPrimerTiempo || '0') + 1))}
+                    >
+                      <Ionicons name="add" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.descuentoItem}>
+                  <Text style={styles.scoreLabel}>{t('matchSheet.addedTime.secondHalf')}</Text>
+                  <View style={styles.descuentoSelector}>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => setDescuentoSegundoTiempo(String(Math.max(0, parseInt(descuentoSegundoTiempo || '0') - 1)))}
+                    >
+                      <Ionicons name="remove" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.descuentoValue}>{descuentoSegundoTiempo || '0'}'</Text>
+                    <TouchableOpacity
+                      style={styles.descuentoButton}
+                      onPress={() => setDescuentoSegundoTiempo(String(parseInt(descuentoSegundoTiempo || '0') + 1))}
+                    >
+                      <Ionicons name="add" size={20} color={THEME.text} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <Text style={styles.descuentoHint}>{t('matchSheet.addedTime.hint')}</Text>
+            </View>
+
+            {/* Sección Alineación */}
+            <View style={styles.resultSection}>
+              <Text style={styles.sectionTitle}>{t('matchSheet.fields.formation')}</Text>
+              
+              {/* Alineación del equipo */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>{t('matchSheet.fields.teamFormation')}</Text>
+                <TouchableOpacity
+                  style={styles.selectInput}
+                  onPress={() => setShowAlineacionModal(true)}
+                >
+                  <Ionicons name="grid" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.selectText}>{alineacion}</Text>
+                  <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Alineación del rival */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>{t('matchSheet.fields.rivalFormation')}</Text>
+                <TouchableOpacity
+                  style={styles.selectInput}
+                  onPress={() => setShowAlineacionRivalModal(true)}
+                >
+                  <Ionicons name="grid" size={20} color={THEME.danger} style={{ marginRight: 8 }} />
+                  <Text style={alineacionRival ? styles.selectText : styles.selectPlaceholder}>
+                    {alineacionRival || t('matchSheet.fields.selectRivalFormation')}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sección Convocatoria */}
+            <View style={styles.resultSection}>
+              <Text style={styles.sectionTitle}>{t('schedule.callupAndLineup')}</Text>
+              
+              {/* Convocados */}
+              <TouchableOpacity
+                style={styles.playerSelectorBtn}
+                onPress={() => setShowConvocadosModal(true)}
+              >
+                <View style={styles.playerSelectorLeft}>
+                  <Ionicons name="people" size={20} color={THEME.success} />
+                  <Text style={styles.playerSelectorText}>{t('schedule.called')} ({convocados.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+              </TouchableOpacity>
+
+              {/* No Convocados */}
+              <TouchableOpacity
+                style={styles.playerSelectorBtn}
+                onPress={() => setShowNoConvocadosModal(true)}
+              >
+                <View style={styles.playerSelectorLeft}>
+                  <Ionicons name="person-remove" size={20} color={THEME.danger} />
+                  <Text style={styles.playerSelectorText}>{t('schedule.notCalled')} ({noConvocados.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+              </TouchableOpacity>
+
+              {/* Editor visual de alineación */}
+              {convocados.length > 0 && (
+                <View style={styles.lineupEditorContainer}>
+                  <View style={styles.lineupEditorHeader}>
+                    <Ionicons name="football" size={20} color="#4CAF50" />
+                    <Text style={styles.lineupEditorTitle}>{t('schedule.visualLineup')} ({alineacion})</Text>
+                  </View>
+                  <LineupEditor
+                    players={players}
+                    convocados={convocados}
+                    titulares={alineacionTitulares}
+                    suplentes={alineacionSuplentes}
+                    formation={alineacion}
+                    onTitularesChange={setAlineacionTitulares}
+                    onSuplentesChange={setAlineacionSuplentes}
+                    jugadoresPorEquipo={jugadoresPorEquipo}
+                  />
+                </View>
+              )}
+
+              {/* Listado de Titulares */}
+              {alineacionTitulares && Object.values(alineacionTitulares).filter(Boolean).length > 0 && (
+                <View style={styles.startersSubsContainer}>
+                  <View style={styles.startersSubsHeader}>
+                    <Ionicons name="football" size={18} color="#4CAF50" />
+                    <Text style={styles.startersSubsTitle}>
+                      {t('matchSheet.fields.starters')} ({Object.values(alineacionTitulares).filter(Boolean).length})
+                    </Text>
+                  </View>
+                  <View style={styles.startersSubsList}>
+                    {Object.values(alineacionTitulares).filter(Boolean).map((playerId) => {
+                      const player = players.find(p => p._id === playerId);
+                      if (!player) return null;
+                      return (
+                        <View key={playerId} style={styles.starterSubChip}>
+                          <View style={[styles.starterSubDorsal, { backgroundColor: '#4CAF50' }]}> 
+                            <Text style={styles.starterSubDorsalText}>{player.dorsal || '-'}</Text>
+                          </View>
+                          <Text style={styles.starterSubName}>{getPlayerFullName(player)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Listado de Suplentes */}
+              {alineacionSuplentes && alineacionSuplentes.length > 0 && (
+                <View style={styles.startersSubsContainer}>
+                  <View style={styles.startersSubsHeader}>
+                    <Ionicons name="swap-horizontal" size={18} color="#9C27B0" />
+                    <Text style={styles.startersSubsTitle}>
+                      {t('matchSheet.fields.substitutes')} ({alineacionSuplentes.length})
+                    </Text>
+                  </View>
+                  <View style={styles.startersSubsList}>
+                    {alineacionSuplentes.map((playerId) => {
+                      const player = players.find(p => p._id === playerId);
+                      if (!player) return null;
+                      return (
+                        <View key={playerId} style={[styles.starterSubChip, { borderLeftColor: '#9C27B0' }]}> 
+                          <View style={[styles.starterSubDorsal, { backgroundColor: '#9C27B0' }]}> 
+                            <Text style={styles.starterSubDorsalText}>{player.dorsal || '-'}</Text>
+                          </View>
+                          <Text style={styles.starterSubName}>{getPlayerFullName(player)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {convocados.length === 0 && (
+                <View style={styles.emptyLineupMessage}>
+                  <Ionicons name="information-circle-outline" size={24} color="#999" />
+                  <Text style={styles.emptyLineupText}>
+                    {t('schedule.emptyLineupHint')}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Sección Eventos */}
+            <View style={styles.resultSection}>
+              <Text style={styles.sectionTitle}>{t('schedule.matchEvents')}</Text>
+              
+              {/* Goles */}
+              <TouchableOpacity 
+                style={styles.eventSelector} 
+                onPress={() => setShowGolesModal(true)}
+              >
+                <View style={styles.eventSelectorHeader}>
+                  <Ionicons name="football" size={20} color="#4CAF50" />
+                  <Text style={styles.eventSelectorTitle}>{t('schedule.goals')} ({goles.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
+
+              {goles.length > 0 && (
+                <View style={styles.eventsList}>
+                  {[...goles].sort((a, b) => {
+                    const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
+                    const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
+                    return minA - minB;
+                  }).map((gol) => {
+                    const originalIndex = goles.indexOf(gol);
+                    return (
+                    <View key={originalIndex} style={styles.eventChip}>
+                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                        setEditingGoalIndex(originalIndex);
+                        setShowGolesModal(true);
+                      }}>
+                        <Text style={styles.eventChipText}>
+                          {gol.minuto}' - {getPlayerName(gol.jugador)}
+                          {gol.asistente ? ` (${t('matchSheet.events.assist')}: ${getPlayerName(gol.asistente)})` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setGoles(goles.filter((_, i) => i !== originalIndex))}>
+                        <Ionicons name="close-circle" size={16} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Tarjetas */}
+              <TouchableOpacity 
+                style={styles.eventSelector} 
+                onPress={() => setShowTarjetasModal(true)}
+              >
+                <View style={styles.eventSelectorHeader}>
+                  <Ionicons name="square" size={20} color="#FFC107" />
+                  <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.cards')} ({tarjetasAmarillas.length + tarjetasRojas.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
+
+              {(tarjetasAmarillas.length > 0 || tarjetasRojas.length > 0) && (
+                <View style={styles.eventsList}>
+                  {[...tarjetasAmarillas].sort((a, b) => {
+                    const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
+                    const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
+                    return minA - minB;
+                  }).map((tarjeta) => {
+                    const originalIdx = tarjetasAmarillas.indexOf(tarjeta);
+                    return (
+                    <View key={`a-${originalIdx}`} style={styles.eventChip}>
+                      <View style={[styles.cardIndicator, { backgroundColor: '#FFC107' }]} />
+                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                        setEditingCardIndex(originalIdx);
+                        setEditingCardType('amarilla');
+                        setShowTarjetasModal(true);
+                      }}>
+                        <Text style={styles.eventChipText}>
+                          {tarjeta.minuto}' - {getPlayerName(tarjeta.jugador)}{tarjeta.motivo ? ` (${tarjeta.motivo})` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => {
+                        const removedCard = tarjetasAmarillas[originalIdx];
+                        const removedJugadorId = typeof removedCard.jugador === 'object' ? removedCard.jugador._id : removedCard.jugador;
+                        const newAmarillas = tarjetasAmarillas.filter((_, i) => i !== originalIdx);
+                        setTarjetasAmarillas(newAmarillas);
+                        // Auto-remove red if player drops below 2 yellows
+                        const remainingYellows = newAmarillas.filter(t => {
+                          const tJugador = typeof t.jugador === 'object' ? t.jugador._id : t.jugador;
+                          return tJugador === removedJugadorId;
+                        });
+                        if (remainingYellows.length < 2) {
+                          setTarjetasRojas(tarjetasRojas.filter(t => {
+                            const tJugador = typeof t.jugador === 'object' ? t.jugador._id : t.jugador;
+                            return !(tJugador === removedJugadorId && t.motivo === 'Doble amarilla');
+                          }));
+                        }
+                      }}>
+                        <Ionicons name="close-circle" size={16} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                    );
+                  })}
+                  {[...tarjetasRojas].sort((a, b) => {
+                    const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
+                    const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
+                    return minA - minB;
+                  }).map((tarjeta) => {
+                    const originalIdx = tarjetasRojas.indexOf(tarjeta);
+                    const isAutoDobleAmarilla = tarjeta.motivo === 'Doble amarilla';
+                    return (
+                    <View key={`r-${originalIdx}`} style={styles.eventChip}>
+                      <View style={[styles.cardIndicator, { backgroundColor: '#F44336' }]} />
+                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                        if (!isAutoDobleAmarilla) {
+                          setEditingCardIndex(originalIdx);
+                          setEditingCardType('roja');
+                          setShowTarjetasModal(true);
+                        }
+                      }}>
+                        <Text style={styles.eventChipText}>
+                          {tarjeta.minuto}' - {getPlayerName(tarjeta.jugador)}{isAutoDobleAmarilla ? ` (${t('matchSheet.cardTypes.doubleYellow') || 'Doble amarilla'})` : ''}{tarjeta.partidosSancion > 0 ? ` [${tarjeta.partidosSancion}${t('matchSheet.modals.banMatchesShort')}]` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                      {!isAutoDobleAmarilla && (
+                      <TouchableOpacity onPress={() => setTarjetasRojas(tarjetasRojas.filter((_, i) => i !== originalIdx))}>
+                        <Ionicons name="close-circle" size={16} color="#666" />
+                      </TouchableOpacity>
+                      )}
+                    </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Cambios */}
+              <TouchableOpacity 
+                style={styles.eventSelector} 
+                onPress={() => setShowCambiosModal(true)}
+              >
+                <View style={styles.eventSelectorHeader}>
+                  <Ionicons name="swap-horizontal" size={20} color="#9C27B0" />
+                  <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.changes')} ({cambios.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
+
+              {cambios.length > 0 && (
+                <View style={styles.eventsList}>
+                  {[...cambios].sort((a, b) => {
+                    const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
+                    const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
+                    return minA - minB;
+                  }).map((cambio) => {
+                    const originalIndex = cambios.indexOf(cambio);
+                    return (
+                      <View key={originalIndex} style={styles.eventChip}>
+                        <Text style={styles.eventChipText}>
+                          {cambio.minuto}' - {getPlayerName(typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale)} → {getPlayerName(typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra)}
+                        </Text>
+                        <TouchableOpacity onPress={() => setCambios(cambios.filter((_, i) => i !== originalIndex))}>
+                          <Ionicons name="close-circle" size={16} color="#666" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Goles del Rival */}
+            <View style={styles.resultSection}>
+              <TouchableOpacity 
+                style={[styles.eventSelector, { borderLeftWidth: 3, borderLeftColor: '#F44336' }]} 
+                onPress={() => setShowGolesRivalModal(true)}
+              >
+                <View style={styles.eventSelectorHeader}>
+                  <View style={{ backgroundColor: '#fee2e2', borderRadius: 16, padding: 4 }}>
+                    <Ionicons name="football" size={20} color="#F44336" />
+                  </View>
+                  <Text style={[styles.eventSelectorTitle, { color: '#dc2626' }]}>{t('matchSheet.rivalGoals.title')} ({golesRival.length})</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#666" />
+              </TouchableOpacity>
+
+              {golesRival.length > 0 && (
+                <View style={styles.eventsList}>
+                  {[...golesRival].sort((a, b) => {
+                    const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
+                    const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
+                    return minA - minB;
+                  }).map((gol) => {
+                    const originalIndex = golesRival.indexOf(gol);
+                    return (
+                      <View key={originalIndex} style={[styles.eventChip, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
+                        <Text style={[styles.eventChipText, { color: '#dc2626' }]}>
+                          {gol.minuto}' - {rival || t('matchSheet.rivalGoals.title')}
+                        </Text>
+                        <TouchableOpacity onPress={() => setGolesRival(golesRival.filter((_, i) => i !== originalIndex))}>
+                          <Ionicons name="close-circle" size={16} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Notas del Entrenador */}
+            <View style={styles.resultSection}>
+              <Text style={styles.sectionTitle}>{t('schedule.coachNotes')}</Text>
+              <TextInput
+                style={styles.notasInput}
+                value={notasEntrenador}
+                onChangeText={setNotasEntrenador}
+                placeholder={t('schedule.notesPlaceholder')}
+                placeholderTextColor={THEME.textMuted}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            {/* Botones */}
+          </KeyboardAwareScrollView>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={handleCancel}
+              >
+                <Text style={styles.cancelBtnText}>{t('schedule.cancel')}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={20} color="#fff" />
+                    <Text style={styles.saveBtnText}>{t('message.save')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+          {/* Date/Time Pickers */}
+          {Platform.OS === 'ios' ? (
+            <>
+              {/* iOS: Modal para Date Picker */}
+              <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowDatePicker(false)}
+              >
+                <View style={styles.datePickerModalBg}>
+                  <View style={styles.datePickerModalContent}>
+                    <View style={styles.datePickerHeader}>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.datePickerCancel}>{t('schedule.cancel')}</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.datePickerTitle}>{t('schedule.selectDate')}</Text>
+                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.datePickerDone}>{t('schedule.done')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={fechaHora}
+                      mode="date"
+                      display="spinner"
+                      onChange={handleDateChange}
+                      style={{ height: 200 }}
+                      textColor="#000000"
+                    />
+                  </View>
+                </View>
+              </Modal>
+
+              {/* iOS: Modal para Time Picker */}
+              <Modal
+                visible={showTimePicker}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowTimePicker(false)}
+              >
+                <View style={styles.datePickerModalBg}>
+                  <View style={styles.datePickerModalContent}>
+                    <View style={styles.datePickerHeader}>
+                      <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                        <Text style={styles.datePickerCancel}>{t('schedule.cancel')}</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.datePickerTitle}>{t('schedule.selectTime')}</Text>
+                      <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                        <Text style={styles.datePickerDone}>{t('schedule.done')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={fechaHora}
+                      mode="time"
+                      is24Hour={true}
+                      display="spinner"
+                      onChange={handleTimeChange}
+                      style={{ height: 200 }}
+                      textColor="#000000"
+                    />
+                  </View>
+                </View>
+              </Modal>
+            </>
+          ) : (
+            <>
+              {/* Android: DateTimePicker nativo */}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={fechaHora}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={fechaHora}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              )}
+            </>
+          )}
+
+          {/* Modal selector de rival */}
+          <Modal
+            visible={showRivalSelector}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+              setShowRivalSelector(false);
+              setSearchRivalText('');
+            }}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('schedule.selectRivalTitle')}</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowRivalSelector(false);
+                    setSearchRivalText('');
+                  }}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Barra de búsqueda */}
+                <View style={styles.rivalSearchContainer}>
+                  <Ionicons name="search" size={20} color={THEME.textMuted} />
+                  <TextInput
+                    style={styles.rivalSearchInput}
+                    placeholder={t('common.search') + '...'}
+                    placeholderTextColor={THEME.textMuted}
+                    value={searchRivalText}
+                    onChangeText={setSearchRivalText}
+                    autoCapitalize="words"
+                  />
+                  {searchRivalText.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchRivalText('')}>
+                      <MaterialIcons name="clear" size={20} color={THEME.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                <ScrollView style={styles.selectorList}>
+                  {filteredRivals.length === 0 ? (
+                    <View style={styles.emptyRivals}>
+                      <Ionicons name="alert-circle" size={48} color={THEME.textMuted} />
+                      <Text style={styles.emptyRivalsText}>
+                        {searchRivalText ? t('common.noResults') : t('schedule.noRivals')}
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredRivals.map((r, index) => (
+                      <TouchableOpacity
+                        key={r._id || index}
+                        style={[
+                          styles.selectorItem,
+                          rival === r.nombre && styles.selectorItemActive,
+                        ]}
+                        onPress={() => {
+                          setRival(r.nombre);
+                          setRivalId(r._id);
+                          setRivalEscudo(r.escudo || null);
+                          setShowRivalSelector(false);
+                          setSearchRivalText('');
+                        }}
+                      >
+                        {r.escudo ? (
+                          <Image 
+                            source={{ uri: r.escudo }} 
+                            style={{ width: 28, height: 28, marginRight: 10, borderRadius: 14 }} 
+                            resizeMode="contain"
+                          />
+                        ) : (
+                          <View style={styles.rivalEscudoPlaceholder}>
+                            <Ionicons name="shield-outline" size={18} color={THEME.textMuted} />
+                          </View>
+                        )}
+                        <Text style={[
+                          styles.selectorItemText,
+                          rival === r.nombre && styles.selectorItemTextActive,
+                          { flex: 1 }
+                        ]}>
+                          {r.nombre}
+                        </Text>
+                        {rival === r.nombre && (
+                          <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </ScrollView>
+                
+                {/* Footer con botón de crear nuevo rival */}
+                <View style={styles.rivalSelectorFooter}>
+                  {searchRivalText.trim() && !filteredRivals.some(r => r.nombre?.toLowerCase() === searchRivalText.toLowerCase()) && (
+                    <TouchableOpacity 
+                      style={styles.useTextButton} 
+                      onPress={() => {
+                        setRival(searchRivalText.trim());
+                        setRivalId(null);
+                        setRivalEscudo(null);
+                        setShowRivalSelector(false);
+                        setSearchRivalText('');
+                      }}
+                    >
+                      <MaterialIcons name="edit" size={18} color={THEME.primary} />
+                      <Text style={styles.useTextButtonText}>
+                        {t('common.use')} "{searchRivalText.trim()}"
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={styles.createRivalButton} onPress={openCreateRivalModal}>
+                    <MaterialIcons name="add" size={20} color="#fff" />
+                    <Text style={styles.createRivalButtonText}>{t('rivals.createNew')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal para crear nuevo rival */}
+          <Modal
+            visible={showCreateRivalModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+              setShowCreateRivalModal(false);
+              setTimeout(() => setShowRivalSelector(true), 100);
+            }}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.createRivalModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('rivals.createRival')}</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowCreateRivalModal(false);
+                    setTimeout(() => setShowRivalSelector(true), 100);
+                  }}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.createRivalBody}>
+                  {/* Selector de escudo */}
+                  <TouchableOpacity style={styles.escudoPicker} onPress={pickRivalImage}>
+                    {newRivalEscudo ? (
+                      <Image source={{ uri: newRivalEscudo }} style={styles.escudoPreview} />
+                    ) : (
+                      <View style={styles.escudoPlaceholder}>
+                        <Ionicons name="camera" size={32} color={THEME.textMuted} />
+                        <Text style={styles.escudoPlaceholderText}>{t('rivals.addShield')}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Campo de nombre */}
+                  <Text style={styles.createRivalLabel}>{t('rivals.name')}</Text>
+                  <TextInput
+                    style={styles.createRivalInput}
+                    value={newRivalName}
+                    onChangeText={setNewRivalName}
+                    placeholder={t('rivals.namePlaceholder')}
+                    placeholderTextColor={THEME.textMuted}
+                  />
+                </View>
+
+                <View style={styles.createRivalFooter}>
+                  <TouchableOpacity
+                    style={styles.createRivalCancelButton}
+                    onPress={() => {
+                      setShowCreateRivalModal(false);
+                      setTimeout(() => setShowRivalSelector(true), 100);
+                    }}
+                  >
+                    <Text style={styles.createRivalCancelText}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.createRivalSaveButton, savingRival && styles.createRivalSaveButtonDisabled]}
+                    onPress={handleCreateRival}
+                    disabled={savingRival}
+                  >
+                    {savingRival ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.createRivalSaveText}>{t('common.create')}</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Alineación */}
+          <Modal
+            visible={showAlineacionModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowAlineacionModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('schedule.selectLineup')}</Text>
+                  <TouchableOpacity onPress={() => setShowAlineacionModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {alineacionesDisponibles.map((alin) => (
+                    <TouchableOpacity
+                      key={alin}
+                      style={[
+                        styles.selectorItem,
+                        alineacion === alin && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setAlineacion(alin);
+                        setShowAlineacionModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorItemText,
+                        alineacion === alin && styles.selectorItemTextActive,
+                      ]}>
+                        {alin}
+                      </Text>
+                      {alineacion === alin && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Alineación Rival */}
+          <Modal
+            visible={showAlineacionRivalModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowAlineacionRivalModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectRivalFormation')}</Text>
+                  <TouchableOpacity onPress={() => setShowAlineacionRivalModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {alineacionesDisponibles.map((alin) => (
+                    <TouchableOpacity
+                      key={alin}
+                      style={[
+                        styles.selectorItem,
+                        alineacionRival === alin && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setAlineacionRival(alin);
+                        setShowAlineacionRivalModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorItemText,
+                        alineacionRival === alin && styles.selectorItemTextActive,
+                      ]}>
+                        {alin}
+                      </Text>
+                      {alineacionRival === alin && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Jornada */}
+          <Modal
+            visible={showJornadaModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowJornadaModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectMatchday')}</Text>
+                  <TouchableOpacity onPress={() => setShowJornadaModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {jornadaOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.selectorItem,
+                        jornada === option && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setJornada(option);
+                        setShowJornadaModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorItemText,
+                        jornada === option && styles.selectorItemTextActive,
+                      ]}>
+                        {t('matchSheet.fields.matchday')} {option}
+                      </Text>
+                      {jornada === option && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Ronda (eliminatoria) */}
+          <Modal
+            visible={showRondaModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowRondaModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectRound')}</Text>
+                  <TouchableOpacity onPress={() => setShowRondaModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {availableRounds.map((roundOption) => (
+                    <TouchableOpacity
+                      key={roundOption}
+                      style={[
+                        styles.selectorItem,
+                        ronda === roundOption && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setRonda(roundOption);
+                        setShowRondaModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorItemText,
+                        ronda === roundOption && styles.selectorItemTextActive,
+                      ]}>
+                        {t(ROUND_KEYS[roundOption] || roundOption)}
+                      </Text>
+                      {ronda === roundOption && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Grupo */}
+          <Modal
+            visible={showGrupoModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowGrupoModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectGroup')}</Text>
+                  <TouchableOpacity onPress={() => setShowGrupoModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {grupoOptions.map((groupOption) => (
+                    <TouchableOpacity
+                      key={groupOption}
+                      style={[
+                        styles.selectorItem,
+                        grupo === groupOption && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setGrupo(groupOption);
+                        setShowGrupoModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.selectorItemText,
+                        grupo === groupOption && styles.selectorItemTextActive,
+                      ]}>
+                        {t('matchSheet.fields.groupN', { n: groupOption })}
+                      </Text>
+                      {grupo === groupOption && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Convocados */}
+          <PlayerSelectionModal
+            visible={showConvocadosModal}
+            onClose={() => setShowConvocadosModal(false)}
+            title={t('schedule.selectCalled')}
+            players={players}
+            selectedIds={convocados}
+            excludeIds={noConvocados}
+            injuries={injuries}
+            sanctionedPlayerIds={sanctionedPlayerIds}
+            onConfirm={(ids) => {
+              setConvocados(ids);
+              // Limpiar titulares y suplentes que ya no están convocados
+              setAlineacionTitulares(prev => prev.filter(id => ids.includes(id)));
+              setAlineacionSuplentes(prev => prev.filter(id => ids.includes(id)));
+              setShowConvocadosModal(false);
+            }}
+          />
+
+          {/* Modal de No Convocados */}
+          <PlayerSelectionModal
+            visible={showNoConvocadosModal}
+            onClose={() => setShowNoConvocadosModal(false)}
+            title={t('schedule.selectNotCalled')}
+            players={players}
+            selectedIds={noConvocados}
+            excludeIds={convocados}
+            injuries={injuries}
+            sanctionedPlayerIds={sanctionedPlayerIds}
+            onConfirm={(ids) => {
+              setNoConvocados(ids);
+              setShowNoConvocadosModal(false);
+            }}
+          />
+
+          {/* Modal de Titulares */}
+          <PlayerSelectionModal
+            visible={showTitularesModal}
+            onClose={() => setShowTitularesModal(false)}
+            title={t('schedule.selectStarters')}
+            players={players.filter(p => convocados.includes(p._id))}
+            selectedIds={alineacionTitulares}
+            excludeIds={alineacionSuplentes}
+            injuries={injuries}
+            onConfirm={(ids) => {
+              setAlineacionTitulares(ids);
+              setShowTitularesModal(false);
+            }}
+          />
+
+          {/* Modal de Suplentes */}
+          <PlayerSelectionModal
+            visible={showSuplentesModal}
+            onClose={() => setShowSuplentesModal(false)}
+            title={t('schedule.selectSubstitutes')}
+            players={players.filter(p => convocados.includes(p._id))}
+            selectedIds={alineacionSuplentes}
+            excludeIds={alineacionTitulares}
+            injuries={injuries}
+            onConfirm={(ids) => {
+              setAlineacionSuplentes(ids);
+              setShowSuplentesModal(false);
+            }}
+          />
+
+          {/* Modal de Goles */}
+          <EventModal
+            visible={showGolesModal}
+            onClose={() => { setShowGolesModal(false); setEditingGoalIndex(null); }}
+            title={editingGoalIndex !== null ? t('matchSheet.modals.editGoal') : t('matchSheet.modals.addGoal')}
+            eventType="gol"
+            players={players}
+            titulares={alineacionTitulares}
+            suplentes={alineacionSuplentes}
+            tiempoPorParte={team?.tiempoPorParte || 45}
+            descuentoPT={Number(descuentoPrimerTiempo) || 0}
+            descuentoST={Number(descuentoSegundoTiempo) || 0}
+            jugadoresEnCampo={jugadoresEnCampo}
+            jugadoresExpulsados={jugadoresExpulsados}
+            cambiosRealizados={cambios}
+            editingEvent={editingGoalIndex !== null ? goles[editingGoalIndex] : null}
+            onAdd={(gol) => {
+              if (editingGoalIndex !== null) {
+                const updated = [...goles];
+                updated[editingGoalIndex] = gol;
+                setGoles(updated);
+                setEditingGoalIndex(null);
+              } else {
+                setGoles([...goles, gol]);
+              }
+              setShowGolesModal(false);
+            }}
+          />
+
+          {/* Modal de Tarjetas */}
+          <EventModal
+            visible={showTarjetasModal}
+            onClose={() => { setShowTarjetasModal(false); setEditingCardIndex(null); setEditingCardType(null); }}
+            title={editingCardIndex !== null ? t('matchSheet.modals.editCard') : t('matchSheet.modals.addCard')}
+            eventType="tarjeta"
+            players={players}
+            titulares={alineacionTitulares}
+            suplentes={alineacionSuplentes}
+            tiempoPorParte={team?.tiempoPorParte || 45}
+            descuentoPT={Number(descuentoPrimerTiempo) || 0}
+            descuentoST={Number(descuentoSegundoTiempo) || 0}
+            jugadoresEnCampo={jugadoresEnCampo}
+            jugadoresExpulsados={jugadoresExpulsados}
+            cambiosRealizados={cambios}
+            editingEvent={editingCardIndex !== null ? (editingCardType === 'amarilla' ? { ...tarjetasAmarillas[editingCardIndex], tipo: 'amarilla' } : { ...tarjetasRojas[editingCardIndex], tipo: 'roja' }) : null}
+            onAdd={(tarjeta) => {
+              if (editingCardIndex !== null) {
+                // Editing existing card
+                if (editingCardType === 'amarilla') {
+                  if (tarjeta.tipo === 'amarilla') {
+                    // Still yellow - update in place
+                    const updated = [...tarjetasAmarillas];
+                    updated[editingCardIndex] = tarjeta;
+                    setTarjetasAmarillas(updated);
+                  } else {
+                    // Changed to red - remove from yellows, add to reds
+                    setTarjetasAmarillas(tarjetasAmarillas.filter((_, i) => i !== editingCardIndex));
+                    setTarjetasRojas([...tarjetasRojas, tarjeta]);
+                  }
+                } else {
+                  if (tarjeta.tipo === 'roja') {
+                    // Still red - update in place
+                    const updated = [...tarjetasRojas];
+                    updated[editingCardIndex] = tarjeta;
+                    setTarjetasRojas(updated);
+                  } else {
+                    // Changed to yellow - remove from reds, add to yellows
+                    setTarjetasRojas(tarjetasRojas.filter((_, i) => i !== editingCardIndex));
+                    setTarjetasAmarillas([...tarjetasAmarillas, tarjeta]);
+                  }
+                }
+                setEditingCardIndex(null);
+                setEditingCardType(null);
+              } else {
+                // Adding new card
+                if (tarjeta.tipo === 'amarilla') {
+                  const newAmarillas = [...tarjetasAmarillas, tarjeta];
+                  setTarjetasAmarillas(newAmarillas);
+                  // Auto-add red card on double yellow
+                  const tarjetaJugadorId = typeof tarjeta.jugador === 'object' ? tarjeta.jugador._id : tarjeta.jugador;
+                  const playerYellows = newAmarillas.filter(t => {
+                    const tJugador = typeof t.jugador === 'object' ? t.jugador._id : t.jugador;
+                    return tJugador === tarjetaJugadorId;
+                  });
+                  if (playerYellows.length >= 2) {
+                    const alreadyHasAutoRed = tarjetasRojas.some(t => {
+                      const tJugador = typeof t.jugador === 'object' ? t.jugador._id : t.jugador;
+                      return tJugador === tarjetaJugadorId && t.motivo === 'Doble amarilla';
+                    });
+                    if (!alreadyHasAutoRed) {
+                      setTarjetasRojas([...tarjetasRojas, { jugador: tarjeta.jugador, minuto: tarjeta.minuto, motivo: 'Doble amarilla' }]);
+                    }
+                  }
+                } else {
+                  setTarjetasRojas([...tarjetasRojas, tarjeta]);
+                }
+              }
+              setShowTarjetasModal(false);
+            }}
+          />
+
+          {/* Modal de Cambios */}
+          <EventModal
+            visible={showCambiosModal}
+            onClose={() => setShowCambiosModal(false)}
+            title={t('matchSheet.modals.addChange')}
+            eventType="cambio"
+            players={players}
+            titulares={alineacionTitulares}
+            suplentes={alineacionSuplentes}
+            tiempoPorParte={team?.tiempoPorParte || 45}
+            descuentoPT={Number(descuentoPrimerTiempo) || 0}
+            descuentoST={Number(descuentoSegundoTiempo) || 0}
+            jugadoresEnCampo={jugadoresEnCampo}
+            jugadoresExpulsados={jugadoresExpulsados}
+            cambiosRealizados={cambios}
+            onAdd={(cambio) => {
+              setCambios([...cambios, cambio]);
+              setShowCambiosModal(false);
+            }}
+          />
+
+          {/* Modal de Goles del Rival */}
+          <EventModal
+            visible={showGolesRivalModal}
+            onClose={() => setShowGolesRivalModal(false)}
+            title={t('matchSheet.rivalGoals.addRivalGoal')}
+            eventType="golRival"
+            players={[]}
+            tiempoPorParte={team?.tiempoPorParte || 45}
+            descuentoPT={Number(descuentoPrimerTiempo) || 0}
+            descuentoST={Number(descuentoSegundoTiempo) || 0}
+            onAdd={(gol) => {
+              setGolesRival([...golesRival, gol]);
+              setShowGolesRivalModal(false);
+            }}
+          />
+
+          {/* Modal de Ubicación */}
+          <Modal
+            visible={showUbicacionModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowUbicacionModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.modals.selectLocation')}</Text>
+                  <TouchableOpacity onPress={() => setShowUbicacionModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {[
+                    { value: 'local', label: t('matchSheet.modals.home'), icon: 'home' },
+                    { value: 'visitante', label: t('matchSheet.modals.away'), icon: 'airplane' },
+                    { value: 'neutral', label: t('matchSheet.modals.neutral'), icon: 'location' },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.selectorItem,
+                        ubicacion === option.value && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setUbicacion(option.value);
+                        setShowUbicacionModal(false);
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <Ionicons 
+                          name={option.icon} 
+                          size={20} 
+                          color={ubicacion === option.value ? THEME.primary : THEME.text} 
+                        />
+                        <Text style={[
+                          styles.selectorItemText,
+                          ubicacion === option.value && styles.selectorItemTextActive,
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </View>
+                      {ubicacion === option.value && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal de Torneo */}
+          <Modal
+            visible={showTorneoModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowTorneoModal(false)}
+          >
+            <View style={styles.selectorModalBg}>
+              <View style={styles.selectorModalContent}>
+                <View style={styles.selectorHeader}>
+                  <Text style={styles.selectorTitle}>{t('matchSheet.competition')}</Text>
+                  <TouchableOpacity onPress={() => setShowTorneoModal(false)}>
+                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {/* Opción Amistoso */}
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorItem,
+                      competicion === 'amistoso' && styles.selectorItemActive,
+                    ]}
+                    onPress={() => {
+                      setCompeticion('amistoso');
+                      setTorneoId(null);
+                      setSelectedCompetitionOption('amistoso');
+                      setShowTorneoModal(false);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{
+                        width: 24, height: 24, borderRadius: 12,
+                        backgroundColor: '#10b981',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <MaterialIcons name="sports-soccer" size={14} color="#fff" />
+                      </View>
+                      <Text style={[
+                        styles.selectorItemText,
+                        competicion === 'amistoso' && styles.selectorItemTextActive,
+                      ]}>
+                        {t('matchSheet.friendly') || 'Amistoso'}
+                      </Text>
+                    </View>
+                    {competicion === 'amistoso' && (
+                      <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Torneos activos */}
+                  {tournaments.filter(tr => tr.estado === 'activo').map((torneo) => (
+                    <TouchableOpacity
+                      key={torneo._id}
+                      style={[
+                        styles.selectorItem,
+                        torneoId === torneo._id && competicion === 'torneo' && styles.selectorItemActive,
+                      ]}
+                      onPress={() => {
+                        setCompeticion('torneo');
+                        setTorneoId(torneo._id);
+                        setSelectedCompetitionOption(torneo._id);
+                        setShowTorneoModal(false);
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View style={{
+                          width: 24, height: 24, borderRadius: 12,
+                          backgroundColor: torneo.color || '#8B5CF6',
+                          alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <MaterialIcons name="emoji-events" size={14} color="#fff" />
+                        </View>
+                        <Text style={[
+                          styles.selectorItemText,
+                          torneoId === torneo._id && competicion === 'torneo' && styles.selectorItemTextActive,
+                        ]}>
+                          {torneo.nombre}
+                        </Text>
+                        {torneo.porDefecto && (
+                          <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 10, color: '#2563eb', fontWeight: '600' }}>{t('tournaments.default')}</Text>
+                          </View>
+                        )}
+                      </View>
+                      {torneoId === torneo._id && competicion === 'torneo' && (
+                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                  {tournaments.filter(tr => tr.estado === 'activo').length === 0 && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                      <Text style={{ color: THEME.textSecondary, fontSize: 14 }}>
+                        {t('tournaments.noActiveTournaments')}
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: isMobileDevice() ? '95%' : '92%',
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: isMobileDevice() ? 14 : 16,
+    paddingVertical: isMobileDevice() ? 12 : 14,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  modalTitle: {
+    fontSize: isMobileDevice() ? 16 : 18,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    flex: 1,
+    padding: isMobileDevice() ? 12 : 16,
+  },
+  
+  // Form
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: THEME.text,
+  },
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  selectText: {
+    flex: 1,
+    fontSize: 15,
+    color: THEME.text,
+  },
+  selectPlaceholder: {
+    flex: 1,
+    fontSize: 15,
+    color: THEME.textMuted,
+  },
+  
+  // Escudos Row
+  escudosRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    paddingVertical: 16,
+    backgroundColor: THEME.background,
+    borderRadius: 16,
+  },
+  escudoContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  escudoLabel: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  escudoButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: THEME.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
+    overflow: 'hidden',
+  },
+  escudoImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
+  },
+  escudoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+    width: '100%',
+    height: '100%',
+  },
+  escudoPlaceholderText: {
+    fontSize: 8,
+    color: THEME.textMuted,
+    marginTop: 2,
+    textAlign: 'center',
+    lineHeight: 10,
+  },
+  vsContainer: {
+    paddingHorizontal: 16,
+  },
+  vsText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: THEME.textSecondary,
+  },
+  
+  // Location
+  locationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  locationBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  locationBtnActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  locationBtnText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: THEME.text,
+  },
+  locationBtnTextActive: {
+    color: '#fff',
+  },
+  
+  // Result Section
+  resultSection: {
+    backgroundColor: THEME.background,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 16,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  scoreItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginBottom: 8,
+  },
+  scoreInput: {
+    backgroundColor: THEME.surface,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    fontSize: 24,
+    fontWeight: '700',
+    color: THEME.text,
+    textAlign: 'center',
+    minWidth: 80,
+  },
+  scoreDivider: {
+    paddingHorizontal: 8,
+  },
+  scoreDividerText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: THEME.textMuted,
+  },
+  resultBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 16,
+  },
+  resultBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  // Descuento styles
+  descuentoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 12,
+  },
+  descuentoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 16,
+  },
+  descuentoItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  descuentoSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  descuentoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: THEME.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  descuentoValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: THEME.text,
+    minWidth: 50,
+    textAlign: 'center',
+  },
+  descuentoHint: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
+  },
+  
+  // Buttons
+  buttonRow: {
+    flexDirection: 'row',
+    gap: isMobileDevice() ? 8 : 12,
+    paddingHorizontal: isMobileDevice() ? 14 : 20,
+    paddingVertical: isMobileDevice() ? 12 : 14,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: isMobileDevice() ? 14 : 16,
+    borderRadius: 12,
+    backgroundColor: THEME.background,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: isMobileDevice() ? 14 : 15,
+    fontWeight: '600',
+    color: THEME.textSecondary,
+  },
+  deleteBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: THEME.danger,
+  },
+  deleteBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  saveBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+  },
+  saveBtnDisabled: {
+    opacity: 0.6,
+  },
+  saveBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  
+  // Selector Modal
+  selectorModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: isMobileDevice() ? 12 : 20,
+  },
+  selectorModalContent: {
+    backgroundColor: THEME.surface,
+    borderRadius: isMobileDevice() ? 14 : 16,
+    width: '100%',
+    maxWidth: isMobileDevice() ? '100%' : 400,
+    maxHeight: isMobileDevice() ? '85%' : '70%',
+  },
+  selectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: isMobileDevice() ? 14 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  selectorTitle: {
+    fontSize: isMobileDevice() ? 15 : 17,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  customRivalInput: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  selectorList: {
+    maxHeight: 300,
+    padding: 8,
+  },
+  selectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginVertical: 2,
+  },
+  selectorItemActive: {
+    backgroundColor: THEME.primary + '15',
+  },
+  selectorItemText: {
+    fontSize: 15,
+    color: THEME.text,
+  },
+  selectorItemTextActive: {
+    color: THEME.primary,
+    fontWeight: '500',
+  },
+  selectorConfirmBtn: {
+    margin: 16,
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+  },
+  selectorConfirmText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: THEME.textMuted,
+    padding: 20,
+  },
+  
+  // Estilos para búsqueda y creación de rival
+  rivalSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.inputBg,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  rivalSearchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    fontSize: 16,
+    color: THEME.text,
+  },
+  rivalEscudoPlaceholder: {
+    width: 28,
+    height: 28,
+    marginRight: 10,
+    borderRadius: 14,
+    backgroundColor: THEME.inputBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyRivals: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyRivalsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: THEME.text,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  rivalSelectorFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
+    gap: 8,
+  },
+  useTextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: THEME.inputBg,
+    borderRadius: 12,
+    gap: 8,
+  },
+  useTextButtonText: {
+    color: THEME.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  createRivalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  createRivalButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  createRivalModalContent: {
+    width: isMobileDevice() ? '95%' : '90%',
+    maxWidth: isMobileDevice() ? '100%' : 400,
+    backgroundColor: THEME.surface,
+    borderRadius: isMobileDevice() ? 16 : 20,
+    overflow: 'hidden',
+  },
+  createRivalBody: {
+    padding: isMobileDevice() ? 16 : 20,
+  },
+  escudoPicker: {
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    backgroundColor: THEME.inputBg,
+    borderWidth: 2,
+    borderColor: THEME.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  escudoPreview: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  escudoPlaceholderText: {
+    alignItems: 'center',
+    textAlign: 'center',
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginTop: 4,
+  },
+  createRivalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  createRivalInput: {
+    backgroundColor: THEME.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: THEME.text,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  createRivalFooter: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
+  },
+  createRivalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.inputBg,
+    alignItems: 'center',
+  },
+  createRivalCancelText: {
+    color: THEME.textSecondary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  createRivalSaveButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+    alignItems: 'center',
+  },
+  createRivalSaveButtonDisabled: {
+    opacity: 0.7,
+  },
+  createRivalSaveText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  
+  // Estilos para selectores de jugadores
+  playerSelectorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  playerSelectorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  playerSelectorText: {
+    fontSize: 15,
+    color: THEME.text,
+  },
+  
+  // Estilos para eventos (unificado con matchSheetList)
+  eventSelector: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  eventSelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  eventsList: {
+    marginBottom: 12,
+    gap: 8,
+  },
+  eventChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  eventChipText: {
+    fontSize: 13,
+    color: '#333',
+    flex: 1,
+  },
+  cardIndicator: {
+    width: 12,
+    height: 16,
+    borderRadius: 2,
+  },
+  
+  // Notas
+  notasInput: {
+    backgroundColor: THEME.inputBg,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: THEME.text,
+    minHeight: 100,
+  },
+  
+  // Estilos para LineupEditor visual
+  lineupEditorContainer: {
+    marginTop: 16,
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    overflow: 'hidden',
+  },
+  lineupEditorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#f0fdf4',
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  lineupEditorTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  emptyLineupMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  emptyLineupText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+  },
+  startersSubsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  startersSubsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  startersSubsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  startersSubsList: {
+    gap: 6,
+  },
+  starterSubChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  starterSubDorsal: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starterSubDorsalText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  starterSubName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1e293b',
+    flex: 1,
+  },
+  
+  // Estilos para modal de DateTimePicker en iOS
+  datePickerModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  datePickerModalContent: {
+    backgroundColor: THEME.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 30,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  datePickerCancel: {
+    fontSize: 16,
+    color: THEME.textSecondary,
+  },
+  datePickerDone: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.primary,
+  },
+});
