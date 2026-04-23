@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import {
   MdMonitorHeart, MdLink, MdContentCopy, MdShare, MdPlayArrow, MdPause,
@@ -19,11 +19,12 @@ import {
 } from '@/api/wellness';
 
 const HeroCard = styled.div`
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary}, ${({ theme }) => theme.colors.primaryHover});
+  color: ${({ theme }) => theme.colors.onPrimary};
   padding: 18px 20px;
   border-radius: ${({ theme }) => theme.radius.lg};
   margin-bottom: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 const StatsGrid = styled.div`
@@ -94,8 +95,10 @@ const StatusPill = styled.span`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color};
+  background: ${({ $tone, theme }) =>
+    theme.colors[$tone === 'success' ? 'successSoft' : 'errorSoft']};
+  color: ${({ $tone, theme }) =>
+    theme.colors[$tone === 'success' ? 'successSoftText' : 'errorSoftText']};
 `;
 
 const ResponseRow = styled.div`
@@ -128,7 +131,7 @@ const ResponseDate = styled.div`
 const ResponseScore = styled.div`
   font-size: 18px;
   font-weight: 800;
-  color: ${({ $color }) => $color || '#3b82f6'};
+  color: ${({ $color, theme }) => $color || theme.colors.primary};
 `;
 
 const Loading = styled.div`
@@ -146,11 +149,11 @@ function getEmojiForScore(v) {
   return '🤩';
 }
 
-function scoreColor(v) {
-  if (v == null) return '#94a3b8';
-  if (v <= 4) return '#ef4444';
-  if (v <= 6) return '#f59e0b';
-  return '#10b981';
+function scoreColor(v, theme) {
+  if (v == null) return theme.colors.textMuted;
+  if (v <= 4) return theme.colors.error;
+  if (v <= 6) return theme.colors.warning;
+  return theme.colors.success;
 }
 
 export default function WellnessDetailModal({
@@ -160,6 +163,7 @@ export default function WellnessDetailModal({
   onUpdate,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const sessionId = session?._id;
 
   const [loading, setLoading] = useState(false);
@@ -322,13 +326,13 @@ export default function WellnessDetailModal({
             </StatBox>
             <StatBox>
               <StatLabel>{t('session.averageWellness', 'Media')}</StatLabel>
-              <StatValue $color={scoreColor(avg)}>
+              <StatValue $color={scoreColor(avg, theme)}>
                 {avg != null ? Number(avg).toFixed(1) : '—'}
               </StatValue>
             </StatBox>
             <StatBox>
               <StatLabel>{t('session.expectedWellness', 'Esperado')}</StatLabel>
-              <StatValue $color="#10b981">
+              <StatValue $color={theme.colors.success}>
                 {data?.expectedWellness ?? '—'}
               </StatValue>
             </StatBox>
@@ -370,10 +374,7 @@ export default function WellnessDetailModal({
               ) : (
                 <Stack $gap={8}>
                   <Row $gap={8} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                    <StatusPill
-                      $bg={isLinkActive ? '#dcfce7' : '#fee2e2'}
-                      $color={isLinkActive ? '#16a34a' : '#dc2626'}
-                    >
+                    <StatusPill $tone={isLinkActive ? 'success' : 'error'}>
                       {isLinkActive ? <MdCheckCircle /> : <MdCancel />}
                       {isLinkActive ? t('session.linkActive', 'Activo') : t('session.linkInactive', 'Inactivo')}
                     </StatusPill>
@@ -419,7 +420,7 @@ export default function WellnessDetailModal({
                           : ''}
                       </ResponseDate>
                     </ResponseInfo>
-                    <ResponseScore $color={scoreColor(r.wellnessScore || r.score)}>
+                    <ResponseScore $color={scoreColor(r.wellnessScore || r.score, theme)}>
                       {getEmojiForScore(r.wellnessScore || r.score)} {(r.wellnessScore || r.score)?.toFixed?.(1) || '—'}
                     </ResponseScore>
                     <Button

@@ -8,7 +8,10 @@ import { Button, Input, Row, Muted } from '@/ui/primitives';
 const SearchBox = styled.div`
   position: relative;
   margin-bottom: 10px;
-  svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888; }
+  svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
   input { padding-left: 32px; }
 `;
 
@@ -25,19 +28,25 @@ const PlayerRow = styled.button`
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: ${({ $selected }) => ($selected ? '#e8f0fe' : 'transparent')};
-  border: 1px solid ${({ $selected, theme }) => ($selected ? '#1a237e' : theme.colors.border)};
+  background: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : 'transparent'};
+  border: 1px solid ${({ $selected, theme }) => $selected ? theme.colors.primary : theme.colors.border};
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
   width: 100%;
+  color: ${({ $selected, theme }) => $selected ? theme.colors.primarySoftText : theme.colors.text};
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:hover { background: ${({ $selected, theme }) => $selected ? theme.colors.primarySoft : theme.colors.surfaceAlt}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Avatar = styled.div`
   width: 36px; height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a237e, #5c6bc0);
-  color: #fff; font-weight: 800; font-size: 13px;
+  background: ${({ theme }) => theme.gradients.primary};
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 13px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden;
 `;
@@ -49,7 +58,7 @@ const Name = styled.div`
 `;
 
 const CheckIcon = styled(MdCheck)`
-  color: #1a237e;
+  color: ${({ theme }) => theme.colors.primary};
   font-size: 22px;
 `;
 

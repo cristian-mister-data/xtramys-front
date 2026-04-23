@@ -14,13 +14,19 @@ const Grid = styled.div`
 const Cell = styled.button`
   aspect-ratio: 1;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $active }) => ($active ? '#1a237e' : '#fff')};
-  color: ${({ $active }) => ($active ? '#fff' : 'inherit')};
+  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.surface};
+  color: ${({ $active, theme }) => $active ? theme.colors.onPrimary : theme.colors.text};
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  &:hover { border-color: #1a237e; }
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ $active, theme }) => $active ? theme.colors.primaryHover : theme.colors.primarySoft};
+    color: ${({ $active, theme }) => $active ? theme.colors.onPrimary : theme.colors.primarySoftText};
+  }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 export default function JornadaModal({ open, onClose, value, onChange, max = 40 }) {

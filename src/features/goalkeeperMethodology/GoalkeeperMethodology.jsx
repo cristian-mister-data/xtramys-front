@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { MdLock, MdAdd, MdDelete, MdEdit } from 'react-icons/md';
+import { MdLock, MdAdd, MdDelete, MdEdit, MdPictureAsPdf } from 'react-icons/md';
+import { generateGoalkeeperMethodologyPdf } from './pdf';
 
 import {
   getDefaultGoalkeeperMethodologyData,
@@ -363,11 +364,15 @@ export default function GoalkeeperMethodology() {
           <PlanCard key={planKey}>
             <PlanHeader onClick={() => setExpanded((e) => ({ ...e, [planKey]: !isOpen }))}>
               <span>{getPlanLabel(planKey, t)}</span>
-              {isEditable && (
-                <Row $gap={6}>
+              <Row $gap={6}>
+                <IconBtn
+                  onClick={(e) => { e.stopPropagation(); generateGoalkeeperMethodologyPdf(planKey, days, t); }}
+                  title={t('common.exportPdf', 'Exportar PDF')}
+                ><MdPictureAsPdf /></IconBtn>
+                {isEditable && (
                   <IconBtn onClick={(e) => { e.stopPropagation(); handleAddDay(planKey); }}><MdAdd /></IconBtn>
-                </Row>
-              )}
+                )}
+              </Row>
             </PlanHeader>
             {isOpen && (
               <PlanBody>

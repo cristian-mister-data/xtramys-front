@@ -10,11 +10,12 @@ import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 
 const HeroCard = styled.div`
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff;
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.success}, ${({ theme }) => theme.mode === 'dark' ? theme.colors.successSoftText : '#059669'});
+  color: ${({ theme }) => theme.mode === 'dark' ? theme.colors.text : '#ffffff'};
   padding: 18px 20px;
   border-radius: ${({ theme }) => theme.radius.lg};
   margin-bottom: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 const HeroTitle = styled.div`
@@ -48,12 +49,24 @@ const StatCard = styled.div`
   gap: 10px;
 `;
 
+const TONE_BG = {
+  info: 'infoSoft', success: 'successSoft', warning: 'warningSoft',
+  error: 'errorSoft', purple: 'purpleSoft', primary: 'primarySoft',
+};
+const TONE_FG = {
+  info: 'infoSoftText', success: 'successSoftText', warning: 'warningSoftText',
+  error: 'errorSoftText', purple: 'purpleSoftText', primary: 'primarySoftText',
+};
+const TONE_SOLID = {
+  info: 'info', success: 'success', warning: 'warning', error: 'error', purple: 'purple', primary: 'primary',
+};
+
 const StatIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: ${({ $bg }) => $bg || '#dbeafe'};
-  color: ${({ $color }) => $color || '#3b82f6'};
+  background: ${({ $tone, theme }) => theme.colors[TONE_BG[$tone] || 'primarySoft']};
+  color: ${({ $tone, theme }) => theme.colors[TONE_FG[$tone] || 'primarySoftText']};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,9 +138,16 @@ const PlayerChip = styled.span`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color};
+  background: ${({ $tone, theme }) => theme.colors[TONE_BG[$tone] || 'primarySoft']};
+  color: ${({ $tone, theme }) => theme.colors[TONE_FG[$tone] || 'primarySoftText']};
   margin: 2px;
+`;
+
+const AttendanceLabel = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: ${({ $tone, theme }) => theme.colors[TONE_SOLID[$tone] || 'text']};
 `;
 
 const Notes = styled.div`
@@ -217,28 +237,28 @@ export default function TrainingSessionDetailModal({
 
       <StatsGrid>
         <StatCard>
-          <StatIcon $bg="#dbeafe" $color="#3b82f6"><MdSchedule /></StatIcon>
+          <StatIcon $tone="info"><MdSchedule /></StatIcon>
           <div>
             <StatLabel>{t('session.startTime', 'Inicio')}</StatLabel>
             <StatValue>{data.horaInicio || '—'}</StatValue>
           </div>
         </StatCard>
         <StatCard>
-          <StatIcon $bg="#fef3c7" $color="#d97706"><MdSchedule /></StatIcon>
+          <StatIcon $tone="warning"><MdSchedule /></StatIcon>
           <div>
             <StatLabel>{t('session.endTime', 'Fin')}</StatLabel>
             <StatValue>{data.horaFin || '—'}</StatValue>
           </div>
         </StatCard>
         <StatCard>
-          <StatIcon $bg="#dcfce7" $color="#16a34a"><MdFitnessCenter /></StatIcon>
+          <StatIcon $tone="success"><MdFitnessCenter /></StatIcon>
           <div>
             <StatLabel>{t('session.exercises', 'Ejercicios')}</StatLabel>
             <StatValue>{linkedExercises.length}</StatValue>
           </div>
         </StatCard>
         <StatCard>
-          <StatIcon $bg="#f3e8ff" $color="#8b5cf6"><MdGroup /></StatIcon>
+          <StatIcon $tone="purple"><MdGroup /></StatIcon>
           <div>
             <StatLabel>{t('session.attendees', 'Asistentes')}</StatLabel>
             <StatValue>{asistentes.length}</StatValue>
@@ -300,11 +320,11 @@ export default function TrainingSessionDetailModal({
             <Card>
               {asistentes.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#16a34a' }}>
+                  <AttendanceLabel $tone="success">
                     ✓ {t('session.present', 'Presentes')} ({asistentes.length})
-                  </div>
+                  </AttendanceLabel>
                   {asistentes.map((p, i) => (
-                    <PlayerChip key={i} $bg="#dcfce7" $color="#16a34a">
+                    <PlayerChip key={i} $tone="success">
                       {getPlayerName(players, p)}
                     </PlayerChip>
                   ))}
@@ -312,11 +332,11 @@ export default function TrainingSessionDetailModal({
               )}
               {ausentes.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#dc2626' }}>
+                  <AttendanceLabel $tone="error">
                     ✗ {t('session.absent', 'Ausentes')} ({ausentes.length})
-                  </div>
+                  </AttendanceLabel>
                   {ausentes.map((p, i) => (
-                    <PlayerChip key={i} $bg="#fee2e2" $color="#dc2626">
+                    <PlayerChip key={i} $tone="error">
                       {getPlayerName(players, p)}
                     </PlayerChip>
                   ))}
@@ -324,11 +344,11 @@ export default function TrainingSessionDetailModal({
               )}
               {justificados.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#d97706' }}>
+                  <AttendanceLabel $tone="warning">
                     ⚠ {t('session.justified', 'Justificados')} ({justificados.length})
-                  </div>
+                  </AttendanceLabel>
                   {justificados.map((p, i) => (
-                    <PlayerChip key={i} $bg="#fef3c7" $color="#d97706">
+                    <PlayerChip key={i} $tone="warning">
                       {getPlayerName(players, p)}
                     </PlayerChip>
                   ))}
@@ -336,11 +356,11 @@ export default function TrainingSessionDetailModal({
               )}
               {lesionados.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: '#8b5cf6' }}>
+                  <AttendanceLabel $tone="purple">
                     🏥 {t('session.injured', 'Lesionados')} ({lesionados.length})
-                  </div>
+                  </AttendanceLabel>
                   {lesionados.map((p, i) => (
-                    <PlayerChip key={i} $bg="#f3e8ff" $color="#8b5cf6">
+                    <PlayerChip key={i} $tone="purple">
                       {getPlayerName(players, p)}
                     </PlayerChip>
                   ))}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { MdSearch, MdAdd, MdClose, MdCheck, MdShield, MdImage } from 'react-icons/md';
@@ -52,12 +52,16 @@ const RivalRow = styled.button`
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: ${({ $selected }) => ($selected ? '#e8f0fe' : 'transparent')};
-  border: 1px solid ${({ $selected, theme }) => ($selected ? '#1a237e' : theme.colors.border)};
+  background: ${({ $selected, theme }) => ($selected ? theme.colors.primarySoft : 'transparent')};
+  border: 1px solid ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.border)};
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
   width: 100%;
+  color: ${({ theme }) => theme.colors.text};
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:hover { background: ${({ $selected, theme }) => ($selected ? theme.colors.primarySoft : theme.colors.surfaceAlt)}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const ImagePicker = styled.label`
@@ -83,6 +87,7 @@ export default function RivalSelector({
 }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const theme = useTheme();
   const rivals = useSelector((s) => s.rival?.rivals || []);
   const userId = useSelector((s) => s.usuario?.data?._id);
 
@@ -222,7 +227,7 @@ export default function RivalSelector({
                   {r.escudo ? <img src={r.escudo} alt="" /> : <MdShield size={18} color="#888" />}
                 </Crest>
                 <span style={{ flex: 1, fontWeight: 600 }}>{r.nombre}</span>
-                {r._id === selectedRivalId ? <MdCheck color="#1a237e" size={20} /> : null}
+                {r._id === selectedRivalId ? <MdCheck color={theme.colors.primary} size={20} /> : null}
               </RivalRow>
             ))}
           </RivalList>

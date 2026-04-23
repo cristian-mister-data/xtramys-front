@@ -598,10 +598,16 @@ export const checkVideoAvailability = async (exerciseOrImageName) => {
   const imageName = typeof exerciseOrImageName === 'string' ? exerciseOrImageName : exerciseOrImageName.image;
   const videoName = imageName.replace('.webp', '.mp4');
 
+  // Web: omitir el HEAD preflight. R2 puede no permitir HEAD CORS y eso bloquea
+  // la aparición del botón de play. Devolvemos true optimista; si el archivo no
+  // existe el <video> emitirá `error` y el visor ya muestra fallback.
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    return true;
+  }
+
   const cached = videoAvailabilityCache[videoName];
   if (cached === true) return true;
   if (cached && typeof cached === 'object') {
-    // Respetar TTL de fallos confirmados (2 min)
     if (Date.now() - cached.time < 120000) return false;
     delete videoAvailabilityCache[videoName];
   }
@@ -618,12 +624,9 @@ export const checkVideoAvailability = async (exerciseOrImageName) => {
       videoAvailabilityCache[videoName] = true;
       return true;
     }
-    // 404 confirmado: cachear con TTL
     videoAvailabilityCache[videoName] = { available: false, time: Date.now() };
     return false;
   } catch {
-    // Error de red o timeout: devolver true (optimista) sin cachear
-    // para que el usuario pueda intentar reproducir y reintentar la comprobación
     return true;
   }
 };

@@ -8,7 +8,7 @@ import { Button, Input, Row, Muted } from '@/ui/primitives';
 const SearchBox = styled.div`
   position: relative;
   margin-bottom: 10px;
-  svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888; }
+  svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: ${({ theme }) => theme.colors.textMuted}; }
   input { padding-left: 32px; }
 `;
 
@@ -25,20 +25,24 @@ const ItemRow = styled.button`
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: ${({ $sel }) => ($sel ? '#e8f0fe' : 'transparent')};
-  border: 1px solid ${({ $sel, theme }) => ($sel ? '#1a237e' : theme.colors.border)};
+  background: ${({ $sel, theme }) => ($sel ? theme.colors.primarySoft : 'transparent')};
+  border: 1px solid ${({ $sel, theme }) => ($sel ? theme.colors.primary : theme.colors.border)};
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
   width: 100%;
+  color: ${({ theme }) => theme.colors.text};
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:hover { background: ${({ $sel, theme }) => ($sel ? theme.colors.primarySoft : theme.colors.surfaceAlt)}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Thumb = styled.div`
   width: 44px; height: 44px;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: ${({ theme }) => theme.colors.surfaceAlt};
   display: flex; align-items: center; justify-content: center;
-  color: #94a3b8;
+  color: ${({ theme }) => theme.colors.textMuted};
   flex-shrink: 0;
   overflow: hidden;
   img { width: 100%; height: 100%; object-fit: cover; }
@@ -52,7 +56,7 @@ const Body = styled.div`
 const Name = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: ${({ theme }) => theme.colors.text};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -60,12 +64,12 @@ const Name = styled.div`
 
 const Meta = styled.div`
   font-size: 12px;
-  color: #64748b;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 2px;
 `;
 
 const Check = styled(MdCheck)`
-  color: #1a237e;
+  color: ${({ theme }) => theme.colors.primary};
   font-size: 22px;
 `;
 

@@ -6,7 +6,7 @@
 // - players: lista editable de {nombre, observacion}.
 // - formation: modal con chips de ALINEACIONES.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -222,6 +222,7 @@ export default function AnalysisFormModal({
 }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const theme = useTheme();
   const fileInputRef = useRef(null);
   const [videoQuestionId, setVideoQuestionId] = useState(null);
 
@@ -549,7 +550,7 @@ export default function AnalysisFormModal({
                 {rivalEscudo ? (
                   <img src={rivalEscudo} alt="escudo" />
                 ) : (
-                  <MdShield size={18} color="#94a3b8" />
+                  <MdShield size={18} color={theme.colors.textMuted} />
                 )}
               </RivalEscudoSm>
               <Input
@@ -654,11 +655,11 @@ export default function AnalysisFormModal({
                     {r.escudo ? (
                       <img src={r.escudo} alt={r.nombre} />
                     ) : (
-                      <MdShield size={16} color="#94a3b8" />
+                      <MdShield size={16} color={theme.colors.textMuted} />
                     )}
                   </RivalEscudoSm>
                   <span style={{ flex: 1 }}>{r.nombre}</span>
-                  {r._id === rivalId && <MdCheckCircle size={18} color="#10b981" />}
+                  {r._id === rivalId && <MdCheckCircle size={18} color={theme.colors.success} />}
                 </RivalOption>
               ))}
             </Stack>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
@@ -10,11 +10,13 @@ import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 
 const HeroCard = styled.div`
-  background: ${({ $color }) => `linear-gradient(135deg, ${$color || '#1a237e'}, #3949ab)`};
-  color: #fff;
+  background: ${({ $color, theme }) =>
+    `linear-gradient(135deg, ${$color || theme.colors.primary}, ${theme.colors.primaryHover})`};
+  color: ${({ theme }) => theme.colors.onPrimary};
   padding: 18px 20px;
   border-radius: ${({ theme }) => theme.radius.lg};
   margin-bottom: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 const HeroTitle = styled.div`
@@ -35,6 +37,7 @@ const ResultBadge = styled.span`
   background: ${({ $bg }) => $bg};
   color: #fff;
   margin-left: 8px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
 `;
 
 const ScoreRow = styled.div`
@@ -63,12 +66,23 @@ const StatCard = styled.div`
   gap: 10px;
 `;
 
+const TONE_BG = {
+  info: 'infoSoft', success: 'successSoft', warning: 'warningSoft',
+  error: 'errorSoft', purple: 'purpleSoft', primary: 'primarySoft',
+};
+const TONE_FG = {
+  info: 'infoSoftText', success: 'successSoftText', warning: 'warningSoftText',
+  error: 'errorSoftText', purple: 'purpleSoftText', primary: 'primarySoftText',
+};
+
 const StatIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: ${({ $bg }) => $bg || '#dbeafe'};
-  color: ${({ $color }) => $color || '#3b82f6'};
+  background: ${({ $bg, $tone, theme }) =>
+    $bg || (theme.colors[TONE_BG[$tone]] ?? theme.colors.primarySoft)};
+  color: ${({ $color, $tone, theme }) =>
+    $color || (theme.colors[TONE_FG[$tone]] ?? theme.colors.primarySoftText)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,8 +139,10 @@ const Minute = styled.span`
   min-width: 36px;
   padding: 2px 6px;
   border-radius: 6px;
-  background: ${({ $bg }) => $bg || '#e5e7eb'};
-  color: ${({ $color }) => $color || '#374151'};
+  background: ${({ $bg, $tone, theme }) =>
+    $bg || (theme.colors[TONE_BG[$tone]] ?? theme.colors.backgroundAlt)};
+  color: ${({ $color, $tone, theme }) =>
+    $color || (theme.colors[TONE_FG[$tone]] ?? theme.colors.textSecondary)};
   font-size: 12px;
   font-weight: 700;
   text-align: center;
@@ -144,11 +160,11 @@ const Notes = styled.div`
   line-height: 1.5;
 `;
 
-function getResultBadge(resultado, t) {
+function getResultBadge(resultado, t, theme) {
   switch (resultado) {
-    case 'Victoria': return { bg: '#10b981', label: t('matchSheet.win', 'Victoria') };
-    case 'Empate': return { bg: '#f59e0b', label: t('matchSheet.draw', 'Empate') };
-    case 'Derrota': return { bg: '#ef4444', label: t('matchSheet.loss', 'Derrota') };
+    case 'Victoria': return { bg: theme.colors.success, label: t('matchSheet.win', 'Victoria') };
+    case 'Empate': return { bg: theme.colors.warning, label: t('matchSheet.draw', 'Empate') };
+    case 'Derrota': return { bg: theme.colors.error, label: t('matchSheet.loss', 'Derrota') };
     default: return null;
   }
 }
@@ -187,14 +203,15 @@ export default function MatchSheetDetailModal({
   onDelete,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const players = useSelector((s) => s.player?.players ?? []);
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
 
   const data = useMemo(() => match || null, [match]);
   if (!data) return null;
 
-  const tournamentColor = data?.torneoId?.color || '#1a237e';
-  const result = getResultBadge(data?.resultado, t);
+  const tournamentColor = data?.torneoId?.color || theme.colors.primary;
+  const result = getResultBadge(data?.resultado, t, theme);
 
   return (
     <Modal
@@ -237,14 +254,14 @@ export default function MatchSheetDetailModal({
 
       <StatsGrid>
         <StatCard>
-          <StatIcon $bg="#dbeafe" $color="#3b82f6"><MdLocationOn /></StatIcon>
+          <StatIcon $tone="info"><MdLocationOn /></StatIcon>
           <div>
             <StatLabel>{t('matchSheet.fields.location', 'Ubicación')}</StatLabel>
             <StatValue>{translateLocation(data.ubicacion, t)}</StatValue>
           </div>
         </StatCard>
         <StatCard>
-          <StatIcon $bg="#f3e8ff" $color="#8b5cf6"><MdSchedule /></StatIcon>
+          <StatIcon $tone="purple"><MdSchedule /></StatIcon>
           <div>
             <StatLabel>{t('matchSheet.fields.dateTime', 'Fecha')}</StatLabel>
             <StatValue>
@@ -254,7 +271,10 @@ export default function MatchSheetDetailModal({
         </StatCard>
         {data.torneoId?.nombre ? (
           <StatCard>
-            <StatIcon $bg={tournamentColor + '22'} $color={tournamentColor}>
+            <StatIcon
+              $bg={(data.torneoId.color || theme.colors.primary) + '22'}
+              $color={data.torneoId.color || theme.colors.primary}
+            >
               <MdEmojiEvents />
             </StatIcon>
             <div>
@@ -264,7 +284,7 @@ export default function MatchSheetDetailModal({
           </StatCard>
         ) : data.competicion === 'amistoso' && (
           <StatCard>
-            <StatIcon $bg="#fef3c7" $color="#d97706"><MdEmojiEvents /></StatIcon>
+            <StatIcon $tone="warning"><MdEmojiEvents /></StatIcon>
             <div>
               <StatLabel>{t('matchSheet.fields.tournament', 'Competición')}</StatLabel>
               <StatValue>{t('matchSheet.friendly', 'Amistoso')}</StatValue>
@@ -273,7 +293,7 @@ export default function MatchSheetDetailModal({
         )}
         {Array.isArray(data.convocados) && data.convocados.length > 0 && (
           <StatCard>
-            <StatIcon $bg="#dcfce7" $color="#16a34a"><MdGroup /></StatIcon>
+            <StatIcon $tone="success"><MdGroup /></StatIcon>
             <div>
               <StatLabel>{t('matchSheet.fields.called', 'Convocados')}</StatLabel>
               <StatValue>{data.convocados.length}</StatValue>
@@ -291,7 +311,7 @@ export default function MatchSheetDetailModal({
             <Card>
               {data.goles.map((g, i) => (
                 <EventItem key={i}>
-                  <Minute $bg="#dcfce7" $color="#16a34a">{g.minuto}&apos;</Minute>
+                  <Minute $tone="success">{g.minuto}&apos;</Minute>
                   <PlayerName>{getPlayerName(players, g.jugador)}</PlayerName>
                 </EventItem>
               ))}
@@ -307,7 +327,7 @@ export default function MatchSheetDetailModal({
             <Card>
               {data.golesRivalDetalle.map((g, i) => (
                 <EventItem key={i}>
-                  <Minute $bg="#fee2e2" $color="#dc2626">{g.minuto}&apos;</Minute>
+                  <Minute $tone="error">{g.minuto}&apos;</Minute>
                   <PlayerName>{g.descripcion || t('matchSheet.rivalGoal', 'Gol del rival')}</PlayerName>
                 </EventItem>
               ))}
@@ -318,13 +338,13 @@ export default function MatchSheetDetailModal({
         {Array.isArray(data.tarjetasAmarillas) && data.tarjetasAmarillas.length > 0 && (
           <Section>
             <SectionTitle>
-              <MdCircle style={{ color: '#FFC107' }} />
+              <MdCircle style={{ color: theme.colors.warning }} />
               {t('matchSheet.fields.yellowCards', 'Tarjetas amarillas')} ({data.tarjetasAmarillas.length})
             </SectionTitle>
             <Card>
               {data.tarjetasAmarillas.map((c, i) => (
                 <EventItem key={i}>
-                  <Minute $bg="#fef3c7" $color="#d97706">{c.minuto}&apos;</Minute>
+                  <Minute $tone="warning">{c.minuto}&apos;</Minute>
                   <PlayerName>{getPlayerName(players, c.jugador)}</PlayerName>
                 </EventItem>
               ))}
@@ -335,13 +355,13 @@ export default function MatchSheetDetailModal({
         {Array.isArray(data.tarjetasRojas) && data.tarjetasRojas.length > 0 && (
           <Section>
             <SectionTitle>
-              <MdCircle style={{ color: '#F44336' }} />
+              <MdCircle style={{ color: theme.colors.error }} />
               {t('matchSheet.fields.redCards', 'Tarjetas rojas')} ({data.tarjetasRojas.length})
             </SectionTitle>
             <Card>
               {data.tarjetasRojas.map((c, i) => (
                 <EventItem key={i}>
-                  <Minute $bg="#fee2e2" $color="#dc2626">{c.minuto}&apos;</Minute>
+                  <Minute $tone="error">{c.minuto}&apos;</Minute>
                   <PlayerName>{getPlayerName(players, c.jugador)}</PlayerName>
                 </EventItem>
               ))}
@@ -359,10 +379,10 @@ export default function MatchSheetDetailModal({
                 <EventItem key={i}>
                   <Minute>{c.minuto}&apos;</Minute>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <PlayerName style={{ color: '#dc2626' }}>
+                    <PlayerName style={{ color: theme.colors.error }}>
                       ↓ {getPlayerName(players, c.sale)}
                     </PlayerName>
-                    <PlayerName style={{ color: '#16a34a' }}>
+                    <PlayerName style={{ color: theme.colors.success }}>
                       ↑ {getPlayerName(players, c.entra)}
                     </PlayerName>
                   </div>

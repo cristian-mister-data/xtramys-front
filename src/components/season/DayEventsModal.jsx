@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
 import { Stack } from '@/ui/primitives';
@@ -38,7 +38,7 @@ const Dot = styled.span`
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: ${({ $color }) => $color || '#3b82f6'};
+  background: ${({ $color, theme }) => $color || theme.colors.primary};
   flex-shrink: 0;
 `;
 
@@ -79,6 +79,7 @@ export default function DayEventsModal({
   onSessionPress,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const dateLabel = date
     ? date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', {
         weekday: 'long', day: 'numeric', month: 'long',
@@ -104,7 +105,7 @@ export default function DayEventsModal({
             </SectionTitle>
             {matches.map((m) => (
               <Item key={m._id} onClick={() => onMatchPress?.(m)}>
-                <Dot $color={m?.torneoId?.color || '#3b82f6'} />
+                <Dot $color={m?.torneoId?.color || theme.colors.primary} />
                 <Content>
                   <Title>vs {m.rival || '—'}</Title>
                   <Sub>
@@ -123,12 +124,12 @@ export default function DayEventsModal({
 
         {sessions.length > 0 && (
           <Section>
-            <SectionTitle $color="#10b981">
+            <SectionTitle $color={theme.colors.success}>
               🏋 {t('season.trainingSessions', 'Entrenamientos')} ({sessions.length})
             </SectionTitle>
             {sessions.map((s) => (
               <Item key={s._id} onClick={() => onSessionPress?.(s)}>
-                <Dot $color="#10b981" />
+                <Dot $color={theme.colors.success} />
                 <Content>
                   <Title>
                     {t('season.training', 'Entrenamiento')}

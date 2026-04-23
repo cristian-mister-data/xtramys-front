@@ -9,6 +9,7 @@
  * primer click siempre dispara el handler.
  */
 import React from 'react';
+import { createPortal } from 'react-dom';
 import * as RNW from 'react-native-web';
 
 const RNWTouchableOpacity = RNW.TouchableOpacity;
@@ -61,12 +62,111 @@ function makeWebPressableWrapper(Base, displayName) {
 const PatchedTouchableOpacity = makeWebPressableWrapper(RNWTouchableOpacity, 'TouchableOpacity');
 const PatchedPressable = RNWPressable ? makeWebPressableWrapper(RNWPressable, 'Pressable') : RNWPressable;
 
+// Patch Modal: la implementación de Modal de react-native-web sufre un bug
+// de pintado en Chromium/Edge. Tras varios intentos de "forzar repaint" sin
+// éxito, optamos por reemplazarla completamente por una implementación
+// nativa basada en createPortal, equivalente a la usada en ui/Modal.jsx
+// (que sí funciona). Mantiene la API mínima de RN Modal usada en el code-
+// base: visible, transparent, animationType, onRequestClose, onShow,
+// onDismiss, statusBarTranslucent, children, style.
+function PatchedModal({
+  visible,
+  transparent,
+  animationType, // 'none' | 'fade' | 'slide' (slide se trata como fade)
+  onRequestClose,
+  onShow,
+  onDismiss,
+  children,
+  // Props ignoradas en web (válidas solo en nativo): supportedOrientations,
+  // hardwareAccelerated, statusBarTranslucent, presentationStyle, etc.
+  ...rest
+}) {
+  const wasVisibleRef = React.useRef(false);
+
+  // Disparar onShow / onDismiss en transiciones.
+  React.useEffect(() => {
+    if (visible && !wasVisibleRef.current) {
+      wasVisibleRef.current = true;
+      if (typeof onShow === 'function') {
+        try { onShow(); } catch (e) { console.error(e); }
+      }
+    } else if (!visible && wasVisibleRef.current) {
+      wasVisibleRef.current = false;
+      if (typeof onDismiss === 'function') {
+        try { onDismiss(); } catch (e) { console.error(e); }
+      }
+    }
+  }, [visible, onShow, onDismiss]);
+
+  // Cerrar con Escape (equivalente a onRequestClose nativo).
+  React.useEffect(() => {
+    if (!visible || typeof onRequestClose !== 'function') return undefined;
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        try { onRequestClose(); } catch (err) { console.error(err); }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [visible, onRequestClose]);
+
+  // Bloquear scroll del body mientras el modal está visible.
+  React.useEffect(() => {
+    if (!visible) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [visible]);
+
+  if (!visible || typeof document === 'undefined') return null;
+
+  const overlayStyle = {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 9999,
+    backgroundColor: transparent ? 'transparent' : '#fff',
+    animation: animationType && animationType !== 'none'
+      ? 'rnwShimModalFadeIn 150ms ease-out'
+      : undefined,
+    // Garantizar que el modal recibe eventos aunque algún ancestro tuviera
+    // pointer-events: none.
+    pointerEvents: 'auto',
+    // display:flex con flexDirection:column es necesario para que los hijos
+    // que usan `flex: 1` (SafeAreaView, View overlay, etc.) se expandan al
+    // tamaño completo del viewport. Sin esto, los hijos colapsan a su
+    // tamaño natural y el modal aparece pegado a una esquina.
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'stretch',
+  };
+
+  return createPortal(
+    <div style={overlayStyle} {...rest}>
+      {children}
+    </div>,
+    document.body
+  );
+}
+PatchedModal.displayName = 'Modal';
+
+// Inyectar keyframes de fade-in una sola vez (idempotente).
+if (typeof document !== 'undefined' && !document.getElementById('__rnw_shim_modal_styles__')) {
+  const styleEl = document.createElement('style');
+  styleEl.id = '__rnw_shim_modal_styles__';
+  styleEl.textContent = '@keyframes rnwShimModalFadeIn { from { opacity: 0 } to { opacity: 1 } }';
+  document.head.appendChild(styleEl);
+}
+
 // Re-export todo lo demás tal cual.
 export * from 'react-native-web';
 // Sobreescribir los dos componentes problemáticos. Los named exports
 // posteriores ganan sobre los de `export *`.
-export { PatchedTouchableOpacity as TouchableOpacity, PatchedPressable as Pressable };
+export { PatchedTouchableOpacity as TouchableOpacity, PatchedPressable as Pressable, PatchedModal as Modal };
 
 // Default: imitar el namespace original con los reemplazos aplicados.
-const _default = { ...RNW, TouchableOpacity: PatchedTouchableOpacity, Pressable: PatchedPressable };
+const _default = { ...RNW, TouchableOpacity: PatchedTouchableOpacity, Pressable: PatchedPressable, Modal: PatchedModal };
 export default _default;

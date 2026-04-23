@@ -17,11 +17,13 @@ const Cta = styled(Link)`
   padding: 8px 14px;
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.colors.primary};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.onPrimary};
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
-  &:hover { background: ${({ theme }) => theme.colors.primaryLight}; }
+  transition: background 0.15s ease;
+  &:hover { background: ${({ theme }) => theme.colors.primaryHover}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 export default function TeamRequiredCard({ message }) {

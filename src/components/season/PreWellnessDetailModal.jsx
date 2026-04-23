@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import {
   MdFavorite, MdLink, MdContentCopy, MdShare, MdPlayArrow, MdPause,
@@ -18,11 +18,12 @@ import {
 } from '@/api/wellness';
 
 const HeroCard = styled.div`
-  background: linear-gradient(135deg, #ec4899, #db2777);
-  color: #fff;
+  background: linear-gradient(135deg, ${({ theme }) => theme.mode === 'dark' ? '#be185d' : '#ec4899'}, ${({ theme }) => theme.mode === 'dark' ? '#9d174d' : '#db2777'});
+  color: #ffffff;
   padding: 18px 20px;
   border-radius: ${({ theme }) => theme.radius.lg};
   margin-bottom: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
 const StatsGrid = styled.div`
@@ -93,8 +94,16 @@ const StatusPill = styled.span`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $color }) => $color};
+  background: ${({ $tone, theme }) =>
+    theme.colors[$tone === 'success' ? 'successSoft' : 'errorSoft']};
+  color: ${({ $tone, theme }) =>
+    theme.colors[$tone === 'success' ? 'successSoftText' : 'errorSoftText']};
+`;
+
+const ResponseMeta = styled.div`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 2px;
 `;
 
 const ResponseRow = styled.div`
@@ -120,6 +129,7 @@ export default function PreWellnessDetailModal({
   onUpdate,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const sessionId = session?._id;
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -260,7 +270,7 @@ export default function PreWellnessDetailModal({
             </StatBox>
             <StatBox>
               <StatLabel>{t('preWellness.status', 'Estado del enlace')}</StatLabel>
-              <StatValue $color={data?.preWellnessToken ? (isLinkActive ? '#10b981' : '#ef4444') : '#94a3b8'}>
+              <StatValue $color={data?.preWellnessToken ? (isLinkActive ? theme.colors.success : theme.colors.error) : theme.colors.textMuted}>
                 {data?.preWellnessToken
                   ? (isLinkActive ? t('preWellness.linkActive', 'Activo') : t('preWellness.linkInactive', 'Inactivo'))
                   : '—'}
@@ -281,10 +291,7 @@ export default function PreWellnessDetailModal({
               ) : (
                 <Stack $gap={8}>
                   <Row $gap={8} style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                    <StatusPill
-                      $bg={isLinkActive ? '#dcfce7' : '#fee2e2'}
-                      $color={isLinkActive ? '#16a34a' : '#dc2626'}
-                    >
+                    <StatusPill $tone={isLinkActive ? 'success' : 'error'}>
                       {isLinkActive ? <MdCheckCircle /> : <MdCancel />}
                       {isLinkActive ? t('preWellness.linkActive', 'Activo') : t('preWellness.linkInactive', 'Inactivo')}
                     </StatusPill>
@@ -319,11 +326,11 @@ export default function PreWellnessDetailModal({
                       <div style={{ fontWeight: 600, fontSize: 13 }}>
                         {r?.player?.nombre || t('common.player', 'Jugador')} {r?.player?.apellidos || ''}
                       </div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                      <ResponseMeta>
                         {r.createdAt
                           ? new Date(r.createdAt).toLocaleString(i18n.language === 'en' ? 'en-US' : 'es-ES')
                           : ''}
-                      </div>
+                      </ResponseMeta>
                     </div>
                     <Button
                       type="button"

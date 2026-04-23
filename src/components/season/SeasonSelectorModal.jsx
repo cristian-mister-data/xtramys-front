@@ -17,7 +17,7 @@ const Item = styled.button`
   padding: 12px 14px;
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.border};
-  background: ${({ theme, $active }) => $active ? '#eff6ff' : theme.colors.surface};
+  background: ${({ theme, $active }) => $active ? theme.colors.primarySoft : theme.colors.surface};
   cursor: pointer;
   text-align: left;
   &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
@@ -53,6 +53,12 @@ const Footer = styled.div`
   justify-content: flex-end;
 `;
 
+const Check = styled.span`
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 800;
+  font-size: 16px;
+`;
+
 export default function SeasonSelectorModal({
   open,
   onClose,
@@ -74,7 +80,7 @@ export default function SeasonSelectorModal({
                   <Year $active={active}>{formatSeasonYear(s.año)}</Year>
                   <Sub>{s.nombre || t('season.season', 'Temporada')}</Sub>
                 </Info>
-                {active && <span style={{ color: '#2563eb' }}>✓</span>}
+                {active && <Check>✓</Check>}
               </Item>
             );
           })

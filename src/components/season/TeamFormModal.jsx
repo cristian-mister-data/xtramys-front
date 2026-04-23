@@ -36,7 +36,7 @@ const Remove = styled.button`
   position: absolute;
   top: 4px;
   right: 4px;
-  background: rgba(239, 68, 68, 0.95);
+  background: ${({ theme }) => theme.colors.error};
   color: #fff;
   border: 0;
   width: 22px;
@@ -45,6 +45,9 @@ const Remove = styled.button`
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  &:hover { filter: brightness(1.1); }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const ImportRow = styled.label`
@@ -222,9 +225,9 @@ export default function TeamFormModal({
                   >×</Remove>
                 </>
               ) : (
-                <span style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 4 }}>
+                <Muted style={{ fontSize: 12, textAlign: 'center', padding: 4 }}>
                   {t('team.tapToUpload', 'Pulsa para subir')}
-                </span>
+                </Muted>
               )}
             </BadgeBox>
             <input

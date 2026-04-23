@@ -20,7 +20,8 @@ const Icon = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: ${({ $bg }) => $bg};
+  background: ${({ $tone, theme }) =>
+    theme.colors[$tone === 'success' ? 'successSoft' : 'infoSoft']};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,14 +51,14 @@ export default function AddEventModal({ open, onClose, onPickMatch, onPickSessio
     <Modal open={open} onClose={onClose} title={t('season.newEvent', '¿Qué quieres añadir?')} width={460}>
       <Stack style={{ gap: 10 }}>
         <Option type="button" onClick={onPickMatch}>
-          <Icon $bg="#dbeafe">⚽</Icon>
+          <Icon $tone="info">⚽</Icon>
           <Body>
             <Title>{t('matchSheet.create', 'Nuevo partido')}</Title>
             <Sub>{t('matchSheet.createSub', 'Programa un partido amistoso o de competición')}</Sub>
           </Body>
         </Option>
         <Option type="button" onClick={onPickSession}>
-          <Icon $bg="#dcfce7">🏃</Icon>
+          <Icon $tone="success">🏃</Icon>
           <Body>
             <Title>{t('session.create', 'Nuevo entrenamiento')}</Title>
             <Sub>{t('session.createSub', 'Planifica una sesión de entrenamiento')}</Sub>

@@ -27,18 +27,29 @@ export async function printAsync({ html, uri } = {}) {
  * Renderiza el HTML dado en un contenedor offscreen, lo captura con
  * html2canvas y lo divide en páginas A4 dentro de un PDF de jsPDF.
  */
-export async function printToFileAsync({ html } = {}) {
+export async function printToFileAsync({ html, width, height, orientation } = {}) {
   if (!html) {
     const empty = new Blob([''], { type: 'application/pdf' });
     return { uri: URL.createObjectURL(empty), base64: null, numberOfPages: 0 };
   }
 
-  // Crear contenedor offscreen con ancho A4 (~794px @ 96dpi).
+  // Detectar orientación: explícita, o derivada de width/height (expo-print API).
+  // A4 portrait = 595x842pt; landscape = 842x595pt.
+  let resolvedOrientation = orientation;
+  if (!resolvedOrientation && typeof width === 'number' && typeof height === 'number') {
+    resolvedOrientation = width > height ? 'landscape' : 'portrait';
+  }
+  if (resolvedOrientation !== 'landscape') resolvedOrientation = 'portrait';
+
+  // Ancho del contenedor offscreen aproximado a A4 a 96dpi.
+  // Portrait ~794px, landscape ~1123px.
+  const containerWidthPx = resolvedOrientation === 'landscape' ? 1123 : 794;
+
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.left = '-10000px';
   container.style.top = '0';
-  container.style.width = '794px';
+  container.style.width = containerWidthPx + 'px';
   container.style.background = '#ffffff';
   container.innerHTML = html;
   document.body.appendChild(container);
@@ -51,7 +62,7 @@ export async function printToFileAsync({ html } = {}) {
       logging: false,
     });
 
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: resolvedOrientation });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pageWidth;

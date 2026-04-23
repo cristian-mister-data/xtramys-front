@@ -38,7 +38,7 @@ const Badge = styled.div`
 const TeamTitle = styled.div`
   font-weight: 700;
   font-size: 14px;
-  color: #0f172a;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const Pool = styled.div`
@@ -52,8 +52,8 @@ const Chip = styled.button`
   align-items: center;
   gap: 4px;
   border: 1px solid ${({ $sel, $color, theme }) => ($sel ? $color : theme.colors.border)};
-  background: ${({ $sel, $color }) => ($sel ? $color : '#fff')};
-  color: ${({ $sel }) => ($sel ? '#fff' : '#0f172a')};
+  background: ${({ $sel, $color, theme }) => ($sel ? $color : theme.colors.surface)};
+  color: ${({ $sel, theme }) => ($sel ? '#fff' : theme.colors.text)};
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -61,13 +61,15 @@ const Chip = styled.button`
   cursor: pointer;
   opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
   pointer-events: ${({ $disabled }) => ($disabled ? 'none' : 'auto')};
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const SectionLabel = styled.div`
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #64748b;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 6px;
 `;
 

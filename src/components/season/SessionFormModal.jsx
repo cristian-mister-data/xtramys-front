@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import {
   MdAdd, MdArrowUpward, MdArrowDownward, MdDelete, MdGroups, MdImage, MdCheckCircle,
@@ -27,7 +27,7 @@ const SectionTitle = styled.div`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #475569;
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: 8px;
 `;
 
@@ -50,8 +50,8 @@ const Chip = styled.span`
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: #eef2ff;
-  color: #1a237e;
+  background: ${({ theme }) => theme.colors.primarySoft};
+  color: ${({ theme }) => theme.colors.primarySoftText};
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -66,9 +66,11 @@ const ToggleChip = styled.button`
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  background: ${({ $sel }) => ($sel ? '#fff7ed' : '#fff')};
-  color: ${({ $sel }) => ($sel ? '#c2410c' : '#0f172a')};
-  border: 1px solid ${({ $sel }) => ($sel ? '#fb923c' : '#e2e8f0')};
+  background: ${({ $sel, theme }) => ($sel ? theme.colors.warningSoft : theme.colors.surface)};
+  color: ${({ $sel, theme }) => ($sel ? theme.colors.warningSoftText : theme.colors.text)};
+  border: 1px solid ${({ $sel, theme }) => ($sel ? theme.colors.warning : theme.colors.border)};
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const ExerciseRow = styled.div`
@@ -76,7 +78,7 @@ const ExerciseRow = styled.div`
   border-radius: 10px;
   padding: 12px;
   margin-bottom: 10px;
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
 `;
 
 const ExHeader = styled.div`
@@ -88,8 +90,8 @@ const ExHeader = styled.div`
 const Index = styled.div`
   width: 26px; height: 26px;
   border-radius: 50%;
-  background: #1a237e;
-  color: #fff;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.onPrimary};
   display: flex; align-items: center; justify-content: center;
   font-weight: 700;
   font-size: 12px;
@@ -99,9 +101,9 @@ const Index = styled.div`
 const Thumb = styled.div`
   width: 44px; height: 44px;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
   display: flex; align-items: center; justify-content: center;
-  color: #94a3b8;
+  color: ${({ theme }) => theme.colors.textMuted};
   flex-shrink: 0;
   overflow: hidden;
   img { width: 100%; height: 100%; object-fit: cover; }
@@ -115,7 +117,7 @@ const ExBody = styled.div`
 const ExName = styled.div`
   font-weight: 600;
   font-size: 14px;
-  color: #0f172a;
+  color: ${({ theme }) => theme.colors.text};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -123,7 +125,7 @@ const ExName = styled.div`
 
 const ExMeta = styled.div`
   font-size: 12px;
-  color: #64748b;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 2px;
 `;
 
@@ -134,9 +136,10 @@ const IconBtn = styled.button`
   width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  color: #475569;
+  color: ${({ theme }) => theme.colors.textSecondary};
   &:disabled { opacity: 0.4; cursor: not-allowed; }
-  &:hover:not(:disabled) { background: #f1f5f9; }
+  &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.backgroundAlt}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const WellnessRow = styled.div`
@@ -151,17 +154,20 @@ const WellBtn = styled.button`
   width: 40px; height: 40px;
   border-radius: 50%;
   border: 1px solid ${({ $sel, $color, theme }) => ($sel ? $color : theme.colors.border)};
-  background: ${({ $sel, $color }) => ($sel ? $color : '#fff')};
-  color: ${({ $sel }) => ($sel ? '#fff' : '#0f172a')};
+  background: ${({ $sel, $color, theme }) => ($sel ? $color : theme.colors.surface)};
+  color: ${({ $sel, theme }) => ($sel ? '#fff' : theme.colors.text)};
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.1s ease;
+  &:hover { transform: scale(1.05); }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
-const wellnessColor = (n) => {
-  if (n <= 3) return '#ef4444';
-  if (n <= 5) return '#f59e0b';
-  if (n <= 7) return '#3b82f6';
-  return '#10b981';
+const wellnessColor = (n, theme) => {
+  if (n <= 3) return theme.colors.error;
+  if (n <= 5) return theme.colors.warning;
+  if (n <= 7) return theme.colors.primary;
+  return theme.colors.success;
 };
 
 const isoToDate = (iso) => {
@@ -243,6 +249,7 @@ export default function SessionFormModal({
   onDelete,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const dispatch = useDispatch();
 
   const user = useSelector((s) => s.usuario.user);
@@ -611,7 +618,7 @@ export default function SessionFormModal({
                     key={n}
                     type="button"
                     $sel={expectedWellness === n}
-                    $color={wellnessColor(n)}
+                    $color={wellnessColor(n, theme)}
                     onClick={() => toggleWellness(n)}
                   >
                     {n}

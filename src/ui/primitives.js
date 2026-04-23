@@ -6,18 +6,22 @@ export const Card = styled.div`
   border-radius: ${({ theme }) => theme.radius.lg};
   padding: 32px;
   box-shadow: ${({ theme }) => theme.shadows.md};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 export const Title = styled.h1`
   margin: 0 0 8px;
   font-size: 24px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
+  letter-spacing: -0.01em;
 `;
 
 export const Subtitle = styled.p`
   margin: 0 0 24px;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
+  line-height: 1.5;
 `;
 
 export const Field = styled.div`
@@ -33,71 +37,127 @@ export const Label = styled.label`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-export const Input = styled.input`
+const inputBase = css`
+  width: 100%;
   padding: 10px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.radius.md};
   background: ${({ theme }) => theme.colors.inputBg};
   color: ${({ theme }) => theme.colors.text};
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
   font-size: 14px;
+  font-family: inherit;
 
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.inputPlaceholder};
+  }
+
+  &:hover:not(:disabled):not(:focus) {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
+
+  &:focus,
+  &:focus-visible {
+    border-color: ${({ theme }) => theme.colors.borderFocus};
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+
+  &:disabled {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    color: ${({ theme }) => theme.colors.textDisabled};
+    cursor: not-allowed;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: ${({ theme }) => theme.colors.error};
+    &:focus {
+      box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.errorSoft};
+    }
   }
 `;
 
+export const Input = styled.input`${inputBase}`;
 export const TextArea = styled.textarea`
-  padding: 10px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ theme }) => theme.colors.inputBg};
-  color: ${({ theme }) => theme.colors.text};
-  outline: none;
-  font-family: inherit;
-  font-size: 14px;
+  ${inputBase}
   min-height: 90px;
   resize: vertical;
-  &:focus { border-color: ${({ theme }) => theme.colors.primary}; }
 `;
 
 export const Button = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 10px 16px;
   border-radius: ${({ theme }) => theme.radius.md};
   font-weight: 600;
   font-size: 14px;
-  transition: transform 0.05s, opacity 0.15s, background 0.15s;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: transform 0.05s ease, opacity 0.15s ease,
+    background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   border: 1px solid transparent;
+  white-space: nowrap;
 
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
   &:not(:disabled):active { transform: translateY(1px); }
 
-  ${({ $variant = 'primary', theme }) =>
-    $variant === 'primary'
-      ? css`
-          background: ${theme.colors.primary};
-          color: #fff;
-          &:hover:not(:disabled) { background: ${theme.colors.primaryLight}; }
-        `
-      : $variant === 'secondary'
-        ? css`
-            background: ${theme.colors.surface};
-            color: ${theme.colors.text};
-            border-color: ${theme.colors.border};
-            &:hover:not(:disabled) { background: ${theme.colors.backgroundAlt}; }
-          `
-        : $variant === 'danger'
-          ? css`
-              background: ${theme.colors.error};
-              color: #fff;
-              &:hover:not(:disabled) { opacity: 0.9; }
-            `
-          : css`
-              background: transparent;
-              color: ${theme.colors.primary};
-              &:hover:not(:disabled) { text-decoration: underline; }
-            `}
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+
+  ${({ $variant = 'primary', theme }) => {
+    if ($variant === 'primary') {
+      return css`
+        background: ${theme.colors.primary};
+        color: ${theme.colors.onPrimary};
+        &:hover:not(:disabled) { background: ${theme.colors.primaryHover}; }
+        &:active:not(:disabled) { background: ${theme.colors.primaryActive}; }
+      `;
+    }
+    if ($variant === 'secondary') {
+      return css`
+        background: ${theme.colors.surface};
+        color: ${theme.colors.text};
+        border-color: ${theme.colors.border};
+        &:hover:not(:disabled) {
+          background: ${theme.colors.backgroundAlt};
+          border-color: ${theme.colors.borderStrong};
+        }
+      `;
+    }
+    if ($variant === 'danger') {
+      return css`
+        background: ${theme.colors.error};
+        color: ${theme.colors.onError};
+        &:hover:not(:disabled) { filter: brightness(1.08); }
+      `;
+    }
+    if ($variant === 'success') {
+      return css`
+        background: ${theme.colors.success};
+        color: ${theme.colors.onSuccess};
+        &:hover:not(:disabled) { filter: brightness(1.08); }
+      `;
+    }
+    if ($variant === 'ghost') {
+      return css`
+        background: transparent;
+        color: ${theme.colors.text};
+        &:hover:not(:disabled) { background: ${theme.colors.backgroundAlt}; }
+      `;
+    }
+    // link
+    return css`
+      background: transparent;
+      color: ${theme.colors.primary};
+      padding: 4px 8px;
+      &:hover:not(:disabled) { text-decoration: underline; }
+    `;
+  }}
 `;
 
 export const Row = styled.div`
@@ -136,5 +196,40 @@ export const PageHeader = styled.div`
 export const PageTitle = styled.h1`
   margin: 0;
   font-size: 22px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
+  letter-spacing: -0.01em;
+`;
+
+// Badge / pill para estados (semántica accesible).
+export const Badge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: ${({ theme }) => theme.radius.full};
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  ${({ $tone = 'neutral', theme }) => {
+    const map = {
+      neutral: { bg: theme.colors.backgroundAlt, fg: theme.colors.textSecondary },
+      primary: { bg: theme.colors.primarySoft, fg: theme.colors.primarySoftText },
+      success: { bg: theme.colors.successSoft, fg: theme.colors.successSoftText },
+      warning: { bg: theme.colors.warningSoft, fg: theme.colors.warningSoftText },
+      error:   { bg: theme.colors.errorSoft,   fg: theme.colors.errorSoftText },
+      info:    { bg: theme.colors.infoSoft,    fg: theme.colors.infoSoftText },
+    };
+    const { bg, fg } = map[$tone] || map.neutral;
+    return css`background: ${bg}; color: ${fg};`;
+  }}
+`;
+
+// Divider visual sutil
+export const Divider = styled.div`
+  height: 1px;
+  background: ${({ theme }) => theme.colors.border};
+  margin: ${({ $vertical }) => ($vertical ? '0 12px' : '12px 0')};
+  ${({ $vertical }) => $vertical && 'width: 1px; height: auto; align-self: stretch;'}
 `;

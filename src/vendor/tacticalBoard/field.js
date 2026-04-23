@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+﻿import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, Pressable, Image, TextInput,
@@ -745,7 +745,7 @@ const FORMATIONS_BY_PLAYER_COUNT = {
   11: FORMATIONS,
 };
 
-// Legacy helper removed — field selection now uses lineType + viewMode directly
+// Legacy helper removed "” field selection now uses lineType + viewMode directly
 
 // Función para obtener los iconos iniciales con etiquetas traducidas
 const getInitialIcons = () => [
@@ -1626,7 +1626,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>📝</Text>
+                    <Text style={{ fontSize: 14 }}>ðŸ“</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.textPanel.title')}
@@ -1928,7 +1928,7 @@ function ConnectorsModal({
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>🔗</Text>
+                    <Text style={{ fontSize: 14 }}>ðŸ”—</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.connectors.title')}
@@ -2077,7 +2077,7 @@ function ConnectorsModal({
                         <View key={connector.id} style={styles.connectorItem}>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.connectorItemText} numberOfLines={1}>
-                              {getElementLabel(connector.fromId)} → {getElementLabel(connector.toId)}
+                              {getElementLabel(connector.fromId)} â†’ {getElementLabel(connector.toId)}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                               <View style={[styles.connectorColorPreview, { backgroundColor: connector.color }]} />
@@ -2133,7 +2133,7 @@ function ConnectorsModal({
 }
 
 // =====================================================
-// COMPONENTE PARA RENDERIZAR LAS LÍNEAS DE CONECTORES
+// COMPONENTE PARA RENDERIZAR LAS LÃNEAS DE CONECTORES
 // =====================================================
 const ConnectorsRenderer = React.memo(({ 
   connectors, 
@@ -2344,7 +2344,7 @@ function SettingsPanel({
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>⚙️</Text>
+                    <Text style={{ fontSize: 14 }}>⚙️</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.settings.title')}
@@ -2394,7 +2394,7 @@ function SettingsPanel({
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 16, marginRight: 8 }}>🔗</Text>
+                      <Text style={{ fontSize: 16, marginRight: 8 }}>ðŸ”—</Text>
                       <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
                         {t('tacticalBoard.connectors.title')}
                       </Text>
@@ -3389,7 +3389,7 @@ function LeftEditPanel({
                     
                     // Si es un material de la paleta (isMaterialPalette)
                     if (icon.isMaterialPalette) {
-                      // Actualizar la configuración de materiales
+                      // Actualizar la Configuración de materiales
                       if (onMaterialsConfigUpdate) {
                         onMaterialsConfigUpdate(icon.materialType || icon.type, {
                           color: updatedIcon.color,
@@ -3516,7 +3516,7 @@ function LockedElementsPanel({
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>🔒</Text>
+                    <Text style={{ fontSize: 14 }}>ðŸ”’</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
@@ -3697,8 +3697,8 @@ function LockedElementsPanel({
                               element.type === 'weights' ? 'Pesas' :
                               'Desconocido'
                             }
-                            {element.size && ` • Tamaño: ${element.size}`}
-                            {element.thickness && ` • Grosor: ${element.thickness}`}
+                            {element.size && ` "¢ Tamaño: ${element.size}`}
+                            {element.thickness && ` "¢ Grosor: ${element.thickness}`}
                           </Text>
                           <View style={styles.lockedElementBadge}>
                             <Feather name="lock" size={12} color="#f39c12" />
@@ -4034,7 +4034,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                   ))}
                 </View>
 
-                {/* Panel de configuración */}
+                {/* Panel de Configuración */}
                 {showSettings && (
                   <View style={[styles.proModalCard, { margin: 12, marginBottom: 8 }]}>
                     <Text style={styles.proModalSectionTitle}>
@@ -4168,7 +4168,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       </View>
                     )}
 
-                    {/* Botón para guardar la configuración en la base de datos */}
+                    {/* Botón para guardar la Configuración en la base de datos */}
                     <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end' }}>
                       <TouchableOpacity
                         onPress={async () => {
@@ -4722,7 +4722,7 @@ function FieldCarouselModal({
             {/* Header */}
             <View style={styles.proModalHeader}>
               <View style={styles.proModalHeaderIcon}>
-                <Text style={{ fontSize: 16 }}>🏟️</Text>
+                <Text style={{ fontSize: 16 }}>ðŸŸï¸</Text>
               </View>
               <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                 {t('field.selectField')}
@@ -5162,7 +5162,7 @@ const DraggableIcon = React.memo(({
   drawingStates,
   multiSelectMode,
   selectedCloneIds,
-  selectedCloneIdsSet, // OPTIMIZACIÓN: Set para búsqueda O(1)
+  selectedCloneIdsSet, // OPTIMIZACIÃ“N: Set para búsqueda O(1)
   setSelectedCloneIds,
   cancelSelection,
   selectionInteractionMode,
@@ -5209,7 +5209,7 @@ const DraggableIcon = React.memo(({
                         drawingStates?.drawingCircle || drawingStates?.drawingRectangle || 
                         drawingStates?.drawingCustomShape || drawingStates?.eraserMode;
   
-  // OPTIMIZACIÓN: Usar Set para búsqueda O(1) si está disponible
+  // OPTIMIZACIÃ“N: Usar Set para búsqueda O(1) si está disponible
   const isSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id);
   const canDrag = !icon.locked && !isDrawingMode && 
                   (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
@@ -5802,7 +5802,7 @@ function distanceToLineSegment(px, py, x1, y1, x2, y2) {
 }
 
 // =====================================================
-// COMPONENTES MEMOIZADOS PARA LÍNEAS - OPTIMIZACIÓN CRÍTICA
+// COMPONENTES MEMOIZADOS PARA LÃNEAS - OPTIMIZACIÃ“N CRÃTICA
 // =====================================================
 
 // Componente memoizado para líneas rectas - evita re-renders innecesarios
@@ -6152,7 +6152,7 @@ function arraysEqual(a, b) {
 }
 
 // =====================================================
-// COMPONENTE MEMOIZADO PARA DETECTORES DE LÍNEAS RECTAS
+// COMPONENTE MEMOIZADO PARA DETECTORES DE LÃNEAS RECTAS
 // =====================================================
 const MemoizedStraightLineDetector = React.memo(({
   icon,
@@ -6197,7 +6197,7 @@ const MemoizedStraightLineDetector = React.memo(({
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
   
-  // Área de toque MUY estrecha, justo en el trazado
+  // Ãrea de toque MUY estrecha, justo en el trazado
 const touchTolerance = Math.max(lineThickness / 2 + 5, 8); // Solo 5px extra del grosor
   const touchAreaWidth = distance;
   const touchAreaHeight = Math.max(lineThickness + 10, 16); // Mínimo 16px
@@ -6406,7 +6406,7 @@ const touchTolerance = Math.max(lineThickness / 2 + 5, 8); // Solo 5px extra del
 });
 
 // =====================================================
-// COMPONENTE MEMOIZADO PARA DETECTORES DE LÍNEAS CURVAS
+// COMPONENTE MEMOIZADO PARA DETECTORES DE LÃNEAS CURVAS
 // =====================================================
 const MemoizedCurveLineDetector = React.memo(({
   icon,
@@ -6723,7 +6723,7 @@ const lineThickness = (icon.thickness || 2) * scale;
 });
 
 // =====================================================
-// COMPONENTES SVG MEMOIZADOS PARA CÍRCULOS Y RECTÁNGULOS
+// COMPONENTES SVG MEMOIZADOS PARA CÃRCULOS Y RECTÃNGULOS
 // =====================================================
 
 // Círculo SVG memoizado - solo renderiza el SVG
@@ -7002,7 +7002,7 @@ const BatchShapesRenderer = React.memo(({
 });
 
 // =====================================================
-// DETECTORES MEMOIZADOS PARA FIGURAS GEOMÉTRICAS
+// DETECTORES MEMOIZADOS PARA FIGURAS GEOMÃ‰TRICAS
 // =====================================================
 
 // Detector memoizado para círculos
@@ -7736,7 +7736,7 @@ const MemoizedRectangleDetector = React.memo(({
   (prev.selectedCloneIdsSet?.has(prev.icon.id) === next.selectedCloneIdsSet?.has(next.icon.id))
 ));
 
-// Detector memoizado para custom shapes - Solo detecta toques en el PERÍMETRO
+// Detector memoizado para custom shapes - Solo detecta toques en el PERÃMETRO
 const MemoizedCustomShapeDetector = React.memo(({
   icon, imageWidth, imageHeight, viewMode, selectedCloneId, setSelectedCloneId, setClones, dragStart,
   clones, selectedCloneIds, selectedCloneIdsSet, multiSelectMode, selectionInteractionMode,
@@ -8135,7 +8135,7 @@ export default function Field(props = {}) {
     // Capturar referencias locales: si pasamos `() => global.fieldCallbacks.onSave`
     // a setState, React lo trata como functional updater y lo invoca al flush.
     // Para entonces el cleanup (strict mode doble mount) ya puede haber nulado
-    // global.fieldCallbacks → crash. Capturando aquí evitamos ese race.
+    // global.fieldCallbacks â†’ crash. Capturando aquí evitamos ese race.
     const cb = global.fieldCallbacks;
     const savedOnSave = cb && cb.onSave ? cb.onSave : null;
     const savedOnCancel = cb && cb.onCancel ? cb.onCancel : null;
@@ -8154,7 +8154,7 @@ export default function Field(props = {}) {
     if (savedOnCancel) setCancelCallback(() => savedOnCancel);
 
     // NOTA: NO nulamos global.fieldCallbacks en cleanup. En React 18 strict
-    // mode dev el efecto se ejecuta dos veces (mount→cleanup→mount), y si
+    // mode dev el efecto se ejecuta dos veces (mountâ†’cleanupâ†’mount), y si
     // nulamos en el primer cleanup el segundo mount no encuentra los
     // callbacks. El próximo `handleOpenField` siempre reasigna fresco.
   }, [sandbox, editVideoData]);
@@ -8258,7 +8258,7 @@ export default function Field(props = {}) {
   }, [])
   );
 
-  // Efecto para controlar el estado de carga — SVG fields render instantly
+  // Efecto para controlar el estado de carga "” SVG fields render instantly
   // (defined here, but runs after render when fieldLineType/viewMode are available)
 
   const dimensions = useScreenDimensions();
@@ -8361,7 +8361,7 @@ export default function Field(props = {}) {
     goalkeeperStripeColor: '#ffffff',
     showPhotos: false
   });
-  // Estado para configuración de materiales de entrenamiento (colores personalizados)
+  // Estado para Configuración de materiales de entrenamiento (colores personalizados)
   const [materialsConfig, setMaterialsConfig] = useState({
     'cone-pro': { color: '#FF6B00', size: 18 },
     'cone-flat': { color: '#FF6B00', size: 24 },
@@ -8374,7 +8374,7 @@ export default function Field(props = {}) {
   const [videoKeyframes, setVideoKeyframes] = useState([]); // Estado para persistir keyframes
   const [formationModalVisible, setFormationModalVisible] = useState(false);
   
-  // Estado para configuración de formaciones (número vs posición, etiquetas personalizadas, color del número)
+  // Estado para Configuración de formaciones (número vs posición, etiquetas personalizadas, color del número)
   const [formationSettings, setFormationSettings] = useState({
     displayMode: 'number', // 'number' o 'position'
     customLabels: { ...getDefaultPositionLabels() },
@@ -8383,7 +8383,7 @@ export default function Field(props = {}) {
     textBackgroundColor: '#ffffff'
   });
 
-  // Estado para configuración de la pizarra (colores y tamaños de iconos de jugadores)
+  // Estado para Configuración de la pizarra (colores y tamaños de iconos de jugadores)
   const [boardSettings, setBoardSettings] = useState({
     playerIcon1: { color: '#2176ff', size: 24 },
     playerIcon2: { color: '#ff3838', size: 24 },
@@ -8395,7 +8395,7 @@ export default function Field(props = {}) {
   const [connectors, setConnectors] = useState([]);
   const [connectorsModalVisible, setConnectorsModalVisible] = useState(false);
 
-  // Persistir formación en configuración de usuario (debounced)
+  // Persistir formación en Configuración de usuario (debounced)
   useEffect(() => {
     let timer = setTimeout(async () => {
       try {
@@ -8420,7 +8420,7 @@ export default function Field(props = {}) {
   const userSettingsLoadedRef = useRef(false);
 
   // Sincronizar teamPlayerStyle con boardSettings.teamPlayers cuando cambie
-  // Solo sincronizar DESPUÉS de que se hayan cargado los datos del usuario
+  // Solo sincronizar DESPUÃ‰S de que se hayan cargado los datos del usuario
   useEffect(() => {
     if (!userSettingsLoadedRef.current) return;
     
@@ -8440,7 +8440,7 @@ export default function Field(props = {}) {
   }, [teamPlayerStyle]);
   
   // ViewShot refs para video
-  const fieldRef = useRef(null); // Ref para el campo completo (con elementos) — se wirea al ViewShot
+  const fieldRef = useRef(null); // Ref para el campo completo (con elementos) "” se wirea al ViewShot
   const fieldBaseRef = useRef(null); // Ref para el campo base (sin overlays)
 
   // Control ref para generación de video client-side
@@ -8464,7 +8464,7 @@ export default function Field(props = {}) {
     }
     keepVideoChangesRef.current = false;
     setVideoRecorderVisible(true);
-  }, []); // Sin [clones] — usa actualClonesRef
+  }, []); // Sin [clones] "” usa actualClonesRef
 
   // Guardado inmediato de formationSettings (botón Guardar)
   const handleSaveFormationSettings = useCallback(async () => {
@@ -8484,7 +8484,7 @@ export default function Field(props = {}) {
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
-      Alert.alert(t('message.error'), t('formations.saveError') || 'Error al guardar la configuración');
+      Alert.alert(t('message.error'), t('formations.saveError') || 'Error al guardar la Configuración');
     }
   }, [dispatch, formationSettings, t]);
 
@@ -8535,11 +8535,11 @@ export default function Field(props = {}) {
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
-      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la configuración');
+      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la Configuración');
     }
   }, [dispatch, boardSettings, t]);
 
-  // Cargar configuración guardada del usuario al entrar a la pantalla
+  // Cargar Configuración guardada del usuario al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
       const loadUserSettings = async () => {
@@ -8700,7 +8700,7 @@ export default function Field(props = {}) {
     // Resetear la referencia de carga de usuario para que al volver a entrar cargue datos frescos
     userSettingsLoadedRef.current = false;
     
-    // Resetear configuración de dibujo a valores por defecto
+    // Resetear Configuración de dibujo a valores por defecto
     setLineType('solid');
     setDotSize(2);
     setDotSpacing(4);
@@ -8709,7 +8709,7 @@ export default function Field(props = {}) {
     setStandardSize(24);
     setPlayersWithNumber(true);
     
-    // Resetear estilos de jugadores y configuración de pizarra a valores por defecto
+    // Resetear estilos de jugadores y Configuración de pizarra a valores por defecto
     setTeamPlayerStyle({
       color: '#2176ff',
       size: 24,
@@ -8978,7 +8978,7 @@ export default function Field(props = {}) {
     }
   }, [videoKeyframes, snapshotToClone, clearMultiSelect]);
 
-  // ─── Video frame control para captura client-side ───
+  // â”€â”€â”€ Video frame control para captura client-side â”€â”€â”€
   // Se actualiza en cada render para que siempre tenga las funciones más recientes
   videoFrameControlRef.current = {
     // Pone un snapshot de elementos en el campo SIN tocar el historial de undo
@@ -9070,7 +9070,7 @@ export default function Field(props = {}) {
   }, [videoKeyframes, snapshotToClone, clearMultiSelect]);  
 
   // =====================================================
-  // CARGA DE VIDEO PARA EDICIÓN
+  // CARGA DE VIDEO PARA EDICIÃ“N
   // =====================================================
   // Ref para almacenar el ID del último video cargado (para detectar cambios)
   const lastLoadedVideoIdRef = useRef(null);
@@ -9160,32 +9160,32 @@ export default function Field(props = {}) {
     }, [fieldLineType, viewMode, snapshotToClone])
   );
   // =====================================================
-  // FIN CARGA DE VIDEO PARA EDICIÓN
+  // FIN CARGA DE VIDEO PARA EDICIÃ“N
   // =====================================================
 
   const handleZoomIn = useCallback(() => {
     setZoomLevel(prev => Math.min(prev + 0.2, 3));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handleZoomOut = useCallback(() => {
     setZoomLevel(prev => Math.max(prev - 0.2, 1));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handlePanLeft = useCallback(() => {
     setPanOffset(prev => ({ ...prev, x: prev.x + 30 }));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handlePanRight = useCallback(() => {
     setPanOffset(prev => ({ ...prev, x: prev.x - 30 }));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handlePanUp = useCallback(() => {
     setPanOffset(prev => ({ ...prev, y: prev.y + 30 }));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handlePanDown = useCallback(() => {
     setPanOffset(prev => ({ ...prev, y: prev.y - 30 }));
-  }, []); // Array de dependencias VACÍO
+  }, []); // Array de dependencias VACÃO
 
   const handleResetView = useCallback(() => {
     setZoomLevel(1);
@@ -9314,7 +9314,7 @@ export default function Field(props = {}) {
     eraserMode
   }), [drawingStraightArrow, drawingStraightLine, drawingCurveArrow, drawingCurveLine, drawingCircle, drawingRectangle, drawingCustomShape, eraserMode]);
   
-  // OPTIMIZACIÓN: Set de IDs seleccionados para búsqueda O(1)
+  // OPTIMIZACIÃ“N: Set de IDs seleccionados para búsqueda O(1)
   const selectedCloneIdsSet = useMemo(() => new Set(selectedCloneIds), [selectedCloneIds]);
   
   // Función para deseleccionar cualquier herramienta de dibujo activa
@@ -9379,10 +9379,10 @@ export default function Field(props = {}) {
   const MAX_HISTORY_SIZE = 50; // Máximo de estados en el historial
   // El historial ahora guarda objetos con { clones, connectors }
   const historyRef = useRef([JSON.stringify({ clones: actualClones, connectors: [] })]); // Historial de estados
-  const historyIndexRef = useRef(0); // Índice actual en el historial
+  const historyIndexRef = useRef(0); // Ãndice actual en el historial
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors: [] })); // Último estado guardado
+  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors: [] })); // Ãšltimo estado guardado
   const debounceTimerRef = useRef(null); // Timer para debounce
   const pendingStateRef = useRef(null); // Estado pendiente de guardar
   const DEBOUNCE_DELAY = 300; // ms - tiempo para agrupar cambios de drag
@@ -9449,7 +9449,7 @@ export default function Field(props = {}) {
 
   // =====================================================
   // SISTEMA IMPERATIVO DE GUARDADO DE HISTORIAL
-  // No usa useEffect sobre actualClones — evita "Maximum update depth exceeded"
+  // No usa useEffect sobre actualClones "” evita "Maximum update depth exceeded"
   // El historial se guarda explícitamente:
   //   1) Desde setClones (diferido, solo si no hay drag activo)
   //   2) Desde saveClonesHistory (llamado explícitamente al finalizar cualquier drag)
@@ -9464,7 +9464,7 @@ export default function Field(props = {}) {
     saveToHistoryDebounced(actualClonesRef.current, connectorsRef.current);
   }, [saveToHistoryDebounced]);
 
-  // Ref estable para saveClonesHistory — permite que setClones no dependa de saveClonesHistory
+  // Ref estable para saveClonesHistory "” permite que setClones no dependa de saveClonesHistory
   // y así setClones tenga identidad estable (evita que todos los hijos re-rendericen por cambio de callback)
   const saveClonesHistoryRef = useRef(saveClonesHistory);
   saveClonesHistoryRef.current = saveClonesHistory;
@@ -9472,7 +9472,7 @@ export default function Field(props = {}) {
   // Timer para guardado diferido (se programa desde setClones cuando no hay drag)
   const historyIdleTimerRef = useRef(null);
 
-  // Wrapper de setClones PURO — sin side effects en el state updater.
+  // Wrapper de setClones PURO "” sin side effects en el state updater.
   // Programa guardado de historial solo cuando NO hay drag activo.
   // Durante drag, el guardado se delega al handler de fin de drag (saveClonesHistory).
   const setClones = useCallback((updater) => {
@@ -9485,7 +9485,7 @@ export default function Field(props = {}) {
         saveClonesHistoryRef.current();
       }, 0);
     }
-  }, []); // SIN dependencias — identidad 100% estable
+  }, []); // SIN dependencias "” identidad 100% estable
   
   // Función UNDO optimizada (restaura clones y conectores)
   const undo = useCallback(() => {
@@ -9886,7 +9886,7 @@ export default function Field(props = {}) {
         icon: icon
       });
 
-      // Cargar configuración guardada en la paleta (si existe)
+      // Cargar Configuración guardada en la paleta (si existe)
       const pIcon = paletteIcons[paletteIndex] || icon || {};
       setLineType(pIcon.lineType ? pIcon.lineType : 'solid');
       setDotSize((pIcon.dotSize !== undefined && pIcon.dotSize !== null) ? pIcon.dotSize : 2);
@@ -9946,8 +9946,8 @@ export default function Field(props = {}) {
       );
     }
     
-    // Usar la configuración actual de la paleta (color, tamaño, thickness)
-    // Obtener el icono actualizado de la paleta para usar su configuración más reciente
+    // Usar la Configuración actual de la paleta (color, tamaño, thickness)
+    // Obtener el icono actualizado de la paleta para usar su Configuración más reciente
     const currentPaletteIcon = paletteIcons[paletteIndex];
     
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
@@ -9978,7 +9978,7 @@ export default function Field(props = {}) {
   
   // Función para manejar la selección de un jugador del equipo
   const handleSelectPlayer = (player) => {
-    // Determinar la etiqueta a mostrar según la configuración
+    // Determinar la etiqueta a mostrar según la Configuración
     let displayLabel = undefined;
     if (teamPlayerStyle.showPosition && player.posicion) {
       // Obtener abreviatura de posición
@@ -10021,7 +10021,7 @@ export default function Field(props = {}) {
 
   // Función para manejar la selección de un material de entrenamiento
   const handleSelectMaterial = useCallback((material) => {
-    // Obtener configuración personalizada del material
+    // Obtener Configuración personalizada del material
     const customConfig = materialsConfig[material.type] || {};
     
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
@@ -10096,7 +10096,7 @@ export default function Field(props = {}) {
     setLeftPanelVisible(true);
   }, [materialsConfig]);
 
-  // Manejador para actualizar configuración de materiales desde el panel de edición
+  // Manejador para actualizar Configuración de materiales desde el panel de edición
   const handleMaterialsConfigUpdate = useCallback((materialType, newConfig) => {
     setMaterialsConfig(prev => ({
       ...prev,
@@ -10132,7 +10132,7 @@ export default function Field(props = {}) {
 
     const { type, icon, paletteIndex } = pendingLineAction;
 
-    // Actualizar solo el estilo global si el tipo de elemento es uno que utiliza la configuración global
+    // Actualizar solo el estilo global si el tipo de elemento es uno que utiliza la Configuración global
     const GLOBAL_STYLE_TYPES = ['straight-arrow','straight-line','curve-arrow','curve-line','circle','rectangle'];
     if (GLOBAL_STYLE_TYPES.includes(type)) {
       setLineType(lineType);
@@ -10162,7 +10162,7 @@ export default function Field(props = {}) {
     // Guardar el grosor para usar al dibujar
     setArrowThickness((thickness !== undefined && thickness !== null) ? thickness : (parseInt(icon.thickness) || 2));
     
-    // Guardar la configuración de estilo en pendingLineAction para usarla después
+    // Guardar la Configuración de estilo en pendingLineAction para usarla después
     setPendingLineAction(prev => prev ? { 
       ...prev, 
       icon: { 
@@ -10179,7 +10179,7 @@ export default function Field(props = {}) {
     // Cerrar la paleta de elementos
     setPaletteVisible(false);
     
-    // Activar el modo de dibujo correspondiente y guardar la configuración
+    // Activar el modo de dibujo correspondiente y guardar la Configuración
     if (type === 'straight-arrow') {
       setDrawingStraightArrow(true);
       setDrawingStraightLine(false);
@@ -10271,7 +10271,7 @@ export default function Field(props = {}) {
       if (distance <= 15) {
         const uniqueId = `custom-shape-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        // Obtener configuración de la paleta
+        // Obtener Configuración de la paleta
         const paletteIcon = paletteIcons.find(ic => ic.type === 'custom-shape-button');
         const paletteIndex = paletteIcons.findIndex(ic => ic.type === 'custom-shape-button');
         
@@ -10341,7 +10341,7 @@ export default function Field(props = {}) {
   }, [drawingCustomShape, isPreviewingPoint, previewPoint]);
 
   function renderCustomShape({ icon, imageWidth, imageHeight }) {
-    // VALIDACIÓN ESTRICTA con la bandera de completado
+    // VALIDACIÃ“N ESTRICTA con la bandera de completado
     if (!icon.isCustomShapeComplete || 
         !icon.points || 
         icon.points.length < 3 || 
@@ -10503,9 +10503,9 @@ onPress: async () => {
     }
   }, [navigation, cancelCallback, clones.length, videoKeyframes.length]);
 
-  // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG → base64 via ViewShot)
+  // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG â†’ base64 via ViewShot)
   useEffect(() => {
-    // SVG fields are instant — mark ready immediately
+    // SVG fields are instant "” mark ready immediately
     setFieldImageReady(true);
     setIsLoadingField(false);
     
@@ -10536,7 +10536,7 @@ onPress: async () => {
     }
     keepVideoChangesRef.current = false;
     setVideoRecorderVisible(true);
-  }, []); // Sin [clones] — usa actualClonesRef
+  }, []); // Sin [clones] "” usa actualClonesRef
   
   // Función para cerrar el grabador de video
   const handleCloseVideoRecorder = useCallback(() => {
@@ -10544,7 +10544,7 @@ onPress: async () => {
     setFieldImageForVideo(null);
 
     // Restaurar clones originales si el usuario NO aplicó cambios permanentemente
-    // Esto SÍ se guarda en el historial para poder hacer undo
+    // Esto SÃ se guarda en el historial para poder hacer undo
     if (!keepVideoChangesRef.current && savedClonesOriginalRef.current) {
       try {
         const toRestore = Array.isArray(savedClonesOriginalRef.current)
@@ -10649,7 +10649,7 @@ onPress: async () => {
       }
       return newMode;
     });
-  }, [selectedCloneId, exitDrawingMode, handleDeselectDrawingTool]); // Sin [clones] — usa actualClonesRef
+  }, [selectedCloneId, exitDrawingMode, handleDeselectDrawingTool]); // Sin [clones] "” usa actualClonesRef
   
   // Función para limpiar selección múltiple
   const clearSelection = useCallback(() => {
@@ -10709,7 +10709,7 @@ onPress: async () => {
     clearSelection();
     // Desactivar el modo multi-select después de borrar
     setMultiSelectMode(false);
-  }, [selectedCloneIds, clearSelection]); // Sin [clones] — usa actualClonesRef
+  }, [selectedCloneIds, clearSelection]); // Sin [clones] "” usa actualClonesRef
   
   // Helper: obtener coords del evento relativas al overlay.
   // En react-native-web, locationX/locationY a veces es undefined en eventos de mouse,
@@ -10824,7 +10824,7 @@ onPress: async () => {
       const strokeTolerance = (clone.thickness || clone.size || 0) / 2;
       const pad = Math.max(2, padding) + strokeTolerance;
 
-      // CÍRCULOS: verificar si la circunferencia está contenida
+      // CÃRCULOS: verificar si la circunferencia está contenida
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
@@ -10845,7 +10845,7 @@ onPress: async () => {
         );
       }
 
-      // RECTÁNGULOS: verificar si el perímetro está contenido
+      // RECTÃNGULOS: verificar si el perímetro está contenido
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
@@ -10945,7 +10945,7 @@ onPress: async () => {
   //
   // - Overlay div nativo (en JSX) escucha pointer events.
   // - Rectángulo de selección dibujado por DOM puro durante el drag,
-  //   sin tocar React state hasta el pointerup → cero re-renders intra-drag.
+  //   sin tocar React state hasta el pointerup â†’ cero re-renders intra-drag.
   // - Detección de elementos contenidos vía función pura `findContainedIds`
   //   que lee refs estables (actualClonesRef, refs de tamaño/viewMode).
   // - Listeners attachados al `window` para move/up: el browser garantiza
@@ -10983,7 +10983,7 @@ onPress: async () => {
       const pad = padding + strokeTol;
       const L = rectLeft - pad, R = rectRight + pad, T = rectTop - pad, B = rectBottom + pad;
 
-      // CÍRCULOS
+      // CÃRCULOS
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -10996,7 +10996,7 @@ onPress: async () => {
         return circleIn(cx, cy, radius + strokeTol, L, T, R, B);
       }
 
-      // RECTÁNGULOS
+      // RECTÃNGULOS
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -11008,7 +11008,7 @@ onPress: async () => {
         return minX >= L && maxX <= R && minY >= T && maxY <= B;
       }
 
-      // LÍNEAS / FLECHAS / SHAPES con array de puntos
+      // LÃNEAS / FLECHAS / SHAPES con array de puntos
       if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -11053,35 +11053,41 @@ onPress: async () => {
     overlay.style.userSelect = 'none';
     overlay.style.cursor = 'crosshair';
 
-    // Crear el rectángulo visual una sola vez. Lo agregamos al document.body
-    // con position:fixed para que no dependa del overlay (más robusto).
+    // Crear el rectángulo visual una sola vez. Lo agregamos DENTRO del
+    // overlay (position:absolute relativo a él) para evitar interferencias
+    // del CSS global `body > div:not(#root) { position:fixed; inset:0; ... }`
+    // (GlobalStyles.js:95) que afecta a hijos directos del body. Como el
+    // overlay es un div web nativo (no react-native View con transform),
+    // position:absolute es seguro aquí.
     const rectEl = document.createElement('div');
     rectEl.setAttribute('data-ms-rect', '');
     Object.assign(rectEl.style, {
-      position: 'fixed',
+      position: 'absolute',
       left: '0px', top: '0px', width: '0px', height: '0px',
       backgroundColor: 'rgba(52,152,219,0.20)',
       border: '2px dashed #3498db',
       pointerEvents: 'none',
       display: 'none',
-      zIndex: '999999',
+      zIndex: '10001',
       boxSizing: 'border-box',
       willChange: 'left,top,width,height',
     });
-    document.body.appendChild(rectEl);
+    overlay.appendChild(rectEl);
 
     let dragging = false;
     let active = false;
     let activeId = null;
-    // Coords en client (viewport) — el rectEl es position:fixed
+    // Coords en client (viewport) durante el drag; convertimos a coords
+    // relativas al overlay al pintar y al detectar contenidos.
     let sCx = 0, sCy = 0, cCx = 0, cCy = 0;
     const THRESHOLD = 4;
 
     const overlayRect = () => overlay.getBoundingClientRect();
 
     const drawRect = () => {
-      const left = Math.min(sCx, cCx);
-      const top = Math.min(sCy, cCy);
+      const r = overlayRect();
+      const left = Math.min(sCx, cCx) - r.left;
+      const top = Math.min(sCy, cCy) - r.top;
       rectEl.style.left = left + 'px';
       rectEl.style.top = top + 'px';
       rectEl.style.width = Math.abs(cCx - sCx) + 'px';
@@ -11140,7 +11146,7 @@ onPress: async () => {
         return;
       }
 
-      // Convertir coords client → coords overlay
+      // Convertir coords client â†’ coords overlay
       const r = overlayRect();
       const left = Math.min(sCx, cCx) - r.left;
       const top = Math.min(sCy, cCy) - r.top;
@@ -11285,7 +11291,7 @@ onPress: async () => {
     const cloneToDelete = actualClonesRef.current.find(clone => clone.id === id);
     setClones(prev => prev.filter(clone => clone.id !== id));
     handleElementDeleted(cloneToDelete);
-  }, [handleElementDeleted]); // Sin [clones] — usa actualClonesRef
+  }, [handleElementDeleted]); // Sin [clones] "” usa actualClonesRef
 
   // Función auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
   const distanceToSegment = useCallback((px, py, x1, y1, x2, y2) => {
@@ -11402,7 +11408,7 @@ onPress: async () => {
       }
     }
     return null;
-  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] — usa actualClonesRef
+  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] "” usa actualClonesRef
 
   // Ref para trackear elementos ya borrados durante un arrastre
   const erasedElementsRef = useRef(new Set());
@@ -11548,7 +11554,7 @@ onPress: async () => {
       { x: straightLineEnd.x, y: straightLineEnd.y }
     ];
     
-    // Obtener el icono de la paleta para usar su configuración
+    // Obtener el icono de la paleta para usar su Configuración
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
     
@@ -11614,7 +11620,7 @@ onPress: async () => {
   
     const type = drawingCurveArrow ? 'curve-arrow' : 'curve-line';
     
-    // Obtener el icono de la paleta para usar su configuración
+    // Obtener el icono de la paleta para usar su Configuración
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
     
@@ -11752,7 +11758,7 @@ onPress: async () => {
     if (cloneToDelete && cloneToDelete.type === 'staff' && cloneToDelete.staffRole) {
       setSelectedStaffIds(prev => prev.filter(staffId => staffId !== cloneToDelete.staffRole));
     }
-  }, []); // Sin [clones] — usa actualClonesRef para identidad estable
+  }, []); // Sin [clones] "” usa actualClonesRef para identidad estable
 
   // Función para duplicar un elemento
   const handleDuplicateClone = useCallback((id) => {
@@ -11785,7 +11791,7 @@ onPress: async () => {
       // Seleccionar el nuevo elemento duplicado
       setSelectedCloneId(duplicatedWithZIndex.id);
     }
-  }, [getNextZIndex]); // Sin [clones] — usa actualClonesRef
+  }, [getNextZIndex]); // Sin [clones] "” usa actualClonesRef
   const duplicateSelectedElements = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -11848,7 +11854,7 @@ onPress: async () => {
     setClones(prev => [...duplicates, ...prev]);
     setSelectedCloneIds(duplicates.map(d => d.id));
     setSelectedCloneId(duplicates[0].id);
-  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] — usa actualClonesRef
+  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] "” usa actualClonesRef
 
   // Función para rotar elementos seleccionados alrededor del centroide del grupo
   const rotateSelectedElements = useCallback((angleDegrees = 15) => {
@@ -11914,7 +11920,7 @@ onPress: async () => {
         };
       }
     }));
-  }, [selectedCloneIds]); // Sin [clones] — usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] "” usa actualClonesRef
 
   // Función para alternar bloquear/desbloquear todos los seleccionados
   const toggleLockSelected = useCallback(() => {
@@ -11937,7 +11943,7 @@ onPress: async () => {
       }
       return c;
     }));
-  }, [selectedCloneIds]); // Sin [clones] — usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] "” usa actualClonesRef
 
   // Función para traer los seleccionados al frente
   const bringSelectedToFront = useCallback(() => {
@@ -12199,7 +12205,7 @@ onPress: async () => {
       />
     );
     
-    // Punta de flecha si es necesario - CORRECCIÓN AQUÍ
+    // Punta de flecha si es necesario - CORRECCIÃ“N AQUÃ
     if (icon.type === 'curve-arrow' && pts.length >= 2) {
       const arrowData = getArrowHeadForStraightLine(
         secondLastPoint,
@@ -12529,7 +12535,7 @@ onPress: async () => {
     });
   }, [positionedClones, imageWidth, imageHeight, standardSize, isCloneVisible]);
   
-  // OPTIMIZACIÓN: Arrays separados para líneas rectas y curvas (para BatchLinesRenderer)
+  // OPTIMIZACIÃ“N: Arrays separados para líneas rectas y curvas (para BatchLinesRenderer)
   const straightLines = useMemo(() => {
     return positionedClones.filter(clone => 
       (clone.type === 'straight-line' || clone.type === 'straight-arrow') && isCloneVisible(clone)
@@ -12542,7 +12548,7 @@ onPress: async () => {
     );
   }, [positionedClones, isCloneVisible]);
   
-  // OPTIMIZACIÓN: Arrays separados para figuras geométricas (para BatchShapesRenderer)
+  // OPTIMIZACIÃ“N: Arrays separados para figuras geométricas (para BatchShapesRenderer)
   const circleElements = useMemo(() => {
     return positionedClones.filter(clone => clone.type === 'circle' && isCloneVisible(clone));
   }, [positionedClones, isCloneVisible]);
@@ -12557,7 +12563,7 @@ onPress: async () => {
     );
   }, [positionedClones, isCloneVisible]);
   
-  // OPTIMIZACIÓN: Memoizar elementos de línea para BatchSvgRenderer
+  // OPTIMIZACIÃ“N: Memoizar elementos de línea para BatchSvgRenderer
   const lineElements = useMemo(() => {
     return positionedClones.filter(clone => {
       return (clone.type === 'straight-line' || 
@@ -12585,13 +12591,13 @@ onPress: async () => {
     }).filter(Boolean);
   }, [positionedClones, isCloneVisible]);
 
-  // OPTIMIZACIÓN: Escala memoizada
+  // OPTIMIZACIÃ“N: Escala memoizada
   const renderScale = useMemo(() => {
     const baseScale = Math.min(imageWidth, imageHeight) / 500;
     return isMobile ? baseScale * 1.35 : baseScale;
   }, [imageWidth, imageHeight, isMobile]);
   
-  // OPTIMIZACIÓN: Verificar si hay algún modo de dibujo activo (incluye eraserMode)
+  // OPTIMIZACIÃ“N: Verificar si hay algún modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
     return drawingStraightArrow || drawingStraightLine || 
            drawingCurveArrow || drawingCurveLine || 
@@ -12768,7 +12774,7 @@ onPress: async () => {
 
     // Si el icono editado corresponde con el que está seleccionado para dibujar (pendingLineAction),
     // actualizar también pendingLineAction y los estados relevantes para que el siguiente dibujo use
-    // la configuración recién aplicada.
+    // la Configuración recién aplicada.
     if (typeof iconEdited.paletteIndex === 'number' && pendingLineAction && pendingLineAction.paletteIndex === iconEdited.paletteIndex) {
       // Actualizar pendingLineAction.icon con los nuevos valores (sin eliminar otras propiedades)
       setPendingLineAction(prev => prev ? ({
@@ -13357,7 +13363,7 @@ onPress: async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>⚙️</Text>
+                      <Text style={{ fontSize: 12 }}>⚙️</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
@@ -13704,7 +13710,7 @@ onPress: async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>👥</Text>
+                      <Text style={{ fontSize: 12 }}>ðŸ‘¥</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {t('tacticalBoard.teamPlayersModal.title')}
@@ -14429,7 +14435,7 @@ const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
         contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 3 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
       >
         {MATERIALS_ICONS.map((material, idx) => {
-          // Obtener configuración personalizada si existe
+          // Obtener Configuración personalizada si existe
           const customConfig = materialsConfig?.[material.type] || {};
           const displayMaterial = {
             ...material,
@@ -15006,6 +15012,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                                   paletteEdit.visible || 
                                   carouselModalVisible ||
                                   lineStyleModalVisible;
+                                  
   
   // Ocultar solo botones inferiores cuando la paleta o zoom está visible
   const shouldHideBottomButtons = paletteVisible || zoomVisible;
@@ -15022,7 +15029,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
         
         {/* Llamada como función (no JSX) para evitar que React trate
             FloatingButtons como un "tipo de componente nuevo" en cada
-            render — al estar definido dentro de Field, su identidad
+            render "” al estar definido dentro de Field, su identidad
             cambia cada render y montar/desmontar TouchableOpacity hacía
             que el primer click no llegara a disparar onPress. */}
         {FloatingButtons({
@@ -15346,10 +15353,10 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         }}
                         pointerEvents="none"
                       >
-                        {/* OPTIMIZACIÓN: Ya no iteramos sobre positionedClones para SVG */}
+                        {/* OPTIMIZACIÃ“N: Ya no iteramos sobre positionedClones para SVG */}
                         {/* Todas las figuras y líneas se renderizan con componentes batch optimizados */}
                         
-                        {/* OPTIMIZACIÓN: Renderizar todas las figuras en batch */}
+                        {/* OPTIMIZACIÃ“N: Renderizar todas las figuras en batch */}
                         <BatchShapesRenderer
                           circles={circleElements}
                           rectangles={rectangleElements}
@@ -15361,7 +15368,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           viewMode={viewMode}
                         />
                         
-                        {/* OPTIMIZACIÓN: Renderizar todas las líneas en batch */}
+                        {/* OPTIMIZACIÃ“N: Renderizar todas las líneas en batch */}
                         <BatchLinesRenderer
                           straightLines={straightLines}
                           curveLines={curveLines}
@@ -15388,7 +15395,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           pointerEvents={(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle || 
                                          drawingCurveLine || drawingCurveArrow || drawingCustomShape) ? "none" : "box-none"}
                         >
-                        {/* OPTIMIZACIÓN: Detectores de círculos memoizados */}
+                        {/* OPTIMIZACIÃ“N: Detectores de círculos memoizados */}
                         {circleElements.map((icon) => (
                           <MemoizedCircleDetector
                             key={`circle-detector-${icon.id}`}
@@ -15413,7 +15420,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           />
                         ))}
                         
-                        {/* OPTIMIZACIÓN: Detectores de rectángulos memoizados */}
+                        {/* OPTIMIZACIÃ“N: Detectores de rectángulos memoizados */}
                         {rectangleElements.map((icon) => (
                           <MemoizedRectangleDetector
                             key={`rect-detector-${icon.id}`}
@@ -15438,7 +15445,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           />
                         ))}
                         
-                        {/* OPTIMIZACIÓN: Detectores de custom-shapes memoizados */}
+                        {/* OPTIMIZACIÃ“N: Detectores de custom-shapes memoizados */}
                         {customShapeElements.map((icon) => (
                           <MemoizedCustomShapeDetector
                             key={`custom-detector-${icon.id}`}
@@ -15587,7 +15594,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           );
                         })}
                         
-                        {/* Áreas de detección para líneas - OPTIMIZADO con componentes memoizados */}
+                        {/* Ãreas de detección para líneas - OPTIMIZADO con componentes memoizados */}
                         {straightLines.map((icon, idx) => (
                           <MemoizedStraightLineDetector
                             key={`sl-det-${icon.id}`}
@@ -16004,31 +16011,11 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   })()}
                     </View>
                     
-                    {/* Rectángulo de selección */}
-                    {multiSelectMode && isSelecting && selectionRect && (
-                      <Svg
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: imageWidth,
-                          height: imageHeight,
-                          zIndex: 10001
-                        }}
-                        pointerEvents="none"
-                      >
-                        <Rect
-                          x={selectionRect.x}
-                          y={selectionRect.y}
-                          width={selectionRect.width}
-                          height={selectionRect.height}
-                          fill="rgba(52, 152, 219, 0.2)"
-                          stroke="#3498db"
-                          strokeWidth={2}
-                          strokeDasharray="5,5"
-                        />
-                      </Svg>
-                    )}
+                    {/* Rectángulo de selección: pintado por DOM nativo dentro
+                        del overlay multi-select (ver useEffect multi-select v3).
+                        El SVG fallback legacy fue eliminado porque no estaba
+                        wired a ningún handler activo y podía ocultar el rect
+                        nativo si por algún motivo aparecía. */}
                     
                     {/* Controles de selección múltiple movidos: ahora se muestran a la derecha (fuera del campo) */}
                     
@@ -16056,7 +16043,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
               
               {/* Capa de overlay para multi-select (fuera de transformaciones).
                   En web usamos un <div> nativo en lugar de <View> para tener
-                  control total sobre los eventos de mouse/touch — el sistema
+                  control total sobre los eventos de mouse/touch "” el sistema
                   de responder de RN no se dispara de forma fiable con mouse
                   sobre overlays transparentes en react-native-web. */}
               {multiSelectMode && selectionInteractionMode === 'select' && (
@@ -16267,7 +16254,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           isMobile={isMobile}
         />
         
-        {/* Floating multi-select buttons removed — actions are now available in the selection status modal */}
+        {/* Floating multi-select buttons removed "” actions are now available in the selection status modal */}
         
         {/* Menú de opciones para elementos seleccionados */}
         <OptionsMenu

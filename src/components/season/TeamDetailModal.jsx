@@ -63,9 +63,9 @@ const StatLabel = styled.span`
 `;
 
 const Warn = styled.div`
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: ${({ theme }) => theme.colors.errorSoft};
+  border: 1px solid ${({ theme }) => theme.colors.error};
+  color: ${({ theme }) => theme.colors.errorSoftText};
   padding: 12px;
   border-radius: ${({ theme }) => theme.radius.md};
   font-size: 13px;

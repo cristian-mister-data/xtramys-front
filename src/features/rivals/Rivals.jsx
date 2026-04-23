@@ -6,7 +6,7 @@
 // - Modal de detalles
 // - Confirmación de borrado
 import { useEffect, useMemo, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -144,7 +144,7 @@ const IconBtn = styled.button`
   transition: background 0.15s;
 
   &:hover {
-    background: ${({ theme, $danger }) => ($danger ? '#fee2e2' : theme.colors.border)};
+    background: ${({ theme, $danger }) => ($danger ? theme.colors.errorSoft : theme.colors.border)};
   }
 `;
 
@@ -197,6 +197,7 @@ export default function Rivals() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
+  const theme = useTheme();
 
   const rivals = useSelector((s) => s.rival.rivals || []);
   const loading = useSelector((s) => s.rival.loading);
@@ -430,7 +431,7 @@ export default function Rivals() {
                 {rival.escudo ? (
                   <img src={rival.escudo} alt={rival.nombre} />
                 ) : (
-                  <MdShield size={48} color="#94a3b8" />
+                  <MdShield size={48} color={theme.colors.textMuted} />
                 )}
               </EscudoBox>
               <RivalName>{rival.nombre}</RivalName>
@@ -481,7 +482,7 @@ export default function Rivals() {
               {escudo ? (
                 <img src={escudo} alt="escudo" />
               ) : (
-                <MdImage size={48} color="#94a3b8" />
+                <MdImage size={48} color={theme.colors.textMuted} />
               )}
             </EscudoPreview>
             <Row $gap={8} style={{ marginTop: 8, justifyContent: 'center' }}>
@@ -554,7 +555,7 @@ export default function Rivals() {
               {viewing.escudo ? (
                 <img src={viewing.escudo} alt={viewing.nombre} />
               ) : (
-                <MdShield size={120} color="#94a3b8" />
+                <MdShield size={120} color={theme.colors.textMuted} />
               )}
             </DetailEscudo>
           </Stack>

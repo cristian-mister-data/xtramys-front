@@ -34,11 +34,11 @@ const SectionHead = styled.div`
   gap: 8px;
   font-size: 14px;
   font-weight: 800;
-  color: #1a237e;
+  color: ${({ theme }) => theme.colors.primary};
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
-  border-bottom: 2px solid #1a237e;
+  border-bottom: 2px solid ${({ theme }) => theme.colors.primary};
   padding-bottom: 6px;
 `;
 
@@ -58,15 +58,20 @@ const ChipRow = styled.div`
 const Chip = styled.button`
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid ${({ $active }) => ($active ? '#1a237e' : '#ddd')};
-  background: ${({ $active }) => ($active ? '#1a237e' : '#fff')};
-  color: ${({ $active }) => ($active ? '#fff' : '#333')};
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
+  background: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.surface)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.text)};
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Select = styled.select`
@@ -74,8 +79,14 @@ const Select = styled.select`
   padding: 8px 10px;
   font-size: 14px;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
+  background: ${({ theme }) => theme.colors.inputBg};
+  color: ${({ theme }) => theme.colors.text};
+  &:focus-visible {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.borderFocus};
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
 `;
 
 const Counter = styled.div`
@@ -84,22 +95,40 @@ const Counter = styled.div`
   gap: 6px;
   button {
     width: 30px; height: 30px; border-radius: 8px;
-    background: #f1f5f9; border: 1px solid #e2e8f0;
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    color: ${({ theme }) => theme.colors.text};
     cursor: pointer; font-size: 16px; font-weight: 800;
+    transition: background 0.15s ease;
+    &:hover { background: ${({ theme }) => theme.colors.surfaceAlt}; }
+    &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
   }
-  .value { min-width: 36px; text-align: center; font-size: 18px; font-weight: 800; color: #1a237e; }
+  .value {
+    min-width: 36px; text-align: center; font-size: 18px; font-weight: 800;
+    color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const ScoreRow = styled.div`
   display: flex; align-items: center; justify-content: center; gap: 14px;
-  padding: 10px; border-radius: 12px; background: #fafafa;
-  .crest { width: 48px; height: 48px; border-radius: 8px; background: #eee; object-fit: cover; }
-  .vs { font-size: 18px; font-weight: 800; color: #888; }
+  padding: 10px; border-radius: 12px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  .crest {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: ${({ theme }) => theme.colors.surfaceAlt};
+    object-fit: cover;
+  }
+  .vs {
+    font-size: 18px; font-weight: 800;
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
 `;
 
 const EventRow = styled.div`
   display: flex; align-items: center; gap: 8px;
-  padding: 6px; background: #fafafa; border-radius: 8px;
+  padding: 6px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border-radius: 8px;
 `;
 
 const SmallInput = styled(Input)`
@@ -290,15 +319,11 @@ export default function MatchSheetFormModal({
                   <MdPictureAsPdf /> PDF
                 </Button>
                 {pdfMenu ? (
-                  <div style={{
-                    position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
-                    background: '#fff', border: '1px solid #ddd', borderRadius: 8,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 10, minWidth: 180,
-                  }}>
-                    <button type="button" onClick={() => handlePDF('full')} style={pdfBtnStyle}>{t('matchSheet.pdf.fullSheet', 'Ficha completa')}</button>
-                    <button type="button" onClick={() => handlePDF('lineup')} style={pdfBtnStyle}>{t('matchSheet.pdf.lineup', 'Alineación')}</button>
-                    <button type="button" onClick={() => handlePDF('callup')} style={pdfBtnStyle}>{t('matchSheet.pdf.callup', 'Convocatoria')}</button>
-                  </div>
+                  <PdfMenu>
+                    <PdfItem type="button" onClick={() => handlePDF('full')}>{t('matchSheet.pdf.fullSheet', 'Ficha completa')}</PdfItem>
+                    <PdfItem type="button" onClick={() => handlePDF('lineup')}>{t('matchSheet.pdf.lineup', 'Alineación')}</PdfItem>
+                    <PdfItem type="button" onClick={() => handlePDF('callup')}>{t('matchSheet.pdf.callup', 'Convocatoria')}</PdfItem>
+                  </PdfMenu>
                 ) : null}
               </div>
             ) : null}
@@ -500,7 +525,7 @@ export default function MatchSheetFormModal({
               {(form.golesRival || []).map((g, i) => (
                 <EventRow key={i}>
                   <SmallInput type="number" min="0" max="120" value={g.minuto} onChange={(e) => updateRivalGoal(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
-                  <span style={{ flex: 1, fontSize: 12, color: '#888' }}>{t('matchSheet.fields.goalsAgainst', 'Gol rival')}</span>
+                  <Muted style={{ flex: 1, fontSize: 12 }}>{t('matchSheet.fields.goalsAgainst', 'Gol rival')}</Muted>
                   <Button type="button" $variant="danger" onClick={() => removeRivalGoal(i)}><MdDelete /></Button>
                 </EventRow>
               ))}
@@ -633,8 +658,39 @@ export default function MatchSheetFormModal({
   );
 }
 
-const pdfBtnStyle = {
-  display: 'block', width: '100%', padding: '8px 12px',
-  background: 'transparent', border: 'none', textAlign: 'left',
-  fontSize: 13, cursor: 'pointer',
-};
+const PdfMenu = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 6px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  box-shadow: ${({ theme }) => theme.shadows.lg};
+  z-index: 10;
+  min-width: 200px;
+  overflow: hidden;
+  padding: 4px;
+`;
+
+const PdfItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text};
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  &:hover {
+    background: ${({ theme }) => theme.colors.primarySoft};
+    color: ${({ theme }) => theme.colors.primarySoftText};
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+`;

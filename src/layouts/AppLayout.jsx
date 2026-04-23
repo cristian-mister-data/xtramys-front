@@ -9,8 +9,8 @@ import { fetchTemporadasUsuario } from '@/store/slices/season/seasonThunks';
 const Shell = styled.div`
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 60px 1fr;
   grid-template-areas:
     'sidebar header'
     'sidebar content';
