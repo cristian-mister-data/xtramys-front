@@ -14,26 +14,12 @@ import {
   Animated,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Tema consistente con el resto de la aplicación
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-  gradient: ['#3578e5', '#2856a2'],
-};
+// Brand gradient stops (kept literal — brand identity)
+const BRAND_GRADIENT = ['#3578e5', '#2856a2'];
 
 // Función para detectar si es móvil (más estricto para mejor experiencia)
 const isMobileDevice = () => {
@@ -116,6 +102,27 @@ export default function SeasonCalendar({
   loading = false,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const mobileStyles = useMemo(() => makeMobileStyles(theme), [theme]);
+  // THEME alias derived from theme tokens — keeps JSX call-sites readable.
+  // Brand gradient stops remain literal per design (BRAND_GRADIENT).
+  const THEME = useMemo(() => ({
+    primary: theme.colors.primary,
+    primaryLight: theme.colors.primaryHover,
+    primaryDark: theme.colors.primary,
+    success: theme.colors.success,
+    warning: theme.colors.warning,
+    danger: theme.colors.error,
+    background: theme.colors.background,
+    surface: theme.colors.surface,
+    text: theme.colors.text,
+    textSecondary: theme.colors.textSecondary,
+    textMuted: theme.colors.textMuted,
+    border: theme.colors.border,
+    inputBg: theme.colors.inputBg,
+    gradient: BRAND_GRADIENT,
+  }), [theme]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const isMobile = isMobileDevice();
@@ -691,11 +698,11 @@ export default function SeasonCalendar({
         const golesFavor = match.golesFavor || 0;
         const golesContra = match.golesContra || 0;
         if (golesFavor > golesContra) {
-          bgColors = ['#10b98120', '#10b98108'];
+          bgColors = [THEME.success + '20', THEME.success + '08'];
         } else if (golesFavor < golesContra) {
-          bgColors = ['#ef444420', '#ef444408'];
+          bgColors = [THEME.danger + '20', THEME.danger + '08'];
         } else {
-          bgColors = ['#f59e0b20', '#f59e0b08'];
+          bgColors = [THEME.warning + '20', THEME.warning + '08'];
         }
       }
       
@@ -1336,9 +1343,9 @@ export default function SeasonCalendar({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     marginHorizontal: isMobileDevice() ? 12 : 16,
     marginBottom: 24,
@@ -1403,9 +1410,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: 20,
   },
   legendItem: {
@@ -1420,7 +1427,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   addEventButton: {
@@ -1429,12 +1436,12 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 16,
   },
   addEventText: {
     fontSize: 12,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   
@@ -1442,9 +1449,9 @@ const styles = StyleSheet.create({
   weekdaysRow: {
     flexDirection: 'row',
     paddingVertical: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   weekdayCell: {
     flex: 1,
@@ -1453,10 +1460,10 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   weekdayTextWeekend: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Grid del calendario
@@ -1473,7 +1480,7 @@ const styles = StyleSheet.create({
     minHeight: isMobileDevice() ? 70 : 85,
     margin: 2,
     borderRadius: 8,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     position: 'relative',
     padding: 4,
   },
@@ -1487,7 +1494,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: THEME.primary + '20',
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1495,18 +1502,18 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   dayCellToday: {
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 2,
-    borderColor: THEME.primary,
+    borderColor: theme.colors.primary,
   },
   dayCellSelected: {
-    backgroundColor: THEME.primary + '20',
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 2,
-    borderColor: THEME.primary,
+    borderColor: theme.colors.primary,
   },
   dayCellWithEvents: {
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   dayCellWithMatch: {
     padding: 0,
@@ -1539,7 +1546,7 @@ const styles = StyleSheet.create({
     width: isMobileDevice() ? 18 : 24,
     height: isMobileDevice() ? 18 : 24,
     borderRadius: 3,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1549,24 +1556,24 @@ const styles = StyleSheet.create({
   fullMatchVs: {
     fontSize: isMobileDevice() ? 8 : 10,
     fontWeight: '600',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   fullMatchResult: {
     fontSize: isMobileDevice() ? 10 : 12,
     fontWeight: '800',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   fullMatchRivalName: {
     fontSize: isMobileDevice() ? 7 : 9,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     maxWidth: '90%',
   },
   fullMatchTime: {
     fontSize: isMobileDevice() ? 7 : 9,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
     marginTop: 1,
   },
   fullMatchUbicacion: {
@@ -1583,27 +1590,27 @@ const styles = StyleSheet.create({
   dayTextOverlay: {
     fontSize: isMobileDevice() ? 10 : 11,
     fontWeight: '700',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   dayTextTodayOverlay: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Texto de días
   dayText: {
     fontSize: isMobileDevice() ? 11 : 13,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   dayTextOtherMonth: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   dayTextToday: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '700',
   },
   dayTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '700',
   },
   
@@ -1613,11 +1620,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   miniEventCard: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 4,
     padding: 3,
     borderLeftWidth: 2,
-    borderLeftColor: THEME.primary,
+    borderLeftColor: theme.colors.primary,
   },
   miniMatchRow: {
     flexDirection: 'row',
@@ -1639,19 +1646,19 @@ const styles = StyleSheet.create({
   miniResultText: {
     fontSize: isMobileDevice() ? 9 : 11,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   miniTimeText: {
     fontSize: isMobileDevice() ? 8 : 10,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   miniSessionCard: {
-    backgroundColor: THEME.success + '15',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 6,
     padding: 6,
     borderLeftWidth: 3,
-    borderLeftColor: THEME.success,
+    borderLeftColor: theme.colors.success,
     minHeight: 40,
   },
   miniSessionRow: {
@@ -1671,19 +1678,19 @@ const styles = StyleSheet.create({
   miniSessionText: {
     fontSize: isMobileDevice() ? 10 : 11,
     fontWeight: '600',
-    color: THEME.success,
+    color: theme.colors.successSoftText,
     lineHeight: 14,
   },
   miniSessionTime: {
     fontSize: isMobileDevice() ? 9 : 10,
     fontWeight: '500',
-    color: THEME.success,
+    color: theme.colors.successSoftText,
     opacity: 0.8,
   },
   moreEventsText: {
     fontSize: 8,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   
@@ -1696,15 +1703,15 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Vista previa de eventos
   eventsPreviewContainer: {
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     paddingVertical: 16,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   eventsPreviewHeader: {
     paddingHorizontal: 16,
@@ -1713,7 +1720,7 @@ const styles = StyleSheet.create({
   eventsPreviewTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     textTransform: 'capitalize',
   },
   eventsPreviewScroll: {
@@ -1723,7 +1730,7 @@ const styles = StyleSheet.create({
   
   // Tarjeta de vista previa de evento
   eventPreviewCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
     minWidth: 240,
@@ -1734,7 +1741,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   
   // Header del partido
@@ -1759,7 +1766,7 @@ const styles = StyleSheet.create({
   jornadaText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Contenedor de equipos del partido
@@ -1789,7 +1796,7 @@ const styles = StyleSheet.create({
   teamNamePreview: {
     fontSize: 11,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     maxWidth: 70,
   },
@@ -1803,17 +1810,17 @@ const styles = StyleSheet.create({
   matchResultText: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   matchTimePreviewText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   matchVsText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Detalles del partido
@@ -1823,7 +1830,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   matchDetailItem: {
     flexDirection: 'row',
@@ -1832,7 +1839,7 @@ const styles = StyleSheet.create({
   },
   matchDetailText: {
     fontSize: 10,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Header de sesión
@@ -1859,7 +1866,7 @@ const styles = StyleSheet.create({
   sessionTeamName: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   sessionDetailsRow: {
@@ -1874,12 +1881,12 @@ const styles = StyleSheet.create({
   },
   sessionDetailText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     maxWidth: 100,
   },
   sessionTimeText: {
     fontWeight: '600',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   sessionExercisesCount: {
     flexDirection: 'row',
@@ -1887,21 +1894,21 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     marginTop: 6,
   },
   sessionExercisesText: {
     fontSize: 12,
     fontWeight: '500',
-    color: THEME.success,
+    color: theme.colors.success,
   },
 });
 
 // ============ ESTILOS PARA VISTA MÓVIL DE SEMANA ============
-const mobileStyles = StyleSheet.create({
+const makeMobileStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   
   // Header
@@ -1939,7 +1946,7 @@ const mobileStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1947,17 +1954,17 @@ const mobileStyles = StyleSheet.create({
   todayChipText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Selector de días
   weekDaysRow: {
     flexDirection: 'row',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   dayBtn: {
     flex: 1,
@@ -1965,20 +1972,20 @@ const mobileStyles = StyleSheet.create({
     paddingVertical: 8,
     marginHorizontal: 3,
     borderRadius: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     minHeight: 68,
   },
   dayBtnSelected: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   dayBtnToday: {
     borderWidth: 2,
-    borderColor: THEME.primary,
+    borderColor: theme.colors.primary,
   },
   dayName: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 2,
     textTransform: 'uppercase',
   },
@@ -1988,13 +1995,13 @@ const mobileStyles = StyleSheet.create({
   dayNum: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   dayNumSelected: {
     color: '#fff',
   },
   dayNumToday: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   eventDots: {
     flexDirection: 'row',
@@ -2031,17 +2038,17 @@ const mobileStyles = StyleSheet.create({
   dayTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     textTransform: 'capitalize',
   },
   addBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -2057,7 +2064,7 @@ const mobileStyles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   emptyAddBtn: {
     flexDirection: 'row',
@@ -2065,19 +2072,19 @@ const mobileStyles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 20,
     marginTop: 8,
   },
   emptyAddText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Tarjeta de evento
   eventCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -2087,7 +2094,7 @@ const mobileStyles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   eventBadge: {
     flexDirection: 'row',
@@ -2125,7 +2132,7 @@ const mobileStyles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
@@ -2133,7 +2140,7 @@ const mobileStyles = StyleSheet.create({
   teamName: {
     fontSize: 12,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     maxWidth: 80,
   },
@@ -2145,12 +2152,12 @@ const mobileStyles = StyleSheet.create({
   resultText: {
     fontSize: 22,
     fontWeight: '800',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   vsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   matchInfo: {
     flexDirection: 'row',
@@ -2158,7 +2165,7 @@ const mobileStyles = StyleSheet.create({
     gap: 10,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   infoChip: {
     flexDirection: 'row',
@@ -2167,7 +2174,7 @@ const mobileStyles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Sesión
@@ -2188,7 +2195,7 @@ const mobileStyles = StyleSheet.create({
   sessionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   sessionMeta: {
     flexDirection: 'row',

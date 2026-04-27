@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Image,
   Platform
 } from 'react-native';
+import { useTheme } from 'styled-components';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -39,7 +40,6 @@ import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import { clearInjuries } from '@/store/slices/injury/injurySlice';
 import { fetchTournamentsByTeam, fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
 import { clearTournaments, clearSanctions } from '@/store/slices/tournament/tournamentSlice';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import SeasonCalendar from './SeasonCalendar';
 import MatchSheetDetailModal from './MatchSheetDetailModal';
 import TrainingSessionDetailModal from './TrainingSessionDetailModal';
@@ -64,6 +64,8 @@ const isMobileDevice = () => {
 };
 
 export default function GestionEquipos() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const temporada = useSelector(state => state.season.season);
   const temporadas = useSelector(state => state.season.seasons);
   const equipos = useSelector(state => state.team.teams);
@@ -791,7 +793,7 @@ export default function GestionEquipos() {
         {(!temporada || !temporada._id) ? (
           <View style={styles.loadingContainer}>
             <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={THEME.primary} />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>
                 {t('home.loadingSeason')}
               </Text>
@@ -802,7 +804,7 @@ export default function GestionEquipos() {
             {/* Header Section con Gradiente */}
             <View style={styles.headerSection}>
               <LinearGradient
-                colors={THEME.gradient}
+                colors={['#1a237e', '#3949ab', '#5c6bc0']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.headerGradient}
@@ -828,7 +830,7 @@ export default function GestionEquipos() {
                     onPress={() => setSeasonSelectorVisible(true)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="calendar-outline" size={16} color={THEME.primary} />
+                    <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
                     <Text style={styles.changeSeasonText}>{t('season.season')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -838,14 +840,14 @@ export default function GestionEquipos() {
             {/* Teams Section */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="people" size={22} color="#374151" />
+                <Ionicons name="people" size={22} color={theme.colors.textSecondary} />
                 <Text style={styles.sectionTitle}>{t('season.team')}</Text>
               </View>
 
               {!equipoSeleccionado ? (
                 <View style={styles.emptyStateContainer}>
                   <View style={styles.emptyStateCard}>
-                    <Ionicons name="people-circle-outline" size={64} color="#d1d5db" />
+                    <Ionicons name="people-circle-outline" size={64} color={theme.colors.textDisabled} />
                     <Text style={styles.emptyStateTitle}>{t('season.noSelectedTeam')}</Text>
                     <Text style={styles.emptyStateSubtitle}>
                       {t('season.noSelectedTeamSubtitle')}
@@ -887,7 +889,7 @@ export default function GestionEquipos() {
                         </Text>
                       </View>
                       <View style={styles.teamDetailChevron}>
-                        <Ionicons name="chevron-forward" size={20} color={THEME.primaryLight} />
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.primaryLight} />
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -900,7 +902,7 @@ export default function GestionEquipos() {
             {equipoSeleccionado && (
               <View style={styles.sectionContainer}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="calendar" size={22} color="#374151" />
+                  <Ionicons name="calendar" size={22} color={theme.colors.textSecondary} />
                   <Text style={styles.sectionTitle}>{t('season.eventsCalendar')}</Text>
                 </View>
                 
@@ -950,7 +952,7 @@ export default function GestionEquipos() {
                   onPress={() => setDayEventsModalVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -959,7 +961,7 @@ export default function GestionEquipos() {
                 {selectedDayEvents?.matches?.length > 0 && (
                   <View style={styles.eventSection}>
                     <View style={styles.eventSectionHeader}>
-                      <Ionicons name="football" size={20} color={THEME.primary} />
+                      <Ionicons name="football" size={20} color={theme.colors.primary} />
                       <Text style={styles.eventSectionTitle}>
                         {t('season.matchSheets')} ({selectedDayEvents.matches.length})
                       </Text>
@@ -976,7 +978,7 @@ export default function GestionEquipos() {
                         activeOpacity={0.7}
                       >
                         <View style={styles.eventItemIcon}>
-                          <Ionicons name="trophy" size={18} color={match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color ? match.torneoId.color : THEME.primary} />
+                          <Ionicons name="trophy" size={18} color={match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color ? match.torneoId.color : theme.colors.primary} />
                         </View>
                         <View style={styles.eventItemContent}>
                           <Text style={styles.eventItemTitle}>vs {match.rival}</Text>
@@ -995,7 +997,7 @@ export default function GestionEquipos() {
                                 : match.jornada ? ` • ${t('season.matchday')} ${match.jornada}` : ''}
                           </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1005,7 +1007,7 @@ export default function GestionEquipos() {
                 {selectedDayEvents?.sessions?.length > 0 && (
                   <View style={styles.eventSection}>
                     <View style={styles.eventSectionHeader}>
-                      <Ionicons name="fitness" size={20} color={THEME.success} />
+                      <Ionicons name="fitness" size={20} color={theme.colors.success} />
                       <Text style={styles.eventSectionTitle}>
                         {t('season.trainingSessions')} ({selectedDayEvents.sessions.length})
                       </Text>
@@ -1021,8 +1023,8 @@ export default function GestionEquipos() {
                         }}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.eventItemIcon, { backgroundColor: THEME.success + '15' }]}>
-                          <Ionicons name="barbell" size={18} color={THEME.success} />
+                        <View style={[styles.eventItemIcon, { backgroundColor: theme.colors.successSoft }]}>
+                          <Ionicons name="barbell" size={18} color={theme.colors.success} />
                         </View>
                         <View style={styles.eventItemContent}>
                           <Text style={styles.eventItemTitle}>
@@ -1033,7 +1035,7 @@ export default function GestionEquipos() {
                             {session.horaFin ? ` • ${t('season.until')} ${session.horaFin}` : ''}
                           </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                        <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1058,7 +1060,7 @@ export default function GestionEquipos() {
                   onPress={() => setSeasonSelectorVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1074,7 +1076,7 @@ export default function GestionEquipos() {
                       onPress={() => handleSelectSeason(season)}
                     >
                       <View style={styles.seasonItemContent}>
-                        <Ionicons name="calendar" size={20} color={temporada?._id === season._id ? "#2563eb" : "#6b7280"} />
+                        <Ionicons name="calendar" size={20} color={temporada?._id === season._id ? theme.colors.primary : theme.colors.textMuted} />
                         <View style={styles.seasonItemTextContainer}>
                           <Text style={[
                             styles.seasonItemText,
@@ -1091,13 +1093,13 @@ export default function GestionEquipos() {
                         </View>
                       </View>
                       {temporada?._id === season._id && (
-                        <Ionicons name="checkmark-circle" size={20} color="#2563eb" />
+                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))
                 ) : (
                   <View style={styles.emptyModalContent}>
-                    <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
+                    <Ionicons name="calendar-outline" size={48} color={theme.colors.textDisabled} />
                     <Text style={styles.emptyModalText}>{t("season.noSeasonsAvailable")}</Text>
                   </View>
                 )}
@@ -1135,7 +1137,7 @@ export default function GestionEquipos() {
                   onPress={() => setCreateSeasonModalVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1148,7 +1150,7 @@ export default function GestionEquipos() {
                   <Text style={newSeason.año ? styles.modalInputText : styles.modalInputPlaceholder}>
                     {newSeason.año ? formatSeasonYear(newSeason.año) : t("season.year")}
                   </Text>
-                  <Ionicons name={showYearOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                  <Ionicons name={showYearOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
 
                 {/* Year Options */}
@@ -1174,7 +1176,7 @@ export default function GestionEquipos() {
                             {option.label}
                           </Text>
                           {newSeason.año === option.value && (
-                            <Ionicons name="checkmark" size={20} color="#2563eb" />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1217,7 +1219,7 @@ export default function GestionEquipos() {
                   onPress={() => setEditTeamModalVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1226,7 +1228,7 @@ export default function GestionEquipos() {
                 <TextInput
                   style={styles.teamNameInput}
                   placeholder={t('team.teamName')}
-                  placeholderTextColor="#A0AEC0"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={teamToEdit?.nombre || ''}
                   onChangeText={(text) => setTeamToEdit(prev => ({ ...prev, nombre: text }))}
                 />
@@ -1243,7 +1245,7 @@ export default function GestionEquipos() {
                         ? categoryOptions.find(c => c.value === teamToEdit.categoriaKey)?.label 
                         : t('team.selectCategory')}
                     </Text>
-                    <Ionicons name={showEditCategoryOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showEditCategoryOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1269,7 +1271,7 @@ export default function GestionEquipos() {
                             {option.label}
                           </Text>
                           {teamToEdit?.categoriaKey === option.value && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1282,7 +1284,7 @@ export default function GestionEquipos() {
                   <TextInput
                     style={styles.teamNameInput}
                     placeholder={t('team.customCategoryPlaceholder')}
-                    placeholderTextColor="#A0AEC0"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                     value={teamToEdit?.categoriaCustom || ''}
                     onChangeText={(text) => setTeamToEdit(prev => ({ ...prev, categoriaCustom: text }))}
                   />
@@ -1298,7 +1300,7 @@ export default function GestionEquipos() {
                     <Text style={styles.selectText}>
                       {t('team.timePerHalfMinutes', { minutes: teamToEdit?.tiempoPorParte || 45 })}
                     </Text>
-                    <Ionicons name={showEditTimeOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showEditTimeOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1324,7 +1326,7 @@ export default function GestionEquipos() {
                             {t('team.timePerHalfMinutes', { minutes: time })}
                           </Text>
                           {teamToEdit?.tiempoPorParte === time && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1342,7 +1344,7 @@ export default function GestionEquipos() {
                     <Text style={styles.selectText}>
                       {t('team.playersPerTeamCount', { count: teamToEdit?.jugadoresPorEquipo || 11 })}
                     </Text>
-                    <Ionicons name={showEditPlayersPerTeamOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showEditPlayersPerTeamOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1368,7 +1370,7 @@ export default function GestionEquipos() {
                             {t('team.playersPerTeamCount', { count })}
                           </Text>
                           {teamToEdit?.jugadoresPorEquipo === count && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1389,12 +1391,12 @@ export default function GestionEquipos() {
                         style={styles.removeBadgeButton}
                         onPress={() => setTeamToEdit(prev => ({ ...prev, escudo: null }))}
                       >
-                        <Ionicons name="close-circle" size={24} color={THEME.danger} />
+                        <Ionicons name="close-circle" size={24} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
                   ) : (
                     <View style={styles.badgePlaceholder}>
-                      <Ionicons name="image-outline" size={40} color="#A0AEC0" />
+                      <Ionicons name="image-outline" size={40} color={theme.colors.inputPlaceholder} />
                       <Text style={styles.badgePlaceholderText}>{t('team.tapToUpload')}</Text>
                     </View>
                   )}
@@ -1441,7 +1443,7 @@ export default function GestionEquipos() {
                   onPress={() => setCreateTeamModalVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1450,7 +1452,7 @@ export default function GestionEquipos() {
                 <TextInput
                   style={styles.teamNameInput}
                   placeholder={t('team.teamName')}
-                  placeholderTextColor="#A0AEC0"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={newTeam.nombre}
                   onChangeText={(text) => setNewTeam(prev => ({ ...prev, nombre: text }))}
                 />
@@ -1467,7 +1469,7 @@ export default function GestionEquipos() {
                         ? categoryOptions.find(c => c.value === newTeam.categoriaKey)?.label 
                         : t('team.selectCategory')}
                     </Text>
-                    <Ionicons name={showCreateCategoryOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showCreateCategoryOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1493,7 +1495,7 @@ export default function GestionEquipos() {
                             {option.label}
                           </Text>
                           {newTeam.categoriaKey === option.value && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1506,7 +1508,7 @@ export default function GestionEquipos() {
                   <TextInput
                     style={styles.teamNameInput}
                     placeholder={t('team.customCategoryPlaceholder')}
-                    placeholderTextColor="#A0AEC0"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                     value={newTeam.categoriaCustom}
                     onChangeText={(text) => setNewTeam(prev => ({ ...prev, categoriaCustom: text }))}
                   />
@@ -1522,7 +1524,7 @@ export default function GestionEquipos() {
                     <Text style={styles.selectText}>
                       {t('team.timePerHalfMinutes', { minutes: newTeam.tiempoPorParte })}
                     </Text>
-                    <Ionicons name={showCreateTimeOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showCreateTimeOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1548,7 +1550,7 @@ export default function GestionEquipos() {
                             {t('team.timePerHalfMinutes', { minutes: time })}
                           </Text>
                           {newTeam.tiempoPorParte === time && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1566,7 +1568,7 @@ export default function GestionEquipos() {
                     <Text style={styles.selectText}>
                       {t('team.playersPerTeamCount', { count: newTeam.jugadoresPorEquipo })}
                     </Text>
-                    <Ionicons name={showCreatePlayersPerTeamOptions ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                    <Ionicons name={showCreatePlayersPerTeamOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
                   </View>
                 </TouchableOpacity>
 
@@ -1592,7 +1594,7 @@ export default function GestionEquipos() {
                             {t('team.playersPerTeamCount', { count })}
                           </Text>
                           {newTeam.jugadoresPorEquipo === count && (
-                            <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -1613,12 +1615,12 @@ export default function GestionEquipos() {
                         style={styles.removeBadgeButton}
                         onPress={() => setNewTeam(prev => ({ ...prev, escudo: null }))}
                       >
-                        <Ionicons name="close-circle" size={24} color={THEME.danger} />
+                        <Ionicons name="close-circle" size={24} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
                   ) : (
                     <View style={styles.badgePlaceholder}>
-                      <Ionicons name="image-outline" size={40} color="#A0AEC0" />
+                      <Ionicons name="image-outline" size={40} color={theme.colors.inputPlaceholder} />
                       <Text style={styles.badgePlaceholderText}>{t('team.tapToUpload')}</Text>
                     </View>
                   )}
@@ -1639,7 +1641,7 @@ export default function GestionEquipos() {
                         <Ionicons 
                           name={importPlayers ? "checkbox" : "square-outline"} 
                           size={24} 
-                          color={importPlayers ? THEME.primary : "#6b7280"} 
+                          color={importPlayers ? theme.colors.primary : theme.colors.textMuted} 
                         />
                         <View style={styles.importPlayersTextContainer}>
                           <Text style={[
@@ -1827,7 +1829,7 @@ export default function GestionEquipos() {
                   }}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1842,7 +1844,7 @@ export default function GestionEquipos() {
                             <Image source={{ uri: equipoSeleccionado.escudo }} style={styles.teamDetailBadge} />
                           ) : (
                             <View style={styles.teamDetailBadgePlaceholder}>
-                              <Ionicons name="shield" size={40} color={THEME.primary} />
+                              <Ionicons name="shield" size={40} color={theme.colors.primary} />
                             </View>
                           )}
                         </View>
@@ -1854,7 +1856,7 @@ export default function GestionEquipos() {
                       
                       <View style={styles.teamDetailStats}>
                         <View style={styles.teamDetailStatItem}>
-                          <Ionicons name="time-outline" size={20} color={THEME.primary} />
+                          <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
                           <Text style={styles.teamDetailStatLabel}>{t('team.timePerHalf')}</Text>
                           <Text style={styles.teamDetailStatValue}>
                             {t('team.timePerHalfMinutes', { minutes: equipoSeleccionado.tiempoPorParte || 45 })}
@@ -1871,14 +1873,14 @@ export default function GestionEquipos() {
                         openEditTeamModal(equipoSeleccionado);
                       }}
                     >
-                      <Ionicons name="pencil" size={20} color={THEME.primary} />
+                      <Ionicons name="pencil" size={20} color={theme.colors.primary} />
                       <Text style={styles.teamDetailEditButtonText}>{t('team.editTeam')}</Text>
                     </TouchableOpacity>
 
                     {/* Sección de eliminación */}
                     <View style={styles.dangerZone}>
                       <View style={styles.dangerZoneHeader}>
-                        <Ionicons name="warning" size={24} color={THEME.danger} />
+                        <Ionicons name="warning" size={24} color={theme.colors.error} />
                         <Text style={styles.dangerZoneTitle}>{t('team.dangerZone')}</Text>
                       </View>
                       
@@ -1887,13 +1889,13 @@ export default function GestionEquipos() {
                           style={styles.deleteTeamButton}
                           onPress={() => setShowDeleteConfirmation(true)}
                         >
-                          <Ionicons name="trash" size={20} color={THEME.danger} />
+                          <Ionicons name="trash" size={20} color={theme.colors.error} />
                           <Text style={styles.deleteTeamButtonText}>{t('team.deleteTeam')}</Text>
                         </TouchableOpacity>
                       ) : (
                         <View style={styles.deleteConfirmationContainer}>
                           <View style={styles.deleteWarningBox}>
-                            <Ionicons name="alert-circle" size={32} color={THEME.danger} />
+                            <Ionicons name="alert-circle" size={32} color={theme.colors.error} />
                             <Text style={styles.deleteWarningTitle}>{t('team.deleteWarningTitle')}</Text>
                             <Text style={styles.deleteWarningText}>{t('team.deleteWarningMessage')}</Text>
                             <Text style={styles.deleteWarningList}>
@@ -1912,7 +1914,7 @@ export default function GestionEquipos() {
                           <TextInput
                             style={styles.deleteConfirmationInput}
                             placeholder={equipoSeleccionado.nombre}
-                            placeholderTextColor="#A0AEC0"
+                            placeholderTextColor={theme.colors.inputPlaceholder}
                             value={deleteConfirmationText}
                             onChangeText={setDeleteConfirmationText}
                           />
@@ -1937,10 +1939,10 @@ export default function GestionEquipos() {
                               disabled={deleteConfirmationText.trim() !== equipoSeleccionado.nombre.trim() || deletingTeam}
                             >
                               {deletingTeam ? (
-                                <ActivityIndicator size="small" color="#ff0000" />
+                                <ActivityIndicator size="small" color={theme.colors.error} />
                               ) : (
                                 <>
-                                  <Ionicons name="trash" size={16} color={THEME.danger} style={{ marginRight: 6 }} />
+                                  <Ionicons name="trash" size={16} color={theme.colors.error} style={{ marginRight: 6 }} />
                                   <Text style={styles.deleteConfirmButtonText}>{t('edition.delete')}</Text>
                                 </>
                               )}
@@ -1959,11 +1961,11 @@ export default function GestionEquipos() {
     </AppLayout>
   );
 }
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   // Container and Layout
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
 
   // Loading States
@@ -1974,12 +1976,12 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 32 : 40,
   },
   loadingCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     padding: isMobileDevice() ? 28 : 36,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -1995,7 +1997,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 18,
     fontSize: isMobileDevice() ? 15 : 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
 
@@ -2009,7 +2011,7 @@ const styles = StyleSheet.create({
     marginHorizontal: isMobileDevice() ? 12 : 16,
     ...Platform.select({
       ios: {
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 16,
@@ -2064,7 +2066,7 @@ const styles = StyleSheet.create({
   changeSeasonButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 8 : 10,
     borderRadius: 12,
@@ -2081,7 +2083,7 @@ const styles = StyleSheet.create({
     }),
   },
   changeSeasonText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: isMobileDevice() ? 12 : 14,
     marginLeft: 6,
@@ -2104,13 +2106,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     paddingVertical: isMobileDevice() ? 14 : 16,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 14,
     ...Platform.select({
       ios: {
-        shadowColor: THEME.success,
+        shadowColor: theme.colors.success,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -2131,12 +2133,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingVertical: isMobileDevice() ? 14 : 16,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: THEME.success,
+    borderColor: theme.colors.success,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -2150,7 +2152,7 @@ const styles = StyleSheet.create({
     }),
   },
   secondaryActionText: {
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '700',
     fontSize: isMobileDevice() ? 13 : 14,
     marginLeft: 8,
@@ -2169,7 +2171,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: isMobileDevice() ? 17 : 19,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 10,
   },
 
@@ -2180,12 +2182,12 @@ const styles = StyleSheet.create({
 
   // Team Cards
   teamCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: isMobileDevice() ? 14 : 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -2199,12 +2201,12 @@ const styles = StyleSheet.create({
     }),
   },
   teamCardSelected: {
-    backgroundColor: THEME.primary + '12',
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary + '12',
+    borderColor: theme.colors.primary,
     borderWidth: 2,
     ...Platform.select({
       ios: {
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOpacity: 0.15,
       },
       android: {
@@ -2220,7 +2222,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -2232,57 +2234,57 @@ const styles = StyleSheet.create({
   teamName: {
     fontSize: 17,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 3,
   },
   teamNameSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   teamCategory: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   teamCategorySelected: {
-    color: THEME.primaryLight,
+    color: theme.colors.primaryLight,
   },
   teamActions: {
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   teamActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primary + '10',
     borderRadius: 10,
     alignSelf: 'flex-start',
   },
   teamActionText: {
     fontSize: 14,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     marginLeft: 8,
   },
 
   // Add Team Card
   addTeamCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 28,
     marginBottom: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
   },
   addTeamText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginTop: 10,
   },
@@ -2292,12 +2294,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emptyStateCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     padding: 36,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -2313,13 +2315,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 18,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 21,
@@ -2327,14 +2329,14 @@ const styles = StyleSheet.create({
   createTeamButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 26,
     borderRadius: 14,
     marginTop: 22,
     ...Platform.select({
       ios: {
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -2353,14 +2355,14 @@ const styles = StyleSheet.create({
   emptyStateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 26,
     borderRadius: 14,
     marginTop: 22,
     ...Platform.select({
       ios: {
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -2379,12 +2381,12 @@ const styles = StyleSheet.create({
 
   // Team Details
   teamDetailsContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     marginHorizontal: 16,
     marginBottom: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -2403,25 +2405,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 18,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   teamDetailsTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 10,
   },
   addPlayerHeaderButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primary + '10',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
   addPlayerHeaderText: {
     fontSize: 14,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -2435,17 +2437,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   playerAvatar: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -2461,19 +2463,19 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 3,
   },
   playerDetails: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   playerCardCompact: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     marginBottom: 6,
   },
@@ -2481,7 +2483,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -2497,12 +2499,12 @@ const styles = StyleSheet.create({
   playerNameCompact: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 2,
   },
   playerDetailsCompact: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   playersGrid: {
     flexDirection: 'row',
@@ -2511,7 +2513,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   playerCardGrid: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 12,
     width: isMobileDevice() ? '31%' : '23.5%',
@@ -2521,7 +2523,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     minHeight: 110,
   },
@@ -2529,7 +2531,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -2546,21 +2548,21 @@ const styles = StyleSheet.create({
   playerNameGrid: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 2,
     lineHeight: 14,
   },
   playerPositionGrid: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 1,
   },
   playerDetailsGrid: {
     fontSize: 10,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 12,
   },
@@ -2572,7 +2574,7 @@ const styles = StyleSheet.create({
   },
   emptyPlayersText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -2581,12 +2583,12 @@ const styles = StyleSheet.create({
   addPlayerContainer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   addPlayerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   addPlayerForm: {
@@ -2598,14 +2600,14 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   inputHalf: {
     flex: 1,
@@ -2614,12 +2616,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10b981',
+    backgroundColor: theme.colors.success,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     marginTop: 8,
-    shadowColor: '#10b981',
+    shadowColor: theme.colors.success,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -2638,7 +2640,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   premiumCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -2650,7 +2652,7 @@ const styles = StyleSheet.create({
   },
   premiumTitle: {
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 8,
@@ -2659,11 +2661,11 @@ const styles = StyleSheet.create({
   premiumButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f59e0b',
+    backgroundColor: theme.colors.warning,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    shadowColor: '#f59e0b',
+    shadowColor: theme.colors.warning,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -2679,13 +2681,13 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '95%',
     maxWidth: 500,
@@ -2697,7 +2699,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   modalContentTablet: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '80%',
     maxWidth: 700,
@@ -2714,12 +2716,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -2728,14 +2730,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -2748,25 +2750,25 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalCancelText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 14,
   },
   modalConfirmButton: {
     flex: 1,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -2778,19 +2780,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   teamNameInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   emptyModalSubtext: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -2803,12 +2805,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   seasonItemActive: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     borderWidth: 1,
-    borderColor: THEME.primaryLight,
+    borderColor: theme.colors.primaryLight,
   },
   seasonItemContent: {
     flexDirection: 'row',
@@ -2822,18 +2824,18 @@ const styles = StyleSheet.create({
   seasonItemText: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   seasonItemTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   seasonItemSubtext: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   seasonItemSubtextActive: {
-    color: THEME.primaryLight,
+    color: theme.colors.primaryLight,
   },
 
   // Empty Modal
@@ -2843,7 +2845,7 @@ const styles = StyleSheet.create({
   },
   emptyModalText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 12,
   },
@@ -2851,13 +2853,13 @@ const styles = StyleSheet.create({
   // Organization Modal
   orgModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 8 : 20,
   },
   orgModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 14 : 20,
     width: '100%',
     height: isMobileDevice() ? '95%' : '90%',
@@ -2872,13 +2874,13 @@ const styles = StyleSheet.create({
   // Player Modal
   playerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
   },
   playerModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '95%',
     maxWidth: 500,
@@ -2890,7 +2892,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   playerModalContentTablet: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '80%',
     maxWidth: 700,
@@ -2907,12 +2909,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   playerModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerModalClose: {
     padding: 4,
@@ -2921,14 +2923,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   playerModalInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   playerModalActions: {
@@ -2936,26 +2938,26 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   playerModalButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 12,
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   playerModalButtonDelete: {
-    backgroundColor: THEME.danger,
-    shadowColor: THEME.danger,
+    backgroundColor: theme.colors.error,
+    shadowColor: theme.colors.error,
   },
   playerModalButtonText: {
     color: '#ffffff',
@@ -2966,7 +2968,7 @@ const styles = StyleSheet.create({
 
   // Select Styles
   selectModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     margin: isMobileDevice() ? 12 : 20,
     maxHeight: isMobileDevice() ? '80%' : '70%',
@@ -2987,38 +2989,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   selectOptionSelected: {
-    backgroundColor: THEME.primary + '15',
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary + '15',
+    borderColor: theme.colors.primary,
     borderWidth: 1,
   },
   selectOptionText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   selectOptionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   modalInputText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     flex: 1,
   },
   modalInputPlaceholder: {
     fontSize: 16,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     flex: 1,
   },
   yearOptionsContainer: {
     maxHeight: 200,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginTop: -8,
     marginBottom: 16,
     shadowColor: '#000',
@@ -3037,18 +3039,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   yearOptionSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   yearOptionText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   yearOptionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 
@@ -3060,20 +3062,20 @@ const styles = StyleSheet.create({
   },
   selectInputText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   selectInputPlaceholder: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     flex: 1,
   },
   positionOptionsContainer: {
     maxHeight: 180,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -3091,26 +3093,26 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   positionOptionSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   positionOptionText: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   positionOptionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 
   // Position Select Styles (Edit Player Modal)
   playerModalSelect: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -3122,20 +3124,20 @@ const styles = StyleSheet.create({
   },
   playerModalSelectText: {
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   playerModalSelectPlaceholder: {
     fontSize: 16,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     flex: 1,
   },
   editPositionOptionsContainer: {
     maxHeight: 150,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -3153,31 +3155,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   editPositionOptionSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   editPositionOptionText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   editPositionOptionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 
   // Add Player Modal
   addPlayerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 12 : 20,
   },
   addPlayerModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     width: '100%',
     maxWidth: isMobileDevice() ? 380 : 400,
@@ -3195,12 +3197,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     paddingVertical: isMobileDevice() ? 14 : 18,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   addPlayerModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   addPlayerModalCloseButton: {
     padding: 4,
@@ -3214,18 +3216,18 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   addPlayerModalCancelButton: {
     flex: 1,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   addPlayerModalCancelText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -3234,19 +3236,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   addPlayerModalDeleteButton: {
-    backgroundColor: THEME.danger,
-    shadowColor: THEME.danger,
+    backgroundColor: theme.colors.error,
+    shadowColor: theme.colors.error,
   },
   addPlayerModalConfirmText: {
     color: '#ffffff',
@@ -3259,7 +3261,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
@@ -3271,20 +3273,20 @@ const styles = StyleSheet.create({
   },
   selectText: {
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   selectPlaceholder: {
     fontSize: 16,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     flex: 1,
   },
   optionsContainer: {
     maxHeight: 200,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginTop: -8,
     marginBottom: 16,
     shadowColor: '#000',
@@ -3303,18 +3305,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   optionItemSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   optionText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   badgeContainer: {
@@ -3322,11 +3324,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 16,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
     borderRadius: 16,
     padding: 20,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   badgePreview: {
     position: 'relative',
@@ -3341,7 +3343,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -10,
     right: -10,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
   },
   badgePlaceholder: {
@@ -3352,7 +3354,7 @@ const styles = StyleSheet.create({
   badgePlaceholderText: {
     marginTop: 8,
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     textAlign: 'center',
   },
 
@@ -3361,15 +3363,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   importPlayersOption: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   importPlayersOptionSelected: {
-    borderColor: THEME.primary,
-    backgroundColor: THEME.primary + '08',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary + '08',
   },
   importPlayersContent: {
     flexDirection: 'row',
@@ -3382,14 +3384,14 @@ const styles = StyleSheet.create({
   importPlayersText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   importPlayersTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   importPlayersSubtext: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   modalConfirmButtonDisabled: {
@@ -3406,7 +3408,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 8,
     borderRadius: 8,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
   },
   
   // Event Section Styles (for day events modal)
@@ -3420,28 +3422,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   eventSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   eventItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   eventItemIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -3452,18 +3454,18 @@ const styles = StyleSheet.create({
   eventItemTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 2,
   },
   eventItemSubtitle: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Modal Footer para crear temporada
   modalFooter: {
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     paddingTop: 16,
     marginTop: 8,
         display: 'flex',
@@ -3475,12 +3477,12 @@ const styles = StyleSheet.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10b981',
+    backgroundColor: theme.colors.success,
     width: '90%',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
-    shadowColor: '#10b981',
+    shadowColor: theme.colors.success,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3496,12 +3498,12 @@ const styles = StyleSheet.create({
   
   // Team Detail Modal
   teamDetailCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   teamDetailHeader: {
     flexDirection: 'row',
@@ -3520,7 +3522,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 16,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3530,17 +3532,17 @@ const styles = StyleSheet.create({
   teamDetailName: {
     fontSize: 22,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 4,
   },
   teamDetailCategory: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   teamDetailStats: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   teamDetailStatItem: {
     flexDirection: 'row',
@@ -3548,29 +3550,29 @@ const styles = StyleSheet.create({
   },
   teamDetailStatLabel: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginLeft: 8,
     flex: 1,
   },
   teamDetailStatValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   teamDetailEditButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primary + '10',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: THEME.primary + '30',
+    borderColor: theme.colors.primary + '30',
   },
   teamDetailEditButtonText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 15,
     marginLeft: 8,
@@ -3586,11 +3588,11 @@ const styles = StyleSheet.create({
   
   // Danger Zone
   dangerZone: {
-    backgroundColor: THEME.danger + '08',
+    backgroundColor: theme.colors.error + '08',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: THEME.danger + '25',
+    borderColor: theme.colors.error + '25',
   },
   dangerZoneHeader: {
     flexDirection: 'row',
@@ -3600,22 +3602,22 @@ const styles = StyleSheet.create({
   dangerZoneTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.danger,
+    color: theme.colors.error,
     marginLeft: 10,
   },
   deleteTeamButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.danger + '40',
+    borderColor: theme.colors.error + '40',
   },
   deleteTeamButtonText: {
-    color: THEME.danger,
+    color: theme.colors.error,
     fontWeight: '600',
     fontSize: 15,
     marginLeft: 8,
@@ -3624,7 +3626,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   deleteWarningBox: {
-    backgroundColor: THEME.danger + '10',
+    backgroundColor: theme.colors.error + '10',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -3633,39 +3635,39 @@ const styles = StyleSheet.create({
   deleteWarningTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.danger,
+    color: theme.colors.error,
     marginTop: 8,
     marginBottom: 8,
     textAlign: 'center',
   },
   deleteWarningText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 20,
   },
   deleteWarningList: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'left',
     lineHeight: 22,
   },
   deleteConfirmationLabel: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 10,
     fontWeight: '500',
   },
   deleteConfirmationInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: THEME.danger + '40',
+    borderColor: theme.colors.error + '40',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   deleteConfirmationButtons: {
@@ -3678,14 +3680,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   deleteCancelButtonText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 14,
     textAlign: 'center',
@@ -3698,10 +3700,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: THEME.danger,
+    backgroundColor: theme.colors.error,
   },
   deleteConfirmButtonDisabled: {
-    backgroundColor: THEME.danger + '40',
+    backgroundColor: theme.colors.error + '40',
   },
   deleteConfirmButtonText: {
     color: '#ffffff',

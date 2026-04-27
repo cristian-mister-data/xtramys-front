@@ -3,7 +3,7 @@ import SeasonView from '@/vendor/season/season';
 
 export default function Season() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <SeasonView />
     </RNWebPage>
   );

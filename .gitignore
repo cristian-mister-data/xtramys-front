@@ -10,6 +10,10 @@ dist-ssr
 *.log
 coverage
 .idea
+
+# Reserved Windows device name accidentally created by tooling; cannot be
+# safely deleted from the working tree, must not be indexed.
+/nul
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json

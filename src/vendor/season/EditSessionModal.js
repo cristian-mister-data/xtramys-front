@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -30,7 +31,7 @@ import StrengthExerciseSelectorModal from '@/vendor/shared/StrengthExerciseSelec
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } from '@/data/strengthExercises';
 
 // Componentes y helpers compartidos
-import { PlayerSelectionModal, THEME, getPlayerInjuryStatus } from '@/vendor/shared/training';
+import { PlayerSelectionModal, getPlayerInjuryStatus } from '@/vendor/shared/training';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -49,6 +50,8 @@ export default function EditSessionModal({
 }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'es';
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [loading, setLoading] = useState(false);
   
   // Detectar dispositivo móvil
@@ -429,11 +432,11 @@ export default function EditSessionModal({
           {/* Header */}
           <View style={[styles.modalHeader, IS_MOBILE && { padding: 14 }]}>
             <View style={styles.headerIcon}>
-              <Ionicons name="fitness" size={24} color={THEME.success} />
+              <Ionicons name="fitness" size={24} color={theme.colors.success} />
             </View>
             <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 16 }]}>{t('session.editSessionTitle')}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -445,7 +448,7 @@ export default function EditSessionModal({
                 style={styles.selectInput}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar" size={20} color={THEME.success} style={{ marginRight: 12 }} />
+                <Ionicons name="calendar" size={20} color={theme.colors.success} style={{ marginRight: 12 }} />
                 <Text style={styles.selectText}>{formatDate(fecha)}</Text>
               </TouchableOpacity>
             </View>
@@ -461,13 +464,13 @@ export default function EditSessionModal({
                     style={styles.timeInput}
                     onPress={() => setShowStartTimePicker(true)}
                   >
-                    <Ionicons name="time" size={20} color={THEME.success} />
+                    <Ionicons name="time" size={20} color={theme.colors.success} />
                     <Text style={styles.timeText}>{horaInicio}</Text>
                   </TouchableOpacity>
                 </View>
                 
                 <View style={styles.timeDivider}>
-                  <Ionicons name="arrow-forward" size={20} color={THEME.textMuted} />
+                  <Ionicons name="arrow-forward" size={20} color={theme.colors.textMuted} />
                 </View>
                 
                 <View style={styles.timeItem}>
@@ -476,7 +479,7 @@ export default function EditSessionModal({
                     style={styles.timeInput}
                     onPress={() => setShowEndTimePicker(true)}
                   >
-                    <Ionicons name="time-outline" size={20} color={THEME.success} />
+                    <Ionicons name="time-outline" size={20} color={theme.colors.success} />
                     <Text style={styles.timeText}>{horaFin}</Text>
                   </TouchableOpacity>
                 </View>
@@ -485,7 +488,7 @@ export default function EditSessionModal({
               {/* Duración calculada */}
               {horaInicio && horaFin && (
                 <View style={styles.durationBadge}>
-                  <Ionicons name="hourglass-outline" size={16} color={THEME.success} />
+                  <Ionicons name="hourglass-outline" size={16} color={theme.colors.success} />
                   <Text style={styles.durationText}>
                     {t('session.duration')}: {(() => {
                       const [h1, m1] = horaInicio.split(':').map(Number);
@@ -512,12 +515,12 @@ export default function EditSessionModal({
                 onPress={() => setShowPlayerSelectorModal(true)}
               >
                 <View style={styles.playerSelectorLeft}>
-                  <Ionicons name="people" size={20} color={THEME.success} />
+                  <Ionicons name="people" size={20} color={theme.colors.success} />
                   <Text style={styles.playerSelectorText}>
                     {t('session.selectPlayersCount', { count: selectedPlayers.length })}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
               
               {/* Chips de jugadores seleccionados */}
@@ -546,7 +549,7 @@ export default function EditSessionModal({
               
               {extraPlayersAvailable.length === 0 ? (
                 <View style={styles.noExtraPlayersInfo}>
-                  <Ionicons name="information-circle-outline" size={20} color={THEME.textMuted} />
+                  <Ionicons name="information-circle-outline" size={20} color={theme.colors.textMuted} />
                   <Text style={styles.noExtraPlayersText}>
                     {t('schedule.noExtraPlayersAvailable') || 'No hay jugadores extras disponibles. Puedes crearlos en la sección de Jugadores marcándolos como "extra".'}
                   </Text>
@@ -579,7 +582,7 @@ export default function EditSessionModal({
                           {getPlayerFullName(player)}
                         </Text>
                         {isSelected && (
-                          <Ionicons name="checkmark-circle" size={16} color={THEME.warning} style={{ marginLeft: 4 }} />
+                          <Ionicons name="checkmark-circle" size={16} color={theme.colors.warning} style={{ marginLeft: 4 }} />
                         )}
                       </TouchableOpacity>
                     );
@@ -597,7 +600,7 @@ export default function EditSessionModal({
                 style={styles.addExerciseBtn}
                 onPress={() => setShowExerciseSelectorModal(true)}
               >
-                <Ionicons name="add-circle" size={22} color={THEME.success} />
+                <Ionicons name="add-circle" size={22} color={theme.colors.success} />
                 <Text style={styles.addExerciseBtnText}>{t('session.addExercise')}</Text>
               </TouchableOpacity>
 
@@ -637,7 +640,7 @@ export default function EditSessionModal({
                                 style={styles.removeExerciseBtnMobile}
                                 onPress={() => handleRemoveExercise(exId)}
                               >
-                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                                <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
                               </TouchableOpacity>
                             </View>
                             
@@ -651,7 +654,7 @@ export default function EditSessionModal({
                                 />
                               ) : (
                                 <View style={styles.exerciseItemImagePlaceholderMobile}>
-                                  <Ionicons name="fitness" size={24} color={THEME.textMuted} />
+                                  <Ionicons name="fitness" size={24} color={theme.colors.textMuted} />
                                 </View>
                               )}
                               <View style={styles.exerciseMetaMobile}>
@@ -667,14 +670,14 @@ export default function EditSessionModal({
                                     onPress={handleMoveUp}
                                     disabled={index === 0}
                                   >
-                                    <Ionicons name="arrow-up" size={16} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                                    <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                                   </TouchableOpacity>
                                   <TouchableOpacity
                                     style={[styles.orderBtnMobile, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
                                     onPress={handleMoveDown}
                                     disabled={index === selectedExercises.length - 1}
                                   >
-                                    <Ionicons name="arrow-down" size={16} color={index === selectedExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                                    <Ionicons name="arrow-down" size={16} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                                   </TouchableOpacity>
                                 </View>
                               </View>
@@ -693,7 +696,7 @@ export default function EditSessionModal({
                                 />
                               ) : (
                                 <View style={styles.exerciseItemImagePlaceholder}>
-                                  <Ionicons name="fitness" size={20} color={THEME.textMuted} />
+                                  <Ionicons name="fitness" size={20} color={theme.colors.textMuted} />
                                 </View>
                               )}
                               <View style={styles.exerciseInfo}>
@@ -718,20 +721,20 @@ export default function EditSessionModal({
                                 onPress={handleMoveUp}
                                 disabled={index === 0}
                               >
-                                <Ionicons name="arrow-up" size={18} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                                <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={[styles.orderBtn, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
                                 onPress={handleMoveDown}
                                 disabled={index === selectedExercises.length - 1}
                               >
-                                <Ionicons name="arrow-down" size={18} color={index === selectedExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                                <Ionicons name="arrow-down" size={18} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={styles.removeExerciseBtn}
                                 onPress={() => handleRemoveExercise(exId)}
                               >
-                                <Ionicons name="close-circle" size={22} color="#ef4444" />
+                                <Ionicons name="close-circle" size={22} color={theme.colors.error} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -751,7 +754,7 @@ export default function EditSessionModal({
                               keyboardType="number-pad"
                               autoComplete="off"
                               placeholder="0"
-                              placeholderTextColor={THEME.textMuted}
+                              placeholderTextColor={theme.colors.textMuted}
                             />
                           </View>
                         )}
@@ -765,7 +768,7 @@ export default function EditSessionModal({
                               setShowTeamAssignmentModal(true);
                             }}
                           >
-                            <Ionicons name="people" size={18} color={THEME.primary} />
+                            <Ionicons name="people" size={18} color={theme.colors.primary} />
                             <Text style={styles.teamAssignmentButtonText}>
                               {t('session.assignTeams')} ({exercise.equipos} {t('session.teams')})
                             </Text>
@@ -787,7 +790,7 @@ export default function EditSessionModal({
                               setExerciseObservations(prev => ({ ...prev, [exId]: text }));
                             }}
                             placeholder={t('session.exerciseNotesPlaceholder')}
-                            placeholderTextColor={THEME.textMuted}
+                            placeholderTextColor={theme.colors.textMuted}
                             multiline
                             numberOfLines={2}
                           />
@@ -798,7 +801,7 @@ export default function EditSessionModal({
                 </View>
               ) : (
                 <View style={styles.emptyExercises}>
-                  <Ionicons name="fitness-outline" size={32} color={THEME.textMuted} />
+                  <Ionicons name="fitness-outline" size={32} color={theme.colors.textMuted} />
                   <Text style={styles.emptyExercisesText}>{t('session.noExercisesAdded')}</Text>
                 </View>
               )}
@@ -810,11 +813,11 @@ export default function EditSessionModal({
               
               {/* Botón añadir ejercicio de fuerza */}
               <TouchableOpacity
-                style={[styles.addExerciseBtn, { borderColor: '#8b5cf6' }]}
+                style={[styles.addExerciseBtn, { borderColor: theme.colors.purple }]}
                 onPress={() => setShowStrengthExerciseSelectorModal(true)}
               >
-                <Ionicons name="barbell" size={22} color="#8b5cf6" />
-                <Text style={[styles.addExerciseBtnText, { color: '#8b5cf6' }]}>{t('session.addStrengthExercise')}</Text>
+                <Ionicons name="barbell" size={22} color={theme.colors.purple} />
+                <Text style={[styles.addExerciseBtnText, { color: theme.colors.purple }]}>{t('session.addStrengthExercise')}</Text>
               </TouchableOpacity>
 
               {/* Lista de ejercicios de fuerza seleccionados */}
@@ -862,7 +865,7 @@ export default function EditSessionModal({
                                 style={styles.removeExerciseBtnMobile}
                                 onPress={() => handleRemoveStrengthExercise(seId)}
                               >
-                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                                <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
                               </TouchableOpacity>
                             </View>
                             <View style={styles.exerciseImageRowMobile}>
@@ -875,21 +878,21 @@ export default function EditSessionModal({
                                 {sectionInfo && (
                                   <Text style={styles.exerciseItemType}>{t(sectionInfo.section.i18nKey)}</Text>
                                 )}
-                                <Text style={{ fontSize: 11, color: THEME.textMuted }}>Nivel: {exercise.level}</Text>
+                                <Text style={{ fontSize: 11, color: theme.colors.textMuted }}>Nivel: {exercise.level}</Text>
                                 <View style={styles.exerciseOrderControlsMobile}>
                                   <TouchableOpacity
                                     style={[styles.orderBtnMobile, index === 0 && styles.orderBtnDisabled]}
                                     onPress={handleMoveUpStrength}
                                     disabled={index === 0}
                                   >
-                                    <Ionicons name="arrow-up" size={16} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                                    <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                                   </TouchableOpacity>
                                   <TouchableOpacity
                                     style={[styles.orderBtnMobile, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
                                     onPress={handleMoveDownStrength}
                                     disabled={index === selectedStrengthExercises.length - 1}
                                   >
-                                    <Ionicons name="arrow-down" size={16} color={index === selectedStrengthExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                                    <Ionicons name="arrow-down" size={16} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                                   </TouchableOpacity>
                                 </View>
                               </View>
@@ -921,20 +924,20 @@ export default function EditSessionModal({
                                 onPress={handleMoveUpStrength}
                                 disabled={index === 0}
                               >
-                                <Ionicons name="arrow-up" size={18} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                                <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={[styles.orderBtn, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
                                 onPress={handleMoveDownStrength}
                                 disabled={index === selectedStrengthExercises.length - 1}
                               >
-                                <Ionicons name="arrow-down" size={18} color={index === selectedStrengthExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                                <Ionicons name="arrow-down" size={18} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={styles.removeExerciseBtn}
                                 onPress={() => handleRemoveStrengthExercise(seId)}
                               >
-                                <Ionicons name="close-circle" size={22} color="#ef4444" />
+                                <Ionicons name="close-circle" size={22} color={theme.colors.error} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -954,7 +957,7 @@ export default function EditSessionModal({
                               keyboardType="number-pad"
                               autoComplete="off"
                               placeholder="0"
-                              placeholderTextColor={THEME.textMuted}
+                              placeholderTextColor={theme.colors.textMuted}
                             />
                           </View>
                         )}
@@ -969,7 +972,7 @@ export default function EditSessionModal({
                               setStrengthExerciseObservations(prev => ({ ...prev, [seId]: text }));
                             }}
                             placeholder={t('session.exerciseNotesPlaceholder')}
-                            placeholderTextColor={THEME.textMuted}
+                            placeholderTextColor={theme.colors.textMuted}
                             multiline
                             numberOfLines={2}
                           />
@@ -980,7 +983,7 @@ export default function EditSessionModal({
                 </View>
               ) : (
                 <View style={styles.emptyExercises}>
-                  <Ionicons name="barbell-outline" size={32} color={THEME.textMuted} />
+                  <Ionicons name="barbell-outline" size={32} color={theme.colors.textMuted} />
                   <Text style={styles.emptyExercisesText}>{t('session.noStrengthExercisesAdded')}</Text>
                 </View>
               )}
@@ -994,7 +997,7 @@ export default function EditSessionModal({
                 value={observaciones}
                 onChangeText={setObservaciones}
                 placeholder={t('session.sessionNotesPlaceholder')}
-                placeholderTextColor={THEME.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -1280,7 +1283,7 @@ export default function EditSessionModal({
                 <View style={styles.teamAssignmentModalContainer}>
                   <View style={styles.teamAssignmentModalHeader}>
                     <View style={styles.teamAssignmentModalHeaderLeft}>
-                      <Ionicons name="people" size={24} color={THEME.primary} />
+                      <Ionicons name="people" size={24} color={theme.colors.primary} />
                       <View style={{ marginLeft: 10 }}>
                         <Text style={styles.teamAssignmentModalTitle}>{t('session.assignTeams')}</Text>
                         <Text style={styles.teamAssignmentModalSubtitle}>{currentExerciseForTeams.nombre}</Text>
@@ -1290,7 +1293,7 @@ export default function EditSessionModal({
                       style={styles.teamAssignmentModalCloseBtn}
                       onPress={() => setShowTeamAssignmentModal(false)}
                     >
-                      <MaterialIcons name="close" size={24} color={THEME.textSecondary} />
+                      <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
 
@@ -1415,7 +1418,7 @@ export default function EditSessionModal({
                                     <Ionicons 
                                       name="person-add-outline" 
                                       size={14} 
-                                      color={isSelected ? "#fff" : THEME.warning} 
+                                      color={isSelected ? "#fff" : theme.colors.warning} 
                                       style={{ marginRight: 4 }}
                                     />
                                   )}
@@ -1451,7 +1454,7 @@ export default function EditSessionModal({
                         }));
                       }}
                     >
-                      <MaterialIcons name="clear-all" size={20} color={THEME.textSecondary} />
+                      <MaterialIcons name="clear-all" size={20} color={theme.colors.textSecondary} />
                       <Text style={styles.teamAssignmentClearBtnText}>{t('session.clearAllTeams')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1472,7 +1475,7 @@ export default function EditSessionModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1480,7 +1483,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: IS_MOBILE_DEVICE ? 12 : 20,
     width: IS_MOBILE_DEVICE ? '100%' : '95%',
     maxWidth: IS_MOBILE_DEVICE ? undefined : 700,
@@ -1498,13 +1501,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   headerIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#10b98115',
+    backgroundColor: theme.colors.successSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1513,12 +1516,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   closeBtn: {
     padding: 4,
     borderRadius: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   modalBody: {
     flex: 1,
@@ -1532,15 +1535,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   selectInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1548,12 +1551,12 @@ const styles = StyleSheet.create({
   selectText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   
   // Time Section
   timeSection: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -1561,7 +1564,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   timeRow: {
@@ -1575,16 +1578,16 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   timeInput: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1592,7 +1595,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   timeDivider: {
     paddingHorizontal: 16,
@@ -1605,14 +1608,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#10b98115',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 20,
     alignSelf: 'center',
   },
   durationText: {
     fontSize: 13,
     fontWeight: '500',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   
   // Info Box
@@ -1620,7 +1623,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: '#3578e510',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -1628,13 +1631,13 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     lineHeight: 18,
   },
   
   // Summary Box
   summaryBox: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     padding: 14,
     marginBottom: 20,
@@ -1642,7 +1645,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   summaryRow: {
@@ -1656,11 +1659,11 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   summaryLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Buttons
@@ -1669,21 +1672,21 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   cancelBtn: {
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
   },
   cancelBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   deleteBtn: {
     flex: 1,
@@ -1693,7 +1696,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.danger,
+    backgroundColor: theme.colors.colors.error,
   },
   deleteBtnText: {
     fontSize: 15,
@@ -1708,7 +1711,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
   },
   saveBtnDisabled: {
     opacity: 0.6,
@@ -1721,7 +1724,7 @@ const styles = StyleSheet.create({
   
   // Section styles
   section: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1734,26 +1737,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: '#10b98115',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#10b98140',
+    borderColor: theme.colors.success,
     borderStyle: 'dashed',
     marginBottom: 12,
   },
   addExerciseBtnText: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   exercisesList: {
     gap: 12,
   },
   exerciseItem: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     padding: 12,
   },
   exerciseItemHeader: {
@@ -1772,7 +1775,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1787,11 +1790,11 @@ const styles = StyleSheet.create({
   exerciseItemName: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   exerciseItemType: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   removeExerciseBtn: {
@@ -1805,43 +1808,43 @@ const styles = StyleSheet.create({
   },
   exerciseFieldLabel: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     minWidth: 100,
   },
   exerciseFieldInput: {
     flex: 1,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   exerciseObsField: {
     gap: 6,
   },
   exerciseObsInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     minHeight: 60,
   },
   emptyExercises: {
     alignItems: 'center',
     padding: 24,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
   },
   emptyExercisesText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 8,
   },
   
@@ -1850,11 +1853,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   playerSelectorLeft: {
     flexDirection: 'row',
@@ -1863,7 +1866,7 @@ const styles = StyleSheet.create({
   },
   playerSelectorText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectedPlayersChips: {
     flexDirection: 'row',
@@ -1872,25 +1875,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   playerChipSmall: {
-    backgroundColor: '#10b98120',
+    backgroundColor: theme.colors.successSoft,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
   playerChipSmallText: {
     fontSize: 12,
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '500',
   },
   playerChipMore: {
-    backgroundColor: '#94a3b830',
+    backgroundColor: theme.colors.surfaceAlt,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
   playerChipMoreText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   
@@ -1898,29 +1901,29 @@ const styles = StyleSheet.create({
   formSectionSubtitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.warning,
+    color: theme.colors.warning,
     marginTop: 16,
     marginBottom: 8,
   },
   extraPlayersSubtitle: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   noExtraPlayersInfo: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   noExtraPlayersText: {
     flex: 1,
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   extraPlayersGrid: {
@@ -1932,16 +1935,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   extraPlayerChipSelected: {
-    backgroundColor: '#f59e0b15',
-    borderColor: THEME.warning,
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
   },
   extraPlayerChipPhoto: {
     width: 24,
@@ -1952,38 +1955,38 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#94a3b830',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   extraPlayerChipAvatarSelected: {
-    backgroundColor: '#f59e0b30',
+    backgroundColor: theme.colors.warningSoft,
   },
   extraPlayerChipInitials: {
     fontSize: 10,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   extraPlayerChipText: {
     fontSize: 12,
-    color: THEME.text,
+    color: theme.colors.text,
     maxWidth: 100,
   },
   extraPlayerChipTextSelected: {
-    color: THEME.warning,
+    color: theme.colors.warning,
     fontWeight: '500',
   },
   
   // Observations
   observationsInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     minHeight: 100,
   },
   
@@ -1996,7 +1999,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   selectorModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '100%',
     maxWidth: 400,
@@ -2008,12 +2011,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   selectorModalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectorList: {
     padding: 8,
@@ -2028,14 +2031,14 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   selectorItemActive: {
-    backgroundColor: '#10b98115',
+    backgroundColor: theme.colors.successSoft,
   },
   selectorItemText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectorItemTextActive: {
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '500',
   },
   exerciseTypeGroup: {
@@ -2044,10 +2047,10 @@ const styles = StyleSheet.create({
   exerciseTypeHeader: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     marginBottom: 4,
   },
@@ -2056,7 +2059,7 @@ const styles = StyleSheet.create({
   },
   exerciseSelectorDesc: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   emptyState: {
@@ -2065,7 +2068,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 8,
   },
   
@@ -2076,7 +2079,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   datePickerModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 30,
@@ -2088,21 +2091,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   datePickerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   datePickerCancel: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   datePickerDone: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Estilos para imagen de ejercicio
@@ -2111,14 +2114,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseImagePlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2148,8 +2151,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   exerciseVideoBadgeInactive: {
-    backgroundColor: '#94a3b8',
-    shadowColor: '#94a3b8',
+    backgroundColor: theme.colors.textMuted,
+    shadowColor: theme.colors.textMuted,
   },
   
   // Modal de video
@@ -2209,14 +2212,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseItemImagePlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2234,7 +2237,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2253,11 +2256,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   removeExerciseBtnMobile: {
     padding: 6,
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     borderRadius: 8,
   },
   exerciseImageRowMobile: {
@@ -2270,13 +2273,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 10,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseItemImagePlaceholderMobile: {
     width: 60,
     height: 60,
     borderRadius: 10,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2294,11 +2297,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   // ============ FIN ESTILOS MÓVIL ============
   
@@ -2308,13 +2311,13 @@ const styles = StyleSheet.create({
   },
   wellnessSubtitle: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   wellnessLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 10,
   },
   wellnessSelector: {
@@ -2328,19 +2331,19 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: THEME.border,
-    backgroundColor: THEME.inputBg,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   wellnessOptionSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   wellnessOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   wellnessOptionTextSelected: {
     color: '#fff',
@@ -2348,7 +2351,7 @@ const styles = StyleSheet.create({
   wellnessDetailBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3578e510',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 12,
     padding: 14,
     gap: 10,
@@ -2357,16 +2360,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
 
   // --- Team Assignment Styles ---
   teamAssignmentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3578e510',
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 1.5,
-    borderColor: '#3578e530',
+    borderColor: theme.colors.primary,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -2374,14 +2377,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   teamAssignmentButtonText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
     flex: 1,
   },
   teamAssignmentBadge: {
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -2394,7 +2397,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   teamAssignmentModalContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     width: '100%',
@@ -2413,8 +2416,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    backgroundColor: THEME.background,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   teamAssignmentModalHeaderLeft: {
     flexDirection: 'row',
@@ -2424,17 +2427,17 @@ const styles = StyleSheet.create({
   teamAssignmentModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   teamAssignmentModalSubtitle: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   teamAssignmentModalCloseBtn: {
     padding: 8,
     borderRadius: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   teamAssignmentModalBody: {
     flex: 1,
@@ -2442,10 +2445,10 @@ const styles = StyleSheet.create({
   },
   teamAssignmentTeamSection: {
     marginBottom: 20,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   teamAssignmentTeamHeader: {
@@ -2453,9 +2456,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   teamAssignmentTeamBadge: {
     width: 28,
@@ -2472,13 +2475,13 @@ const styles = StyleSheet.create({
   teamAssignmentTeamTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 10,
     flex: 1,
   },
   teamAssignmentTeamCount: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   teamAssignmentPlayersList: {
@@ -2490,36 +2493,36 @@ const styles = StyleSheet.create({
   teamAssignmentPlayerChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderWidth: 1.5,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   teamAssignmentPlayerChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   teamAssignmentPlayerChipDisabled: {
-    backgroundColor: THEME.inputBg,
-    borderColor: THEME.border,
+    backgroundColor: theme.colors.inputBg,
+    borderColor: theme.colors.border,
     opacity: 0.5,
   },
   teamAssignmentPlayerChipExtra: {
-    borderColor: THEME.warning,
-    backgroundColor: THEME.warning + '15',
+    borderColor: theme.colors.warning,
+    backgroundColor: theme.colors.warning + '15',
   },
   teamAssignmentPlayerChipExtraSelected: {
-    backgroundColor: THEME.warning,
-    borderColor: THEME.warning,
+    backgroundColor: theme.colors.warning,
+    borderColor: theme.colors.warning,
   },
   teamAssignmentPlayerDorsal: {
     fontSize: 12,
     fontWeight: '700',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginRight: 6,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -2530,14 +2533,14 @@ const styles = StyleSheet.create({
   },
   teamAssignmentPlayerName: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   teamAssignmentPlayerNameSelected: {
     color: '#ffffff',
   },
   teamAssignmentPlayerNameDisabled: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   teamAssignmentModalFooter: {
     flexDirection: 'row',
@@ -2546,8 +2549,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    backgroundColor: THEME.background,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   teamAssignmentClearBtn: {
     flexDirection: 'row',
@@ -2555,12 +2558,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   teamAssignmentClearBtnText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
@@ -2571,7 +2574,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   teamAssignmentConfirmBtnText: {
     color: '#ffffff',
