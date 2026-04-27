@@ -3,7 +3,7 @@ import WellnessTemplatesView from '@/vendor/wellness/WellnessTemplates';
 
 export default function WellnessTemplates() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <WellnessTemplatesView />
     </RNWebPage>
   );

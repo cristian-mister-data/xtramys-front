@@ -15,6 +15,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
@@ -51,20 +52,9 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
 
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#276e15',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-};
+// THEME tokens are now derived from styled-components theme inside the component.
+// `getWellnessColor` returns semantic wellness/mood colors and is intentionally
+// left with literal hex values (chart-style data colors).
 
 // Colores según nivel de wellness
 const getWellnessColor = (value) => {
@@ -78,6 +68,23 @@ const getWellnessColor = (value) => {
 export default function WellnessManagement({ navigation }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const THEME = useMemo(() => ({
+    primary: theme.colors.primary,
+    primaryLight: theme.colors.primaryLight,
+    primaryDark: theme.colors.primaryHover,
+    success: theme.colors.success,
+    warning: theme.colors.warning,
+    danger: theme.colors.error,
+    background: theme.colors.background,
+    backgroundAlt: theme.colors.backgroundAlt,
+    surface: theme.colors.surface,
+    text: theme.colors.text,
+    textSecondary: theme.colors.textSecondary,
+    textMuted: theme.colors.textMuted,
+    border: theme.colors.border,
+  }), [theme]);
   const sessions = useSelector(state => state.session.session) || [];
   const equipos = useSelector(state => state.team.teams) || [];
   
@@ -1108,7 +1115,7 @@ export default function WellnessManagement({ navigation }) {
                   ) : isLinkExpired ? (
                     <View style={styles.linkActions}>
                       <View style={styles.linkStatusRow}>
-                        <View style={[styles.linkStatusBadge, { backgroundColor: '#fee2e2' }]}>
+                        <View style={[styles.linkStatusBadge, { backgroundColor: theme.colors.errorSoft }]}>
                           <Ionicons name="time-outline" size={14} color={THEME.danger} />
                           <Text style={[styles.linkStatusText, { color: THEME.danger }]}>
                             {t('preWellness.linkExpired')}
@@ -1135,7 +1142,7 @@ export default function WellnessManagement({ navigation }) {
                   ) : (
                     <View style={styles.linkActions}>
                       <View style={styles.linkStatusRow}>
-                        <View style={[styles.linkStatusBadge, { backgroundColor: isLinkActive ? '#dcfce7' : '#fee2e2' }]}>
+                        <View style={[styles.linkStatusBadge, { backgroundColor: isLinkActive ? theme.colors.successSoft : theme.colors.errorSoft }]}>
                           <Ionicons 
                             name={isLinkActive ? 'checkmark-circle' : 'close-circle'} 
                             size={14} 
@@ -1341,17 +1348,17 @@ export default function WellnessManagement({ navigation }) {
 
         {/* Modal PDF por rango de fechas */}
         <Modal visible={showRangePDFModal} animationType="slide" transparent>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ backgroundColor: THEME.surface, borderRadius: 16, padding: 24, width: isMobile ? '90%' : 400, maxWidth: 500 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b' }}>{t('wellness.rangePDF')}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text }}>{t('wellness.rangePDF')}</Text>
                 <TouchableOpacity onPress={() => setShowRangePDFModal(false)}>
-                  <Ionicons name="close" size={24} color="#64748b" />
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
               {/* Tipo */}
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 8 }}>{t('wellness.pdfType')}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginBottom: 8 }}>{t('wellness.pdfType')}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 <TouchableOpacity
                   style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'post' ? '#276e15' : THEME.backgroundAlt }}
@@ -1368,25 +1375,25 @@ export default function WellnessManagement({ navigation }) {
               </View>
 
               {/* Fecha desde */}
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 8 }}>{t('wellness.fromDate', 'Desde')}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginBottom: 8 }}>{t('wellness.fromDate', 'Desde')}</Text>
               <TouchableOpacity
-                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, padding: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                 onPress={() => setShowFromPicker(true)}
               >
-                <Ionicons name="calendar-outline" size={18} color="#3578e5" />
-                <Text style={{ fontSize: 14, color: '#1e293b' }}>
+                <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
+                <Text style={{ fontSize: 14, color: theme.colors.text }}>
                   {rangeFromDate.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </Text>
               </TouchableOpacity>
 
               {/* Fecha hasta */}
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 8 }}>{t('wellness.toDate', 'Hasta')}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginBottom: 8 }}>{t('wellness.toDate', 'Hasta')}</Text>
               <TouchableOpacity
-                style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 12, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, padding: 12, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 8 }}
                 onPress={() => setShowToPicker(true)}
               >
-                <Ionicons name="calendar-outline" size={18} color="#3578e5" />
-                <Text style={{ fontSize: 14, color: '#1e293b' }}>
+                <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
+                <Text style={{ fontSize: 14, color: theme.colors.text }}>
                   {rangeToDate.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </Text>
               </TouchableOpacity>
@@ -1432,10 +1439,10 @@ export default function WellnessManagement({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingTop: 16,
@@ -1474,21 +1481,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   tabActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   tabTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   tabContent: {
     flex: 1,
@@ -1497,24 +1504,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 16,
   },
   sessionsList: {
     flex: 1,
   },
   sessionCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   sessionHeader: {
     marginBottom: 12,
@@ -1527,16 +1534,16 @@ const styles = StyleSheet.create({
   sessionDate: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   sessionTime: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginLeft: 4,
   },
   sessionName: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   sessionActions: {
@@ -1578,15 +1585,15 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 4,
   },
-  
+
   // Templates
   typeSelector: {
     flexDirection: 'row',
@@ -1602,13 +1609,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   typeBtnActive: {
-    borderColor: THEME.primary,
-    backgroundColor: `${THEME.primary}10`,
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   typeBadgeSmall: {
     paddingHorizontal: 6,
@@ -1622,23 +1629,23 @@ const styles = StyleSheet.create({
   typeBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   typeBtnTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     marginBottom: 16,
   },
   createBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1646,12 +1653,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   templateCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   templateHeader: {
     marginBottom: 10,
@@ -1664,13 +1671,13 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   defaultBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
@@ -1678,11 +1685,11 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#d97706',
+    color: theme.colors.warningSoftText,
   },
   templateDescription: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   templateMeta: {
@@ -1697,31 +1704,31 @@ const styles = StyleSheet.create({
   },
   templateMetaText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   templateActions: {
     flexDirection: 'row',
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     paddingTop: 12,
   },
   templateActionBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobile ? 10 : 20,
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobile ? 14 : 16,
     width: '100%',
     maxWidth: isMobile ? 400 : 500,
@@ -1734,7 +1741,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobile ? 14 : 16,
     paddingVertical: isMobile ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitleRow: {
     flexDirection: 'row',
@@ -1744,7 +1751,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalBody: {
     padding: 16,
@@ -1754,23 +1761,23 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 16,
   },
   textInput: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   textArea: {
     minHeight: 80,
@@ -1780,7 +1787,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
@@ -1788,12 +1795,12 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   questionText: {
     flex: 1,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   addQuestionRow: {
     flexDirection: 'row',
@@ -1804,7 +1811,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addQuestionBtn: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     padding: 12,
     borderRadius: 10,
     justifyContent: 'center',
@@ -1814,19 +1821,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 10,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
   },
   cancelBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   saveBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 10,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   saveBtnDisabled: {
@@ -1835,7 +1842,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   closeModalBtn: {
     flex: 1,
@@ -1856,14 +1863,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 10,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   pdfBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
 
   // Session Modal
@@ -1888,14 +1895,14 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
   statLabel: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
@@ -1909,7 +1916,7 @@ const styles = StyleSheet.create({
   linkSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   generateLinkBtn: {
@@ -1926,7 +1933,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkActions: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     padding: 12,
   },
@@ -1954,9 +1961,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -1965,7 +1972,7 @@ const styles = StyleSheet.create({
   linkUrlText: {
     flex: 1,
     fontSize: 11,
-    color: THEME.text,
+    color: theme.colors.text,
     fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
   linkActionBtn: {
@@ -1974,14 +1981,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingVertical: 10,
     borderRadius: 8,
   },
   linkActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   responsesSection: {
     marginBottom: 20,
@@ -1989,22 +1996,22 @@ const styles = StyleSheet.create({
   responsesSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   noResponses: {
     alignItems: 'center',
     paddingVertical: 30,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
   },
   noResponsesText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 8,
   },
   responseCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
@@ -2023,7 +2030,7 @@ const styles = StyleSheet.create({
   responsePlayerName: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   responseScoreBadge: {
     paddingHorizontal: 10,
@@ -2037,7 +2044,7 @@ const styles = StyleSheet.create({
   },
   responseQuestions: {
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     paddingTop: 8,
     marginTop: 4,
   },
@@ -2046,11 +2053,11 @@ const styles = StyleSheet.create({
   },
   responseQuestionText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   responseAnswerText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 2,
   },
   responseFooter: {
@@ -2060,11 +2067,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   responseTime: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   pendingSection: {
     marginBottom: 20,
@@ -2072,7 +2079,7 @@ const styles = StyleSheet.create({
   pendingSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   pendingList: {
@@ -2084,7 +2091,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
@@ -2092,6 +2099,6 @@ const styles = StyleSheet.create({
   pendingPlayerName: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#92400e',
+    color: theme.colors.warningSoftText,
   },
 });

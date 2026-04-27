@@ -3,7 +3,7 @@ import WellnessManagementView from '@/vendor/wellness/WellnessManagement';
 
 export default function WellnessManagement() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <WellnessManagementView />
     </RNWebPage>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppLayout from '@/vendor/shared/appLayout';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import {
   getWellnessTemplates,
   createWellnessTemplate,
@@ -31,6 +31,8 @@ const isMobile = width < 768;
 
 export default function WellnessTemplates({ navigation }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState([]);
   const [selectedType, setSelectedType] = useState('pre'); // 'pre' o 'post'
@@ -253,7 +255,7 @@ export default function WellnessTemplates({ navigation }) {
   return (
     <AppLayout navigation={navigation}>
       <View style={styles.container}>
-        {/* Header */}
+        {/* Header (decorative brand gradient — keep literals) */}
         <LinearGradient colors={['#667eea', '#764ba2']} style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -287,17 +289,17 @@ export default function WellnessTemplates({ navigation }) {
         {/* Content */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#667eea" />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : (
           <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
             {templates.length === 0 ? (
               <View style={styles.emptyState}>
-                <MaterialIcons name="description" size={64} color="#ccc" />
+                <MaterialIcons name="description" size={64} color={theme.colors.textMuted} />
                 <Text style={styles.emptyStateText}>{t('wellnessTemplates.noTemplates')}</Text>
                 <Text style={styles.emptyStateSubtext}>
-                  {selectedType === 'pre' 
-                    ? t('wellnessTemplates.noPreTemplatesHint') 
+                  {selectedType === 'pre'
+                    ? t('wellnessTemplates.noPreTemplatesHint')
                     : t('wellnessTemplates.noPostTemplatesHint')}
                 </Text>
               </View>
@@ -307,7 +309,7 @@ export default function WellnessTemplates({ navigation }) {
           </ScrollView>
         )}
 
-        {/* FAB */}
+        {/* FAB (decorative brand gradient — keep literals) */}
         <TouchableOpacity style={styles.fab} onPress={openCreateModal}>
           <LinearGradient colors={['#667eea', '#764ba2']} style={styles.fabGradient}>
             <Feather name="plus" size={24} color="#fff" />
@@ -323,7 +325,7 @@ export default function WellnessTemplates({ navigation }) {
                   {editingTemplate ? t('wellnessTemplates.editTemplate') : t('wellnessTemplates.createTemplate')}
                 </Text>
                 <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                  <Ionicons name="close" size={24} color="#666" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -334,6 +336,7 @@ export default function WellnessTemplates({ navigation }) {
                   value={templateName}
                   onChangeText={setTemplateName}
                   placeholder={t('wellnessTemplates.templateNamePlaceholder')}
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                 />
 
                 <Text style={styles.inputLabel}>{t('wellnessTemplates.description')}</Text>
@@ -342,12 +345,13 @@ export default function WellnessTemplates({ navigation }) {
                   value={templateDescription}
                   onChangeText={setTemplateDescription}
                   placeholder={t('wellnessTemplates.descriptionPlaceholder')}
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   multiline
                   numberOfLines={3}
                 />
 
                 <Text style={styles.inputLabel}>{t('wellnessTemplates.questions')}</Text>
-                
+
                 {questions.map((q, index) => (
                   <View key={index} style={styles.questionItem}>
                     <View style={styles.questionContent}>
@@ -362,26 +366,26 @@ export default function WellnessTemplates({ navigation }) {
                         disabled={index === 0}
                         style={[styles.questionActionBtn, index === 0 && styles.disabledBtn]}
                       >
-                        <Ionicons name="chevron-up" size={18} color={index === 0 ? '#ccc' : '#666'} />
+                        <Ionicons name="chevron-up" size={18} color={index === 0 ? theme.colors.textDisabled : theme.colors.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => moveQuestion(index, 1)}
                         disabled={index === questions.length - 1}
                         style={[styles.questionActionBtn, index === questions.length - 1 && styles.disabledBtn]}
                       >
-                        <Ionicons name="chevron-down" size={18} color={index === questions.length - 1 ? '#ccc' : '#666'} />
+                        <Ionicons name="chevron-down" size={18} color={index === questions.length - 1 ? theme.colors.textDisabled : theme.colors.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => toggleQuestionRequired(index)}
                         style={styles.questionActionBtn}
                       >
-                        <Ionicons name={q.required ? "star" : "star-outline"} size={18} color={q.required ? '#f39c12' : '#666'} />
+                        <Ionicons name={q.required ? "star" : "star-outline"} size={18} color={q.required ? theme.colors.warning : theme.colors.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => removeQuestion(index)}
                         style={styles.questionActionBtn}
                       >
-                        <Ionicons name="trash-outline" size={18} color="#e74c3c" />
+                        <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -393,6 +397,7 @@ export default function WellnessTemplates({ navigation }) {
                     value={newQuestion}
                     onChangeText={setNewQuestion}
                     placeholder={t('wellnessTemplates.addQuestionPlaceholder')}
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                     onSubmitEditing={addQuestion}
                   />
                   <TouchableOpacity style={styles.addQuestionBtn} onPress={addQuestion}>
@@ -428,10 +433,10 @@ export default function WellnessTemplates({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
     padding: 20,
@@ -459,9 +464,9 @@ const styles = StyleSheet.create({
   typeSelector: {
     flexDirection: 'row',
     padding: 15,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   typeButton: {
     flex: 1,
@@ -469,18 +474,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     marginHorizontal: 5,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   typeButtonActive: {
-    backgroundColor: '#667eea',
+    backgroundColor: theme.colors.primary,
   },
   typeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   typeButtonTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   loadingContainer: {
     flex: 1,
@@ -502,24 +507,24 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginTop: 15,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: theme.colors.textMuted,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 20,
   },
   templateCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: theme.mode === 'dark' ? 0.4 : 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -534,13 +539,13 @@ const styles = StyleSheet.create({
   templateName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
     marginRight: 10,
   },
   defaultBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f39c12',
+    backgroundColor: theme.colors.warning,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
@@ -553,11 +558,11 @@ const styles = StyleSheet.create({
   },
   templateDescription: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginTop: 6,
   },
   questionsPreview: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -565,17 +570,17 @@ const styles = StyleSheet.create({
   questionsCount: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#667eea',
+    color: theme.colors.primary,
     marginBottom: 8,
   },
   questionPreview: {
     fontSize: 13,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   moreQuestions: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -598,16 +603,16 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   editButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: theme.colors.primary,
   },
   defaultButton: {
-    backgroundColor: '#f39c12',
+    backgroundColor: theme.colors.warning,
   },
   duplicateButton: {
-    backgroundColor: '#9b59b6',
+    backgroundColor: theme.colors.purple,
   },
   deleteButton: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: theme.colors.error,
   },
   fab: {
     position: 'absolute',
@@ -617,7 +622,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: theme.mode === 'dark' ? 0.6 : 0.3,
     shadowRadius: 6,
     elevation: 6,
   },
@@ -629,13 +634,13 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobile ? 10 : 20,
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobile ? 14 : 16,
     width: isMobile ? '100%' : '60%',
     maxHeight: isMobile ? '95%' : '90%',
@@ -648,12 +653,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobile ? 16 : 20,
     paddingVertical: isMobile ? 14 : 18,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: isMobile ? 17 : 20,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalBody: {
     padding: isMobile ? 16 : 20,
@@ -662,17 +667,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 15,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.inputBorder,
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
-    backgroundColor: '#fafafa',
+    backgroundColor: theme.colors.inputBg,
+    color: theme.colors.text,
   },
   textArea: {
     height: 80,
@@ -681,7 +687,7 @@ const styles = StyleSheet.create({
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
@@ -691,11 +697,11 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
   },
   requiredBadge: {
     fontSize: 11,
-    color: '#e74c3c',
+    color: theme.colors.error,
     fontWeight: '600',
     marginTop: 4,
   },
@@ -720,7 +726,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addQuestionBtn: {
-    backgroundColor: '#667eea',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     padding: 12,
   },
@@ -729,7 +735,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: theme.colors.border,
   },
   cancelButton: {
     paddingVertical: 12,
@@ -738,11 +744,11 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -751,7 +757,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
 });
