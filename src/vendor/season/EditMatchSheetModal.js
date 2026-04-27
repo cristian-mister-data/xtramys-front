@@ -23,6 +23,7 @@ const isMobileDevice = () => {
 };
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
@@ -35,29 +36,13 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 
-// Tema consistente con el resto de la aplicación
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-  gradient: ['#3578e5', '#2856a2'],
-};
-
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
 // Modal para eventos (goles, tarjetas, cambios)
 function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const modalStyles = useMemo(() => makeModalStyles(theme), [theme]);
   const [minuto, setMinuto] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [asistente, setAsistente] = useState(null); // Jugador que da la asistencia
@@ -219,7 +204,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -230,11 +215,11 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
               style={modalStyles.minuteSelector}
               onPress={() => setShowMinuteModal(true)}
             >
-              <Ionicons name="time-outline" size={20} color={THEME.primary} />
-              <Text style={[modalStyles.minuteSelectorText, minuto && { color: THEME.text, fontWeight: '600' }]}>
+              <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+              <Text style={[modalStyles.minuteSelectorText, minuto && { color: theme.colors.text, fontWeight: '600' }]}>
                 {getMinuteLabel()}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+              <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
             </TouchableOpacity>
 
             {eventType === 'gol' && (
@@ -282,7 +267,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                       style={[
                         modalStyles.playerChip,
                         asistente === p._id && modalStyles.playerChipSelected,
-                        { borderColor: asistente === p._id ? '#8b5cf6' : THEME.border, backgroundColor: asistente === p._id ? '#8b5cf6' : THEME.surface }
+                        { borderColor: asistente === p._id ? theme.colors.purple : theme.colors.border, backgroundColor: asistente === p._id ? theme.colors.purple : theme.colors.surface }
                       ]}
                       onPress={() => setAsistente(p._id)}
                     >
@@ -326,21 +311,21 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                   <TouchableOpacity
                     style={[
                       modalStyles.cardTypeBtn,
-                      tipoTarjeta === 'amarilla' && { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }
+                      tipoTarjeta === 'amarilla' && { backgroundColor: theme.colors.warningSoft, borderColor: theme.colors.warning }
                     ]}
                     onPress={() => setTipoTarjeta('amarilla')}
                   >
-                    <View style={[modalStyles.cardIcon, { backgroundColor: '#f59e0b' }]} />
+                    <View style={[modalStyles.cardIcon, { backgroundColor: theme.colors.warning }]} />
                     <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.yellow')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       modalStyles.cardTypeBtn,
-                      tipoTarjeta === 'roja' && { backgroundColor: '#fee2e2', borderColor: '#ef4444' }
+                      tipoTarjeta === 'roja' && { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.error }
                     ]}
                     onPress={() => setTipoTarjeta('roja')}
                   >
-                    <View style={[modalStyles.cardIcon, { backgroundColor: '#ef4444' }]} />
+                    <View style={[modalStyles.cardIcon, { backgroundColor: theme.colors.error }]} />
                     <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.red')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -351,18 +336,18 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                       <TouchableOpacity
                         onPress={() => setPartidosSancionRoja(prev => String(Math.max(1, (parseInt(prev) || 1) - 1)))}
-                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.errorSoft, alignItems: 'center', justifyContent: 'center' }}
                       >
-                        <Ionicons name="remove" size={20} color="#ef4444" />
+                        <Ionicons name="remove" size={20} color={theme.colors.error} />
                       </TouchableOpacity>
-                      <Text style={{ fontSize: 20, fontWeight: '700', color: '#ef4444', minWidth: 30, textAlign: 'center' }}>{partidosSancionRoja}</Text>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: theme.colors.error, minWidth: 30, textAlign: 'center' }}>{partidosSancionRoja}</Text>
                       <TouchableOpacity
                         onPress={() => setPartidosSancionRoja(prev => String(Math.min(20, (parseInt(prev) || 1) + 1)))}
-                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.errorSoft, alignItems: 'center', justifyContent: 'center' }}
                       >
-                        <Ionicons name="add" size={20} color="#ef4444" />
+                        <Ionicons name="add" size={20} color={theme.colors.error} />
                       </TouchableOpacity>
-                      <Text style={{ fontSize: 12, color: THEME.textSecondary }}>{t('matchSheet.modals.banMatchesHint')}</Text>
+                      <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>{t('matchSheet.modals.banMatchesHint')}</Text>
                     </View>
                   </>
                 )}
@@ -373,7 +358,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                   value={motivo}
                   onChangeText={setMotivo}
                   placeholder={t('matchSheet.modals.reasonPlaceholder')}
-                  placeholderTextColor={THEME.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </>
             )}
@@ -387,11 +372,11 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                       key={p._id}
                       style={[
                         modalStyles.playerChip,
-                        jugadorSale === p._id && { backgroundColor: '#ef4444', borderColor: '#ef4444' }
+                        jugadorSale === p._id && { backgroundColor: theme.colors.error, borderColor: theme.colors.error }
                       ]}
                       onPress={() => setJugadorSale(p._id)}
                     >
-                      <Ionicons name="arrow-down" size={12} color={jugadorSale === p._id ? '#fff' : '#ef4444'} />
+                      <Ionicons name="arrow-down" size={12} color={jugadorSale === p._id ? '#fff' : theme.colors.error} />
                       <Text style={[
                         modalStyles.playerChipText,
                         jugadorSale === p._id && { color: '#fff' }
@@ -409,11 +394,11 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                       key={p._id}
                       style={[
                         modalStyles.playerChip,
-                        jugadorEntra === p._id && { backgroundColor: '#10b981', borderColor: '#10b981' }
+                        jugadorEntra === p._id && { backgroundColor: theme.colors.success, borderColor: theme.colors.success }
                       ]}
                       onPress={() => setJugadorEntra(p._id)}
                     >
-                      <Ionicons name="arrow-up" size={12} color={jugadorEntra === p._id ? '#fff' : '#10b981'} />
+                      <Ionicons name="arrow-up" size={12} color={jugadorEntra === p._id ? '#fff' : theme.colors.success} />
                       <Text style={[
                         modalStyles.playerChipText,
                         jugadorEntra === p._id && { color: '#fff' }
@@ -440,7 +425,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
             <View style={modalStyles.header}>
               <Text style={modalStyles.title}>{t('matchSheet.modals.selectMinute')}</Text>
               <TouchableOpacity onPress={() => setShowMinuteModal(false)}>
-                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -507,7 +492,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
 }
 
 // Estilos para modales auxiliares
-const modalStyles = StyleSheet.create({
+const makeModalStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -516,7 +501,7 @@ const modalStyles = StyleSheet.create({
     padding: isMobileDevice() ? 8 : 12,
   },
   container: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 12 : 14,
     width: '100%',
     maxWidth: isMobileDevice() ? '100%' : 450,
@@ -529,35 +514,35 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 14 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   title: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: 12,
   },
   selectAllBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     borderRadius: 8,
   },
   selectAllText: {
     fontSize: 13,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   countText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginLeft: 'auto',
   },
   list: {
@@ -570,43 +555,43 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
   },
   checkboxSelected: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   playerName: {
     flex: 1,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerDorsal: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   emptyText: {
     textAlign: 'center',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     padding: 20,
   },
   confirmBtn: {
     margin: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   confirmBtnText: {
@@ -617,18 +602,18 @@ const modalStyles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerChipsRow: {
     flexDirection: 'row',
@@ -637,19 +622,19 @@ const modalStyles = StyleSheet.create({
   playerChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   playerChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   playerChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerChipTextSelected: {
     color: '#fff',
@@ -662,18 +647,18 @@ const modalStyles = StyleSheet.create({
   optionChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   optionChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   optionChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   optionChipTextSelected: {
     color: '#fff',
@@ -690,7 +675,7 @@ const modalStyles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 8,
   },
   cardIcon: {
@@ -701,15 +686,15 @@ const modalStyles = StyleSheet.create({
   cardTypeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   // Estilos para selector de minuto
   minuteSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
     gap: 10,
@@ -717,12 +702,12 @@ const modalStyles = StyleSheet.create({
   minuteSelectorText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   minuteSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 16,
     marginBottom: 10,
   },
@@ -734,31 +719,31 @@ const modalStyles = StyleSheet.create({
   minuteOption: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     minWidth: 50,
     alignItems: 'center',
   },
   minuteOptionSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   minuteOptionAddedTime: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#f59e0b',
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
   },
   minuteOptionText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   minuteOptionTextSelected: {
     color: '#fff',
   },
   minuteOptionTextAddedTime: {
-    color: '#d97706',
+    color: theme.colors.warningSoftText,
   },
 });
 
@@ -778,6 +763,8 @@ export default function EditMatchSheetModal({
   sanctionedPlayerIds = [], // IDs de jugadores sancionados en torneo actual
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const isCreateMode = !matchSheet?._id;
   const [loading, setLoading] = useState(false);
   
@@ -1506,7 +1493,7 @@ export default function EditMatchSheetModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{matchSheet?._id ? t('matchSheet.editMatch') : t('matchSheet.fields.createMatchSheet')}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -1527,7 +1514,7 @@ export default function EditMatchSheetModal({
                       <Image source={{ uri: rivalEscudo }} style={styles.escudoImage} />
                     ) : (
                       <View style={styles.escudoPlaceholder}>
-                        <Ionicons name="shield-outline" size={28} color={THEME.textMuted} />
+                        <Ionicons name="shield-outline" size={28} color={theme.colors.textMuted} />
                         <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{rival || t('matchSheet.fields.selectRival')}</Text>
                       </View>
                     )
@@ -1537,7 +1524,7 @@ export default function EditMatchSheetModal({
                       <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
                     ) : (
                       <View style={styles.escudoPlaceholder}>
-                        <Ionicons name="shield-outline" size={28} color={THEME.primary} />
+                        <Ionicons name="shield-outline" size={28} color={theme.colors.primary} />
                         <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{team?.nombre || ''}</Text>
                       </View>
                     )
@@ -1563,7 +1550,7 @@ export default function EditMatchSheetModal({
                       <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
                     ) : (
                       <View style={styles.escudoPlaceholder}>
-                        <Ionicons name="shield-outline" size={28} color={THEME.primary} />
+                        <Ionicons name="shield-outline" size={28} color={theme.colors.primary} />
                         <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{team?.nombre || ''}</Text>
                       </View>
                     )
@@ -1573,7 +1560,7 @@ export default function EditMatchSheetModal({
                       <Image source={{ uri: rivalEscudo }} style={styles.escudoImage} />
                     ) : (
                       <View style={styles.escudoPlaceholder}>
-                        <Ionicons name="shield-outline" size={28} color={THEME.textMuted} />
+                        <Ionicons name="shield-outline" size={28} color={theme.colors.textMuted} />
                         <Text style={styles.escudoPlaceholderText} numberOfLines={2}>{rival || t('matchSheet.fields.selectRival')}</Text>
                       </View>
                     )
@@ -1605,7 +1592,7 @@ export default function EditMatchSheetModal({
                 style={styles.selectInput}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                <Ionicons name="calendar" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.selectText}>{formatDate(fechaHora)}</Text>
               </TouchableOpacity>
             </View>
@@ -1617,7 +1604,7 @@ export default function EditMatchSheetModal({
                 style={styles.selectInput}
                 onPress={() => setShowTimePicker(true)}
               >
-                <Ionicons name="time" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                <Ionicons name="time" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.selectText}>{formatTime(fechaHora)}</Text>
               </TouchableOpacity>
             </View>
@@ -1632,19 +1619,19 @@ export default function EditMatchSheetModal({
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <TouchableOpacity
                         style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
-                          fase === 'grupos' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                          fase === 'grupos' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
                         onPress={() => { setFase('grupos'); setRonda(null); setPierna(null); }}
                       >
-                        <Text style={[styles.selectText, fase === 'grupos' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                        <Text style={[styles.selectText, fase === 'grupos' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
                           {t('matchSheet.fields.groupPhase')}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
-                          fase === 'eliminatoria' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                          fase === 'eliminatoria' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
                         onPress={() => { setFase('eliminatoria'); setGrupo(null); setJornada(''); }}
                       >
-                        <Text style={[styles.selectText, fase === 'eliminatoria' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                        <Text style={[styles.selectText, fase === 'eliminatoria' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
                           {t('matchSheet.fields.knockoutPhase')}
                         </Text>
                       </TouchableOpacity>
@@ -1663,7 +1650,7 @@ export default function EditMatchSheetModal({
                       <Text style={grupo ? styles.selectText : styles.selectPlaceholder}>
                         {grupo ? t('matchSheet.fields.groupN', { n: grupo }) : t('matchSheet.fields.selectGroup')}
                       </Text>
-                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                      <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1681,7 +1668,7 @@ export default function EditMatchSheetModal({
                       <Text style={jornada ? styles.selectText : styles.selectPlaceholder}>
                         {jornada ? `${t('matchSheet.fields.matchday')} ${jornada}` : t('matchSheet.fields.selectMatchday')}
                       </Text>
-                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                      <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1697,7 +1684,7 @@ export default function EditMatchSheetModal({
                       <Text style={ronda ? styles.selectText : styles.selectPlaceholder}>
                         {ronda ? t(ROUND_KEYS[ronda] || ronda) : t('matchSheet.fields.selectRound')}
                       </Text>
-                      <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                      <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1710,25 +1697,25 @@ export default function EditMatchSheetModal({
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity
                           style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
-                            pierna === 'ida' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                            pierna === 'ida' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
                           onPress={() => setPierna('ida')}
                         >
-                          <Text style={[styles.selectText, pierna === 'ida' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                          <Text style={[styles.selectText, pierna === 'ida' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
                             {t('matchSheet.fields.legFirst')}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
-                            pierna === 'vuelta' && { backgroundColor: THEME.primary + '20', borderColor: THEME.primary }]}
+                            pierna === 'vuelta' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
                           onPress={() => setPierna('vuelta')}
                         >
-                          <Text style={[styles.selectText, pierna === 'vuelta' && { color: THEME.primary, fontWeight: 'bold' }]}>
+                          <Text style={[styles.selectText, pierna === 'vuelta' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
                             {t('matchSheet.fields.legSecond')}
                           </Text>
                         </TouchableOpacity>
                       </View>
                     ) : (
-                      <View style={[styles.selectInput, { backgroundColor: THEME.bgLight }]}>
+                      <View style={[styles.selectInput, { backgroundColor: theme.colors.background }]}>
                         <Text style={styles.selectText}>{t('matchSheet.fields.legSingle')}</Text>
                       </View>
                     )}
@@ -1750,7 +1737,7 @@ export default function EditMatchSheetModal({
                    ubicacion === 'neutral' ? t('matchSheet.modals.neutral') : 
                    t('matchSheet.modals.selectLocation')}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1762,14 +1749,14 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowTorneoModal(true)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <MaterialIcons name={competicion === 'amistoso' ? 'sports-soccer' : 'emoji-events'} size={20} color={competicion === 'amistoso' ? '#10b981' : '#8B5CF6'} />
+                  <MaterialIcons name={competicion === 'amistoso' ? 'sports-soccer' : 'emoji-events'} size={20} color={competicion === 'amistoso' ? theme.colors.success : theme.colors.purple} />
                   <Text style={styles.selectText}>
                     {competicion === 'amistoso'
                       ? (t('matchSheet.friendly') || 'Amistoso')
                       : (tournaments.find(tr => tr._id === torneoId)?.nombre || t('tournaments.selectTournament'))}
                   </Text>
                 </View>
-                <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1794,7 +1781,7 @@ export default function EditMatchSheetModal({
                         }
                       }}
                     >
-                      <Ionicons name="remove" size={20} color={THEME.text} />
+                      <Ionicons name="remove" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.descuentoValue}>
                       {ubicacion === 'visitante' ? (golesContra || '0') : (golesFavor || '0')}
@@ -1809,7 +1796,7 @@ export default function EditMatchSheetModal({
                         }
                       }}
                     >
-                      <Ionicons name="add" size={20} color={THEME.text} />
+                      <Ionicons name="add" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1834,7 +1821,7 @@ export default function EditMatchSheetModal({
                         }
                       }}
                     >
-                      <Ionicons name="remove" size={20} color={THEME.text} />
+                      <Ionicons name="remove" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.descuentoValue}>
                       {ubicacion === 'visitante' ? (golesFavor || '0') : (golesContra || '0')}
@@ -1849,7 +1836,7 @@ export default function EditMatchSheetModal({
                         }
                       }}
                     >
-                      <Ionicons name="add" size={20} color={THEME.text} />
+                      <Ionicons name="add" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1858,15 +1845,15 @@ export default function EditMatchSheetModal({
               {resultado && (
                 <View style={[
                   styles.resultBadge,
-                  resultado === 'Victoria' && { backgroundColor: THEME.success + '20', borderColor: THEME.success },
-                  resultado === 'Empate' && { backgroundColor: THEME.warning + '20', borderColor: THEME.warning },
-                  resultado === 'Derrota' && { backgroundColor: THEME.danger + '20', borderColor: THEME.danger },
+                  resultado === 'Victoria' && { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success },
+                  resultado === 'Empate' && { backgroundColor: theme.colors.warning + '20', borderColor: theme.colors.warning },
+                  resultado === 'Derrota' && { backgroundColor: theme.colors.error + '20', borderColor: theme.colors.error },
                 ]}>
                   <Text style={[
                     styles.resultBadgeText,
-                    resultado === 'Victoria' && { color: THEME.success },
-                    resultado === 'Empate' && { color: THEME.warning },
-                    resultado === 'Derrota' && { color: THEME.danger },
+                    resultado === 'Victoria' && { color: theme.colors.success },
+                    resultado === 'Empate' && { color: theme.colors.warning },
+                    resultado === 'Derrota' && { color: theme.colors.error },
                   ]}>
                     {translateResult(resultado)}
                   </Text>
@@ -1885,14 +1872,14 @@ export default function EditMatchSheetModal({
                       style={styles.descuentoButton}
                       onPress={() => setDescuentoPrimerTiempo(String(Math.max(0, parseInt(descuentoPrimerTiempo || '0') - 1)))}
                     >
-                      <Ionicons name="remove" size={20} color={THEME.text} />
+                      <Ionicons name="remove" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.descuentoValue}>{descuentoPrimerTiempo || '0'}'</Text>
                     <TouchableOpacity
                       style={styles.descuentoButton}
                       onPress={() => setDescuentoPrimerTiempo(String(parseInt(descuentoPrimerTiempo || '0') + 1))}
                     >
-                      <Ionicons name="add" size={20} color={THEME.text} />
+                      <Ionicons name="add" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1903,14 +1890,14 @@ export default function EditMatchSheetModal({
                       style={styles.descuentoButton}
                       onPress={() => setDescuentoSegundoTiempo(String(Math.max(0, parseInt(descuentoSegundoTiempo || '0') - 1)))}
                     >
-                      <Ionicons name="remove" size={20} color={THEME.text} />
+                      <Ionicons name="remove" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.descuentoValue}>{descuentoSegundoTiempo || '0'}'</Text>
                     <TouchableOpacity
                       style={styles.descuentoButton}
                       onPress={() => setDescuentoSegundoTiempo(String(parseInt(descuentoSegundoTiempo || '0') + 1))}
                     >
-                      <Ionicons name="add" size={20} color={THEME.text} />
+                      <Ionicons name="add" size={20} color={theme.colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1929,9 +1916,9 @@ export default function EditMatchSheetModal({
                   style={styles.selectInput}
                   onPress={() => setShowAlineacionModal(true)}
                 >
-                  <Ionicons name="grid" size={20} color={THEME.primary} style={{ marginRight: 8 }} />
+                  <Ionicons name="grid" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.selectText}>{alineacion}</Text>
-                  <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
               
@@ -1942,11 +1929,11 @@ export default function EditMatchSheetModal({
                   style={styles.selectInput}
                   onPress={() => setShowAlineacionRivalModal(true)}
                 >
-                  <Ionicons name="grid" size={20} color={THEME.danger} style={{ marginRight: 8 }} />
+                  <Ionicons name="grid" size={20} color={theme.colors.error} style={{ marginRight: 8 }} />
                   <Text style={alineacionRival ? styles.selectText : styles.selectPlaceholder}>
                     {alineacionRival || t('matchSheet.fields.selectRivalFormation')}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1961,10 +1948,10 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowConvocadosModal(true)}
               >
                 <View style={styles.playerSelectorLeft}>
-                  <Ionicons name="people" size={20} color={THEME.success} />
+                  <Ionicons name="people" size={20} color={theme.colors.success} />
                   <Text style={styles.playerSelectorText}>{t('schedule.called')} ({convocados.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {/* No Convocados */}
@@ -1973,17 +1960,17 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowNoConvocadosModal(true)}
               >
                 <View style={styles.playerSelectorLeft}>
-                  <Ionicons name="person-remove" size={20} color={THEME.danger} />
+                  <Ionicons name="person-remove" size={20} color={theme.colors.error} />
                   <Text style={styles.playerSelectorText}>{t('schedule.notCalled')} ({noConvocados.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {/* Editor visual de alineación */}
               {convocados.length > 0 && (
                 <View style={styles.lineupEditorContainer}>
                   <View style={styles.lineupEditorHeader}>
-                    <Ionicons name="football" size={20} color="#4CAF50" />
+                    <Ionicons name="football" size={20} color={theme.colors.success} />
                     <Text style={styles.lineupEditorTitle}>{t('schedule.visualLineup')} ({alineacion})</Text>
                   </View>
                   <LineupEditor
@@ -2003,7 +1990,7 @@ export default function EditMatchSheetModal({
               {alineacionTitulares && Object.values(alineacionTitulares).filter(Boolean).length > 0 && (
                 <View style={styles.startersSubsContainer}>
                   <View style={styles.startersSubsHeader}>
-                    <Ionicons name="football" size={18} color="#4CAF50" />
+                    <Ionicons name="football" size={18} color={theme.colors.success} />
                     <Text style={styles.startersSubsTitle}>
                       {t('matchSheet.fields.starters')} ({Object.values(alineacionTitulares).filter(Boolean).length})
                     </Text>
@@ -2014,7 +2001,7 @@ export default function EditMatchSheetModal({
                       if (!player) return null;
                       return (
                         <View key={playerId} style={styles.starterSubChip}>
-                          <View style={[styles.starterSubDorsal, { backgroundColor: '#4CAF50' }]}> 
+                          <View style={[styles.starterSubDorsal, { backgroundColor: theme.colors.success }]}> 
                             <Text style={styles.starterSubDorsalText}>{player.dorsal || '-'}</Text>
                           </View>
                           <Text style={styles.starterSubName}>{getPlayerFullName(player)}</Text>
@@ -2029,7 +2016,7 @@ export default function EditMatchSheetModal({
               {alineacionSuplentes && alineacionSuplentes.length > 0 && (
                 <View style={styles.startersSubsContainer}>
                   <View style={styles.startersSubsHeader}>
-                    <Ionicons name="swap-horizontal" size={18} color="#9C27B0" />
+                    <Ionicons name="swap-horizontal" size={18} color={theme.colors.purple} />
                     <Text style={styles.startersSubsTitle}>
                       {t('matchSheet.fields.substitutes')} ({alineacionSuplentes.length})
                     </Text>
@@ -2039,8 +2026,8 @@ export default function EditMatchSheetModal({
                       const player = players.find(p => p._id === playerId);
                       if (!player) return null;
                       return (
-                        <View key={playerId} style={[styles.starterSubChip, { borderLeftColor: '#9C27B0' }]}> 
-                          <View style={[styles.starterSubDorsal, { backgroundColor: '#9C27B0' }]}> 
+                        <View key={playerId} style={[styles.starterSubChip, { borderLeftColor: theme.colors.purple }]}> 
+                          <View style={[styles.starterSubDorsal, { backgroundColor: theme.colors.purple }]}> 
                             <Text style={styles.starterSubDorsalText}>{player.dorsal || '-'}</Text>
                           </View>
                           <Text style={styles.starterSubName}>{getPlayerFullName(player)}</Text>
@@ -2053,7 +2040,7 @@ export default function EditMatchSheetModal({
 
               {convocados.length === 0 && (
                 <View style={styles.emptyLineupMessage}>
-                  <Ionicons name="information-circle-outline" size={24} color="#999" />
+                  <Ionicons name="information-circle-outline" size={24} color={theme.colors.textMuted} />
                   <Text style={styles.emptyLineupText}>
                     {t('schedule.emptyLineupHint')}
                   </Text>
@@ -2071,10 +2058,10 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowGolesModal(true)}
               >
                 <View style={styles.eventSelectorHeader}>
-                  <Ionicons name="football" size={20} color="#4CAF50" />
+                  <Ionicons name="football" size={20} color={theme.colors.success} />
                   <Text style={styles.eventSelectorTitle}>{t('schedule.goals')} ({goles.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {goles.length > 0 && (
@@ -2097,7 +2084,7 @@ export default function EditMatchSheetModal({
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setGoles(goles.filter((_, i) => i !== originalIndex))}>
-                        <Ionicons name="close-circle" size={16} color="#666" />
+                        <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                     );
@@ -2111,10 +2098,10 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowTarjetasModal(true)}
               >
                 <View style={styles.eventSelectorHeader}>
-                  <Ionicons name="square" size={20} color="#FFC107" />
+                  <Ionicons name="square" size={20} color={theme.colors.warning} />
                   <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.cards')} ({tarjetasAmarillas.length + tarjetasRojas.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {(tarjetasAmarillas.length > 0 || tarjetasRojas.length > 0) && (
@@ -2127,7 +2114,7 @@ export default function EditMatchSheetModal({
                     const originalIdx = tarjetasAmarillas.indexOf(tarjeta);
                     return (
                     <View key={`a-${originalIdx}`} style={styles.eventChip}>
-                      <View style={[styles.cardIndicator, { backgroundColor: '#FFC107' }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.warning }]} />
                       <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                         setEditingCardIndex(originalIdx);
                         setEditingCardType('amarilla');
@@ -2154,7 +2141,7 @@ export default function EditMatchSheetModal({
                           }));
                         }
                       }}>
-                        <Ionicons name="close-circle" size={16} color="#666" />
+                        <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                     );
@@ -2168,7 +2155,7 @@ export default function EditMatchSheetModal({
                     const isAutoDobleAmarilla = tarjeta.motivo === 'Doble amarilla';
                     return (
                     <View key={`r-${originalIdx}`} style={styles.eventChip}>
-                      <View style={[styles.cardIndicator, { backgroundColor: '#F44336' }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.error }]} />
                       <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                         if (!isAutoDobleAmarilla) {
                           setEditingCardIndex(originalIdx);
@@ -2182,7 +2169,7 @@ export default function EditMatchSheetModal({
                       </TouchableOpacity>
                       {!isAutoDobleAmarilla && (
                       <TouchableOpacity onPress={() => setTarjetasRojas(tarjetasRojas.filter((_, i) => i !== originalIdx))}>
-                        <Ionicons name="close-circle" size={16} color="#666" />
+                        <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                       )}
                     </View>
@@ -2197,10 +2184,10 @@ export default function EditMatchSheetModal({
                 onPress={() => setShowCambiosModal(true)}
               >
                 <View style={styles.eventSelectorHeader}>
-                  <Ionicons name="swap-horizontal" size={20} color="#9C27B0" />
+                  <Ionicons name="swap-horizontal" size={20} color={theme.colors.purple} />
                   <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.changes')} ({cambios.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {cambios.length > 0 && (
@@ -2217,7 +2204,7 @@ export default function EditMatchSheetModal({
                           {cambio.minuto}' - {getPlayerName(typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale)} → {getPlayerName(typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra)}
                         </Text>
                         <TouchableOpacity onPress={() => setCambios(cambios.filter((_, i) => i !== originalIndex))}>
-                          <Ionicons name="close-circle" size={16} color="#666" />
+                          <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                         </TouchableOpacity>
                       </View>
                     );
@@ -2229,16 +2216,16 @@ export default function EditMatchSheetModal({
             {/* Goles del Rival */}
             <View style={styles.resultSection}>
               <TouchableOpacity 
-                style={[styles.eventSelector, { borderLeftWidth: 3, borderLeftColor: '#F44336' }]} 
+                style={[styles.eventSelector, { borderLeftWidth: 3, borderLeftColor: theme.colors.error }]} 
                 onPress={() => setShowGolesRivalModal(true)}
               >
                 <View style={styles.eventSelectorHeader}>
-                  <View style={{ backgroundColor: '#fee2e2', borderRadius: 16, padding: 4 }}>
-                    <Ionicons name="football" size={20} color="#F44336" />
+                  <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: 16, padding: 4 }}>
+                    <Ionicons name="football" size={20} color={theme.colors.error} />
                   </View>
-                  <Text style={[styles.eventSelectorTitle, { color: '#dc2626' }]}>{t('matchSheet.rivalGoals.title')} ({golesRival.length})</Text>
+                  <Text style={[styles.eventSelectorTitle, { color: theme.colors.errorSoftText }]}>{t('matchSheet.rivalGoals.title')} ({golesRival.length})</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#666" />
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
 
               {golesRival.length > 0 && (
@@ -2250,12 +2237,12 @@ export default function EditMatchSheetModal({
                   }).map((gol) => {
                     const originalIndex = golesRival.indexOf(gol);
                     return (
-                      <View key={originalIndex} style={[styles.eventChip, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
-                        <Text style={[styles.eventChipText, { color: '#dc2626' }]}>
+                      <View key={originalIndex} style={[styles.eventChip, { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.error }]}>
+                        <Text style={[styles.eventChipText, { color: theme.colors.errorSoftText }]}>
                           {gol.minuto}' - {rival || t('matchSheet.rivalGoals.title')}
                         </Text>
                         <TouchableOpacity onPress={() => setGolesRival(golesRival.filter((_, i) => i !== originalIndex))}>
-                          <Ionicons name="close-circle" size={16} color="#ef4444" />
+                          <Ionicons name="close-circle" size={16} color={theme.colors.error} />
                         </TouchableOpacity>
                       </View>
                     );
@@ -2272,7 +2259,7 @@ export default function EditMatchSheetModal({
                 value={notasEntrenador}
                 onChangeText={setNotasEntrenador}
                 placeholder={t('schedule.notesPlaceholder')}
-                placeholderTextColor={THEME.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -2410,24 +2397,24 @@ export default function EditMatchSheetModal({
                     setShowRivalSelector(false);
                     setSearchRivalText('');
                   }}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 
                 {/* Barra de búsqueda */}
                 <View style={styles.rivalSearchContainer}>
-                  <Ionicons name="search" size={20} color={THEME.textMuted} />
+                  <Ionicons name="search" size={20} color={theme.colors.textMuted} />
                   <TextInput
                     style={styles.rivalSearchInput}
                     placeholder={t('common.search') + '...'}
-                    placeholderTextColor={THEME.textMuted}
+                    placeholderTextColor={theme.colors.textMuted}
                     value={searchRivalText}
                     onChangeText={setSearchRivalText}
                     autoCapitalize="words"
                   />
                   {searchRivalText.length > 0 && (
                     <TouchableOpacity onPress={() => setSearchRivalText('')}>
-                      <MaterialIcons name="clear" size={20} color={THEME.textMuted} />
+                      <MaterialIcons name="clear" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -2435,7 +2422,7 @@ export default function EditMatchSheetModal({
                 <ScrollView style={styles.selectorList}>
                   {filteredRivals.length === 0 ? (
                     <View style={styles.emptyRivals}>
-                      <Ionicons name="alert-circle" size={48} color={THEME.textMuted} />
+                      <Ionicons name="alert-circle" size={48} color={theme.colors.textMuted} />
                       <Text style={styles.emptyRivalsText}>
                         {searchRivalText ? t('common.noResults') : t('schedule.noRivals')}
                       </Text>
@@ -2464,7 +2451,7 @@ export default function EditMatchSheetModal({
                           />
                         ) : (
                           <View style={styles.rivalEscudoPlaceholder}>
-                            <Ionicons name="shield-outline" size={18} color={THEME.textMuted} />
+                            <Ionicons name="shield-outline" size={18} color={theme.colors.textMuted} />
                           </View>
                         )}
                         <Text style={[
@@ -2475,7 +2462,7 @@ export default function EditMatchSheetModal({
                           {r.nombre}
                         </Text>
                         {rival === r.nombre && (
-                          <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                          <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                         )}
                       </TouchableOpacity>
                     ))
@@ -2495,7 +2482,7 @@ export default function EditMatchSheetModal({
                         setSearchRivalText('');
                       }}
                     >
-                      <MaterialIcons name="edit" size={18} color={THEME.primary} />
+                      <MaterialIcons name="edit" size={18} color={theme.colors.primary} />
                       <Text style={styles.useTextButtonText}>
                         {t('common.use')} "{searchRivalText.trim()}"
                       </Text>
@@ -2528,7 +2515,7 @@ export default function EditMatchSheetModal({
                     setShowCreateRivalModal(false);
                     setTimeout(() => setShowRivalSelector(true), 100);
                   }}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
 
@@ -2539,7 +2526,7 @@ export default function EditMatchSheetModal({
                       <Image source={{ uri: newRivalEscudo }} style={styles.escudoPreview} />
                     ) : (
                       <View style={styles.escudoPlaceholder}>
-                        <Ionicons name="camera" size={32} color={THEME.textMuted} />
+                        <Ionicons name="camera" size={32} color={theme.colors.textMuted} />
                         <Text style={styles.escudoPlaceholderText}>{t('rivals.addShield')}</Text>
                       </View>
                     )}
@@ -2552,7 +2539,7 @@ export default function EditMatchSheetModal({
                     value={newRivalName}
                     onChangeText={setNewRivalName}
                     placeholder={t('rivals.namePlaceholder')}
-                    placeholderTextColor={THEME.textMuted}
+                    placeholderTextColor={theme.colors.textMuted}
                   />
                 </View>
 
@@ -2594,7 +2581,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('schedule.selectLineup')}</Text>
                   <TouchableOpacity onPress={() => setShowAlineacionModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -2617,7 +2604,7 @@ export default function EditMatchSheetModal({
                         {alin}
                       </Text>
                       {alineacion === alin && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -2638,7 +2625,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectRivalFormation')}</Text>
                   <TouchableOpacity onPress={() => setShowAlineacionRivalModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -2661,7 +2648,7 @@ export default function EditMatchSheetModal({
                         {alin}
                       </Text>
                       {alineacionRival === alin && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -2682,7 +2669,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectMatchday')}</Text>
                   <TouchableOpacity onPress={() => setShowJornadaModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -2705,7 +2692,7 @@ export default function EditMatchSheetModal({
                         {t('matchSheet.fields.matchday')} {option}
                       </Text>
                       {jornada === option && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -2726,7 +2713,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectRound')}</Text>
                   <TouchableOpacity onPress={() => setShowRondaModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -2749,7 +2736,7 @@ export default function EditMatchSheetModal({
                         {t(ROUND_KEYS[roundOption] || roundOption)}
                       </Text>
                       {ronda === roundOption && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -2770,7 +2757,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.fields.selectGroup')}</Text>
                   <TouchableOpacity onPress={() => setShowGrupoModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -2793,7 +2780,7 @@ export default function EditMatchSheetModal({
                         {t('matchSheet.fields.groupN', { n: groupOption })}
                       </Text>
                       {grupo === groupOption && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -3017,7 +3004,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.modals.selectLocation')}</Text>
                   <TouchableOpacity onPress={() => setShowUbicacionModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -3041,7 +3028,7 @@ export default function EditMatchSheetModal({
                         <Ionicons 
                           name={option.icon} 
                           size={20} 
-                          color={ubicacion === option.value ? THEME.primary : THEME.text} 
+                          color={ubicacion === option.value ? theme.colors.primary : theme.colors.text} 
                         />
                         <Text style={[
                           styles.selectorItemText,
@@ -3051,7 +3038,7 @@ export default function EditMatchSheetModal({
                         </Text>
                       </View>
                       {ubicacion === option.value && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -3072,7 +3059,7 @@ export default function EditMatchSheetModal({
                 <View style={styles.selectorHeader}>
                   <Text style={styles.selectorTitle}>{t('matchSheet.competition')}</Text>
                   <TouchableOpacity onPress={() => setShowTorneoModal(false)}>
-                    <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={styles.selectorList}>
@@ -3092,7 +3079,7 @@ export default function EditMatchSheetModal({
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <View style={{
                         width: 24, height: 24, borderRadius: 12,
-                        backgroundColor: '#10b981',
+                        backgroundColor: theme.colors.success,
                         alignItems: 'center', justifyContent: 'center',
                       }}>
                         <MaterialIcons name="sports-soccer" size={14} color="#fff" />
@@ -3105,7 +3092,7 @@ export default function EditMatchSheetModal({
                       </Text>
                     </View>
                     {competicion === 'amistoso' && (
-                      <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
 
@@ -3127,7 +3114,7 @@ export default function EditMatchSheetModal({
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <View style={{
                           width: 24, height: 24, borderRadius: 12,
-                          backgroundColor: torneo.color || '#8B5CF6',
+                          backgroundColor: torneo.color || theme.colors.purple,
                           alignItems: 'center', justifyContent: 'center',
                         }}>
                           <MaterialIcons name="emoji-events" size={14} color="#fff" />
@@ -3139,19 +3126,19 @@ export default function EditMatchSheetModal({
                           {torneo.nombre}
                         </Text>
                         {torneo.porDefecto && (
-                          <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                            <Text style={{ fontSize: 10, color: '#2563eb', fontWeight: '600' }}>{t('tournaments.default')}</Text>
+                          <View style={{ backgroundColor: theme.colors.infoSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 10, color: theme.colors.infoSoftText, fontWeight: '600' }}>{t('tournaments.default')}</Text>
                           </View>
                         )}
                       </View>
                       {torneoId === torneo._id && competicion === 'torneo' && (
-                        <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
                   {tournaments.filter(tr => tr.estado === 'activo').length === 0 && (
                     <View style={{ padding: 20, alignItems: 'center' }}>
-                      <Text style={{ color: THEME.textSecondary, fontSize: 14 }}>
+                      <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
                         {t('tournaments.noActiveTournaments')}
                       </Text>
                     </View>
@@ -3166,14 +3153,14 @@ export default function EditMatchSheetModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: isMobileDevice() ? '95%' : '92%',
@@ -3186,12 +3173,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 14 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   closeBtn: {
     padding: 4,
@@ -3208,25 +3195,25 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -3234,12 +3221,12 @@ const styles = StyleSheet.create({
   selectText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectPlaceholder: {
     flex: 1,
     fontSize: 15,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   
   // Escudos Row
@@ -3249,7 +3236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
     paddingVertical: 16,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
   },
   escudoContainer: {
@@ -3258,7 +3245,7 @@ const styles = StyleSheet.create({
   },
   escudoLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -3266,11 +3253,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   escudoImage: {
@@ -3287,7 +3274,7 @@ const styles = StyleSheet.create({
   },
   escudoPlaceholderText: {
     fontSize: 8,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 2,
     textAlign: 'center',
     lineHeight: 10,
@@ -3298,7 +3285,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Location
@@ -3312,20 +3299,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingVertical: 14,
   },
   locationBtnActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   locationBtnText: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   locationBtnTextActive: {
     color: '#fff',
@@ -3333,7 +3320,7 @@ const styles = StyleSheet.create({
   
   // Result Section
   resultSection: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -3341,7 +3328,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   scoreRow: {
@@ -3356,19 +3343,19 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   scoreInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
     fontSize: 24,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     minWidth: 80,
   },
@@ -3378,7 +3365,7 @@ const styles = StyleSheet.create({
   scoreDividerText: {
     fontSize: 24,
     fontWeight: '700',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   resultBadge: {
     alignSelf: 'center',
@@ -3397,7 +3384,7 @@ const styles = StyleSheet.create({
   descuentoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   descuentoRow: {
@@ -3412,32 +3399,32 @@ const styles = StyleSheet.create({
   descuentoSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 8,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   descuentoButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   descuentoValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     minWidth: 50,
     textAlign: 'center',
   },
   descuentoHint: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginTop: 12,
     fontStyle: 'italic',
@@ -3449,21 +3436,21 @@ const styles = StyleSheet.create({
     gap: isMobileDevice() ? 8 : 12,
     paddingHorizontal: isMobileDevice() ? 14 : 20,
     paddingVertical: isMobileDevice() ? 12 : 14,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   cancelBtn: {
     flex: 1,
     paddingVertical: isMobileDevice() ? 14 : 16,
     borderRadius: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
   },
   cancelBtnText: {
     fontSize: isMobileDevice() ? 14 : 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   deleteBtn: {
     flex: 1,
@@ -3473,7 +3460,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.danger,
+    backgroundColor: theme.colors.error,
   },
   deleteBtnText: {
     fontSize: 15,
@@ -3488,7 +3475,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   saveBtnDisabled: {
     opacity: 0.6,
@@ -3508,7 +3495,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 12 : 20,
   },
   selectorModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     width: '100%',
     maxWidth: isMobileDevice() ? '100%' : 400,
@@ -3520,12 +3507,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: isMobileDevice() ? 14 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   selectorTitle: {
     fontSize: isMobileDevice() ? 15 : 17,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   customRivalInput: {
     padding: 16,
@@ -3545,14 +3532,14 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   selectorItemActive: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   selectorItemText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectorItemTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   selectorConfirmBtn: {
@@ -3560,7 +3547,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   selectorConfirmText: {
@@ -3570,7 +3557,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     padding: 20,
   },
   
@@ -3578,27 +3565,27 @@ const styles = StyleSheet.create({
   rivalSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     marginHorizontal: 16,
     marginBottom: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   rivalSearchInput: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   rivalEscudoPlaceholder: {
     width: 28,
     height: 28,
     marginRight: 10,
     borderRadius: 14,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3609,14 +3596,14 @@ const styles = StyleSheet.create({
   emptyRivalsText: {
     fontSize: 16,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 12,
     textAlign: 'center',
   },
   rivalSelectorFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     gap: 8,
   },
   useTextButton: {
@@ -3624,12 +3611,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     gap: 8,
   },
   useTextButtonText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -3637,7 +3624,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -3650,7 +3637,7 @@ const styles = StyleSheet.create({
   createRivalModalContent: {
     width: isMobileDevice() ? '95%' : '90%',
     maxWidth: isMobileDevice() ? '100%' : 400,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 16 : 20,
     overflow: 'hidden',
   },
@@ -3661,9 +3648,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 16,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -3680,40 +3667,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 4,
   },
   createRivalLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   createRivalInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   createRivalFooter: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   createRivalCancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
   },
   createRivalCancelText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 16,
   },
@@ -3721,7 +3708,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   createRivalSaveButtonDisabled: {
@@ -3738,12 +3725,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   playerSelectorLeft: {
     flexDirection: 'row',
@@ -3752,17 +3739,17 @@ const styles = StyleSheet.create({
   },
   playerSelectorText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   
   // Estilos para eventos (unificado con matchSheetList)
   eventSelector: {
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -3775,7 +3762,7 @@ const styles = StyleSheet.create({
   eventSelectorTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   eventsList: {
     marginBottom: 12,
@@ -3784,7 +3771,7 @@ const styles = StyleSheet.create({
   eventChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -3792,7 +3779,7 @@ const styles = StyleSheet.create({
   },
   eventChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   cardIndicator: {
@@ -3803,24 +3790,24 @@ const styles = StyleSheet.create({
   
   // Notas
   notasInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     minHeight: 100,
   },
   
   // Estilos para LineupEditor visual
   lineupEditorContainer: {
     marginTop: 16,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   lineupEditorHeader: {
@@ -3828,20 +3815,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: THEME.success + '15',
+    backgroundColor: theme.colors.success + '15',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   lineupEditorTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   emptyLineupMessage: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -3849,16 +3836,16 @@ const styles = StyleSheet.create({
   emptyLineupText: {
     flex: 1,
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   startersSubsContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   startersSubsHeader: {
     flexDirection: 'row',
@@ -3867,12 +3854,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   startersSubsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   startersSubsList: {
     gap: 6,
@@ -3883,10 +3870,10 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: theme.colors.success,
   },
   starterSubDorsal: {
     width: 28,
@@ -3903,7 +3890,7 @@ const styles = StyleSheet.create({
   starterSubName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   
@@ -3914,7 +3901,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   datePickerModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 30,
@@ -3926,20 +3913,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   datePickerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   datePickerCancel: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   datePickerDone: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
 });

@@ -36,11 +36,15 @@ import StrengthExerciseSelectorModal from '@/vendor/shared/StrengthExerciseSelec
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } from '@/data/strengthExercises';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
-import { PlayerSelectionModal, THEME, getPlayerInjuryStatus } from '@/vendor/shared/training';
+import { PlayerSelectionModal, getPlayerInjuryStatus } from '@/vendor/shared/training';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from 'styled-components';
 
 // Componente modal para selección de opciones (jornada, etc.)
-const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOption, title, renderLabel }) => (
+const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOption, title, renderLabel }) => {
+  const theme = useTheme();
+  const optionModalStyles = useMemo(() => makeOptionModalStyles(theme), [theme]);
+  return (
   <Modal
     visible={visible}
     animationType="fade"
@@ -52,7 +56,7 @@ const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOpt
         <View style={optionModalStyles.modalHeader}>
           <Text style={optionModalStyles.modalTitle}>{title}</Text>
           <TouchableOpacity onPress={onClose} style={optionModalStyles.closeButton}>
-            <Ionicons name="close" size={24} color={THEME.textSecondary} />
+            <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
         <ScrollView style={optionModalStyles.modalContent}>
@@ -72,7 +76,7 @@ const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOpt
                 {renderLabel ? renderLabel(option) : option}
               </Text>
               {selectedOption === option && (
-                <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
               )}
             </TouchableOpacity>
           ))}
@@ -80,12 +84,13 @@ const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOpt
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
-const optionModalStyles = StyleSheet.create({
+const makeOptionModalStyles = (theme) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 12,
@@ -94,7 +99,7 @@ const optionModalStyles = StyleSheet.create({
     width: '90%',
     maxWidth: 380,
     maxHeight: '75%',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     overflow: 'hidden',
   },
@@ -105,12 +110,12 @@ const optionModalStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   closeButton: {
     padding: 4,
@@ -129,10 +134,10 @@ const optionModalStyles = StyleSheet.create({
   },
   optionItemText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   optionItemTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 });
@@ -140,6 +145,8 @@ const optionModalStyles = StyleSheet.create({
 
 // Componente para selección de opción única
 function OptionSelectorModal({ visible, onClose, title, options, selectedOption, onSelect }) {
+  const theme = useTheme();
+  const modalStyles = useMemo(() => makeModalStyles(theme), [theme]);
   if (!visible) return null;
 
   return (
@@ -149,7 +156,7 @@ function OptionSelectorModal({ visible, onClose, title, options, selectedOption,
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -170,7 +177,7 @@ function OptionSelectorModal({ visible, onClose, title, options, selectedOption,
                   {option}
                 </Text>
                 {selectedOption === option && (
-                  <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                  <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -184,6 +191,8 @@ function OptionSelectorModal({ visible, onClose, title, options, selectedOption,
 // Componente para añadir eventos (goles, tarjetas, cambios)
 function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const modalStyles = useMemo(() => makeModalStyles(theme), [theme]);
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [asistente, setAsistente] = useState(''); // Jugador que da la asistencia
   const [minuto, setMinuto] = useState('');
@@ -347,7 +356,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -358,11 +367,11 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
               style={modalStyles.minuteSelector}
               onPress={() => setShowMinuteModal(true)}
             >
-              <Ionicons name="time-outline" size={20} color={THEME.primary} />
-              <Text style={[modalStyles.minuteSelectorText, minuto && { color: THEME.text, fontWeight: '600' }]}>
+              <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+              <Text style={[modalStyles.minuteSelectorText, minuto && { color: theme.colors.text, fontWeight: '600' }]}>
                 {getMinuteLabel()}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={THEME.textMuted} />
+              <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
             </TouchableOpacity>
 
             {eventType === 'gol' && (
@@ -410,7 +419,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                       style={[
                         modalStyles.playerChip,
                         asistente === p._id && modalStyles.playerChipSelected,
-                        { borderColor: asistente === p._id ? '#8b5cf6' : THEME.border, backgroundColor: asistente === p._id ? '#8b5cf6' : THEME.surface }
+                        { borderColor: asistente === p._id ? theme.colors.purple : theme.colors.border, backgroundColor: asistente === p._id ? theme.colors.purple : theme.colors.surface }
                       ]}
                       onPress={() => setAsistente(p._id)}
                     >
@@ -454,7 +463,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                   <TouchableOpacity
                     style={[
                       modalStyles.cardTypeBtn,
-                      tipoTarjeta === 'amarilla' && { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }
+                      tipoTarjeta === 'amarilla' && { backgroundColor: theme.colors.warningSoft, borderColor: '#f59e0b' }
                     ]}
                     onPress={() => setTipoTarjeta('amarilla')}
                   >
@@ -464,7 +473,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                   <TouchableOpacity
                     style={[
                       modalStyles.cardTypeBtn,
-                      tipoTarjeta === 'roja' && { backgroundColor: '#fee2e2', borderColor: '#ef4444' }
+                      tipoTarjeta === 'roja' && { backgroundColor: theme.colors.errorSoft, borderColor: '#ef4444' }
                     ]}
                     onPress={() => setTipoTarjeta('roja')}
                   >
@@ -490,7 +499,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                       >
                         <Ionicons name="add" size={20} color="#ef4444" />
                       </TouchableOpacity>
-                      <Text style={{ fontSize: 12, color: THEME.textSecondary }}>{t('matchSheet.modals.banMatchesHint')}</Text>
+                      <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>{t('matchSheet.modals.banMatchesHint')}</Text>
                     </View>
                   </>
                 )}
@@ -501,7 +510,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                   value={motivo}
                   onChangeText={setMotivo}
                   placeholder={t('matchSheet.modals.reasonPlaceholder')}
-                  placeholderTextColor={THEME.textMuted}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </>
             )}
@@ -570,7 +579,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
             <View style={modalStyles.header}>
               <Text style={modalStyles.title}>{t('matchSheet.modals.selectMinuteTitle')}</Text>
               <TouchableOpacity onPress={() => setShowMinuteModal(false)}>
-                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -637,16 +646,16 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
 }
 
 // Estilos para los modales auxiliares
-const modalStyles = StyleSheet.create({
+const makeModalStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 12,
   },
   container: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     width: '100%',
     maxWidth: 450,
@@ -659,35 +668,35 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: 12,
   },
   selectAllBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 8,
   },
   selectAllText: {
     fontSize: 13,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   countText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginLeft: 'auto',
   },
   list: {
@@ -700,46 +709,46 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   playerName: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   playerDorsal: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   emptyText: {
     textAlign: 'center',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     padding: 20,
   },
   confirmBtn: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     margin: 16,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
   confirmBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -753,31 +762,31 @@ const modalStyles = StyleSheet.create({
     marginVertical: 2,
   },
   optionItemActive: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
   },
   optionText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   optionTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerChipsRow: {
     flexDirection: 'row',
@@ -788,23 +797,23 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 4,
   },
   playerChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   playerChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerChipTextSelected: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   optionsRow: {
     flexDirection: 'row',
@@ -814,21 +823,21 @@ const modalStyles = StyleSheet.create({
   optionChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   optionChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   optionChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   optionChipTextSelected: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   cardTypeRow: {
     flexDirection: 'row',
@@ -842,7 +851,7 @@ const modalStyles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 8,
   },
   cardIcon: {
@@ -853,15 +862,15 @@ const modalStyles = StyleSheet.create({
   cardTypeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   // Estilos para selector de minuto
   minuteSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
     gap: 10,
@@ -869,12 +878,12 @@ const modalStyles = StyleSheet.create({
   minuteSelectorText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   minuteSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 16,
     marginBottom: 10,
   },
@@ -886,31 +895,31 @@ const modalStyles = StyleSheet.create({
   minuteOption: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     minWidth: 50,
     alignItems: 'center',
   },
   minuteOptionSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   minuteOptionAddedTime: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#f59e0b',
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
   },
   minuteOptionText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   minuteOptionTextSelected: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   minuteOptionTextAddedTime: {
-    color: '#d97706',
+    color: theme.colors.warningSoftText,
   },
 });
 
@@ -930,6 +939,8 @@ export default function AddEventModal({
   defaultEventType = null, // 'match', 'session' o null para mostrar selector
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const currentLang = i18n.language || 'es';
   const [eventType, setEventType] = useState(null); // 'match' or 'session'
   const [loading, setLoading] = useState(false);
@@ -1757,7 +1768,7 @@ export default function AddEventModal({
       {/* Advertencia si ya hay partido en la fecha */}
       {hasMatchOnSelectedDate && (
         <View style={styles.matchWarning}>
-          <Ionicons name="warning" size={24} color={THEME.warning} />
+          <Ionicons name="warning" size={24} color={theme.colors.warning} />
           <Text style={styles.matchWarningText}>
             {t('schedule.matchExistsOnDate')}
           </Text>
@@ -1782,8 +1793,8 @@ export default function AddEventModal({
         }}
         activeOpacity={hasMatchOnSelectedDate ? 1 : 0.7}
       >
-        <View style={[styles.typeOptionIcon, { backgroundColor: THEME.primary + '15' }]}>
-          <Ionicons name="football" size={32} color={hasMatchOnSelectedDate ? THEME.textMuted : THEME.primary} />
+        <View style={[styles.typeOptionIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+          <Ionicons name="football" size={32} color={hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.primary} />
         </View>
         <View style={styles.typeOptionContent}>
           <Text style={[styles.typeOptionTitle, hasMatchOnSelectedDate && styles.typeOptionTitleDisabled]}>
@@ -1796,9 +1807,9 @@ export default function AddEventModal({
           </Text>
         </View>
         {hasMatchOnSelectedDate ? (
-          <Ionicons name="close-circle" size={24} color={THEME.danger} />
+          <Ionicons name="close-circle" size={24} color={theme.colors.error} />
         ) : (
-          <Ionicons name="chevron-forward" size={24} color={THEME.textMuted} />
+          <Ionicons name="chevron-forward" size={24} color={theme.colors.textMuted} />
         )}
       </TouchableOpacity>
       
@@ -1820,8 +1831,8 @@ export default function AddEventModal({
         }}
         activeOpacity={hasMatchOnSelectedDate ? 1 : 0.7}
       >
-        <View style={[styles.typeOptionIcon, { backgroundColor: THEME.success + '15' }]}>
-          <Ionicons name="fitness" size={32} color={hasMatchOnSelectedDate ? THEME.textMuted : THEME.success} />
+        <View style={[styles.typeOptionIcon, { backgroundColor: theme.colors.success + '15' }]}>
+          <Ionicons name="fitness" size={32} color={hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.success} />
         </View>
         <View style={styles.typeOptionContent}>
           <Text style={[styles.typeOptionTitle, hasMatchOnSelectedDate && styles.typeOptionTitleDisabled]}>
@@ -1834,9 +1845,9 @@ export default function AddEventModal({
           </Text>
         </View>
         {hasMatchOnSelectedDate ? (
-          <Ionicons name="close-circle" size={24} color={THEME.danger} />
+          <Ionicons name="close-circle" size={24} color={theme.colors.error} />
         ) : (
-          <Ionicons name="chevron-forward" size={24} color={THEME.textMuted} />
+          <Ionicons name="chevron-forward" size={24} color={theme.colors.textMuted} />
         )}
       </TouchableOpacity>
     </View>
@@ -1849,7 +1860,7 @@ export default function AddEventModal({
       <View style={styles.formHeader}>
         {!defaultEventType && (
           <TouchableOpacity onPress={() => setEventType(null)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={THEME.text} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         )}
         <Text style={styles.formTitle}>{t('schedule.newMatchSheet')}</Text>
@@ -1858,7 +1869,7 @@ export default function AddEventModal({
       {/* Card de Datos del Partido */}
       <View style={styles.createCard}>
         <View style={styles.createCardHeader}>
-          <Ionicons name="information-circle" size={24} color={THEME.primary} />
+          <Ionicons name="information-circle" size={24} color={theme.colors.primary} />
           <Text style={styles.createCardTitle}>{t('matchSheet.sections.matchData')}</Text>
         </View>
 
@@ -1878,7 +1889,7 @@ export default function AddEventModal({
                     <Image source={{ uri: matchData.rivalEscudo }} style={styles.escudoImage} />
                   ) : (
                     <View style={styles.escudoPlaceholder}>
-                      <Ionicons name="shield-outline" size={32} color={THEME.textMuted} />
+                      <Ionicons name="shield-outline" size={32} color={theme.colors.textMuted} />
                       <Text style={styles.escudoPlaceholderText}>{matchData.rival || t('matchSheet.fields.selectRival')}</Text>
                     </View>
                   )
@@ -1887,7 +1898,7 @@ export default function AddEventModal({
                     <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
                   ) : (
                     <View style={styles.escudoPlaceholder}>
-                      <Ionicons name="shield-outline" size={32} color={THEME.textMuted} />
+                      <Ionicons name="shield-outline" size={32} color={theme.colors.textMuted} />
                       <Text style={styles.escudoPlaceholderText}>{team?.nombre || ''}</Text>
                     </View>
                   )
@@ -1912,7 +1923,7 @@ export default function AddEventModal({
                     <Image source={{ uri: team.escudo }} style={styles.escudoImage} />
                   ) : (
                     <View style={styles.escudoPlaceholder}>
-                      <Ionicons name="shield-outline" size={32} color={THEME.textMuted} />
+                      <Ionicons name="shield-outline" size={32} color={theme.colors.textMuted} />
                       <Text style={styles.escudoPlaceholderText}>{team?.nombre || ''}</Text>
                     </View>
                   )
@@ -1921,7 +1932,7 @@ export default function AddEventModal({
                     <Image source={{ uri: matchData.rivalEscudo }} style={styles.escudoImage} />
                   ) : (
                     <View style={styles.escudoPlaceholder}>
-                      <Ionicons name="shield-outline" size={32} color={THEME.textMuted} />
+                      <Ionicons name="shield-outline" size={32} color={theme.colors.textMuted} />
                       <Text style={styles.escudoPlaceholderText}>{matchData.rival || t('matchSheet.fields.selectRival')}</Text>
                     </View>
                   )
@@ -1962,7 +1973,7 @@ export default function AddEventModal({
 
           {/* Competición */}
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 6 }}>{t('matchSheet.competition')} *</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.text, marginBottom: 6 }}>{t('matchSheet.competition')} *</Text>
             <TouchableOpacity 
               style={styles.selector} 
               onPress={() => setShowTorneoModal(true)}
@@ -2098,7 +2109,7 @@ export default function AddEventModal({
                       </TouchableOpacity>
                     </View>
                   ) : (
-                    <View style={[styles.selector, { backgroundColor: '#f3f4f6' }]}>
+                    <View style={[styles.selector, { backgroundColor: theme.colors.backgroundAlt }]}>
                       <Text style={styles.selectorTextSelected}>{t('matchSheet.fields.legSingle')}</Text>
                     </View>
                   )}
@@ -2277,7 +2288,7 @@ export default function AddEventModal({
       {/* Card de Convocatoria y Alineación */}
       <View style={styles.createCard}>
         <View style={styles.createCardHeader}>
-          <Ionicons name="people" size={24} color={THEME.primary} />
+          <Ionicons name="people" size={24} color={theme.colors.primary} />
           <Text style={styles.createCardTitle}>{t('matchSheet.sections.callupAndLineup')}</Text>
         </View>
 
@@ -2406,7 +2417,7 @@ export default function AddEventModal({
       {/* Card de Notas del Entrenador */}
       <View style={styles.createCard}>
         <View style={styles.createCardHeader}>
-          <Ionicons name="document-text" size={24} color={THEME.primary} />
+          <Ionicons name="document-text" size={24} color={theme.colors.primary} />
           <Text style={styles.createCardTitle}>{t('matchSheet.sections.coachNotes')}</Text>
         </View>
 
@@ -2416,7 +2427,7 @@ export default function AddEventModal({
             value={matchData.notasEntrenador}
             onChangeText={(text) => setMatchData(prev => ({ ...prev, notasEntrenador: text }))}
             placeholder={t('matchSheet.fields.notesPlaceholder')}
-            placeholderTextColor={THEME.textMuted}
+            placeholderTextColor={theme.colors.textMuted}
             multiline
             numberOfLines={6}
             textAlignVertical="top"
@@ -2427,7 +2438,7 @@ export default function AddEventModal({
       {/* Card de Eventos del Partido */}
       <View style={styles.createCard}>
         <View style={styles.createCardHeader}>
-          <Ionicons name="flash" size={24} color={THEME.primary} />
+          <Ionicons name="flash" size={24} color={theme.colors.primary} />
           <Text style={styles.createCardTitle}>{t('matchSheet.sections.matchEvents')}</Text>
         </View>
 
@@ -2759,24 +2770,24 @@ export default function AddEventModal({
                 setShowRivalSelector(false);
                 setSearchRivalText('');
               }}>
-                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
             {/* Barra de búsqueda */}
             <View style={styles.rivalSearchContainer}>
-              <Ionicons name="search" size={20} color={THEME.textMuted} />
+              <Ionicons name="search" size={20} color={theme.colors.textMuted} />
               <TextInput
                 style={styles.rivalSearchInput}
                 placeholder={t('common.search') + '...'}
-                placeholderTextColor={THEME.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
                 value={searchRivalText}
                 onChangeText={setSearchRivalText}
                 autoCapitalize="words"
               />
               {searchRivalText.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchRivalText('')}>
-                  <MaterialIcons name="clear" size={20} color={THEME.textMuted} />
+                  <MaterialIcons name="clear" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -2784,7 +2795,7 @@ export default function AddEventModal({
             <ScrollView style={styles.selectorList}>
               {filteredRivals.length === 0 ? (
                 <View style={styles.emptyRivals}>
-                  <Ionicons name="alert-circle" size={48} color={THEME.textMuted} />
+                  <Ionicons name="alert-circle" size={48} color={theme.colors.textMuted} />
                   <Text style={styles.emptyRivalsText}>
                     {searchRivalText ? t('common.noResults') : t('schedule.noRivals')}
                   </Text>
@@ -2821,7 +2832,7 @@ export default function AddEventModal({
                       />
                     ) : (
                       <View style={styles.rivalEscudoPlaceholder}>
-                        <Ionicons name="shield-outline" size={18} color={THEME.textMuted} />
+                        <Ionicons name="shield-outline" size={18} color={theme.colors.textMuted} />
                       </View>
                     )}
                     <Text style={[
@@ -2832,7 +2843,7 @@ export default function AddEventModal({
                       {rival.nombre}
                     </Text>
                     {matchData.rival === rival.nombre && (
-                      <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))
@@ -2855,7 +2866,7 @@ export default function AddEventModal({
                     setSearchRivalText('');
                   }}
                 >
-                  <MaterialIcons name="edit" size={18} color={THEME.primary} />
+                  <MaterialIcons name="edit" size={18} color={theme.colors.primary} />
                   <Text style={styles.useTextButtonText}>
                     {t('common.use')} "{searchRivalText.trim()}"
                   </Text>
@@ -2888,7 +2899,7 @@ export default function AddEventModal({
                 setShowCreateRivalModal(false);
                 setTimeout(() => setShowRivalSelector(true), 100);
               }}>
-                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -2899,7 +2910,7 @@ export default function AddEventModal({
                   <Image source={{ uri: newRivalEscudo }} style={styles.escudoPreview} />
                 ) : (
                   <View style={styles.escudoPlaceholder}>
-                    <Ionicons name="camera" size={32} color={THEME.textMuted} />
+                    <Ionicons name="camera" size={32} color={theme.colors.textMuted} />
                     <Text style={styles.escudoPlaceholderText}>{t('rivals.addShield')}</Text>
                   </View>
                 )}
@@ -2912,7 +2923,7 @@ export default function AddEventModal({
                 value={newRivalName}
                 onChangeText={setNewRivalName}
                 placeholder={t('rivals.namePlaceholder')}
-                placeholderTextColor={THEME.textMuted}
+                placeholderTextColor={theme.colors.textMuted}
               />
             </View>
 
@@ -3039,12 +3050,12 @@ export default function AddEventModal({
         animationType="fade"
         onRequestClose={() => setShowTorneoModal(false)}
       >
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowTorneoModal(false)}>
-          <Pressable style={{ backgroundColor: THEME.surface, borderRadius: 16, width: '85%', maxWidth: 400, maxHeight: '60%', overflow: 'hidden' }} onPress={() => {}}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: THEME.text }}>{t('matchSheet.competition')}</Text>
+        <Pressable style={{ flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowTorneoModal(false)}>
+          <Pressable style={{ backgroundColor: theme.colors.surface, borderRadius: 16, width: '85%', maxWidth: 400, maxHeight: '60%', overflow: 'hidden' }} onPress={() => {}}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.text }}>{t('matchSheet.competition')}</Text>
               <TouchableOpacity onPress={() => setShowTorneoModal(false)}>
-                <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ padding: 8 }}>
@@ -3053,22 +3064,22 @@ export default function AddEventModal({
                 style={[{
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                   padding: 14, borderRadius: 10, marginBottom: 4,
-                }, matchData.competicion === 'amistoso' && { backgroundColor: THEME.success + '15' }]}
+                }, matchData.competicion === 'amistoso' && { backgroundColor: theme.colors.success + '15' }]}
                 onPress={() => {
                   setMatchData(prev => ({ ...prev, competicion: 'amistoso', torneoId: null }));
                   setShowTorneoModal(false);
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: THEME.success, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: theme.colors.success, alignItems: 'center', justifyContent: 'center' }}>
                     <MaterialIcons name="sports-soccer" size={14} color="#fff" />
                   </View>
-                  <Text style={[{ fontSize: 15, color: THEME.textSecondary }, matchData.competicion === 'amistoso' && { color: THEME.text, fontWeight: '600' }]}>
+                  <Text style={[{ fontSize: 15, color: theme.colors.textSecondary }, matchData.competicion === 'amistoso' && { color: theme.colors.text, fontWeight: '600' }]}>
                     {t('matchSheet.friendly') || 'Amistoso'}
                   </Text>
                 </View>
                 {matchData.competicion === 'amistoso' && (
-                  <Ionicons name="checkmark" size={20} color={THEME.success} />
+                  <Ionicons name="checkmark" size={20} color={theme.colors.success} />
                 )}
               </TouchableOpacity>
 
@@ -3089,12 +3100,12 @@ export default function AddEventModal({
                     <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: torneo.color || '#8B5CF6', alignItems: 'center', justifyContent: 'center' }}>
                       <MaterialIcons name="emoji-events" size={14} color="#fff" />
                     </View>
-                    <Text style={[{ fontSize: 15, color: THEME.textSecondary }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { color: THEME.text, fontWeight: '600' }]}>
+                    <Text style={[{ fontSize: 15, color: theme.colors.textSecondary }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { color: theme.colors.text, fontWeight: '600' }]}>
                       {torneo.nombre}
                     </Text>
                     {torneo.porDefecto && (
-                      <View style={{ backgroundColor: THEME.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                        <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: '600' }}>{t('tournaments.defaultBadge') || 'Por defecto'}</Text>
+                      <View style={{ backgroundColor: theme.colors.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: '600' }}>{t('tournaments.defaultBadge') || 'Por defecto'}</Text>
                       </View>
                     )}
                   </View>
@@ -3105,7 +3116,7 @@ export default function AddEventModal({
               ))}
               {tournaments.filter(tr => tr.estado === 'activo').length === 0 && (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: THEME.textMuted, fontSize: 14 }}>
+                  <Text style={{ color: theme.colors.textMuted, fontSize: 14 }}>
                     {t('tournaments.noActiveTournaments')}
                   </Text>
                 </View>
@@ -3342,7 +3353,7 @@ export default function AddEventModal({
       <View style={styles.formHeader}>
         {!defaultEventType && (
           <TouchableOpacity onPress={() => setEventType(null)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={THEME.text} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         )}
         <Text style={styles.formTitle}>{t('schedule.newTrainingSession')}</Text>
@@ -3356,7 +3367,7 @@ export default function AddEventModal({
           onPress={() => setShowSessionDatePicker(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="calendar" size={20} color={THEME.success} style={{ marginRight: 8 }} />
+          <Ionicons name="calendar" size={20} color={theme.colors.success} style={{ marginRight: 8 }} />
           <Text style={styles.selectInputText}>{formatDate(sessionData.fecha)}</Text>
         </TouchableOpacity>
       </View>
@@ -3369,7 +3380,7 @@ export default function AddEventModal({
           onPress={() => setShowStartTimePicker(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="time" size={20} color={THEME.success} style={{ marginRight: 8 }} />
+          <Ionicons name="time" size={20} color={theme.colors.success} style={{ marginRight: 8 }} />
           <Text style={styles.selectInputText}>{sessionData.horaInicio}</Text>
         </TouchableOpacity>
       </View>
@@ -3382,7 +3393,7 @@ export default function AddEventModal({
           onPress={() => setShowEndTimePicker(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="time-outline" size={20} color={THEME.success} style={{ marginRight: 8 }} />
+          <Ionicons name="time-outline" size={20} color={theme.colors.success} style={{ marginRight: 8 }} />
           <Text style={styles.selectInputText}>{sessionData.horaFin}</Text>
         </TouchableOpacity>
       </View>
@@ -3396,12 +3407,12 @@ export default function AddEventModal({
           onPress={() => setShowPlayerSelectorModal(true)}
         >
           <View style={styles.playerSelectorLeft}>
-            <Ionicons name="people" size={20} color={THEME.success} />
+            <Ionicons name="people" size={20} color={theme.colors.success} />
             <Text style={styles.playerSelectorText}>
               {t('schedule.selectPlayersCount', { count: selectedPlayers.length })}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
         </TouchableOpacity>
         
         {/* Chips de jugadores seleccionados */}
@@ -3432,7 +3443,7 @@ export default function AddEventModal({
         
         {extraPlayersAvailable.length === 0 ? (
           <View style={styles.noExtraPlayersInfo}>
-            <Ionicons name="information-circle-outline" size={20} color={THEME.textMuted} />
+            <Ionicons name="information-circle-outline" size={20} color={theme.colors.textMuted} />
             <Text style={styles.noExtraPlayersText}>
               {t('schedule.noExtraPlayersAvailable')}
             </Text>
@@ -3487,7 +3498,7 @@ export default function AddEventModal({
           style={styles.addExerciseBtn}
           onPress={() => setShowExerciseSelectorModal(true)}
         >
-          <Ionicons name="add-circle" size={22} color={THEME.success} />
+          <Ionicons name="add-circle" size={22} color={theme.colors.success} />
           <Text style={styles.addExerciseBtnText}>{t('schedule.addExerciseBtn')}</Text>
         </TouchableOpacity>
 
@@ -3541,7 +3552,7 @@ export default function AddEventModal({
                           />
                         ) : (
                           <View style={styles.exerciseItemImagePlaceholderMobile}>
-                            <Ionicons name="fitness" size={24} color={THEME.textMuted} />
+                            <Ionicons name="fitness" size={24} color={theme.colors.textMuted} />
                           </View>
                         )}
                         <View style={styles.exerciseMetaMobile}>
@@ -3565,14 +3576,14 @@ export default function AddEventModal({
                               onPress={handleMoveUp}
                               disabled={index === 0}
                             >
-                              <Ionicons name="arrow-up" size={16} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                              <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.orderBtnMobile, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
                               onPress={handleMoveDown}
                               disabled={index === selectedExercises.length - 1}
                             >
-                              <Ionicons name="arrow-down" size={16} color={index === selectedExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                              <Ionicons name="arrow-down" size={16} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -3591,7 +3602,7 @@ export default function AddEventModal({
                           />
                         ) : (
                           <View style={styles.exerciseItemImagePlaceholder}>
-                            <Ionicons name="fitness" size={20} color={THEME.textMuted} />
+                            <Ionicons name="fitness" size={20} color={theme.colors.textMuted} />
                           </View>
                         )}
                         <View style={styles.exerciseInfo}>
@@ -3625,14 +3636,14 @@ export default function AddEventModal({
                           onPress={handleMoveUp}
                           disabled={index === 0}
                         >
-                          <Ionicons name="arrow-up" size={18} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                          <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.orderBtn, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
                           onPress={handleMoveDown}
                           disabled={index === selectedExercises.length - 1}
                         >
-                          <Ionicons name="arrow-down" size={18} color={index === selectedExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                          <Ionicons name="arrow-down" size={18} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.removeExerciseBtn}
@@ -3658,7 +3669,7 @@ export default function AddEventModal({
                         keyboardType="number-pad"
                         autoComplete="off"
                         placeholder="0"
-                        placeholderTextColor={THEME.textMuted}
+                        placeholderTextColor={theme.colors.textMuted}
                       />
                     </View>
                   )}
@@ -3673,7 +3684,7 @@ export default function AddEventModal({
                         setExerciseObservations(prev => ({ ...prev, [exId]: text }));
                       }}
                       placeholder={t('schedule.notesAboutExercise')}
-                      placeholderTextColor={THEME.textMuted}
+                      placeholderTextColor={theme.colors.textMuted}
                       multiline
                       numberOfLines={2}
                     />
@@ -3688,7 +3699,7 @@ export default function AddEventModal({
                         setShowTeamAssignmentModal(true);
                       }}
                     >
-                      <Ionicons name="people" size={18} color={THEME.primary} />
+                      <Ionicons name="people" size={18} color={theme.colors.primary} />
                       <Text style={styles.teamAssignmentButtonText}>
                         {t('schedule.assignTeams')} ({exercise.equipos})
                       </Text>
@@ -3705,7 +3716,7 @@ export default function AddEventModal({
           </View>
         ) : (
           <View style={styles.emptyExercises}>
-            <Ionicons name="fitness-outline" size={32} color={THEME.textMuted} />
+            <Ionicons name="fitness-outline" size={32} color={theme.colors.textMuted} />
             <Text style={styles.emptyExercisesText}>{t('schedule.noExercisesAdded')}</Text>
           </View>
         )}
@@ -3717,11 +3728,11 @@ export default function AddEventModal({
         
         {/* Botón añadir ejercicio de fuerza */}
         <TouchableOpacity
-          style={[styles.addExerciseBtn, { borderColor: '#8b5cf6' }]}
+          style={[styles.addExerciseBtn, { borderColor: theme.colors.purple }]}
           onPress={() => setShowStrengthExerciseSelectorModal(true)}
         >
           <Ionicons name="barbell" size={22} color="#8b5cf6" />
-          <Text style={[styles.addExerciseBtnText, { color: '#8b5cf6' }]}>{t('schedule.addStrengthExerciseBtn')}</Text>
+          <Text style={[styles.addExerciseBtnText, { color: theme.colors.purple }]}>{t('schedule.addStrengthExerciseBtn')}</Text>
         </TouchableOpacity>
 
         {/* Lista de ejercicios de fuerza seleccionados */}
@@ -3782,21 +3793,21 @@ export default function AddEventModal({
                           {sectionInfo && (
                             <Text style={styles.exerciseItemType}>{t(sectionInfo.section.i18nKey)}</Text>
                           )}
-                          <Text style={{ fontSize: 11, color: THEME.textMuted }}>{t('schedule.strengthExerciseLevel')}: {exercise.level}</Text>
+                          <Text style={{ fontSize: 11, color: theme.colors.textMuted }}>{t('schedule.strengthExerciseLevel')}: {exercise.level}</Text>
                           <View style={styles.exerciseOrderControlsMobile}>
                             <TouchableOpacity
                               style={[styles.orderBtnMobile, index === 0 && styles.orderBtnDisabled]}
                               onPress={handleMoveUpStrength}
                               disabled={index === 0}
                             >
-                              <Ionicons name="arrow-up" size={16} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                              <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.orderBtnMobile, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
                               onPress={handleMoveDownStrength}
                               disabled={index === selectedStrengthExercises.length - 1}
                             >
-                              <Ionicons name="arrow-down" size={16} color={index === selectedStrengthExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                              <Ionicons name="arrow-down" size={16} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -3828,14 +3839,14 @@ export default function AddEventModal({
                           onPress={handleMoveUpStrength}
                           disabled={index === 0}
                         >
-                          <Ionicons name="arrow-up" size={18} color={index === 0 ? THEME.textMuted : THEME.primary} />
+                          <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.orderBtn, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
                           onPress={handleMoveDownStrength}
                           disabled={index === selectedStrengthExercises.length - 1}
                         >
-                          <Ionicons name="arrow-down" size={18} color={index === selectedStrengthExercises.length - 1 ? THEME.textMuted : THEME.primary} />
+                          <Ionicons name="arrow-down" size={18} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.removeExerciseBtn}
@@ -3861,7 +3872,7 @@ export default function AddEventModal({
                         keyboardType="number-pad"
                         autoComplete="off"
                         placeholder="0"
-                        placeholderTextColor={THEME.textMuted}
+                        placeholderTextColor={theme.colors.textMuted}
                       />
                     </View>
                   )}
@@ -3876,7 +3887,7 @@ export default function AddEventModal({
                         setStrengthExerciseObservations(prev => ({ ...prev, [seId]: text }));
                       }}
                       placeholder={t('schedule.notesAboutExercise')}
-                      placeholderTextColor={THEME.textMuted}
+                      placeholderTextColor={theme.colors.textMuted}
                       multiline
                       numberOfLines={2}
                     />
@@ -3887,7 +3898,7 @@ export default function AddEventModal({
           </View>
         ) : (
           <View style={styles.emptyExercises}>
-            <Ionicons name="barbell-outline" size={32} color={THEME.textMuted} />
+            <Ionicons name="barbell-outline" size={32} color={theme.colors.textMuted} />
             <Text style={styles.emptyExercisesText}>{t('schedule.noStrengthExercisesAdded')}</Text>
           </View>
         )}
@@ -3901,7 +3912,7 @@ export default function AddEventModal({
           value={sessionData.observaciones}
           onChangeText={(text) => setSessionData(prev => ({ ...prev, observaciones: text }))}
           placeholder={t('schedule.sessionNotesPlaceholder')}
-          placeholderTextColor={THEME.textMuted}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -3948,7 +3959,7 @@ export default function AddEventModal({
           <Text style={styles.footerCancelBtnText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.footerSaveBtn, { backgroundColor: THEME.success }, loading && styles.footerSaveBtnDisabled]}
+          style={[styles.footerSaveBtn, { backgroundColor: theme.colors.success }, loading && styles.footerSaveBtnDisabled]}
           onPress={handleCreateSession}
           disabled={loading}
         >
@@ -4200,7 +4211,7 @@ export default function AddEventModal({
               style={styles.modalCloseBtn}
               onPress={onClose}
             >
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -4222,7 +4233,7 @@ export default function AddEventModal({
                   style={styles.teamAssignmentModalCloseBtn}
                   onPress={() => setShowTeamAssignmentModal(false)}
                 >
-                  <Ionicons name="close" size={24} color={THEME.textSecondary} />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             
@@ -4432,14 +4443,14 @@ export default function AddEventModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '92%',
@@ -4453,12 +4464,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalCloseBtn: {
     padding: 4,
@@ -4470,40 +4481,40 @@ const styles = StyleSheet.create({
   },
   typeSelectorTitle: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 20,
     textAlign: 'center',
   },
   matchWarning: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.warning + '15',
+    backgroundColor: theme.colors.warning + '15',
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: THEME.warning + '40',
+    borderColor: theme.colors.warning + '40',
   },
   matchWarningText: {
     flex: 1,
     fontSize: 13,
-    color: THEME.warning,
+    color: theme.colors.warning,
     marginLeft: 10,
     lineHeight: 18,
   },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   typeOptionDisabled: {
     opacity: 0.5,
-    backgroundColor: THEME.border + '30',
+    backgroundColor: theme.colors.border + '30',
   },
   typeOptionIcon: {
     width: 60,
@@ -4519,15 +4530,15 @@ const styles = StyleSheet.create({
   typeOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 4,
   },
   typeOptionTitleDisabled: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   typeOptionDescription: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   
@@ -4551,7 +4562,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   formGroup: {
     marginBottom: 20,
@@ -4559,25 +4570,25 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -4585,12 +4596,12 @@ const styles = StyleSheet.create({
   selectInputText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectInputPlaceholder: {
     flex: 1,
     fontSize: 15,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   
   // Escudos Row
@@ -4600,7 +4611,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
     paddingVertical: 16,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
   },
   escudoContainer: {
@@ -4609,7 +4620,7 @@ const styles = StyleSheet.create({
   },
   escudoLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -4617,11 +4628,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   escudoImage: {
@@ -4636,7 +4647,7 @@ const styles = StyleSheet.create({
   },
   escudoPlaceholderText: {
     fontSize: 10,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -4646,7 +4657,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   
   // Location Buttons
@@ -4660,28 +4671,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingVertical: 14,
   },
   locationButtonActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   locationButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   locationButtonTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   
   // Form Section (Resultado, Convocatoria, etc)
   formSection: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
@@ -4689,7 +4700,7 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   
@@ -4706,19 +4717,19 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   scoreTextInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
     fontSize: 24,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     textAlign: 'center',
     minWidth: 80,
     width: '100%',
@@ -4726,7 +4737,7 @@ const styles = StyleSheet.create({
   scoreSeparator: {
     fontSize: 24,
     fontWeight: '700',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     paddingHorizontal: 8,
   },
   resultadoBadge: {
@@ -4739,14 +4750,14 @@ const styles = StyleSheet.create({
   resultadoText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: '#fff', // text on semantic resultado badge (green/orange/red bg)
   },
   
   // Descuento (Added Time)
   descuentoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 20,
     marginBottom: 12,
   },
@@ -4759,16 +4770,16 @@ const styles = StyleSheet.create({
   },
   descuentoLabel: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   descuentoSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   descuentoButton: {
     padding: 12,
@@ -4778,11 +4789,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   descuentoHint: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginTop: 10,
   },
@@ -4792,12 +4803,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   playerSelectorLeft: {
     flexDirection: 'row',
@@ -4806,7 +4817,7 @@ const styles = StyleSheet.create({
   },
   playerSelectorText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectedChips: {
     flexDirection: 'row',
@@ -4815,36 +4826,36 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chip: {
-    backgroundColor: THEME.primary + '20',
+    backgroundColor: theme.colors.primary + '20',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
   chipText: {
     fontSize: 12,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   calledChip: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: theme.colors.successSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   calledChipText: {
     fontSize: 12,
-    color: '#4CAF50',
+    color: theme.colors.successSoftText,
     fontWeight: '500',
   },
   notCalledChip: {
-    backgroundColor: '#ffebee',
+    backgroundColor: theme.colors.errorSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   notCalledChipText: {
     fontSize: 12,
-    color: '#F44336',
+    color: theme.colors.errorSoftText,
     fontWeight: '500',
   },
   
@@ -4854,21 +4865,21 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: theme.colors.border,
   },
   footerCancelBtn: {
     flex: 1,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
   },
   footerCancelBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   footerSaveBtn: {
     flex: 2,
@@ -4878,7 +4889,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   footerSaveBtnDisabled: {
     opacity: 0.6,
@@ -4886,7 +4897,7 @@ const styles = StyleSheet.create({
   footerSaveBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   
   // Info Note
@@ -4894,7 +4905,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primary + '10',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
@@ -4902,20 +4913,20 @@ const styles = StyleSheet.create({
   infoNoteText: {
     flex: 1,
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     lineHeight: 18,
   },
   
   // Selector Modal
   selectorModalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   selectorModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '100%',
     maxWidth: 400,
@@ -4927,12 +4938,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   selectorModalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectorList: {
     padding: 8,
@@ -4947,14 +4958,14 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   selectorItemActive: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   selectorItemText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   selectorItemTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   emptyRivals: {
@@ -4964,12 +4975,12 @@ const styles = StyleSheet.create({
   emptyRivalsText: {
     fontSize: 16,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 12,
   },
   emptyRivalsSubtext: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -4978,34 +4989,34 @@ const styles = StyleSheet.create({
   rivalSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     marginHorizontal: 16,
     marginBottom: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   rivalSearchInput: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   rivalEscudoPlaceholder: {
     width: 28,
     height: 28,
     marginRight: 10,
     borderRadius: 14,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   rivalSelectorFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     gap: 8,
   },
   useTextButton: {
@@ -5013,12 +5024,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     gap: 8,
   },
   useTextButtonText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -5026,20 +5037,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
   },
   createRivalButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     fontSize: 16,
   },
   createRivalModalContent: {
     width: '90%',
     maxWidth: 400,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -5050,9 +5061,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 16,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -5071,34 +5082,34 @@ const styles = StyleSheet.create({
   createRivalLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   createRivalInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   createRivalFooter: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   createRivalCancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
   },
   createRivalCancelText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 16,
   },
@@ -5106,14 +5117,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   createRivalSaveButtonDisabled: {
     opacity: 0.7,
   },
   createRivalSaveText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     fontSize: 16,
   },
@@ -5125,26 +5136,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: THEME.success + '15',
+    backgroundColor: theme.colors.success + '15',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.success + '40',
+    borderColor: theme.colors.success + '40',
     borderStyle: 'dashed',
     marginBottom: 12,
   },
   addExerciseBtnText: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   exercisesList: {
     gap: 12,
   },
   exerciseItem: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     padding: 12,
   },
   exerciseItemHeader: {
@@ -5163,12 +5174,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   exerciseNumberText: {
-    color: '#fff',
+    color: theme.colors.onSuccess,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -5178,11 +5189,11 @@ const styles = StyleSheet.create({
   exerciseItemName: {
     fontSize: 15,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   exerciseItemType: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   removeExerciseBtn: {
@@ -5196,43 +5207,43 @@ const styles = StyleSheet.create({
   },
   exerciseFieldLabel: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     minWidth: 100,
   },
   exerciseFieldInput: {
     flex: 1,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   exerciseObsField: {
     gap: 6,
   },
   exerciseObsInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     minHeight: 60,
   },
   emptyExercises: {
     alignItems: 'center',
     padding: 24,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
   },
   emptyExercisesText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 8,
   },
   selectedPlayersChips: {
@@ -5242,32 +5253,32 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   playerChipSmall: {
-    backgroundColor: THEME.success + '20',
+    backgroundColor: theme.colors.success + '20',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
   playerChipSmallText: {
     fontSize: 12,
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '500',
   },
   playerChipMore: {
-    backgroundColor: THEME.textMuted + '30',
+    backgroundColor: theme.colors.textMuted + '30',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
   playerChipMoreText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   
   // Estilos para Jugadores Extras
   formSectionSubtitle: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginBottom: 12,
     marginTop: -4,
   },
@@ -5279,24 +5290,24 @@ const styles = StyleSheet.create({
   },
   extraPlayerInput: {
     flex: 1,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   extraPlayerAddBtn: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.primary + '40',
+    borderColor: theme.colors.primary + '40',
   },
   extraPlayersList: {
     gap: 8,
@@ -5305,12 +5316,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   extraPlayerItemLeft: {
     flexDirection: 'row',
@@ -5322,13 +5333,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   extraPlayerName: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
     flex: 1,
   },
@@ -5336,20 +5347,20 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.danger + '15',
+    backgroundColor: theme.colors.error + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
   
   observationsInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     minHeight: 100,
   },
   exerciseTypeGroup: {
@@ -5358,10 +5369,10 @@ const styles = StyleSheet.create({
   exerciseTypeHeader: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     marginBottom: 4,
   },
@@ -5370,17 +5381,17 @@ const styles = StyleSheet.create({
   },
   exerciseSelectorDesc: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   
   // Estilos para LineupEditor visual
   lineupEditorContainer: {
     marginTop: 16,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   lineupEditorHeader: {
@@ -5388,20 +5399,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: theme.colors.successSoft,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   lineupEditorTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#166534',
+    color: theme.colors.successSoftText,
   },
   emptyLineupMessage: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -5409,16 +5420,16 @@ const styles = StyleSheet.create({
   emptyLineupText: {
     flex: 1,
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     lineHeight: 18,
   },
   startersSubsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   startersSubsHeader: {
     flexDirection: 'row',
@@ -5427,12 +5438,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
   },
   startersSubsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   startersSubsList: {
     gap: 6,
@@ -5443,10 +5454,10 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: '#4CAF50', // semantic: starter (green)
   },
   starterSubDorsal: {
     width: 28,
@@ -5456,14 +5467,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   starterSubDorsalText: {
-    color: '#fff',
+    color: '#fff', // text on semantic dorsal bg (#4CAF50/#9C27B0)
     fontSize: 12,
     fontWeight: '700',
   },
   starterSubName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   
@@ -5473,25 +5484,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     marginBottom: 4,
   },
   eventItemText: {
     flex: 1,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 8,
   },
   
   // Estilos para modal de DateTimePicker en iOS
   datePickerModalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   datePickerModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -5502,21 +5513,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   datePickerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   datePickerCancel: {
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   datePickerDone: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   
   // Estilos para imagen de ejercicio
@@ -5525,14 +5536,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseImagePlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5562,8 +5573,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   exerciseVideoBadgeInactive: {
-    backgroundColor: '#94a3b8',
-    shadowColor: '#94a3b8',
+    backgroundColor: theme.colors.textDisabled,
+    shadowColor: theme.colors.textDisabled,
   },
   
   // Modal de video
@@ -5623,14 +5634,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseItemImagePlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5648,7 +5659,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5667,11 +5678,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   removeExerciseBtnMobile: {
     padding: 6,
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     borderRadius: 8,
   },
   exerciseImageRowMobile: {
@@ -5684,13 +5695,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 10,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
   },
   exerciseItemImagePlaceholderMobile: {
     width: 60,
     height: 60,
     borderRadius: 10,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5708,18 +5719,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   // ============ FIN ESTILOS MÓVIL ============
   
   // Estilos para Wellness
   wellnessSubtitle: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   wellnessSelector: {
@@ -5732,28 +5743,28 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: THEME.border,
-    backgroundColor: THEME.inputBg,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   wellnessOptionSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   wellnessOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   wellnessOptionTextSelected: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   // Estilos para asignación de equipos
   teamAssignmentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -5762,7 +5773,7 @@ const styles = StyleSheet.create({
   },
   teamAssignmentButtonText: {
     fontSize: 14,
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '500',
     flex: 1,
   },
@@ -5775,17 +5786,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
     zIndex: 1000,
   },
   teamAssignmentModalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   teamAssignmentModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -5797,19 +5808,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   teamAssignmentModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   teamAssignmentModalCloseBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5818,7 +5829,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   teamSection: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 14,
     marginBottom: 14,
@@ -5836,17 +5847,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   teamBadgeText: {
-    color: '#fff',
+    color: '#fff', // text on semantic team color bg (from teamColors palette)
     fontWeight: '700',
     fontSize: 14,
   },
   teamPlayerCount: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   teamSubtitle: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     marginTop: 4,
   },
@@ -5861,25 +5872,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: THEME.border,
-    backgroundColor: THEME.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   playerChipDisabled: {
     opacity: 0.4,
   },
   playerChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerChipTextSelected: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
   playerChipTextDisabled: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   teamAssignmentDoneBtn: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     marginHorizontal: 16,
     marginVertical: 16,
     paddingVertical: 14,
@@ -5887,12 +5898,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   teamAssignmentDoneBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   noPlayersText: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     fontSize: 14,
     fontStyle: 'italic',
     padding: 8,
@@ -5901,7 +5912,7 @@ const styles = StyleSheet.create({
   noExtraPlayersInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     padding: 16,
     borderRadius: 12,
     gap: 12,
@@ -5909,7 +5920,7 @@ const styles = StyleSheet.create({
   noExtraPlayersText: {
     flex: 1,
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     lineHeight: 20,
   },
   extraPlayersGrid: {
@@ -5920,7 +5931,7 @@ const styles = StyleSheet.create({
   extraPlayerChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -5929,8 +5940,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   extraPlayerChipSelected: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#22c55e',
+    backgroundColor: theme.colors.successSoft,
+    borderColor: theme.colors.success,
   },
   extraPlayerChipPhoto: {
     width: 28,
@@ -5941,36 +5952,36 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   extraPlayerChipAvatarSelected: {
-    backgroundColor: '#bbf7d0',
+    backgroundColor: theme.colors.successSoft,
   },
   extraPlayerChipInitials: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   extraPlayerChipText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
     maxWidth: 150,
   },
   extraPlayerChipTextSelected: {
-    color: '#166534',
+    color: theme.colors.successSoftText,
   },
   
   // Estilos para cards (igual que matchSheetList)
   createCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardHeader: {
     flexDirection: 'row',
@@ -5981,7 +5992,7 @@ const styles = StyleSheet.create({
   createCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   createCardContent: {
@@ -5989,22 +6000,22 @@ const styles = StyleSheet.create({
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   selectorText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
   },
   selectorTextSelected: {
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -6015,14 +6026,14 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
     fontWeight: '500',
   },
   subTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 12,
     marginTop: 8,
   },
@@ -6035,38 +6046,38 @@ const styles = StyleSheet.create({
   },
   resultadoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   playerSelector: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   playerChip: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: theme.colors.primarySoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   playerChipText: {
     fontSize: 12,
-    color: '#1976d2',
+    color: theme.colors.primarySoftText,
     fontWeight: '500',
   },
   eventSelector: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -6079,7 +6090,7 @@ const styles = StyleSheet.create({
   eventSelectorTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.text,
   },
   eventsList: {
     marginBottom: 12,
@@ -6088,7 +6099,7 @@ const styles = StyleSheet.create({
   eventChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f4f8',
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -6096,7 +6107,7 @@ const styles = StyleSheet.create({
   },
   eventChipText: {
     fontSize: 13,
-    color: '#333',
+    color: theme.colors.text,
     flex: 1,
   },
   cardIndicator: {
@@ -6109,13 +6120,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     gap: 8,
   },
   emptyLineupText: {
     fontSize: 14,
-    color: '#999',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     flex: 1,
   },
