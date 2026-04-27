@@ -186,6 +186,18 @@ const EmptyState = styled.div`
   font-size: 13px;
 `;
 
+const TabPanel = styled.div`
+  /* Internal scroll so the modal panel does NOT grow to fill the
+     viewport. Together with Modal's own max-height this keeps the
+     dialog compact, matching the create/edit form modal. */
+  max-height: 60vh;
+  overflow-y: auto;
+  /* Compensate Modal Body horizontal padding so scrollbar sits at the
+     edge of the panel like in the form modal. */
+  margin: 0 -4px;
+  padding: 0 4px;
+`;
+
 export default function TournamentDetailModal({
   open,
   onClose,
@@ -239,7 +251,7 @@ export default function TournamentDetailModal({
       open={open}
       onClose={onClose}
       title={tournament.nombre}
-      width={760}
+      width={620}
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
           {onEdit ? (
@@ -286,7 +298,8 @@ export default function TournamentDetailModal({
       </Tabs>
 
       {tab === 'info' && (
-        <Stack $gap={12}>
+        <TabPanel>
+          <Stack $gap={12}>
           <InfoGrid>
             <InfoCard>
               <InfoLabel>{t('tournaments.format', 'Formato')}</InfoLabel>
@@ -336,10 +349,12 @@ export default function TournamentDetailModal({
             </div>
           ) : null}
         </Stack>
+        </TabPanel>
       )}
 
       {tab === 'standings' && showStandings && (
-        standings.length === 0 ? (
+        <TabPanel>
+        {standings.length === 0 ? (
           <EmptyState>{t('tournaments.noStandings', 'Aún no hay partidos jugados para calcular la clasificación')}</EmptyState>
         ) : (
           <Table>
@@ -374,11 +389,13 @@ export default function TournamentDetailModal({
               ))}
             </tbody>
           </Table>
-        )
+        )}
+        </TabPanel>
       )}
 
       {tab === 'brackets' && showBrackets && (
-        brackets.length === 0 ? (
+        <TabPanel>
+        {brackets.length === 0 ? (
           <EmptyState>{t('tournaments.noBrackets', 'Aún no hay partidos eliminatorios para mostrar')}</EmptyState>
         ) : (
           <div>
@@ -399,11 +416,13 @@ export default function TournamentDetailModal({
               </RoundBlock>
             ))}
           </div>
-        )
+        )}
+        </TabPanel>
       )}
 
       {tab === 'sanctions' && (
-        loadingSanctions ? (
+        <TabPanel>
+        {loadingSanctions ? (
           <EmptyState>{t('common.loading', 'Cargando...')}</EmptyState>
         ) : sanctions.length === 0 ? (
           <EmptyState>{t('tournaments.noSanctions', 'Sin sanciones registradas')}</EmptyState>
@@ -433,7 +452,8 @@ export default function TournamentDetailModal({
               );
             })}
           </div>
-        )
+        )}
+        </TabPanel>
       )}
     </Modal>
   );

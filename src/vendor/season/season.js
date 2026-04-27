@@ -2064,7 +2064,7 @@ const styles = StyleSheet.create({
   changeSeasonButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 8 : 10,
     borderRadius: 12,
@@ -2546,21 +2546,21 @@ const styles = StyleSheet.create({
   playerNameGrid: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111827',
+    color: THEME.text,
     textAlign: 'center',
     marginBottom: 2,
     lineHeight: 14,
   },
   playerPositionGrid: {
     fontSize: 11,
-    color: '#6b7280',
+    color: THEME.textSecondary,
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 1,
   },
   playerDetailsGrid: {
     fontSize: 10,
-    color: '#9ca3af',
+    color: THEME.textMuted,
     textAlign: 'center',
     lineHeight: 12,
   },
@@ -2572,7 +2572,7 @@ const styles = StyleSheet.create({
   },
   emptyPlayersText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: THEME.textSecondary,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -2581,12 +2581,12 @@ const styles = StyleSheet.create({
   addPlayerContainer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: THEME.border,
   },
   addPlayerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: THEME.text,
     marginBottom: 16,
   },
   addPlayerForm: {
@@ -2598,14 +2598,14 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: THEME.inputBg,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: THEME.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111827',
+    color: THEME.text,
   },
   inputHalf: {
     flex: 1,
@@ -2638,7 +2638,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   premiumCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -2650,7 +2650,7 @@ const styles = StyleSheet.create({
   },
   premiumTitle: {
     fontSize: 16,
-    color: '#111827',
+    color: THEME.text,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 8,
@@ -2857,7 +2857,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 8 : 20,
   },
   orgModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 14 : 20,
     width: '100%',
     height: isMobileDevice() ? '95%' : '90%',
@@ -2966,7 +2966,7 @@ const styles = StyleSheet.create({
 
   // Select Styles
   selectModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     margin: isMobileDevice() ? 12 : 20,
     maxHeight: isMobileDevice() ? '80%' : '70%',
@@ -3015,7 +3015,7 @@ const styles = StyleSheet.create({
   },
   yearOptionsContainer: {
     maxHeight: 200,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -3070,7 +3070,7 @@ const styles = StyleSheet.create({
   },
   positionOptionsContainer: {
     maxHeight: 180,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -3132,7 +3132,7 @@ const styles = StyleSheet.create({
   },
   editPositionOptionsContainer: {
     maxHeight: 150,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -3177,7 +3177,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 12 : 20,
   },
   addPlayerModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     width: '100%',
     maxWidth: isMobileDevice() ? 380 : 400,
@@ -3281,7 +3281,7 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     maxHeight: 200,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -3326,7 +3326,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: 16,
     padding: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: THEME.backgroundAlt,
   },
   badgePreview: {
     position: 'relative',
@@ -3704,7 +3704,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.danger + '40',
   },
   deleteConfirmButtonText: {
-    color: '#ff0000',
+    color: '#ffffff',
     fontWeight: '600',
     fontSize: 14,
   },

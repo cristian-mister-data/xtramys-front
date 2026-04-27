@@ -3040,11 +3040,11 @@ export default function AddEventModal({
         onRequestClose={() => setShowTorneoModal(false)}
       >
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowTorneoModal(false)}>
-          <Pressable style={{ backgroundColor: '#fff', borderRadius: 16, width: '85%', maxWidth: 400, maxHeight: '60%', overflow: 'hidden' }} onPress={() => {}}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#1e293b' }}>{t('matchSheet.competition')}</Text>
+          <Pressable style={{ backgroundColor: THEME.surface, borderRadius: 16, width: '85%', maxWidth: 400, maxHeight: '60%', overflow: 'hidden' }} onPress={() => {}}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: THEME.border }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: THEME.text }}>{t('matchSheet.competition')}</Text>
               <TouchableOpacity onPress={() => setShowTorneoModal(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={THEME.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView style={{ padding: 8 }}>
@@ -3053,22 +3053,22 @@ export default function AddEventModal({
                 style={[{
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                   padding: 14, borderRadius: 10, marginBottom: 4,
-                }, matchData.competicion === 'amistoso' && { backgroundColor: '#10b98112' }]}
+                }, matchData.competicion === 'amistoso' && { backgroundColor: THEME.success + '15' }]}
                 onPress={() => {
                   setMatchData(prev => ({ ...prev, competicion: 'amistoso', torneoId: null }));
                   setShowTorneoModal(false);
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: THEME.success, alignItems: 'center', justifyContent: 'center' }}>
                     <MaterialIcons name="sports-soccer" size={14} color="#fff" />
                   </View>
-                  <Text style={[{ fontSize: 15, color: '#475569' }, matchData.competicion === 'amistoso' && { color: '#1e293b', fontWeight: '600' }]}>
+                  <Text style={[{ fontSize: 15, color: THEME.textSecondary }, matchData.competicion === 'amistoso' && { color: THEME.text, fontWeight: '600' }]}>
                     {t('matchSheet.friendly') || 'Amistoso'}
                   </Text>
                 </View>
                 {matchData.competicion === 'amistoso' && (
-                  <Ionicons name="checkmark" size={20} color="#10b981" />
+                  <Ionicons name="checkmark" size={20} color={THEME.success} />
                 )}
               </TouchableOpacity>
 
@@ -3079,7 +3079,7 @@ export default function AddEventModal({
                   style={[{
                     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                     padding: 14, borderRadius: 10, marginBottom: 4,
-                  }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { backgroundColor: '#8B5CF612' }]}
+                  }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { backgroundColor: '#8B5CF615' }]}
                   onPress={() => {
                     setMatchData(prev => ({ ...prev, competicion: 'torneo', torneoId: torneo._id }));
                     setShowTorneoModal(false);
@@ -3089,12 +3089,12 @@ export default function AddEventModal({
                     <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: torneo.color || '#8B5CF6', alignItems: 'center', justifyContent: 'center' }}>
                       <MaterialIcons name="emoji-events" size={14} color="#fff" />
                     </View>
-                    <Text style={[{ fontSize: 15, color: '#475569' }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { color: '#1e293b', fontWeight: '600' }]}>
+                    <Text style={[{ fontSize: 15, color: THEME.textSecondary }, matchData.torneoId === torneo._id && matchData.competicion !== 'amistoso' && { color: THEME.text, fontWeight: '600' }]}>
                       {torneo.nombre}
                     </Text>
                     {torneo.porDefecto && (
-                      <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                        <Text style={{ fontSize: 10, color: '#2563eb', fontWeight: '600' }}>{t('tournaments.defaultBadge') || 'Por defecto'}</Text>
+                      <View style={{ backgroundColor: THEME.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 10, color: THEME.primary, fontWeight: '600' }}>{t('tournaments.defaultBadge') || 'Por defecto'}</Text>
                       </View>
                     )}
                   </View>
@@ -3105,7 +3105,7 @@ export default function AddEventModal({
               ))}
               {tournaments.filter(tr => tr.estado === 'activo').length === 0 && (
                 <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 14 }}>
+                  <Text style={{ color: THEME.textMuted, fontSize: 14 }}>
                     {t('tournaments.noActiveTournaments')}
                   </Text>
                 </View>

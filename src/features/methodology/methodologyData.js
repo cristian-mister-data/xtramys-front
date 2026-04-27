@@ -844,37 +844,91 @@ const spanishFallback = (key) => {
 export const DEFAULT_METHODOLOGY_DATA = getDefaultMethodologyData(spanishFallback);
 
 // Colores por categoría
+//
+// Cada entrada incluye además variantes accesibles para modo oscuro:
+//  - darkAccent: tono claro/luminoso (Tailwind 300-400) para usar como TEXTO
+//    sobre fondos oscuros — todos cumplen >=4.5:1 sobre el `background`
+//    (#0b1220) y el `surface` (#162038) del darkTheme.
+//  - darkSoft: versión low-alpha (≈0.18) del color para usar como FONDO
+//    tintado de la card / badge sobre superficies oscuras (similar a
+//    *Soft del theme: successSoft, infoSoft, etc.).
 export const CATEGORY_COLORS = {
   fundamentos: {
     primary: '#4CAF50',
     secondary: '#81C784',
-    gradient: ['#4CAF50', '#81C784']
+    gradient: ['#4CAF50', '#81C784'],
+    darkAccent: '#86efac', // green-300
+    darkSoft: 'rgba(74, 222, 128, 0.18)'
   },
   benjamines: {
     primary: '#2196F3',
     secondary: '#64B5F6',
-    gradient: ['#2196F3', '#64B5F6']
+    gradient: ['#2196F3', '#64B5F6'],
+    darkAccent: '#93c5fd', // blue-300
+    darkSoft: 'rgba(96, 165, 250, 0.18)'
   },
   alevines: {
     primary: '#9C27B0',
     secondary: '#BA68C8',
-    gradient: ['#9C27B0', '#BA68C8']
+    gradient: ['#9C27B0', '#BA68C8'],
+    darkAccent: '#d8b4fe', // purple-300
+    darkSoft: 'rgba(167, 139, 250, 0.20)'
   },
   infantiles: {
     primary: '#FF9800',
     secondary: '#FFB74D',
-    gradient: ['#FF9800', '#FFB74D']
+    gradient: ['#FF9800', '#FFB74D'],
+    darkAccent: '#fdba74', // orange-300
+    darkSoft: 'rgba(251, 146, 60, 0.18)'
   },
   cadetes: {
     primary: '#F44336',
     secondary: '#E57373',
-    gradient: ['#F44336', '#E57373']
+    gradient: ['#F44336', '#E57373'],
+    darkAccent: '#fca5a5', // red-300
+    darkSoft: 'rgba(248, 113, 113, 0.18)'
   },
   juveniles: {
     primary: '#607D8B',
     secondary: '#90A4AE',
-    gradient: ['#607D8B', '#90A4AE']
+    gradient: ['#607D8B', '#90A4AE'],
+    darkAccent: '#cbd5e1', // slate-300
+    darkSoft: 'rgba(148, 163, 184, 0.22)'
   }
+};
+
+/**
+ * Devuelve un set de estilos accesibles según el modo del tema.
+ *
+ * Dark mode → card tintada suave sobre surface, texto en accent luminoso
+ * (≥4.5:1 sobre el tinte y sobre surface). Sin gradientes vivos al 100%
+ * de saturación que rompen el contraste con el fondo oscuro.
+ *
+ * Light mode → conserva el diseño actual de gradiente vivo con texto
+ * blanco para cabeceras y badges (apariencia intacta).
+ */
+export const getCategoryStyles = (color, mode = 'light') => {
+  const safe = color || CATEGORY_COLORS.fundamentos;
+  if (mode === 'dark') {
+    return {
+      headerBg: safe.darkSoft,
+      headerText: safe.darkAccent,
+      headerSubText: '#f1f5fb',         // theme.colors.text — chevrons / iconos
+      badgeBg: safe.darkSoft,
+      badgeText: safe.darkAccent,
+      accentText: safe.darkAccent,      // texto coloreado (titulares de opción)
+      optionBorder: safe.darkAccent
+    };
+  }
+  return {
+    headerBg: `linear-gradient(90deg, ${safe.gradient[0]} 0%, ${safe.gradient[1]} 100%)`,
+    headerText: '#fff',
+    headerSubText: '#fff',
+    badgeBg: safe.primary,
+    badgeText: '#fff',
+    accentText: safe.primary,
+    optionBorder: safe.primary
+  };
 };
 
 // Iconos por categoría

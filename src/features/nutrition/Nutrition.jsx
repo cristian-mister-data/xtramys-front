@@ -200,8 +200,22 @@ const MealTileCount = styled.div`
 
 const CardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
+  align-items: stretch;
+
+  @media (max-width: 1280px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  @media (max-width: 720px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const DayCardWrap = styled.button`
@@ -212,45 +226,68 @@ const DayCardWrap = styled.button`
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  &:hover { box-shadow: ${({ theme }) => theme.shadows.md}; }
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  &:hover {
+    box-shadow: ${({ theme }) => theme.shadows.md};
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const DayCardHeader = styled.div`
   background: ${({ $rest }) => ($rest ? GRAD_PURPLE : GRAD_GREEN)};
   color: #fff;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 `;
 
 const DayName = styled.div`
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const DayTag = styled.div`
-  font-size: 11px;
-  opacity: 0.9;
+  font-size: 10px;
+  opacity: 0.92;
   margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
 `;
 
 const DayBody = styled.div`
-  padding: 10px 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  flex: 1;
+  background: ${({ theme }) => theme.colors.surface};
+  min-width: 0;
 `;
 
 const MealRow = styled.div`
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  min-width: 0;
+  > div:last-child { min-width: 0; flex: 1; }
 `;
 
 const MealCircle = styled.div`
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   background: ${({ $color }) => `${$color}22`};
   color: ${({ $color }) => $color};
@@ -261,16 +298,24 @@ const MealCircle = styled.div`
 `;
 
 const MealLabel = styled.div`
-  font-size: 11px;
-  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 10px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  margin-bottom: 2px;
 `;
 
 const MealDescription = styled.div`
-  font-size: 13px;
+  font-size: 12.5px;
   color: ${({ theme }) => theme.colors.text};
   line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
 const ContextCardWrap = styled.button`

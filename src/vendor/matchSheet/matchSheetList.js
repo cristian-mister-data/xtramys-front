@@ -610,18 +610,26 @@ export default function MatchSheetList() {
               <Ionicons name="document-text-outline" size={28} color="#2474E5" />
               <Text style={styles.topBarTitle}>{t('matchSheet.title')}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              {/* Botón de menú (3 puntos) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* Botón de filtros */}
               <TouchableOpacity
-                onPress={() => setMobileMenuVisible(true)}
-                style={styles.mobileMenuButton}
+                onPress={() => setFiltersVisible(!filtersVisible)}
+                style={[styles.headerActionBtn, filtersVisible && styles.headerActionBtnActive]}
               >
-                <Ionicons name="ellipsis-vertical" size={20} color="#2474E5" />
+                <MaterialIcons name="filter-list" size={20} color={filtersVisible ? '#fff' : '#2474E5'} />
                 {activeFiltersCount > 0 && (
                   <View style={styles.mobileMenuBadge}>
                     <Text style={styles.mobileMenuBadgeText}>{activeFiltersCount}</Text>
                   </View>
                 )}
+              </TouchableOpacity>
+              {/* Botón crear ficha */}
+              <TouchableOpacity
+                onPress={openCreateModal}
+                style={styles.headerCreateBtn}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                {!IS_MOBILE && <Text style={styles.headerCreateBtnText}>{t('matchSheet.actions.createMatchSheet')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -3302,6 +3310,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: "#b5d6fa",
+  },
+  headerActionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#eaf2fb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#b5d6fa',
+  },
+  headerActionBtnActive: {
+    backgroundColor: '#2474E5',
+    borderColor: '#2474E5',
+  },
+  headerCreateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#2474E5',
+  },
+  headerCreateBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   mobileMenuOverlay: {
     flex: 1,

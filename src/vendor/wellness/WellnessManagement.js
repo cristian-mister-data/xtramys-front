@@ -1342,7 +1342,7 @@ export default function WellnessManagement({ navigation }) {
         {/* Modal PDF por rango de fechas */}
         <Modal visible={showRangePDFModal} animationType="slide" transparent>
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: isMobile ? '90%' : 400, maxWidth: 500 }}>
+            <View style={{ backgroundColor: THEME.surface, borderRadius: 16, padding: 24, width: isMobile ? '90%' : 400, maxWidth: 500 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b' }}>{t('wellness.rangePDF')}</Text>
                 <TouchableOpacity onPress={() => setShowRangePDFModal(false)}>
@@ -1354,16 +1354,16 @@ export default function WellnessManagement({ navigation }) {
               <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 8 }}>{t('wellness.pdfType')}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 <TouchableOpacity
-                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'post' ? '#276e15' : '#f1f5f9' }}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'post' ? '#276e15' : THEME.backgroundAlt }}
                   onPress={() => setRangePDFType('post')}
                 >
-                  <Text style={{ fontWeight: '600', color: rangePDFType === 'post' ? '#fff' : '#64748b' }}>{t('wellness.postBadge')}</Text>
+                  <Text style={{ fontWeight: '600', color: rangePDFType === 'post' ? '#fff' : THEME.textSecondary }}>{t('wellness.postBadge')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'pre' ? '#f59e0b' : '#f1f5f9' }}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'pre' ? '#f59e0b' : THEME.backgroundAlt }}
                   onPress={() => setRangePDFType('pre')}
                 >
-                  <Text style={{ fontWeight: '600', color: rangePDFType === 'pre' ? '#fff' : '#64748b' }}>{t('wellness.preBadge')}</Text>
+                  <Text style={{ fontWeight: '600', color: rangePDFType === 'pre' ? '#fff' : THEME.textSecondary }}>{t('wellness.preBadge')}</Text>
                 </TouchableOpacity>
               </View>
 

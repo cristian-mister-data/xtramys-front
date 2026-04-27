@@ -1669,9 +1669,9 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: THEME.border,
   },
   cancelBtn: {
     flex: 1,
@@ -2394,7 +2394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   teamAssignmentModalContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     width: '100%',
@@ -2442,7 +2442,7 @@ const styles = StyleSheet.create({
   },
   teamAssignmentTeamSection: {
     marginBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -2508,7 +2508,7 @@ const styles = StyleSheet.create({
   },
   teamAssignmentPlayerChipExtra: {
     borderColor: THEME.warning,
-    backgroundColor: '#fffbeb',
+    backgroundColor: THEME.warning + '15',
   },
   teamAssignmentPlayerChipExtraSelected: {
     backgroundColor: THEME.warning,
@@ -2555,7 +2555,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderWidth: 1,
     borderColor: THEME.border,
   },

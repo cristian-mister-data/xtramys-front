@@ -20,6 +20,7 @@ import useMatchSheetPDF from '@/vendor/matchSheet/useMatchSheetPDF';
 import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/MatchSheetPDFModals';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { THEME } from '@/vendor/shared/ProfessionalHeader';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -29,24 +30,6 @@ const ROUND_I18N_KEYS = {
   octavos: 'tournaments.roundRound16',
   dieciseisavos: 'tournaments.roundRound32',
   treintaydosavos: 'tournaments.roundRound64',
-};
-
-// Tema consistente con el resto de la aplicación
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-  gradient: ['#3578e5', '#2856a2'],
 };
 
 // Colores por posición (consistentes con jugadores.js)
@@ -685,7 +668,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   viewModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
@@ -697,7 +680,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   viewModalContentTablet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 20,
     width: '90%',
     maxWidth: 800,
@@ -716,22 +699,22 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: THEME.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: THEME.text,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
   },
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
   },
   modalBody: {
     paddingHorizontal: 24,
@@ -747,7 +730,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     padding: 16,
     borderRadius: 12,
   },
@@ -755,7 +738,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: THEME.text,
     marginLeft: 12,
   },
   resultBadge: {
@@ -784,12 +767,12 @@ const styles = StyleSheet.create({
     minWidth: 150,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e9eef6',
-    shadowColor: '#1e293b',
+    borderColor: THEME.border,
+    shadowColor: THEME.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -816,7 +799,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: THEME.textSecondary,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -825,7 +808,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: THEME.text,
   },
   
   // Detail Cards
@@ -833,11 +816,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   detailCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -853,12 +836,12 @@ const styles = StyleSheet.create({
   detailCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: THEME.text,
     marginLeft: 8,
   },
   detailCardContent: {
     fontSize: 14,
-    color: '#6b7280',
+    color: THEME.textSecondary,
     lineHeight: 20,
   },
   
@@ -868,23 +851,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: THEME.border,
     gap: 8,
   },
   eventMinute: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#3578e5',
+    color: THEME.primary,
     minWidth: 35,
   },
   eventPlayer: {
     fontSize: 14,
-    color: '#333',
+    color: THEME.text,
     flex: 1,
   },
   eventType: {
     fontSize: 12,
-    color: '#666',
+    color: THEME.textSecondary,
     fontStyle: 'italic',
   },
   cambioDetails: {
@@ -1025,12 +1008,12 @@ const playerStyles = StyleSheet.create({
   listCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     marginBottom: 6,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: THEME.border,
   },
   listCardIndicator: {
     width: 4,
@@ -1057,7 +1040,7 @@ const playerStyles = StyleSheet.create({
   listCardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: THEME.text,
     marginBottom: 3,
   },
   listCardTags: {
@@ -1068,7 +1051,7 @@ const playerStyles = StyleSheet.create({
   listCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -1077,24 +1060,24 @@ const playerStyles = StyleSheet.create({
   listCardTagText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: THEME.textSecondary,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
     gap: 6,
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: '#1e293b',
+    color: THEME.text,
     paddingVertical: 2,
   },
   filterScroll: {
@@ -1106,27 +1089,27 @@ const playerStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     marginRight: 6,
     gap: 4,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   filterChipActive: {
-    backgroundColor: '#3578e5',
-    borderColor: '#3578e5',
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: THEME.textSecondary,
   },
   filterChipTextActive: {
     color: '#ffffff',
   },
   noResults: {
     textAlign: 'center',
-    color: '#94a3b8',
+    color: THEME.textMuted,
     fontSize: 13,
     paddingVertical: 12,
   },

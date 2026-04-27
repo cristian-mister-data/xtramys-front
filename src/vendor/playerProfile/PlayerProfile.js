@@ -11,6 +11,7 @@ import { savePdfToDownloads } from '../../utils/pdfDownload';
 import { getPlayerWellnessHistory, getPlayerAnthropometry, getPlayerAnthropometryPDF, getPlayerPreWellnessHistory } from '../../utils/api';
 import { getPlayerFullName } from '../../utils/playerHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { THEME } from '@/vendor/shared/ProfessionalHeader';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -2836,13 +2837,13 @@ const generatePDFHTML = (t) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.background,
   },
   loadingText: {
     marginTop: 12,
@@ -2850,13 +2851,13 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     padding: isMobileDevice() ? 12 : 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: THEME.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -2905,7 +2906,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 10 : 16,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: isMobileDevice() ? 12 : 16,
@@ -2949,11 +2950,11 @@ const styles = StyleSheet.create({
   infoCard: {
     flex: 1,
     minWidth: isMobileDevice() ? '45%' : '30%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     padding: isMobileDevice() ? 10 : 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   infoLabel: {
     fontSize: 11,
@@ -3063,12 +3064,12 @@ const styles = StyleSheet.create({
   },
   wellnessSummaryCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     padding: isMobileDevice() ? 12 : 16,
     borderRadius: isMobileDevice() ? 8 : 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   wellnessSummaryValue: {
     fontSize: isMobileDevice() ? 24 : 28,
@@ -3082,12 +3083,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   wellnessDetailCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   wellnessDetailHeader: {
     flexDirection: 'row',
@@ -3160,7 +3161,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   injuryCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
@@ -3341,11 +3342,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   anthropometryFoldsContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     padding: isMobileDevice() ? 12 : 16,
     borderRadius: isMobileDevice() ? 8 : 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   anthropometryFoldsTitle: {
     fontSize: isMobileDevice() ? 14 : 16,
@@ -3366,12 +3367,12 @@ const styles = StyleSheet.create({
   },
   anthropometryFoldItem: {
     width: '31%',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   anthropometryFoldValue: {
     fontSize: 18,
@@ -3385,7 +3386,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   anthropometryHistoryCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
@@ -3426,7 +3427,7 @@ const styles = StyleSheet.create({
   },
   anthropometryHistoryStat: {
     width: '48%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',

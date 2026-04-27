@@ -16,6 +16,7 @@ import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppLayout from '@/vendor/shared/appLayout';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import {
   getWellnessTemplates,
   createWellnessTemplate,
@@ -458,9 +459,9 @@ const styles = StyleSheet.create({
   typeSelector: {
     flexDirection: 'row',
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: THEME.border,
   },
   typeButton: {
     flex: 1,
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     marginHorizontal: 5,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: THEME.backgroundAlt,
   },
   typeButtonActive: {
     backgroundColor: '#667eea',
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   templateCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   questionsPreview: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -634,7 +635,7 @@ const styles = StyleSheet.create({
     padding: isMobile ? 10 : 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: isMobile ? 14 : 16,
     width: isMobile ? '100%' : '60%',
     maxHeight: isMobile ? '95%' : '90%',
@@ -647,12 +648,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobile ? 16 : 20,
     paddingVertical: isMobile ? 14 : 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: THEME.border,
   },
   modalTitle: {
     fontSize: isMobile ? 17 : 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: THEME.text,
   },
   modalBody: {
     padding: isMobile ? 16 : 20,

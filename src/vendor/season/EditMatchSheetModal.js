@@ -581,7 +581,7 @@ const modalStyles = StyleSheet.create({
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
   },
   checkboxSelected: {
     backgroundColor: '#4CAF50',
@@ -3449,9 +3449,9 @@ const styles = StyleSheet.create({
     gap: isMobileDevice() ? 8 : 12,
     paddingHorizontal: isMobileDevice() ? 14 : 20,
     paddingVertical: isMobileDevice() ? 12 : 14,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: THEME.border,
   },
   cancelBtn: {
     flex: 1,
@@ -3758,11 +3758,11 @@ const styles = StyleSheet.create({
   // Estilos para eventos (unificado con matchSheetList)
   eventSelector: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: THEME.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -3775,7 +3775,7 @@ const styles = StyleSheet.create({
   eventSelectorTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: THEME.text,
   },
   eventsList: {
     marginBottom: 12,
@@ -3784,7 +3784,7 @@ const styles = StyleSheet.create({
   eventChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f4f8',
+    backgroundColor: THEME.backgroundAlt,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -3792,7 +3792,7 @@ const styles = StyleSheet.create({
   },
   eventChipText: {
     fontSize: 13,
-    color: '#333',
+    color: THEME.text,
     flex: 1,
   },
   cardIndicator: {
@@ -3828,20 +3828,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: THEME.success + '15',
     borderBottomWidth: 1,
     borderBottomColor: THEME.border,
   },
   lineupEditorTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#166534',
+    color: THEME.success,
   },
   emptyLineupMessage: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -3849,16 +3849,16 @@ const styles = StyleSheet.create({
   emptyLineupText: {
     flex: 1,
     fontSize: 13,
-    color: '#64748b',
+    color: THEME.textSecondary,
     lineHeight: 18,
   },
   startersSubsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 10,
     padding: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   startersSubsHeader: {
     flexDirection: 'row',
@@ -3867,12 +3867,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: THEME.border,
   },
   startersSubsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: THEME.text,
   },
   startersSubsList: {
     gap: 6,

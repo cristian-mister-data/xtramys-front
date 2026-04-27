@@ -2,7 +2,7 @@
 // Mantiene la misma lógica: lista de metodologías del usuario + plantilla recomendada (read-only),
 // expansión de categorías, edición de días/planes para metodologías propias.
 import { useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
@@ -23,6 +23,7 @@ import {
   CATEGORY_COLORS,
   CATEGORY_ORDER,
   getDaysLabel,
+  getCategoryStyles,
 } from './methodologyData';
 import {
   getMethodologies,
@@ -66,8 +67,8 @@ const ReadOnlyBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #fff8e1;
-  color: #ff9800;
+  background: ${({ theme }) => theme.colors.warningSoft};
+  color: ${({ theme }) => theme.colors.warningSoftText};
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -117,11 +118,14 @@ const CategoryHeader = styled.button`
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: linear-gradient(90deg, ${({ $color }) => $color.gradient[0]} 0%, ${({ $color }) => $color.gradient[1]} 100%);
-  color: #fff;
+  background: ${({ $styles }) => $styles.headerBg};
+  color: ${({ $styles }) => $styles.headerText};
   cursor: pointer;
   text-align: left;
   border: 0;
+  /* En dark mode el fondo es un tinte suave sobre surface, así que conviene
+     una separación inferior sutil con el body de la card. */
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const CategoryName = styled.div`
@@ -169,8 +173,8 @@ const DayCard = styled.div`
 `;
 
 const DayBadge = styled.div`
-  background: ${({ $color }) => $color.primary};
-  color: #fff;
+  background: ${({ $styles }) => $styles.badgeBg};
+  color: ${({ $styles }) => $styles.badgeText};
   font-size: 11px;
   font-weight: 700;
   padding: 2px 10px;
@@ -192,8 +196,14 @@ const OptionPill = styled.div`
   padding: 6px 8px;
   background: ${({ theme }) => theme.colors.backgroundAlt};
   border-radius: ${({ theme }) => theme.radius.sm};
-  border-left: 3px solid ${({ $color }) => $color.primary};
-  strong { color: ${({ $color }) => $color.primary}; }
+  border-left: 3px solid ${({ $styles }) => $styles.optionBorder};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  strong { color: ${({ $styles }) => $styles.accentText}; }
+`;
+
+const ConstraintText = styled.div`
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 2px;
 `;
 
 const DayActions = styled.div`
@@ -244,11 +254,11 @@ function MethodologySelector({ methodologies, selectedId, onSelect, onCreateNew,
   );
 }
 
-function DayCardView({ day, color, isEditable, onEdit, onDelete }) {
+function DayCardView({ day, styles, isEditable, onEdit, onDelete }) {
   const { t } = useTranslation();
   return (
     <DayCard>
-      <DayBadge $color={color}>{t('methodology.dayNumber', { number: day.day_number })}</DayBadge>
+      <DayBadge $styles={styles}>{t('methodology.dayNumber', { number: day.day_number })}</DayBadge>
       {day.orientation && (
         <DayRow>
           <span>{t('methodology.orientation', 'Orientación')}: </span>
@@ -279,9 +289,9 @@ function DayCardView({ day, color, isEditable, onEdit, onDelete }) {
             <span>{t('methodology.mainPart', 'Parte principal')}</span>
           </DayRow>
           {day.main_part.options.map((opt, i) => (
-            <OptionPill key={i} $color={color}>
+            <OptionPill key={i} $styles={styles}>
               <strong>{opt.tasks?.join(' / ')}</strong>
-              {opt.constraint && <div style={{ color: '#666' }}>{opt.constraint}</div>}
+              {opt.constraint && <ConstraintText>{opt.constraint}</ConstraintText>}
             </OptionPill>
           ))}
         </>
@@ -480,6 +490,8 @@ function CreateMethodologyModal({ open, onClose, onSave }) {
 // ---------- main ----------
 export default function Methodology() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const themeMode = theme?.mode || 'light';
   const user = useSelector((s) => s.usuario.data);
   const userId = user?._id;
 
@@ -669,10 +681,11 @@ export default function Methodology() {
         if (!cat && !isEditable) return null;
         const data = cat || { id: categoryKey, name: categoryKey, plans: {} };
         const color = CATEGORY_COLORS[categoryKey] || CATEGORY_COLORS.fundamentos;
+        const styles = getCategoryStyles(color, themeMode);
         const isOpen = !!expanded[categoryKey];
         return (
           <CategoryCard key={categoryKey}>
-            <CategoryHeader $color={color} onClick={() => setExpanded((e) => ({ ...e, [categoryKey]: !e[categoryKey] }))}>
+            <CategoryHeader $styles={styles} onClick={() => setExpanded((e) => ({ ...e, [categoryKey]: !e[categoryKey] }))}>
               <CategoryName>{data.name}</CategoryName>
               {isOpen ? <MdExpandLess size={22} /> : <MdExpandMore size={22} />}
             </CategoryHeader>
@@ -700,7 +713,7 @@ export default function Methodology() {
                         <DayCardView
                           key={i}
                           day={day}
-                          color={color}
+                          styles={styles}
                           isEditable={isEditable}
                           onEdit={() => setEditDay({ categoryKey, planKey, dayIndex: i, day })}
                           onDelete={() => handleDeleteDay(categoryKey, planKey, i)}

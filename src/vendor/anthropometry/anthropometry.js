@@ -33,6 +33,7 @@ import { clearAnthropometries } from '@/store/slices/anthropometry/anthropometry
 import AppLayout from '@/vendor/shared/appLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
@@ -407,24 +408,78 @@ const Anthropometry = ({ navigation }) => {
   return (
     <AppLayout scrollEnabled={false}>
       <View style={{ flex: 1 }}>
-        {/* Header estilo unificado */}
+        {/* Header estilo unificado (acciones inline, sin menú de 3 puntos) */}
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
-            <View style={styles.topBarTitleContainer}>
-              <Ionicons name="body" size={28} color="#2474E5" />
-              <Text style={styles.topBarTitle}>{t('anthropometry.anthropometry')}</Text>
+            <View style={[styles.topBarTitleContainer, { flexShrink: 1, minWidth: 0 }]}>
+              <Ionicons name="body" size={IS_MOBILE ? 22 : 28} color="#2474E5" />
+              <Text style={styles.topBarTitle} numberOfLines={1}>{t('anthropometry.anthropometry')}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              {/* Botón de menú (3 puntos) */}
+            <View style={styles.headerActions}>
+              {/* Filtro por fechas */}
               <TouchableOpacity
-                onPress={() => setMobileMenuVisible(true)}
-                style={[styles.mobileMenuButton, (dateFilter || filterPlayer !== 'all') && styles.mobileMenuButtonActive]}
+                onPress={() => {
+                  setTempStartDate(dateFilter?.startDate || null);
+                  setTempEndDate(dateFilter?.endDate || null);
+                  setDateRangeModalVisible(true);
+                }}
+                style={[styles.headerIconBtn, dateFilter && styles.headerIconBtnActive]}
+                accessibilityLabel={t('anthropometry.filters.filterByDates')}
               >
-                <Ionicons name="ellipsis-vertical" size={20} color={(dateFilter || filterPlayer !== 'all') ? "#fff" : "#2474E5"} />
-                {(dateFilter || filterPlayer !== 'all') && (
-                  <View style={styles.filterBadge}>
-                    <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
-                  </View>
+                <MaterialIcons name="event" size={20} color={dateFilter ? '#fff' : '#2474E5'} />
+                {!IS_MOBILE && (
+                  <Text style={[styles.headerIconBtnText, dateFilter && styles.headerIconBtnTextActive]}>
+                    {t('anthropometry.filters.filterByDates')}
+                  </Text>
+                )}
+                {dateFilter && (
+                  <TouchableOpacity
+                    style={styles.headerIconBtnClear}
+                    onPress={(e) => { e.stopPropagation && e.stopPropagation(); clearDateFilter(); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              {/* Filtro por jugador */}
+              <TouchableOpacity
+                onPress={() => setPlayerFilterModalVisible(true)}
+                style={[styles.headerIconBtn, filterPlayer !== 'all' && styles.headerIconBtnActive]}
+                accessibilityLabel={t('anthropometry.filterByPlayer')}
+              >
+                <MaterialIcons name="person" size={20} color={filterPlayer !== 'all' ? '#fff' : '#2474E5'} />
+                {!IS_MOBILE && (
+                  <Text style={[styles.headerIconBtnText, filterPlayer !== 'all' && styles.headerIconBtnTextActive]}>
+                    {filterPlayer === 'all'
+                      ? t('anthropometry.filterByPlayer')
+                      : (() => {
+                          const p = players.find(p => p._id === filterPlayer);
+                          return p ? getPlayerFullName(p) : t('player.player');
+                        })()}
+                  </Text>
+                )}
+                {filterPlayer !== 'all' && (
+                  <TouchableOpacity
+                    style={styles.headerIconBtnClear}
+                    onPress={(e) => { e.stopPropagation && e.stopPropagation(); clearPlayerFilter(); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              {/* Botón primario: Nueva medición */}
+              <TouchableOpacity
+                onPress={openCreateModal}
+                style={styles.headerPrimaryBtn}
+                accessibilityLabel={t('anthropometry.newMeasurement')}
+              >
+                <MaterialIcons name="add" size={20} color="#fff" />
+                {!IS_MOBILE && (
+                  <Text style={styles.headerPrimaryBtnText}>{t('anthropometry.newMeasurement')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1254,11 +1309,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   topBar: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     paddingTop: Platform.OS === 'web' ? 16 : 10,
     paddingBottom: Platform.OS === 'web' ? 12 : 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: THEME.border,
   },
   topBarHeaderRow: {
     flexDirection: 'row',
@@ -1335,6 +1390,70 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#b5d6fa',
   },
+  // Acciones inline del header (estilo unificado, sin menú de 3 puntos)
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  headerIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: IS_MOBILE_DEVICE ? 0 : 12,
+    minWidth: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#b5d6fa',
+    backgroundColor: THEME.surface,
+    justifyContent: 'center',
+  },
+  headerIconBtnActive: {
+    backgroundColor: '#2474E5',
+    borderColor: '#2474E5',
+  },
+  headerIconBtnText: {
+    color: '#2474E5',
+    fontWeight: '600',
+    fontSize: 13,
+    maxWidth: 140,
+  },
+  headerIconBtnTextActive: {
+    color: '#fff',
+  },
+  headerIconBtnClear: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  headerPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: IS_MOBILE_DEVICE ? 0 : 14,
+    minWidth: 38,
+    borderRadius: 19,
+    backgroundColor: '#2474E5',
+    justifyContent: 'center',
+    shadowColor: '#2856a2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  headerPrimaryBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+    letterSpacing: 0.2,
+  },
   mobileMenuBadge: {
     position: 'absolute',
     top: -4,
@@ -1354,10 +1473,10 @@ const styles = StyleSheet.create({
   anthropometryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: THEME.border,
     paddingVertical: 12,
     paddingHorizontal: 12,
     minHeight: 74,
@@ -1420,14 +1539,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   // ========== NUEVOS ESTILOS PROFESIONALES ==========
   // Vista Grid - Tarjetas compactas
   gridCard: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 8,
@@ -1531,7 +1650,7 @@ const styles = StyleSheet.create({
   listCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 16,
     marginBottom: 10,
     overflow: 'hidden',
@@ -1541,7 +1660,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: THEME.border,
   },
   listCardMobile: {
     borderRadius: 12,
@@ -1558,7 +1677,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -1586,7 +1705,7 @@ const styles = StyleSheet.create({
   listCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1613,7 +1732,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1625,7 +1744,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionsModalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 8,
@@ -1682,7 +1801,7 @@ const styles = StyleSheet.create({
   },
   optionsModalCancelButton: {
     marginTop: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1693,7 +1812,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   dateRangeModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 20,
     marginHorizontal: 16,
     marginVertical: 'auto',
@@ -1804,7 +1923,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   mobileMenuContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: Platform.OS === 'ios' ? 34 : 0,
@@ -1858,7 +1977,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   playerItemSelected: {
-    backgroundColor: '#eaf2fb',
+    backgroundColor: THEME.primary + '15',
   },
   playerItemText: {
     fontSize: 16,
@@ -1870,7 +1989,7 @@ const styles = StyleSheet.create({
   },
   // Estilos del modal de creación
   createModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 20,
     width: '95%',
     maxWidth: 500,
@@ -1883,7 +2002,7 @@ const styles = StyleSheet.create({
     elevation: 25,
   },
   createModalContainerMobile: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 16,
     width: '100%',
     maxWidth: 420,
@@ -1956,7 +2075,7 @@ const styles = StyleSheet.create({
     width: IS_MOBILE_DEVICE ? 36 : 40,
     height: IS_MOBILE_DEVICE ? 36 : 40,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -1966,15 +2085,15 @@ const styles = StyleSheet.create({
     padding: IS_MOBILE_DEVICE ? 16 : 24,
   },
   createCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   createCardMobile: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -2030,7 +2149,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3578e5',
   },
   createModalButtonSecondary: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
   },
   createModalButtonText: {
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
@@ -2044,13 +2163,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
     borderRadius: 12,
     paddingHorizontal: IS_MOBILE_DEVICE ? 12 : 16,
     paddingVertical: IS_MOBILE_DEVICE ? 12 : 14,
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
-    backgroundColor: '#fff',
-    color: '#1e293b',
+    backgroundColor: THEME.surface,
+    color: THEME.text,
   },
   textArea: {
     minHeight: 120,
@@ -2072,11 +2191,11 @@ const styles = StyleSheet.create({
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2098,7 +2217,7 @@ const styles = StyleSheet.create({
   },
   viewModalContent: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: THEME.surface,
       borderRadius: IS_MOBILE_DEVICE ? 16 : 20,
       width: '100%',
       maxWidth: 500,
@@ -2109,7 +2228,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: THEME.surface,
       borderRadius: IS_MOBILE_DEVICE ? 16 : 20,
       width: '100%',
       maxWidth: 500,
@@ -2123,7 +2242,7 @@ const styles = StyleSheet.create({
   }),
   viewModalContentTablet: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: THEME.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2134,7 +2253,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: THEME.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2154,12 +2273,12 @@ const styles = StyleSheet.create({
     paddingTop: IS_MOBILE_DEVICE ? 16 : 24,
     paddingBottom: IS_MOBILE_DEVICE ? 12 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: THEME.border,
   },
   modalTitle: {
     fontSize: IS_MOBILE_DEVICE ? 16 : 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: THEME.text,
     flex: 1,
   },
   modalBody: {
@@ -2170,12 +2289,12 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
   },
   detailSection: {
     marginBottom: IS_MOBILE_DEVICE ? 16 : 24,
@@ -2197,11 +2316,11 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   detailCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   detailValueLarge: {
     fontSize: 24,
@@ -2217,11 +2336,11 @@ const styles = StyleSheet.create({
   detailGridItem: {
     flex: 1,
     minWidth: IS_MOBILE_DEVICE ? '42%' : '45%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderRadius: IS_MOBILE_DEVICE ? 10 : 12,
     padding: IS_MOBILE_DEVICE ? 10 : 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: THEME.border,
   },
   detailLabel: {
     fontSize: IS_MOBILE_DEVICE ? 11 : 12,
@@ -2263,7 +2382,7 @@ const styles = StyleSheet.create({
   },
   // Estilos del modal de jugador
   pickerModal: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -2277,12 +2396,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: THEME.border,
   },
   pickerModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: THEME.text,
   },
   pickerModalContent: {
     maxHeight: 400,
@@ -2294,17 +2413,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: THEME.border,
   },
   pickerModalItemText: {
     fontSize: 16,
-    color: '#333',
+    color: THEME.text,
   },
   // Estilos para panel de filtros
   filtersPanel: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: THEME.backgroundAlt,
     borderBottomWidth: 1,
-    borderBottomColor: '#e3e8f0',
+    borderBottomColor: THEME.border,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },

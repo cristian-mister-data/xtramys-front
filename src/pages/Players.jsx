@@ -46,7 +46,10 @@ const Chip = styled.button`
   border-radius: ${({ theme }) => theme.radius.full};
   border: 1px solid ${({ $active, $color, theme }) => ($active ? ($color || theme.colors.primary) : theme.colors.border)};
   background: ${({ $active, $color, theme }) => ($active ? ($color || theme.colors.primary) : theme.colors.surface)};
-  color: ${({ $active, theme }) => ($active ? '#fff' : theme.colors.textSecondary)};
+  color: ${({ $active, $color, theme }) => {
+    if (!$active) return theme.colors.textSecondary;
+    return $color ? '#fff' : theme.colors.onPrimary;
+  }};
   font-weight: 600;
   font-size: 12px;
   cursor: pointer;
@@ -57,7 +60,8 @@ const Spacer = styled.div`flex: 1;`;
 
 const ViewSwitch = styled.div`
   display: inline-flex;
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   padding: 4px;
   border-radius: ${({ theme }) => theme.radius.full};
 `;
@@ -66,7 +70,7 @@ const ViewBtn = styled.button`
   padding: 6px 12px;
   border: 0;
   background: ${({ $active, theme }) => ($active ? theme.colors.primary : 'transparent')};
-  color: ${({ $active, theme }) => ($active ? '#fff' : theme.colors.textSecondary)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.textSecondary)};
   font-size: 13px;
   font-weight: 600;
   border-radius: ${({ theme }) => theme.radius.full};

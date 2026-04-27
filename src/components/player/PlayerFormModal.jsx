@@ -67,7 +67,8 @@ const ToggleRow = styled.label`
   gap: 10px;
   padding: 10px 12px;
   border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   cursor: pointer;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.text};
@@ -76,7 +77,8 @@ const ToggleRow = styled.label`
 
 const SexRow = styled.div`
   display: inline-flex;
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   padding: 4px;
   border-radius: ${({ theme }) => theme.radius.full};
 `;
@@ -85,7 +87,7 @@ const SexBtn = styled.button`
   padding: 6px 14px;
   border: 0;
   background: ${({ $active, theme }) => ($active ? theme.colors.primary : 'transparent')};
-  color: ${({ $active, theme }) => ($active ? '#fff' : theme.colors.textSecondary)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.textSecondary)};
   font-weight: 600;
   font-size: 13px;
   border-radius: ${({ theme }) => theme.radius.full};

@@ -1422,15 +1422,15 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     marginBottom: 12,
-    backgroundColor: '#fef3c7',
+    backgroundColor: THEME.warning + '20',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#fbbf24',
+    borderColor: THEME.warning + '60',
   },
   restTimeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#854d0e',
+    color: THEME.warning,
   },
   
   // PDF Button

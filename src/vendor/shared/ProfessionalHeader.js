@@ -17,13 +17,17 @@ export const THEME = {
   secondary: '#00bcd4',     // Cyan vibrante
   accent: '#ff6b35',        // Naranja energético
   background: '#f8fafc',    // Gris muy claro
+  backgroundAlt: '#f1f5f9', // Gris ligeramente más oscuro (para inputs/dropdowns)
   surface: '#ffffff',       // Blanco
   text: '#1e293b',          // Casi negro
   textSecondary: '#64748b', // Gris medio
+  textMuted: '#94a3b8',     // Gris claro
   border: '#e2e8f0',        // Gris claro
+  inputBg: '#f8fafc',       // Fondo de inputs
   success: '#10b981',       // Verde
   warning: '#f59e0b',       // Amarillo
   error: '#ef4444',         // Rojo
+  danger: '#ef4444',        // Alias de error
   gradient: ['#1a237e', '#3949ab', '#5c6bc0'], // Gradiente azul
 };
 

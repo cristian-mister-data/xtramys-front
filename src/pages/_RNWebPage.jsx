@@ -2,11 +2,13 @@
  * Wrapper común para páginas que montan componentes RN del proyecto móvil.
  *
  * - Provee SafeAreaProvider + GestureHandlerRootView ocupando 100%.
- * - Modo oscuro: aplica filtro de inversión inteligente (invert + hue-rotate)
- *   al contenido vendor (que tiene colores claros hardcoded), y contra-invierte
- *   imágenes/vídeos/canvas/iframes para que se vean correctos.
- *   Esta técnica es el estándar para retrofitear dark mode sobre contenido legacy
- *   sin tocar miles de líneas de estilos RN.
+ * - Por defecto: en modo oscuro aplica filtro de inversión inteligente
+ *   (invert + hue-rotate) al contenido vendor, contra-invirtiendo media.
+ *   Útil para retrofitear dark mode sobre contenido legacy con colores
+ *   claros hardcoded sin tocar miles de líneas de estilos RN.
+ * - `themed` prop: si la página vendor ya usa `useTheme()` + `makeStyles(theme)`
+ *   con tokens reales, debe OPT-OUT del filtro pasando `<RNWebPage themed>`.
+ *   En ese caso el frame usa `theme.colors.background` y NO aplica invert.
  */
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,7 +16,7 @@ import styled, { css } from 'styled-components';
 
 const fillStyle = { flex: 1, width: '100%', height: '100%' };
 
-// Selector de elementos que NO deben invertirse (deben verse con sus colores reales).
+// Elementos que NO deben invertirse (deben verse con sus colores reales).
 const RAW_MEDIA = `
   img,
   video,
@@ -44,8 +46,10 @@ const Frame = styled.div`
   min-height: calc(100dvh - 60px - 48px);
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
-  background: #f8fafc;
-  color-scheme: light;
+  background: ${({ theme, $themed }) =>
+    $themed ? theme.colors.background : '#f8fafc'};
+  color-scheme: ${({ $themed, theme }) =>
+    $themed ? (theme.mode === 'dark' ? 'dark' : 'light') : 'light'};
   border: 1px solid
     ${({ theme }) =>
       theme.mode === 'dark' ? theme.colors.border : 'transparent'};
@@ -54,12 +58,13 @@ const Frame = styled.div`
   display: flex;
   flex-direction: column;
 
-  ${({ theme }) => theme.mode === 'dark' && darkInvert}
+  ${({ theme, $themed }) =>
+    !$themed && theme.mode === 'dark' && darkInvert}
 `;
 
-export default function RNWebPage({ children }) {
+export default function RNWebPage({ children, themed = false }) {
   return (
-    <Frame>
+    <Frame $themed={themed}>
       <SafeAreaProvider style={fillStyle}>
         <GestureHandlerRootView style={fillStyle}>
           {children}

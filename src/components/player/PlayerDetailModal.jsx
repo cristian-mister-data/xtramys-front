@@ -56,7 +56,7 @@ const Stats = styled.div`
 `;
 
 const Stat = styled.div`
-  background: ${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
   padding: 12px;

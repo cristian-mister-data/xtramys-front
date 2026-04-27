@@ -802,7 +802,12 @@ export default function MyVideos() {
       </View>
 
       {/* Source Filter Tabs */}
-      <View style={styles.sourceFilterBar}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.sourceFilterBar}
+        style={styles.sourceFilterScroll}
+      >
         {[
           { key: 'all', label: t('myVideos.allVideos') },
           { key: 'mine', label: t('myVideos.myVideosOnly') },
@@ -812,11 +817,17 @@ export default function MyVideos() {
             key={tab.key}
             style={[styles.sourceTab, sourceFilter === tab.key && styles.sourceTabActive]}
             onPress={() => { setSourceFilter(tab.key); setCurrentFolder(null); setFolderPath([]); }}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.sourceTabTxt, sourceFilter === tab.key && styles.sourceTabTxtActive]}>{tab.label}</Text>
+            <Text
+              numberOfLines={1}
+              style={[styles.sourceTabTxt, sourceFilter === tab.key && styles.sourceTabTxtActive]}
+            >
+              {tab.label}
+            </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Content */}
       {loading ? (
@@ -2596,24 +2607,29 @@ const styles = StyleSheet.create({
   },
 
   // Source filter tabs
-  sourceFilterBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 8,
+  sourceFilterScroll: {
+    flexGrow: 0,
     backgroundColor: '#fff',
   },
+  sourceFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
   sourceTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
+    flexShrink: 0,
   },
   sourceTabActive: {
     backgroundColor: '#6366F1',
   },
   sourceTabTxt: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
   },

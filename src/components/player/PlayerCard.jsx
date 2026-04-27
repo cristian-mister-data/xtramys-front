@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import {
   getPositionColor,
@@ -79,8 +79,9 @@ const Tag = styled.span`
   font-weight: 600;
   padding: 3px 8px;
   border-radius: ${({ theme }) => theme.radius.full};
-  background: ${({ $bg }) => $bg || '#f1f5f9'};
-  color: ${({ $color }) => $color || '#475569'};
+  background: ${({ $bg, theme }) => $bg || theme.colors.backgroundAlt};
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 // ====== GRID CARD ======
@@ -151,9 +152,15 @@ const GridStats = styled.div`
 
 export default function PlayerCard({ player, viewMode = 'list', onClick }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const colors = getPositionColor(player.posicion);
   const icon = getPositionIcon(player.posicion);
   const positionLabel = translatePosition(player.posicion, t);
+  const isDark = theme.mode === 'dark';
+  // Position tints adapted per theme: in dark mode use a stronger tint and the
+  // lighter color shade for legible text; in light mode keep the soft tint.
+  const posBg = isDark ? `${colors[0]}33` : `${colors[0]}22`;
+  const posText = isDark ? colors[0] : colors[1];
 
   if (viewMode === 'grid') {
     return (
@@ -166,11 +173,11 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
         <GridBody>
           <GridName>{getPlayerFullName(player)}</GridName>
           <GridStats>
-            <Tag $bg="#dbeafe" $color="#1d4ed8">#{player.dorsal ?? '-'}</Tag>
+            <Tag $bg={theme.colors.primarySoft} $color={theme.colors.primarySoftText}>#{player.dorsal ?? '-'}</Tag>
             {player.edad ? <Tag>{player.edad} {t('player.yearsOld', 'años')}</Tag> : null}
           </GridStats>
-          <Tag $bg={`${colors[0]}22`} $color={colors[1]}>{icon} {positionLabel}</Tag>
-          {player.extra ? <Tag $bg="#fef3c7" $color="#d97706">⭐ {t('player.extra', 'Extra')}</Tag> : null}
+          <Tag $bg={posBg} $color={posText}>{icon} {positionLabel}</Tag>
+          {player.extra ? <Tag $bg={theme.colors.warningSoft} $color={theme.colors.warningSoftText}>⭐ {t('player.extra', 'Extra')}</Tag> : null}
         </GridBody>
       </GridWrap>
     );
@@ -185,10 +192,10 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
       <Body>
         <Name>{getPlayerFullName(player)}</Name>
         <Tags>
-          {player.extra ? <Tag $bg="#fef3c7" $color="#d97706">⭐ {t('player.extra', 'Extra')}</Tag> : null}
-          <Tag $bg={`${colors[0]}22`} $color={colors[1]}>{icon} {positionLabel}</Tag>
+          {player.extra ? <Tag $bg={theme.colors.warningSoft} $color={theme.colors.warningSoftText}>⭐ {t('player.extra', 'Extra')}</Tag> : null}
+          <Tag $bg={posBg} $color={posText}>{icon} {positionLabel}</Tag>
           <Tag>👕 #{player.dorsal ?? '-'}</Tag>
-          {player.edad ? <Tag $bg="#fef3c7" $color="#d97706">📅 {player.edad} {t('player.yearsOld', 'años')}</Tag> : null}
+          {player.edad ? <Tag $bg={theme.colors.warningSoft} $color={theme.colors.warningSoftText}>📅 {player.edad} {t('player.yearsOld', 'años')}</Tag> : null}
           {player.altura ? <Tag>📏 {player.altura} cm</Tag> : null}
         </Tags>
       </Body>
