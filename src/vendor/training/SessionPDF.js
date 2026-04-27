@@ -921,39 +921,36 @@ export const generateSessionPDF = async ({
     const t = (key, fallback) => i18n?.t(key) || fallback;
     const locale = i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US';
     
-    // Pre-resolver imágenes de ejercicios de fuerza a base64 para el HTML
+    // Pre-resolver imágenes de ejercicios de fuerza a base64 para el HTML.
+    // En web, `getStrengthExerciseImage` devuelve la URL bundleada por Vite,
+    // así que la convertimos directamente a data:URL con fetch + FileReader.
+    // (En móvil este flujo usaba expo-asset + FileSystem.readAsStringAsync,
+    // que no funciona en navegador.)
     const imageDataUris = {};
     if (strengthExercises && strengthExercises.length > 0) {
-      for (const exercise of strengthExercises) {
+      const toDataUrl = async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('fetch failed: ' + res.status);
+        const blob = await res.blob();
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      };
+      await Promise.all(strengthExercises.map(async (exercise) => {
         try {
           const imageSource = getStrengthExerciseImage(exercise.image);
-          if (imageSource) {
-            const asset = Asset.fromModule(imageSource);
-            try {
-              await asset.downloadAsync();
-            } catch (downloadErr) {
-              // Fallback para nombres de archivo con caracteres especiales (espacios, acentos, comillas)
-              // que causan "Illegal character in query" en downloadAsync
-              if (asset.hash && asset.type) {
-                const safePath = `${FileSystem.cacheDirectory}ExponentAsset-${asset.hash}.${asset.type}`;
-                const info = await FileSystem.getInfoAsync(safePath);
-                if (!info.exists && asset.uri) {
-                  await FileSystem.downloadAsync(encodeURI(asset.uri), safePath);
-                }
-                asset.localUri = safePath;
-              }
-            }
-            if (asset.localUri) {
-              const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-                encoding: FileSystem.EncodingType.Base64,
-              });
-              imageDataUris[exercise.image] = `data:image/webp;base64,${base64}`;
-            }
-          }
+          if (!imageSource) return;
+          // En web `imageSource` es una URL string; en RN era un módulo.
+          const url = typeof imageSource === 'string' ? imageSource : imageSource?.uri;
+          if (!url) return;
+          imageDataUris[exercise.image] = await toDataUrl(url);
         } catch (e) {
           console.warn('Failed to resolve image for PDF:', exercise.id, e);
         }
-      }
+      }));
     }
 
     // Generar HTML

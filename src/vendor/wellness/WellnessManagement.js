@@ -1012,6 +1012,12 @@ export default function WellnessManagement({ navigation }) {
     const isLinkActive = isPreWellness
       ? sessionWellnessData?.preWellnessLinkActive !== false
       : sessionWellnessData?.wellnessLinkActive !== false;
+    const isLinkExpired = isPreWellness
+      ? sessionWellnessData?.preWellnessLinkExpired === true
+      : sessionWellnessData?.wellnessLinkExpired === true;
+    const currentLang = t('lang') === 'en' ? 'en' : 'es';
+    const linkEndpoint = isPreWellness ? 'prewellness/form' : 'api/wellness/form';
+    const fullLink = token ? `${BACKEND_URL}/${linkEndpoint}/${token}?lang=${currentLang}` : '';
     const responses = sessionWellnessData?.responses || [];
     const average = isPreWellness
       ? sessionWellnessData?.averagePreWellness
@@ -1099,6 +1105,33 @@ export default function WellnessManagement({ navigation }) {
                         </>
                       )}
                     </TouchableOpacity>
+                  ) : isLinkExpired ? (
+                    <View style={styles.linkActions}>
+                      <View style={styles.linkStatusRow}>
+                        <View style={[styles.linkStatusBadge, { backgroundColor: '#fee2e2' }]}>
+                          <Ionicons name="time-outline" size={14} color={THEME.danger} />
+                          <Text style={[styles.linkStatusText, { color: THEME.danger }]}>
+                            {t('preWellness.linkExpired')}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.generateLinkBtn, { backgroundColor: accentColor }]}
+                        onPress={handleGenerateLink}
+                        disabled={generatingLink}
+                      >
+                        {generatingLink ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="refresh" size={18} color="#fff" />
+                            <Text style={styles.generateLinkText}>
+                              {t('preWellness.regenerateLink')}
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <View style={styles.linkActions}>
                       <View style={styles.linkStatusRow}>
@@ -1115,6 +1148,21 @@ export default function WellnessManagement({ navigation }) {
                           </Text>
                         </View>
                       </View>
+                      
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={handleCopyLink}
+                        style={styles.linkUrlBox}
+                      >
+                        <Text
+                          style={styles.linkUrlText}
+                          numberOfLines={2}
+                          selectable
+                        >
+                          {fullLink}
+                        </Text>
+                        <Ionicons name="copy-outline" size={16} color={THEME.primary} />
+                      </TouchableOpacity>
                       
                       <View style={styles.linkBtnRow}>
                         <TouchableOpacity style={styles.linkActionBtn} onPress={handleShareLink}>
@@ -1901,6 +1949,24 @@ const styles = StyleSheet.create({
   linkBtnRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  linkUrlBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: THEME.surface,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  linkUrlText: {
+    flex: 1,
+    fontSize: 11,
+    color: THEME.text,
+    fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
   linkActionBtn: {
     flex: 1,

@@ -51,23 +51,181 @@ export const listVideoFolders = silentStub('listVideoFolders', { data: [] });
 export const getAllExercises = stub('getAllExercises', { data: [] });
 export const getAllStrategies = stub('getAllStrategies', { data: [] });
 
-export const getSessionWellnessStats = stub('getSessionWellnessStats', { data: null });
-export const getSessionPreWellnessStats = stub('getSessionPreWellnessStats', { data: null });
-export const getWellnessRange = stub('getWellnessRange', { data: [] });
-export const getPreWellnessRange = stub('getPreWellnessRange', { data: [] });
-export const getWellnessTemplates = stub('getWellnessTemplates', { data: [] });
-export const createWellnessTemplate = stub('createWellnessTemplate');
-export const updateWellnessTemplate = stub('updateWellnessTemplate');
-export const deleteWellnessTemplate = stub('deleteWellnessTemplate');
-export const duplicateWellnessTemplate = stub('duplicateWellnessTemplate');
-export const setDefaultWellnessTemplate = stub('setDefaultWellnessTemplate');
-export const generateWellnessLink = stub('generateWellnessLink', { data: { token: '' } });
-export const generatePreWellnessLink = stub('generatePreWellnessLink', { data: { token: '' } });
-export const toggleWellnessLink = stub('toggleWellnessLink');
-export const togglePreWellnessLink = stub('togglePreWellnessLink');
-export const deleteWellnessResponse = stub('deleteWellnessResponse');
-export const deletePreWellnessResponse = stub('deletePreWellnessResponse');
-export const updateSessionPreWellness = stub('updateSessionPreWellness');
+export const getSessionWellnessStats = async (sessionId) => {
+  try {
+    const response = await api.get(`/wellness/session/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting wellness stats:', error);
+    throw error;
+  }
+};
+
+export const getSessionPreWellnessStats = async (sessionId) => {
+  try {
+    const response = await apiBase.get(`/prewellness/session/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting pre-wellness stats:', error);
+    throw error;
+  }
+};
+
+export const getWellnessRange = async (teamId, from, to) => {
+  try {
+    const response = await api.get(`/wellness/range`, { params: { teamId, from, to } });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting wellness range:', error);
+    throw error;
+  }
+};
+
+export const getPreWellnessRange = async (teamId, from, to) => {
+  try {
+    const response = await apiBase.get(`/prewellness/range`, { params: { teamId, from, to } });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting pre-wellness range:', error);
+    throw error;
+  }
+};
+
+// ============ WELLNESS TEMPLATES API ============
+export const getWellnessTemplates = async (type = null) => {
+  try {
+    const params = type ? { type } : {};
+    const response = await api.get('/wellness-template', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting wellness templates:', error);
+    throw error;
+  }
+};
+
+export const createWellnessTemplate = async (templateData) => {
+  try {
+    const response = await api.post('/wellness-template', templateData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error creating wellness template:', error);
+    throw error;
+  }
+};
+
+export const updateWellnessTemplate = async (templateId, templateData) => {
+  try {
+    const response = await api.put(`/wellness-template/${templateId}`, templateData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error updating wellness template:', error);
+    throw error;
+  }
+};
+
+export const deleteWellnessTemplate = async (templateId) => {
+  try {
+    const response = await api.delete(`/wellness-template/${templateId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error deleting wellness template:', error);
+    throw error;
+  }
+};
+
+export const duplicateWellnessTemplate = async (templateId, newName) => {
+  try {
+    const response = await api.post(`/wellness-template/${templateId}/duplicate`, { newName });
+    return response.data;
+  } catch (error) {
+    console.warn('Error duplicating wellness template:', error);
+    throw error;
+  }
+};
+
+export const setDefaultWellnessTemplate = async (templateId) => {
+  try {
+    const response = await api.post(`/wellness-template/${templateId}/set-default`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error setting default wellness template:', error);
+    throw error;
+  }
+};
+
+// ============ WELLNESS LINK / RESPONSES ============
+export const generateWellnessLink = async (sessionId, expiryHours = 72) => {
+  try {
+    const response = await api.post(`/wellness/session/${sessionId}/generate-link`, { expiryHours });
+    return response.data;
+  } catch (error) {
+    console.warn('Error generating wellness link:', error);
+    throw error;
+  }
+};
+
+export const generatePreWellnessLink = async (sessionId, expiryHours = 72, templateId = null, questions = null) => {
+  try {
+    const body = { expiryHours };
+    if (templateId) body.templateId = templateId;
+    if (questions && questions.length > 0) body.questions = questions;
+    const response = await apiBase.post(`/prewellness/session/${sessionId}/generate-link`, body);
+    return response.data;
+  } catch (error) {
+    console.warn('Error generating pre-wellness link:', error);
+    throw error;
+  }
+};
+
+export const toggleWellnessLink = async (sessionId, active) => {
+  try {
+    const response = await api.post(`/wellness/session/${sessionId}/toggle-link`, { active });
+    return response.data;
+  } catch (error) {
+    console.warn('Error toggling wellness link:', error);
+    throw error;
+  }
+};
+
+export const togglePreWellnessLink = async (sessionId, active) => {
+  try {
+    const response = await apiBase.post(`/prewellness/session/${sessionId}/toggle-link`, { active });
+    return response.data;
+  } catch (error) {
+    console.warn('Error toggling pre-wellness link:', error);
+    throw error;
+  }
+};
+
+export const deleteWellnessResponse = async (responseId) => {
+  try {
+    const response = await api.delete(`/wellness/response/${responseId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error deleting wellness response:', error);
+    throw error;
+  }
+};
+
+export const deletePreWellnessResponse = async (responseId) => {
+  try {
+    const response = await apiBase.delete(`/prewellness/response/${responseId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error deleting pre-wellness response:', error);
+    throw error;
+  }
+};
+
+export const updateSessionPreWellness = async (sessionId, preWellnessData) => {
+  try {
+    const response = await apiBase.put(`/prewellness/session/${sessionId}`, preWellnessData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error updating pre-wellness:', error);
+    throw error;
+  }
+};
 
 // ============ Player history (wellness / pre-wellness / antropometría) ============
 // Implementaciones reales replicando misterdata/src/utils/api.js

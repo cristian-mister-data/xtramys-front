@@ -213,6 +213,41 @@ const StatBadge = styled.span`
   font-weight: 600;
 `;
 
+const PdfDownloadBar = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+`;
+
+const PdfDownloadButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f2937;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+    background: #f8fafc;
+  }
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  }
+`;
+
 const Panel = styled.div`
   background: #fff;
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -496,14 +531,15 @@ function ProtocolDetail({ protocol, onBack }) {
           <StatBadge><MdLayers size={14} /> {protocol.sections.length} {t('injuryPrevention.blocks')}</StatBadge>
           <StatBadge><MdFitnessCenter size={14} /> {totalExercises} {t('injuryPrevention.exercises')}</StatBadge>
         </StatBadgeRow>
-        <Button
-          $variant="secondary"
-          onClick={() => generateProtocolPdf(protocol, lang, t)}
-          style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}
-        >
-          <MdPictureAsPdf size={18} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-          {t('injuryPrevention.downloadPdf')}
-        </Button>
+        <PdfDownloadBar>
+          <PdfDownloadButton
+            type="button"
+            onClick={() => generateProtocolPdf(protocol, lang, t)}
+          >
+            <MdPictureAsPdf size={18} />
+            <span>{t('injuryPrevention.downloadPdf')}</span>
+          </PdfDownloadButton>
+        </PdfDownloadBar>
       </DetailHero>
 
       {(hasRiskFactors || hasObjectives) && (

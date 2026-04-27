@@ -19,18 +19,23 @@ function applyToEl(player) {
 }
 
 export function useVideoPlayer(source, setup) {
-  // Player como objeto estable durante toda la vida del componente.
+  // Forzamos un re-render cuando cambia el source para que VideoView lea el
+  // valor nuevo. expo-video en RN reacciona a cambios del source argument;
+  // este shim replica ese comportamiento.
+  const [, force] = useState(0);
   const ref = useRef(null);
   if (!ref.current) {
     const player = {
       _el: null,
       _source: source || null,
+      _onSourceChange: null,
       get source() { return this._source; },
       set source(s) {
         this._source = s;
         if (this._el) {
           this._el.src = typeof s === 'string' ? s : s?.uri || '';
         }
+        this._onSourceChange?.();
       },
       _loop: false,
       get loop() { return this._loop; },
@@ -63,16 +68,33 @@ export function useVideoPlayer(source, setup) {
           this._el.src = typeof s === 'string' ? s : s?.uri || '';
           this._el.load?.();
         }
+        this._onSourceChange?.();
       },
       release() { try { this._el?.pause?.(); } catch {} },
       seekBy() {},
     };
+    player._onSourceChange = () => force((x) => x + 1);
     if (typeof setup === 'function') {
       try { setup(player); } catch {}
     }
     ref.current = player;
   }
-  return ref.current;
+  // Reactivo al source: si llega un valor nuevo, actualizamos el player y
+  // re-ejecutamos el callback de setup (igual que hace expo-video nativo).
+  const player = ref.current;
+  const newKey = typeof source === 'string' ? source : source?.uri || null;
+  const oldKey = typeof player._source === 'string' ? player._source : player._source?.uri || null;
+  if (newKey !== oldKey) {
+    player._source = source || null;
+    if (player._el) {
+      player._el.src = newKey || '';
+      try { player._el.load?.(); } catch {}
+    }
+    if (typeof setup === 'function') {
+      try { setup(player); } catch {}
+    }
+  }
+  return player;
 }
 
 export function VideoView({

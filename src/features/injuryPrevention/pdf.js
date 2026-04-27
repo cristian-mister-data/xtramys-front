@@ -11,7 +11,7 @@ const escapeHtml = (text) => {
     .replace(/'/g, '&#039;');
 };
 
-export function generateProtocolPdf(protocol, lang, t) {
+export async function generateProtocolPdf(protocol, lang, t) {
   let sectionsHtml = '';
   protocol.sections.forEach((section, sectionIndex) => {
     sectionsHtml += `
@@ -80,12 +80,8 @@ body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11pt;line
 ${(riskFactorsHtml || objectivesHtml) ? `<div class="intro-section"><h2>${escapeHtml(protocol.introduction?.title?.[lang] || t('injuryPrevention.introduction'))}</h2>${riskFactorsHtml}${objectivesHtml}</div>` : ''}
 ${sectionsHtml}
 <div class="footer">${escapeHtml(t('injuryPrevention.pdfGeneratedBy'))} Xtramys - ${new Date().toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US')}</div>
-<script>window.onload=()=>setTimeout(()=>window.print(),300);</script>
 </body></html>`;
 
-  const w = window.open('', '_blank');
-  if (!w) return;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  const Print = await import('expo-print');
+  await Print.printAsync({ html });
 }

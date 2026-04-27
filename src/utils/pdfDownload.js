@@ -19,6 +19,12 @@ export const savePdfToDownloads = async (sourceUri, fileName) => {
   // Web: descarga directa, sin pasar por share sheet ni cache.
   if (Platform.OS === 'web') {
     try {
+      // Sentinel del shim de expo-print: la "descarga" ya se hizo vía
+      // window.print() (diálogo "Guardar como PDF" del navegador). No hay
+      // un blob real que volcar a disco.
+      if (typeof sourceUri === 'string' && sourceUri.startsWith('webprint://')) {
+        return true;
+      }
       let blob;
       if (typeof sourceUri === 'string' && sourceUri.startsWith('webfs://')) {
         // Recuperar contenido persistido por el shim de expo-file-system.

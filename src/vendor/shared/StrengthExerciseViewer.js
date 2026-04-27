@@ -44,6 +44,13 @@ const ensureCacheDir = async () => {
 const getCachedVideoPath = (exerciseId) => `${VIDEO_CACHE_DIR}${exerciseId}.mp4`;
 
 const getOrCacheVideo = async (exercise) => {
+  // En web no podemos cachear videos en localStorage (límite ~5MB) y un URI
+  // `webfs://...` no es reproducible por el `<video>`. Usamos directamente
+  // la URL remota — el navegador hace streaming y caché HTTP nativos.
+  if (Platform.OS === 'web') {
+    return getStrengthExerciseVideoUrl(exercise);
+  }
+
   await ensureCacheDir();
   const cachedPath = getCachedVideoPath(exercise.id);
   const fileInfo = await FileSystem.getInfoAsync(cachedPath);
@@ -149,6 +156,24 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
     setDownloading(true);
     setDownloadProgress(0);
     try {
+      // Web: descargar como archivo .mp4 normal del navegador.
+      if (Platform.OS === 'web') {
+        const remoteUrl = getStrengthExerciseVideoUrl(exercise);
+        const res = await fetch(remoteUrl);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${exercise.id || 'video'}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try { document.body.removeChild(a); } catch {}
+          try { URL.revokeObjectURL(url); } catch {}
+        }, 1500);
+        return;
+      }
       await ensureCacheDir();
       const cachedPath = getCachedVideoPath(exercise.id);
       const fileInfo = await FileSystem.getInfoAsync(cachedPath);
@@ -201,6 +226,61 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
     if (!exercise || !imageSource) return;
     setDownloading(true);
     try {
+      // Web: descargar la imagen como PNG en alta calidad (2x upscale,
+      // suavizado de alta calidad). PNG es lossless: sin pérdida sobre el
+      // .webp original, y al 2x se ve más nítido al imprimir / compartir.
+      if (Platform.OS === 'web') {
+        const url = typeof imageSource === 'string' ? imageSource : imageSource?.uri;
+        if (!url) throw new Error('No image URL');
+
+        const img = await new Promise((resolve, reject) => {
+          const image = new window.Image();
+          image.crossOrigin = 'anonymous';
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('image load failed'));
+          image.src = url;
+        });
+
+        // Escalado 4x con suavizado de alta calidad. Algunas imágenes
+        // originales tienen poca resolución, así que limitamos el lado mayor
+        // a 4096 px para que no saquemos un PNG inflado sin ganancia real.
+        const naturalW = img.naturalWidth || img.width;
+        const naturalH = img.naturalHeight || img.height;
+        const MAX_DIMENSION = 4096;
+        const SCALE = Math.min(4, MAX_DIMENSION / Math.max(naturalW, naturalH));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(naturalW * SCALE);
+        canvas.height = Math.round(naturalH * SCALE);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        if ('imageSmoothingQuality' in ctx) {
+          ctx.imageSmoothingQuality = 'high';
+        }
+        // Fondo blanco por si la imagen tuviese transparencia (las fotos de
+        // ejercicio normalmente son opacas, pero garantizamos export limpio).
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+            'image/png'
+          );
+        });
+
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${exercise.id || 'image'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try { document.body.removeChild(a); } catch {}
+          try { URL.revokeObjectURL(blobUrl); } catch {}
+        }, 1500);
+        return;
+      }
       // Obtener la imagen local desde el bundle usando expo-asset
       const asset = Asset.fromModule(imageSource);
       try {
