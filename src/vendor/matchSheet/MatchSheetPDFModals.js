@@ -1,6 +1,6 @@
 // components/pages/matchSheet/MatchSheetPDFModals.js
 // Componente reutilizable con los modales de configuración de PDF
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,27 +13,11 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useTheme } from 'styled-components';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-
-// Tema consistente con el resto de la aplicación
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-};
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -51,20 +35,22 @@ export default function MatchSheetPDFModals({
   onGenerateLineupPDF,
   pdfOptions,
   onPdfOptionsChange,
-  
+
   // Modal de Convocatoria
   showConvocatoriaPDFModal,
   onCloseConvocatoriaModal,
   onGenerateCallUpPDF,
   convocatoriaPDFData,
   onConvocatoriaDataChange,
-  
+
   // Datos compartidos
   matchSheet,
   players = [],
   generatingPDF = false,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   if (!matchSheet) return null;
 
@@ -95,10 +81,10 @@ export default function MatchSheetPDFModals({
                 style={styles.modalCloseBtn}
                 onPress={onCloseLineupModal}
               >
-                <Ionicons name="close" size={28} color="#64748b" />
+                <Ionicons name="close" size={28} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <KeyboardAwareScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Vista previa de titulares */}
               <View style={styles.pdfOptionsCard}>
@@ -129,11 +115,11 @@ export default function MatchSheetPDFModals({
                   )}
                 </View>
               </View>
-              
+
               {/* Opciones */}
               <View style={styles.pdfOptionsCard}>
                 <Text style={styles.pdfOptionsTitle}>{t('matchSheet.pdfOptions.title')}</Text>
-                
+
                 <View style={styles.pdfOptionRow}>
                   <View style={styles.pdfOptionLeft}>
                     <Ionicons name="camera" size={20} color="#4CAF50" />
@@ -142,26 +128,26 @@ export default function MatchSheetPDFModals({
                   <Switch
                     value={pdfOptions.showPhotos}
                     onValueChange={(v) => onPdfOptionsChange({ ...pdfOptions, showPhotos: v })}
-                    trackColor={{ false: '#e2e8f0', true: '#86efac' }}
-                    thumbColor={pdfOptions.showPhotos ? '#4CAF50' : '#94a3b8'}
+                    trackColor={{ false: theme.colors.border, true: '#86efac' }}
+                    thumbColor={pdfOptions.showPhotos ? '#4CAF50' : theme.colors.textMuted}
                   />
                 </View>
-                
+
                 <View style={styles.pdfOptionRow}>
                   <View style={styles.pdfOptionLeft}>
-                    <Ionicons name="text" size={20} color="#3578e5" />
+                    <Ionicons name="text" size={20} color={theme.colors.primary} />
                     <Text style={styles.pdfOptionLabel}>{t('matchSheet.pdfOptions.showNames')}</Text>
                   </View>
                   <Switch
                     value={pdfOptions.showNames}
                     onValueChange={(v) => onPdfOptionsChange({ ...pdfOptions, showNames: v })}
-                    trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
-                    thumbColor={pdfOptions.showNames ? '#3578e5' : '#94a3b8'}
+                    trackColor={{ false: theme.colors.border, true: '#93c5fd' }}
+                    thumbColor={pdfOptions.showNames ? theme.colors.primary : theme.colors.textMuted}
                   />
                 </View>
               </View>
             </KeyboardAwareScrollView>
-            
+
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -213,10 +199,10 @@ export default function MatchSheetPDFModals({
                 style={styles.modalCloseBtn}
                 onPress={onCloseConvocatoriaModal}
               >
-                <Ionicons name="close" size={28} color="#64748b" />
+                <Ionicons name="close" size={28} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <KeyboardAwareScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Vista previa de convocados */}
               <View style={styles.pdfOptionsCard}>
@@ -245,18 +231,18 @@ export default function MatchSheetPDFModals({
                   )}
                 </View>
               </View>
-              
+
               {/* Vista previa de no convocados */}
               {matchSheet?.noConvocados?.length > 0 && (
                 <View style={styles.pdfOptionsCard}>
-                  <Text style={[styles.pdfOptionsTitle, { color: '#dc2626' }]}>{t('matchSheet.lineup.notCalled')}</Text>
+                  <Text style={[styles.pdfOptionsTitle, { color: theme.colors.error }]}>{t('matchSheet.lineup.notCalled')}</Text>
                   <View style={styles.playersPreview}>
                     {matchSheet.noConvocados.map((p, idx) => {
                       const player = typeof p === 'object' ? p : players.find(pl => pl._id === p);
                       if (!player) return null;
                       return (
-                        <View key={player._id || idx} style={[styles.playerChip, { backgroundColor: '#fef2f2' }]}>
-                          <View style={[styles.playerPhoto, { backgroundColor: '#dc2626', justifyContent: 'center', alignItems: 'center' }]}>
+                        <View key={player._id || idx} style={[styles.playerChip, { backgroundColor: theme.colors.errorSoft }]}>
+                          <View style={[styles.playerPhoto, { backgroundColor: theme.colors.error, justifyContent: 'center', alignItems: 'center' }]}>
                             <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
                               {player.dorsal || '?'}
                             </Text>
@@ -268,11 +254,11 @@ export default function MatchSheetPDFModals({
                   </View>
                 </View>
               )}
-              
+
               {/* Datos de quedada */}
               <View style={styles.pdfOptionsCard}>
                 <Text style={styles.pdfOptionsTitle}>{t('matchSheet.pdfOptions.meetingData')}</Text>
-                
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('matchSheet.pdfOptions.meetingTime')}</Text>
                   <TextInput
@@ -280,10 +266,10 @@ export default function MatchSheetPDFModals({
                     value={convocatoriaPDFData.horaQuedada}
                     onChangeText={(text) => onConvocatoriaDataChange({ ...convocatoriaPDFData, horaQuedada: text })}
                     placeholder={t('matchSheet.pdfOptions.meetingTimePlaceholder')}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                   />
                 </View>
-                
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('matchSheet.pdfOptions.meetingPlace')}</Text>
                   <TextInput
@@ -291,10 +277,10 @@ export default function MatchSheetPDFModals({
                     value={convocatoriaPDFData.lugarQuedada}
                     onChangeText={(text) => onConvocatoriaDataChange({ ...convocatoriaPDFData, lugarQuedada: text })}
                     placeholder={t('matchSheet.pdfOptions.meetingPlaceholder')}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                   />
                 </View>
-                
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>{t('matchSheet.pdfOptions.observations')}</Text>
                   <TextInput
@@ -302,12 +288,12 @@ export default function MatchSheetPDFModals({
                     value={convocatoriaPDFData.observaciones}
                     onChangeText={(text) => onConvocatoriaDataChange({ ...convocatoriaPDFData, observaciones: text })}
                     placeholder={t('matchSheet.pdfOptions.observationsPlaceholder')}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                     multiline
                     numberOfLines={3}
                   />
                 </View>
-                
+
                 <View style={styles.pdfOptionRow}>
                   <View style={styles.pdfOptionLeft}>
                     <Ionicons name="camera" size={20} color="#4CAF50" />
@@ -316,13 +302,13 @@ export default function MatchSheetPDFModals({
                   <Switch
                     value={convocatoriaPDFData.showPhotos}
                     onValueChange={(v) => onConvocatoriaDataChange({ ...convocatoriaPDFData, showPhotos: v })}
-                    trackColor={{ false: '#e2e8f0', true: '#86efac' }}
-                    thumbColor={convocatoriaPDFData.showPhotos ? '#4CAF50' : '#94a3b8'}
+                    trackColor={{ false: theme.colors.border, true: '#86efac' }}
+                    thumbColor={convocatoriaPDFData.showPhotos ? '#4CAF50' : theme.colors.textMuted}
                   />
                 </View>
               </View>
             </KeyboardAwareScrollView>
-            
+
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -367,6 +353,8 @@ export function MatchSheetPDFButtons({
   layout = 'horizontal', // 'horizontal' | 'vertical'
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   if (!matchSheet) return null;
 
@@ -439,16 +427,16 @@ export function MatchSheetPDFButtons({
           </>
         )}
       </TouchableOpacity>
-      
+
       <TouchableOpacity
         style={[buttonStyle, styles.pdfButtonSecondary]}
         onPress={onCallUpPress}
         disabled={generatingPDF}
       >
-        <Ionicons name="people" size={20} color={THEME.primary} />
+        <Ionicons name="people" size={20} color={theme.colors.primary} />
         <Text style={styles.pdfButtonTextSecondary}>{t('matchSheet.pdf.callupButton')}</Text>
       </TouchableOpacity>
-      
+
       {showMatchSheetButton && (
         <TouchableOpacity
           style={[buttonStyle, styles.pdfButtonFullSheet]}
@@ -469,17 +457,17 @@ export function MatchSheetPDFButtons({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   // Modal Container
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 8 : 12,
   },
   modalContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 12 : 16,
     maxHeight: '90%',
     width: '100%',
@@ -497,7 +485,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 10 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalHeaderLeft: {
     flexDirection: 'row',
@@ -514,17 +502,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   modalCloseBtn: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   modalBody: {
     paddingHorizontal: isMobileDevice() ? 12 : 16,
@@ -537,12 +525,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 10 : 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
-  
+
   // Options Card
   pdfOptionsCard: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: isMobileDevice() ? 12 : 16,
@@ -550,7 +538,7 @@ const styles = StyleSheet.create({
   pdfOptionsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   pdfOptionRow: {
@@ -559,7 +547,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   pdfOptionLeft: {
     flexDirection: 'row',
@@ -568,9 +556,9 @@ const styles = StyleSheet.create({
   },
   pdfOptionLabel: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
-  
+
   // Players Preview
   playersPreview: {
     flexDirection: 'row',
@@ -580,7 +568,7 @@ const styles = StyleSheet.create({
   playerChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0fdf4',
+    backgroundColor: theme.colors.successSoft,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 20,
@@ -593,62 +581,62 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: 12,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   noPlayersText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 10,
   },
-  
+
   // Input
   inputGroup: {
     marginBottom: 12,
   },
   inputLabel: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 6,
     fontWeight: '500',
   },
   textInput: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   textInputMultiline: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  
+
   // Buttons
   cancelButton: {
     flex: 1,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderRadius: isMobileDevice() ? 10 : 12,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
     fontSize: isMobileDevice() ? 14 : 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   generateButton: {
     flex: 2,
     flexDirection: 'row',
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderRadius: isMobileDevice() ? 10 : 12,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
@@ -661,7 +649,7 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.6,
   },
-  
+
   // PDF Buttons
   pdfButtonsContainer: {
     flexDirection: 'row',
@@ -697,12 +685,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   pdfButtonPrimary: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   pdfButtonSecondary: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: THEME.primary,
+    borderColor: theme.colors.primary,
   },
   pdfButtonFullSheet: {
     backgroundColor: '#FF5722',
@@ -713,7 +701,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pdfButtonTextSecondary: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },

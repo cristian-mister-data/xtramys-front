@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import Svg, { Rect, Line, Circle, Path, G, Defs, ClipPath, Ellipse } from 'react-native-svg';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 
@@ -529,6 +530,8 @@ function ProfessionalFootballField({ width, height }) {
 
 // Componente de posición en el campo
 function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlayer, player, onRemove, isSelecting, readOnly = false, showPhotos = true, showNames = true, translatePosition }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(position.pos);
   const pixelX = (x / 100) * fieldWidth;
   const pixelY = (y / 100) * fieldHeight;
@@ -588,6 +591,8 @@ function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlay
 
 // Componente de jugador en la lista
 function PlayerItem({ player, onPress, isSelected, isAssigned }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(player.posicion);
   
   return (
@@ -616,12 +621,12 @@ function PlayerItem({ player, onPress, isSelected, isAssigned }) {
       </View>
       {isSelected && !isAssigned && (
         <View style={styles.selectedIndicator}>
-          <Ionicons name="radio-button-on" size={18} color="#3b82f6" />
+          <Ionicons name="radio-button-on" size={18} color={theme.colors.primary} />
         </View>
       )}
       {isAssigned && (
         <View style={styles.assignedBadge}>
-          <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+          <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />
         </View>
       )}
     </TouchableOpacity>
@@ -644,6 +649,8 @@ export default function LineupEditor({
   containerWidth = null, // Ancho disponible del contenedor padre (para evitar overflow en modales)
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [lineupAssignments, setLineupAssignments] = useState({});
   const screenWidth = Dimensions.get('window').width;
@@ -870,7 +877,7 @@ export default function LineupEditor({
           </View>
         </View>
         <TouchableOpacity style={styles.clearButton} onPress={handleClearLineup}>
-          <Ionicons name="refresh" size={18} color="#64748b" />
+          <Ionicons name="refresh" size={18} color={theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
       
@@ -879,7 +886,7 @@ export default function LineupEditor({
         <Ionicons 
           name={selectedPlayer ? "hand-left" : "information-circle"} 
           size={18} 
-          color={selectedPlayer ? "#3b82f6" : "#64748b"} 
+          color={selectedPlayer ? theme.colors.primary : theme.colors.textMuted} 
         />
 <Text style={[styles.instructionText, selectedPlayer && styles.instructionTextActive]}>
           {selectedPlayer 
@@ -927,7 +934,7 @@ export default function LineupEditor({
             <View style={styles.playersPanelMobileVertical}>
               <View style={styles.panelHeaderMobile}>
                 <View style={styles.panelHeaderLeft}>
-                  <Ionicons name="people" size={14} color="#3b82f6" />
+                  <Ionicons name="people" size={14} color={theme.colors.primary} />
                   <Text style={styles.panelTitleMobile}>{t('matchSheet.lineup.called')}</Text>
                 </View>
                 <View style={styles.panelBadgeMobile}>
@@ -985,19 +992,19 @@ export default function LineupEditor({
                     </Text>
                     {selectedPlayer?._id === player._id && (
                       <View style={styles.selectedIndicatorMobile}>
-                        <Ionicons name="radio-button-on" size={12} color="#3b82f6" />
+                        <Ionicons name="radio-button-on" size={12} color={theme.colors.primary} />
                       </View>
                     )}
                     {assignedPlayerIds.includes(player._id) && (
                       <View style={styles.assignedBadgeMobile}>
-                        <Ionicons name="checkmark-circle" size={12} color="#10b981" />
+                        <Ionicons name="checkmark-circle" size={12} color={theme.colors.success} />
                       </View>
                     )}
                   </TouchableOpacity>
                 ))}
                 {convocadosPlayers.length === 0 && (
                   <View style={styles.emptyContainerMobile}>
-                    <Ionicons name="alert-circle-outline" size={24} color="#cbd5e1" />
+                    <Ionicons name="alert-circle-outline" size={24} color={theme.colors.textDisabled} />
                     <Text style={styles.emptyTextMobile}>{t('matchSheet.lineup.selectCalledFirst')}</Text>
                   </View>
                 )}
@@ -1010,7 +1017,7 @@ export default function LineupEditor({
             <View style={styles.playersPanel}>
               <View style={styles.panelHeader}>
                 <View style={styles.panelHeaderLeft}>
-                  <Ionicons name="people" size={16} color="#3b82f6" />
+                  <Ionicons name="people" size={16} color={theme.colors.primary} />
                   <Text style={styles.panelTitle}>{t('matchSheet.lineup.called')}</Text>
                 </View>
                 <View style={styles.panelBadge}>
@@ -1034,7 +1041,7 @@ export default function LineupEditor({
                 ))}
                 {convocadosPlayers.length === 0 && (
                   <View style={styles.emptyContainer}>
-                    <Ionicons name="alert-circle-outline" size={36} color="#cbd5e1" />
+                    <Ionicons name="alert-circle-outline" size={36} color={theme.colors.textDisabled} />
                     <Text style={styles.emptyText}>{t('matchSheet.lineup.selectCalledFirst')}</Text>
                   </View>
                 )}
@@ -1095,7 +1102,7 @@ export default function LineupEditor({
           <Text style={styles.counterValue}>{assignedPlayerIds.length}/{jugadoresPorEquipo}</Text>
         </View>
         <View style={[styles.counterBadge, styles.suplentesBadge]}>
-          <Ionicons name="swap-horizontal" size={16} color="#8b5cf6" />
+          <Ionicons name="swap-horizontal" size={16} color={theme.colors.purple} />
           <Text style={styles.counterLabel}>{t('matchSheet.lineup.substitutes')}</Text>
           <Text style={styles.counterValue}>{suplentes.length}</Text>
         </View>
@@ -1104,14 +1111,14 @@ export default function LineupEditor({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1133,25 +1140,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   formationText: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   clearButton: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1159,25 +1166,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   instructionBarActive: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primaryLight,
   },
   instructionText: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     flex: 1,
   },
   instructionTextActive: {
-    color: '#3b82f6',
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   editorContainer: {
@@ -1197,11 +1204,11 @@ const styles = StyleSheet.create({
   },
   playersPanelMobileVertical: {
     width: '100%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   panelHeaderMobile: {
     flexDirection: 'row',
@@ -1209,16 +1216,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
     gap: 8,
   },
   panelTitleMobile: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: theme.colors.textSecondary,
   },
   panelBadgeMobile: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -1231,7 +1238,7 @@ const styles = StyleSheet.create({
   suplentesButtonMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: theme.colors.purple,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -1253,18 +1260,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 6,
     borderRadius: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   playerItemMobileSelected: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   playerItemMobileAssigned: {
     opacity: 0.55,
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   playerItemMobilePhoto: {
     width: 32,
@@ -1286,12 +1293,12 @@ const styles = StyleSheet.create({
   playerItemMobileName: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginTop: 4,
     textAlign: 'center',
   },
   playerItemMobileNameAssigned: {
-    color: '#9ca3af',
+    color: theme.colors.textDisabled,
   },
   selectedIndicatorMobile: {
     position: 'absolute',
@@ -1312,15 +1319,15 @@ const styles = StyleSheet.create({
   },
   emptyTextMobile: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
   },
   playersPanel: {
     width: 160,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     maxHeight: 560,
   },
 
@@ -1331,7 +1338,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
   },
   panelHeaderLeft: {
     flexDirection: 'row',
@@ -1341,10 +1348,10 @@ const styles = StyleSheet.create({
   panelTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#334155',
+    color: theme.colors.textSecondary,
   },
   panelBadge: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -1363,18 +1370,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   playerItemSelected: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   playerItemAssigned: {
     opacity: 0.55,
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   playerItemPhoto: {
     width: 36,
@@ -1400,14 +1407,14 @@ const styles = StyleSheet.create({
   playerItemName: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   playerItemNameAssigned: {
-    color: '#9ca3af',
+    color: theme.colors.textDisabled,
   },
   playerItemPos: {
     fontSize: 11,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   selectedIndicator: {
@@ -1420,7 +1427,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: theme.colors.purple,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -1439,7 +1446,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     textAlign: 'center',
     marginTop: 10,
   },
@@ -1514,7 +1521,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: theme.colors.border,
   },
   counterBadge: {
     flexDirection: 'row',
@@ -1525,28 +1532,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   titularesBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     borderWidth: 1,
-    borderColor: '#fcd34d',
+    borderColor: theme.colors.warning,
   },
   suplentesBadge: {
-    backgroundColor: '#ede9fe',
+    backgroundColor: theme.colors.purpleSoft,
     borderWidth: 1,
-    borderColor: '#c4b5fd',
+    borderColor: theme.colors.purple,
   },
   counterLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.textSecondary,
   },
   counterValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   // Estilos para modo readOnly
   containerReadOnly: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginTop: 8,
@@ -1561,12 +1568,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   suplentesReadOnlyCard: {
-    backgroundColor: '#faf5ff',
+    backgroundColor: theme.colors.purpleSoft,
     borderRadius: 12,
     padding: 14,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#e9d5ff',
+    borderColor: theme.colors.purple,
   },
   suplentesReadOnlyHeader: {
     flexDirection: 'row',
@@ -1577,13 +1584,13 @@ const styles = StyleSheet.create({
   suplentesReadOnlyIndicator: {
     width: 5,
     height: 18,
-    backgroundColor: '#9333ea',
+    backgroundColor: theme.colors.purple,
     borderRadius: 3,
   },
   suplentesReadOnlyTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#581c87',
+    color: theme.colors.purpleSoftText,
   },
   suplentesReadOnlyList: {
     flexDirection: 'row',
@@ -1618,7 +1625,7 @@ suplenteReadOnlyItem: {
   },
   suplenteReadOnlyName: {
     fontSize: 11,
-    color: '#581c87',
+    color: theme.colors.purpleSoftText,
     fontWeight: '600',
     marginTop: 4,
     textAlign: 'center',

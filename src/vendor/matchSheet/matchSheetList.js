@@ -1,6 +1,7 @@
 ﻿// components/pages/matchSheet/matchSheetList.js
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, TextInput, Platform, Switch, Image } from 'react-native';
+import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import AppLayout from '@/vendor/shared/appLayout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,6 +78,8 @@ function sortByMinuto(a, b) {
 // El componente MatchSheetDetail se eliminó y se reutiliza el modal de Temporadas
 
 function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selectedTeam, isGrid = false }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
   const formatDate = (date) => {
     if (!date) return t('matchSheet.fields.noDate');
@@ -190,7 +193,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           <View style={styles.gridCardStats}>
             {matchSheet.fechaHora && (
               <View style={styles.gridCardStat}>
-                <Ionicons name="calendar-outline" size={8} color="#64748b" />
+                <Ionicons name="calendar-outline" size={8} color={theme.colors.textMuted} />
                 <Text style={styles.gridCardStatText}>
                   {formatDate(matchSheet.fechaHora)}{matchSheet.fase === 'eliminatoria' && matchSheet.ronda ? ` · ${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}` : matchSheet.jornada ? ` · J${matchSheet.jornada}` : ''}
                 </Text>
@@ -248,13 +251,13 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           )}
           {matchSheet.fechaHora && (
             <View style={styles.listCardTag}>
-              <Ionicons name="calendar-outline" size={12} color="#64748b" />
+              <Ionicons name="calendar-outline" size={12} color={theme.colors.textMuted} />
               <Text style={styles.listCardTagText}>{formatDate(matchSheet.fechaHora)}</Text>
             </View>
           )}
           {(matchSheet.jornada || matchSheet.fase === 'eliminatoria') && (
             <View style={[styles.listCardTag, styles.listCardTagWarning]}>
-              <Ionicons name="trophy-outline" size={12} color="#d97706" />
+              <Ionicons name="trophy-outline" size={12} color={theme.colors.warning} />
               <Text style={[styles.listCardTagText, { color: '#d97706' }]}>
                 {matchSheet.fase === 'eliminatoria' && matchSheet.ronda
                   ? `${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
@@ -266,7 +269,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           )}
           {matchSheet.ubicacion && (
             <View style={[styles.listCardTag, { backgroundColor: '#f3e8ff' }]}>
-              <Ionicons name={matchSheet.ubicacion === 'Casa' ? 'home' : matchSheet.ubicacion === 'Fuera' ? 'airplane' : 'location'} size={12} color="#7c3aed" />
+              <Ionicons name={matchSheet.ubicacion === 'Casa' ? 'home' : matchSheet.ubicacion === 'Fuera' ? 'airplane' : 'location'} size={12} color={theme.colors.purple} />
               <Text style={[styles.listCardTagText, { color: '#7c3aed' }]}>{matchSheet.ubicacion}</Text>
             </View>
           )}
@@ -286,13 +289,13 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           style={styles.listCardActionBtn}
           onPress={() => onPress(matchSheet)}
         >
-          <Ionicons name="eye-outline" size={18} color="#3b82f6" />
+          <Ionicons name="eye-outline" size={18} color={theme.colors.primaryLight} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.listCardActionBtn}
           onPress={() => onOpenOptions(matchSheet)}
         >
-          <Ionicons name="ellipsis-vertical" size={18} color="#64748b" />
+          <Ionicons name="ellipsis-vertical" size={18} color={theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
     </Pressable>
@@ -300,6 +303,8 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
 }
 
 export default function MatchSheetList() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   
@@ -593,7 +598,7 @@ export default function MatchSheetList() {
     return (
       <AppLayout scrollEnabled={false}>
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="#2474E5" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.emptyText}>{t('matchSheet.loading')}</Text>
         </View>
       </AppLayout>
@@ -607,7 +612,7 @@ export default function MatchSheetList() {
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
             <View style={styles.topBarTitleContainer}>
-              <Ionicons name="document-text-outline" size={28} color="#2474E5" />
+              <Ionicons name="document-text-outline" size={28} color={theme.colors.primary} />
               <Text style={styles.topBarTitle}>{t('matchSheet.title')}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -616,7 +621,7 @@ export default function MatchSheetList() {
                 onPress={() => setFiltersVisible(!filtersVisible)}
                 style={[styles.headerActionBtn, filtersVisible && styles.headerActionBtnActive]}
               >
-                <MaterialIcons name="filter-list" size={20} color={filtersVisible ? '#fff' : '#2474E5'} />
+                <MaterialIcons name="filter-list" size={20} color={filtersVisible ? '#fff' : theme.colors.primary} />
                 {activeFiltersCount > 0 && (
                   <View style={styles.mobileMenuBadge}>
                     <Text style={styles.mobileMenuBadgeText}>{activeFiltersCount}</Text>
@@ -637,7 +642,7 @@ export default function MatchSheetList() {
 
         {!selectedTeam ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={80} color="#b5d6fa" />
+            <Ionicons name="people-outline" size={80} color={theme.colors.primarySoft} />
             <Text style={styles.emptyText}>{t('matchSheet.selectTeamFirst')}</Text>
           </View>
         ) : (
@@ -659,7 +664,7 @@ export default function MatchSheetList() {
                     <TextInput
                       style={styles.filterInput}
                       placeholder={t('matchSheet.filters.rivalPlaceholder')}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.colors.textMuted}
                       value={filterRival}
                       onChangeText={setFilterRival}
                     />
@@ -670,7 +675,7 @@ export default function MatchSheetList() {
                     <TextInput
                       style={styles.filterInput}
                       placeholder={t('matchSheet.filters.matchdayPlaceholder')}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.colors.textMuted}
                       value={filterJornada}
                       onChangeText={(text) => setFilterJornada(filterNumericInput(text))}
                       keyboardType="number-pad"
@@ -776,19 +781,19 @@ export default function MatchSheetList() {
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.filterChip, sortDateOrder === 'desc' && { backgroundColor: '#3578e5', borderColor: '#3578e5' }]}
+                      style={[styles.filterChip, sortDateOrder === 'desc' && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
                       onPress={() => setSortDateOrder(sortDateOrder === 'desc' ? 'default' : 'desc')}
                     >
-                      <Ionicons name="arrow-down" size={14} color={sortDateOrder === 'desc' ? '#fff' : '#3578e5'} />
+                      <Ionicons name="arrow-down" size={14} color={sortDateOrder === 'desc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.filterChipText, sortDateOrder === 'desc' && styles.filterChipTextActive]}>
                         {t('matchSheet.filters.dateNewest')}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.filterChip, sortDateOrder === 'asc' && { backgroundColor: '#3578e5', borderColor: '#3578e5' }]}
+                      style={[styles.filterChip, sortDateOrder === 'asc' && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
                       onPress={() => setSortDateOrder(sortDateOrder === 'asc' ? 'default' : 'asc')}
                     >
-                      <Ionicons name="arrow-up" size={14} color={sortDateOrder === 'asc' ? '#fff' : '#3578e5'} />
+                      <Ionicons name="arrow-up" size={14} color={sortDateOrder === 'asc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.filterChipText, sortDateOrder === 'asc' && styles.filterChipTextActive]}>
                         {t('matchSheet.filters.dateOldest')}
                       </Text>
@@ -886,7 +891,7 @@ export default function MatchSheetList() {
                     style={styles.clearFiltersButton}
                     onPress={clearFilters}
                   >
-                    <MaterialIcons name="clear" size={18} color="#666" />
+                    <MaterialIcons name="clear" size={18} color={theme.colors.textSecondary} />
                     <Text style={styles.clearFiltersText}>{t('matchSheet.actions.clearFilters')}</Text>
                   </TouchableOpacity>
 
@@ -901,7 +906,7 @@ export default function MatchSheetList() {
             ) : null}
             ListEmptyComponent={
               <View style={[styles.emptyContainer, { marginTop: 40 }]}>
-                <Ionicons name="document-text-outline" size={80} color="#b5d6fa" />
+                <Ionicons name="document-text-outline" size={80} color={theme.colors.primarySoft} />
                 <Text style={styles.emptyText}>
                   {activeFiltersCount > 0 ? t('matchSheet.noMatchesFiltered') : t('matchSheet.noMatchSheets')}
                 </Text>
@@ -959,7 +964,7 @@ export default function MatchSheetList() {
                 }}
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: '#eff6ff' }]}>
-                  <MaterialIcons name="edit" size={20} color="#2563eb" />
+                  <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.actions.edit')}</Text>
               </TouchableOpacity>
@@ -969,7 +974,7 @@ export default function MatchSheetList() {
                 onPress={() => pdfHook.openLineupPDFModal()}
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: '#f0fdf4' }]}>
-                  <Ionicons name="football" size={20} color="#16a34a" />
+                  <Ionicons name="football" size={20} color={theme.colors.success} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.lineupTitle')}</Text>
               </TouchableOpacity>
@@ -979,7 +984,7 @@ export default function MatchSheetList() {
                 onPress={() => pdfHook.openConvocatoriaPDFModal()}
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: '#faf5ff' }]}>
-                  <Ionicons name="people" size={20} color="#7c3aed" />
+                  <Ionicons name="people" size={20} color={theme.colors.purple} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.callupTitle')}</Text>
               </TouchableOpacity>
@@ -991,9 +996,9 @@ export default function MatchSheetList() {
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: '#fff7ed' }]}>
                   {pdfHook.generatingPDFType === 'matchsheet' ? (
-                    <ActivityIndicator color="#ea580c" size="small" />
+                    <ActivityIndicator color={theme.colors.accent} size="small" />
                   ) : (
-                    <Ionicons name="document-text" size={20} color="#ea580c" />
+                    <Ionicons name="document-text" size={20} color={theme.colors.accent} />
                   )}
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.matchSheetTitle')}</Text>
@@ -1004,7 +1009,7 @@ export default function MatchSheetList() {
                 onPress={() => handleDelete(selectedMatchSheetForOptions)}
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: '#fef2f2' }]}>
-                  <MaterialIcons name="delete" size={20} color="#dc2626" />
+                  <MaterialIcons name="delete" size={20} color={theme.colors.error} />
                 </View>
                 <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
                   {t('matchSheet.actions.delete')}
@@ -1076,7 +1081,7 @@ export default function MatchSheetList() {
                     setMobileMenuVisible(false);
                   }}
                 >
-                  <MaterialIcons name="filter-list" size={24} color="#2474E5" />
+                  <MaterialIcons name="filter-list" size={24} color={theme.colors.primary} />
                   <Text style={styles.mobileMenuItemText}>{t('matchSheet.actions.filters')}</Text>
                   {activeFiltersCount > 0 && (
                     <View style={styles.mobileMenuItemBadge}>
@@ -1094,7 +1099,7 @@ export default function MatchSheetList() {
                     setMobileMenuVisible(false);
                   }}
                 >
-                  <MaterialIcons name="add" size={20} color="#ffffffff" backgroundColor="#2474E5" borderRadius={100} />
+                  <MaterialIcons name="add" size={20} color="#fff" backgroundColor={theme.colors.primary} borderRadius={100} />
                   <Text style={styles.mobileMenuItemText}>{t('matchSheet.actions.createMatchSheet')}</Text>
                 </TouchableOpacity>
               </View>
@@ -1125,7 +1130,7 @@ export default function MatchSheetList() {
                     <TextInput
                       style={styles.filterInput}
                       placeholder={t('matchSheet.filters.rivalPlaceholder')}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.colors.textMuted}
                       value={filterRival}
                       onChangeText={setFilterRival}
                     />
@@ -1136,7 +1141,7 @@ export default function MatchSheetList() {
                     <TextInput
                       style={styles.filterInput}
                       placeholder={t('matchSheet.filters.matchdayPlaceholder')}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.colors.textMuted}
                       value={filterJornada}
                       onChangeText={(text) => setFilterJornada(filterNumericInput(text))}
                       keyboardType="number-pad"
@@ -1242,19 +1247,19 @@ export default function MatchSheetList() {
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.filterChip, sortDateOrder === 'desc' && { backgroundColor: '#3578e5', borderColor: '#3578e5' }]}
+                      style={[styles.filterChip, sortDateOrder === 'desc' && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
                       onPress={() => setSortDateOrder(sortDateOrder === 'desc' ? 'default' : 'desc')}
                     >
-                      <Ionicons name="arrow-down" size={14} color={sortDateOrder === 'desc' ? '#fff' : '#3578e5'} />
+                      <Ionicons name="arrow-down" size={14} color={sortDateOrder === 'desc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.filterChipText, sortDateOrder === 'desc' && styles.filterChipTextActive]}>
                         {t('matchSheet.filters.dateNewest')}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.filterChip, sortDateOrder === 'asc' && { backgroundColor: '#3578e5', borderColor: '#3578e5' }]}
+                      style={[styles.filterChip, sortDateOrder === 'asc' && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
                       onPress={() => setSortDateOrder(sortDateOrder === 'asc' ? 'default' : 'asc')}
                     >
-                      <Ionicons name="arrow-up" size={14} color={sortDateOrder === 'asc' ? '#fff' : '#3578e5'} />
+                      <Ionicons name="arrow-up" size={14} color={sortDateOrder === 'asc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.filterChipText, sortDateOrder === 'asc' && styles.filterChipTextActive]}>
                         {t('matchSheet.filters.dateOldest')}
                       </Text>
@@ -1352,7 +1357,7 @@ export default function MatchSheetList() {
                     style={styles.clearFiltersButton}
                     onPress={clearFilters}
                   >
-                    <MaterialIcons name="clear" size={18} color="#666" />
+                    <MaterialIcons name="clear" size={18} color={theme.colors.textSecondary} />
                     <Text style={styles.clearFiltersText}>{t('matchSheet.actions.clearFilters')}</Text>
                   </TouchableOpacity>
 
@@ -1388,13 +1393,13 @@ export default function MatchSheetList() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   topBar: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingTop: Platform.OS === 'web' ? 16 : 10,
     paddingBottom: Platform.OS === 'web' ? 12 : 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: theme.colors.border,
   },
   topBarHeaderRow: {
     flexDirection: 'row',
@@ -1410,7 +1415,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: Platform.OS === 'web' ? 24 : 18,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   topBarMobile: {
     paddingHorizontal: 8,
@@ -1420,12 +1425,12 @@ const styles = StyleSheet.create({
   teamInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf2fb',
+    backgroundColor: theme.colors.primarySoft,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#b5d6fa',
+    borderColor: theme.colors.primarySoft,
     gap: 8,
     flex: 1,
     marginRight: 8,
@@ -1435,7 +1440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   teamInfoText: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: 'bold',
     fontSize: 16,
     flex: 1,
@@ -1454,11 +1459,11 @@ const styles = StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     paddingVertical: Platform.OS === 'ios' ? 8 : 7,
     paddingHorizontal: 16,
     borderRadius: 22,
-    shadowColor: '#2856a2',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.16,
     shadowRadius: 8,
@@ -1480,10 +1485,10 @@ const styles = StyleSheet.create({
   matchSheetCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 12,
     minHeight: 74,
@@ -1501,8 +1506,8 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   matchSheetCardPressed: {
-    backgroundColor: '#eaf2fb',
-    borderColor: '#b5d6fa',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primarySoft,
     shadowOpacity: 0.18,
     elevation: 4,
   },
@@ -1517,7 +1522,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2856a2',
+    color: theme.colors.primary,
     marginBottom: 2,
     letterSpacing: 0.25,
     textShadowColor: '#e6eefc',
@@ -1549,7 +1554,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8fa0b8',
+    color: theme.colors.textMuted,
     marginBottom: 20,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -1560,7 +1565,7 @@ const styles = StyleSheet.create({
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f6fc',
+    backgroundColor: theme.colors.background,
     padding: 24,
   },
   matchSheetCardContent: {
@@ -1576,7 +1581,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -1589,7 +1594,7 @@ const styles = StyleSheet.create({
   // ========== NUEVOS ESTILOS PROFESIONALES ==========
   // Vista Grid - Tarjetas compactas
   gridCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 8,
@@ -1602,7 +1607,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.colors.border,
   },
   gridCardMobile: {
     marginHorizontal: 3,
@@ -1651,7 +1656,7 @@ const styles = StyleSheet.create({
   gridCardTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 4,
     lineHeight: 14,
@@ -1685,24 +1690,24 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   gridCardStatHighlight: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
   },
   gridCardStatText: {
     fontSize: 9,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   gridCardStatValue: {
     fontSize: 10,
-    color: '#d97706',
+    color: theme.colors.warning,
     fontWeight: '700',
   },
   gridCardBadge: {
     marginTop: 4,
-    backgroundColor: '#f3e8ff',
+    backgroundColor: theme.colors.purpleSoft,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -1713,13 +1718,13 @@ const styles = StyleSheet.create({
   gridCardBadgeText: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#7c3aed',
+    color: theme.colors.purple,
   },
   // Vista Lista - Tarjetas horizontales
   listCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     marginBottom: 10,
     overflow: 'hidden',
@@ -1729,14 +1734,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.colors.border,
   },
   listCardMobile: {
     borderRadius: 12,
     marginBottom: 8,
   },
   listCardPressed: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   listCardIndicator: {
     width: 4,
@@ -1746,7 +1751,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -1766,7 +1771,7 @@ const styles = StyleSheet.create({
   listCardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 6,
   },
   listCardTitleMobile: {
@@ -1781,22 +1786,22 @@ const styles = StyleSheet.create({
   listCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     gap: 4,
   },
   listCardTagSuccess: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: theme.colors.successSoft,
   },
   listCardTagWarning: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
   },
   listCardTagText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   listCardActions: {
     flexDirection: 'row',
@@ -1808,7 +1813,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1820,17 +1825,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   tournamentChipActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   tournamentChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   tournamentChipTextActive: {
     color: '#fff',
@@ -1848,17 +1853,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   filterChipActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   filterChipTextActive: {
     color: '#fff',
@@ -1870,7 +1875,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   optionsModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 8,
@@ -1885,14 +1890,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: theme.colors.border,
     alignSelf: 'center',
     marginBottom: 16,
   },
   optionsModalTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -1912,22 +1917,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   optionsModalOptionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   optionsModalOptionDanger: {
     borderBottomWidth: 0,
   },
   optionsModalOptionTextDanger: {
-    color: '#dc2626',
+    color: theme.colors.error,
   },
   optionsModalCancelButton: {
     marginTop: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1935,7 +1940,7 @@ const styles = StyleSheet.create({
   optionsModalCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   modalBg: {
     flex: 1,
@@ -1946,7 +1951,7 @@ const styles = StyleSheet.create({
   },
   modalContent: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '100%',
       maxWidth: 500,
@@ -1957,7 +1962,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '100%',
       maxWidth: 500,
@@ -1971,7 +1976,7 @@ const styles = StyleSheet.create({
   }),
   modalContentTablet: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -1982,7 +1987,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -1996,7 +2001,7 @@ const styles = StyleSheet.create({
   }),
   viewModalContent: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '95%',
       maxWidth: 500,
@@ -2007,7 +2012,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '95%',
       maxWidth: 500,
@@ -2021,7 +2026,7 @@ const styles = StyleSheet.create({
   }),
   viewModalContentTablet: Platform.select({
     ios: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2032,7 +2037,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2052,12 +2057,12 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   modalBody: {
     paddingHorizontal: 24,
@@ -2067,12 +2072,12 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   matchSheetDetailCard: {
     marginBottom: 16,
@@ -2081,14 +2086,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     padding: 16,
     borderRadius: 12,
   },
   matchSheetDetailTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 12,
     flex: 1,
   },
@@ -2154,11 +2159,11 @@ const styles = StyleSheet.create({
     minWidth: 150,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e9eef6',
+    borderColor: theme.colors.border,
     shadowColor: '#1e293b',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -2185,7 +2190,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -2194,17 +2199,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   detailsSection: {
     gap: 16,
   },
   detailCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     marginBottom: 12,
   },
   detailCardHeader: {
@@ -2215,17 +2220,17 @@ const styles = StyleSheet.create({
   detailCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.text,
     marginLeft: 8,
   },
   detailCardContent: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     lineHeight: 20,
   },
   // Estilos del modal de creación
   createModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '96%',
     maxWidth: 800,
@@ -2238,7 +2243,7 @@ const styles = StyleSheet.create({
     elevation: 25,
   },
   createModalContainerMobile: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     width: '100%',
     maxWidth: '100%',
@@ -2259,7 +2264,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   createModalHeaderLeft: {
     flexDirection: 'row',
@@ -2275,35 +2280,35 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   createModalTitleMobile: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   createModalSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalSubtitleMobile: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalCloseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2317,20 +2322,20 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   createCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardMobile: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardHeader: {
     flexDirection: 'row',
@@ -2341,7 +2346,7 @@ const styles = StyleSheet.create({
   createCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   createCardContent: {
@@ -2360,7 +2365,7 @@ const styles = StyleSheet.create({
   },
   escudoLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 8,
     fontWeight: '600',
   },
@@ -2369,12 +2374,12 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   escudoImage: {
     width: '100%',
@@ -2388,14 +2393,14 @@ const styles = StyleSheet.create({
   },
   escudoPlaceholderText: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     textAlign: 'center',
   },
   escudoEditBadge: {
     position: 'absolute',
     bottom: -4,
     right: -4,
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     width: 24,
     height: 24,
@@ -2415,7 +2420,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
   },
   createModalFooter: {
     flexDirection: 'row',
@@ -2423,7 +2428,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
     gap: 16,
   },
   createCancelButton: {
@@ -2431,20 +2436,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#fff',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
   },
   createCancelButtonText: {
     fontSize: 16,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '600',
   },
   createSaveButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   createSaveButtonText: {
@@ -2454,14 +2459,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
-    color: '#1e293b',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   textArea: {
     minHeight: 120,
@@ -2477,7 +2482,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
     fontWeight: '500',
   },
@@ -2490,7 +2495,7 @@ const styles = StyleSheet.create({
   },
   resultadoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   resultadoBadge: {
@@ -2508,16 +2513,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingVertical: 8,
   },
   descuentoButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 8,
@@ -2525,43 +2530,43 @@ const styles = StyleSheet.create({
   descuentoValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     minWidth: 40,
     textAlign: 'center',
   },
   descuentoHint: {
     fontSize: 13,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 8,
   },
   selector: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   selectorText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
   },
   selectorTextSelected: {
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   playerSelector: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2574,7 +2579,7 @@ const styles = StyleSheet.create({
   playerSelectorTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.text,
   },
   selectedPlayersContainer: {
     flexDirection: 'row',
@@ -2583,47 +2588,47 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   playerChip: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: theme.colors.primarySoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   playerChipText: {
     fontSize: 12,
-    color: '#1976d2',
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   calledChip: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: theme.colors.successSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   calledChipText: {
     fontSize: 12,
-    color: '#4CAF50',
+    color: theme.colors.success,
     fontWeight: '500',
   },
   notCalledChip: {
-    backgroundColor: '#ffebee',
+    backgroundColor: theme.colors.errorSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   notCalledChipText: {
     fontSize: 12,
-    color: '#F44336',
+    color: theme.colors.error,
     fontWeight: '500',
   },
   subTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 12,
     marginTop: 8,
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -2642,14 +2647,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   playerSearchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -2658,7 +2663,7 @@ const styles = StyleSheet.create({
   playerSearchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1e293b',
+    color: theme.colors.text,
     padding: 0,
   },
   injuryFilterRow: {
@@ -2667,47 +2672,47 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   injuryFilterBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   injuryFilterBtnActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   injuryFilterBtnText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   injuryFilterBtnTextActive: {
     color: '#fff',
   },
   selectedPanelMobile: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 10,
     padding: 10,
     marginHorizontal: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: theme.colors.primarySoft,
   },
   selectedPanelTitleMobile: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2474E5',
+    color: theme.colors.primary,
     marginBottom: 8,
   },
   selectedChipMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -2727,51 +2732,51 @@ const styles = StyleSheet.create({
   playerRowMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     gap: 10,
   },
   playerRowMobileSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
   },
   playerCheckMobile: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerCheckMobileSelected: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   playerAvatarMobile: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerNameMobile: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   playerNameMobileSelected: {
-    color: '#2474E5',
+    color: theme.colors.primary,
   },
   playerPositionMobile: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   injuryBadge: {
@@ -2802,12 +2807,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   closeButton: {
     padding: 4,
@@ -2816,8 +2821,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#f9fafb',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   selectAllButton: {
     flexDirection: 'row',
@@ -2827,7 +2832,7 @@ const styles = StyleSheet.create({
   selectAllText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2474E5',
+    color: theme.colors.primary,
   },
   modalContent: {
     maxHeight: 400,
@@ -2835,14 +2840,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    color: theme.colors.textMuted,
     padding: 20,
     fontStyle: 'italic',
   },
   playerItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -2852,20 +2857,20 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 4,
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   checkboxSelected: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   playerItemText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
   },
   optionItem: {
     flexDirection: 'row',
@@ -2873,23 +2878,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   optionItemText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
   },
   optionItemTextSelected: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   modalActions: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: theme.colors.border,
   },
   modalActionButton: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -2904,23 +2909,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
     gap: 8,
   },
   eventMinute: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#3578e5',
+    color: theme.colors.primary,
     minWidth: 35,
   },
   eventPlayer: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
     flex: 1,
   },
   eventType: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
   },
   cambioDetails: {
@@ -2939,7 +2944,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statItem: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 8,
     padding: 12,
     minWidth: '30%',
@@ -2948,22 +2953,22 @@ const styles = StyleSheet.create({
   },
   statItemLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
     textAlign: 'center',
   },
   statItemValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   eventSelector: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2976,7 +2981,7 @@ const styles = StyleSheet.create({
   eventSelectorTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.text,
   },
   eventsList: {
     marginBottom: 12,
@@ -2985,7 +2990,7 @@ const styles = StyleSheet.create({
   eventChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f4f8',
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -2993,7 +2998,7 @@ const styles = StyleSheet.create({
   },
   eventChipText: {
     fontSize: 13,
-    color: '#333',
+    color: theme.colors.text,
     flex: 1,
   },
   cardIndicator: {
@@ -3010,21 +3015,21 @@ const styles = StyleSheet.create({
   },
   picker: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   pickerText: {
     fontSize: 16,
-    color: '#999',
+    color: theme.colors.textMuted,
   },
   pickerTextSelected: {
-    color: '#333',
+    color: theme.colors.text,
   },
   cardTypeContainer: {
     flexDirection: 'row',
@@ -3041,12 +3046,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   cardTypeButtonSelected: {
-    borderColor: '#2474E5',
-    backgroundColor: '#e3f2fd',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   cardIcon: {
     width: 16,
@@ -3055,11 +3060,11 @@ const styles = StyleSheet.create({
   },
   cardTypeText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   cardTypeTextSelected: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   locationStat: {
@@ -3069,7 +3074,7 @@ const styles = StyleSheet.create({
   // --- Vista de cuadrícula/lista ---
   viewModeSwitch: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -3080,7 +3085,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   viewModeBtnActive: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
   },
   // Estilos para vista Grid
@@ -3139,13 +3144,13 @@ const styles = StyleSheet.create({
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
     flex: 1,
     maxWidth: 200,
   },
@@ -3162,7 +3167,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     marginLeft: 7,
-    color: "#2474E5",
+    color: theme.colors.primary,
     fontWeight: "bold",
     width: 120,
   },
@@ -3170,12 +3175,12 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
     marginRight: 8,
   },
   filterButtonMobile: {
@@ -3185,7 +3190,7 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     marginLeft: 7,
-    color: "#2474E5",
+    color: theme.colors.primary,
     fontWeight: "bold",
     fontSize: 14,
   },
@@ -3204,7 +3209,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   filtersSection: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 12,
@@ -3216,7 +3221,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
   },
   filtersSectionMobile: {
     marginHorizontal: 8,
@@ -3231,11 +3236,11 @@ const styles = StyleSheet.create({
   filtersTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   resultsCount: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   filtersGrid: {
@@ -3253,18 +3258,18 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   filterInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    backgroundColor: '#f9f9f9',
-    color: '#333',
+    backgroundColor: theme.colors.background,
+    color: theme.colors.text,
   },
   filterActions: {
     flexDirection: 'row',
@@ -3273,24 +3278,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
   },
   clearFiltersButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   clearFiltersText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },
   closeFiltersButton: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -3305,25 +3310,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
   },
   headerActionBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eaf2fb',
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#b5d6fa',
+    borderColor: theme.colors.primarySoft,
   },
   headerActionBtnActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   headerCreateBtn: {
     flexDirection: 'row',
@@ -3332,7 +3337,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
   },
   headerCreateBtnText: {
     color: '#fff',
@@ -3345,7 +3350,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   mobileMenuContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
@@ -3362,13 +3367,13 @@ const styles = StyleSheet.create({
   mobileMenuItemText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     marginLeft: 16,
     fontWeight: '500',
   },
   mobileMenuDivider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.backgroundAlt,
     marginVertical: 8,
   },
   mobileMenuBadge: {
@@ -3446,7 +3451,7 @@ const styles = StyleSheet.create({
   minuteSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.text,
     marginTop: 16,
     marginBottom: 8,
     paddingHorizontal: 4,
@@ -3461,41 +3466,41 @@ const styles = StyleSheet.create({
     minWidth: 50,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   minuteOptionSelected: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   minuteOptionAddedTime: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#f59e0b',
+    backgroundColor: theme.colors.warningSoft,
+    borderColor: theme.colors.warning,
   },
   minuteOptionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.text,
   },
   minuteOptionTextSelected: {
     color: '#ffffff',
   },
   minuteOptionTextAddedTime: {
-    color: '#92400e',
+    color: theme.colors.warningSoftText,
     fontWeight: '600',
   },
   // Estilos para PDF
   pdfOptionsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -3505,7 +3510,7 @@ const styles = StyleSheet.create({
   pdfOptionsTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 12,
   },
   pdfOptionRow: {
@@ -3514,7 +3519,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   pdfOptionLeft: {
     flexDirection: 'row',
@@ -3523,7 +3528,7 @@ const styles = StyleSheet.create({
   },
   pdfOptionLabel: {
     fontSize: 15,
-    color: '#374151',
+    color: theme.colors.text,
   },
   convocadosPreview: {
     flexDirection: 'row',
@@ -3533,13 +3538,13 @@ const styles = StyleSheet.create({
   convocadoChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0fdf4',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 20,
     paddingVertical: 6,
     paddingHorizontal: 10,
     paddingRight: 14,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: theme.colors.successSoft,
     gap: 8,
   },
   convocadoPhoto: {
@@ -3549,12 +3554,12 @@ const styles = StyleSheet.create({
   },
   convocadoName: {
     fontSize: 13,
-    color: '#166534',
+    color: theme.colors.successSoftText,
     fontWeight: '500',
   },
   noConvocadosText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
@@ -3567,35 +3572,35 @@ const styles = StyleSheet.create({
   },
   visualLineupContainer: {
     marginTop: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   emptyLineupMessage: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 20,
     marginTop: 16,
     gap: 12,
   },
   emptyLineupText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     flex: 1,
     textAlign: 'center',
   },
   startersSubsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   startersSubsHeader: {
     flexDirection: 'row',
@@ -3604,12 +3609,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
   },
   startersSubsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   startersSubsList: {
     gap: 6,
@@ -3620,10 +3625,10 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: theme.colors.success,
   },
   starterSubDorsal: {
     width: 28,
@@ -3640,18 +3645,18 @@ const styles = StyleSheet.create({
   starterSubName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   // Estilos para preview de suplentes en modal PDF
   suplentesPreviewCard: {
-    backgroundColor: '#faf5ff',
+    backgroundColor: theme.colors.purpleSoft,
     borderRadius: 12,
     padding: 14,
     marginTop: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e9d5ff',
+    borderColor: theme.colors.purpleSoft,
   },
   suplentesPreviewHeader: {
     flexDirection: 'row',
@@ -3662,13 +3667,13 @@ const styles = StyleSheet.create({
   suplentesPreviewIndicator: {
     width: 5,
     height: 18,
-    backgroundColor: '#9333ea',
+    backgroundColor: theme.colors.purple,
     borderRadius: 3,
   },
   suplentesPreviewTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#581c87',
+    color: theme.colors.purpleSoftText,
   },
   suplentesPreviewList: {
     flexDirection: 'row',
@@ -3685,7 +3690,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: '#9333ea',
+    borderColor: theme.colors.purple,
   },
   suplentePreviewCircle: {
     width: 40,
@@ -3703,7 +3708,7 @@ const styles = StyleSheet.create({
   },
   suplentePreviewName: {
     fontSize: 10,
-    color: '#581c87',
+    color: theme.colors.purpleSoftText,
     fontWeight: '600',
     marginTop: 4,
     textAlign: 'center',

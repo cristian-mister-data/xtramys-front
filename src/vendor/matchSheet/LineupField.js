@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Rect, Line, Circle, Ellipse } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { getPlayerFullName, getPlayerInitials, getPlayerFirstName } from '@/utils/playerHelpers';
 
 // Imagen del campo de fútbol (usamos SVG para dibujarlo)
@@ -224,6 +225,8 @@ function PlayerMarker({
   isSelected,
   size = 40
 }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(position);
   const pixelX = (x / 100) * fieldWidth;
   const pixelY = (y / 100) * fieldHeight;
@@ -294,6 +297,8 @@ export default function LineupField({
   height: propHeight,
   style,
 }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
@@ -410,7 +415,7 @@ export default function LineupField({
                 {t('matchSheet.selectPlayer') || 'Seleccionar jugador'}
               </Text>
               <TouchableOpacity onPress={() => setShowPlayerSelector(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
             
@@ -426,7 +431,7 @@ export default function LineupField({
                     setSelectedPosition(null);
                   }}
                 >
-                  <Ionicons name="remove-circle" size={24} color="#dc2626" />
+                  <Ionicons name="remove-circle" size={24} color={theme.colors.error} />
                   <Text style={styles.removeText}>
                     {t('matchSheet.removePlayer') || 'Quitar jugador'}
                   </Text>
@@ -472,7 +477,7 @@ export default function LineupField({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     alignItems: 'center',
   },
@@ -531,11 +536,11 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -546,12 +551,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   playerList: {
     padding: 16,
@@ -560,17 +565,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
   },
   removeOption: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     marginBottom: 16,
   },
   removeText: {
-    color: '#dc2626',
+    color: theme.colors.error,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -583,7 +588,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -598,16 +603,16 @@ const styles = StyleSheet.create({
   optionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   optionDetails: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   noPlayersText: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
     fontSize: 16,
     paddingVertical: 24,
   },

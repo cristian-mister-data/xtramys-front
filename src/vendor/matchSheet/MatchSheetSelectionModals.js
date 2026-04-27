@@ -1,6 +1,6 @@
 // components/pages/matchSheet/MatchSheetSelectionModals.js
 // Modales de selección reutilizables para fichas de partido
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,25 +13,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-
-// Tema consistente
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-};
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -52,6 +36,8 @@ export function OptionSelectionModal({
   renderOption = null, 
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   
   if (!visible) return null;
 
@@ -67,7 +53,7 @@ export function OptionSelectionModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
           
@@ -95,7 +81,7 @@ export function OptionSelectionModal({
                       {option}
                     </Text>
                     {selectedOption === option && (
-                      <Ionicons name="checkmark" size={20} color={THEME.primary} />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </>
                 )}
@@ -113,6 +99,8 @@ export function OptionSelectionModal({
  */
 export function UbicacionModal({ visible, onClose, ubicaciones, selectedUbicacion, onSelect }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
     <OptionSelectionModal
@@ -128,13 +116,13 @@ export function UbicacionModal({ visible, onClose, ubicaciones, selectedUbicacio
             <Ionicons 
               name={option === ubicaciones[0] ? 'home' : option === ubicaciones[1] ? 'airplane' : 'location'}
               size={20} 
-              color={isSelected ? THEME.primary : THEME.textSecondary} 
+              color={isSelected ? theme.colors.primary : theme.colors.textSecondary} 
             />
             <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
               {option}
             </Text>
           </View>
-          {isSelected && <Ionicons name="checkmark" size={20} color={THEME.primary} />}
+          {isSelected && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
         </>
       )}
     />
@@ -146,6 +134,8 @@ export function UbicacionModal({ visible, onClose, ubicaciones, selectedUbicacio
  */
 export function JornadaModal({ visible, onClose, jornadaOptions, selectedJornada, onSelect }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   
   if (!visible) return null;
 
@@ -161,7 +151,7 @@ export function JornadaModal({ visible, onClose, jornadaOptions, selectedJornada
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('matchSheet.fields.selectMatchday')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
           
@@ -228,6 +218,8 @@ export function PlayerSelectionModal({
   maxSelection = null,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [tempSelected, setTempSelected] = useState([]);
   
   useEffect(() => {
@@ -270,7 +262,7 @@ export function PlayerSelectionModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
           
@@ -358,6 +350,8 @@ export function SinglePlayerModal({
   onSelect,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   
   const availablePlayers = players.filter(p => !excludeIds.includes(p._id));
 
@@ -370,7 +364,7 @@ export function SinglePlayerModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -406,7 +400,7 @@ export function SinglePlayerModal({
                         )}
                       </View>
                     </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color={THEME.primary} />}
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />}
                   </TouchableOpacity>
                 );
               })
@@ -418,7 +412,7 @@ export function SinglePlayerModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -427,7 +421,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 8 : 12,
   },
   modalContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 12 : 14,
     width: '100%',
     maxWidth: isMobileDevice() ? '100%' : 380,
@@ -445,12 +439,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalBody: {
     padding: isMobileDevice() ? 6 : 8,
@@ -461,7 +455,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 12 : 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   
   // Option styles
@@ -475,14 +469,14 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   optionItemActive: {
-    backgroundColor: `${THEME.primary}10`,
+    backgroundColor: `${theme.colors.primary}10`,
   },
   optionText: {
     fontSize: isMobileDevice() ? 14 : 16,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   optionTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   ubicacionOption: {
@@ -500,19 +494,19 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     margin: 4,
     borderRadius: 8,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: isMobileDevice() ? 44 : 50,
     maxWidth: isMobileDevice() ? 54 : 60,
   },
   jornadaItemActive: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   jornadaText: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   jornadaTextActive: {
     color: '#fff',
@@ -525,23 +519,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 6 : 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: isMobileDevice() ? 8 : 12,
   },
   selectAllBtn: {
     paddingVertical: isMobileDevice() ? 5 : 6,
     paddingHorizontal: isMobileDevice() ? 10 : 12,
     borderRadius: 6,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.background,
   },
   selectAllText: {
     fontSize: isMobileDevice() ? 12 : 13,
     fontWeight: '500',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   countText: {
     fontSize: isMobileDevice() ? 12 : 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginLeft: 'auto',
   },
   
@@ -556,10 +550,10 @@ const styles = StyleSheet.create({
     paddingVertical: isMobileDevice() ? 10 : 12,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   playerItemSelected: {
-    backgroundColor: `${THEME.primary}08`,
+    backgroundColor: `${theme.colors.primary}08`,
   },
   playerInfo: {
     flexDirection: 'row',
@@ -573,7 +567,7 @@ const styles = StyleSheet.create({
     marginRight: isMobileDevice() ? 10 : 12,
   },
   playerPhotoPlaceholder: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -588,11 +582,11 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: isMobileDevice() ? 14 : 15,
     fontWeight: '500',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   playerPosition: {
     fontSize: isMobileDevice() ? 12 : 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   
@@ -602,13 +596,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   
   // Button styles
@@ -616,19 +610,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: isMobileDevice() ? 11 : 12,
     borderRadius: 10,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: isMobileDevice() ? 14 : 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   confirmButton: {
     flex: 1,
     paddingVertical: isMobileDevice() ? 11 : 12,
     borderRadius: 10,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   confirmButtonText: {
@@ -640,7 +634,7 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     padding: 20,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
   },
 });
