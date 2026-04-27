@@ -17,8 +17,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
+
+// Brand gradient stops (kept literal per migration rules — brand identity).
+const BRAND_GRADIENT = ['#1a237e', '#3949ab', '#5c6bc0'];
+const BRAND_PRIMARY = '#1a237e';
+const BRAND_PRIMARY_LIGHT = '#3949ab';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
@@ -76,6 +81,8 @@ export default function Home({ navigation: navigationProp }) {
   const navigation = navigationProp || navigationFromHook;
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   // Redux state
   const temporada = useSelector(state => state.season.season);
@@ -437,7 +444,7 @@ export default function Home({ navigation: navigationProp }) {
     return (
       <View style={styles.loadingContainer}>
         <LinearGradient
-          colors={THEME.gradient}
+          colors={BRAND_GRADIENT}
           style={styles.loadingGradient}
         >
           <View style={styles.loadingContent}>
@@ -458,12 +465,12 @@ export default function Home({ navigation: navigationProp }) {
       style={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[THEME.primary]} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
       }
     >
       {/* ========== HERO HEADER ========== */}
       <LinearGradient
-        colors={THEME.gradient}
+        colors={BRAND_GRADIENT}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.heroGradient}
@@ -514,7 +521,7 @@ export default function Home({ navigation: navigationProp }) {
         <View style={styles.quickStatsRow}>
           <View style={[styles.quickStatCard]}>
             <LinearGradient
-              colors={[THEME.primary, THEME.primaryLight]}
+              colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]}
               style={styles.quickStatGradient}
             >
               <View style={styles.quickStatIconBg}>
@@ -527,7 +534,7 @@ export default function Home({ navigation: navigationProp }) {
 
           <View style={[styles.quickStatCard, styles.quickStatSessions]}>
             <LinearGradient
-              colors={[THEME.primaryLight, '#5c6bc0']}
+              colors={[BRAND_PRIMARY_LIGHT, '#5c6bc0']}
               style={styles.quickStatGradient}
             >
               <View style={styles.quickStatIconBg}>
@@ -540,7 +547,7 @@ export default function Home({ navigation: navigationProp }) {
 
           <View style={[styles.quickStatCard, styles.quickStatMatches]}>
             <LinearGradient
-              colors={[THEME.success, '#047857']}
+              colors={[theme.colors.success, '#047857']}
               style={styles.quickStatGradient}
             >
               <View style={styles.quickStatIconBg}>
@@ -557,7 +564,7 @@ export default function Home({ navigation: navigationProp }) {
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
           <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[THEME.primary, THEME.primaryLight]} style={styles.sectionIconGradient}>
+            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
               <Ionicons name="stats-chart" size={18} color="#fff" />
             </LinearGradient>
           </View>
@@ -587,14 +594,14 @@ export default function Home({ navigation: navigationProp }) {
 
         <View style={styles.performanceCard}>
           <LinearGradient
-            colors={[THEME.primary, THEME.primaryLight]}
+            colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]}
             style={styles.performanceGradient}
           >
             {/* Win Rate Circle */}
             <View style={styles.winRateSection}>
               <View style={styles.winRateCircle}>
                 <LinearGradient
-                  colors={currentWinPercentage >= 50 ? [THEME.success, '#047857'] : [THEME.warning, '#d97706']}
+                  colors={currentWinPercentage >= 50 ? [theme.colors.success, '#047857'] : [theme.colors.warning, '#d97706']}
                   style={styles.winRateGradient}
                 >
                   <Text style={styles.winRateNumber}>
@@ -610,7 +617,7 @@ export default function Home({ navigation: navigationProp }) {
               <View style={styles.matchGridRow}>
                 <View style={[styles.matchGridItem, styles.matchGridWon]}>
                   <View style={styles.matchGridIconBg}>
-                    <Ionicons name="trophy" size={16} color={THEME.success} />
+                    <Ionicons name="trophy" size={16} color={theme.colors.success} />
                   </View>
                   <Text style={styles.matchGridNumber}>
                     {statsTab === 'total' ? stats.partidosGanados : (selectedTournamentStats?.ganados || 0)}
@@ -620,7 +627,7 @@ export default function Home({ navigation: navigationProp }) {
 
                 <View style={[styles.matchGridItem, styles.matchGridDrawn]}>
                   <View style={styles.matchGridIconBg}>
-                    <Ionicons name="remove-circle" size={16} color={THEME.warning} />
+                    <Ionicons name="remove-circle" size={16} color={theme.colors.warning} />
                   </View>
                   <Text style={styles.matchGridNumber}>
                     {statsTab === 'total' ? stats.partidosEmpatados : (selectedTournamentStats?.empatados || 0)}
@@ -630,7 +637,7 @@ export default function Home({ navigation: navigationProp }) {
 
                 <View style={[styles.matchGridItem, styles.matchGridLost]}>
                   <View style={styles.matchGridIconBg}>
-                    <Ionicons name="close-circle" size={16} color={THEME.error} />
+                    <Ionicons name="close-circle" size={16} color={theme.colors.error} />
                   </View>
                   <Text style={styles.matchGridNumber}>
                     {statsTab === 'total' ? stats.partidosPerdidos : (selectedTournamentStats?.perdidos || 0)}
@@ -647,7 +654,7 @@ export default function Home({ navigation: navigationProp }) {
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
           <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[THEME.primary, THEME.primaryLight]} style={styles.sectionIconGradient}>
+            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
               <Ionicons name="football" size={18} color="#fff" />
             </LinearGradient>
           </View>
@@ -663,7 +670,7 @@ export default function Home({ navigation: navigationProp }) {
           >
             <View style={styles.matchCardModern}>
               <LinearGradient
-                colors={THEME.gradient}
+                colors={BRAND_GRADIENT}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.matchCardGradient}
@@ -739,7 +746,7 @@ export default function Home({ navigation: navigationProp }) {
         ) : (
           <TouchableOpacity style={styles.emptyMatchCard} activeOpacity={0.8} onPress={() => navigation.navigate('FichasPartidoDrawer')} accessibilityRole="button" accessibilityLabel="Ir a fichas de partido">
             <View style={styles.emptyMatchIcon}>
-              <Ionicons name="football-outline" size={40} color={THEME.border} />
+              <Ionicons name="football-outline" size={40} color={theme.colors.border} />
             </View>
             <Text style={styles.emptyMatchTitle}>{t('home.noMatchesScheduled')}</Text>
             <Text style={styles.emptyMatchSubtitle}>{t('home.createMatchSheet')}</Text>
@@ -754,9 +761,9 @@ export default function Home({ navigation: navigationProp }) {
             <View style={styles.sectionIconContainer}>
               <LinearGradient 
                 colors={
-                  ultimoPartido.resultado === 'Victoria' ? [THEME.success, '#047857'] :
-                  ultimoPartido.resultado === 'Empate' ? [THEME.warning, '#d97706'] :
-                  [THEME.error, '#dc2626']
+                  ultimoPartido.resultado === 'Victoria' ? [theme.colors.success, '#047857'] :
+                  ultimoPartido.resultado === 'Empate' ? [theme.colors.warning, '#d97706'] :
+                  [theme.colors.error, '#dc2626']
                 } 
                 style={styles.sectionIconGradient}
               >
@@ -783,8 +790,8 @@ export default function Home({ navigation: navigationProp }) {
               <View style={[
                 styles.lastMatchResultIndicator,
                 { backgroundColor: 
-                  ultimoPartido.resultado === 'Victoria' ? THEME.success :
-                  ultimoPartido.resultado === 'Empate' ? THEME.warning : THEME.error
+                  ultimoPartido.resultado === 'Victoria' ? theme.colors.success :
+                  ultimoPartido.resultado === 'Empate' ? theme.colors.warning : theme.colors.error
                 }
               ]} />
               
@@ -814,8 +821,8 @@ export default function Home({ navigation: navigationProp }) {
                     <Text style={[
                       styles.lastMatchScore,
                       { color: 
-                        ultimoPartido.resultado === 'Victoria' ? THEME.success :
-                        ultimoPartido.resultado === 'Empate' ? THEME.warning : THEME.error
+                        ultimoPartido.resultado === 'Victoria' ? theme.colors.success :
+                        ultimoPartido.resultado === 'Empate' ? theme.colors.warning : theme.colors.error
                       }
                     ]}>
                       {ultimoPartido.ubicacion === 'Casa' || ultimoPartido.ubicacion === 'local'
@@ -846,7 +853,7 @@ export default function Home({ navigation: navigationProp }) {
                     ) : null}
                     {ultimoPartido.ubicacion && (
                       <View style={styles.lastMatchTag}>
-                        <Ionicons name={['Casa','local'].includes(ultimoPartido.ubicacion) ? 'home-outline' : ['Fuera','visitante'].includes(ultimoPartido.ubicacion) ? 'airplane-outline' : 'location-outline'} size={10} color={THEME.textSecondary} />
+                        <Ionicons name={['Casa','local'].includes(ultimoPartido.ubicacion) ? 'home-outline' : ['Fuera','visitante'].includes(ultimoPartido.ubicacion) ? 'airplane-outline' : 'location-outline'} size={10} color={theme.colors.textSecondary} />
                         <Text style={styles.lastMatchTagText}>
                           {['Casa','local'].includes(ultimoPartido.ubicacion) ? t('matchSheet.modals.home') : ['Fuera','visitante'].includes(ultimoPartido.ubicacion) ? t('matchSheet.modals.away') : t('matchSheet.modals.neutral')}
                         </Text>
@@ -854,8 +861,8 @@ export default function Home({ navigation: navigationProp }) {
                     )}
                     {ultimoPartido.torneoId && typeof ultimoPartido.torneoId === 'object' && ultimoPartido.torneoId.nombre && (
                       <View style={styles.lastMatchTag}>
-                        <Ionicons name="trophy" size={10} color={ultimoPartido.torneoId.color || THEME.textSecondary} />
-                        <Text style={[styles.lastMatchTagText, { color: ultimoPartido.torneoId.color || THEME.textSecondary }]} numberOfLines={1}>{ultimoPartido.torneoId.nombre}</Text>
+                        <Ionicons name="trophy" size={10} color={ultimoPartido.torneoId.color || theme.colors.textSecondary} />
+                        <Text style={[styles.lastMatchTagText, { color: ultimoPartido.torneoId.color || theme.colors.textSecondary }]} numberOfLines={1}>{ultimoPartido.torneoId.nombre}</Text>
                       </View>
                     )}
                   </View>
@@ -865,8 +872,8 @@ export default function Home({ navigation: navigationProp }) {
                   <View style={[
                     styles.lastMatchResultBadge,
                     { backgroundColor: 
-                      ultimoPartido.resultado === 'Victoria' ? '#ecfdf5' :
-                      ultimoPartido.resultado === 'Empate' ? '#fffbeb' : '#fef2f2'
+                      ultimoPartido.resultado === 'Victoria' ? theme.colors.successSoft :
+                      ultimoPartido.resultado === 'Empate' ? theme.colors.warningSoft : theme.colors.errorSoft
                     }
                   ]}>
                     <Ionicons 
@@ -876,12 +883,12 @@ export default function Home({ navigation: navigationProp }) {
                       } 
                       size={18} 
                       color={
-                        ultimoPartido.resultado === 'Victoria' ? THEME.success :
-                        ultimoPartido.resultado === 'Empate' ? THEME.warning : THEME.error
+                        ultimoPartido.resultado === 'Victoria' ? theme.colors.success :
+                        ultimoPartido.resultado === 'Empate' ? theme.colors.warning : theme.colors.error
                       }
                     />
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                  <Ionicons name="chevron-forward" size={20} color={theme.colors.textDisabled} />
                 </View>
               </View>
             </View>
@@ -894,7 +901,7 @@ export default function Home({ navigation: navigationProp }) {
         <View style={styles.sectionHeaderModern}>
           <View style={styles.sectionIconContainer}>
             <LinearGradient 
-              colors={stats.lesionesActivas > 0 ? [THEME.error, '#dc2626'] : [THEME.success, '#047857']} 
+              colors={stats.lesionesActivas > 0 ? [theme.colors.error, '#dc2626'] : [theme.colors.success, '#047857']} 
               style={styles.sectionIconGradient}
             >
               <Ionicons name={stats.lesionesActivas > 0 ? 'bandage' : 'heart'} size={18} color="#fff" />
@@ -917,7 +924,7 @@ export default function Home({ navigation: navigationProp }) {
               >
                 <View style={styles.injuryCardContent}>
                   <View style={styles.injuryIconContainer}>
-                    <LinearGradient colors={[THEME.error, '#dc2626']} style={styles.injuryIconGradient}>
+                    <LinearGradient colors={[theme.colors.error, '#dc2626']} style={styles.injuryIconGradient}>
                       <Ionicons name="warning" size={24} color="#fff" />
                     </LinearGradient>
                   </View>
@@ -932,7 +939,7 @@ export default function Home({ navigation: navigationProp }) {
                   </View>
 
                   <View style={styles.injuryArrow}>
-                    <Ionicons name="chevron-forward" size={24} color={THEME.error} />
+                    <Ionicons name="chevron-forward" size={24} color={theme.colors.error} />
                   </View>
                 </View>
 
@@ -953,7 +960,7 @@ export default function Home({ navigation: navigationProp }) {
             >
               <View style={styles.healthyCardContent}>
                 <View style={styles.healthyIconContainer}>
-                  <LinearGradient colors={[THEME.success, '#047857']} style={styles.healthyIconGradient}>
+                  <LinearGradient colors={[theme.colors.success, '#047857']} style={styles.healthyIconGradient}>
                     <Ionicons name="checkmark-circle" size={28} color="#fff" />
                   </LinearGradient>
                 </View>
@@ -963,7 +970,7 @@ export default function Home({ navigation: navigationProp }) {
                 </View>
               </View>
               <View style={styles.healthyBadge}>
-                <Ionicons name="shield-checkmark" size={14} color={THEME.success} />
+                <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
                 <Text style={styles.healthyBadgeText}>100% disponible</Text>
               </View>
             </LinearGradient>
@@ -975,7 +982,7 @@ export default function Home({ navigation: navigationProp }) {
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
           <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[THEME.primary, THEME.primaryLight]} style={styles.sectionIconGradient}>
+            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
               <Ionicons name="calendar" size={18} color="#fff" />
             </LinearGradient>
           </View>
@@ -991,7 +998,7 @@ export default function Home({ navigation: navigationProp }) {
           >
             <View style={styles.sessionCardModern}>
               <LinearGradient
-                colors={THEME.gradient}
+                colors={BRAND_GRADIENT}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.sessionCardGradient}
@@ -1058,7 +1065,7 @@ export default function Home({ navigation: navigationProp }) {
         ) : (
           <TouchableOpacity style={styles.emptySessionCard} activeOpacity={0.8} onPress={() => navigation.navigate('EntrenamientoDrawer')} accessibilityRole="button" accessibilityLabel="Ir a entrenamientos">
             <View style={styles.emptySessionIcon}>
-              <Ionicons name="calendar-outline" size={40} color={THEME.border} />
+              <Ionicons name="calendar-outline" size={40} color={theme.colors.border} />
             </View>
             <Text style={styles.emptySessionTitle}>{t('session.noSessions')}</Text>
             <Text style={styles.emptySessionSubtitle}>Programa tu próximo entrenamiento</Text>
@@ -1071,7 +1078,7 @@ export default function Home({ navigation: navigationProp }) {
         <View style={styles.section}>
           <View style={styles.sectionHeaderModern}>
             <View style={styles.sectionIconContainer}>
-              <LinearGradient colors={[THEME.textSecondary, '#475569']} style={styles.sectionIconGradient}>
+              <LinearGradient colors={[theme.colors.textSecondary, '#475569']} style={styles.sectionIconGradient}>
                 <Ionicons name="time" size={18} color="#fff" />
               </LinearGradient>
             </View>
@@ -1108,13 +1115,13 @@ export default function Home({ navigation: navigationProp }) {
                   <View style={styles.lastSessionStats}>
                     {ultimaSesion.ejercicios && ultimaSesion.ejercicios.length > 0 && (
                       <View style={styles.lastSessionStat}>
-                        <Ionicons name="barbell-outline" size={12} color={THEME.textSecondary} />
+                        <Ionicons name="barbell-outline" size={12} color={theme.colors.textSecondary} />
                         <Text style={styles.lastSessionStatText}>{ultimaSesion.ejercicios.length}</Text>
                       </View>
                     )}
                     {ultimaSesion.jugadores && ultimaSesion.jugadores.length > 0 && (
                       <View style={styles.lastSessionStat}>
-                        <Ionicons name="people-outline" size={12} color={THEME.textSecondary} />
+                        <Ionicons name="people-outline" size={12} color={theme.colors.textSecondary} />
                         <Text style={styles.lastSessionStatText}>{ultimaSesion.jugadores.length}</Text>
                       </View>
                     )}
@@ -1123,9 +1130,9 @@ export default function Home({ navigation: navigationProp }) {
 
                 <View style={styles.lastSessionRight}>
                   <View style={styles.lastSessionCompletedBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={THEME.success} />
+                    <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                  <Ionicons name="chevron-forward" size={20} color={theme.colors.textDisabled} />
                 </View>
               </View>
             </View>
@@ -1217,10 +1224,10 @@ export default function Home({ navigation: navigationProp }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -1421,17 +1428,17 @@ const styles = StyleSheet.create({
   sectionTitleModern: {
     fontSize: isMobileDevice() ? 18 : 20,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   sectionSubtitle: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 1,
   },
   // ========== STATS TABS ==========
   statsTabs: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 10,
     padding: 3,
     marginBottom: 12,
@@ -1444,7 +1451,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   statsTabActive: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1454,10 +1461,10 @@ const styles = StyleSheet.create({
   statsTabText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   statsTabTextActive: {
-    color: '#1a237e',
+    color: theme.colors.primary,
     fontWeight: '700',
   },
   // ========== PERFORMANCE CARD ==========
@@ -1546,7 +1553,7 @@ const styles = StyleSheet.create({
   matchCardModern: {
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -1631,7 +1638,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyMatchCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
@@ -1641,7 +1648,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
   },
   emptyMatchIcon: {
@@ -1650,18 +1657,18 @@ const styles = StyleSheet.create({
   emptyMatchTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   emptyMatchSubtitle: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     marginTop: 4,
     textAlign: 'center',
   },
   // Last Match Card
   lastMatchCardModern: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -1670,7 +1677,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     flexDirection: 'row',
   },
   lastMatchResultIndicator: {
@@ -1685,7 +1692,7 @@ const styles = StyleSheet.create({
   },
   lastMatchLeft: {},
   lastMatchDateBadge: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1695,19 +1702,19 @@ const styles = StyleSheet.create({
   lastMatchDateWeekday: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     marginBottom: 1,
     letterSpacing: 0.5,
   },
   lastMatchDateDay: {
     fontSize: 20,
     fontWeight: '800',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   lastMatchDateMonth: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     marginTop: 1,
   },
   lastMatchMiddle: {
@@ -1716,7 +1723,7 @@ const styles = StyleSheet.create({
   lastMatchRivalText: {
     fontSize: 15,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   lastMatchScoreContainer: {
     marginTop: 4,
@@ -1733,7 +1740,7 @@ const styles = StyleSheet.create({
   lastMatchTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -1741,7 +1748,7 @@ const styles = StyleSheet.create({
   },
   lastMatchTagText: {
     fontSize: 10,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   lastMatchRight: {
@@ -1760,7 +1767,7 @@ const styles = StyleSheet.create({
   injuryCardModern: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: THEME.error,
+    shadowColor: theme.colors.error,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -1790,11 +1797,11 @@ const styles = StyleSheet.create({
   injuryTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.error,
+    color: theme.colors.error,
   },
   injurySubtext: {
     fontSize: 13,
-    color: '#991b1b',
+    color: theme.colors.errorSoftText,
     marginTop: 2,
   },
   injuryArrow: {
@@ -1809,12 +1816,12 @@ const styles = StyleSheet.create({
   },
   injuryProgressFill: {
     height: '100%',
-    backgroundColor: THEME.error,
+    backgroundColor: theme.colors.error,
     borderRadius: 3,
   },
   injuryProgressText: {
     fontSize: 11,
-    color: '#991b1b',
+    color: theme.colors.errorSoftText,
     marginTop: 6,
     textAlign: 'center',
   },
@@ -1822,7 +1829,7 @@ const styles = StyleSheet.create({
   healthyCardModern: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: THEME.success,
+    shadowColor: theme.colors.success,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -1852,11 +1859,11 @@ const styles = StyleSheet.create({
   healthyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.success,
+    color: theme.colors.success,
   },
   healthySubtext: {
     fontSize: 13,
-    color: '#047857',
+    color: theme.colors.successSoftText,
     marginTop: 2,
   },
   healthyBadge: {
@@ -1872,14 +1879,14 @@ const styles = StyleSheet.create({
   },
   healthyBadgeText: {
     fontSize: 11,
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '600',
   },
   // ========== SESSION CARDS ==========
   sessionCardModern: {
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -1992,7 +1999,7 @@ const styles = StyleSheet.create({
   },
   // Empty Session
   emptySessionCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
@@ -2002,7 +2009,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
   },
   emptySessionIcon: {
@@ -2011,18 +2018,18 @@ const styles = StyleSheet.create({
   emptySessionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   emptySessionSubtitle: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     marginTop: 4,
     textAlign: 'center',
   },
   // ========== LAST SESSION ==========
   lastSessionCardModern: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -2031,7 +2038,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   lastSessionContent: {
     flexDirection: 'row',
@@ -2041,7 +2048,7 @@ const styles = StyleSheet.create({
   },
   lastSessionLeft: {},
   lastSessionDateBadge: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -2051,12 +2058,12 @@ const styles = StyleSheet.create({
   lastSessionDateDay: {
     fontSize: 20,
     fontWeight: '800',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   lastSessionDateMonth: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     marginTop: 1,
   },
   lastSessionMiddle: {
@@ -2065,12 +2072,12 @@ const styles = StyleSheet.create({
   lastSessionDateText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     textTransform: 'capitalize',
   },
   lastSessionTimeText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   lastSessionStats: {
@@ -2085,7 +2092,7 @@ const styles = StyleSheet.create({
   },
   lastSessionStatText: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   lastSessionRight: {

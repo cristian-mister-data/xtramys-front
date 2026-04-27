@@ -3,7 +3,7 @@ import InjuriesManagement from '@/vendor/injuries/injuries';
 
 export default function Injuries() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <InjuriesManagement />
     </RNWebPage>
   );

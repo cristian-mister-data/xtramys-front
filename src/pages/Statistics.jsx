@@ -3,7 +3,7 @@ import StatisticsView from '@/vendor/statistics/statistics';
 
 export default function Statistics() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <StatisticsView />
     </RNWebPage>
   );

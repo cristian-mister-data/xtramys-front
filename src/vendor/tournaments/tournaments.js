@@ -22,6 +22,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTheme } from 'styled-components';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {
@@ -40,22 +41,6 @@ import {
   updateMatchSheet,
   fetchMatchSheetsByTeam,
 } from '@/store/slices/matchSheet/matchSheetThunks';
-
-const THEME = {
-  primary: '#1a237e',
-  primaryLight: '#3949ab',
-  secondary: '#00bcd4',
-  accent: '#ff6b35',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  border: '#e2e8f0',
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  gradient: ['#1a237e', '#3949ab', '#5c6bc0'],
-};
 
 const TOURNAMENT_TYPES = [
   { value: 'liga', label: 'tournaments.league', icon: 'format-list-numbered', color: '#3B82F6' },
@@ -95,6 +80,8 @@ const selectInjuries = state => state.injury?.injuries || EMPTY_ARRAY;
 
 /* ================== Tournament Card ================== */
 function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOBILE }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const tipoInfo = TOURNAMENT_TYPES.find(tt => tt.value === tournament.tipo) || TOURNAMENT_TYPES[1];
 
@@ -145,7 +132,7 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
               style={styles.optionsBtn}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <MaterialIcons name="more-vert" size={20} color={THEME.textSecondary} />
+              <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -153,7 +140,7 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
         <View style={styles.tournamentCardMeta}>
           {(tournament.fechaInicio || tournament.fechaFin) && (
             <View style={styles.metaItem}>
-              <MaterialIcons name="date-range" size={14} color={THEME.textSecondary} />
+              <MaterialIcons name="date-range" size={14} color={theme.colors.textSecondary} />
               <Text style={styles.metaText}>
                 {tournament.fechaInicio ? formatDate(tournament.fechaInicio) : ''}
                 {tournament.fechaInicio && tournament.fechaFin ? ' → ' : ''}
@@ -162,7 +149,7 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
             </View>
           )}
           <View style={styles.metaItem}>
-            <MaterialIcons name="sports-soccer" size={14} color={THEME.textSecondary} />
+            <MaterialIcons name="sports-soccer" size={14} color={theme.colors.textSecondary} />
             <Text style={styles.metaText}>
               {matchCount} {matchCount === 1 ? t('tournaments.match') : t('tournaments.matches')}
             </Text>
@@ -181,6 +168,8 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
 
 /* ================== Create/Edit Tournament Modal ================== */
 function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS_MOBILE }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const isEditing = !!tournament;
 
@@ -308,13 +297,13 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <MaterialIcons name="emoji-events" size={24} color={THEME.primary} />
+              <MaterialIcons name="emoji-events" size={24} color={theme.colors.primary} />
               <Text style={styles.modalTitle}>
                 {isEditing ? t('tournaments.editTitle') : t('tournaments.createTitle')}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.modalCloseBtn}>
-              <MaterialIcons name="close" size={24} color={THEME.textSecondary} />
+              <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -327,7 +316,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                 value={nombre}
                 onChangeText={setNombre}
                 placeholder={t('tournaments.namePlaceholder')}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={theme.colors.inputPlaceholder}
               />
             </View>
 
@@ -344,7 +333,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                     ]}
                     onPress={() => setTipo(tt.value)}
                   >
-                    <MaterialIcons name={tt.icon} size={20} color={tipo === tt.value ? tt.color : THEME.textSecondary} />
+                    <MaterialIcons name={tt.icon} size={20} color={tipo === tt.value ? tt.color : theme.colors.textSecondary} />
                     <Text style={[
                       styles.typeOptionText,
                       tipo === tt.value && { color: tt.color, fontWeight: '600' },
@@ -365,8 +354,8 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                     style={[styles.statusOption, estado === 'activo' && styles.statusOptionActive]}
                     onPress={() => setEstado('activo')}
                   >
-                    <MaterialIcons name="play-circle-filled" size={18} color={estado === 'activo' ? THEME.success : THEME.textSecondary} />
-                    <Text style={[styles.statusOptionText, estado === 'activo' && { color: THEME.success, fontWeight: '600' }]}>
+                    <MaterialIcons name="play-circle-filled" size={18} color={estado === 'activo' ? theme.colors.success : theme.colors.textSecondary} />
+                    <Text style={[styles.statusOptionText, estado === 'activo' && { color: theme.colors.success, fontWeight: '600' }]}>
                       {t('tournaments.active')}
                     </Text>
                   </TouchableOpacity>
@@ -374,8 +363,8 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                     style={[styles.statusOption, estado === 'finalizado' && styles.statusOptionFinished]}
                     onPress={() => setEstado('finalizado')}
                   >
-                    <MaterialIcons name="check-circle" size={18} color={estado === 'finalizado' ? THEME.textSecondary : THEME.textSecondary} />
-                    <Text style={[styles.statusOptionText, estado === 'finalizado' && { color: THEME.text, fontWeight: '600' }]}>
+                    <MaterialIcons name="check-circle" size={18} color={estado === 'finalizado' ? theme.colors.textSecondary : theme.colors.textSecondary} />
+                    <Text style={[styles.statusOptionText, estado === 'finalizado' && { color: theme.colors.text, fontWeight: '600' }]}>
                       {t('tournaments.finished')}
                     </Text>
                   </TouchableOpacity>
@@ -391,7 +380,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                   style={styles.dateButton}
                   onPress={() => setShowDatePicker('inicio')}
                 >
-                  <MaterialIcons name="event" size={18} color={THEME.primary} />
+                  <MaterialIcons name="event" size={18} color={theme.colors.primary} />
                   <View>
                     <Text style={styles.dateLabelSmall}>{t('tournaments.startDate')}</Text>
                     <Text style={styles.dateValue}>{formatDate(fechaInicio)}</Text>
@@ -401,7 +390,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                   style={styles.dateButton}
                   onPress={() => setShowDatePicker('fin')}
                 >
-                  <MaterialIcons name="event" size={18} color={THEME.error} />
+                  <MaterialIcons name="event" size={18} color={theme.colors.error} />
                   <View>
                     <Text style={styles.dateLabelSmall}>{t('tournaments.endDate')}</Text>
                     <Text style={styles.dateValue}>{formatDate(fechaFin)}</Text>
@@ -438,7 +427,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                 value={descripcion}
                 onChangeText={setDescripcion}
                 placeholder={t('tournaments.descriptionPlaceholder')}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={theme.colors.inputPlaceholder}
                 multiline
                 numberOfLines={3}
               />
@@ -447,17 +436,17 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
             {/* Torneo por defecto */}
             <View style={[styles.formGroup, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                <MaterialIcons name="star" size={20} color={porDefecto ? THEME.warning : THEME.textSecondary} />
+                <MaterialIcons name="star" size={20} color={porDefecto ? theme.colors.warning : theme.colors.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.formLabel}>{t('tournaments.setAsDefault') || 'Torneo por defecto'}</Text>
-                  <Text style={{ color: THEME.textSecondary, fontSize: 12 }}>{t('tournaments.defaultHint') || 'Se preseleccionará al crear fichas de partido'}</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{t('tournaments.defaultHint') || 'Se preseleccionará al crear fichas de partido'}</Text>
                 </View>
               </View>
               <Switch
                 value={porDefecto}
                 onValueChange={setPorDefecto}
-                trackColor={{ false: THEME.border, true: THEME.warning + '80' }}
-                thumbColor={porDefecto ? THEME.warning : '#f4f3f4'}
+                trackColor={{ false: theme.colors.border, true: theme.colors.warning + '80' }}
+                thumbColor={porDefecto ? theme.colors.warning : '#f4f3f4'}
               />
             </View>
 
@@ -468,9 +457,9 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                   style={styles.advancedToggle}
                   onPress={() => setShowAdvanced(!showAdvanced)}
                 >
-                  <MaterialIcons name="tune" size={20} color={THEME.primary} />
+                  <MaterialIcons name="tune" size={20} color={theme.colors.primary} />
                   <Text style={styles.advancedToggleText}>{t('tournaments.advancedConfig')}</Text>
-                  <MaterialIcons name={showAdvanced ? 'expand-less' : 'expand-more'} size={24} color={THEME.textSecondary} />
+                  <MaterialIcons name={showAdvanced ? 'expand-less' : 'expand-more'} size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
 
                 {showAdvanced && (
@@ -502,11 +491,11 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                           <Text style={styles.configLabel}>{t('tournaments.numberOfGroups')}</Text>
                           <View style={styles.numberInputRow}>
                             <TouchableOpacity style={styles.numberBtn} onPress={() => setNumGrupos(String(Math.max(1, parseInt(numGrupos || 1) - 1)))}>
-                              <MaterialIcons name="remove" size={18} color={THEME.primary} />
+                              <MaterialIcons name="remove" size={18} color={theme.colors.primary} />
                             </TouchableOpacity>
                             <Text style={styles.numberValue}>{numGrupos}</Text>
                             <TouchableOpacity style={styles.numberBtn} onPress={() => setNumGrupos(String(Math.min(32, parseInt(numGrupos || 0) + 1)))}>
-                              <MaterialIcons name="add" size={18} color={THEME.primary} />
+                              <MaterialIcons name="add" size={18} color={theme.colors.primary} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -515,11 +504,11 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                           <Text style={styles.configLabel}>{t('tournaments.teamsPerGroup')}</Text>
                           <View style={styles.numberInputRow}>
                             <TouchableOpacity style={styles.numberBtn} onPress={() => setEquiposPorGrupo(String(Math.max(2, parseInt(equiposPorGrupo || 2) - 1)))}>
-                              <MaterialIcons name="remove" size={18} color={THEME.primary} />
+                              <MaterialIcons name="remove" size={18} color={theme.colors.primary} />
                             </TouchableOpacity>
                             <Text style={styles.numberValue}>{equiposPorGrupo}</Text>
                             <TouchableOpacity style={styles.numberBtn} onPress={() => setEquiposPorGrupo(String(Math.min(20, parseInt(equiposPorGrupo || 0) + 1)))}>
-                              <MaterialIcons name="add" size={18} color={THEME.primary} />
+                              <MaterialIcons name="add" size={18} color={theme.colors.primary} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -603,7 +592,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                     {tipo !== 'liga' && formato !== 'liga' && (
                       <View style={styles.configRow}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <MaterialIcons name="emoji-events" size={18} color={THEME.primary} />
+                          <MaterialIcons name="emoji-events" size={18} color={theme.colors.primary} />
                           <Text style={styles.configLabel}>{t('tournaments.finalFormat')}</Text>
                         </View>
                         <View style={styles.configChips}>
@@ -628,18 +617,18 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                     )}
 
                     {/* Ciclo de sanciones */}
-                    <View style={[styles.configRow, { borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12, marginTop: 4 }]}>
+                    <View style={[styles.configRow, { borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 12, marginTop: 4 }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <MaterialIcons name="gavel" size={18} color={THEME.warning} />
+                        <MaterialIcons name="gavel" size={18} color={theme.colors.warning} />
                         <Text style={styles.configLabel}>{t('tournaments.sanctionCycle')}</Text>
                       </View>
                       <View style={styles.numberInputRow}>
                         <TouchableOpacity style={styles.numberBtn} onPress={() => setCicloAmarillas(String(Math.max(1, parseInt(cicloAmarillas || 1) - 1)))}>
-                          <MaterialIcons name="remove" size={18} color={THEME.warning} />
+                          <MaterialIcons name="remove" size={18} color={theme.colors.warning} />
                         </TouchableOpacity>
-                        <Text style={[styles.numberValue, { color: THEME.warning }]}>{cicloAmarillas}</Text>
+                        <Text style={[styles.numberValue, { color: theme.colors.warning }]}>{cicloAmarillas}</Text>
                         <TouchableOpacity style={styles.numberBtn} onPress={() => setCicloAmarillas(String(Math.min(20, parseInt(cicloAmarillas || 0) + 1)))}>
-                          <MaterialIcons name="add" size={18} color={THEME.warning} />
+                          <MaterialIcons name="add" size={18} color={theme.colors.warning} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -694,6 +683,8 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
 
 /* ================== Tournament Detail Modal ================== */
 function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete, IS_MOBILE, onViewMatch, onCreateMatch, visible, sanctions, loadingSanctions }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const currentLang = i18n.language?.split('-')[0] || 'es';
@@ -771,7 +762,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
         </Text>
         {sortedMatches.length === 0 ? (
           <View style={styles.emptyMatchesCard}>
-            <MaterialIcons name="sports-soccer" size={40} color={THEME.border} />
+            <MaterialIcons name="sports-soccer" size={40} color={theme.colors.border} />
             <Text style={styles.emptyText}>{t('tournaments.noMatches')}</Text>
             <Text style={styles.emptySubtext}>{t('tournaments.noMatchesHint')}</Text>
           </View>
@@ -797,9 +788,9 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                   <Text style={styles.matchCardRival} numberOfLines={1}>{match.rival || '-'}</Text>
                   <View style={styles.matchCardTags}>
                     {isFuture ? (
-                      <View style={[styles.matchCardTag, { backgroundColor: '#eef2ff' }]}>
-                        <Ionicons name="time-outline" size={11} color="#6366f1" />
-                        <Text style={[styles.matchCardTagText, { color: '#6366f1' }]}>{t('matchSheet.matchToBePlayed')}</Text>
+                      <View style={[styles.matchCardTag, { backgroundColor: theme.colors.infoSoft }]}>
+                        <Ionicons name="time-outline" size={11} color={theme.colors.info} />
+                        <Text style={[styles.matchCardTagText, { color: theme.colors.infoSoftText }]}>{t('matchSheet.matchToBePlayed')}</Text>
                       </View>
                     ) : match.golesFavor != null && match.golesContra != null ? (
                       <View style={[styles.matchCardTag, { backgroundColor: colors[0] + '18' }]}>
@@ -811,14 +802,14 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                     ) : null}
                     {match.fechaHora && (
                       <View style={styles.matchCardTag}>
-                        <Ionicons name="calendar-outline" size={11} color={THEME.textSecondary} />
+                        <Ionicons name="calendar-outline" size={11} color={theme.colors.textSecondary} />
                         <Text style={styles.matchCardTagText}>{formatMatchDate(match.fechaHora)}</Text>
                       </View>
                     )}
                     {(match.jornada || match.fase === 'eliminatoria' || match.fase === 'grupos') && (
-                      <View style={[styles.matchCardTag, { backgroundColor: '#fef3c7' }]}>
-                        <Ionicons name="trophy-outline" size={11} color="#d97706" />
-                        <Text style={[styles.matchCardTagText, { color: '#d97706' }]}>
+                      <View style={[styles.matchCardTag, { backgroundColor: theme.colors.warningSoft }]}>
+                        <Ionicons name="trophy-outline" size={11} color={theme.colors.warningSoftText} />
+                        <Text style={[styles.matchCardTagText, { color: theme.colors.warningSoftText }]}>
                           {match.fase === 'eliminatoria' && match.ronda
                             ? `${t(`tournaments.round${({final:'Final',semifinal:'Semifinal',cuartos:'Quarters',octavos:'Round16',dieciseisavos:'Round32',treintaydosavos:'Round64'})[match.ronda] || 'Final'}`)}${match.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : match.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : match.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                             : match.fase === 'grupos' && match.grupo
@@ -828,9 +819,9 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                       </View>
                     )}
                     {match.ubicacion && (
-                      <View style={[styles.matchCardTag, { backgroundColor: '#f3e8ff' }]}>
-                        <Ionicons name={['Casa','local'].includes(match.ubicacion) ? 'home' : ['Fuera','visitante'].includes(match.ubicacion) ? 'airplane' : 'location'} size={11} color="#7c3aed" />
-                        <Text style={[styles.matchCardTagText, { color: '#7c3aed' }]}>
+                      <View style={[styles.matchCardTag, { backgroundColor: theme.colors.purpleSoft }]}>
+                        <Ionicons name={['Casa','local'].includes(match.ubicacion) ? 'home' : ['Fuera','visitante'].includes(match.ubicacion) ? 'airplane' : 'location'} size={11} color={theme.colors.purpleSoftText} />
+                        <Text style={[styles.matchCardTagText, { color: theme.colors.purpleSoftText }]}>
                           {['Casa','local'].includes(match.ubicacion) ? t('matchSheet.modals.home') : ['Fuera','visitante'].includes(match.ubicacion) ? t('matchSheet.modals.away') : t('matchSheet.modals.neutral')}
                         </Text>
                       </View>
@@ -838,7 +829,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                   </View>
                 </View>
                 <View style={styles.matchCardArrow}>
-                  <Ionicons name="chevron-forward" size={18} color={THEME.textSecondary} />
+                  <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
                 </View>
               </Pressable>
             );
@@ -847,7 +838,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
       </View>
       {/* Create match button */}
       <TouchableOpacity style={styles.createMatchBtn} onPress={() => onCreateMatch()}>
-        <MaterialIcons name="add-circle" size={20} color={THEME.primary} />
+        <MaterialIcons name="add-circle" size={20} color={theme.colors.primary} />
         <Text style={styles.createMatchBtnText}>{t('tournaments.createMatch')}</Text>
       </TouchableOpacity>
     </>
@@ -859,7 +850,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
     if (loadingSanctions) {
       return (
         <View style={styles.sanctionLoadingContainer}>
-          <ActivityIndicator size="large" color={THEME.primary} />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       );
     }
@@ -867,7 +858,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
     if (!sortedSanctions || sortedSanctions.length === 0) {
       return (
         <View style={styles.emptyMatchesCard}>
-          <MaterialIcons name="gavel" size={40} color={THEME.border} />
+          <MaterialIcons name="gavel" size={40} color={theme.colors.border} />
           <Text style={styles.emptyText}>{t('tournaments.noSanctionData')}</Text>
           <Text style={styles.emptySubtext}>{t('tournaments.noSanctionDataHint')}</Text>
         </View>
@@ -891,7 +882,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
       if (tipo === 'rojaDirecta') return { name: 'square', color: '#ef4444' };
       if (tipo === 'dobleAmarilla') return { name: 'square', color: '#f97316' };
       if (tipo === 'cicloAmarillas') return { name: 'loop', color: '#8b5cf6' };
-      return { name: 'gavel', color: THEME.textSecondary };
+      return { name: 'gavel', color: theme.colors.textSecondary };
     };
 
     return (
@@ -924,7 +915,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                       <Text style={styles.sanctionWarningBadgeText}>{t('tournaments.warningBadge')}</Text>
                     </View>
                   )}
-                  <MaterialIcons name={isExpanded ? 'expand-less' : 'expand-more'} size={20} color={THEME.textSecondary} />
+                  <MaterialIcons name={isExpanded ? 'expand-less' : 'expand-more'} size={20} color={theme.colors.textSecondary} />
                 </View>
               </TouchableOpacity>
 
@@ -1011,7 +1002,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
               {/* Ban info summary if sanctioned but no sanciones array */}
               {player.sancionado && player.partidosSancion > 0 && sancionesActivas.length === 0 && (
                 <View style={styles.sanctionBanInfo}>
-                  <MaterialIcons name="event-busy" size={14} color={THEME.error} />
+                  <MaterialIcons name="event-busy" size={14} color={theme.colors.error} />
                   <Text style={styles.sanctionBanText}>
                     {t('tournaments.pendingBan')}: {player.partidosSancion} {player.partidosSancion === 1 ? t('tournaments.match') : t('tournaments.matchesPlural')}
                   </Text>
@@ -1022,7 +1013,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
               {isExpanded && sancionesCumplidas.length > 0 && (
                 <View style={styles.sanctionHistoryBlock}>
                   <View style={styles.sanctionHistoryHeader}>
-                    <MaterialIcons name="history" size={14} color={THEME.textSecondary} />
+                    <MaterialIcons name="history" size={14} color={theme.colors.textSecondary} />
                     <Text style={styles.sanctionHistoryTitle}>{t('tournaments.sanctionHistory')}</Text>
                   </View>
                   {sancionesCumplidas.map((sancion, idx) => {
@@ -1070,7 +1061,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: IS_MOBILE ? THEME.surface : 'rgba(0,0,0,0.15)', alignItems: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: IS_MOBILE ? theme.colors.surface : theme.colors.overlay, alignItems: 'center' }}>
         <View style={[styles.detailModalContent, IS_MOBILE && styles.detailModalContentMobile]}>
               {/* Header with tournament color */}
               <LinearGradient
@@ -1098,7 +1089,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                   style={[styles.detailTab, detailTab === 'matches' && styles.detailTabActive]}
                   onPress={() => setDetailTab('matches')}
                 >
-                  <MaterialIcons name="sports-soccer" size={18} color={detailTab === 'matches' ? THEME.primary : THEME.textSecondary} />
+                  <MaterialIcons name="sports-soccer" size={18} color={detailTab === 'matches' ? theme.colors.primary : theme.colors.textSecondary} />
                   <Text style={[styles.detailTabText, detailTab === 'matches' && styles.detailTabTextActive]}>
                     {t('tournaments.matches')}
                   </Text>
@@ -1107,7 +1098,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                   style={[styles.detailTab, detailTab === 'sanctions' && styles.detailTabActive]}
                   onPress={() => setDetailTab('sanctions')}
                 >
-                  <MaterialIcons name="gavel" size={18} color={detailTab === 'sanctions' ? THEME.primary : THEME.textSecondary} />
+                  <MaterialIcons name="gavel" size={18} color={detailTab === 'sanctions' ? theme.colors.primary : theme.colors.textSecondary} />
                   <Text style={[styles.detailTabText, detailTab === 'sanctions' && styles.detailTabTextActive]}>
                     {t('tournaments.sanctionsTab')}
                   </Text>
@@ -1120,7 +1111,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                   <View style={styles.detailInfoCard}>
                     {(tournament.fechaInicio || tournament.fechaFin) && (
                       <View style={styles.detailInfoRow}>
-                        <MaterialIcons name="date-range" size={18} color={THEME.primary} />
+                        <MaterialIcons name="date-range" size={18} color={theme.colors.primary} />
                         <Text style={styles.detailInfoText}>
                           {formatDate(tournament.fechaInicio)} - {formatDate(tournament.fechaFin)}
                         </Text>
@@ -1134,19 +1125,19 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
 
                 {/* Stats */}
                 <View style={styles.statsRow}>
-                  <View style={[styles.statCard, { borderLeftColor: THEME.primary }]}>
+                  <View style={[styles.statCard, { borderLeftColor: theme.colors.primary }]}>
                     <Text style={styles.statNumber}>{stats.played}</Text>
                     <Text style={styles.statLabel}>{t('tournaments.matches')}</Text>
                   </View>
-                  <View style={[styles.statCard, { borderLeftColor: THEME.success }]}>
+                  <View style={[styles.statCard, { borderLeftColor: theme.colors.success }]}>
                     <Text style={styles.statNumber}>{stats.wins}</Text>
                     <Text style={styles.statLabel}>{t('tournaments.wins')}</Text>
                   </View>
-                  <View style={[styles.statCard, { borderLeftColor: THEME.warning }]}>
+                  <View style={[styles.statCard, { borderLeftColor: theme.colors.warning }]}>
                     <Text style={styles.statNumber}>{stats.draws}</Text>
                     <Text style={styles.statLabel}>{t('tournaments.draws')}</Text>
                   </View>
-                  <View style={[styles.statCard, { borderLeftColor: THEME.error }]}>
+                  <View style={[styles.statCard, { borderLeftColor: theme.colors.error }]}>
                     <Text style={styles.statNumber}>{stats.losses}</Text>
                     <Text style={styles.statLabel}>{t('tournaments.losses')}</Text>
                   </View>
@@ -1160,7 +1151,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
               {/* Footer actions */}
               <View style={[styles.modalFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
                 <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(tournament)}>
-                  <MaterialIcons name="delete-outline" size={20} color={THEME.error} />
+                  <MaterialIcons name="delete-outline" size={20} color={theme.colors.error} />
                   <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.saveButton} onPress={() => onEdit(tournament)}>
@@ -1176,6 +1167,8 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
 
 /* ================== Options Modal ================== */
 function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggleStatus }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
   if (!tournament) return null;
 
@@ -1185,14 +1178,14 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
         <View style={styles.optionsCard}>
           <Text style={styles.optionsTitle} numberOfLines={1}>{tournament.nombre}</Text>
           <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onEdit(tournament); }}>
-            <MaterialIcons name="edit" size={22} color={THEME.primary} />
+            <MaterialIcons name="edit" size={22} color={theme.colors.primary} />
             <Text style={styles.optionText}>{t('common.edit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onToggleStatus(tournament); }}>
             <MaterialIcons
               name={tournament.estado === 'activo' ? 'check-circle' : 'play-circle-filled'}
               size={22}
-              color={tournament.estado === 'activo' ? THEME.textSecondary : THEME.success}
+              color={tournament.estado === 'activo' ? theme.colors.textSecondary : theme.colors.success}
             />
             <Text style={styles.optionText}>
               {tournament.estado === 'activo' ? t('tournaments.markFinished') : t('tournaments.markActive')}
@@ -1200,8 +1193,8 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
           </TouchableOpacity>
           <View style={styles.optionDivider} />
           <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onDelete(tournament); }}>
-            <MaterialIcons name="delete-outline" size={22} color={THEME.error} />
-            <Text style={[styles.optionText, { color: THEME.error }]}>{t('common.delete')}</Text>
+            <MaterialIcons name="delete-outline" size={22} color={theme.colors.error} />
+            <Text style={[styles.optionText, { color: theme.colors.error }]}>{t('common.delete')}</Text>
           </TouchableOpacity>
         </View>
       </Pressable>
@@ -1211,6 +1204,8 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
 
 /* ================== Main Tournaments Component ================== */
 export default function Tournaments() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
@@ -1384,7 +1379,7 @@ export default function Tournaments() {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="emoji-events" size={64} color={THEME.border} />
+      <MaterialIcons name="emoji-events" size={64} color={theme.colors.border} />
       <Text style={styles.emptyTitle}>{t('tournaments.emptyTitle')}</Text>
       <Text style={styles.emptySubtitle}>{t('tournaments.emptySubtitle')}</Text>
       <TouchableOpacity style={styles.emptyButton} onPress={handleCreate}>
@@ -1423,7 +1418,7 @@ export default function Tournaments() {
         {/* Loading */}
         {loading && tournaments.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={THEME.primary} />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : (
           <FlatList
@@ -1442,7 +1437,7 @@ export default function Tournaments() {
         {/* FAB for mobile */}
         {IS_MOBILE && tournaments.length > 0 && (
           <TouchableOpacity style={[styles.fab, { bottom: Math.max(insets.bottom, 20) }]} onPress={handleCreate} activeOpacity={0.8}>
-            <LinearGradient colors={[THEME.primary, THEME.primaryLight]} style={styles.fabGradient}>
+            <LinearGradient colors={[theme.colors.primary, theme.colors.primaryHover]} style={styles.fabGradient}>
               <MaterialIcons name="add" size={28} color="#fff" />
             </LinearGradient>
           </TouchableOpacity>
@@ -1510,19 +1505,19 @@ export default function Tournaments() {
 }
 
 /* ================== Styles ================== */
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: 12,
   },
   filterRow: {
@@ -1534,17 +1529,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   filterChipActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterChipText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   filterChipTextActive: {
@@ -1554,7 +1549,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1576,7 +1571,7 @@ const styles = StyleSheet.create({
   // Tournament Card
   tournamentCard: {
     flexDirection: 'row',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     overflow: 'hidden',
     ...Platform.select({
@@ -1610,11 +1605,11 @@ const styles = StyleSheet.create({
   tournamentCardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   tournamentCardType: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 1,
   },
   statusBadge: {
@@ -1623,20 +1618,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   statusActive: {
-    backgroundColor: THEME.success + '15',
+    backgroundColor: theme.colors.successSoft,
   },
   statusFinished: {
-    backgroundColor: THEME.textSecondary + '15',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   statusBadgeText: {
     fontSize: 11,
     fontWeight: '600',
   },
   statusActiveText: {
-    color: THEME.success,
+    color: theme.colors.successSoftText,
   },
   statusFinishedText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   optionsBtn: {
     padding: 4,
@@ -1653,11 +1648,11 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   tournamentCardDesc: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   // Empty state
@@ -1671,12 +1666,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1684,7 +1679,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1708,19 +1703,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
-      ios: { shadowColor: THEME.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      ios: { shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
       android: { elevation: 6 },
     }),
   },
   // Modal styles
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '95%',
     maxWidth: 600,
@@ -1738,12 +1733,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalCloseBtn: {
     padding: 4,
@@ -1759,7 +1754,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   // Form styles
   formGroup: {
@@ -1768,18 +1763,18 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   formInput: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   formTextArea: {
     minHeight: 80,
@@ -1798,12 +1793,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: THEME.border,
-    backgroundColor: THEME.background,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   typeOptionText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   statusSelector: {
     flexDirection: 'row',
@@ -1818,20 +1813,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: THEME.border,
-    backgroundColor: THEME.background,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   statusOptionActive: {
-    borderColor: THEME.success,
-    backgroundColor: THEME.success + '10',
+    borderColor: theme.colors.success,
+    backgroundColor: theme.colors.successSoft,
   },
   statusOptionFinished: {
-    borderColor: THEME.textSecondary,
-    backgroundColor: THEME.textSecondary + '10',
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   statusOptionText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   dateRow: {
     flexDirection: 'row',
@@ -1842,20 +1837,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   dateLabelSmall: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   dateValue: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   colorSelector: {
@@ -1884,10 +1879,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   cancelButtonText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1898,7 +1893,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   saveButtonText: {
     color: '#fff',
@@ -1913,11 +1908,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.error + '40',
-    backgroundColor: THEME.error + '08',
+    borderColor: theme.colors.error,
+    backgroundColor: theme.colors.errorSoft,
   },
   deleteButtonText: {
-    color: THEME.error,
+    color: theme.colors.error,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1945,7 +1940,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   detailInfoCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     padding: 14,
     gap: 8,
@@ -1958,11 +1953,11 @@ const styles = StyleSheet.create({
   },
   detailInfoText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   detailDescription: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   // Stats
@@ -1975,7 +1970,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '20%',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
@@ -1988,11 +1983,11 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   statLabel: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -2003,35 +1998,35 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   emptyMatchesCard: {
     alignItems: 'center',
     padding: 30,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     gap: 8,
   },
   emptyText: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   emptySubtext: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   matchItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     padding: 10,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 10,
   },
   matchDateCol: {
@@ -2041,11 +2036,11 @@ const styles = StyleSheet.create({
   matchDateDay: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   matchJornada: {
     fontSize: 10,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   matchInfoCol: {
     flex: 1,
@@ -2054,7 +2049,7 @@ const styles = StyleSheet.create({
   matchRival: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   matchResultBadge: {
     alignSelf: 'flex-start',
@@ -2073,12 +2068,12 @@ const styles = StyleSheet.create({
   matchCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     marginBottom: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
       android: { elevation: 2 },
@@ -2111,7 +2106,7 @@ const styles = StyleSheet.create({
   matchCardRival: {
     fontSize: 14,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   matchCardTags: {
     flexDirection: 'row',
@@ -2121,7 +2116,7 @@ const styles = StyleSheet.create({
   matchCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceAlt,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
@@ -2130,7 +2125,7 @@ const styles = StyleSheet.create({
   matchCardTagText: {
     fontSize: 10,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   matchCardArrow: {
     paddingRight: 10,
@@ -2139,7 +2134,7 @@ const styles = StyleSheet.create({
   // =================== Detail Modal (larger) ===================
   detailModalContent: {
     flex: 1,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     width: '100%',
     maxWidth: 750,
     overflow: 'hidden',
@@ -2159,26 +2154,26 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 8,
     marginBottom: 20,
-    backgroundColor: THEME.primary + '10',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: THEME.primary + '30',
+    borderColor: theme.colors.primary,
     borderStyle: 'dashed',
   },
   createMatchBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   // Options modal
   optionsOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   optionsCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     padding: 8,
     width: 260,
@@ -2190,11 +2185,11 @@ const styles = StyleSheet.create({
   optionsTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   optionItem: {
     flexDirection: 'row',
@@ -2206,12 +2201,12 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   optionDivider: {
     height: 1,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     marginHorizontal: 10,
   },
   // =================== Advanced Config Styles ===================
@@ -2221,10 +2216,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 16,
   },
   advancedToggleLeft: {
@@ -2235,7 +2230,7 @@ const styles = StyleSheet.create({
   advancedToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   advancedSection: {
     gap: 16,
@@ -2247,7 +2242,7 @@ const styles = StyleSheet.create({
   configLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 4,
   },
   configChips: {
@@ -2260,20 +2255,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: THEME.border,
-    backgroundColor: THEME.background,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   configChipActive: {
-    borderColor: THEME.primary,
-    backgroundColor: THEME.primary + '12',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   configChipText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   configChipTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   numberInputRow: {
@@ -2285,20 +2280,20 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
   numberValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     minWidth: 30,
     textAlign: 'center',
   },
   configHint: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -2306,8 +2301,8 @@ const styles = StyleSheet.create({
   detailTabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    backgroundColor: THEME.surface,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   detailTab: {
     flex: 1,
@@ -2320,15 +2315,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   detailTabActive: {
-    borderBottomColor: THEME.primary,
+    borderBottomColor: theme.colors.primary,
   },
   detailTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   detailTabTextActive: {
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   // =================== Sanctions Styles ===================
   sanctionLoadingContainer: {
@@ -2337,12 +2332,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sanctionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.colors.border,
     gap: 10,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -2357,7 +2352,7 @@ const styles = StyleSheet.create({
   sanctionPlayerName: {
     fontSize: 15,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   sanctionBadgesRight: {
@@ -2425,7 +2420,7 @@ const styles = StyleSheet.create({
   sanctionCycleLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   sanctionCycleCards: {
     flexDirection: 'row',
@@ -2443,7 +2438,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fee2e2',
+    backgroundColor: theme.colors.errorSoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -2451,16 +2446,16 @@ const styles = StyleSheet.create({
   sanctionBanText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.error,
+    color: theme.colors.error,
   },
   // Active sanction block
   sanctionActiveBlock: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     borderRadius: 8,
     padding: 10,
     gap: 6,
     borderLeftWidth: 3,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: theme.colors.error,
   },
   sanctionActiveHeader: {
     flexDirection: 'row',
@@ -2470,7 +2465,7 @@ const styles = StyleSheet.create({
   sanctionActiveTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#dc2626',
+    color: theme.colors.errorSoftText,
     flex: 1,
   },
   sanctionOriginRow: {
@@ -2481,7 +2476,7 @@ const styles = StyleSheet.create({
   },
   sanctionOriginText: {
     fontSize: 11,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
   },
   sanctionProgressRow: {
     paddingLeft: 20,
@@ -2497,10 +2492,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   sanctionMatchSlotServed: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: theme.colors.successSoft,
   },
   sanctionMatchSlotPending: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   sanctionMatchSlotText: {
     fontSize: 11,
@@ -2508,12 +2503,12 @@ const styles = StyleSheet.create({
   },
   // History block
   sanctionHistoryBlock: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 8,
     padding: 10,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   sanctionHistoryHeader: {
     flexDirection: 'row',
@@ -2521,12 +2516,12 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
   },
   sanctionHistoryTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -2534,7 +2529,7 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   sanctionHistoryItemHeader: {
     flexDirection: 'row',
@@ -2549,14 +2544,14 @@ const styles = StyleSheet.create({
   sanctionHistoryItemType: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   sanctionHistoryServedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#dcfce7',
+    backgroundColor: theme.colors.successSoft,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -2564,12 +2559,12 @@ const styles = StyleSheet.create({
   sanctionHistoryServedText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#16a34a',
+    color: theme.colors.successSoftText,
     textTransform: 'uppercase',
   },
   sanctionHistoryOrigin: {
     fontSize: 11,
-    color: '#6b7280',
+    color: theme.colors.textMuted,
     paddingLeft: 14,
   },
   sanctionServedList: {
@@ -2583,11 +2578,11 @@ const styles = StyleSheet.create({
   },
   sanctionServedItemText: {
     fontSize: 10,
-    color: '#16a34a',
+    color: theme.colors.success,
   },
   sanctionNoHistory: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 6,

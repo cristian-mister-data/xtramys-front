@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
+import { useTheme } from 'styled-components';
 import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-chart-kit';
 
@@ -20,9 +21,9 @@ const isMobileDevice = () => {
   return Math.min(width, height) < 768;
 };
 
-const chartConfig = {
-  backgroundGradientFrom: '#ffffff',
-  backgroundGradientTo: '#ffffff',
+const makeChartConfig = (theme) => ({
+  backgroundGradientFrom: theme.colors.surface,
+  backgroundGradientTo: theme.colors.surface,
   color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
   strokeWidth: 2,
   barPercentage: 0.5,
@@ -32,7 +33,7 @@ const chartConfig = {
   propsForLabels: {
     fontSize: 10,
   },
-};
+});
 
 const CHART_COLORS = [
   '#2563eb', // blue
@@ -53,32 +54,35 @@ const FILTER_OPTIONS = ['all', 'active', 'recovered'];
 
 // Componente para selector de tipo de gráfico
 const ChartTypeSelector = ({ selected, onSelect, isMobile }) => {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const iconSize = isMobile ? 16 : 20;
+  const inactiveColor = theme.colors.textSecondary;
   return (
     <View style={styles.chartTypeSelector}>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'pie' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('pie')}
       >
-        <MaterialIcons name="pie-chart" size={iconSize} color={selected === 'pie' ? '#fff' : '#6b7280'} />
+        <MaterialIcons name="pie-chart" size={iconSize} color={selected === 'pie' ? '#fff' : inactiveColor} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'barH' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('barH')}
       >
-        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barH' ? '#fff' : '#6b7280'} style={{ transform: [{ rotate: '90deg' }] }} />
+        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barH' ? '#fff' : inactiveColor} style={{ transform: [{ rotate: '90deg' }] }} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'barV' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('barV')}
       >
-        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barV' ? '#fff' : '#6b7280'} />
+        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barV' ? '#fff' : inactiveColor} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'table' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('table')}
       >
-        <MaterialIcons name="table-chart" size={iconSize} color={selected === 'table' ? '#fff' : '#6b7280'} />
+        <MaterialIcons name="table-chart" size={iconSize} color={selected === 'table' ? '#fff' : inactiveColor} />
       </TouchableOpacity>
     </View>
   );
@@ -86,6 +90,8 @@ const ChartTypeSelector = ({ selected, onSelect, isMobile }) => {
 
 // Componente para mostrar tabla
 const DataTable = ({ data, isMobile }) => {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const total = data.reduce((acc, item) => acc + item.count, 0);
   return (
     <View style={styles.tableContainer}>
@@ -112,6 +118,8 @@ const DataTable = ({ data, isMobile }) => {
 
 // Componente para gráfico de barras horizontal
 const HorizontalBarChart = ({ data, isMobile }) => {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const maxValue = Math.max(...data.map(d => d.count), 1);
   return (
     <View style={styles.horizontalBarContainer}>
@@ -137,12 +145,14 @@ const HorizontalBarChart = ({ data, isMobile }) => {
 
 // Componente genérico de gráfico
 const ChartRenderer = ({ type, data, chartWidth, chartHeight, isMobile, selectedLegend, toggleLegend, t }) => {
+  const theme = useTheme();
+  const chartConfig = useMemo(() => makeChartConfig(theme), [theme]);
   const filteredData = data.filter(item => !selectedLegend.includes(item.name));
 
   if (filteredData.length === 0) {
     return (
       <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#9ca3af' }}>{t('common.noData')}</Text>
+        <Text style={{ color: theme.colors.textMuted }}>{t('common.noData')}</Text>
       </View>
     );
   }
@@ -201,6 +211,8 @@ const ChartRenderer = ({ type, data, chartWidth, chartHeight, isMobile, selected
 
 export default function InjuryStatistics() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const injuries = useSelector(state => state.injury.injuries);
   const jugadores = useSelector(state => state.player.players);
   const loading = useSelector(state => state.injury.loading);
@@ -293,10 +305,10 @@ export default function InjuryStatistics() {
         name,
         count,
         color: CHART_COLORS[index % CHART_COLORS.length],
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       }));
-  }, [filteredInjuries, t]);
+  }, [filteredInjuries, t, theme]);
 
   // Datos para gráfico de tipos
   const typeData = useMemo(() => {
@@ -311,10 +323,10 @@ export default function InjuryStatistics() {
         name,
         count,
         color: CHART_COLORS[index % CHART_COLORS.length],
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       }));
-  }, [filteredInjuries, t]);
+  }, [filteredInjuries, t, theme]);
 
   // Datos para gráfico de recaídas
   const relapseData = useMemo(() => {
@@ -327,7 +339,7 @@ export default function InjuryStatistics() {
         name: t('injuryStats.relapse.new'),
         count: withoutRelapse,
         color: '#10b981',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       });
     }
@@ -336,12 +348,12 @@ export default function InjuryStatistics() {
         name: t('injuryStats.relapse.relapse'),
         count: withRelapse,
         color: '#f59e0b',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       });
     }
     return data;
-  }, [filteredInjuries, t]);
+  }, [filteredInjuries, t, theme]);
 
   // Datos para gráfico de posiciones
   const positionData = useMemo(() => {
@@ -359,10 +371,10 @@ export default function InjuryStatistics() {
         name,
         count,
         color: CHART_COLORS[index % CHART_COLORS.length],
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       }));
-  }, [filteredInjuries, jugadores, t]);
+  }, [filteredInjuries, jugadores, t, theme]);
 
   // Datos para gráfico de duración
   const durationData = useMemo(() => {
@@ -391,25 +403,25 @@ export default function InjuryStatistics() {
         name: t('injuryStats.duration.short'),
         count: durationCounts.corta,
         color: '#10b981',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       },
       {
         name: t('injuryStats.duration.medium'),
         count: durationCounts.media,
         color: '#f59e0b',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       },
       {
         name: t('injuryStats.duration.long'),
         count: durationCounts.larga,
         color: '#ef4444',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       },
     ].filter(item => item.count > 0);
-  }, [filteredInjuries, t]);
+  }, [filteredInjuries, t, theme]);
 
   // Datos para gráfico de estado
   const statusData = useMemo(() => {
@@ -419,7 +431,7 @@ export default function InjuryStatistics() {
         name: t('injuryStats.summary.active'),
         count: stats.activas,
         color: '#ef4444',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       });
     }
@@ -428,7 +440,7 @@ export default function InjuryStatistics() {
         name: t('injuryStats.status.recovered'),
         count: stats.enRecuperacion,
         color: '#f59e0b',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       });
     }
@@ -437,12 +449,12 @@ export default function InjuryStatistics() {
         name: t('injuryStats.summary.recovered'),
         count: stats.recuperadas,
         color: '#10b981',
-        legendFontColor: '#6b7280',
+        legendFontColor: theme.colors.textSecondary,
         legendFontSize: 12,
       });
     }
     return data;
-  }, [stats, t]);
+  }, [stats, t, theme]);
 
   // Datos para gráfico de lesiones activas por mes
   const monthlyActiveData = useMemo(() => {
@@ -481,10 +493,10 @@ export default function InjuryStatistics() {
       name,
       count: monthlyCounts[index],
       color: CHART_COLORS[index % CHART_COLORS.length],
-      legendFontColor: '#6b7280',
+      legendFontColor: theme.colors.textSecondary,
       legendFontSize: 12,
     }));
-  }, [filteredInjuries, selectedYear]);
+  }, [filteredInjuries, selectedYear, theme]);
 
   const toggleLegendZone = (name) => {
     setSelectedLegendZone(prev =>
@@ -526,7 +538,7 @@ export default function InjuryStatistics() {
   if (loading && injuries.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t('injuryStats.loading')}</Text>
       </View>
     );
@@ -536,7 +548,7 @@ export default function InjuryStatistics() {
     return (
       <View style={styles.container}>
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="insert-chart" size={iconSizeSmall} color="#d1d5db" />
+          <MaterialIcons name="insert-chart" size={iconSizeSmall} color={theme.colors.textDisabled} />
           <Text style={styles.emptyTitle}>{t('injuryStats.noInjuries')}</Text>
           <Text style={styles.emptySubtitle}>
             {t('injuryStats.noInjuriesSubtitle')}
@@ -560,7 +572,7 @@ export default function InjuryStatistics() {
                 styles.legendDot,
                 {
                   backgroundColor: selectedLegend.includes(item.name)
-                    ? '#d1d5db'
+                    ? theme.colors.textDisabled
                     : item.color,
                 },
               ]}
@@ -613,7 +625,7 @@ export default function InjuryStatistics() {
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
           <View style={[styles.summaryItem, styles.summaryTotal]}>
-            <MaterialIcons name="medical-services" size={iconSizeLarge} color="#2563eb" />
+            <MaterialIcons name="medical-services" size={iconSizeLarge} color={theme.colors.primary} />
             <View style={styles.summaryTextContainer}>
               <Text style={styles.summaryValue}>{stats.total}</Text>
               <Text style={styles.summaryLabel}>{t('injuryStats.summary.total')}</Text>
@@ -624,8 +636,8 @@ export default function InjuryStatistics() {
         <View style={styles.summaryGrid}>
           <View style={[styles.summaryCard, styles.summarySmall]}>
             <View style={styles.summaryIconContainer}>
-              <View style={[styles.summaryIconBadge, { backgroundColor: '#fee2e2' }]}>
-                <MaterialIcons name="error" size={iconSizeMedium} color="#ef4444" />
+              <View style={[styles.summaryIconBadge, { backgroundColor: theme.colors.errorSoft }]}>
+                <MaterialIcons name="error" size={iconSizeMedium} color={theme.colors.error} />
               </View>
             </View>
             <Text style={styles.summarySmallValue}>{stats.activas}</Text>
@@ -634,8 +646,8 @@ export default function InjuryStatistics() {
 
           <View style={[styles.summaryCard, styles.summarySmall]}>
             <View style={styles.summaryIconContainer}>
-              <View style={[styles.summaryIconBadge, { backgroundColor: '#fef3c7' }]}>
-                <MaterialIcons name="hourglass-empty" size={iconSizeMedium} color="#f59e0b" />
+              <View style={[styles.summaryIconBadge, { backgroundColor: theme.colors.warningSoft }]}>
+                <MaterialIcons name="hourglass-empty" size={iconSizeMedium} color={theme.colors.warning} />
               </View>
             </View>
             <Text style={styles.summarySmallValue}>{stats.enRecuperacion}</Text>
@@ -644,8 +656,8 @@ export default function InjuryStatistics() {
 
           <View style={[styles.summaryCard, styles.summarySmall]}>
             <View style={styles.summaryIconContainer}>
-              <View style={[styles.summaryIconBadge, { backgroundColor: '#d1fae5' }]}>
-                <MaterialIcons name="check-circle" size={iconSizeMedium} color="#10b981" />
+              <View style={[styles.summaryIconBadge, { backgroundColor: theme.colors.successSoft }]}>
+                <MaterialIcons name="check-circle" size={iconSizeMedium} color={theme.colors.success} />
               </View>
             </View>
             <Text style={styles.summarySmallValue}>{stats.recuperadas}</Text>
@@ -659,7 +671,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <MaterialIcons name="calendar-today" size={iconSizeMedium} color="#2563eb" />
+              <MaterialIcons name="calendar-today" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byMonth')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeMonthly} onSelect={setChartTypeMonthly} isMobile={isMobile} />
@@ -714,7 +726,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <MaterialIcons name="pie-chart" size={iconSizeMedium} color="#2563eb" />
+              <MaterialIcons name="pie-chart" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byStatus')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeStatus} onSelect={setChartTypeStatus} isMobile={isMobile} />
@@ -751,7 +763,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Ionicons name="body" size={iconSizeMedium} color="#2563eb" />
+              <Ionicons name="body" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byZone')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeZone} onSelect={setChartTypeZone} isMobile={isMobile} />
@@ -777,7 +789,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <MaterialIcons name="healing" size={iconSizeMedium} color="#2563eb" />
+              <MaterialIcons name="healing" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byType')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeType} onSelect={setChartTypeType} isMobile={isMobile} />
@@ -803,7 +815,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Ionicons name="warning" size={iconSizeMedium} color="#2563eb" />
+              <Ionicons name="warning" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byRelapse')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeRelapse} onSelect={setChartTypeRelapse} isMobile={isMobile} />
@@ -829,7 +841,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <MaterialIcons name="sports-soccer" size={iconSizeMedium} color="#2563eb" />
+              <MaterialIcons name="sports-soccer" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byPosition')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypePosition} onSelect={setChartTypePosition} isMobile={isMobile} />
@@ -855,7 +867,7 @@ export default function InjuryStatistics() {
         <View style={styles.chartContainer}>
           <View style={styles.chartHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Ionicons name="time" size={iconSizeMedium} color="#2563eb" />
+              <Ionicons name="time" size={iconSizeMedium} color={theme.colors.primary} />
               <Text style={styles.chartTitle}>{t('injuryStats.charts.byDuration')} ({filterLabel})</Text>
             </View>
             <ChartTypeSelector selected={chartTypeDuration} onSelect={setChartTypeDuration} isMobile={isMobile} />
@@ -894,10 +906,10 @@ export default function InjuryStatistics() {
 
 const isMobile = isMobileDevice();
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -908,7 +920,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: isMobile ? 12 : 16,
     fontSize: isMobile ? 14 : 16,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -920,13 +932,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: isMobile ? 16 : 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.colors.text,
     marginTop: isMobile ? 12 : 16,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: isMobile ? 12 : 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: isMobile ? 6 : 8,
   },
@@ -944,7 +956,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.text,
   },
   filterButtons: {
     flexDirection: 'row',
@@ -954,18 +966,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   filterButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   filterButtonTextActive: {
     color: '#fff',
@@ -978,10 +990,10 @@ const styles = StyleSheet.create({
   chartTypeButton: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   chartTypeButtonActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
   },
   // Year selector styles
   yearSelectorContainer: {
@@ -993,7 +1005,7 @@ const styles = StyleSheet.create({
   yearLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.text,
   },
   yearButtons: {
     flexDirection: 'row',
@@ -1003,18 +1015,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   yearButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   yearButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   yearButtonTextActive: {
     color: '#fff',
@@ -1025,7 +1037,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   tableRow: {
     flexDirection: 'row',
@@ -1034,10 +1046,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tableRowEven: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   tableRowTotal: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.border,
   },
   tableCell: {
     flex: 2,
@@ -1052,39 +1064,39 @@ const styles = StyleSheet.create({
   },
   tableCellText: {
     fontSize: 13,
-    color: '#374151',
+    color: theme.colors.text,
   },
   tableCellValue: {
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   tableCellPercent: {
     flex: 1,
     fontSize: 13,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     textAlign: 'right',
   },
   tableCellTotal: {
     flex: 2,
     fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: theme.colors.text,
   },
   tableCellValueTotal: {
     flex: 1,
     fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   tableCellPercentTotal: {
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     textAlign: 'right',
   },
   // Horizontal bar chart
@@ -1100,13 +1112,13 @@ const styles = StyleSheet.create({
   horizontalBarLabel: {
     width: 100,
     fontSize: 11,
-    color: '#374151',
+    color: theme.colors.text,
     textAlign: 'right',
   },
   horizontalBarTrack: {
     flex: 1,
     height: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -1118,14 +1130,14 @@ const styles = StyleSheet.create({
     width: 30,
     fontSize: 12,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.colors.text,
     textAlign: 'left',
   },
   summaryContainer: {
     padding: isMobile ? 12 : 16,
   },
   summaryCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobile ? 10 : 12,
     padding: isMobile ? 12 : 16,
     marginBottom: isMobile ? 10 : 12,
@@ -1149,11 +1161,11 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: isMobile ? 26 : 32,
     fontWeight: '700',
-    color: '#2563eb',
+    color: theme.colors.primary,
   },
   summaryLabel: {
     fontSize: isMobile ? 12 : 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginTop: isMobile ? 2 : 4,
   },
@@ -1181,17 +1193,17 @@ const styles = StyleSheet.create({
   summarySmallValue: {
     fontSize: isMobile ? 20 : 24,
     fontWeight: '700',
-    color: '#111827',
+    color: theme.colors.text,
     marginBottom: isMobile ? 2 : 4,
   },
   summarySmallLabel: {
     fontSize: isMobile ? 10 : 12,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     textAlign: 'center',
   },
   chartContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobile ? 10 : 12,
     padding: isMobile ? 12 : 16,
     marginHorizontal: isMobile ? 12 : 16,
@@ -1210,12 +1222,12 @@ const styles = StyleSheet.create({
     marginBottom: isMobile ? 12 : 16,
     paddingBottom: isMobile ? 10 : 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: theme.colors.border,
   },
   chartTitle: {
     fontSize: isMobile ? 14 : 16,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.colors.text,
     marginLeft: isMobile ? 6 : 8,
     flexShrink: 1,
   },
@@ -1240,16 +1252,16 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: isMobile ? 11 : 13,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   legendTextInactive: {
     opacity: 0.5,
     textDecorationLine: 'line-through',
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
   },
   legendValue: {
     fontWeight: '700',
-    color: '#111827',
+    color: theme.colors.text,
   },
 });

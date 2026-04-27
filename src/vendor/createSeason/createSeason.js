@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   TextInput,
@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTheme } from 'styled-components';
 import { createTemporadaEquipo } from '@/store/slices/season/seasonThunks';
 import { useTranslation } from 'react-i18next';
 import { RESET_STORE } from '@/store/rootReducer';
@@ -31,6 +32,9 @@ const isMobileDevice = () => {
 };
 
 export default function CreateSeasonAndTeam({ setToken, navigation }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const [año, setAño] = useState(new Date().getFullYear().toString());
   const [teamName, setTeamName] = useState('');
   const [idUsuario, setIdUsuario] = useState(null);
@@ -176,16 +180,16 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
 
   if (loadingSeason || loadingTeam || loading) {
     return (
-      <AppLayout backgroundColor={TOP_GREEN}>
+      <AppLayout backgroundColor={theme.colors.background}>
         <View style={[styles.fullBg, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#23292F" />
+          <ActivityIndicator size="large" color={theme.colors.text} />
         </View>
       </AppLayout>
     );
   }
 
   return (
-    <AppLayout backgroundColor={TOP_GREEN}>
+    <AppLayout backgroundColor={theme.colors.background}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -203,13 +207,13 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 <Text style={año ? styles.inputText : styles.inputPlaceholder}>
                   {año ? formatSeasonYear(año) : t("season.season")}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
 
               <Text style={styles.inputLabel}>{t("team.teamName")}</Text>
               <TextInput
                 placeholder={t("team.teamName")}
-                placeholderTextColor="#A0AEC0"
+                placeholderTextColor={theme.colors.inputPlaceholder}
                 value={teamName}
                 onChangeText={setTeamName}
                 style={styles.input}
@@ -220,13 +224,13 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 <Text style={categoriaKey ? styles.inputText : styles.inputPlaceholder}>
                   {categoriaKey ? (categoriaKey === 'otro' ? (categoriaCustom || t('team.customCategory')) : t(`team.categories.${categoriaKey}`) ) : t('team.category')}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
 
               {categoriaKey === 'otro' && (
                 <TextInput
                   placeholder={t('team.customCategoryPlaceholder')}
-                  placeholderTextColor="#A0AEC0"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={categoriaCustom}
                   onChangeText={setCategoriaCustom}
                   style={styles.input}
@@ -236,13 +240,13 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
               <Text style={styles.inputLabel}>{t('team.timePerHalf')}</Text>
               <TouchableOpacity style={styles.input} onPress={() => setShowTimeOptions(true)}>
                 <Text style={styles.inputText}>{t('team.timePerHalfMinutes', { minutes: tiempoPorParte })}</Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
 
               <Text style={styles.inputLabel}>{t('team.playersPerTeam')}</Text>
               <TouchableOpacity style={styles.input} onPress={() => setShowPlayersPerTeamOptions(true)}>
                 <Text style={styles.inputText}>{t('team.playersPerTeamCount', { count: jugadoresPorEquipo })}</Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
 
               <Text style={styles.inputLabel}>{t('team.badge')}</Text>
@@ -250,20 +254,20 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 {escudo ? (
                   <Image source={{ uri: escudo }} style={{ width: 44, height: 44, borderRadius: 8, marginRight: 10 }} />
                 ) : (
-                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: '#eef2ff', marginRight: 10 }} />
+                  <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: theme.colors.primarySoft, marginRight: 10 }} />
                 )}
                 <TouchableOpacity onPress={pickBadgeImage} style={{ paddingHorizontal: 8 }}>
-                  <Text style={{ color: '#2563eb' }}>{escudo ? t('team.changeBadge') : t('team.uploadBadge')}</Text>
+                  <Text style={{ color: theme.colors.primary }}>{escudo ? t('team.changeBadge') : t('team.uploadBadge')}</Text>
                 </TouchableOpacity>
                 {escudo && (
                   <TouchableOpacity onPress={() => setEscudo(null)} style={{ paddingHorizontal: 8 }}>
-                    <Text style={{ color: '#ef4444' }}>{t('team.removeBadge')}</Text>
+                    <Text style={{ color: theme.colors.error }}>{t('team.removeBadge')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <TouchableOpacity
-                style={[styles.button, loading && { backgroundColor: '#444' }]}
+                style={[styles.button, loading && { backgroundColor: theme.colors.textMuted }]}
                 onPress={handleCrear}
                 activeOpacity={0.85}
                 disabled={loading}
@@ -276,7 +280,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => setLogoutConfirm(true)}>
-                <Text style={[styles.link, { color: "red" }]}>{t("menu.logout")}</Text>
+                <Text style={[styles.link, { color: theme.colors.error }]}>{t("menu.logout")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -297,7 +301,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                   onPress={() => setYearSelectVisible(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -321,7 +325,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                       {option.label}
                     </Text>
                     {año === option.value && (
-                      <Ionicons name="checkmark" size={20} color="#2563eb" />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -345,7 +349,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                   onPress={() => setShowCategoryOptions(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -360,7 +364,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                       {opt.label}
                     </Text>
                     {categoriaKey === opt.value && (
-                      <Ionicons name="checkmark" size={20} color="#2563eb" />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -384,7 +388,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                   onPress={() => setShowTimeOptions(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -399,7 +403,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                       {t('team.timePerHalfMinutes', { minutes: time })}
                     </Text>
                     {tiempoPorParte === time && (
-                      <Ionicons name="checkmark" size={20} color="#2563eb" />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -423,7 +427,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                   onPress={() => setShowPlayersPerTeamOptions(false)}
                   style={styles.modalCloseButton}
                 >
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -438,7 +442,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                       {t('team.playersPerTeamCount', { count })}
                     </Text>
                     {jugadoresPorEquipo === count && (
-                      <Ionicons name="checkmark" size={20} color="#2563eb" />
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -466,14 +470,10 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   );
 }
 
-const BORDER = "#E5E7EB";
-const CARD_BG = "#fff";
-const TOP_GREEN = "#c0e2e7";
-
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   fullBg: {
     flex: 1,
-    backgroundColor: TOP_GREEN,
+    backgroundColor: theme.colors.background,
   },
   contentContainer: {
     flex: 1,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: CARD_BG,
+    backgroundColor: theme.colors.surface,
     width: isMobileDevice() ? '95%' : '92%',
     maxWidth: isMobileDevice() ? 380 : 400,
     borderRadius: isMobileDevice() ? 20 : 26,
@@ -497,42 +497,42 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: isMobileDevice() ? 20 : 22,
     fontWeight: 'bold',
-    color: "#222",
+    color: theme.colors.text,
     marginBottom: 4,
     textAlign: 'left',
   },
   inputLabel: {
     fontSize: isMobileDevice() ? 12 : 13,
-    color: '#777',
+    color: theme.colors.textSecondary,
     fontWeight: '700',
     marginBottom: 3,
     marginTop: isMobileDevice() ? 10 : 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 8,
     padding: isMobileDevice() ? 12 : 13,
     fontSize: isMobileDevice() ? 15 : 16,
     marginBottom: 2,
-    backgroundColor: '#F7F7FA',
-    color: '#23292F',
+    backgroundColor: theme.colors.inputBg,
+    color: theme.colors.text,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   inputText: {
     fontSize: isMobileDevice() ? 15 : 16,
-    color: '#23292F',
+    color: theme.colors.text,
     flex: 1,
   },
   inputPlaceholder: {
     fontSize: isMobileDevice() ? 15 : 16,
-    color: '#A0AEC0',
+    color: theme.colors.inputPlaceholder,
     flex: 1,
   },
   button: {
-    backgroundColor: "#23292F",
+    backgroundColor: theme.colors.text,
     paddingVertical: isMobileDevice() ? 14 : 16,
     borderRadius: 10,
     alignItems: 'center',
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   link: {
-    color: "#444",
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     fontSize: isMobileDevice() ? 14 : 15,
     marginTop: 10,
@@ -558,13 +558,13 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 12 : 20,
   },
   selectModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: isMobileDevice() ? 14 : 16,
     maxHeight: isMobileDevice() ? '80%' : '70%',
     width: '100%',
@@ -582,12 +582,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     paddingVertical: isMobileDevice() ? 14 : 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '600',
-    color: '#111827',
+    color: theme.colors.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -603,20 +603,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   selectOptionSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
     borderWidth: 1,
   },
   selectOptionText: {
     fontSize: isMobileDevice() ? 14 : 16,
-    color: '#374151',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   selectOptionTextSelected: {
-    color: '#2563eb',
+    color: theme.colors.primarySoftText,
     fontWeight: '600',
   },
 });

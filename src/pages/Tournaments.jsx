@@ -3,7 +3,7 @@ import TournamentsView from '@/vendor/tournaments/tournaments';
 
 export default function Tournaments() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <TournamentsView />
     </RNWebPage>
   );

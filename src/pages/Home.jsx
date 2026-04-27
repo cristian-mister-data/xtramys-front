@@ -3,7 +3,7 @@ import HomeView from '@/vendor/home/home';
 
 export default function Home() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <HomeView />
     </RNWebPage>
   );

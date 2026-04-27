@@ -27,7 +27,7 @@ import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { clearPlayers } from '@/store/slices/player/playerSlice';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import AppLayout from '@/vendor/shared/appLayout';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
+import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const isMobileDevice = () => {
@@ -49,6 +49,8 @@ const getPositionColor = (position) => {
 };
 
 export default function InjuriesManagement({ navigation }) {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const injuries = useSelector(state => state.injury.injuries);
@@ -442,7 +444,7 @@ export default function InjuriesManagement({ navigation }) {
     return (
       <AppLayout>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>{t('injury.loading')}</Text>
         </View>
       </AppLayout>
@@ -456,7 +458,7 @@ export default function InjuriesManagement({ navigation }) {
       <AppLayout>
         <View style={styles.emptyStateContainer}>
           <View style={styles.emptyStateCard}>
-            <Ionicons name="people-circle-outline" size={64} color="#d1d5db" />
+            <Ionicons name="people-circle-outline" size={64} color={theme.colors.border} />
             <Text style={styles.emptyStateTitle}>{t('injury.noTeam')}</Text>
             <Text style={styles.emptyStateSubtitle}>
               {t('injury.noTeamSubtitle')}
@@ -473,7 +475,7 @@ export default function InjuriesManagement({ navigation }) {
         {/* Header con Gradiente */}
         <View style={styles.headerSection}>
           <LinearGradient
-            colors={THEME.gradient}
+            colors={['#1a237e', '#3949ab', '#5c6bc0']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.headerGradient}
@@ -510,17 +512,17 @@ export default function InjuriesManagement({ navigation }) {
           <View style={styles.filtersSection}>
             <View style={styles.filterBarRow}>
               <View style={styles.searchBarContainer}>
-                <Ionicons name="search" size={18} color="#94a3b8" />
+                <Ionicons name="search" size={18} color={theme.colors.textMuted} />
                 <TextInput
                   style={styles.searchBarInput}
                   placeholder={t('injury.playerNamePlaceholder')}
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
                 {searchQuery ? (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                    <Ionicons name="close-circle" size={18} color={theme.colors.textMuted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -528,7 +530,7 @@ export default function InjuriesManagement({ navigation }) {
                 style={styles.filterToggleBtn}
                 onPress={() => setShowFilters(!showFilters)}
               >
-                <Ionicons name="filter" size={isMobileDevice() ? 18 : 20} color="#2474E5" />
+                <Ionicons name="filter" size={isMobileDevice() ? 18 : 20} color={theme.colors.primary} />
                 <Text style={styles.filterToggleBtnText}>{t('injury.filters')}</Text>
                 {(selectedPositions.length > 0 || selectedStatuses.length > 0 || startDateFilter || endDateFilter || sortByDuration) && (
                   <View style={styles.filterBadge}>
@@ -595,7 +597,7 @@ export default function InjuriesManagement({ navigation }) {
                           ]}
                           onPress={() => toggleStatusFilter(option.value)}
                         >
-                          <View style={[styles.statusDot, { backgroundColor: option.color || '#6b7280' }]} />
+                          <View style={[styles.statusDot, { backgroundColor: option.color || theme.colors.textSecondary }]} />
                           <Text style={[styles.chipFilterItemText, isActive && styles.chipFilterItemTextActive]}>
                             {option.label}
                           </Text>
@@ -613,7 +615,7 @@ export default function InjuriesManagement({ navigation }) {
                       style={styles.dateChipBtn}
                       onPress={() => { setDateFilterType('start'); setDateFilterVisible(true); }}
                     >
-                      <MaterialIcons name="calendar-today" size={16} color="#2474E5" />
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
                       <Text style={startDateFilter ? styles.dateChipText : styles.dateChipPlaceholder}>
                         {startDateFilter
                           ? new Date(startDateFilter).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })
@@ -622,16 +624,16 @@ export default function InjuriesManagement({ navigation }) {
                       </Text>
                       {startDateFilter && (
                         <TouchableOpacity onPress={() => setStartDateFilter(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                          <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                         </TouchableOpacity>
                       )}
                     </TouchableOpacity>
-                    <Ionicons name="arrow-forward" size={14} color="#d1d5db" />
+                    <Ionicons name="arrow-forward" size={14} color={theme.colors.border} />
                     <TouchableOpacity
                       style={styles.dateChipBtn}
                       onPress={() => { setDateFilterType('end'); setDateFilterVisible(true); }}
                     >
-                      <MaterialIcons name="calendar-today" size={16} color="#2474E5" />
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
                       <Text style={endDateFilter ? styles.dateChipText : styles.dateChipPlaceholder}>
                         {endDateFilter
                           ? new Date(endDateFilter).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })
@@ -640,7 +642,7 @@ export default function InjuriesManagement({ navigation }) {
                       </Text>
                       {endDateFilter && (
                         <TouchableOpacity onPress={() => setEndDateFilter(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                          <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                         </TouchableOpacity>
                       )}
                     </TouchableOpacity>
@@ -663,7 +665,7 @@ export default function InjuriesManagement({ navigation }) {
                       style={[styles.chipFilterItem, sortByDuration === 'asc' && styles.chipFilterItemActive]}
                       onPress={() => setSortByDuration(sortByDuration === 'asc' ? '' : 'asc')}
                     >
-                      <Ionicons name="arrow-up" size={14} color={sortByDuration === 'asc' ? '#fff' : '#2474E5'} />
+                      <Ionicons name="arrow-up" size={14} color={sortByDuration === 'asc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.chipFilterItemText, sortByDuration === 'asc' && styles.chipFilterItemTextActive]}>
                         {t('injury.durationShortest')}
                       </Text>
@@ -672,7 +674,7 @@ export default function InjuriesManagement({ navigation }) {
                       style={[styles.chipFilterItem, sortByDuration === 'desc' && styles.chipFilterItemActive]}
                       onPress={() => setSortByDuration(sortByDuration === 'desc' ? '' : 'desc')}
                     >
-                      <Ionicons name="arrow-down" size={14} color={sortByDuration === 'desc' ? '#fff' : '#2474E5'} />
+                      <Ionicons name="arrow-down" size={14} color={sortByDuration === 'desc' ? '#fff' : theme.colors.primary} />
                       <Text style={[styles.chipFilterItemText, sortByDuration === 'desc' && styles.chipFilterItemTextActive]}>
                         {t('injury.durationLongest')}
                       </Text>
@@ -687,7 +689,7 @@ export default function InjuriesManagement({ navigation }) {
                   </Text>
                   {(searchQuery || selectedPositions.length > 0 || selectedStatuses.length > 0 || startDateFilter || endDateFilter || sortByDuration) && (
                     <TouchableOpacity style={styles.chipClearFiltersBtn} onPress={clearFilters}>
-                      <MaterialIcons name="clear" size={18} color="#666" />
+                      <MaterialIcons name="clear" size={18} color={theme.colors.textSecondary} />
                       <Text style={styles.chipClearFiltersBtnText}>{t('injury.clearFilters')}</Text>
                     </TouchableOpacity>
                   )}
@@ -698,7 +700,7 @@ export default function InjuriesManagement({ navigation }) {
           {getFilteredInjuries() && getFilteredInjuries().length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateCard}>
-                <MaterialIcons name="medical-services" size={64} color="#d1d5db" />
+                <MaterialIcons name="medical-services" size={64} color={theme.colors.border} />
                 <Text style={styles.emptyStateTitle}>
                   {injuries?.length === 0 ? t('injury.noInjuries') : t('injury.noResults')}
                 </Text>
@@ -767,23 +769,23 @@ export default function InjuriesManagement({ navigation }) {
                             handleDelete(injury._id);
                           }}
                         >
-                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                          <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                         </TouchableOpacity>
                       </View>
 
                     <View style={styles.injuryDetails}>
                       <View style={styles.detailRow}>
-                        <Ionicons name="body" size={16} color="#6b7280" />
+                        <Ionicons name="body" size={16} color={theme.colors.textSecondary} />
                         <Text style={styles.detailLabel}>{t('injury.zone')}:</Text>
                         <Text style={styles.detailValue}>{injury.zona?.value ? t('injury.zones.' + injury.zona.value, injury.zona.label) : '-'}</Text>
                       </View>
                       <View style={styles.detailRow}>
-                        <MaterialIcons name="healing" size={16} color="#6b7280" />
+                        <MaterialIcons name="healing" size={16} color={theme.colors.textSecondary} />
                         <Text style={styles.detailLabel}>{t('injury.type')}:</Text>
                         <Text style={styles.detailValue}>{injury.tipo?.value ? t('injury.types.' + injury.tipo.value, injury.tipo.label) : '-'}</Text>
                       </View>
                       <View style={styles.detailRow}>
-                        <Ionicons name="time" size={16} color="#6b7280" />
+                        <Ionicons name="time" size={16} color={theme.colors.textSecondary} />
                         <Text style={styles.detailLabel}>{t('injury.durationLabel')}:</Text>
                         <Text style={styles.detailValue}>
                           {getInjuryDuration(injury).label}
@@ -792,7 +794,7 @@ export default function InjuriesManagement({ navigation }) {
                       </View>
                       {injury.lesionEspecifica && (
                         <View style={styles.detailRow}>
-                          <Ionicons name="information-circle" size={16} color="#6b7280" />
+                          <Ionicons name="information-circle" size={16} color={theme.colors.textSecondary} />
                           <Text style={styles.detailLabel}>{t('injury.details')}:</Text>
                           <Text style={styles.detailValue}>{injury.lesionEspecifica}</Text>
                         </View>
@@ -804,25 +806,25 @@ export default function InjuriesManagement({ navigation }) {
                         </View>
                         {injury.fechaFinPrevista && (
                           <>
-                            <Ionicons name="arrow-forward" size={16} color="#d1d5db" />
+                            <Ionicons name="arrow-forward" size={16} color={theme.colors.border} />
                             <View style={styles.dateItem}>
-                              <Text style={[styles.dateLabel, { color: '#f59e0b' }]}>{t('injury.estimatedEnd')}</Text>
+                              <Text style={[styles.dateLabel, { color: theme.colors.warning }]}>{t('injury.estimatedEnd')}</Text>
                               <Text style={styles.dateValue}>{formatDate(injury.fechaFinPrevista)}</Text>
                             </View>
                           </>
                         )}
                         {injury.fechaFin && (
                           <>
-                            <Ionicons name="arrow-forward" size={16} color="#d1d5db" />
+                            <Ionicons name="arrow-forward" size={16} color={theme.colors.border} />
                             <View style={styles.dateItem}>
-                              <Text style={[styles.dateLabel, { color: '#10b981' }]}>{t('injury.actualEnd')}</Text>
+                              <Text style={[styles.dateLabel, { color: theme.colors.success }]}>{t('injury.actualEnd')}</Text>
                               <Text style={styles.dateValue}>{formatDate(injury.fechaFin)}</Text>
                             </View>
                           </>
                         )}
                         {!injury.fechaFinPrevista && !injury.fechaFin && (
                           <>
-                            <Ionicons name="arrow-forward" size={16} color="#d1d5db" />
+                            <Ionicons name="arrow-forward" size={16} color={theme.colors.border} />
                             <View style={styles.dateItem}>
                               <Text style={styles.dateLabel}>{t('injury.endEstimated')}</Text>
                               <Text style={styles.dateValue}>-</Text>
@@ -832,7 +834,7 @@ export default function InjuriesManagement({ navigation }) {
                       </View>
                       {injury.recaida && (
                         <View style={styles.relapseBadge}>
-                          <Ionicons name="warning" size={14} color="#f59e0b" />
+                          <Ionicons name="warning" size={14} color={theme.colors.warning} />
                           <Text style={styles.relapseText}>{t('injury.relapse')}</Text>
                         </View>
                       )}
@@ -859,7 +861,7 @@ export default function InjuriesManagement({ navigation }) {
                   {editMode ? t('injury.editInjury') : t('injury.registerInjuryTitle')}
                 </Text>
                 <TouchableOpacity onPress={closeModal} style={styles.modalCloseButton}>
-                  <Ionicons name="close" size={24} color="#6b7280" />
+                  <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
@@ -878,7 +880,7 @@ export default function InjuriesManagement({ navigation }) {
                       })()
                       : t('injury.selectPlayer')}
                   </Text>
-                  <Ionicons name={showPlayerSelector ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                  <Ionicons name={showPlayerSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
                 {showPlayerSelector && (
                   <View style={styles.optionsContainer}>
@@ -902,7 +904,7 @@ export default function InjuriesManagement({ navigation }) {
                             {getPlayerFullName(player)}
                           </Text>
                           {formData.jugador === player._id && (
-                            <Ionicons name="checkmark" size={20} color="#2563eb" />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -919,7 +921,7 @@ export default function InjuriesManagement({ navigation }) {
                   <Text style={formData.zona.value ? styles.selectInputText : styles.selectInputPlaceholder}>
                     {formData.zona.value ? t('injury.zones.' + formData.zona.value, formData.zona.label) : t('injury.selectZone')}
                   </Text>
-                  <Ionicons name={showZoneSelector ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                  <Ionicons name={showZoneSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
                 {showZoneSelector && (
                   <View style={styles.optionsContainer}>
@@ -943,7 +945,7 @@ export default function InjuriesManagement({ navigation }) {
                             {option.label}
                           </Text>
                           {formData.zona.value === option.value && (
-                            <Ionicons name="checkmark" size={20} color="#2563eb" />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -960,7 +962,7 @@ export default function InjuriesManagement({ navigation }) {
                   <Text style={formData.tipo.value ? styles.selectInputText : styles.selectInputPlaceholder}>
                     {formData.tipo.value ? t('injury.types.' + formData.tipo.value, formData.tipo.label) : t('injury.selectType')}
                   </Text>
-                  <Ionicons name={showTypeSelector ? "chevron-up" : "chevron-down"} size={20} color="#6b7280" />
+                  <Ionicons name={showTypeSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
                 {showTypeSelector && (
                   <View style={styles.optionsContainer}>
@@ -984,7 +986,7 @@ export default function InjuriesManagement({ navigation }) {
                             {option.label}
                           </Text>
                           {formData.tipo.value === option.value && (
-                            <Ionicons name="checkmark" size={20} color="#2563eb" />
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -997,7 +999,7 @@ export default function InjuriesManagement({ navigation }) {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder={t('injury.example')}
-                  placeholderTextColor="#A0AEC0"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={formData.lesionEspecifica}
                   onChangeText={(text) => setFormData({ ...formData, lesionEspecifica: text })}
                   multiline
@@ -1012,7 +1014,7 @@ export default function InjuriesManagement({ navigation }) {
                     onPress={() => setDatePickerVisibleStart(true)}
                   >
                     <View style={styles.datePickerContent}>
-                      <MaterialIcons name="calendar-today" size={20} color="#2563eb" />
+                      <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
                       <Text style={formData.fechaInicioDate ? styles.datePickerText : styles.datePickerPlaceholder}>
                         {formData.fechaInicioDate
                           ? formData.fechaInicioDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
@@ -1023,14 +1025,14 @@ export default function InjuriesManagement({ navigation }) {
                           : t('injury.selectStartDate')}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                   {formData.fechaInicioDate && (
                     <TouchableOpacity
                       style={styles.clearDateButton}
                       onPress={clearStartDate}
                     >
-                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1043,7 +1045,7 @@ export default function InjuriesManagement({ navigation }) {
                     onPress={() => setDatePickerVisibleEnd(true)}
                   >
                     <View style={styles.datePickerContent}>
-                      <MaterialIcons name="calendar-today" size={20} color="#2563eb" />
+                      <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
                       <Text style={formData.fechaFinDate ? styles.datePickerText : styles.datePickerPlaceholder}>
                         {formData.fechaFinDate
                           ? formData.fechaFinDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
@@ -1054,14 +1056,14 @@ export default function InjuriesManagement({ navigation }) {
                           : t('injury.selectEndDateOptional')}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                   {formData.fechaFinDate && (
                     <TouchableOpacity
                       style={styles.clearDateButton}
                       onPress={clearEndDate}
                     >
-                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1075,7 +1077,7 @@ export default function InjuriesManagement({ navigation }) {
                     onPress={() => setDatePickerVisibleEndPrevista(true)}
                   >
                     <View style={styles.datePickerContent}>
-                      <MaterialIcons name="schedule" size={20} color="#f59e0b" />
+                      <MaterialIcons name="schedule" size={20} color={theme.colors.warning} />
                       <Text style={formData.fechaFinPrevistaDate ? styles.datePickerText : styles.datePickerPlaceholder}>
                         {formData.fechaFinPrevistaDate
                           ? formData.fechaFinPrevistaDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
@@ -1086,14 +1088,14 @@ export default function InjuriesManagement({ navigation }) {
                           : t('injury.selectEstimatedEndDateOptional')}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
                   </TouchableOpacity>
                   {formData.fechaFinPrevistaDate && (
                     <TouchableOpacity
                       style={styles.clearDateButton}
                       onPress={clearEstimatedEndDate}
                     >
-                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1239,10 +1241,10 @@ export default function InjuriesManagement({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -1253,7 +1255,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   headerSection: {
@@ -1263,7 +1265,7 @@ const styles = StyleSheet.create({
   headerGradient: {
     borderRadius: 20,
     marginHorizontal: isMobileDevice() ? 12 : 16,
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1334,7 +1336,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emptyStateCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     padding: 36,
     alignItems: 'center',
@@ -1344,18 +1346,18 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginTop: 16,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
@@ -1363,12 +1365,12 @@ const styles = StyleSheet.create({
   emptyStateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 14,
     marginTop: 20,
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1384,7 +1386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   injuryCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 14 : 16,
     padding: isMobileDevice() ? 12 : 18,
     paddingLeft: isMobileDevice() ? 16 : 22,
@@ -1395,7 +1397,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   injuryCardHeader: {
@@ -1427,12 +1429,12 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: isMobileDevice() ? 15 : 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   deleteButton: {
     padding: 8,
     borderRadius: 10,
-    backgroundColor: THEME.error + '10',
+    backgroundColor: theme.colors.errorSoft,
   },
   injuryDetails: {
     gap: 10,
@@ -1444,12 +1446,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   detailValue: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '600',
     flex: 1,
   },
@@ -1460,7 +1462,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: isMobileDevice() ? 8 : 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
     flexWrap: isMobileDevice() ? 'wrap' : 'nowrap',
     gap: isMobileDevice() ? 4 : 0,
   },
@@ -1469,19 +1471,19 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   dateValue: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '600',
   },
   relapseBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
@@ -1490,18 +1492,18 @@ const styles = StyleSheet.create({
   },
   relapseText: {
     fontSize: 12,
-    color: '#f59e0b',
+    color: theme.colors.warningSoftText,
     fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 10 : 20,
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 16 : 20,
     width: '100%',
     maxWidth: isMobileDevice() ? 400 : 500,
@@ -1519,12 +1521,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     paddingVertical: isMobileDevice() ? 14 : 18,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -1536,19 +1538,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   textArea: {
@@ -1556,9 +1558,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   selectInput: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1569,20 +1571,20 @@ const styles = StyleSheet.create({
   },
   selectInputText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   selectInputPlaceholder: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.inputPlaceholder,
     flex: 1,
   },
   optionsContainer: {
     maxHeight: 180,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -1600,18 +1602,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   optionSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
   },
   optionText: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   optionTextSelected: {
-    color: THEME.primary,
+    color: theme.colors.primarySoftText,
     fontWeight: '600',
   },
   checkboxContainer: {
@@ -1625,17 +1627,17 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   checkboxLabel: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   modalActions: {
@@ -1643,29 +1645,29 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.surfaceAlt,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalCancelText: {
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     fontSize: 14,
   },
   modalConfirmButton: {
     flex: 1,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: THEME.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1677,9 +1679,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   datePickerButton: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1696,43 +1698,25 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   datePickerPlaceholder: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.inputPlaceholder,
   },
   datePickerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  datePickerButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.surface,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 48,
-    marginRight: 8,
-  },
-  datePickerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   clearDateButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: theme.colors.errorSoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1744,7 +1728,7 @@ const styles = StyleSheet.create({
   filtersToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 14,
@@ -1755,16 +1739,16 @@ const styles = StyleSheet.create({
     elevation: 2,
     gap: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   filtersToggleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   filtersContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginTop: 12,
@@ -1775,7 +1759,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     gap: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   filterGroup: {
     gap: 8,
@@ -1783,14 +1767,14 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1801,13 +1785,13 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     paddingVertical: 0,
   },
   multiSelectButton: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1819,18 +1803,18 @@ const styles = StyleSheet.create({
   },
   multiSelectText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   multiSelectPlaceholder: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.inputPlaceholder,
   },
   multiSelectOptions: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginTop: 8,
     maxHeight: 150,
     shadowColor: '#000',
@@ -1846,11 +1830,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   multiSelectOptionText: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   checkboxRow: {
@@ -1859,9 +1843,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dateFilterButton: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1877,12 +1861,12 @@ const styles = StyleSheet.create({
   },
   dateFilterText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   dateFilterPlaceholder: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.inputPlaceholder,
   },
   dateFiltersRow: {
     flexDirection: 'row',
@@ -1900,16 +1884,16 @@ const styles = StyleSheet.create({
   dateFilterSubLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   clearFiltersButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: theme.colors.errorSoft,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1918,7 +1902,7 @@ const styles = StyleSheet.create({
   },
   clearFiltersText: {
     fontSize: 14,
-    color: '#dc2626',
+    color: theme.colors.errorSoftText,
     fontWeight: '600',
   },
   durationSortChip: {
@@ -1929,24 +1913,24 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   durationSortChipActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   durationSortChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   durationSortChipTextActive: {
     color: '#fff',
   },
   playerPosition: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -1961,38 +1945,38 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.inputBorder,
     gap: 8,
   },
   searchBarInput: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
     paddingVertical: 0,
   },
   filterToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf2fb',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#b5d6fa',
+    borderColor: theme.colors.primarySoft,
   },
   filterToggleBtnText: {
     marginLeft: 7,
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },
   filterBadge: {
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -2006,7 +1990,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chipFiltersPanel: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -2017,7 +2001,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
     gap: 10,
   },
   chipFilterSection: {
@@ -2026,7 +2010,7 @@ const styles = StyleSheet.create({
   chipFilterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   chipFilterScroll: {
@@ -2040,17 +2024,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   chipFilterItemActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   chipFilterItemText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   chipFilterItemTextActive: {
     color: '#fff',
@@ -2067,24 +2051,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
   },
   chipFilterResultsText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   chipClearFiltersBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   chipClearFiltersBtnText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -2107,17 +2091,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
-    backgroundColor: '#f8fafc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   dateChipText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   dateChipPlaceholder: {
     fontSize: 13,
-    color: THEME.textMuted || '#94a3b8',
+    color: theme.colors.inputPlaceholder,
   },
   // Updated injury card styles
   injuryCardColorBar: {

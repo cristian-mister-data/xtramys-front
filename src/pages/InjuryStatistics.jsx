@@ -3,7 +3,7 @@ import InjuryStatisticsView from '@/vendor/injuries/injuryStatistics';
 
 export default function InjuryStatistics() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <InjuryStatisticsView />
     </RNWebPage>
   );

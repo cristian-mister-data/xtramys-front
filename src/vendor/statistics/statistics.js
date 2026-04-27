@@ -13,6 +13,7 @@ import {
     Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import i18n from '@/i18n';
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
@@ -35,7 +36,6 @@ import { fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThun
 import InjuryStatistics from '@/vendor/injuries/injuryStatistics';
 // PlayerProfile RN aún no portado a vendor; stub para no crashear el modal.
 const PlayerProfile = () => null;
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 // Helper para obtener locale basado en i18n
@@ -50,6 +50,8 @@ export default function Statistics({ navigation }) {
     const dispatch = useDispatch();
     const route = useRoute();
     const insets = useSafeAreaInsets();
+    const theme = useTheme();
+    const styles = useMemo(() => makeStyles(theme), [theme]);
     const matchSheets = useSelector(state => state.matchSheet.matchSheets) || [];
     const loading = useSelector(state => state.matchSheet.loading);
     const temporada = useSelector(state => state.season.season);
@@ -1003,7 +1005,7 @@ playerStatsMap[p._id] = {
         return (
             <AppLayout>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={THEME.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                     <Text style={styles.loadingText}>{t('statistics.loading')}</Text>
                 </View>
             </AppLayout>
@@ -1015,7 +1017,7 @@ playerStatsMap[p._id] = {
             <AppLayout>
                 <View style={styles.emptyContainer}>
                     <View style={styles.emptyIconContainer}>
-                        <MaterialIcons name="analytics" size={48} color={THEME.primary} />
+                        <MaterialIcons name="analytics" size={48} color={theme.colors.primary} />
                     </View>
                     <Text style={styles.emptyText}>{t('statistics.noData')}</Text>
                     <Text style={styles.emptySubText}>{t('statistics.noDataSubtitle')}</Text>
@@ -1030,7 +1032,7 @@ playerStatsMap[p._id] = {
                 {/* Premium Header */}
                 <View style={styles.headerSection}>
                     <LinearGradient
-                        colors={THEME.gradient}
+                        colors={['#1a237e', '#3949ab', '#5c6bc0']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.headerGradient}
@@ -1077,7 +1079,7 @@ playerStatsMap[p._id] = {
                                 <Ionicons 
                                     name={icons[tab]} 
                                     size={isMobile ? 14 : 18} 
-                                    color={activeTab === tab ? '#ffffff' : THEME.textSecondary} 
+                                    color={activeTab === tab ? '#ffffff' : theme.colors.textSecondary} 
                                     style={{ marginRight: isMobile ? 4 : 6 }}
                                 />
                                 <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
@@ -1129,10 +1131,10 @@ playerStatsMap[p._id] = {
                                                     <View style={[
                                                         styles.performanceRingProgress,
                                                         { 
-                                                            borderTopColor: THEME.success,
-                                                            borderRightColor: stats.team.winRate >= 25 ? THEME.success : 'rgba(255,255,255,0.1)',
-                                                            borderBottomColor: stats.team.winRate >= 50 ? THEME.success : 'rgba(255,255,255,0.1)',
-                                                            borderLeftColor: stats.team.winRate >= 75 ? THEME.success : 'rgba(255,255,255,0.1)',
+                                                            borderTopColor: theme.colors.success,
+                                                            borderRightColor: stats.team.winRate >= 25 ? theme.colors.success : 'rgba(255,255,255,0.1)',
+                                                            borderBottomColor: stats.team.winRate >= 50 ? theme.colors.success : 'rgba(255,255,255,0.1)',
+                                                            borderLeftColor: stats.team.winRate >= 75 ? theme.colors.success : 'rgba(255,255,255,0.1)',
                                                         }
                                                     ]} />
                                                     <View style={styles.performanceRingInner}>
@@ -1145,17 +1147,17 @@ playerStatsMap[p._id] = {
                                         <View style={styles.performanceRingRight}>
                                             <View style={styles.performanceRingStats}>
                                                 <View style={styles.performanceRingStat}>
-                                                    <View style={[styles.performanceStatDot, { backgroundColor: THEME.success }]} />
+                                                    <View style={[styles.performanceStatDot, { backgroundColor: theme.colors.success }]} />
                                                     <Text style={styles.performanceStatLabel}>{t('statistics.wins')}</Text>
                                                     <Text style={styles.performanceStatValue}>{stats.team.wins}</Text>
                                                 </View>
                                                 <View style={styles.performanceRingStat}>
-                                                    <View style={[styles.performanceStatDot, { backgroundColor: THEME.warning }]} />
+                                                    <View style={[styles.performanceStatDot, { backgroundColor: theme.colors.warning }]} />
                                                     <Text style={styles.performanceStatLabel}>{t('statistics.draws')}</Text>
                                                     <Text style={styles.performanceStatValue}>{stats.team.draws}</Text>
                                                 </View>
                                                 <View style={styles.performanceRingStat}>
-                                                    <View style={[styles.performanceStatDot, { backgroundColor: THEME.danger }]} />
+                                                    <View style={[styles.performanceStatDot, { backgroundColor: theme.colors.error }]} />
                                                     <Text style={styles.performanceStatLabel}>{t('statistics.losses')}</Text>
                                                     <Text style={styles.performanceStatValue}>{stats.team.losses}</Text>
                                                 </View>
@@ -1177,11 +1179,11 @@ playerStatsMap[p._id] = {
                                 <View style={styles.goalsComparisonBody}>
                                     <View style={styles.goalsComparisonSide}>
                                         <Text style={styles.goalsComparisonSideLabel}>{t('statistics.goalsFor')}</Text>
-                                        <Text style={[styles.goalsComparisonSideValue, { color: THEME.success }]}>{stats.team.goalsFor}</Text>
-                                        <View style={[styles.goalsComparisonBar, { backgroundColor: THEME.success + '30' }]}>
+                                        <Text style={[styles.goalsComparisonSideValue, { color: theme.colors.success }]}>{stats.team.goalsFor}</Text>
+                                        <View style={[styles.goalsComparisonBar, { backgroundColor: theme.colors.success + '30' }]}>
                                             <View style={[styles.goalsComparisonBarFill, { 
                                                 width: `${Math.min((stats.team.goalsFor / Math.max(stats.team.goalsFor, stats.team.goalsAgainst, 1)) * 100, 100)}%`,
-                                                backgroundColor: THEME.success 
+                                                backgroundColor: theme.colors.success 
                                             }]} />
                                         </View>
                                     </View>
@@ -1190,7 +1192,7 @@ playerStatsMap[p._id] = {
                                         <View style={styles.goalsComparisonDiffBadge}>
                                             <Text style={[
                                                 styles.goalsComparisonDiffText,
-                                                { color: stats.team.goalsFor >= stats.team.goalsAgainst ? THEME.success : THEME.danger }
+                                                { color: stats.team.goalsFor >= stats.team.goalsAgainst ? theme.colors.success : theme.colors.error }
                                             ]}>
                                                 {stats.team.goalsFor - stats.team.goalsAgainst > 0 ? '+' : ''}{stats.team.goalsFor - stats.team.goalsAgainst}
                                             </Text>
@@ -1199,11 +1201,11 @@ playerStatsMap[p._id] = {
                                     
                                     <View style={styles.goalsComparisonSide}>
                                         <Text style={styles.goalsComparisonSideLabel}>{t('statistics.goalsAgainst')}</Text>
-                                        <Text style={[styles.goalsComparisonSideValue, { color: THEME.danger }]}>{stats.team.goalsAgainst}</Text>
-                                        <View style={[styles.goalsComparisonBar, { backgroundColor: THEME.danger + '30' }]}>
+                                        <Text style={[styles.goalsComparisonSideValue, { color: theme.colors.error }]}>{stats.team.goalsAgainst}</Text>
+                                        <View style={[styles.goalsComparisonBar, { backgroundColor: theme.colors.error + '30' }]}>
                                             <View style={[styles.goalsComparisonBarFill, { 
                                                 width: `${Math.min((stats.team.goalsAgainst / Math.max(stats.team.goalsFor, stats.team.goalsAgainst, 1)) * 100, 100)}%`,
-                                                backgroundColor: THEME.danger 
+                                                backgroundColor: theme.colors.error 
                                             }]} />
                                         </View>
                                     </View>
@@ -1211,7 +1213,7 @@ playerStatsMap[p._id] = {
 
                                 <View style={styles.goalsComparisonFooter}>
                                     <View style={styles.goalsComparisonFooterItem}>
-                                        <Ionicons name="stats-chart" size={16} color={THEME.primary} />
+                                        <Ionicons name="stats-chart" size={16} color={theme.colors.primary} />
                                         <Text style={styles.goalsComparisonFooterLabel}>{t('statistics.avgPerMatch')}</Text>
                                         <Text style={styles.goalsComparisonFooterValue}>
                                             {stats.team.matches > 0 ? (stats.team.goalsFor / stats.team.matches).toFixed(1) : '0'}
@@ -1219,7 +1221,7 @@ playerStatsMap[p._id] = {
                                     </View>
                                     <View style={styles.goalsComparisonFooterDivider} />
                                     <View style={styles.goalsComparisonFooterItem}>
-                                        <Ionicons name="shield-checkmark" size={16} color={THEME.success} />
+                                        <Ionicons name="shield-checkmark" size={16} color={theme.colors.success} />
                                         <Text style={styles.goalsComparisonFooterLabel}>{t('statistics.cleanSheets')}</Text>
                                         <Text style={styles.goalsComparisonFooterValue}>{stats.team.cleanSheets}</Text>
                                     </View>
@@ -1242,7 +1244,7 @@ playerStatsMap[p._id] = {
                                     {/* Key metrics row */}
                                     <View style={styles.rivalGoalMetricsRow}>
                                         <View style={styles.rivalGoalMetricItem}>
-                                            <Text style={[styles.rivalGoalMetricValue, { color: THEME.danger }]}>
+                                            <Text style={[styles.rivalGoalMetricValue, { color: theme.colors.error }]}>
                                                 {stats.team.rivalGoalStats.avgFirstGoal}'
                                             </Text>
                                             <Text style={styles.rivalGoalMetricLabel}>
@@ -1251,7 +1253,7 @@ playerStatsMap[p._id] = {
                                         </View>
                                         <View style={styles.rivalGoalMetricDivider} />
                                         <View style={styles.rivalGoalMetricItem}>
-                                            <Text style={[styles.rivalGoalMetricValue, { color: THEME.text }]}>
+                                            <Text style={[styles.rivalGoalMetricValue, { color: theme.colors.text }]}>
                                                 {stats.team.rivalGoalStats.avgPerMatch}
                                             </Text>
                                             <Text style={styles.rivalGoalMetricLabel}>
@@ -1283,7 +1285,7 @@ playerStatsMap[p._id] = {
                                                     <View style={styles.rivalGoalBarTrack}>
                                                         <View style={[styles.rivalGoalBarFill, {
                                                             width: `${Math.max(pct, count > 0 ? 8 : 0)}%`,
-                                                            backgroundColor: isMostDangerous ? THEME.danger : '#475569',
+                                                            backgroundColor: isMostDangerous ? theme.colors.error : '#475569',
                                                         }]}>
                                                             {count > 0 && (
                                                                 <Text style={styles.rivalGoalBarCount}>{count}</Text>
@@ -1310,13 +1312,13 @@ playerStatsMap[p._id] = {
                                         </View>
                                         <View style={styles.goalsComparisonFooterDivider} />
                                         <View style={styles.goalsComparisonFooterItem}>
-                                            <Ionicons name="arrow-down" size={14} color={THEME.success} />
+                                            <Ionicons name="arrow-down" size={14} color={theme.colors.success} />
                                             <Text style={styles.goalsComparisonFooterLabel}>{t('statistics.team.earliestRivalGoal')}</Text>
                                             <Text style={styles.goalsComparisonFooterValue}>{stats.team.rivalGoalStats.earliest}'</Text>
                                         </View>
                                         <View style={styles.goalsComparisonFooterDivider} />
                                         <View style={styles.goalsComparisonFooterItem}>
-                                            <Ionicons name="arrow-up" size={14} color={THEME.danger} />
+                                            <Ionicons name="arrow-up" size={14} color={theme.colors.error} />
                                             <Text style={styles.goalsComparisonFooterLabel}>{t('statistics.team.latestRivalGoal')}</Text>
                                             <Text style={styles.goalsComparisonFooterValue}>{stats.team.rivalGoalStats.latest}'</Text>
                                         </View>
@@ -1328,7 +1330,7 @@ playerStatsMap[p._id] = {
                             <View style={styles.tacticalStatsGrid}>
                                 <View style={styles.tacticalStatCard}>
                                     <LinearGradient
-                                        colors={[THEME.primary, THEME.primaryLight]}
+                                        colors={[theme.colors.primary, theme.colors.primaryLight]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                         style={styles.tacticalStatGradient}
@@ -1379,23 +1381,23 @@ playerStatsMap[p._id] = {
                                     <View style={styles.playersSummaryContent}>
                                         <View style={styles.playersSummaryItem}>
                                             <View style={[styles.playersSummaryIconWrap, { backgroundColor: "#c7c7c7ff"}]}>
-                                                <Ionicons name="people" size={isMobile ? 16 : 20} color={THEME.primary} />
+                                                <Ionicons name="people" size={isMobile ? 16 : 20} color={theme.colors.primary} />
                                             </View>
                                             <Text style={styles.playersSummaryValue}>{stats.players.length}</Text>
                                             <Text style={styles.playersSummaryLabel}>{t('statistics.playersCount')}</Text>
                                         </View>
                                         <View style={styles.playersSummaryDivider} />
                                         <View style={styles.playersSummaryItem}>
-                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: THEME.success + '30' }]}>
-                                                <Ionicons name="football" size={isMobile ? 16 : 20} color={THEME.success} />
+                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: theme.colors.success + '30' }]}>
+                                                <Ionicons name="football" size={isMobile ? 16 : 20} color={theme.colors.success} />
                                             </View>
                                             <Text style={styles.playersSummaryValue}>{stats.players.reduce((acc, p) => acc + p.goals, 0)}</Text>
                                             <Text style={styles.playersSummaryLabel}>{t('statistics.goals')}</Text>
                                         </View>
                                         <View style={styles.playersSummaryDivider} />
                                         <View style={styles.playersSummaryItem}>
-                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: '#8b5cf6' + '30' }]}>
-                                                <Ionicons name="hand-left" size={isMobile ? 16 : 20} color="#8b5cf6" />
+                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: theme.colors.purpleSoft }]}>
+                                                <Ionicons name="hand-left" size={isMobile ? 16 : 20} color={theme.colors.purple} />
                                             </View>
                                             <Text style={styles.playersSummaryValue}>{stats.players.reduce((acc, p) => acc + p.assists, 0)}</Text>
                                             <Text style={styles.playersSummaryLabel}>{t('statistics.assists')}</Text>
@@ -1407,17 +1409,17 @@ playerStatsMap[p._id] = {
                             {/* Search Bar */}
                             <View style={styles.playerSearchContainer}>
                                 <View style={styles.playerSearchInputWrapper}>
-                                    <Ionicons name="search" size={isMobile ? 16 : 18} color={THEME.textSecondary} />
+                                    <Ionicons name="search" size={isMobile ? 16 : 18} color={theme.colors.textSecondary} />
                                     <TextInput
                                         style={styles.playerSearchInput}
                                         placeholder={t('statistics.searchPlayer')}
-                                        placeholderTextColor={THEME.textMuted}
+                                        placeholderTextColor={theme.colors.textMuted}
                                         value={playerSearch}
                                         onChangeText={setPlayerSearch}
                                     />
                                     {playerSearch.length > 0 && (
                                         <TouchableOpacity onPress={() => setPlayerSearch('')}>
-                                            <Ionicons name="close-circle" size={isMobile ? 16 : 18} color={THEME.textSecondary} />
+                                            <Ionicons name="close-circle" size={isMobile ? 16 : 18} color={theme.colors.textSecondary} />
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -1510,11 +1512,11 @@ playerStatsMap[p._id] = {
                                                 <Text style={styles.compactStatLabel}>PJ</Text>
                                             </View>
                                             <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, { color: THEME.primary }]}>{player.minutes}'</Text>
+                                                <Text style={[styles.compactStatValue, { color: theme.colors.primary }]}>{player.minutes}'</Text>
                                                 <Text style={styles.compactStatLabel}>MIN</Text>
                                             </View>
                                             <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, player.goals > 0 && { color: THEME.success, fontWeight: '700' }]}>{player.goals}</Text>
+                                                <Text style={[styles.compactStatValue, player.goals > 0 && { color: theme.colors.success, fontWeight: '700' }]}>{player.goals}</Text>
                                                 <Text style={styles.compactStatLabel}>G</Text>
                                             </View>
                                             <View style={styles.compactStatBox}>
@@ -1541,8 +1543,8 @@ playerStatsMap[p._id] = {
                                             <Text style={[
                                                 styles.compactAttendance,
                                                 { 
-                                                    color: player.attendancePercentage >= 80 ? THEME.success :
-                                                        player.attendancePercentage >= 60 ? THEME.warning : THEME.danger
+                                                    color: player.attendancePercentage >= 80 ? theme.colors.success :
+                                                        player.attendancePercentage >= 60 ? theme.colors.warning : theme.colors.error
                                                 }
                                             ]}>
                                                 {player.attendancePercentage}%
@@ -1558,7 +1560,7 @@ playerStatsMap[p._id] = {
                                     <View style={styles.sectionCard}>
                                         <View style={styles.sectionHeader}>
                                             <View style={styles.sectionIconContainer}>
-                                                <MaterialIcons name="calendar-today" size={18} color={THEME.primary} />
+                                                <MaterialIcons name="calendar-today" size={18} color={theme.colors.primary} />
                                             </View>
                                             <Text style={styles.sectionTitle}>{t('statistics.weeklyAttendance.title')}</Text>
                                         </View>
@@ -1575,7 +1577,7 @@ playerStatsMap[p._id] = {
                                                         ? t('statistics.weeklyAttendance.allPlayers')
                                                         : `${selectedPlayerIds.length} ${t('statistics.weeklyAttendance.playersSelected')}`}
                                                 </Text>
-                                                <Ionicons name="chevron-down" size={20} color={THEME.textSecondary} />
+                                                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
                                             </TouchableOpacity>
                                         </View>
 
@@ -1594,7 +1596,7 @@ playerStatsMap[p._id] = {
                                                                 ? tempDateRange.start.toLocaleDateString(getLocale())
                                                                 : t('statistics.weeklyAttendance.selectDate')}
                                                         </Text>
-                                                        <Ionicons name="calendar-outline" size={18} color="#64748b" />
+                                                        <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
                                                     </TouchableOpacity>
                                                 </View>
                                                 <View style={styles.dateFilterItem}>
@@ -1608,7 +1610,7 @@ playerStatsMap[p._id] = {
                                                                 ? tempDateRange.end.toLocaleDateString(getLocale())
                                                                 : t('statistics.weeklyAttendance.selectDate')}
                                                         </Text>
-                                                        <Ionicons name="calendar-outline" size={18} color="#64748b" />
+                                                        <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
                                                     </TouchableOpacity>
                                                 </View>
                                             </View>
@@ -1633,7 +1635,7 @@ playerStatsMap[p._id] = {
                                                             setWeeklyDateRange({ start: null, end: null });
                                                         }}
                                                     >
-                                                        <Ionicons name="close-circle" size={16} color="#ef4444" />
+                                                        <Ionicons name="close-circle" size={16} color={theme.colors.error} />
                                                         <Text style={styles.clearFilterText}>{t('statistics.weeklyAttendance.clear')}</Text>
                                                     </TouchableOpacity>
                                                 )}
@@ -1642,7 +1644,7 @@ playerStatsMap[p._id] = {
 
                                         {weeklyAttendance.length === 0 ? (
                                             <View style={styles.emptyFilterState}>
-                                                <Ionicons name="calendar-outline" size={48} color="#cbd5e1" />
+                                                <Ionicons name="calendar-outline" size={48} color={theme.colors.textDisabled} />
                                                 <Text style={styles.emptyFilterText}>{t('statistics.weeklyAttendance.noData')}</Text>
                                                 <Text style={styles.emptyFilterSubText}>
                                                     {weeklyDateRange.start && weeklyDateRange.end
@@ -1734,7 +1736,7 @@ playerStatsMap[p._id] = {
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>{t('statistics.weeklyAttendance.filterByPlayers')}</Text>
                             <TouchableOpacity onPress={() => setShowPlayerFilterModal(false)}>
-                                <Ionicons name="close" size={24} color="#64748b" />
+                                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
@@ -1829,10 +1831,10 @@ playerStatsMap[p._id] = {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
     },
     loadingContainer: {
         flex: 1,
@@ -1842,7 +1844,7 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         marginTop: 16,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -1857,7 +1859,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 20,
-        backgroundColor: THEME.primary + '15',
+        backgroundColor: theme.colors.primary + '15',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
@@ -1865,12 +1867,12 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 20,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
         marginTop: 16,
     },
     emptySubText: {
         fontSize: 14,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginTop: 8,
         textAlign: 'center',
     },
@@ -1883,7 +1885,7 @@ const styles = StyleSheet.create({
         marginHorizontal: isMobile ? 12 : 16,
         paddingVertical: isMobile ? 20 : 24,
         paddingHorizontal: isMobile ? 18 : 24,
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 16,
@@ -1967,7 +1969,7 @@ const styles = StyleSheet.create({
     tab: {
         flex: 1,
         flexDirection: 'row',
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         paddingVertical: isMobile ? 12 : 14,
         borderRadius: isMobile ? 12 : 14,
         alignItems: 'center',
@@ -1978,16 +1980,16 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     activeTab: {
-        backgroundColor: THEME.primary,
-        borderColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
+        borderColor: theme.colors.primary,
     },
     tabText: {
         fontSize: isMobile ? 12 : 13,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     activeTabText: {
         color: '#ffffff',
@@ -1999,7 +2001,7 @@ const styles = StyleSheet.create({
     },
     competitionTabs: {
         flexDirection: 'row',
-        backgroundColor: '#f1f5f9',
+        backgroundColor: theme.colors.backgroundAlt,
         borderRadius: 10,
         padding: 3,
     },
@@ -2012,7 +2014,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 2,
     },
     competitionTabActive: {
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.colors.surface,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
@@ -2022,32 +2024,32 @@ const styles = StyleSheet.create({
     competitionTabText: {
         fontSize: isMobile ? 12 : 13,
         fontWeight: '500',
-        color: '#475569',
+        color: theme.colors.textSecondary,
     },
     competitionTabTextActive: {
-        color: THEME.primary,
+        color: theme.colors.primary,
         fontWeight: '700',
     },
     tournamentSelector: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 10,
         marginTop: 8,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
         gap: 8,
     },
     tournamentSelectorText: {
         flex: 1,
         fontSize: 13,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     tournamentPickerContent: {
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         width: isMobile ? '90%' : 400,
         maxHeight: '60%',
@@ -2063,12 +2065,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        borderBottomColor: theme.colors.border,
     },
     tournamentPickerTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     tournamentPickerList: {
         maxHeight: 350,
@@ -2080,20 +2082,20 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f8fafc',
+        borderBottomColor: theme.colors.border,
     },
     tournamentPickerItemActive: {
-        backgroundColor: THEME.primary + '08',
+        backgroundColor: theme.colors.primary + '08',
     },
     tournamentPickerItemText: {
         flex: 1,
         fontSize: 14,
         fontWeight: '500',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     tournamentPickerItemTextActive: {
         fontWeight: '700',
-        color: THEME.primary,
+        color: theme.colors.primary,
     },
     tournamentPickerDot: {
         width: 12,
@@ -2113,7 +2115,7 @@ const styles = StyleSheet.create({
     },
     kpiCard: {
         flex: 1,
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         padding: 18,
         shadowColor: '#000',
@@ -2122,25 +2124,25 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     kpiCardWin: {
         borderLeftWidth: 4,
-        borderLeftColor: THEME.success,
+        borderLeftColor: theme.colors.success,
     },
     kpiCardDraw: {
         borderLeftWidth: 4,
-        borderLeftColor: THEME.warning,
+        borderLeftColor: theme.colors.warning,
     },
     kpiCardLoss: {
         borderLeftWidth: 4,
-        borderLeftColor: THEME.danger,
+        borderLeftColor: theme.colors.error,
     },
     kpiIconContainer: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
@@ -2148,7 +2150,7 @@ const styles = StyleSheet.create({
     kpiLabel: {
         fontSize: 12,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginBottom: 6,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -2158,7 +2160,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     sectionCard: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 20,
         padding: 20,
         marginBottom: 16,
@@ -2168,7 +2170,7 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -2176,20 +2178,20 @@ const styles = StyleSheet.create({
         marginBottom: 18,
         paddingBottom: 14,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     sectionIconContainer: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: THEME.primary + '15',
+        backgroundColor: theme.colors.primary + '15',
         justifyContent: 'center',
         alignItems: 'center',
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
         marginLeft: 12,
     },
     goalsChart: {
@@ -2206,16 +2208,16 @@ const styles = StyleSheet.create({
     goalBarLabel: {
         fontSize: 13,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
     },
     goalBarValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     progressBarBg: {
         height: 10,
-        backgroundColor: THEME.border,
+        backgroundColor: theme.colors.border,
         borderRadius: 5,
         overflow: 'hidden',
     },
@@ -2229,17 +2231,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: THEME.border,
+        borderTopColor: theme.colors.border,
     },
     statRowLabel: {
         fontSize: 14,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '500',
     },
     statRowValue: {
         fontSize: 14,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     tacticalGrid: {
         flexDirection: isMobile ? 'column' : 'row',
@@ -2247,23 +2249,23 @@ const styles = StyleSheet.create({
     },
     tacticalItem: {
         flex: 1,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         padding: 20,
         borderRadius: 16,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     tacticalValue: {
         fontSize: 20,
         fontWeight: '700',
-        color: THEME.primary,
+        color: theme.colors.primary,
         marginBottom: 4,
         textAlign: 'center',
     },
     tacticalLabel: {
         fontSize: 12,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         textAlign: 'center',
         fontWeight: '500',
     },
@@ -2272,7 +2274,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     tableContainer: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         overflow: 'hidden',
         shadowColor: '#000',
@@ -2281,7 +2283,7 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     tableHeader: {
         flexDirection: 'row',
@@ -2304,13 +2306,13 @@ const styles = StyleSheet.create({
     tr: {
         flexDirection: 'row',
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     trEven: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
     },
     trOdd: {
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
     },
     td: {
         paddingVertical: 14,
@@ -2320,24 +2322,24 @@ const styles = StyleSheet.create({
     },
     tdText: {
         fontSize: 13,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
     },
     playerName: {
         fontSize: 13,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
         textAlign: 'left',
         width: '100%',
     },
     playerPosition: {
         fontSize: 11,
-        color: THEME.textMuted,
+        color: theme.colors.textMuted,
         textAlign: 'left',
         width: '100%',
         marginTop: 2,
     },
     goalBadge: {
-        backgroundColor: THEME.success + '20',
+        backgroundColor: theme.colors.success + '20',
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
@@ -2345,10 +2347,10 @@ const styles = StyleSheet.create({
     goalBadgeText: {
         fontSize: 12,
         fontWeight: '700',
-        color: THEME.success,
+        color: theme.colors.success,
     },
     cardY: {
-        backgroundColor: THEME.warning + '25',
+        backgroundColor: theme.colors.warning + '25',
         width: 22,
         height: 26,
         borderRadius: 4,
@@ -2356,7 +2358,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cardR: {
-        backgroundColor: THEME.danger + '25',
+        backgroundColor: theme.colors.error + '25',
         width: 22,
         height: 26,
         borderRadius: 4,
@@ -2366,7 +2368,7 @@ const styles = StyleSheet.create({
     cardText: {
         fontSize: 10,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     weeklyAttendanceSection: {
         marginTop: isMobile ? 16 : 20,
@@ -2376,7 +2378,7 @@ const styles = StyleSheet.create({
         marginTop: isMobile ? 12 : 16,
         paddingTop: isMobile ? 12 : 16,
         borderTopWidth: 1,
-        borderTopColor: THEME.border,
+        borderTopColor: theme.colors.border,
     },
     weekHeader: {
         flexDirection: 'row',
@@ -2394,10 +2396,10 @@ const styles = StyleSheet.create({
     weekLabel: {
         fontSize: isMobile ? 12 : 14,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     weekBadge: {
-        backgroundColor: THEME.primary + '15',
+        backgroundColor: theme.colors.primary + '15',
         paddingHorizontal: isMobile ? 10 : 14,
         paddingVertical: isMobile ? 4 : 6,
         borderRadius: isMobile ? 10 : 12,
@@ -2405,16 +2407,16 @@ const styles = StyleSheet.create({
     weekBadgeText: {
         fontSize: isMobile ? 10 : 12,
         fontWeight: '600',
-        color: THEME.primary,
+        color: theme.colors.primary,
     },
     weekPdfButton: {
-        backgroundColor: THEME.error,
+        backgroundColor: theme.colors.error,
         width: isMobile ? 32 : 36,
         height: isMobile ? 32 : 36,
         borderRadius: isMobile ? 8 : 10,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: THEME.error,
+        shadowColor: theme.colors.error,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
@@ -2426,7 +2428,7 @@ const styles = StyleSheet.create({
         gap: isMobile ? 8 : 10,
     },
     weekPlayerItem: {
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         paddingHorizontal: isMobile ? 10 : 14,
         paddingVertical: isMobile ? 10 : 12,
         borderRadius: isMobile ? 10 : 12,
@@ -2436,12 +2438,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     weekPlayerName: {
         fontSize: isMobile ? 11 : 13,
         fontWeight: '500',
-        color: THEME.text,
+        color: theme.colors.text,
         flex: 1,
         marginRight: isMobile ? 6 : 8,
     },
@@ -2453,7 +2455,7 @@ const styles = StyleSheet.create({
     weekPlayerCount: {
         fontSize: isMobile ? 10 : 12,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     weekPlayerPercentage: {
         fontSize: isMobile ? 10 : 12,
@@ -2464,7 +2466,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     playerCard: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         padding: 18,
         marginBottom: 12,
@@ -2474,7 +2476,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     playerCardHeader: {
         flexDirection: 'row',
@@ -2483,7 +2485,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     playerCardLeft: {
         flex: 1,
@@ -2491,18 +2493,18 @@ const styles = StyleSheet.create({
     playerCardName: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
         marginBottom: 4,
     },
     playerCardPosition: {
         fontSize: 12,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '500',
     },
     goalBadgeLarge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 16,
@@ -2522,16 +2524,16 @@ const styles = StyleSheet.create({
     statItem: {
         flex: 1,
         minWidth: isMobile ? '18%' : 80,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         padding: 14,
         borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     statLabel: {
         fontSize: 10,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '600',
         marginBottom: 4,
         textTransform: 'uppercase',
@@ -2540,18 +2542,18 @@ const styles = StyleSheet.create({
     statValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     attendanceSection: {
         marginTop: 8,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: THEME.border,
+        borderTopColor: theme.colors.border,
     },
     attendanceSectionTitle: {
         fontSize: 11,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginBottom: 8,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -2562,23 +2564,23 @@ const styles = StyleSheet.create({
     },
     attendanceItem: {
         flex: 1,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         padding: 14,
         borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     attendanceLabel: {
         fontSize: 10,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '600',
         marginBottom: 4,
     },
     attendanceValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     cardsRow: {
         flexDirection: 'row',
@@ -2590,7 +2592,7 @@ const styles = StyleSheet.create({
         marginBottom: isMobile ? 12 : 16,
         paddingBottom: isMobile ? 12 : 16,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     dateFilterInputs: {
         flexDirection: isMobile ? 'column' : 'row',
@@ -2603,13 +2605,13 @@ const styles = StyleSheet.create({
     dateFilterLabel: {
         fontSize: isMobile ? 11 : 12,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginBottom: isMobile ? 4 : 6,
     },
     dateFilterButton: {
-        backgroundColor: THEME.inputBg,
+        backgroundColor: theme.colors.inputBg,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
         borderRadius: isMobile ? 10 : 12,
         paddingHorizontal: isMobile ? 12 : 14,
         paddingVertical: isMobile ? 10 : 12,
@@ -2619,7 +2621,7 @@ const styles = StyleSheet.create({
     },
     dateFilterButtonText: {
         fontSize: isMobile ? 12 : 14,
-        color: THEME.text,
+        color: theme.colors.text,
     },
     clearFilterButton: {
         flexDirection: 'row',
@@ -2630,12 +2632,12 @@ const styles = StyleSheet.create({
         paddingVertical: isMobile ? 6 : 8,
         paddingHorizontal: isMobile ? 10 : 12,
         borderRadius: isMobile ? 6 : 8,
-        backgroundColor: THEME.danger + '10',
+        backgroundColor: theme.colors.error + '10',
     },
     clearFilterText: {
         fontSize: isMobile ? 11 : 12,
         fontWeight: '600',
-        color: THEME.danger,
+        color: theme.colors.error,
     },
     filterButtons: {
         flexDirection: 'row',
@@ -2648,18 +2650,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: isMobile ? 4 : 6,
-        backgroundColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
         paddingHorizontal: isMobile ? 14 : 18,
         paddingVertical: isMobile ? 8 : 10,
         borderRadius: isMobile ? 10 : 12,
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
         shadowRadius: 6,
         elevation: 4,
     },
     applyFilterButtonDisabled: {
-        backgroundColor: THEME.textMuted,
+        backgroundColor: theme.colors.textMuted,
         shadowOpacity: 0,
         elevation: 0,
     },
@@ -2675,12 +2677,12 @@ const styles = StyleSheet.create({
     emptyFilterText: {
         fontSize: isMobile ? 14 : 16,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginTop: isMobile ? 12 : 14,
     },
     emptyFilterSubText: {
         fontSize: isMobile ? 11 : 13,
-        color: THEME.textMuted,
+        color: theme.colors.textMuted,
         marginTop: isMobile ? 4 : 6,
         textAlign: 'center',
     },
@@ -2691,9 +2693,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: THEME.inputBg,
+        backgroundColor: theme.colors.inputBg,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
         borderRadius: isMobile ? 10 : 12,
         paddingHorizontal: isMobile ? 12 : 16,
         paddingVertical: isMobile ? 10 : 14,
@@ -2701,16 +2703,16 @@ const styles = StyleSheet.create({
     },
     playerFilterTriggerText: {
         fontSize: isMobile ? 12 : 14,
-        color: THEME.text,
+        color: theme.colors.text,
         fontWeight: '500',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: theme.colors.overlay,
         justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderTopLeftRadius: isMobile ? 20 : 24,
         borderTopRightRadius: isMobile ? 20 : 24,
         padding: isMobile ? 16 : 20,
@@ -2723,12 +2725,12 @@ const styles = StyleSheet.create({
         marginBottom: isMobile ? 16 : 20,
         paddingBottom: isMobile ? 12 : 16,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     modalTitle: {
         fontSize: isMobile ? 16 : 18,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     modalActions: {
         flexDirection: 'row',
@@ -2739,10 +2741,10 @@ const styles = StyleSheet.create({
         paddingVertical: isMobile ? 8 : 10,
         paddingHorizontal: isMobile ? 10 : 12,
         borderRadius: isMobile ? 6 : 8,
-        backgroundColor: THEME.primary + '10',
+        backgroundColor: theme.colors.primary + '10',
     },
     modalActionText: {
-        color: THEME.primary,
+        color: theme.colors.primary,
         fontWeight: '600',
         fontSize: isMobile ? 12 : 14,
     },
@@ -2756,27 +2758,27 @@ const styles = StyleSheet.create({
         paddingVertical: isMobile ? 12 : 14,
         paddingHorizontal: isMobile ? 6 : 8,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
         borderRadius: isMobile ? 6 : 8,
     },
     modalItemActive: {
-        backgroundColor: THEME.primary + '10',
+        backgroundColor: theme.colors.primary + '10',
     },
     modalItemText: {
         fontSize: isMobile ? 13 : 15,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '500',
     },
     modalItemTextActive: {
-        color: THEME.primary,
+        color: theme.colors.primary,
         fontWeight: '600',
     },
     modalConfirmButton: {
-        backgroundColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
         paddingVertical: isMobile ? 14 : 16,
         borderRadius: isMobile ? 12 : 14,
         alignItems: 'center',
-        shadowColor: THEME.primary,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 8,
@@ -2916,11 +2918,11 @@ const styles = StyleSheet.create({
     resultsStripLabel: {
         fontSize: 11,
         fontWeight: '700',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         letterSpacing: 1,
     },
     goalsComparisonCard: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: isMobile ? 16 : 20,
         overflow: 'hidden',
         marginBottom: isMobile ? 12 : 16,
@@ -2930,13 +2932,13 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     goalsComparisonHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: isMobile ? 14 : 18,
-        backgroundColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
     },
     goalsComparisonIconWrap: {
         width: isMobile ? 30 : 36,
@@ -2964,7 +2966,7 @@ const styles = StyleSheet.create({
     goalsComparisonSideLabel: {
         fontSize: 11,
         fontWeight: '700',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         letterSpacing: 1,
         marginBottom: 8,
     },
@@ -2989,12 +2991,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     goalsComparisonDiffBadge: {
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     goalsComparisonDiffText: {
         fontSize: 18,
@@ -3003,7 +3005,7 @@ const styles = StyleSheet.create({
     goalsComparisonFooter: {
         flexDirection: isMobile ? 'column' : 'row',
         borderTopWidth: 1,
-        borderTopColor: THEME.border,
+        borderTopColor: theme.colors.border,
         paddingVertical: 16,
         paddingHorizontal: 20,
         gap: isMobile ? 12 : 0,
@@ -3017,20 +3019,20 @@ const styles = StyleSheet.create({
     goalsComparisonFooterLabel: {
         flex: 1,
         fontSize: 13,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
     },
     goalsComparisonFooterValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     goalsComparisonFooterDivider: {
         width: 1,
-        backgroundColor: THEME.border,
+        backgroundColor: theme.colors.border,
         marginHorizontal: 16,
     },
     rivalGoalCard: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: isMobile ? 16 : 20,
         overflow: 'hidden',
         marginBottom: isMobile ? 12 : 16,
@@ -3040,13 +3042,13 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 4,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     rivalGoalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: isMobile ? 14 : 18,
-        backgroundColor: THEME.danger,
+        backgroundColor: theme.colors.error,
     },
     rivalGoalIconWrap: {
         width: isMobile ? 30 : 36,
@@ -3082,14 +3084,14 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     rivalGoalMetricLabel: {
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontSize: isMobile ? 10 : 11,
         textAlign: 'center',
         marginTop: 4,
     },
     rivalGoalMetricDivider: {
         width: 1,
-        backgroundColor: THEME.border,
+        backgroundColor: theme.colors.border,
     },
     rivalGoalHistogram: {
         paddingHorizontal: isMobile ? 12 : 16,
@@ -3101,7 +3103,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     rivalGoalBarLabel: {
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontSize: 11,
         width: 50,
         textAlign: 'right',
@@ -3110,7 +3112,7 @@ const styles = StyleSheet.create({
     rivalGoalBarTrack: {
         flex: 1,
         height: 18,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         borderRadius: 6,
         overflow: 'hidden',
     },
@@ -3126,7 +3128,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     rivalGoalHalfLabel: {
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontSize: 10,
         fontWeight: '600',
     },
@@ -3223,7 +3225,7 @@ const styles = StyleSheet.create({
     sortControlsLabel: {
         fontSize: isMobile ? 11 : 12,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         marginBottom: isMobile ? 8 : 10,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -3234,23 +3236,23 @@ const styles = StyleSheet.create({
     sortChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         paddingHorizontal: isMobile ? 10 : 14,
         paddingVertical: isMobile ? 8 : 10,
         borderRadius: isMobile ? 16 : 20,
         marginRight: isMobile ? 6 : 10,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
         gap: isMobile ? 4 : 6,
     },
     sortChipActive: {
-        backgroundColor: THEME.primary,
-        borderColor: THEME.primary,
+        backgroundColor: theme.colors.primary,
+        borderColor: theme.colors.primary,
     },
     sortChipText: {
         fontSize: isMobile ? 11 : 13,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
     },
     sortChipTextActive: {
         color: '#ffffff',
@@ -3258,12 +3260,12 @@ const styles = StyleSheet.create({
     positionLegendContainer: {
         paddingHorizontal: isMobile ? 12 : 16,
         paddingVertical: isMobile ? 8 : 10,
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 10,
         marginHorizontal: isMobile ? 12 : 16,
         marginBottom: isMobile ? 8 : 12,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     positionLegendRow: {
         flexDirection: 'row',
@@ -3285,14 +3287,14 @@ const styles = StyleSheet.create({
     positionLegendText: {
         fontSize: isMobile ? 11 : 13,
         fontWeight: '500',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
     },
     playerCardsContainer: {
         gap: 12,
         marginBottom: 20,
     },
     playerStatCard: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         overflow: 'hidden',
         shadowColor: '#000',
@@ -3301,21 +3303,21 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     playerStatCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 14,
-        backgroundColor: THEME.background,
+        backgroundColor: theme.colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     playerStatCardRank: {
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: THEME.primary + '15',
+        backgroundColor: theme.colors.primary + '15',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
@@ -3323,7 +3325,7 @@ const styles = StyleSheet.create({
     playerStatCardRankText: {
         fontSize: 12,
         fontWeight: '700',
-        color: THEME.primary,
+        color: theme.colors.primary,
     },
     playerStatCardInfo: {
         flex: 1,
@@ -3331,7 +3333,7 @@ const styles = StyleSheet.create({
     playerStatCardName: {
         fontSize: 15,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
         marginBottom: 2,
     },
     playerStatCardPosition: {
@@ -3346,13 +3348,13 @@ const styles = StyleSheet.create({
     },
     playerStatCardPositionText: {
         fontSize: 12,
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         fontWeight: '500',
     },
     playerGoalsBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: THEME.success,
+        backgroundColor: theme.colors.success,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 12,
@@ -3377,19 +3379,19 @@ const styles = StyleSheet.create({
     playerStatItemValue: {
         fontSize: 18,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
         marginBottom: 2,
     },
     playerStatItemLabel: {
         fontSize: 10,
         fontWeight: '600',
-        color: THEME.textSecondary,
+        color: theme.colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 0.3,
     },
     playerStatDivider: {
         height: 1,
-        backgroundColor: THEME.border,
+        backgroundColor: theme.colors.border,
         marginVertical: 12,
     },
     playerStatFooter: {
@@ -3432,7 +3434,7 @@ const styles = StyleSheet.create({
     playerAttendanceBarBg: {
         flex: 1,
         height: 6,
-        backgroundColor: THEME.border,
+        backgroundColor: theme.colors.border,
         borderRadius: 3,
         overflow: 'hidden',
     },
@@ -3453,27 +3455,27 @@ const styles = StyleSheet.create({
     playerSearchInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: isMobile ? 10 : 12,
         paddingHorizontal: isMobile ? 10 : 14,
         paddingVertical: isMobile ? 8 : 10,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
         gap: isMobile ? 8 : 10,
     },
     playerSearchInput: {
         flex: 1,
         fontSize: isMobile ? 12 : 14,
-        color: THEME.text,
+        color: theme.colors.text,
         paddingVertical: 0,
     },
     compactPlayerList: {
-        backgroundColor: THEME.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: isMobile ? 12 : 16,
         overflow: 'hidden',
         marginBottom: isMobile ? 16 : 20,
         borderWidth: 1,
-        borderColor: THEME.border,
+        borderColor: theme.colors.border,
     },
     compactPlayerRow: {
         flexDirection: 'row',
@@ -3482,7 +3484,7 @@ const styles = StyleSheet.create({
         paddingVertical: isMobile ? 10 : 12,
         paddingHorizontal: isMobile ? 10 : 14,
         borderBottomWidth: 1,
-        borderBottomColor: THEME.border,
+        borderBottomColor: theme.colors.border,
     },
     compactPlayerLeft: {
         flexDirection: 'row',
@@ -3494,7 +3496,7 @@ const styles = StyleSheet.create({
     compactPlayerRank: {
         fontSize: isMobile ? 10 : 11,
         fontWeight: '600',
-        color: THEME.textMuted,
+        color: theme.colors.textMuted,
         width: isMobile ? 22 : 28,
     },
     compactPositionDot: {
@@ -3506,7 +3508,7 @@ const styles = StyleSheet.create({
     compactPlayerName: {
         fontSize: isMobile ? 12 : 14,
         fontWeight: '600',
-        color: THEME.text,
+        color: theme.colors.text,
         flex: 1,
     },
     compactPlayerStats: {
@@ -3522,12 +3524,12 @@ const styles = StyleSheet.create({
     compactStatValue: {
         fontSize: isMobile ? 12 : 13,
         fontWeight: '700',
-        color: THEME.text,
+        color: theme.colors.text,
     },
     compactStatLabel: {
         fontSize: isMobile ? 8 : 9,
         fontWeight: '600',
-        color: THEME.textMuted,
+        color: theme.colors.textMuted,
         textTransform: 'uppercase',
     },
     compactCardsContainer: {
