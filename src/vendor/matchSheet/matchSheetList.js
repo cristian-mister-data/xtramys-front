@@ -341,11 +341,10 @@ export default function MatchSheetList() {
   const [filterTorneo, setFilterTorneo] = useState('');
   const [filterResultado, setFilterResultado] = useState('');
   const [filterUbicacion, setFilterUbicacion] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [sortDateOrder, setSortDateOrder] = useState('default');
   const [sortGoals, setSortGoals] = useState('');
-  
-  // Estado para menú móvil
-  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
 
   // Estados para creación/edición de ficha
 
@@ -394,7 +393,29 @@ export default function MatchSheetList() {
         }
       }
       
-      return matchesRival && matchesJornada && matchesEquipo && matchesTorneo && matchesResultado && matchesUbicacion;
+      // Filter by date range
+      let matchesDateRange = true;
+      if (filterDateFrom || filterDateTo) {
+        const msDate = matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : null;
+        if (!msDate || isNaN(msDate.getTime())) {
+          matchesDateRange = false;
+        } else {
+          if (filterDateFrom) {
+            const from = new Date(filterDateFrom);
+            if (!isNaN(from.getTime()) && msDate < from) matchesDateRange = false;
+          }
+          if (matchesDateRange && filterDateTo) {
+            const to = new Date(filterDateTo);
+            if (!isNaN(to.getTime())) {
+              // Make 'to' inclusive of the whole day
+              to.setHours(23, 59, 59, 999);
+              if (msDate > to) matchesDateRange = false;
+            }
+          }
+        }
+      }
+
+      return matchesRival && matchesJornada && matchesEquipo && matchesTorneo && matchesResultado && matchesUbicacion && matchesDateRange;
     });
 
     // Sort by goals if requested
@@ -456,10 +477,10 @@ export default function MatchSheetList() {
     past.sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
 
     return [...upcoming, ...past, ...undated];
-  }, [matchSheets, filterRival, filterJornada, filterEquipo, filterTorneo, filterResultado, filterUbicacion, sortDateOrder, sortGoals, selectedTeam]);
+  }, [matchSheets, filterRival, filterJornada, filterEquipo, filterTorneo, filterResultado, filterUbicacion, filterDateFrom, filterDateTo, sortDateOrder, sortGoals, selectedTeam]);
   
   // Contar filtros activos
-  const activeFiltersCount = [filterRival, filterJornada, filterEquipo, filterTorneo, filterResultado, filterUbicacion, sortGoals, sortDateOrder !== 'default' ? sortDateOrder : ''].filter(Boolean).length;
+  const activeFiltersCount = [filterRival, filterJornada, filterEquipo, filterTorneo, filterResultado, filterUbicacion, filterDateFrom, filterDateTo, sortGoals, sortDateOrder !== 'default' ? sortDateOrder : ''].filter(Boolean).length;
   
   // Limpiar filtros
   const clearFilters = () => {
@@ -469,6 +490,8 @@ export default function MatchSheetList() {
     setFilterTorneo('');
     setFilterResultado('');
     setFilterUbicacion('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
     setSortDateOrder('default');
     setSortGoals('');
   };
@@ -680,6 +703,34 @@ export default function MatchSheetList() {
                       onChangeText={(text) => setFilterJornada(filterNumericInput(text))}
                       keyboardType="number-pad"
                       autoComplete="off"
+                    />
+                  </View>
+                </View>
+
+                {/* Date range filter */}
+                <View style={[styles.filtersGrid, IS_MOBILE && styles.filtersGridMobile, { marginTop: 10 }]}>
+                  <View style={styles.filterInputContainer}>
+                    <Text style={styles.filterLabel}>{t('matchSheet.filters.dateFrom') || 'Desde fecha'}</Text>
+                    <TextInput
+                      style={styles.filterInput}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={filterDateFrom}
+                      onChangeText={setFilterDateFrom}
+                      autoComplete="off"
+                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
+                    />
+                  </View>
+                  <View style={styles.filterInputContainer}>
+                    <Text style={styles.filterLabel}>{t('matchSheet.filters.dateTo') || 'Hasta fecha'}</Text>
+                    <TextInput
+                      style={styles.filterInput}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={filterDateTo}
+                      onChangeText={setFilterDateTo}
+                      autoComplete="off"
+                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
                     />
                   </View>
                 </View>
@@ -1060,53 +1111,6 @@ export default function MatchSheetList() {
           sanctionedPlayerIds={sanctions.filter(s => s.sancionado).map(s => s.playerId)}
         />
 
-        {/* Menú Móvil */}
-        <Modal
-          visible={mobileMenuVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setMobileMenuVisible(false)}
-        >
-          <Pressable 
-            style={styles.mobileMenuOverlay}
-            onPress={() => setMobileMenuVisible(false)}
-          >
-            <Pressable style={styles.mobileMenuContainer} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.mobileMenuContent}>
-
-                <TouchableOpacity
-                  style={styles.mobileMenuItem}
-                  onPress={() => {
-                    setFiltersVisible(!filtersVisible);
-                    setMobileMenuVisible(false);
-                  }}
-                >
-                  <MaterialIcons name="filter-list" size={24} color={theme.colors.primary} />
-                  <Text style={styles.mobileMenuItemText}>{t('matchSheet.actions.filters')}</Text>
-                  {activeFiltersCount > 0 && (
-                    <View style={styles.mobileMenuItemBadge}>
-                      <Text style={styles.mobileMenuItemBadgeText}>{activeFiltersCount}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                <View style={styles.mobileMenuDivider} />
-
-                <TouchableOpacity
-                  style={styles.mobileMenuItem}
-                  onPress={() => {
-                    openCreateModal();
-                    setMobileMenuVisible(false);
-                  }}
-                >
-                  <MaterialIcons name="add" size={20} color="#fff" backgroundColor={theme.colors.primary} borderRadius={100} />
-                  <Text style={styles.mobileMenuItemText}>{t('matchSheet.actions.createMatchSheet')}</Text>
-                </TouchableOpacity>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
-
         {/* Sección de Filtros Móvil */}
         {filtersVisible && IS_MOBILE && (
           <Modal
@@ -1146,6 +1150,32 @@ export default function MatchSheetList() {
                       onChangeText={(text) => setFilterJornada(filterNumericInput(text))}
                       keyboardType="number-pad"
                       autoComplete="off"
+                    />
+                  </View>
+
+                  <View style={[styles.filterInputContainer, { minWidth: '100%' }]}>
+                    <Text style={styles.filterLabel}>{t('matchSheet.filters.dateFrom') || 'Desde fecha'}</Text>
+                    <TextInput
+                      style={styles.filterInput}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={filterDateFrom}
+                      onChangeText={setFilterDateFrom}
+                      autoComplete="off"
+                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
+                    />
+                  </View>
+
+                  <View style={[styles.filterInputContainer, { minWidth: '100%' }]}>
+                    <Text style={styles.filterLabel}>{t('matchSheet.filters.dateTo') || 'Hasta fecha'}</Text>
+                    <TextInput
+                      style={styles.filterInput}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={filterDateTo}
+                      onChangeText={setFilterDateTo}
+                      autoComplete="off"
+                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
                     />
                   </View>
                 </View>
