@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { generateSessionPDF } from '@/vendor/training/SessionPDF';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -31,22 +32,8 @@ import { STRENGTH_EXERCISES, getStrengthExerciseImage, getStrengthExerciseVideoU
 import StrengthExerciseViewer from '@/vendor/shared/StrengthExerciseViewer';
 
 // Tema consistente con el resto de la aplicación
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-  inputBg: '#f8fafc',
-  gradient: ['#3578e5', '#2856a2'],
-};
+// NOTE: Colores ahora vienen del ThemeProvider de styled-components.
+// TEAM_COLORS se mantiene literal porque son datos semánticos (identidad de equipo).
 
 // Colores para los equipos
 const TEAM_COLORS = ['#3578e5', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
@@ -64,6 +51,8 @@ export default function TrainingSessionDetailModal({
   onWellnessUpdate, // Callback para cuando se actualice el wellness
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
@@ -435,14 +424,14 @@ export default function TrainingSessionDetailModal({
                   style={styles.headerSecondaryButton}
                   onPress={() => onEdit(session)}
                 >
-                  <MaterialIcons name="edit" size={20} color="#374151" />
+                  <MaterialIcons name="edit" size={20} color={theme.colors.text} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onClose}
               >
-                <MaterialIcons name="close" size={24} color="#64748b" />
+                <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -451,7 +440,7 @@ export default function TrainingSessionDetailModal({
             {/* Session Detail Card - Header con fecha */}
             <View style={styles.sessionDetailCard}>
               <View style={styles.sessionDetailHeader}>
-                <MaterialIcons name="event" size={24} color={THEME.primary} />
+                <MaterialIcons name="event" size={24} color={theme.colors.primary} />
                 <Text style={styles.sessionDetailTitle}>
                   {formatDate(session.fecha)} • {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
                 </Text>
@@ -463,7 +452,7 @@ export default function TrainingSessionDetailModal({
               <Text style={styles.detailSectionTitle}>{t('session.generalInformation')}</Text>
               
               <View style={styles.detailRow}>
-                <MaterialIcons name="schedule" size={20} color="#64748b" />
+                <MaterialIcons name="schedule" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.detailLabel}>{t('session.scheduleLabel')}:</Text>
                 <Text style={styles.detailValue}>
                   {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
@@ -471,7 +460,7 @@ export default function TrainingSessionDetailModal({
               </View>
               
               <View style={styles.detailRow}>
-                <MaterialIcons name="fitness-center" size={20} color="#64748b" />
+                <MaterialIcons name="fitness-center" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.detailLabel}>{t('session.exercisesLabel')}:</Text>
                 <Text style={styles.detailValue}>
                   {t('session.exercisesCount', { count: orderedExercises.length })}
@@ -480,7 +469,7 @@ export default function TrainingSessionDetailModal({
               
               {(sessionPlayers.length > 0 || (session.jugadoresExtras && session.jugadoresExtras.length > 0)) && (
                 <View style={styles.detailRow}>
-                  <Ionicons name="people" size={20} color="#64748b" />
+                  <Ionicons name="people" size={20} color={theme.colors.textSecondary} />
                   <Text style={styles.detailLabel}>{t('session.playersLabel')}:</Text>
                   <Text style={styles.detailValue}>
                     {sessionPlayers.length + (session.jugadoresExtras?.length || 0)} {t('session.availableCount', { count: sessionPlayers.length + (session.jugadoresExtras?.length || 0) })}
@@ -522,7 +511,7 @@ export default function TrainingSessionDetailModal({
                   style={styles.wellnessDetailBtn}
                   onPress={() => setShowPreWellnessDetail(true)}
                 >
-                  <MaterialIcons name="open-in-new" size={16} color="#fff" />
+                  <MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />
                   <Text style={styles.wellnessDetailBtnText}>
                     {t('preWellness.manage')}
                   </Text>
@@ -530,13 +519,13 @@ export default function TrainingSessionDetailModal({
               </View>
               
               {loadingPreWellness ? (
-                <ActivityIndicator size="small" color={THEME.primary} style={{ marginVertical: 12 }} />
+                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 12 }} />
               ) : (
                 <View style={styles.wellnessStatsContainer}>
                   {/* Response Count */}
                   <View style={styles.wellnessStatBox}>
                     <Text style={styles.wellnessStatLabel}>{t('preWellness.responses')}</Text>
-                    <Text style={[styles.wellnessStatValue, { color: THEME.textSecondary }]}>
+                    <Text style={[styles.wellnessStatValue, { color: theme.colors.textSecondary }]}>
                       {preWellnessStats?.responseCount || 0}
                     </Text>
                   </View>
@@ -546,7 +535,7 @@ export default function TrainingSessionDetailModal({
               {/* Link status indicator */}
               {preWellnessStats?.hasActiveLink && (
                 <View style={styles.wellnessLinkActive}>
-                  <Ionicons name="link" size={14} color={THEME.success} />
+                  <Ionicons name="link" size={14} color={theme.colors.success} />
                   <Text style={styles.wellnessLinkActiveText}>
                     {t('preWellness.linkActive')}
                   </Text>
@@ -559,7 +548,7 @@ export default function TrainingSessionDetailModal({
               <View style={styles.wellnessSectionHeader}>
                 <View style={styles.preWellnessTitleRow}>
                   <Text style={styles.detailSectionTitle}>{t('session.wellness')}</Text>
-                  <View style={[styles.preWellnessBadge, { backgroundColor: '#10b981' }]}>
+                  <View style={[styles.preWellnessBadge, { backgroundColor: theme.colors.success }]}>
                     <Text style={styles.preWellnessBadgeText}>{t('session.postBadge')}</Text>
                   </View>
                 </View>
@@ -567,7 +556,7 @@ export default function TrainingSessionDetailModal({
                   style={styles.wellnessDetailBtn}
                   onPress={() => setShowWellnessDetail(true)}
                 >
-                  <MaterialIcons name="open-in-new" size={16} color="#fff" />
+                  <MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />
                   <Text style={styles.wellnessDetailBtnText}>
                     {t('session.manageWellness')}
                   </Text>
@@ -575,27 +564,27 @@ export default function TrainingSessionDetailModal({
               </View>
               
               {loadingWellness ? (
-                <ActivityIndicator size="small" color={THEME.primary} style={{ marginVertical: 12 }} />
+                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 12 }} />
               ) : (
                 <View style={styles.wellnessStatsContainer}>
                   {/* Expected Wellness */}
                   <View style={styles.wellnessStatBox}>
                     <Text style={styles.wellnessStatLabel}>{t('session.expectedWellness')}</Text>
-                    <Text style={[styles.wellnessStatValue, { color: '#10b981' }]}>
+                    <Text style={[styles.wellnessStatValue, { color: theme.colors.success }]}>
                       {wellnessStats?.expectedWellness || '-'}
                     </Text>
                   </View>
                   {/* Average Wellness */}
                   <View style={styles.wellnessStatBox}>
                     <Text style={styles.wellnessStatLabel}>{t('session.averageWellness')}</Text>
-                    <Text style={[styles.wellnessStatValue, { color: '#3b82f6' }]}>
+                    <Text style={[styles.wellnessStatValue, { color: theme.colors.info }]}>
                       {wellnessStats?.averageWellness?.toFixed(1) || '-'}
                     </Text>
                   </View>
                   {/* Response Count */}
                   <View style={styles.wellnessStatBox}>
                     <Text style={styles.wellnessStatLabel}>{t('session.responses')}</Text>
-                    <Text style={[styles.wellnessStatValue, { color: THEME.textSecondary }]}>
+                    <Text style={[styles.wellnessStatValue, { color: theme.colors.textSecondary }]}>
                       {wellnessStats?.responseCount || 0}
                     </Text>
                   </View>
@@ -605,7 +594,7 @@ export default function TrainingSessionDetailModal({
               {/* Link status indicator */}
               {wellnessStats?.hasActiveLink && (
                 <View style={styles.wellnessLinkActive}>
-                  <Ionicons name="link" size={14} color={THEME.success} />
+                  <Ionicons name="link" size={14} color={theme.colors.success} />
                   <Text style={styles.wellnessLinkActiveText}>
                     {t('session.wellnessLinkActive')}
                   </Text>
@@ -663,7 +652,7 @@ export default function TrainingSessionDetailModal({
                               resizeMode="cover"
                             />
                             <View style={styles.zoomBadgeWithText}>
-                              <MaterialIcons name="fullscreen" size={18} color={THEME.primary} />
+                              <MaterialIcons name="fullscreen" size={18} color={theme.colors.primary} />
                               <Text style={styles.zoomBadgeText}>{t('common.zoom')}</Text>
                             </View>
                           </TouchableOpacity>
@@ -675,33 +664,33 @@ export default function TrainingSessionDetailModal({
                           {/* Tags informativos - igual que en training.js */}
                           <View style={styles.exerciseTags}>
                             {getFolderName(ejercicio) && (
-                              <View style={[styles.exerciseTag, { backgroundColor: '#e8f5e9' }]}>
-                                <Ionicons name="folder" size={14} color="#388e3c" />
-                                <Text style={[styles.exerciseTagText, { color: '#388e3c' }]}>{getFolderName(ejercicio)}</Text>
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.successSoft }]}>
+                                <Ionicons name="folder" size={14} color={theme.colors.successSoftText} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.successSoftText }]}>{getFolderName(ejercicio)}</Text>
                               </View>
                             )}
                             {ejercicio.numeroJugadores && (
-                              <View style={[styles.exerciseTag, { backgroundColor: '#e3f2fd' }]}>
-                                <Ionicons name="people" size={14} color="#1976d2" />
-                                <Text style={[styles.exerciseTagText, { color: '#1976d2' }]}>{ejercicio.numeroJugadores}</Text>
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.infoSoft }]}>
+                                <Ionicons name="people" size={14} color={theme.colors.infoSoftText} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.infoSoftText }]}>{ejercicio.numeroJugadores}</Text>
                               </View>
                             )}
                             {ejercicio.equipos && (
-                              <View style={[styles.exerciseTag, { backgroundColor: '#f3e5f5' }]}>
-                                <Ionicons name="flag" size={14} color="#7b1fa2" />
-                                <Text style={[styles.exerciseTagText, { color: '#7b1fa2' }]}>{ejercicio.equipos}</Text>
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.purpleSoft }]}>
+                                <Ionicons name="flag" size={14} color={theme.colors.purpleSoftText} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.purpleSoftText }]}>{ejercicio.equipos}</Text>
                               </View>
                             )}
                             {ejercicio.dimensiones && (
-                              <View style={[styles.exerciseTag, { backgroundColor: '#ede7f6' }]}>
-                                <Ionicons name="resize-outline" size={14} color="#673AB7" />
-                                <Text style={[styles.exerciseTagText, { color: '#673AB7' }]}>{ejercicio.dimensiones}</Text>
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.purpleSoft }]}>
+                                <Ionicons name="resize-outline" size={14} color={theme.colors.purpleSoftText} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.purpleSoftText }]}>{ejercicio.dimensiones}</Text>
                               </View>
                             )}
                             {tiempoDescanso > 0 && (
-                              <View style={[styles.exerciseTag, { backgroundColor: '#e8f5e9' }]}>
-                                <Ionicons name="time-outline" size={14} color="#388e3c" />
-                                <Text style={[styles.exerciseTagText, { color: '#388e3c' }]}>{t('session.restTimeShort')}: {tiempoDescanso}min</Text>
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.successSoft }]}>
+                                <Ionicons name="time-outline" size={14} color={theme.colors.successSoftText} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.successSoftText }]}>{t('session.restTimeShort')}: {tiempoDescanso}min</Text>
                               </View>
                             )}
                             
@@ -742,7 +731,7 @@ export default function TrainingSessionDetailModal({
                           {/* Observación específica de la sesión */}
                           {observacionesMap[ejercicio._id] && (
                             <View style={styles.observacionContainer}>
-                              <Ionicons name="chatbubble-ellipses" size={14} color={THEME.textSecondary} />
+                              <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.textSecondary} />
                               <Text style={styles.observacionText}>
                                 <Text style={{ fontWeight: 'bold' }}>{t('session.observation')}: </Text>
                                 {observacionesMap[ejercicio._id]}
@@ -754,7 +743,7 @@ export default function TrainingSessionDetailModal({
                           {teamAssignments && teamAssignments.length > 0 && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0)) && (
                             <View style={styles.teamAssignmentsContainer}>
                               <View style={styles.teamAssignmentsHeader}>
-                                <Ionicons name="people" size={16} color={THEME.primary} />
+                                <Ionicons name="people" size={16} color={theme.colors.primary} />
                                 <Text style={styles.teamAssignmentsTitle}>
                                   {t('session.teamAssignments')}
                                 </Text>
@@ -797,7 +786,7 @@ export default function TrainingSessionDetailModal({
                       {/* Indicador de tiempo de descanso entre ejercicios */}
                       {!isLast && tiempoDescanso > 0 && (
                         <View style={styles.restTimeCard}>
-                          <Ionicons name="time-outline" size={16} color="#854d0e" />
+                          <Ionicons name="time-outline" size={16} color={theme.colors.warningSoftText} />
                           <Text style={styles.restTimeText}>{t('session.restTime')}: {tiempoDescanso} min</Text>
                         </View>
                       )}
@@ -811,7 +800,7 @@ export default function TrainingSessionDetailModal({
             {sessionStrengthExercises.length > 0 && (
               <View style={[styles.section, { marginBottom: 24 }]}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="barbell" size={20} color="#8b5cf6" />
+                  <Ionicons name="barbell" size={20} color={theme.colors.purple} />
                   <Text style={styles.sectionTitle}>{t('session.strengthExercises')}</Text>
                   <View style={styles.exerciseCount}>
                     <Text style={styles.exerciseCountText}>{sessionStrengthExercises.length}</Text>
@@ -852,12 +841,12 @@ export default function TrainingSessionDetailModal({
                               <Text style={styles.strengthGridName} numberOfLines={2}>{t(exercise.i18nKey)}</Text>
                               <View style={styles.strengthGridTagsRow}>
                                 {sectionInfo && (
-                                  <View style={[styles.strengthGridTag, { backgroundColor: 'rgba(139,92,246,0.15)' }]}>
-                                    <Text style={[styles.strengthGridTagText, { color: '#8b5cf6' }]}>{t(sectionInfo.section.i18nKey)}</Text>
+                                  <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.purpleSoft }]}>
+                                    <Text style={[styles.strengthGridTagText, { color: theme.colors.purpleSoftText }]}>{t(sectionInfo.section.i18nKey)}</Text>
                                   </View>
                                 )}
-                                <View style={[styles.strengthGridTag, { backgroundColor: 'rgba(59,130,246,0.15)' }]}>
-                                  <Text style={[styles.strengthGridTagText, { color: '#3b82f6' }]}>Nv {exercise.level}</Text>
+                                <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.infoSoft }]}>
+                                  <Text style={[styles.strengthGridTagText, { color: theme.colors.infoSoftText }]}>Nv {exercise.level}</Text>
                                 </View>
                               </View>
                             </View>
@@ -889,7 +878,7 @@ export default function TrainingSessionDetailModal({
                   );
                 }}
               >
-                <Ionicons name="trash" size={20} color={THEME.danger} />
+                <Ionicons name="trash" size={20} color={theme.colors.error} />
                 <Text style={styles.deleteButtonText}>{t('session.deleteSession')}</Text>
               </TouchableOpacity>
             )}
@@ -1028,15 +1017,15 @@ export default function TrainingSessionDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   viewModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '95%',
     maxHeight: '90%',
@@ -1047,7 +1036,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   viewModalContentTablet: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '80%',
     maxWidth: 700,
@@ -1064,17 +1053,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   modalCloseBtn: {
     padding: 4,
@@ -1082,7 +1071,7 @@ const styles = StyleSheet.create({
   headerSecondaryButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   modalBody: {
     padding: 20,
@@ -1090,7 +1079,7 @@ const styles = StyleSheet.create({
   
   // Session Detail Card (header con fecha) - igual que training.js
   sessionDetailCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1104,12 +1093,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   
   // Detail Section - igual que training.js
   detailSection: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1117,11 +1106,11 @@ const styles = StyleSheet.create({
   detailSectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   detailRow: {
     flexDirection: 'row',
@@ -1129,17 +1118,17 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border + '50',
+    borderBottomColor: theme.colors.border + '50',
   },
   detailLabel: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     flex: 1,
   },
   detailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   detailPlayersRow: {
     paddingTop: 12,
@@ -1148,24 +1137,24 @@ const styles = StyleSheet.create({
   detailPlayersLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.success,
+    color: theme.colors.success,
     marginBottom: 6,
   },
   detailPlayersLabelExtra: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.warning,
+    color: theme.colors.warning,
     marginBottom: 6,
   },
   detailPlayersText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   
   // Session Info Card
   sessionInfoCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -1177,13 +1166,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   sessionInfoTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   sessionInfoRow: {
     flexDirection: 'row',
@@ -1195,17 +1184,17 @@ const styles = StyleSheet.create({
   },
   sessionInfoLabel: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   sessionInfoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   
   // Section Card
   sectionCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
@@ -1217,33 +1206,33 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   sectionContent: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   emptyText: {
     fontSize: 14,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     paddingVertical: 20,
   },
   
   // Exercise Card
   exerciseCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   exerciseOrderBadge: {
     position: 'absolute',
@@ -1252,13 +1241,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
   exerciseOrderText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1282,10 +1271,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   strengthGridCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   strengthGridImageContainer: {
@@ -1305,7 +1294,7 @@ const styles = StyleSheet.create({
   strengthGridName: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     lineHeight: 14,
     marginBottom: 4,
   },
@@ -1345,7 +1334,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   zoomBadgeText: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontWeight: 'bold',
     fontSize: 12,
   },
@@ -1355,7 +1344,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   exerciseTags: {
@@ -1378,7 +1367,7 @@ const styles = StyleSheet.create({
   },
   exerciseDescription: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   // Sección de detalles del ejercicio (descripción, objetivo, duración)
@@ -1386,17 +1375,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   exerciseDetailText: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 6,
   },
   exerciseDetailLabel: {
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   observacionContainer: {
     flexDirection: 'row',
@@ -1404,13 +1393,13 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
     padding: 10,
-    backgroundColor: THEME.warning + '15',
+    backgroundColor: theme.colors.warningSoft,
     borderRadius: 8,
   },
   observacionText: {
     flex: 1,
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
   },
   
@@ -1422,15 +1411,15 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     marginBottom: 12,
-    backgroundColor: THEME.warning + '20',
+    backgroundColor: theme.colors.warningSoft,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.warning + '60',
+    borderColor: theme.colors.warning + '60',
   },
   restTimeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: THEME.warning,
+    color: theme.colors.warningSoftText,
   },
   
   // PDF Button
@@ -1438,7 +1427,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -1446,7 +1435,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   pdfButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1458,20 +1447,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.danger + '10',
+    backgroundColor: theme.colors.errorSoft,
     borderWidth: 1,
-    borderColor: THEME.danger + '30',
+    borderColor: theme.colors.error + '30',
     gap: 8,
     marginTop: 24,
     marginBottom: 20,
   },
   deleteButtonText: {
-    color: THEME.danger,
+    color: theme.colors.error,
     fontSize: 14,
     fontWeight: '600',
   },
   
-  // Image Modal
+  // Image Modal (fullscreen image viewer - dark backdrop kept literal intentionally)
   imageModalBg: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
@@ -1501,7 +1490,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   
-  // Estilos para botón de video en ejercicio
+  // Estilos para botón de video en ejercicio (brand pink kept literal)
   exerciseVideoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1512,7 +1501,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   exerciseVideoBtnInactive: {
-    backgroundColor: '#94a3b8',
+    backgroundColor: theme.colors.textMuted,
   },
   exerciseVideoBtnText: {
     color: '#fff',
@@ -1520,7 +1509,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Modal de video
+  // Modal de video (dark video player UI - colors kept literal intentionally)
   videoModalBg: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.95)',
@@ -1599,13 +1588,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   wellnessDetailBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1615,16 +1604,16 @@ const styles = StyleSheet.create({
   },
   wellnessStatBox: {
     flex: 1,
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   wellnessStatLabel: {
     fontSize: 11,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -1632,7 +1621,7 @@ const styles = StyleSheet.create({
   wellnessStatValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   wellnessLinkActive: {
     flexDirection: 'row',
@@ -1641,13 +1630,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   wellnessLinkActiveText: {
     fontSize: 12,
-    color: THEME.success,
+    color: theme.colors.success,
     fontWeight: '500',
   },
   preWellnessTitleRow: {
@@ -1656,7 +1645,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   preWellnessBadge: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: theme.colors.warning,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1672,7 +1661,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   teamAssignmentsHeader: {
     flexDirection: 'row',
@@ -1683,7 +1672,7 @@ const styles = StyleSheet.create({
   teamAssignmentsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   teamsGrid: {
     flexDirection: 'row',
@@ -1694,11 +1683,11 @@ const styles = StyleSheet.create({
     minWidth: 160,
     flex: 1,
     maxWidth: '100%',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 8,
   },
   teamBoxHeader: {
@@ -1723,7 +1712,7 @@ const styles = StyleSheet.create({
   },
   teamPlayerName: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     paddingVertical: 3,
     lineHeight: 18,
   },

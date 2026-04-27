@@ -1,6 +1,7 @@
 // components/pages/season/WellnessDetailModal.js
 // Modal para ver detalle de wellness de una sesión de entrenamiento
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTheme } from 'styled-components';
 import {
   View,
   Text,
@@ -24,21 +25,6 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import api from '@/utils/api';
 import { BACKEND_URL } from '@/config';
-
-const THEME = {
-  primary: '#3578e5',
-  primaryLight: '#5b93ea',
-  primaryDark: '#2856a2',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-};
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -69,6 +55,8 @@ export default function WellnessDetailModal({
   onUpdate,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -517,17 +505,17 @@ export default function WellnessDetailModal({
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={styles.headerIcon}>
-              <Ionicons name="pulse" size={24} color={THEME.primary} />
+              <Ionicons name="pulse" size={24} color={theme.colors.primary} />
             </View>
             <Text style={styles.modalTitle}>{t('session.wellnessConfig')}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={24} color={THEME.textSecondary} />
+              <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={THEME.primary} />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>{t('message.loading')}...</Text>
             </View>
           ) : (
@@ -557,7 +545,7 @@ export default function WellnessDetailModal({
                       <View style={styles.statCard}>
                         <Text style={[
                           styles.statValue,
-                          { color: isOnTarget ? THEME.success : (isAbove ? THEME.primary : THEME.danger) }
+                          { color: isOnTarget ? theme.colors.success : (isAbove ? theme.colors.primary : theme.colors.error) }
                         ]}>
                           {isOnTarget ? '✓' : (isAbove ? '↑' : '↓')}
                         </Text>
@@ -582,7 +570,7 @@ export default function WellnessDetailModal({
                     style={styles.addQuestionBtn}
                     onPress={() => setShowAddQuestion(!showAddQuestion)}
                   >
-                    <Ionicons name={showAddQuestion ? 'close' : 'add'} size={20} color={THEME.primary} />
+                    <Ionicons name={showAddQuestion ? 'close' : 'add'} size={20} color={theme.colors.primary} />
                   </TouchableOpacity>
                 </View>
                 
@@ -593,7 +581,7 @@ export default function WellnessDetailModal({
                       value={newQuestion}
                       onChangeText={setNewQuestion}
                       placeholder={t('session.questionPlaceholder')}
-                      placeholderTextColor={THEME.textMuted}
+                      placeholderTextColor={theme.colors.textMuted}
                     />
                     <TouchableOpacity 
                       style={styles.addQuestionConfirm}
@@ -613,7 +601,7 @@ export default function WellnessDetailModal({
                     <View key={index} style={styles.questionItem}>
                       <Text style={styles.questionText}>{q.question}</Text>
                       <TouchableOpacity onPress={() => handleRemoveQuestion(index)}>
-                        <Ionicons name="trash-outline" size={18} color={THEME.danger} />
+                        <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
                   ))
@@ -661,16 +649,16 @@ export default function WellnessDetailModal({
                     <View style={styles.linkStatusContainer}>
                       <View style={[
                         styles.linkStatusBadge,
-                        { backgroundColor: wellnessData?.wellnessLinkActive !== false ? THEME.success + '20' : THEME.danger + '20' }
+                        { backgroundColor: wellnessData?.wellnessLinkActive !== false ? theme.colors.success + '20' : theme.colors.error + '20' }
                       ]}>
                         <Ionicons 
                           name={wellnessData?.wellnessLinkActive !== false ? "checkmark-circle" : "close-circle"} 
                           size={16} 
-                          color={wellnessData?.wellnessLinkActive !== false ? THEME.success : THEME.danger} 
+                          color={wellnessData?.wellnessLinkActive !== false ? theme.colors.success : theme.colors.error} 
                         />
                         <Text style={[
                           styles.linkStatusText,
-                          { color: wellnessData?.wellnessLinkActive !== false ? THEME.success : THEME.danger }
+                          { color: wellnessData?.wellnessLinkActive !== false ? theme.colors.success : theme.colors.error }
                         ]}>
                           {wellnessData?.wellnessLinkActive !== false 
                             ? t('session.linkActive') 
@@ -680,23 +668,23 @@ export default function WellnessDetailModal({
                       <TouchableOpacity 
                         style={[
                           styles.toggleLinkBtn,
-                          { backgroundColor: wellnessData?.wellnessLinkActive !== false ? THEME.danger + '15' : THEME.success + '15' }
+                          { backgroundColor: wellnessData?.wellnessLinkActive !== false ? theme.colors.error + '15' : theme.colors.success + '15' }
                         ]}
                         onPress={handleToggleLink}
                         disabled={toggling}
                       >
                         {toggling ? (
-                          <ActivityIndicator size="small" color={wellnessData?.wellnessLinkActive !== false ? THEME.danger : THEME.success} />
+                          <ActivityIndicator size="small" color={wellnessData?.wellnessLinkActive !== false ? theme.colors.error : theme.colors.success} />
                         ) : (
                           <>
                             <Ionicons 
                               name={wellnessData?.wellnessLinkActive !== false ? "pause" : "play"} 
                               size={16} 
-                              color={wellnessData?.wellnessLinkActive !== false ? THEME.danger : THEME.success} 
+                              color={wellnessData?.wellnessLinkActive !== false ? theme.colors.error : theme.colors.success} 
                             />
                             <Text style={[
                               styles.toggleLinkText,
-                              { color: wellnessData?.wellnessLinkActive !== false ? THEME.danger : THEME.success }
+                              { color: wellnessData?.wellnessLinkActive !== false ? theme.colors.error : theme.colors.success }
                             ]}>
                               {wellnessData?.wellnessLinkActive !== false 
                                 ? t('session.deactivateLink') 
@@ -719,23 +707,23 @@ export default function WellnessDetailModal({
                         onPress={handleCopyLink}
                         disabled={wellnessData?.wellnessLinkActive === false}
                       >
-                        <Ionicons name="copy" size={18} color={wellnessData?.wellnessLinkActive === false ? THEME.textMuted : THEME.primary} />
-                        <Text style={[styles.linkActionText, wellnessData?.wellnessLinkActive === false && { color: THEME.textMuted }]}>{t('session.copyLink')}</Text>
+                        <Ionicons name="copy" size={18} color={wellnessData?.wellnessLinkActive === false ? theme.colors.textMuted : theme.colors.primary} />
+                        <Text style={[styles.linkActionText, wellnessData?.wellnessLinkActive === false && { color: theme.colors.textMuted }]}>{t('session.copyLink')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={[styles.linkActionBtn, wellnessData?.wellnessLinkActive === false && styles.linkActionBtnDisabled]} 
                         onPress={handleShareLink}
                         disabled={wellnessData?.wellnessLinkActive === false}
                       >
-                        <Ionicons name="share-social" size={18} color={wellnessData?.wellnessLinkActive === false ? THEME.textMuted : THEME.success} />
-                        <Text style={[styles.linkActionText, { color: wellnessData?.wellnessLinkActive === false ? THEME.textMuted : THEME.success }]}>{t('session.shareLink')}</Text>
+                        <Ionicons name="share-social" size={18} color={wellnessData?.wellnessLinkActive === false ? theme.colors.textMuted : theme.colors.success} />
+                        <Text style={[styles.linkActionText, { color: wellnessData?.wellnessLinkActive === false ? theme.colors.textMuted : theme.colors.success }]}>{t('session.shareLink')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={styles.linkActionBtn} 
                         onPress={handleGenerateLink}
                       >
-                        <Ionicons name="refresh" size={18} color={THEME.warning} />
-                        <Text style={[styles.linkActionText, { color: THEME.warning }]}>{t('common.new') || 'Nuevo'}</Text>
+                        <Ionicons name="refresh" size={18} color={theme.colors.warning} />
+                        <Text style={[styles.linkActionText, { color: theme.colors.warning }]}>{t('common.new') || 'Nuevo'}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -768,7 +756,7 @@ export default function WellnessDetailModal({
                 
                 {wellnessData?.responses?.length === 0 ? (
                   <View style={styles.emptyResponses}>
-                    <Ionicons name="chatbubbles-outline" size={40} color={THEME.textMuted} />
+                    <Ionicons name="chatbubbles-outline" size={40} color={theme.colors.textMuted} />
                     <Text style={styles.emptyText}>
                       {t('session.noResponses')}
                     </Text>
@@ -778,7 +766,7 @@ export default function WellnessDetailModal({
                     <View key={response._id} style={styles.responseCard}>
                       <View style={styles.responseHeader}>
                         <View style={styles.responsePlayer}>
-                          <Ionicons name="person" size={16} color={THEME.primary} />
+                          <Ionicons name="person" size={16} color={theme.colors.primary} />
                           <Text style={styles.responsePlayerName}>{response.playerName}</Text>
                         </View>
                         <View style={[
@@ -809,7 +797,7 @@ export default function WellnessDetailModal({
                         <TouchableOpacity
                           onPress={() => handleDeleteResponse(response._id, response.playerName)}
                         >
-                          <Ionicons name="trash-outline" size={16} color={THEME.danger} />
+                          <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -824,15 +812,15 @@ export default function WellnessDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
     padding: isMobileDevice() ? 0 : 0,
   },
   modalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: isMobileDevice() ? 12 : 20,
     borderTopRightRadius: isMobileDevice() ? 12 : 20,
     maxHeight: '92%',
@@ -845,13 +833,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   headerIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -860,7 +848,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   closeBtn: {
     padding: 8,
@@ -875,7 +863,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   summarySection: {
     marginBottom: 20,
@@ -884,14 +872,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   summaryCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: isMobileDevice() ? 12 : 16,
     padding: isMobileDevice() ? 12 : 16,
   },
   summaryLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   wellnessSelector: {
@@ -904,15 +892,15 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: THEME.border,
-    backgroundColor: THEME.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   wellnessOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   wellnessOptionTextSelected: {
     color: '#fff',
@@ -923,7 +911,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 12 : 16,
     alignItems: 'center',
@@ -931,11 +919,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: isMobileDevice() ? 20 : 24,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -955,13 +943,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   addQuestionBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -972,25 +960,25 @@ const styles = StyleSheet.create({
   },
   questionInput: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   addQuestionConfirm: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 10 : 14,
     marginBottom: 8,
@@ -998,11 +986,11 @@ const styles = StyleSheet.create({
   questionText: {
     flex: 1,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   emptyText: {
     textAlign: 'center',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     fontSize: 14,
     padding: 16,
   },
@@ -1010,7 +998,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 12 : 14,
     marginBottom: 24,
@@ -1028,7 +1016,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 12 : 14,
     gap: 8,
@@ -1039,7 +1027,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkContainer: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     padding: 14,
   },
@@ -1075,7 +1063,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   linkTextInactive: {
@@ -1097,14 +1085,14 @@ const styles = StyleSheet.create({
   linkActionText: {
     fontSize: 13,
     fontWeight: '500',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   emptyResponses: {
     alignItems: 'center',
     padding: 24,
   },
   responseCard: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: isMobileDevice() ? 10 : 12,
     padding: isMobileDevice() ? 10 : 14,
     marginBottom: 10,
@@ -1123,7 +1111,7 @@ const styles = StyleSheet.create({
   responsePlayerName: {
     fontSize: isMobileDevice() ? 14 : 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   wellnessBadge: {
     width: 32,
@@ -1141,19 +1129,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   responseAnswer: {
     marginBottom: 8,
   },
   responseQuestion: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 2,
   },
   responseAnswerText: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   responseFooter: {
     flexDirection: 'row',
@@ -1162,11 +1150,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   responseDate: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   sectionHeaderResponses: {
     flexDirection: 'row',

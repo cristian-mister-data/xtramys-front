@@ -1,6 +1,7 @@
 // components/pages/season/PreWellnessDetailModal.js
 // Modal para ver detalle de pre-wellness de una sesión de entrenamiento
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTheme } from 'styled-components';
 import {
   View,
   Text,
@@ -38,20 +39,8 @@ const isMobileDevice = () => {
   return Math.min(width, height) < 768;
 };
 
-const THEME = {
-  primary: '#667eea',
-  primaryLight: '#818cf8',
-  primaryDark: '#5a67d8',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  background: '#f8fafc',
-  surface: '#ffffff',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  border: '#e2e8f0',
-};
+// PDF/HTML print colors (kept literal intentionally)
+const PDF_PRIMARY = '#667eea';
 
 // Colores según nivel de pre-wellness
 const getPreWellnessColor = (value) => {
@@ -77,6 +66,17 @@ export default function PreWellnessDetailModal({
   onUpdate,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const THEME = useMemo(() => ({
+    primary: theme.colors.primary,
+    success: theme.colors.success,
+    warning: theme.colors.warning,
+    danger: theme.colors.error,
+    text: theme.colors.text,
+    textSecondary: theme.colors.textSecondary,
+    textMuted: theme.colors.textMuted,
+  }), [theme]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -280,7 +280,7 @@ export default function PreWellnessDetailModal({
             style={[
               styles.scoreButton,
               expectedPreWellness === num && styles.scoreButtonSelected,
-              { backgroundColor: expectedPreWellness === num ? getPreWellnessColor(num) : '#f0f0f0' }
+              { backgroundColor: expectedPreWellness === num ? getPreWellnessColor(num) : theme.colors.backgroundAlt }
             ]}
             onPress={() => setExpectedPreWellness(num)}
           >
@@ -606,6 +606,7 @@ export default function PreWellnessDetailModal({
                       value={newQuestion}
                       onChangeText={setNewQuestion}
                       placeholder={t('preWellness.questionPlaceholder')}
+                      placeholderTextColor={theme.colors.inputPlaceholder}
                       onSubmitEditing={addQuestion}
                     />
                     <TouchableOpacity style={styles.addQuestionConfirm} onPress={addQuestion}>
@@ -819,14 +820,14 @@ export default function PreWellnessDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
     borderTopLeftRadius: isMobileDevice() ? 12 : 24,
     borderTopRightRadius: isMobileDevice() ? 12 : 24,
     maxHeight: isMobileDevice() ? '95%' : '90%',
@@ -839,8 +840,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 14 : 20,
     paddingVertical: isMobileDevice() ? 14 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-    backgroundColor: THEME.surface,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: isMobileDevice() ? 12 : 24,
     borderTopRightRadius: isMobileDevice() ? 12 : 24,
   },
@@ -850,7 +851,7 @@ const styles = StyleSheet.create({
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -866,18 +867,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: isMobileDevice() ? 18 : 20,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   headerDate: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   closeButton: {
     padding: 8,
   },
   pdfButton: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     padding: 8,
     borderRadius: 8,
   },
@@ -892,7 +893,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -900,7 +901,7 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -917,16 +918,16 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: THEME.border,
+    backgroundColor: theme.colors.border,
     marginHorizontal: 10,
   },
   section: {
@@ -941,34 +942,34 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 12,
   },
   templateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   templateSelectorText: {
     flex: 1,
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 10,
   },
   scoreSelectorContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   scoreSelectorLabel: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   scoreSelector: {
@@ -990,7 +991,7 @@ const styles = StyleSheet.create({
   scoreButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   scoreButtonTextSelected: {
     color: '#fff',
@@ -1001,7 +1002,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   clearExpectedText: {
-    color: THEME.danger,
+    color: theme.colors.error,
     fontSize: 13,
   },
   addQuestionBtn: {
@@ -1014,21 +1015,22 @@ const styles = StyleSheet.create({
   },
   questionInput: {
     flex: 1,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     marginRight: 10,
+    color: theme.colors.text,
   },
   addQuestionConfirm: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     padding: 12,
   },
   noQuestionsText: {
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -1036,23 +1038,23 @@ const styles = StyleSheet.create({
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   questionItemText: {
     flex: 1,
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     padding: isMobileDevice() ? 14 : 16,
     marginBottom: 20,
@@ -1070,7 +1072,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.success,
+    backgroundColor: theme.colors.success,
     borderRadius: 12,
     padding: isMobileDevice() ? 12 : 14,
     gap: 8,
@@ -1081,7 +1083,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkContainer: {
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     padding: 14,
   },
@@ -1117,7 +1119,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   linkTextInactive: {
@@ -1139,15 +1141,15 @@ const styles = StyleSheet.create({
   linkActionText: {
     fontSize: 13,
     fontWeight: '500',
-    color: THEME.primary,
+    color: theme.colors.primary,
   },
   responseItem: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   responseHeader: {
     flexDirection: 'row',
@@ -1160,11 +1162,11 @@ const styles = StyleSheet.create({
   responseName: {
     fontSize: 15,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   responseDate: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   scoreCircle: {
@@ -1183,19 +1185,19 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   questionResponseItem: {
     marginBottom: 8,
   },
   questionResponseQ: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 2,
   },
   questionResponseA: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   deleteResponseBtn: {
     padding: 6,
@@ -1207,11 +1209,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: THEME.border,
+    borderTopColor: theme.colors.border,
   },
   responseFooterDate: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
   },
   pendingSection: {
     marginBottom: 20,
@@ -1219,7 +1221,7 @@ const styles = StyleSheet.create({
   pendingSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 10,
   },
   pendingList: {
@@ -1230,27 +1232,27 @@ const styles = StyleSheet.create({
   pendingPlayer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 6,
   },
   pendingPlayerName: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   templateModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: isMobileDevice() ? 8 : 12,
   },
   templateModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 12 : 14,
     width: '100%',
     maxWidth: isMobileDevice() ? '100%' : 400,
@@ -1263,12 +1265,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   templateModalTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   templateList: {
     padding: isMobileDevice() ? 8 : 12,
@@ -1277,13 +1279,13 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 12 : 14,
     borderRadius: 10,
     marginBottom: 8,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: theme.colors.backgroundAlt,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   templateItemSelected: {
-    backgroundColor: '#f0f0ff',
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
   },
   templateItemContent: {
     flexDirection: 'row',
@@ -1291,18 +1293,18 @@ const styles = StyleSheet.create({
   },
   templateItemText: {
     fontSize: 15,
-    color: THEME.text,
+    color: theme.colors.text,
     fontWeight: '500',
   },
   templateDefaultBadge: {
-    backgroundColor: '#f39c12',
+    backgroundColor: theme.colors.warning,
     borderRadius: 10,
     padding: 3,
     marginLeft: 8,
   },
   templateItemQuestions: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
 });

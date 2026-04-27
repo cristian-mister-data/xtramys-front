@@ -14,13 +14,13 @@ import {
   TextInput,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useMatchSheetPDF from '@/vendor/matchSheet/useMatchSheetPDF';
 import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/MatchSheetPDFModals';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -59,6 +59,8 @@ const getPositionIcon = (position) => {
 
 // Componente de ítem de jugador estilo lista (como jugadores.js)
 function PlayerListItem({ player, t, isMobile }) {
+  const theme = useTheme();
+  const playerStyles = useMemo(() => makePlayerStyles(theme), [theme]);
   if (!player) return null;
   const colors = getPositionColor(player.posicion);
   return (
@@ -75,9 +77,9 @@ function PlayerListItem({ player, t, isMobile }) {
         </Text>
         <View style={playerStyles.listCardTags}>
           {player.dorsal != null && (
-            <View style={[playerStyles.listCardTag, { backgroundColor: '#eff6ff' }]}>
-              <Ionicons name="shirt-outline" size={11} color="#3b82f6" />
-              <Text style={[playerStyles.listCardTagText, { color: '#3b82f6' }]}>#{player.dorsal}</Text>
+            <View style={[playerStyles.listCardTag, { backgroundColor: theme.colors.primarySoft }]}>
+              <Ionicons name="shirt-outline" size={11} color={theme.colors.primary} />
+              <Text style={[playerStyles.listCardTagText, { color: theme.colors.primary }]}>#{player.dorsal}</Text>
             </View>
           )}
           {player.posicion && (
@@ -96,6 +98,8 @@ function PlayerListItem({ player, t, isMobile }) {
 
 // Componente de lista de jugadores con filtros de posición
 function PlayerListWithFilters({ playerIds, allPlayers, t, isMobile }) {
+  const theme = useTheme();
+  const playerStyles = useMemo(() => makePlayerStyles(theme), [theme]);
   const [posFilter, setPosFilter] = useState('');
   const [search, setSearch] = useState('');
 
@@ -130,17 +134,17 @@ function PlayerListWithFilters({ playerIds, allPlayers, t, isMobile }) {
     <View>
       {resolvedPlayers.length > 4 && (
         <View style={playerStyles.searchRow}>
-          <Ionicons name="search" size={16} color="#94a3b8" />
+          <Ionicons name="search" size={16} color={theme.colors.inputPlaceholder} />
           <TextInput
             style={playerStyles.searchInput}
             placeholder={t('player.searchPlaceholder')}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={theme.colors.inputPlaceholder}
             value={search}
             onChangeText={setSearch}
           />
           {search ? (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={18} color="#94a3b8" />
+              <Ionicons name="close-circle" size={18} color={theme.colors.inputPlaceholder} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -198,6 +202,8 @@ export default function MatchSheetDetailModal({
   onDelete,
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const currentLang = i18n.language || 'es';
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -256,12 +262,12 @@ export default function MatchSheetDetailModal({
   };
 
   const getResultBadgeColorNorm = (result) => {
-    if (!result) return '#9E9E9E';
+    if (!result) return theme.colors.textMuted;
     switch(result.toLowerCase()) {
-      case 'victoria': case 'win': return '#4CAF50';
-      case 'empate': case 'draw': return '#FF9800';
-      case 'derrota': case 'loss': return '#F44336';
-      default: return '#9E9E9E';
+      case 'victoria': case 'win': return theme.colors.success;
+      case 'empate': case 'draw': return theme.colors.warning;
+      case 'derrota': case 'loss': return theme.colors.error;
+      default: return theme.colors.textMuted;
     }
   };
 
@@ -304,14 +310,14 @@ export default function MatchSheetDetailModal({
                   style={styles.modalEditButton}
                   onPress={() => onEdit(matchSheet)}
                 >
-                  <Ionicons name="pencil" size={20} color="#374151" />
+                  <Ionicons name="pencil" size={20} color={theme.colors.text} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onClose}
               >
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -320,7 +326,7 @@ export default function MatchSheetDetailModal({
             {/* Card principal con rival y resultado */}
             <View style={styles.matchSheetDetailCard}>
               <View style={styles.matchSheetDetailHeader}>
-                <Ionicons name="football" size={24} color="#3578e5" />
+                <Ionicons name="football" size={24} color={theme.colors.primary} />
                 <Text style={styles.matchSheetDetailTitle}>{matchSheet.rival}</Text>
                 {matchSheet.resultado && (
                   <View style={[styles.resultBadge, { backgroundColor: getResultBadgeColor(matchSheet.resultado) }]}>
@@ -335,8 +341,8 @@ export default function MatchSheetDetailModal({
               <View style={styles.statsRow}>
                 {matchSheet.ubicacion && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: '#dbeafe' }]}>
-                      <Ionicons name="location" size={18} color="#2196F3" />
+                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.infoSoft }]}>
+                      <Ionicons name="location" size={18} color={theme.colors.info} />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statLabel}>{t('matchSheet.fields.location')}</Text>
@@ -346,8 +352,8 @@ export default function MatchSheetDetailModal({
                 )}
                 {(matchSheet.fase === 'eliminatoria' || matchSheet.fase === 'grupos' || matchSheet.jornada != null) && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: '#f3e8ff' }]}>
-                      <Ionicons name="calendar" size={18} color="#9C27B0" />
+                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.purpleSoft }]}>
+                      <Ionicons name="calendar" size={18} color={theme.colors.purple} />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statLabel}>
@@ -365,8 +371,8 @@ export default function MatchSheetDetailModal({
                 )}
                 {matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: matchSheet.torneoId.color ? matchSheet.torneoId.color + '28' : '#fef3c7' }]}>
-                      <Ionicons name="trophy" size={18} color={matchSheet.torneoId.color || '#F59E0B'} />
+                    <View style={[styles.statIconBg, { backgroundColor: matchSheet.torneoId.color ? matchSheet.torneoId.color + '28' : theme.colors.warningSoft }]}>
+                      <Ionicons name="trophy" size={18} color={matchSheet.torneoId.color || theme.colors.warning} />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statLabel}>{t('matchSheet.fields.tournament')}</Text>
@@ -376,8 +382,8 @@ export default function MatchSheetDetailModal({
                 )}
                 {matchSheet.golesFavor != null && matchSheet.golesContra != null && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: '#fee2e2' }]}>
-                      <Ionicons name="football" size={18} color="#FF5722" />
+                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.errorSoft }]}>
+                      <Ionicons name="football" size={18} color={theme.colors.error} />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statLabel}>{t('matchSheet.fields.result')}</Text>
@@ -394,7 +400,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.fechaHora && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="time-outline" size={18} color="#FF5722" />
+                      <Ionicons name="time-outline" size={18} color={theme.colors.error} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.dateTime')}</Text>
                     </View>
                     <Text style={styles.detailCardContent}>{formatDate(matchSheet.fechaHora)}</Text>
@@ -404,7 +410,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.convocados && matchSheet.convocados.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="people" size={18} color="#4CAF50" />
+                      <Ionicons name="people" size={18} color={theme.colors.success} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.called')} ({matchSheet.convocados.length})</Text>
                     </View>
                     <PlayerListWithFilters
@@ -419,7 +425,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="star" size={18} color="#FFC107" />
+                      <Ionicons name="star" size={18} color={theme.colors.warning} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.starters')} ({matchSheet.alineacionTitulares.length})</Text>
                     </View>
                     <PlayerListWithFilters
@@ -438,7 +444,7 @@ export default function MatchSheetDetailModal({
                     onLayout={e => setLineupCardWidth(e.nativeEvent.layout.width)}
                   >
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="football" size={18} color="#4CAF50" />
+                      <Ionicons name="football" size={18} color={theme.colors.success} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.lineup.visualLineup')} ({matchSheet.alineacion})</Text>
                     </View>
                     <LineupEditor
@@ -462,7 +468,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.notasEntrenador && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="document-text-outline" size={18} color="#2196F3" />
+                      <Ionicons name="document-text-outline" size={18} color={theme.colors.info} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.coachNotes')}</Text>
                     </View>
                     <Text style={styles.detailCardContent}>{matchSheet.notasEntrenador}</Text>
@@ -473,7 +479,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.goles && matchSheet.goles.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="football" size={18} color="#4CAF50" />
+                      <Ionicons name="football" size={18} color={theme.colors.success} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.goals')} ({matchSheet.goles.length})</Text>
                     </View>
                     {[...matchSheet.goles].sort((a, b) => {
@@ -497,7 +503,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.tarjetasAmarillas && matchSheet.tarjetasAmarillas.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <View style={[styles.cardIndicator, { backgroundColor: '#FFC107' }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.warning }]} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.yellowCards')} ({matchSheet.tarjetasAmarillas.length})</Text>
                     </View>
                       {[...matchSheet.tarjetasAmarillas].sort((a, b) => {
@@ -521,7 +527,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.tarjetasRojas && matchSheet.tarjetasRojas.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <View style={[styles.cardIndicator, { backgroundColor: '#F44336' }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.error }]} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.redCards')} ({matchSheet.tarjetasRojas.length})</Text>
                     </View>
                       {[...matchSheet.tarjetasRojas].sort((a, b) => {
@@ -545,7 +551,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.cambios && matchSheet.cambios.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <Ionicons name="swap-horizontal" size={18} color="#9C27B0" />
+                      <Ionicons name="swap-horizontal" size={18} color={theme.colors.purple} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.changes')} ({matchSheet.cambios.length})</Text>
                     </View>
                     {[...matchSheet.cambios].sort((a, b) => {
@@ -560,12 +566,12 @@ export default function MatchSheetDetailModal({
                           <Text style={styles.eventMinute}>{cambio.minuto}'</Text>
                           <View style={styles.cambioDetails}>
                             <View style={styles.cambioRow}>
-                              <Ionicons name="arrow-down" size={14} color="#F44336" />
-                              <Text style={[styles.eventPlayer, { color: '#F44336' }]}>{salePlayer ? getPlayerFullName(salePlayer) : t('common.player')}</Text>
+                              <Ionicons name="arrow-down" size={14} color={theme.colors.error} />
+                              <Text style={[styles.eventPlayer, { color: theme.colors.error }]}>{salePlayer ? getPlayerFullName(salePlayer) : t('common.player')}</Text>
                             </View>
                             <View style={styles.cambioRow}>
-                              <Ionicons name="arrow-up" size={14} color="#4CAF50" />
-                              <Text style={[styles.eventPlayer, { color: '#4CAF50' }]}>{entraPlayer ? getPlayerFullName(entraPlayer) : t('common.player')}</Text>
+                              <Ionicons name="arrow-up" size={14} color={theme.colors.success} />
+                              <Text style={[styles.eventPlayer, { color: theme.colors.success }]}>{entraPlayer ? getPlayerFullName(entraPlayer) : t('common.player')}</Text>
                             </View>
                           </View>
                         </View>
@@ -576,24 +582,24 @@ export default function MatchSheetDetailModal({
 
                 {/* Goles del Rival */}
                 {matchSheet.golesRival && matchSheet.golesRival.length > 0 && (
-                  <View style={[styles.detailCard, { borderLeftWidth: 3, borderLeftColor: '#F44336', backgroundColor: '#fef2f2' }]}>
+                  <View style={[styles.detailCard, { borderLeftWidth: 3, borderLeftColor: theme.colors.error, backgroundColor: theme.colors.errorSoft }]}>
                     <View style={styles.detailCardHeader}>
-                      <View style={{ backgroundColor: '#fee2e2', borderRadius: 20, padding: 6 }}>
-                        <Ionicons name="football" size={18} color="#F44336" />
+                      <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: 20, padding: 6 }}>
+                        <Ionicons name="football" size={18} color={theme.colors.error} />
                       </View>
-                      <Text style={[styles.detailCardTitle, { color: '#dc2626' }]}>{t('matchSheet.rivalGoals.title')} ({matchSheet.golesRival.length})</Text>
+                      <Text style={[styles.detailCardTitle, { color: theme.colors.errorSoftText }]}>{t('matchSheet.rivalGoals.title')} ({matchSheet.golesRival.length})</Text>
                     </View>
                     {[...matchSheet.golesRival].sort((a, b) => {
                       const minA = parseInt(String(a.minuto).replace(/\+.*/, '')) || 0;
                       const minB = parseInt(String(b.minuto).replace(/\+.*/, '')) || 0;
                       return minA - minB;
                     }).map((gol, index) => (
-                      <View key={index} style={[styles.eventItem, { borderBottomColor: '#fecaca' }]}>
-                        <View style={{ backgroundColor: '#fee2e2', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                          <Text style={[styles.eventMinute, { color: '#dc2626' }]}>{gol.minuto}'</Text>
+                      <View key={index} style={[styles.eventItem, { borderBottomColor: theme.colors.errorSoft }]}>
+                        <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <Text style={[styles.eventMinute, { color: theme.colors.errorSoftText }]}>{gol.minuto}'</Text>
                         </View>
-                        <Ionicons name="football-outline" size={14} color="#ef4444" />
-                        <Text style={[styles.eventPlayer, { color: '#dc2626', fontWeight: '500' }]}>{matchSheet.rival}</Text>
+                        <Ionicons name="football-outline" size={14} color={theme.colors.error} />
+                        <Text style={[styles.eventPlayer, { color: theme.colors.errorSoftText, fontWeight: '500' }]}>{matchSheet.rival}</Text>
                       </View>
                     ))}
                   </View>
@@ -631,7 +637,7 @@ export default function MatchSheetDetailModal({
                   );
                 }}
               >
-                <Ionicons name="trash" size={20} color={THEME.danger} />
+                <Ionicons name="trash" size={20} color={theme.colors.error} />
                 <Text style={styles.deleteButtonText}>{t('matchSheet.deleteMatch')}</Text>
               </TouchableOpacity>
             )}
@@ -659,16 +665,16 @@ export default function MatchSheetDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   viewModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
@@ -680,7 +686,7 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   viewModalContentTablet: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '90%',
     maxWidth: 800,
@@ -699,29 +705,29 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   modalBody: {
     paddingHorizontal: 24,
     paddingVertical: 20,
     paddingBottom: 40,
   },
-  
+
   // Match Sheet Detail Card
   matchSheetDetailCard: {
     marginBottom: 16,
@@ -730,7 +736,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     padding: 16,
     borderRadius: 12,
   },
@@ -738,7 +744,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 12,
   },
   resultBadge: {
@@ -751,7 +757,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
+
   // Stats
   detailSection: {
     marginBottom: 16,
@@ -767,12 +773,12 @@ const styles = StyleSheet.create({
     minWidth: 150,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
-    shadowColor: THEME.text,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -799,7 +805,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -808,19 +814,19 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: THEME.text,
+    color: theme.colors.text,
   },
-  
+
   // Detail Cards
   detailsSection: {
     gap: 16,
   },
   detailCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -836,38 +842,38 @@ const styles = StyleSheet.create({
   detailCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginLeft: 8,
   },
   detailCardContent: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
-  
+
   // Events
   eventItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     gap: 8,
   },
   eventMinute: {
     fontSize: 14,
     fontWeight: '700',
-    color: THEME.primary,
+    color: theme.colors.primary,
     minWidth: 35,
   },
   eventPlayer: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   eventType: {
     fontSize: 12,
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
   },
   cambioDetails: {
@@ -884,7 +890,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 2,
   },
-  
+
   // PDF Buttons
   pdfButtonsContainer: {
     flexDirection: 'row',
@@ -904,29 +910,29 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   pdfButtonPrimary: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
   },
   pdfButtonSecondary: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: THEME.primary,
+    borderColor: theme.colors.primary,
   },
   pdfButtonFullSheet: {
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     marginTop: 10,
     marginHorizontal: 16,
   },
   pdfButtonTextPrimary: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   pdfButtonTextSecondary: {
-    color: THEME.primary,
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
-  
+
   // Delete Button
   deleteButton: {
     flexDirection: 'row',
@@ -934,21 +940,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: THEME.danger + '10',
+    backgroundColor: theme.colors.errorSoft,
     borderWidth: 1,
-    borderColor: THEME.danger + '30',
+    borderColor: theme.colors.error,
     gap: 8,
     marginBottom: 20,
   },
   deleteButtonText: {
-    color: THEME.danger,
+    color: theme.colors.error,
     fontSize: 14,
     fontWeight: '600',
   },
-  
+
   // PDF Config Modal
   pdfConfigModal: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '90%',
     maxWidth: 400,
@@ -964,18 +970,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: THEME.inputBg,
+    backgroundColor: theme.colors.inputBg,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 16,
   },
   checkboxRow: {
@@ -989,31 +995,31 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   checkboxLabel: {
     fontSize: 14,
-    color: THEME.text,
+    color: theme.colors.text,
   },
 });
 
 // Estilos para la lista de jugadores (consistentes con jugadores.js)
-const playerStyles = StyleSheet.create({
+const makePlayerStyles = (theme) => StyleSheet.create({
   listCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     marginBottom: 6,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   listCardIndicator: {
     width: 4,
@@ -1040,7 +1046,7 @@ const playerStyles = StyleSheet.create({
   listCardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: THEME.text,
+    color: theme.colors.text,
     marginBottom: 3,
   },
   listCardTags: {
@@ -1051,7 +1057,7 @@ const playerStyles = StyleSheet.create({
   listCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
@@ -1060,24 +1066,24 @@ const playerStyles = StyleSheet.create({
   listCardTagText: {
     fontSize: 11,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     gap: 6,
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: THEME.text,
+    color: theme.colors.text,
     paddingVertical: 2,
   },
   filterScroll: {
@@ -1089,27 +1095,27 @@ const playerStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     marginRight: 6,
     gap: 4,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   filterChipActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: THEME.textSecondary,
+    color: theme.colors.textSecondary,
   },
   filterChipTextActive: {
     color: '#ffffff',
   },
   noResults: {
     textAlign: 'center',
-    color: THEME.textMuted,
+    color: theme.colors.textMuted,
     fontSize: 13,
     paddingVertical: 12,
   },
