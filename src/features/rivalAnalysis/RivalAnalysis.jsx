@@ -173,7 +173,7 @@ export default function RivalAnalysis() {
   const userTemplates = useSelector((s) => s.rivalAnalysis.userTemplates || []);
   const rivals = useSelector((s) => s.rival.rivals || []);
   const equipos = useSelector((s) => s.team.teams || []);
-  const userId = useSelector((s) => s.usuario.data?._id);
+  const userId = useSelector((s) => s.usuario.user?._id);
 
   const selectedTeam = useMemo(
     () => equipos.find((e) => e.seleccionado === true),

@@ -1696,7 +1696,7 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 6,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: theme.colors.colors.error,
+    backgroundColor: theme.colors.error,
   },
   deleteBtnText: {
     fontSize: 15,

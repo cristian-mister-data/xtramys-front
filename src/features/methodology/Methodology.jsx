@@ -492,7 +492,7 @@ export default function Methodology() {
   const { t } = useTranslation();
   const theme = useTheme();
   const themeMode = theme?.mode || 'light';
-  const user = useSelector((s) => s.usuario.data);
+  const user = useSelector((s) => s.usuario.user);
   const userId = user?._id;
 
   const [methodologies, setMethodologies] = useState([]);

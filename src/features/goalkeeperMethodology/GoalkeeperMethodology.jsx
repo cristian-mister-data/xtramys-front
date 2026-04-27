@@ -226,7 +226,7 @@ function CreateModal({ open, onClose, onSave }) {
 
 export default function GoalkeeperMethodology() {
   const { t } = useTranslation();
-  const userId = useSelector((s) => s.usuario.data?._id);
+  const userId = useSelector((s) => s.usuario.user?._id);
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState('recommended');

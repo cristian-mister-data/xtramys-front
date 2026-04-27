@@ -766,7 +766,7 @@ function MealDetailModal({ open, onClose, mealKey, mealData, t }) {
 // ---------- main ----------
 export default function Nutrition() {
   const { t } = useTranslation();
-  const userId = useSelector((s) => s.usuario.data?._id);
+  const userId = useSelector((s) => s.usuario.user?._id);
 
   const [activeTab, setActiveTab] = useState('preseason');
   const [viewMode, setViewMode] = useState('recommended');

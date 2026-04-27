@@ -202,7 +202,7 @@ export default function Rivals() {
   const rivals = useSelector((s) => s.rival.rivals || []);
   const loading = useSelector((s) => s.rival.loading);
   const equipos = useSelector((s) => s.team.teams || []);
-  const userId = useSelector((s) => s.usuario.data?._id);
+  const userId = useSelector((s) => s.usuario.user?._id);
 
   const selectedTeam = useMemo(
     () => equipos.find((e) => e.seleccionado === true),
