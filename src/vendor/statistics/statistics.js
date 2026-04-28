@@ -1380,7 +1380,7 @@ playerStatsMap[p._id] = {
                                 >
                                     <View style={styles.playersSummaryContent}>
                                         <View style={styles.playersSummaryItem}>
-                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: "#c7c7c7ff"}]}>
+                                            <View style={[styles.playersSummaryIconWrap, { backgroundColor: theme.colors.primary + '30' }]}>
                                                 <Ionicons name="people" size={isMobile ? 16 : 20} color={theme.colors.primary} />
                                             </View>
                                             <Text style={styles.playersSummaryValue}>{stats.players.length}</Text>
@@ -1448,7 +1448,7 @@ playerStatsMap[p._id] = {
                                                 <Ionicons 
                                                     name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} 
                                                     size={12} 
-                                                    color="#ffffff" 
+                                                    color={theme.colors.onPrimary} 
                                                 />
                                             )}
                                         </TouchableOpacity>
@@ -1520,7 +1520,7 @@ playerStatsMap[p._id] = {
                                                 <Text style={styles.compactStatLabel}>G</Text>
                                             </View>
                                             <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, player.assists > 0 && { color: '#8b5cf6', fontWeight: '700' }]}>{player.assists}</Text>
+                                                <Text style={[styles.compactStatValue, player.assists > 0 && { color: theme.colors.purple, fontWeight: '700' }]}>{player.assists}</Text>
                                                 <Text style={styles.compactStatLabel}>A</Text>
                                             </View>
                                             <View style={styles.compactCardsContainer}>
@@ -1778,7 +1778,7 @@ playerStatsMap[p._id] = {
                                         <Ionicons
                                             name={isSelected ? "checkbox" : "square-outline"}
                                             size={24}
-                                            color={isSelected ? "#2563eb" : "#cbd5e1"}
+                                            color={isSelected ? theme.colors.primary : theme.colors.borderStrong}
                                         />
                                     </TouchableOpacity>
                                 );
@@ -3255,7 +3255,7 @@ const makeStyles = (theme) => StyleSheet.create({
         color: theme.colors.textSecondary,
     },
     sortChipTextActive: {
-        color: '#ffffff',
+        color: theme.colors.onPrimary,
     },
     positionLegendContainer: {
         paddingHorizontal: isMobile ? 12 : 16,

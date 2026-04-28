@@ -33,12 +33,12 @@ import { clearAnthropometries } from '@/store/slices/anthropometry/anthropometry
 import AppLayout from '@/vendor/shared/appLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { THEME } from '@/vendor/shared/ProfessionalHeader';
+import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
-function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, isGrid = false, t }) {
+function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, isGrid = false, t, styles, theme }) {
   const getPlayerName = (playerId) => {
     if (typeof playerId === 'object' && playerId.nombre) {
       return getPlayerFullName(playerId);
@@ -141,15 +141,15 @@ function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, i
           
           {item.peso && (
             <View style={[styles.listCardTag, styles.listCardTagSuccess]}>
-              <Ionicons name="fitness-outline" size={12} color="#059669" />
-              <Text style={[styles.listCardTagText, { color: '#059669' }]}>{item.peso} kg</Text>
+              <Ionicons name="fitness-outline" size={12} color={theme.colors.successSoftText} />
+              <Text style={[styles.listCardTagText, { color: theme.colors.successSoftText }]}>{item.peso} kg</Text>
             </View>
           )}
           
           {item.porcentaje_grasa && (
             <View style={[styles.listCardTag, styles.listCardTagWarning]}>
-              <Ionicons name="analytics-outline" size={12} color="#d97706" />
-              <Text style={[styles.listCardTagText, { color: '#d97706' }]}>{item.porcentaje_grasa.toFixed(1)}%</Text>
+              <Ionicons name="analytics-outline" size={12} color={theme.colors.warningSoftText} />
+              <Text style={[styles.listCardTagText, { color: theme.colors.warningSoftText }]}>{item.porcentaje_grasa.toFixed(1)}%</Text>
             </View>
           )}
         </View>
@@ -180,6 +180,8 @@ const Anthropometry = ({ navigation }) => {
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   
   const { anthropometries, loading } = useSelector((state) => state.anthropometry);
   const { players } = useSelector((state) => state.player);
@@ -518,6 +520,8 @@ const Anthropometry = ({ navigation }) => {
                 onOpenOptions={openOptionsModal}
                 IS_MOBILE={IS_MOBILE}
                 players={players}
+                styles={styles}
+                theme={theme}
               />
             )}
             contentContainerStyle={{ padding: 16 }}
@@ -1293,27 +1297,27 @@ const Anthropometry = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f6fc',
+    backgroundColor: theme.colors.background,
     padding: 24,
   },
   emptyText: {
     fontSize: 16,
-    color: '#8fa0b8',
+    color: theme.colors.text,
     marginTop: 16,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   topBar: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     paddingTop: Platform.OS === 'web' ? 16 : 10,
     paddingBottom: Platform.OS === 'web' ? 12 : 8,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   topBarHeaderRow: {
     flexDirection: 'row',
@@ -1329,7 +1333,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: Platform.OS === 'web' ? 24 : 18,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   topBarMobile: {
     paddingHorizontal: 8,
@@ -1343,20 +1347,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#b5d6fa',
+    borderColor: theme.colors.border,
     gap: 6,
   },
   filterButtonActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterButtonText: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
   filterButtonTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   clearFilterBtn: {
     marginLeft: 4,
@@ -1364,7 +1368,7 @@ const styles = StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     paddingVertical: Platform.OS === 'ios' ? 8 : 7,
     paddingHorizontal: 16,
     borderRadius: 22,
@@ -1376,7 +1380,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   createButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: 'bold',
     fontSize: 16,
     letterSpacing: 0.25,
@@ -1388,7 +1392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#b5d6fa',
+    borderColor: theme.colors.border,
   },
   // Acciones inline del header (estilo unificado, sin menú de 3 puntos)
   headerActions: {
@@ -1406,22 +1410,22 @@ const styles = StyleSheet.create({
     minWidth: 38,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: '#b5d6fa',
-    backgroundColor: THEME.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
   },
   headerIconBtnActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   headerIconBtnText: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 13,
     maxWidth: 140,
   },
   headerIconBtnTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   headerIconBtnClear: {
     width: 18,
@@ -1440,7 +1444,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: IS_MOBILE_DEVICE ? 0 : 14,
     minWidth: 38,
     borderRadius: 19,
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     shadowColor: '#2856a2',
     shadowOffset: { width: 0, height: 2 },
@@ -1449,7 +1453,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerPrimaryBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '700',
     fontSize: 14,
     letterSpacing: 0.2,
@@ -1473,10 +1477,10 @@ const styles = StyleSheet.create({
   anthropometryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 12,
     minHeight: 74,
@@ -1496,8 +1500,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   anthropometryCardPressed: {
-    backgroundColor: '#eaf2fb',
-    borderColor: '#b5d6fa',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   cardInfo: {
     flex: 1,
@@ -1505,7 +1509,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2856a2',
+    color: theme.colors.primary,
     marginBottom: 6,
     letterSpacing: 0.25,
   },
@@ -1539,14 +1543,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   // ========== NUEVOS ESTILOS PROFESIONALES ==========
   // Vista Grid - Tarjetas compactas
   gridCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 8,
@@ -1559,7 +1563,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: theme.colors.border,
   },
   gridCardMobile: {
     marginHorizontal: 3,
@@ -1591,7 +1595,7 @@ const styles = StyleSheet.create({
   gridCardTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 4,
     lineHeight: 14,
@@ -1614,29 +1618,29 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   gridCardStatHighlight: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: theme.colors.successSoft,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
   },
   gridCardStatText: {
     fontSize: 9,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   gridCardStatValue: {
     fontSize: 10,
-    color: '#059669',
+    color: theme.colors.successSoftText,
     fontWeight: '700',
   },
   gridCardStatUnit: {
     fontSize: 8,
-    color: '#059669',
+    color: theme.colors.successSoftText,
     fontWeight: '500',
   },
   gridCardBadge: {
     marginTop: 4,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -1644,13 +1648,13 @@ const styles = StyleSheet.create({
   gridCardBadgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#d97706',
+    color: theme.colors.warningSoftText,
   },
   // Vista Lista - Tarjetas horizontales
   listCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     marginBottom: 10,
     overflow: 'hidden',
@@ -1660,14 +1664,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   listCardMobile: {
     borderRadius: 12,
     marginBottom: 8,
   },
   listCardPressed: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   listCardIndicator: {
     width: 4,
@@ -1677,7 +1681,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -1690,7 +1694,7 @@ const styles = StyleSheet.create({
   listCardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 6,
   },
   listCardTitleMobile: {
@@ -1705,22 +1709,22 @@ const styles = StyleSheet.create({
   listCardTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     gap: 4,
   },
   listCardTagSuccess: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: theme.colors.successSoft,
   },
   listCardTagWarning: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
   },
   listCardTagText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   listCardActions: {
     flexDirection: 'row',
@@ -1732,7 +1736,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1744,7 +1748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionsModalContent: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 8,
@@ -1759,14 +1763,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: theme.colors.border,
     alignSelf: 'center',
     marginBottom: 16,
   },
   optionsModalTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -1786,7 +1790,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   optionsModalOptionDanger: {
     borderBottomWidth: 0,
@@ -1794,14 +1798,14 @@ const styles = StyleSheet.create({
   optionsModalOptionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   optionsModalOptionTextDanger: {
     color: '#dc2626',
   },
   optionsModalCancelButton: {
     marginTop: 8,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1809,10 +1813,10 @@ const styles = StyleSheet.create({
   optionsModalCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   dateRangeModalContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     marginHorizontal: 16,
     marginVertical: 'auto',
@@ -1826,12 +1830,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   dateRangeModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   dateRangeCloseBtn: {
     padding: 4,
@@ -1842,7 +1846,7 @@ const styles = StyleSheet.create({
   },
   createDatePicker: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -1857,31 +1861,31 @@ const styles = StyleSheet.create({
   },
   createDateLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
   },
   createDateValue: {
     fontSize: 15,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   dateRangePreview: {
     marginHorizontal: 20,
     marginBottom: 20,
     padding: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   dateRangePreviewTitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
   },
   dateRangePreviewText: {
     fontSize: 16,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '600',
   },
   dateRangeModalFooter: {
@@ -1889,7 +1893,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
     gap: 12,
   },
   dateRangeCancelBtn: {
@@ -1897,24 +1901,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     alignItems: 'center',
   },
   dateRangeCancelText: {
     fontSize: 16,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   dateRangeApplyBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   dateRangeApplyText: {
     fontSize: 16,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
   mobileMenuOverlay: {
@@ -1923,7 +1927,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   mobileMenuContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: Platform.OS === 'ios' ? 34 : 0,
@@ -1948,7 +1952,7 @@ const styles = StyleSheet.create({
   },
   mobileMenuItemText: {
     fontSize: 16,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
     flex: 1,
   },
@@ -1974,22 +1978,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   playerItemSelected: {
-    backgroundColor: THEME.primary + '15',
+    backgroundColor: theme.colors.primary + '15',
   },
   playerItemText: {
     fontSize: 16,
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   playerItemTextSelected: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   // Estilos del modal de creación
   createModalContainer: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '95%',
     maxWidth: 500,
@@ -2002,7 +2006,7 @@ const styles = StyleSheet.create({
     elevation: 25,
   },
   createModalContainerMobile: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '100%',
     maxWidth: 420,
@@ -2023,7 +2027,7 @@ const styles = StyleSheet.create({
     paddingRight: IS_MOBILE_DEVICE ? 62 : 78,
     paddingVertical: IS_MOBILE_DEVICE ? 14 : 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   createModalHeaderLeft: {
     flexDirection: 'row',
@@ -2042,7 +2046,7 @@ const styles = StyleSheet.create({
     width: IS_MOBILE_DEVICE ? 38 : 48,
     height: IS_MOBILE_DEVICE ? 38 : 48,
     borderRadius: IS_MOBILE_DEVICE ? 12 : 24,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -2050,22 +2054,22 @@ const styles = StyleSheet.create({
   createModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   createModalTitleMobile: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     flexShrink: 1,
   },
   createModalSubtitleMobile: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalCloseBtn: {
@@ -2075,7 +2079,7 @@ const styles = StyleSheet.create({
     width: IS_MOBILE_DEVICE ? 36 : 40,
     height: IS_MOBILE_DEVICE ? 36 : 40,
     borderRadius: 20,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -2085,20 +2089,20 @@ const styles = StyleSheet.create({
     padding: IS_MOBILE_DEVICE ? 16 : 24,
   },
   createCard: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   createCardMobile: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardHeader: {
     flexDirection: 'row',
@@ -2109,18 +2113,18 @@ const styles = StyleSheet.create({
   createCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   sixFoldsHint: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginTop: 2,
   },
   sixFoldsHintSmall: {
     fontSize: 11,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginBottom: 12,
   },
@@ -2133,7 +2137,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: IS_MOBILE_DEVICE ? 14 : 24,
     paddingVertical: IS_MOBILE_DEVICE ? 14 : 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
     gap: IS_MOBILE_DEVICE ? 10 : 16,
   },
   createModalButton: {
@@ -2146,30 +2150,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createModalButtonPrimary: {
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
   },
   createModalButtonSecondary: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   createModalButtonText: {
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
   createModalButtonTextSecondary: {
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: IS_MOBILE_DEVICE ? 12 : 16,
     paddingVertical: IS_MOBILE_DEVICE ? 12 : 14,
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
-    backgroundColor: THEME.surface,
-    color: THEME.text,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   textArea: {
     minHeight: 120,
@@ -2185,27 +2189,27 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
     fontWeight: '500',
   },
   selector: {
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   selectorText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.colors.textMuted,
   },
   selectorTextSelected: {
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   // Estilos del modal de detalle
   modalBg: {
@@ -2217,7 +2221,7 @@ const styles = StyleSheet.create({
   },
   viewModalContent: Platform.select({
     ios: {
-      backgroundColor: THEME.surface,
+      backgroundColor: theme.colors.surface,
       borderRadius: IS_MOBILE_DEVICE ? 16 : 20,
       width: '100%',
       maxWidth: 500,
@@ -2228,7 +2232,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: THEME.surface,
+      backgroundColor: theme.colors.surface,
       borderRadius: IS_MOBILE_DEVICE ? 16 : 20,
       width: '100%',
       maxWidth: 500,
@@ -2238,11 +2242,22 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
+    },
+    default: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: IS_MOBILE_DEVICE ? 16 : 20,
+      width: '100%',
+      maxWidth: 500,
+      maxHeight: '95%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
     },
   }),
   viewModalContentTablet: Platform.select({
     ios: {
-      backgroundColor: THEME.surface,
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2253,7 +2268,7 @@ const styles = StyleSheet.create({
       shadowRadius: 20,
     },
     android: {
-      backgroundColor: THEME.surface,
+      backgroundColor: theme.colors.surface,
       borderRadius: 20,
       width: '90%',
       maxWidth: 800,
@@ -2263,6 +2278,17 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
+    },
+    default: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      width: '90%',
+      maxWidth: 800,
+      maxHeight: '95%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
     },
   }),
   modalHeader: {
@@ -2273,12 +2299,12 @@ const styles = StyleSheet.create({
     paddingTop: IS_MOBILE_DEVICE ? 16 : 24,
     paddingBottom: IS_MOBILE_DEVICE ? 12 : 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: IS_MOBILE_DEVICE ? 16 : 20,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
     flex: 1,
   },
   modalBody: {
@@ -2289,12 +2315,12 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   detailSection: {
     marginBottom: IS_MOBILE_DEVICE ? 16 : 24,
@@ -2302,7 +2328,7 @@ const styles = StyleSheet.create({
   detailSectionTitle: {
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: IS_MOBILE_DEVICE ? 8 : 12,
   },
   detailRow: {
@@ -2313,19 +2339,19 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 15,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   detailCard: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   detailValueLarge: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   detailGrid: {
@@ -2336,22 +2362,22 @@ const styles = StyleSheet.create({
   detailGridItem: {
     flex: 1,
     minWidth: IS_MOBILE_DEVICE ? '42%' : '45%',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: IS_MOBILE_DEVICE ? 10 : 12,
     padding: IS_MOBILE_DEVICE ? 10 : 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   detailLabel: {
     fontSize: IS_MOBILE_DEVICE ? 11 : 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 4,
     fontWeight: '500',
   },
   detailValue: {
     fontSize: IS_MOBILE_DEVICE ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   detailResultsGrid: {
     flexDirection: 'row',
@@ -2361,16 +2387,16 @@ const styles = StyleSheet.create({
   detailResultCard: {
     flex: 1,
     minWidth: IS_MOBILE_DEVICE ? '42%' : undefined,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: IS_MOBILE_DEVICE ? 10 : 12,
     padding: IS_MOBILE_DEVICE ? 12 : 16,
     borderWidth: 1,
-    borderColor: '#90caf9',
+    borderColor: theme.colors.primarySoft,
     alignItems: 'center',
   },
   detailResultLabel: {
     fontSize: IS_MOBILE_DEVICE ? 11 : 12,
-    color: '#1565c0',
+    color: theme.colors.primarySoftText,
     marginBottom: 4,
     fontWeight: '500',
     textAlign: 'center',
@@ -2378,11 +2404,11 @@ const styles = StyleSheet.create({
   detailResultValue: {
     fontSize: IS_MOBILE_DEVICE ? 16 : 20,
     fontWeight: '700',
-    color: '#1565c0',
+    color: theme.colors.primarySoftText,
   },
   // Estilos del modal de jugador
   pickerModal: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -2396,12 +2422,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   pickerModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: THEME.text,
+    color: theme.colors.text,
   },
   pickerModalContent: {
     maxHeight: 400,
@@ -2413,17 +2439,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   pickerModalItemText: {
     fontSize: 16,
-    color: THEME.text,
+    color: theme.colors.text,
   },
   // Estilos para panel de filtros
   filtersPanel: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -2436,31 +2462,31 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   filterInput: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   filterInputActive: {
-    borderColor: '#2474E5',
-    backgroundColor: '#f0f9ff',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
   },
   filterInputText: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
     flex: 1,
   },
   filterInputTextActive: {
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   clearInputBtn: {
     padding: 4,
@@ -2477,25 +2503,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     gap: 6,
   },
   clearFiltersText: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   closeFiltersButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
   },
   closeFiltersText: {
     fontSize: 14,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
   // Badge de filtros
@@ -2515,8 +2541,8 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   mobileMenuButtonActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   // Estilos para vista Grid
   anthropometryCardGrid: {
@@ -2575,14 +2601,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: IS_MOBILE_DEVICE ? 10 : 12,
     paddingVertical: IS_MOBILE_DEVICE ? 10 : 14,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     gap: IS_MOBILE_DEVICE ? 6 : 8,
   },
   createCancelButtonText: {
     fontSize: IS_MOBILE_DEVICE ? 13 : 16,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   createSaveButton: {
@@ -2592,12 +2618,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: IS_MOBILE_DEVICE ? 10 : 12,
     paddingVertical: IS_MOBILE_DEVICE ? 10 : 14,
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     gap: IS_MOBILE_DEVICE ? 6 : 8,
   },
   createSaveButtonText: {
     fontSize: IS_MOBILE_DEVICE ? 13 : 16,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
   },
 });

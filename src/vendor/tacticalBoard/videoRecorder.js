@@ -1084,6 +1084,15 @@ export default function VideoRecorder({
         ? t('videoRecorder.errorUpdatingVideo')
         : t('videoRecorder.errorSavingVideo');
       showNotification(errorMessage, 'error');
+      // Notificar al padre (sandbox/Análisis Rival) para que pueda mostrar
+      // su propio toast cuando el overlay se cierre.
+      if (global.fieldCallbacks?.onVideoSaveError) {
+        try {
+          global.fieldCallbacks.onVideoSaveError(error);
+        } catch (cbErr) {
+          console.warn('onVideoSaveError callback threw:', cbErr);
+        }
+      }
     } finally {
       setIsSaving(false);
     }

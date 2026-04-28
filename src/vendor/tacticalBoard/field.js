@@ -8108,6 +8108,7 @@ export default function Field(props = {}) {
     autoOpenVideoRecorder = false, // Abrir grabador de video automáticamente
     hideFolderPicker = false, // Ocultar selector de carpeta en el grabador de video
     presetFolderId = null, // Carpeta preseleccionada para guardar videos
+    presetVideoName = '', // Nombre preseleccionado para el video (auto-naming)
     isGlobalExercise = false, // Si el ejercicio es global (admin)
     // Eliminar onSave y onCancel de los parámetros para evitar el warning
     // onSave,
@@ -8120,7 +8121,7 @@ export default function Field(props = {}) {
   // Estado para modo de edición de video - inicializar basado en editVideoData
   const [isEditingVideo, setIsEditingVideo] = useState(!!editVideoData);
   const [editingVideoId, setEditingVideoId] = useState(editVideoData?.videoId || null);
-  const [editingVideoName, setEditingVideoName] = useState(editVideoData?.nombre || '');
+  const [editingVideoName, setEditingVideoName] = useState(editVideoData?.nombre || presetVideoName || '');
   const [editingVideoDescription, setEditingVideoDescription] = useState(editVideoData?.descripcion || '');
   const [editingVideoFolderId, setEditingVideoFolderId] = useState(editVideoData?.folderId || null);
   // Dimensiones originales del video para conversión correcta de coordenadas
@@ -15051,7 +15052,10 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             openCarouselModal();
           },
           onTogglePalette: () => {
-            if (!videoRecorderVisible) setPaletteVisible(!paletteVisible);
+            // Permitir abrir/cerrar la paleta también con el VideoRecorder
+            // visible: el usuario quiere añadir/seleccionar iconos sin
+            // tener que cerrar la grabadora previamente.
+            setPaletteVisible(!paletteVisible);
           },
           onToggleZoom: () => {
             if (!videoRecorderVisible) setZoomVisible(!zoomVisible);

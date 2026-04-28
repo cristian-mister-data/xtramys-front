@@ -67,7 +67,29 @@ const RNFS = {
       frames.set(dst, frames.get(src));
     }
   },
-  readFile: NOT_IMPL('readFile'),
+  // En web, `capture()` (view-shot shim) devuelve directamente una data URL.
+  // El flujo nativo haría `RNFS.readFile(uri, 'base64')` para obtener los
+  // bytes; replicamos esa semántica extrayendo la parte base64. También
+  // soportamos lecturas desde el almacén interno de frames.
+  readFile: async (path, encoding = 'base64') => {
+    if (!path) throw new Error('react-native-fs.readFile: empty path');
+    let value = path;
+    if (frames.has(path)) value = frames.get(path);
+    if (typeof value === 'string' && value.startsWith('data:')) {
+      const commaIdx = value.indexOf(',');
+      const payload = commaIdx >= 0 ? value.slice(commaIdx + 1) : value;
+      if (encoding === 'base64') return payload;
+      if (encoding === 'utf8') {
+        try {
+          return atob(payload);
+        } catch (_) {
+          return payload;
+        }
+      }
+      return payload;
+    }
+    throw new Error(`react-native-fs.readFile: unsupported source on web (${String(path).slice(0, 60)})`);
+  },
   writeFile: NOT_IMPL('writeFile'),
   stat: NOT_IMPL('stat'),
   // API interna para videoUtils

@@ -64,25 +64,25 @@ const ChartTypeSelector = ({ selected, onSelect, isMobile }) => {
         style={[styles.chartTypeButton, selected === 'pie' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('pie')}
       >
-        <MaterialIcons name="pie-chart" size={iconSize} color={selected === 'pie' ? '#fff' : inactiveColor} />
+        <MaterialIcons name="pie-chart" size={iconSize} color={selected === 'pie' ? theme.colors.onPrimary : inactiveColor} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'barH' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('barH')}
       >
-        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barH' ? '#fff' : inactiveColor} style={{ transform: [{ rotate: '90deg' }] }} />
+        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barH' ? theme.colors.onPrimary : inactiveColor} style={{ transform: [{ rotate: '90deg' }] }} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'barV' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('barV')}
       >
-        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barV' ? '#fff' : inactiveColor} />
+        <MaterialCommunityIcons name="chart-bar" size={iconSize} color={selected === 'barV' ? theme.colors.onPrimary : inactiveColor} />
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.chartTypeButton, selected === 'table' && styles.chartTypeButtonActive]}
         onPress={() => onSelect('table')}
       >
-        <MaterialIcons name="table-chart" size={iconSize} color={selected === 'table' ? '#fff' : inactiveColor} />
+        <MaterialIcons name="table-chart" size={iconSize} color={selected === 'table' ? theme.colors.onPrimary : inactiveColor} />
       </TouchableOpacity>
     </View>
   );
@@ -980,7 +980,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   filterButtonTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   // Chart type selector
   chartTypeSelector: {
@@ -1029,7 +1029,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   yearButtonTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   // Table styles
   tableContainer: {

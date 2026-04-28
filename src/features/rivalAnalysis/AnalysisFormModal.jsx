@@ -18,6 +18,8 @@ import {
   MdGridOn,
   MdBrush,
   MdCheckCircle,
+  MdPlayCircle,
+  MdMovieFilter,
 } from 'react-icons/md';
 
 import {
@@ -37,7 +39,9 @@ import {
   ErrorText,
 } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
+import { getVideoStreamUrl } from '@/utils/api';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
+import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
 import {
   ALINEACIONES,
   getIconComponent,
@@ -127,6 +131,43 @@ const SnapshotPreview = styled.div`
     max-height: 240px;
     border-radius: 6px;
   }
+`;
+
+// Caja clickable para previsualizar el vídeo guardado: muestra el primer
+// frame (poster nativo del <video preload="metadata">) con un overlay
+// "play" en el centro. Al click, abre el reproductor en un modal.
+const VideoThumb = styled.button`
+  position: relative;
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  padding: 0;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  min-height: 160px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+
+  video {
+    pointer-events: none;
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: 6px;
+  }
+`;
+
+const PlayOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  pointer-events: none;
+  border-radius: ${({ theme }) => theme.radius.md};
 `;
 
 const RivalOption = styled.button`
@@ -239,6 +280,10 @@ export default function AnalysisFormModal({
   const [formationQuestionId, setFormationQuestionId] = useState(null);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [snapshotQuestionId, setSnapshotQuestionId] = useState(null);
+  const [showVideoRecorder, setShowVideoRecorder] = useState(false);
+  const [videoRecorderQuestionId, setVideoRecorderQuestionId] = useState(null);
+  const [videoRecorderQuestionText, setVideoRecorderQuestionText] = useState('');
+  const [videoViewerUrl, setVideoViewerUrl] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -314,6 +359,32 @@ export default function AnalysisFormModal({
   const triggerVideoUpload = (qid) => {
     setVideoQuestionId(qid);
     fileInputRef.current?.click();
+  };
+
+  const openVideoRecorder = (qid) => {
+    const q = questions.find((x) => x.id === qid);
+    setVideoRecorderQuestionId(qid);
+    setVideoRecorderQuestionText(q ? getQuestionText(q, t) : '');
+    setShowVideoRecorder(true);
+  };
+
+  const handleVideoRecorded = (videoId) => {
+    if (videoRecorderQuestionId && videoId) {
+      // Forma `{ videoId }`: AnalysisDetailModal ya sabe renderizarla
+      // como Reproducir/Descargar contra /api/video/stream/:id.
+      setAnswer(videoRecorderQuestionId, { videoId });
+      toast.success(
+        t('rivalAnalysis.form.videoSavedSuccess', 'Vídeo guardado correctamente')
+      );
+    }
+  };
+
+  const handleVideoRecorderError = (err) => {
+    const msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      t('rivalAnalysis.form.videoSaveError', 'Error al guardar el vídeo');
+    toast.error(msg);
   };
 
   const handleVideoChange = (e) => {
@@ -474,27 +545,48 @@ export default function AnalysisFormModal({
         </Stack>
       );
     } else if (q.type === 'video') {
+      const hasVideoId = !!value?.videoId;
+      const hasInlineUrl = !!value?.url;
+      const hasAny = hasVideoId || hasInlineUrl;
+      const playUrl = hasVideoId
+        ? getVideoStreamUrl(value.videoId)
+        : hasInlineUrl
+        ? value.url
+        : '';
       body = (
         <Stack $gap={6}>
-          {value?.url ? (
-            <video
-              src={value.url}
-              controls
-              style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 6 }}
-            />
+          {hasAny ? (
+            <VideoThumb type="button" onClick={() => setVideoViewerUrl(playUrl)}>
+              {/* preload="metadata" hace que el navegador pinte el primer
+                  frame como póster sin descargar todo el vídeo */}
+              <video src={playUrl} preload="metadata" muted playsInline />
+              <PlayOverlay theme={theme}>
+                <MdPlayCircle size={56} />
+              </PlayOverlay>
+            </VideoThumb>
           ) : (
-            <Muted>{t('rivalAnalysis.form.noVideo', 'Sin vídeo')}</Muted>
+            <SnapshotPreview>
+              <Muted>{t('rivalAnalysis.form.noVideo', 'Sin vídeo')}</Muted>
+            </SnapshotPreview>
           )}
           <Row $gap={6}>
             <Button $variant="secondary" type="button" onClick={() => triggerVideoUpload(q.id)}>
               <Row $gap={6}>
                 <MdVideocam size={16} />
-                {value?.url
+                {hasAny
                   ? t('rivalAnalysis.form.changeVideo', 'Cambiar vídeo')
-                  : t('rivalAnalysis.form.addVideo', 'Subir vídeo')}
+                  : t('rivalAnalysis.form.uploadVideo', 'Subir vídeo')}
               </Row>
             </Button>
-            {value?.url && (
+            <Button $variant="secondary" type="button" onClick={() => openVideoRecorder(q.id)}>
+              <Row $gap={6}>
+                <MdMovieFilter size={16} />
+                {hasVideoId
+                  ? t('rivalAnalysis.form.recordAgain', 'Regrabar pizarra')
+                  : t('rivalAnalysis.form.recordFromBoard', 'Grabar desde pizarra')}
+              </Row>
+            </Button>
+            {hasAny && (
               <Button $variant="ghost" type="button" onClick={() => setAnswer(q.id, null)}>
                 <MdDelete size={14} />
               </Button>
@@ -694,7 +786,7 @@ export default function AnalysisFormModal({
         </PillRow>
       </Modal>
 
-      {/* Snapshot táctico */}
+      {/* Snapshot táctico (Field vendor real, montado como overlay) */}
       <TacticalSnapshotModal
         open={showSnapshot}
         onClose={() => {
@@ -702,8 +794,48 @@ export default function AnalysisFormModal({
           setSnapshotQuestionId(null);
         }}
         onSave={handleSnapshotSave}
+        initialPlayers={
+          snapshotQuestionId ? dynamicAnswers[snapshotQuestionId]?.elements : undefined
+        }
+        initialFieldType={
+          snapshotQuestionId
+            ? dynamicAnswers[snapshotQuestionId]?.fieldType || 'full'
+            : 'full'
+        }
         title={t('rivalAnalysis.form.tacticalBoard', 'Pizarra táctica')}
       />
+
+      {/* Grabador de vídeo táctico (Field en modo sandbox + autoOpenVideoRecorder) */}
+      <TacticalVideoRecorderModal
+        open={showVideoRecorder}
+        onClose={() => {
+          setShowVideoRecorder(false);
+          setVideoRecorderQuestionId(null);
+          setVideoRecorderQuestionText('');
+        }}
+        onSaved={handleVideoRecorded}
+        onError={handleVideoRecorderError}
+        rivalName={rival}
+        questionText={videoRecorderQuestionText}
+        title={t('rivalAnalysis.form.recordTacticalVideo', 'Grabar vídeo táctico')}
+      />
+
+      {/* Reproductor del vídeo guardado: se abre al pulsar la miniatura */}
+      <Modal
+        open={!!videoViewerUrl}
+        onClose={() => setVideoViewerUrl('')}
+        title={t('rivalAnalysis.form.videoPreview', 'Vídeo')}
+        width={760}
+      >
+        {videoViewerUrl && (
+          <video
+            src={videoViewerUrl}
+            controls
+            autoPlay
+            style={{ width: '100%', maxHeight: '70vh', borderRadius: 6 }}
+          />
+        )}
+      </Modal>
     </>
   );
 }

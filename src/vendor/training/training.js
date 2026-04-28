@@ -2657,7 +2657,7 @@ const styles = StyleSheet.create({
   // --- Pro Session Card ---
   proSessionCard: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',

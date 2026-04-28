@@ -1,55 +1,293 @@
 // utils/api.js — adapter for vendor RN code: re-exports host video API and
 // stubs el resto de funciones aún no portadas al backend web.
 
-import {
-  saveVideo,
-  createVideoFolder,
-  getVideoFoldersFlat,
-} from '@/api/video';
 import * as videoApi from '@/api/video';
 import api, { apiBase } from '@/api/client';
+import { pollJobUntilDone } from '@/api/client';
+export {
+  generateVideo,
+  getJobStatus,
+  presignVideo,
+  proxyUploadVideo,
+  linkVideoToExercise,
+  linkVideoToStrategy,
+  getVideosByExercise,
+  getVideosByStrategy,
+  presignTacticalVideo,
+  saveTacticalVideo,
+  listTacticalVideos,
+  getTacticalVideo,
+  downloadTacticalVideo,
+  updateTacticalVideo,
+  deleteTacticalVideo,
+  getActiveAssociations,
+} from '@/api/video';
 
-export * from '@/api/video';
-export { saveVideo, createVideoFolder };
+// =====================
+// Funciones de video — mirror EXACTO de misterdata/src/utils/api.js.
+// El backend ya devuelve { success, video, videoId } / { success, videos } /
+// { success, folder } / { success, folders }, así que basta con devolver
+// response.data sin envolver (el envoltorio rompía el shape esperado por
+// vendor + forzaba success:true incluso en fallos).
+// =====================
 
-// Adapters de nombres
-export const proxyUploadToR2 = async () => {
-  throw new Error('proxyUploadToR2: not implemented on web');
+export const saveVideo = async (videoData) => {
+  try {
+    const response = await api.post('/video/save', videoData, {
+      timeout: 45000,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.data;
+  } catch (error) {
+    console.warn('Error saving video:', error);
+    throw error;
+  }
 };
-export const getAllVideoFoldersFlat = async () => {
-  const res = await getVideoFoldersFlat();
-  return res?.data ?? res;
-};
-export const updateVideo = async (videoId, payload) => saveVideo({ ...payload, _id: videoId });
 
-// Stubs: registra warning, no rompe la UI.
+export const listVideos = async (filters = {}) => {
+  try {
+    const response = await api.get('/video/list', { params: filters });
+    return response.data;
+  } catch (error) {
+    console.warn('Error listing videos:', error);
+    throw error;
+  }
+};
+
+export const getMyVideos = listVideos; // alias (algunos consumidores legacy)
+
+export const getVideoById = async (videoId) => {
+  try {
+    const response = await api.get(`/video/${videoId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting video:', error);
+    throw error;
+  }
+};
+
+export const getVideoForEdit = async (videoId) => {
+  try {
+    const response = await api.get(`/video/${videoId}/edit`, { timeout: 45000 });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting video for edit:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const duplicateVideoForEdit = async (videoId, payload = {}) => {
+  try {
+    const response = await api.post(`/video/${videoId}/duplicate-for-edit`, payload, {
+      timeout: 45000,
+    });
+    return response.data;
+  } catch (error) {
+    console.warn('Error duplicating video for edit:', error);
+    throw error;
+  }
+};
+
+export const updateVideo = async (videoId, videoData) => {
+  try {
+    const response = await api.put(`/video/${videoId}`, videoData, {
+      timeout: 45000,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.data;
+  } catch (error) {
+    console.warn('Error updating video:', error);
+    throw error;
+  }
+};
+
+export const deleteVideo = async (videoId) => {
+  try {
+    const response = await api.delete(`/video/${videoId}`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error deleting video:', error);
+    throw error;
+  }
+};
+
+// =====================
+// Carpetas de video
+// =====================
+
+export const createVideoFolder = async (folderData) => {
+  try {
+    const response = await api.post('/video-folder', folderData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error creating video folder:', error);
+    throw error;
+  }
+};
+
+export const listVideoFolders = async (parentFolder = null, lang = null) => {
+  try {
+    const params = {};
+    if (parentFolder !== null) params.parentFolder = parentFolder;
+    if (lang) params.lang = lang;
+    const response = await api.get('/video-folder', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error listing video folders:', error);
+    throw error;
+  }
+};
+
+export const getVideoFolderById = async (folderId, lang = null) => {
+  try {
+    const params = lang ? { lang } : {};
+    const response = await api.get(`/video-folder/${folderId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting video folder:', error);
+    throw error;
+  }
+};
+
+export const updateVideoFolder = async (folderId, folderData) => {
+  try {
+    const response = await api.put(`/video-folder/${folderId}`, folderData);
+    return response.data;
+  } catch (error) {
+    console.warn('Error updating video folder:', error);
+    throw error;
+  }
+};
+
+export const deleteVideoFolder = async (folderId, moveVideosTo = null) => {
+  try {
+    const response = await api.delete(`/video-folder/${folderId}`, {
+      data: { moveVideosTo },
+    });
+    return response.data;
+  } catch (error) {
+    console.warn('Error deleting video folder:', error);
+    throw error;
+  }
+};
+
+export const moveVideoToFolder = async (videoId, folderId) => {
+  try {
+    const response = await api.post('/video-folder/move-video', { videoId, folderId });
+    return response.data;
+  } catch (error) {
+    console.warn('Error moving video to folder:', error);
+    throw error;
+  }
+};
+
+export const duplicateVideoToFolder = async (videoId, folderId) => {
+  try {
+    const response = await api.post('/video-folder/duplicate-video', { videoId, folderId });
+    return response.data;
+  } catch (error) {
+    console.warn('Error duplicating video to folder:', error);
+    throw error;
+  }
+};
+
+export const getAllVideoFoldersFlat = async (lang = null) => {
+  try {
+    const params = lang ? { lang } : {};
+    const response = await api.get('/video-folder/flat', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting all video folders:', error);
+    throw error;
+  }
+};
+// Alias para vendor que importa el nombre antiguo:
+export const getVideoFolders = listVideoFolders;
+export const getVideoFoldersFlat = getAllVideoFoldersFlat;
+export const getVideoFolder = getVideoFolderById;
+
+export const getGlobalVideoFolders = async (lang = null) => {
+  try {
+    const params = lang ? { lang } : {};
+    const response = await api.get('/video-folder/global', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error getting global video folders:', error);
+    throw error;
+  }
+};
+
+export const listGlobalVideos = async (folderId = null) => {
+  try {
+    const params = {};
+    if (folderId) params.folderId = folderId;
+    const response = await api.get('/video/global', { params });
+    return response.data;
+  } catch (error) {
+    console.warn('Error listing global videos:', error);
+    throw error;
+  }
+};
+export const getGlobalVideos = listGlobalVideos;
+
+// =====================
+// Stubs / no implementados en web
+// =====================
 const stub = (name, fallback = { data: null }) => async (..._args) => {
   console.warn(`[utils/api] ${name}() no implementado en web`);
   return fallback;
 };
-// Stubs silenciosos: para endpoints intencionalmente no soportados en web.
-const silentStub = (_name, fallback = { data: null }) => async (..._args) => fallback;
 
-// URLs de video (usadas en <video src> y <a href>)
-export const getVideoStreamUrl = (videoId) => `/api/video/stream/${videoId}`;
-export const getVideoDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
-export const getReadyDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
-export const getPreWellnessFormUrl = (token) => `${window.location.origin}/public/pre-wellness/${token}`;
+export const proxyUploadToR2 = async () => {
+  throw new Error('proxyUploadToR2: not implemented on web');
+};
 
-// Lesiones / video / ejercicios / estrategias / wellness — pendientes de migrar al host web.
-export const regenerateVideoWithField = stub('regenerateVideoWithField');
+// Regenera el MP4 server-side a partir de los keyframes guardados.
+// Mirror de misterdata: si el backend encola un job, hacemos polling.
+let _activeVideoPollController = null;
+export const regenerateVideoWithField = async (videoId, fieldImageData = null) => {
+  if (_activeVideoPollController) {
+    _activeVideoPollController.abort();
+  }
+  const controller = new AbortController();
+  _activeVideoPollController = controller;
+  try {
+    const response = await api.post(
+      `/video/${videoId}/regenerate`,
+      { fieldImageData },
+      { timeout: 120000 }
+    );
+    const result = response.data;
+    if (result.status === 'processing' && result.jobId) {
+      const done = await pollJobUntilDone(result.jobId, { signal: controller.signal });
+      return { success: true, videoId: done.videoId };
+    }
+    return result;
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('Video generation cancelled');
+    }
+    console.warn('Error regenerating video:', error);
+    throw error;
+  } finally {
+    if (_activeVideoPollController === controller) {
+      _activeVideoPollController = null;
+    }
+  }
+};
+
 export const unlinkVideoFromExercise = stub('unlinkVideoFromExercise');
 export const unlinkVideoFromStrategy = stub('unlinkVideoFromStrategy');
-export const getVideoForEdit = stub('getVideoForEdit');
-export const duplicateVideoForEdit = stub('duplicateVideoForEdit');
-export const deleteVideo = stub('deleteVideo');
-export const getVideoFolderById = stub('getVideoFolderById');
-export const listVideos = silentStub('listVideos', { data: [] });
-export const listGlobalVideos = silentStub('listGlobalVideos', { data: [] });
-export const listVideoFolders = silentStub('listVideoFolders', { data: [] });
 
 export const getAllExercises = stub('getAllExercises', { data: [] });
 export const getAllStrategies = stub('getAllStrategies', { data: [] });
+
+// URLs de video (rutas relativas; el reverse-proxy reescribe /api → backend)
+export const getVideoStreamUrl = (videoId) => `/api/video/stream/${videoId}`;
+export const getVideoDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
+export const getReadyDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
+export const getPreWellnessFormUrl = (token) =>
+  `${window.location.origin}/public/pre-wellness/${token}`;
 
 export const getSessionWellnessStats = async (sessionId) => {
   try {

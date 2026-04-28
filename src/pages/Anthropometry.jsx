@@ -3,7 +3,7 @@ import AnthropometryView from '@/vendor/anthropometry/anthropometry';
 
 export default function Anthropometry() {
   return (
-    <RNWebPage>
+    <RNWebPage themed>
       <AnthropometryView />
     </RNWebPage>
   );

@@ -153,11 +153,15 @@ export function useRoute() {
 }
 
 export function useFocusEffect(callback) {
+  // RN's useFocusEffect refires whenever the (memoised) callback identity
+  // changes, since vendor code wraps it with useCallback(fn, [deps]). On web
+  // we don't have focus events, so re-running on callback identity is the
+  // closest equivalent — and it's what makes folder navigation in MyVideos
+  // (and similar pages) actually reload content when currentFolder changes.
   useEffect(() => {
     const cleanup = callback();
     return typeof cleanup === 'function' ? cleanup : undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [callback]);
 }
 
 export function useIsFocused() { return true; }

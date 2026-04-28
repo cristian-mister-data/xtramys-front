@@ -103,8 +103,57 @@ export async function downloadAsync(remoteUri, localUri) {
   });
 }
 
+/**
+ * Shim de FileSystem.createDownloadResumable. En nativo descarga a un fichero
+ * local con progreso. En web hacemos `fetch` → blob URL para que el código
+ * vendor (myVideos.downloadVideo, etc.) pueda pasar `result.uri` a
+ * MediaLibrary.createAssetAsync, que dispara la descarga real del browser.
+ */
+export function createDownloadResumable(remoteUri, _localUri, _options, onProgress) {
+  let cancelled = false;
+  return {
+    async downloadAsync() {
+      const r = await fetch(remoteUri);
+      if (!r.ok) throw new Error(`Download failed: ${r.status}`);
+      const total = Number(r.headers.get('content-length')) || 0;
+      let received = 0;
+      let blob;
+      if (r.body && r.body.getReader && typeof onProgress === 'function') {
+        const reader = r.body.getReader();
+        const chunks = [];
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          if (cancelled) throw new Error('Download cancelled');
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.byteLength;
+          try {
+            onProgress({
+              totalBytesWritten: received,
+              totalBytesExpectedToWrite: total || received,
+            });
+          } catch {}
+        }
+        blob = new Blob(chunks);
+      } else {
+        blob = await r.blob();
+      }
+      const url = (typeof URL !== 'undefined' && URL.createObjectURL)
+        ? URL.createObjectURL(blob)
+        : remoteUri;
+      return { uri: url, status: r.status, headers: {} };
+    },
+    async pauseAsync() { /* no-op web */ },
+    async resumeAsync() { return this.downloadAsync(); },
+    async cancelAsync() { cancelled = true; },
+    savable() { return {}; },
+  };
+}
+
 export default {
   documentDirectory, cacheDirectory, bundleDirectory,
   readAsStringAsync, writeAsStringAsync, deleteAsync, getInfoAsync,
-  makeDirectoryAsync, readDirectoryAsync, downloadAsync, copyAsync, moveAsync, EncodingType,
+  makeDirectoryAsync, readDirectoryAsync, downloadAsync, copyAsync, moveAsync,
+  createDownloadResumable, EncodingType,
 };

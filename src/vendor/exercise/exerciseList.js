@@ -2729,7 +2729,7 @@ const styles = StyleSheet.create({
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#e3e8f0',

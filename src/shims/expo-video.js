@@ -103,6 +103,14 @@ export function VideoView({
   contentFit = 'contain',
   nativeControls = true,
   allowsFullscreen = true,
+  // Props específicas de RN/expo-video que NO existen en el DOM <video>;
+  // las desestructuramos para que NO acaben en el spread y eviten warnings
+  // del estilo "Unknown DOM property fullscreenOptions".
+  allowsPictureInPicture,
+  fullscreenOptions,
+  showsTimecodes,
+  requiresLinearPlayback,
+  startsPictureInPictureAutomatically,
   ...rest
 }) {
   const elRef = useRef(null);

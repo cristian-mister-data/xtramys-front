@@ -398,8 +398,8 @@ export default function AnalysisDetailModal({
     );
   };
 
-  const renderGraphicBlock = (label, IconCmp, color, imageBase64) => (
-    <QBlock>
+  const renderGraphicBlock = (label, IconCmp, color, imageBase64, key) => (
+    <QBlock key={key}>
       <QHead>
         <QIcon $color={color || '#3578e5'}>
           <IconCmp size={16} />
@@ -416,11 +416,11 @@ export default function AnalysisDetailModal({
     </QBlock>
   );
 
-  const renderVideoBlock = (label, IconCmp, color, value) => {
+  const renderVideoBlock = (label, IconCmp, color, value, key) => {
     const videoId = value?.videoId;
     const inlineUrl = value?.url;
     return (
-      <QBlock>
+      <QBlock key={key}>
         <QHead>
           <QIcon $color={color || '#3578e5'}>
             <IconCmp size={16} />
@@ -521,7 +521,7 @@ export default function AnalysisDetailModal({
           }
         }
         if (!g?.imageBase64) return renderQuestionAnswer(qText, null, Icon, color);
-        return renderGraphicBlock(qText, Icon, color, g.imageBase64);
+        return renderGraphicBlock(qText, Icon, color, g.imageBase64, q.id);
       }
 
       // video
@@ -537,7 +537,7 @@ export default function AnalysisDetailModal({
           }
         }
         if (!v?.videoId && !v?.url) return renderQuestionAnswer(qText, null, Icon, color);
-        return renderVideoBlock(qText, Icon, color, v);
+        return renderVideoBlock(qText, Icon, color, v, q.id);
       }
 
       // text por defecto
@@ -555,7 +555,8 @@ export default function AnalysisDetailModal({
               t('rivalAnalysis.actions.video', 'Vídeo'),
               MdVideocam,
               '#3578e5',
-              v
+              v,
+              `orphan-${k}`
             )
           );
         } else if (v?.imageBase64) {
@@ -564,7 +565,8 @@ export default function AnalysisDetailModal({
               t('rivalAnalysis.actions.graphic', 'Gráfico'),
               MdBrush,
               '#3578e5',
-              v.imageBase64
+              v.imageBase64,
+              `orphan-${k}`
             )
           );
         }

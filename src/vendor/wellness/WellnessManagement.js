@@ -75,16 +75,35 @@ export default function WellnessManagement({ navigation }) {
     primaryLight: theme.colors.primaryLight,
     primaryDark: theme.colors.primaryHover,
     success: theme.colors.success,
+    successSoft: theme.colors.successSoft,
+    successSoftText: theme.colors.successSoftText,
     warning: theme.colors.warning,
+    warningSoft: theme.colors.warningSoft,
+    warningSoftText: theme.colors.warningSoftText,
     danger: theme.colors.error,
     background: theme.colors.background,
     backgroundAlt: theme.colors.backgroundAlt,
     surface: theme.colors.surface,
+    surfaceAlt: theme.colors.surfaceAlt,
+    onPrimary: theme.colors.onPrimary,
     text: theme.colors.text,
     textSecondary: theme.colors.textSecondary,
     textMuted: theme.colors.textMuted,
     border: theme.colors.border,
   }), [theme]);
+  const isDark = theme.mode === 'dark';
+  // Gradiente de cabecera adaptado al tema (en oscuro utiliza tonos
+  // de superficie para no romper el contraste suave del resto de la app).
+  const headerGradient = isDark
+    ? [theme.colors.surface, theme.colors.surfaceAlt, theme.colors.surfaceElevated]
+    : ['#1a237e', '#3949ab', '#5c6bc0'];
+  const headerTextColor = isDark ? theme.colors.text : '#fff';
+  const headerTextMutedColor = isDark
+    ? theme.colors.textSecondary
+    : 'rgba(255,255,255,0.8)';
+  const headerActionBg = isDark
+    ? theme.colors.backgroundAlt
+    : 'rgba(255,255,255,0.2)';
   const sessions = useSelector(state => state.session.session) || [];
   const equipos = useSelector(state => state.team.teams) || [];
   
@@ -709,7 +728,7 @@ export default function WellnessManagement({ navigation }) {
         <Ionicons 
           name="calendar" 
           size={18} 
-          color={activeTab === 'sessions' ? '#fff' : THEME.textSecondary} 
+          color={activeTab === 'sessions' ? THEME.onPrimary : THEME.textSecondary} 
         />
         <Text style={[styles.tabText, activeTab === 'sessions' && styles.tabTextActive]}>
           {t('wellness.sessions')}
@@ -722,7 +741,7 @@ export default function WellnessManagement({ navigation }) {
         <Ionicons 
           name="document-text" 
           size={18} 
-          color={activeTab === 'templates' ? '#fff' : THEME.textSecondary} 
+          color={activeTab === 'templates' ? THEME.onPrimary : THEME.textSecondary} 
         />
         <Text style={[styles.tabText, activeTab === 'templates' && styles.tabTextActive]}>
           {t('wellness.templates')}
@@ -764,33 +783,33 @@ export default function WellnessManagement({ navigation }) {
               
               <View style={styles.sessionActions}>
                 <TouchableOpacity
-                  style={[styles.sessionActionBtn, { backgroundColor: '#f59e0b15' }]}
+                  style={[styles.sessionActionBtn, { backgroundColor: THEME.warningSoft }]}
                   onPress={() => openSessionModal(session, 'pre')}
                 >
                   <View style={styles.sessionActionContent}>
-                    <View style={[styles.typeBadge, { backgroundColor: '#f59e0b' }]}>
+                    <View style={[styles.typeBadge, { backgroundColor: THEME.warning }]}>
                       <Text style={styles.typeBadgeText}>{t('wellness.preBadge')}</Text>
                     </View>
-                    <Text style={[styles.sessionActionText, { color: '#f59e0b' }]}>
+                    <Text style={[styles.sessionActionText, { color: THEME.warningSoftText }]}>
                       {t('preWellness.title')}
                     </Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={20} color="#f59e0b" />
+                  <MaterialIcons name="chevron-right" size={20} color={THEME.warningSoftText} />
                 </TouchableOpacity>
                 
                 <TouchableOpacity
-                  style={[styles.sessionActionBtn, { backgroundColor: '#10b98115' }]}
+                  style={[styles.sessionActionBtn, { backgroundColor: THEME.successSoft }]}
                   onPress={() => openSessionModal(session, 'post')}
                 >
                   <View style={styles.sessionActionContent}>
-                    <View style={[styles.typeBadge, { backgroundColor: '#276e15' }]}>
+                    <View style={[styles.typeBadge, { backgroundColor: THEME.success }]}>
                       <Text style={styles.typeBadgeText}>{t('wellness.postBadge')}</Text>
                     </View>
-                    <Text style={[styles.sessionActionText, { color: '#276e15' }]}>
+                    <Text style={[styles.sessionActionText, { color: THEME.successSoftText }]}>
                       {t('session.wellness')}
                     </Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={20} color="#276e15" />
+                  <MaterialIcons name="chevron-right" size={20} color={THEME.successSoftText} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -808,8 +827,8 @@ export default function WellnessManagement({ navigation }) {
           style={[styles.typeBtn, selectedTemplateType === 'pre' && styles.typeBtnActive]}
           onPress={() => setSelectedTemplateType('pre')}
         >
-          <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'pre' ? '#f59e0b' : '#e2e8f0' }]}>
-            <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'pre' ? '#fff' : '#64748b' }]}>PRE</Text>
+          <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'pre' ? THEME.warning : THEME.backgroundAlt }]}>
+            <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'pre' ? '#fff' : THEME.textSecondary }]}>PRE</Text>
           </View>
           <Text style={[styles.typeBtnText, selectedTemplateType === 'pre' && styles.typeBtnTextActive]}>
             {t('preWellness.title')}
@@ -819,8 +838,8 @@ export default function WellnessManagement({ navigation }) {
           style={[styles.typeBtn, selectedTemplateType === 'post' && styles.typeBtnActive]}
           onPress={() => setSelectedTemplateType('post')}
         >
-          <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'post' ? '#276e15' : '#e2e8f0' }]}>
-            <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'post' ? '#fff' : '#64748b' }]}>POST</Text>
+          <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'post' ? THEME.success : THEME.backgroundAlt }]}>
+            <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'post' ? '#fff' : THEME.textSecondary }]}>POST</Text>
           </View>
           <Text style={[styles.typeBtnText, selectedTemplateType === 'post' && styles.typeBtnTextActive]}>
             {t('session.wellness')}
@@ -1320,23 +1339,23 @@ export default function WellnessManagement({ navigation }) {
     <AppLayout>
       <View style={styles.container}>
         <LinearGradient
-          colors={['#1a237e', '#3949ab', '#5c6bc0']}
+          colors={headerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
+          style={[styles.header, isDark && { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}
         >
           <View style={styles.headerContent}>
-            <MaterialIcons name="favorite" size={28} color="#fff" />
-            <Text style={styles.headerTitle}>{t('wellness.title')}</Text>
+            <MaterialIcons name="favorite" size={28} color={headerTextColor} />
+            <Text style={[styles.headerTitle, { color: headerTextColor }]}>{t('wellness.title')}</Text>
             <TouchableOpacity
-              style={{ marginLeft: 'auto', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              style={{ marginLeft: 'auto', backgroundColor: headerActionBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: isDark ? 1 : 0, borderColor: theme.colors.border }}
               onPress={() => setShowRangePDFModal(true)}
             >
-              <Ionicons name="document-text-outline" size={18} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{t('wellness.pdfButton')}</Text>
+              <Ionicons name="document-text-outline" size={18} color={headerTextColor} />
+              <Text style={{ color: headerTextColor, fontSize: 12, fontWeight: '600' }}>{t('wellness.pdfButton')}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerSubtitle, { color: headerTextMutedColor }]}>
             {t('wellness.subtitle')}
           </Text>
         </LinearGradient>
@@ -1363,13 +1382,13 @@ export default function WellnessManagement({ navigation }) {
               <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginBottom: 8 }}>{t('wellness.pdfType')}</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 <TouchableOpacity
-                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'post' ? '#276e15' : THEME.backgroundAlt }}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'post' ? THEME.success : THEME.backgroundAlt }}
                   onPress={() => setRangePDFType('post')}
                 >
                   <Text style={{ fontWeight: '600', color: rangePDFType === 'post' ? '#fff' : THEME.textSecondary }}>{t('wellness.postBadge')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'pre' ? '#f59e0b' : THEME.backgroundAlt }}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: rangePDFType === 'pre' ? THEME.warning : THEME.backgroundAlt }}
                   onPress={() => setRangePDFType('pre')}
                 >
                   <Text style={{ fontWeight: '600', color: rangePDFType === 'pre' ? '#fff' : THEME.textSecondary }}>{t('wellness.preBadge')}</Text>
@@ -1402,7 +1421,7 @@ export default function WellnessManagement({ navigation }) {
 
               {/* Botón generar */}
               <TouchableOpacity
-                style={{ backgroundColor: rangePDFType === 'pre' ? '#f59e0b' : '#276e15', borderRadius: 10, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                style={{ backgroundColor: rangePDFType === 'pre' ? THEME.warning : THEME.success, borderRadius: 10, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
                 onPress={handleGenerateRangePDF}
                 disabled={generatingRangePDF}
               >
