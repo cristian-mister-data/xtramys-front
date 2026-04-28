@@ -13,10 +13,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { getPlayerInjuryStatus } from './helpers';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import THEME from './theme';
+import THEME_DEFAULT from './theme';
 
 /**
  * Modal para seleccionar jugadores con soporte para:
@@ -58,6 +59,33 @@ export default function PlayerSelectionModal({
   maxSelection = null 
 }) {
   const { t } = useTranslation();
+  const themeSC = useTheme();
+  const THEME = useMemo(() => {
+    const c = themeSC?.colors || {};
+    return {
+      primary: c.primary || THEME_DEFAULT.primary,
+      primaryLight: c.primaryHover || c.primary || THEME_DEFAULT.primaryLight,
+      primaryDark: c.primaryActive || c.primary || THEME_DEFAULT.primaryDark,
+      success: c.success || THEME_DEFAULT.success,
+      warning: c.warning || THEME_DEFAULT.warning,
+      danger: c.error || THEME_DEFAULT.danger,
+      background: c.background || THEME_DEFAULT.background,
+      backgroundAlt: c.backgroundAlt || c.background || THEME_DEFAULT.background,
+      surface: c.surface || THEME_DEFAULT.surface,
+      surfaceAlt: c.surfaceAlt || c.surface || THEME_DEFAULT.surface,
+      text: c.text || THEME_DEFAULT.text,
+      textSecondary: c.textSecondary || THEME_DEFAULT.textSecondary,
+      textMuted: c.textMuted || THEME_DEFAULT.textMuted,
+      border: c.border || THEME_DEFAULT.border,
+      inputBg: c.inputBg || THEME_DEFAULT.inputBg,
+      onPrimary: c.onPrimary || '#ffffff',
+      primarySoft: c.primarySoft || (c.primary ? c.primary + '20' : '#eff6ff'),
+      errorSoft: c.errorSoft || (c.error ? c.error + '20' : '#fee2e2'),
+      errorSoftText: c.errorSoftText || c.error || '#dc2626',
+      gradient: THEME_DEFAULT.gradient,
+    };
+  }, [themeSC]);
+  const styles = useMemo(() => makeStyles(THEME), [THEME]);
   const { width, height } = useWindowDimensions();
   const isPortrait = height >= width;
   const isWide = width > 900;
@@ -368,9 +396,9 @@ export default function PlayerSelectionModal({
                         )}
                       </View>
                       {isSanctioned && (
-                        <View style={[styles.statusBadgeMobile, { backgroundColor: '#fee2e2' }]}>
+                        <View style={[styles.statusBadgeMobile, { backgroundColor: THEME.errorSoft }]}>
                           <MaterialIcons name="block" size={12} color="#dc2626" />
-                          <Text style={[styles.statusTextMobile, { color: '#dc2626' }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
+                          <Text style={[styles.statusTextMobile, { color: THEME.errorSoftText }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
                         </View>
                       )}
                       {status && (
@@ -413,8 +441,8 @@ export default function PlayerSelectionModal({
                             {getPlayerFullName(j)}
                           </Text>
                           {isSanctioned && (
-                            <View style={[styles.statusBadge, { backgroundColor: '#fee2e2' }]}>
-                              <Text style={[styles.statusText, { color: '#dc2626' }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: THEME.errorSoft }]}>
+                              <Text style={[styles.statusText, { color: THEME.errorSoftText }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
                             </View>
                           )}
                           {status && (
@@ -464,8 +492,8 @@ export default function PlayerSelectionModal({
                           </Text>
                         )}
                         {isSanctioned && (
-                          <View style={[styles.cardStatusBadge, { backgroundColor: '#fee2e2' }]}>
-                            <Text style={[styles.cardStatusText, { color: '#dc2626' }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
+                          <View style={[styles.cardStatusBadge, { backgroundColor: THEME.errorSoft }]}>
+                            <Text style={[styles.cardStatusText, { color: THEME.errorSoftText }]}>{t('tournaments.sanctioned', 'Sancionado')}</Text>
                           </View>
                         )}
                         {status && (
@@ -492,7 +520,7 @@ export default function PlayerSelectionModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (THEME) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.65)',
@@ -502,7 +530,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 0,
     padding: Platform.OS === 'ios' ? 16 : 12,
   },
@@ -524,7 +552,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -542,7 +570,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     borderWidth: 1,
     borderColor: THEME.border,
   },
@@ -556,7 +584,7 @@ const styles = StyleSheet.create({
     color: THEME.textSecondary,
   },
   filterBtnTextActive: {
-    color: '#fff',
+    color: THEME.onPrimary,
   },
   searchRow: {
     flexDirection: 'row',
@@ -625,7 +653,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#fee2e2',
+    backgroundColor: THEME.errorSoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -656,11 +684,11 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '600',
   },
   mainArea: {
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
   },
   gridWrapper: {
     flexDirection: 'row',
@@ -680,7 +708,7 @@ const styles = StyleSheet.create({
   },
   playerCard: {
     width: 100,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -694,7 +722,7 @@ const styles = StyleSheet.create({
   },
   playerCardSel: {
     borderColor: THEME.primary,
-    backgroundColor: '#eff6ff',
+    backgroundColor: THEME.primarySoft,
   },
   playerCardDisabled: {
     opacity: 0.5,
@@ -725,7 +753,7 @@ const styles = StyleSheet.create({
   },
   cardStatusText: {
     fontSize: 9,
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '600',
   },
   pagination: {
@@ -742,7 +770,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -768,19 +796,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   doneBtnText: {
-    color: '#fff',
+    color: THEME.onPrimary,
     fontSize: 15,
     fontWeight: '600',
   },
   
   // ============ ESTILOS MÓVIL PARA SELECTOR DE JUGADORES ============
   selectedPanelMobile: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: THEME.primarySoft,
     borderRadius: 10,
     padding: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#3578e530',
+    borderColor: THEME.primary + '30',
   },
   selectedPanelTitleMobile: {
     fontSize: 12,
@@ -799,19 +827,19 @@ const styles = StyleSheet.create({
   },
   selectedChipTextMobile: {
     fontSize: 12,
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '500',
     maxWidth: 100,
   },
   selectedChipRemoveMobile: {
     fontSize: 16,
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '600',
   },
   playerRowMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -820,7 +848,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   playerRowMobileSelected: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: THEME.primarySoft,
     borderColor: THEME.primary,
   },
   playerRowMobileDisabled: {
@@ -843,7 +871,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -867,7 +895,7 @@ const styles = StyleSheet.create({
   },
   statusTextMobile: {
     fontSize: 10,
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '600',
   },
 });

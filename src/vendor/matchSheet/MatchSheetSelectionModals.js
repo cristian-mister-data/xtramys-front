@@ -47,7 +47,7 @@ export function OptionSelectionModal({
       animationType="fade"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -145,7 +145,7 @@ export function JornadaModal({ visible, onClose, jornadaOptions, selectedJornada
       animationType="fade"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContainer, { maxHeight: '70%' }]}>
           <View style={styles.modalHeader}>

@@ -109,7 +109,11 @@ export const GlobalStyles = createGlobalStyle`
   html[data-theme="dark"] body > div:not(#root):not([data-theme-aware]):has(*) {
     position: fixed;
     inset: 0;
-    filter: invert(0.92) hue-rotate(180deg);
+    /* invert(1) + hue-rotate(180deg) = inversión perfecta de luminosidad
+       que preserva los matices (blues siguen siendo blues, etc.). Usar
+       invert(0.92) introduce un sesgo que vira los colores hacia tonos
+       fluorescentes (verdes neón al invertir azules). */
+    filter: invert(1) hue-rotate(180deg);
 
     img,
     video,

@@ -298,7 +298,7 @@ export default function MatchSheetDetailModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalBg}>
         <View style={IS_TABLET ? styles.viewModalContentTablet : styles.viewModalContent}>
           {/* Header */}

@@ -3,6 +3,7 @@
 // envuelve la página por fuera. Este sólo aporta scroll + safe area + KeyboardAvoiding.
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from 'styled-components';
 
 function hasVirtualizedList(children) {
   if (!children) return false;
@@ -17,9 +18,11 @@ function hasVirtualizedList(children) {
 
 export default function AppLayout({ children, scrollEnabled = true, backgroundColor }) {
   const useDirectRender = !scrollEnabled || hasVirtualizedList(children);
+  const theme = useTheme();
+  const bg = backgroundColor || theme?.colors?.background || '#f2f6fc';
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: backgroundColor ? backgroundColor : '#f2f6fc', width: '100%' }}
+      style={{ flex: 1, backgroundColor: bg, width: '100%' }}
       edges={['left', 'right', 'bottom']}
     >
       <KeyboardAvoidingView

@@ -399,6 +399,7 @@ export default function TrainingSessionDetailModal({
       visible={visible}
       animationType="slide"
       transparent
+     
       onRequestClose={onClose}
     >
       <View style={styles.modalBg}>
@@ -891,6 +892,7 @@ export default function TrainingSessionDetailModal({
         visible={imageModalVisible}
         transparent
         animationType="fade"
+       
         onRequestClose={() => setImageModalVisible(false)}
       >
         <View style={styles.imageModalBg}>
@@ -931,6 +933,7 @@ export default function TrainingSessionDetailModal({
         visible={showVideoModal}
         transparent
         animationType="fade"
+       
         onRequestClose={closeVideoModal}
       >
         <View style={styles.videoModalBg}>

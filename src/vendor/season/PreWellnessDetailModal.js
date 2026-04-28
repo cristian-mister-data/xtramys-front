@@ -495,7 +495,7 @@ export default function PreWellnessDetailModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}

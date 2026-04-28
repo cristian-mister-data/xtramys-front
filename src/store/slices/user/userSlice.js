@@ -56,9 +56,14 @@ const userSlice = createSlice({
         s.user = a.payload;
         s.isAuthenticated = !!a.payload;
       })
-      .addCase(fetchMe.rejected, (s) => {
-        s.user = null;
-        s.isAuthenticated = false;
+      .addCase(fetchMe.rejected, (s, a) => {
+        // Solo cerramos sesión si fue un error real de autenticación
+        // (401/403). Un fallo de red o servidor transitorio al recargar
+        // la página NO debe expulsar al usuario ni borrar su cache.
+        if (a.payload?.isAuthError) {
+          s.user = null;
+          s.isAuthenticated = false;
+        }
       })
 
       .addCase(logoutThunk.fulfilled, (s) => {

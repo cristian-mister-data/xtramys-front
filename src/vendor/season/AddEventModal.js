@@ -50,7 +50,7 @@ const OptionModal = ({ visible, onClose, options, selectedOption, setSelectedOpt
     animationType="fade"
     transparent={true}
     onRequestClose={onClose}
-  >
+ >
     <View style={optionModalStyles.modalOverlay}>
       <View style={optionModalStyles.modalContainer}>
         <View style={optionModalStyles.modalHeader}>
@@ -1660,7 +1660,7 @@ export default function AddEventModal({
 
   // Handler para cambio de fecha del partido
   const handleMatchDateChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowMatchDatePicker(false);
     }
     if (date) {
@@ -1690,7 +1690,7 @@ export default function AddEventModal({
 
   // Handler para cambio de hora del partido
   const handleMatchTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowMatchTimePicker(false);
     }
     if (date) {
@@ -1711,7 +1711,7 @@ export default function AddEventModal({
 
   // Handler para cambio de fecha de sesión
   const handleSessionDateChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowSessionDatePicker(false);
     }
     if (date) {
@@ -1730,7 +1730,7 @@ export default function AddEventModal({
 
   // Handler para hora de inicio de sesión
   const handleStartTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowStartTimePicker(false);
     }
     if (date) {
@@ -1742,7 +1742,7 @@ export default function AddEventModal({
 
   // Handler para hora de fin de sesión
   const handleEndTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowEndTimePicker(false);
     }
     if (date) {
@@ -4198,7 +4198,7 @@ export default function AddEventModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalBg}>
         <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {/* Header */}
@@ -4409,7 +4409,7 @@ export default function AddEventModal({
       transparent={false}
       animationType="slide"
       onRequestClose={closeVideoModal}
-    >
+   >
       <View style={styles.videoModalBg}>
         <View style={styles.videoModalContent}>
           <View style={styles.videoModalHeader}>
@@ -5174,12 +5174,12 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   exerciseNumberText: {
-    color: theme.colors.onSuccess,
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

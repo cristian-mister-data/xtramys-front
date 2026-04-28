@@ -2171,7 +2171,7 @@ const styles = StyleSheet.create({
   // --- General containers ---
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
     paddingTop: 0,
   },
   

@@ -302,7 +302,7 @@ export default function EditSessionModal({
 
   // Handler para fecha
   const handleDateChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowDatePicker(false);
     }
     if (date) {
@@ -320,7 +320,7 @@ export default function EditSessionModal({
 
   // Handler para hora de inicio
   const handleStartTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowStartTimePicker(false);
     }
     if (date) {
@@ -332,7 +332,7 @@ export default function EditSessionModal({
 
   // Handler para hora de fin
   const handleEndTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowEndTimePicker(false);
     }
     if (date) {
@@ -426,7 +426,7 @@ export default function EditSessionModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalBg}>
         <View style={styles.modalContent}>
           {/* Header */}
@@ -1775,12 +1775,12 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   exerciseNumberText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

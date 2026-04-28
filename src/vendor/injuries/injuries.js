@@ -853,7 +853,7 @@ export default function InjuriesManagement({ navigation }) {
           animationType="slide"
           transparent={true}
           onRequestClose={closeModal}
-        >
+       >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>

@@ -314,8 +314,6 @@ export default function Players() {
           <Row>
             <Muted style={{ fontSize: 12 }}>
               {filtered.length} {t('player.players', 'jugadores').toLowerCase()}
-              {' · '}
-              {t('player.profileFutureHint', 'Próximamente: perfil completo del jugador con estadísticas y lesiones.')}
             </Muted>
           </Row>
         </>

@@ -1,4 +1,4 @@
-﻿// components/pages/matchSheet/matchSheetList.js
+// components/pages/matchSheet/matchSheetList.js
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, TextInput, Platform, Switch, Image } from 'react-native';
 import { useTheme } from 'styled-components';
@@ -25,7 +25,7 @@ import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
 
-// Mapa de ronda → clave i18n
+// Mapa de ronda ? clave i18n
 const ROUND_I18N_KEYS = {
   final: 'tournaments.roundFinal',
   semifinal: 'tournaments.roundSemifinal',
@@ -42,7 +42,7 @@ const FIELD_WIDTH = 160;
 const FIELD_HEIGHT = 115;
 
 // Ubicaciones de partidos
-// Las ubicaciones se traducirán dinámicamente usando las claves de i18n
+// Las ubicaciones se traducir�n din�micamente usando las claves de i18n
 const ubicacionesKeys = ['home', 'away', 'neutral'];
 
 // Alineaciones importadas desde useMatchSheetForm.js (ALINEACIONES_BY_PLAYER_COUNT)
@@ -56,7 +56,7 @@ function normalizeFormation(value) {
   return v;
 }
 
-// Helper para parsear minuto string ("45+2" → 47, "60" → 60)
+// Helper para parsear minuto string ("45+2" ? 47, "60" ? 60)
 function parseMinuto(minuto) {
   if (typeof minuto === 'number') return minuto;
   if (typeof minuto === 'string') {
@@ -75,7 +75,7 @@ function sortByMinuto(a, b) {
 }
 
 // REEMPLAZADO: ahora se usa MatchSheetDetailModal importado desde season/
-// El componente MatchSheetDetail se eliminó y se reutiliza el modal de Temporadas
+// El componente MatchSheetDetail se elimin� y se reutiliza el modal de Temporadas
 
 function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selectedTeam, isGrid = false }) {
   const theme = useTheme();
@@ -130,7 +130,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
     return `${matchSheet.golesFavor} - ${matchSheet.golesContra}`;
   };
 
-  // ========== VISTA GRID - Diseño profesional compacto ==========
+  // ========== VISTA GRID - Dise�o profesional compacto ==========
   if (isGrid) {
     return (
       <Pressable
@@ -159,7 +159,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
             </View>
           )}
           
-          {/* Icono de ubicación en esquina */}
+          {/* Icono de ubicaci�n en esquina */}
           {matchSheet.ubicacion && (
             <View style={styles.gridCardUbicacionCorner}>
               <Ionicons 
@@ -177,8 +177,8 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           </Text>
 
           {isMatchInFuture() ? (
-            <View style={[styles.gridCardScoreBadge, { backgroundColor: '#eef2ff' }]}>
-              <Text style={[styles.gridCardScoreText, { color: '#6366f1', fontSize: 9 }]}>
+            <View style={[styles.gridCardScoreBadge, { backgroundColor: theme.colors.primarySoft }]}>
+              <Text style={[styles.gridCardScoreText, { color: theme.colors.primarySoftText, fontSize: 9 }]}>
                 {t('matchSheet.matchToBePlayed')}
               </Text>
             </View>
@@ -195,7 +195,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
               <View style={styles.gridCardStat}>
                 <Ionicons name="calendar-outline" size={8} color={theme.colors.textMuted} />
                 <Text style={styles.gridCardStatText}>
-                  {formatDate(matchSheet.fechaHora)}{matchSheet.fase === 'eliminatoria' && matchSheet.ronda ? ` · ${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}` : matchSheet.jornada ? ` · J${matchSheet.jornada}` : ''}
+                  {formatDate(matchSheet.fechaHora)}{matchSheet.fase === 'eliminatoria' && matchSheet.ronda ? ` � ${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}` : matchSheet.jornada ? ` � J${matchSheet.jornada}` : ''}
                 </Text>
               </View>
             )}
@@ -205,7 +205,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
     );
   }
 
-  // ========== VISTA LISTA - Diseño profesional horizontal ==========
+  // ========== VISTA LISTA - Dise�o profesional horizontal ==========
   return (
     <Pressable
       onPress={() => onPress(matchSheet)}
@@ -239,9 +239,9 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
 
         <View style={styles.listCardTags}>
           {isMatchInFuture() ? (
-            <View style={[styles.listCardTag, { backgroundColor: '#eef2ff' }]}>
+            <View style={[styles.listCardTag, { backgroundColor: theme.colors.primarySoft }]}>
               <Ionicons name="time-outline" size={12} color="#6366f1" />
-              <Text style={[styles.listCardTagText, { color: '#6366f1' }]}>{t('matchSheet.matchToBePlayed')}</Text>
+              <Text style={[styles.listCardTagText, { color: theme.colors.primarySoftText }]}>{t('matchSheet.matchToBePlayed')}</Text>
             </View>
           ) : getScore() && (
             <View style={[styles.listCardTag, { backgroundColor: getResultColor(matchSheet.resultado)[0] + '20' }]}>
@@ -258,7 +258,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           {(matchSheet.jornada || matchSheet.fase === 'eliminatoria') && (
             <View style={[styles.listCardTag, styles.listCardTagWarning]}>
               <Ionicons name="trophy-outline" size={12} color={theme.colors.warning} />
-              <Text style={[styles.listCardTagText, { color: '#d97706' }]}>
+              <Text style={[styles.listCardTagText, { color: theme.colors.warningSoftText }]}>
                 {matchSheet.fase === 'eliminatoria' && matchSheet.ronda
                   ? `${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                   : matchSheet.fase === 'grupos' && matchSheet.grupo
@@ -268,9 +268,9 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
             </View>
           )}
           {matchSheet.ubicacion && (
-            <View style={[styles.listCardTag, { backgroundColor: '#f3e8ff' }]}>
+            <View style={[styles.listCardTag, { backgroundColor: theme.colors.purpleSoft }]}>
               <Ionicons name={matchSheet.ubicacion === 'Casa' ? 'home' : matchSheet.ubicacion === 'Fuera' ? 'airplane' : 'location'} size={12} color={theme.colors.purple} />
-              <Text style={[styles.listCardTagText, { color: '#7c3aed' }]}>{matchSheet.ubicacion}</Text>
+              <Text style={[styles.listCardTagText, { color: theme.colors.purpleSoftText }]}>{matchSheet.ubicacion}</Text>
             </View>
           )}
           {matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre && (
@@ -311,7 +311,7 @@ export default function MatchSheetList() {
   // Current language for translations
   const currentLang = i18n.language?.split('-')[0] || 'es';
   
-  // Ubicaciones traducidas dinámicamente
+  // Ubicaciones traducidas din�micamente
   const ubicaciones = useMemo(() => 
     ubicacionesKeys.map(key => t(`matchSheet.fields.${key}`))
   , [t]);
@@ -346,14 +346,14 @@ export default function MatchSheetList() {
   const [sortDateOrder, setSortDateOrder] = useState('default');
   const [sortGoals, setSortGoals] = useState('');
 
-  // Estados para creación/edición de ficha
+  // Estados para creaci�n/edici�n de ficha
 
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
 
-  // Filtrar fichas de partido y ordenarlas: primeros los próximos (más cercanos → más lejanos),
-  // luego los partidos pasados (más cercanos al presente → más lejanos). Las fichas sin fecha quedan al final.
-  // Torneos únicos presentes en las fichas de partido
+  // Filtrar fichas de partido y ordenarlas: primeros los pr�ximos (m�s cercanos ? m�s lejanos),
+  // luego los partidos pasados (m�s cercanos al presente ? m�s lejanos). Las fichas sin fecha quedan al final.
+  // Torneos �nicos presentes en las fichas de partido
   const uniqueTournaments = useMemo(() => {
     const seen = new Set();
     const result = [];
@@ -470,10 +470,10 @@ export default function MatchSheetList() {
       }
     });
 
-    // Ordenar próximos de más cercanos a más lejanos (ascendente)
+    // Ordenar pr�ximos de m�s cercanos a m�s lejanos (ascendente)
     upcoming.sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora));
 
-    // Ordenar pasados del más cercano al presente al más lejano (descendente)
+    // Ordenar pasados del m�s cercano al presente al m�s lejano (descendente)
     past.sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora));
 
     return [...upcoming, ...past, ...undated];
@@ -519,7 +519,7 @@ export default function MatchSheetList() {
       if (selectedTeam?._id) {
         dispatch(fetchMatchSheetsByTeam(selectedTeam._id));
         dispatch(fetchRivalsByTeam(selectedTeam._id));
-        dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id })); // Para validación
+        dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id })); // Para validaci�n
         dispatch(fetchInjuriesByTeam({ team: selectedTeam._id })); // Para mostrar lesionados
       }
     }
@@ -535,10 +535,10 @@ export default function MatchSheetList() {
     onComplete: () => setOptionsModalVisible(false),
   });
 
-  // Función para filtrar solo números
+  // Funci�n para filtrar solo n�meros
   const filterNumericInput = (text) => text.replace(/[^0-9]/g, '');
 
-  // ─── Handlers para el modal compartido (EditMatchSheetModal) ───
+  // --- Handlers para el modal compartido (EditMatchSheetModal) ---
 
   const handleCreateMatchFromModal = async (matchData) => {
     if (!selectedTeam?._id) {
@@ -639,7 +639,7 @@ export default function MatchSheetList() {
               <Text style={styles.topBarTitle}>{t('matchSheet.title')}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {/* Botón de filtros */}
+              {/* Bot�n de filtros */}
               <TouchableOpacity
                 onPress={() => setFiltersVisible(!filtersVisible)}
                 style={[styles.headerActionBtn, filtersVisible && styles.headerActionBtnActive]}
@@ -651,7 +651,7 @@ export default function MatchSheetList() {
                   </View>
                 )}
               </TouchableOpacity>
-              {/* Botón crear ficha */}
+              {/* Bot�n crear ficha */}
               <TouchableOpacity
                 onPress={openCreateModal}
                 style={styles.headerCreateBtn}
@@ -777,7 +777,7 @@ export default function MatchSheetList() {
                   </ScrollView>
                 </View>
 
-                {/* Ubicación filter chips */}
+                {/* Ubicaci�n filter chips */}
                 <View style={{ marginTop: 10 }}>
                   <Text style={styles.filterLabel}>{t('matchSheet.filters.locationFilter')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
@@ -1014,7 +1014,7 @@ export default function MatchSheetList() {
                   openEditModal(selectedMatchSheetForOptions);
                 }}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#eff6ff' }]}>
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
                   <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.actions.edit')}</Text>
@@ -1024,7 +1024,7 @@ export default function MatchSheetList() {
                 style={styles.optionsModalOption}
                 onPress={() => pdfHook.openLineupPDFModal()}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#f0fdf4' }]}>
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.successSoft }]}>
                   <Ionicons name="football" size={20} color={theme.colors.success} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.lineupTitle')}</Text>
@@ -1034,7 +1034,7 @@ export default function MatchSheetList() {
                 style={styles.optionsModalOption}
                 onPress={() => pdfHook.openConvocatoriaPDFModal()}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#faf5ff' }]}>
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.purpleSoft }]}>
                   <Ionicons name="people" size={20} color={theme.colors.purple} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.callupTitle')}</Text>
@@ -1045,7 +1045,7 @@ export default function MatchSheetList() {
                 onPress={() => pdfHook.handleGenerateMatchSheetPDF()}
                 disabled={pdfHook.generatingPDF}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#fff7ed' }]}>
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.warningSoft }]}>
                   {pdfHook.generatingPDFType === 'matchsheet' ? (
                     <ActivityIndicator color={theme.colors.accent} size="small" />
                   ) : (
@@ -1059,7 +1059,7 @@ export default function MatchSheetList() {
                 style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
                 onPress={() => handleDelete(selectedMatchSheetForOptions)}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#fef2f2' }]}>
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}>
                   <MaterialIcons name="delete" size={20} color={theme.colors.error} />
                 </View>
                 <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
@@ -1095,7 +1095,7 @@ export default function MatchSheetList() {
         />
 
 
-        {/* Modal de Creación/Edición (compartido) */}
+        {/* Modal de Creaci�n/Edici�n (compartido) */}
         <EditMatchSheetModal
           visible={crearModalVisible}
           matchSheet={editingMatchSheet}
@@ -1111,7 +1111,7 @@ export default function MatchSheetList() {
           sanctionedPlayerIds={sanctions.filter(s => s.sancionado).map(s => s.playerId)}
         />
 
-        {/* Sección de Filtros Móvil */}
+        {/* Secci�n de Filtros M�vil */}
         {filtersVisible && IS_MOBILE && (
           <Modal
             visible={filtersVisible}
@@ -1222,7 +1222,7 @@ export default function MatchSheetList() {
                   </ScrollView>
                 </View>
 
-                {/* Ubicación filter chips - Mobile */}
+                {/* Ubicaci�n filter chips - Mobile */}
                 <View style={{ marginTop: 10 }}>
                   <Text style={styles.filterLabel}>{t('matchSheet.filters.locationFilter')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
@@ -1478,7 +1478,7 @@ const makeStyles = (theme) => StyleSheet.create({
   teamInfoTextMobile: {
     fontSize: 14,
   },
-  // Estilos para gestión de tipos
+  // Estilos para gesti�n de tipos
   buttonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1504,7 +1504,7 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 6,
   },
   createButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: 'bold',
     fontSize: 16,
     letterSpacing: 0.25,
@@ -1555,7 +1555,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
     marginBottom: 2,
     letterSpacing: 0.25,
-    textShadowColor: '#e6eefc',
+    textShadowColor: theme.colors.primarySoft,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },
@@ -2130,17 +2130,17 @@ const makeStyles = (theme) => StyleSheet.create({
   matchPendingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eef2ff',
+    backgroundColor: theme.colors.primarySoft,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: theme.colors.primarySoft,
     gap: 6,
   },
   matchPendingText: {
-    color: '#6366f1',
+    color: theme.colors.primarySoftText,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -2258,7 +2258,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMuted,
     lineHeight: 20,
   },
-  // Estilos del modal de creación
+  // Estilos del modal de creaci�n
   createModalContainer: {
     backgroundColor: theme.colors.surface,
     borderRadius: 20,
@@ -2437,7 +2437,7 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: theme.colors.surface,
   },
   escudoRemoveBtn: {
     position: 'absolute',
@@ -3101,7 +3101,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#2196F3',
   },
-  // --- Vista de cuadrícula/lista ---
+  // --- Vista de cuadr�cula/lista ---
   viewModeSwitch: {
     flexDirection: 'row',
     backgroundColor: theme.colors.backgroundAlt,
@@ -3335,7 +3335,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  // Estilos para menú móvil
+  // Estilos para men� m�vil
   mobileMenuButton: {
     width: 40,
     height: 40,
@@ -3729,10 +3729,10 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: theme.colors.surface,
   },
   suplentePreviewDorsal: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '700',
     fontSize: 14,
   },

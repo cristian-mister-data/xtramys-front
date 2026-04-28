@@ -190,7 +190,7 @@ const TabPanel = styled.div`
   /* Internal scroll so the modal panel does NOT grow to fill the
      viewport. Together with Modal's own max-height this keeps the
      dialog compact, matching the create/edit form modal. */
-  max-height: 60vh;
+  max-height: min(50vh, 420px);
   overflow-y: auto;
   /* Compensate Modal Body horizontal padding so scrollbar sits at the
      edge of the panel like in the form modal. */

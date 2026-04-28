@@ -145,7 +145,7 @@ function PatchedModal({
   };
 
   return createPortal(
-    <div style={overlayStyle} {...rest}>
+    <div style={overlayStyle} data-theme-aware="true" {...rest}>
       {children}
     </div>,
     document.body

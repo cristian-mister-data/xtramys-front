@@ -30,9 +30,11 @@ const RAW_MEDIA = `
 `;
 
 const darkInvert = css`
-  /* Inversión perceptual: invert + hue-rotate preserva matices,
-     solo invierte luminosidad (blanco↔negro, claro↔oscuro). */
-  filter: invert(0.92) hue-rotate(180deg);
+  /* Inversión perceptual: invert(1) + hue-rotate(180deg) invierte
+     únicamente la luminosidad y preserva los matices (azules siguen
+     siendo azules). Valores como 0.92 producen verdes fluorescentes
+     al desplazar la saturación de los azules. */
+  filter: invert(1) hue-rotate(180deg);
 
   /* Contra-invertimos contenido visual para que se vea natural */
   ${RAW_MEDIA} {
@@ -46,8 +48,7 @@ const Frame = styled.div`
   min-height: calc(100dvh - 60px - 48px);
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
-  background: ${({ theme, $themed }) =>
-    $themed ? theme.colors.background : '#f8fafc'};
+  background: ${({ theme }) => theme.colors.background};
   color-scheme: ${({ $themed, theme }) =>
     $themed ? (theme.mode === 'dark' ? 'dark' : 'light') : 'light'};
   border: 1px solid
@@ -57,7 +58,14 @@ const Frame = styled.div`
     theme.mode === 'dark' ? theme.shadows.lg : theme.shadows.sm};
   display: flex;
   flex-direction: column;
+`;
 
+const InvertLayer = styled.div`
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   ${({ theme, $themed }) =>
     !$themed && theme.mode === 'dark' && darkInvert}
 `;
@@ -65,11 +73,13 @@ const Frame = styled.div`
 export default function RNWebPage({ children, themed = false }) {
   return (
     <Frame $themed={themed}>
-      <SafeAreaProvider style={fillStyle}>
-        <GestureHandlerRootView style={fillStyle}>
-          {children}
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
+      <InvertLayer $themed={themed}>
+        <SafeAreaProvider style={fillStyle}>
+          <GestureHandlerRootView style={fillStyle}>
+            {children}
+          </GestureHandlerRootView>
+        </SafeAreaProvider>
+      </InvertLayer>
     </Frame>
   );
 }

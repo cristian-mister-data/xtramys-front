@@ -242,7 +242,7 @@ const MatchSheetFormContent = ({
             <Text style={[styles.selectorText, ubicacion && styles.selectorTextSelected]}>
               {getUbicacionDisplay(ubicacion)}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           {/* Competición */}
@@ -293,7 +293,7 @@ const MatchSheetFormContent = ({
                         : t('tournaments.selectTournament')}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-down" size={20} color="#666" />
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -308,7 +308,7 @@ const MatchSheetFormContent = ({
               <Text style={[styles.selectorText, alineacion && styles.selectorTextSelected]}>
                 {alineacion || t('matchSheet.modals.selectFormation')}
               </Text>
-              <Ionicons name="chevron-down" size={18} color="#666" />
+              <Ionicons name="chevron-down" size={18} color={theme.colors.textMuted} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.selector, styles.inputHalf]} 
@@ -317,7 +317,7 @@ const MatchSheetFormContent = ({
               <Text style={[styles.selectorText, alineacionRival && styles.selectorTextSelected]}>
                 {alineacionRival || t('matchSheet.modals.selectRivalFormation')}
               </Text>
-              <Ionicons name="chevron-down" size={20} color="#666" />
+              <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
           
@@ -329,7 +329,7 @@ const MatchSheetFormContent = ({
             <Text style={[styles.selectorText, jornada && styles.selectorTextSelected]}>
               {jornada ? `${t('matchSheet.fields.matchday')} ${jornada}` : t('matchSheet.fields.selectMatchday')}
             </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
           
           {/* Fecha y Hora */}
@@ -338,7 +338,7 @@ const MatchSheetFormContent = ({
             onPress={onShowDateTimePicker}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="calendar-outline" size={20} color="#666" />
+              <Ionicons name="calendar-outline" size={20} color={theme.colors.textMuted} />
               <Text style={[styles.selectorText, styles.selectorTextSelected]}>
                 {fechaHora.toLocaleDateString('es-ES', { 
                   day: '2-digit', 
@@ -349,7 +349,7 @@ const MatchSheetFormContent = ({
                 })}
               </Text>
             </View>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
           
           <Text style={styles.subTitle}>{t('matchSheet.fields.result')}</Text>
@@ -371,7 +371,7 @@ const MatchSheetFormContent = ({
                     }
                   }}
                 >
-                  <Ionicons name="remove" size={20} color="#666" />
+                  <Ionicons name="remove" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
                 <Text style={styles.descuentoValue}>
                   {isAwayLocation ? golesContra : golesFavor}
@@ -386,7 +386,7 @@ const MatchSheetFormContent = ({
                     }
                   }}
                 >
-                  <Ionicons name="add" size={20} color="#666" />
+                  <Ionicons name="add" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -405,7 +405,7 @@ const MatchSheetFormContent = ({
                     }
                   }}
                 >
-                  <Ionicons name="remove" size={20} color="#666" />
+                  <Ionicons name="remove" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
                 <Text style={styles.descuentoValue}>
                   {isAwayLocation ? golesFavor : golesContra}
@@ -420,7 +420,7 @@ const MatchSheetFormContent = ({
                     }
                   }}
                 >
-                  <Ionicons name="add" size={20} color="#666" />
+                  <Ionicons name="add" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -454,14 +454,14 @@ const MatchSheetFormContent = ({
                   style={styles.descuentoButton}
                   onPress={() => setDescuentoPrimerTiempo(prev => String(Math.max(0, Number(prev) - 1)))}
                 >
-                  <Ionicons name="remove" size={20} color="#666" />
+                  <Ionicons name="remove" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
                 <Text style={styles.descuentoValue}>{descuentoPrimerTiempo}</Text>
                 <TouchableOpacity
                   style={styles.descuentoButton}
                   onPress={() => setDescuentoPrimerTiempo(prev => String(Math.min(15, Number(prev) + 1)))}
                 >
-                  <Ionicons name="add" size={20} color="#666" />
+                  <Ionicons name="add" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -472,14 +472,14 @@ const MatchSheetFormContent = ({
                   style={styles.descuentoButton}
                   onPress={() => setDescuentoSegundoTiempo(prev => String(Math.max(0, Number(prev) - 1)))}
                 >
-                  <Ionicons name="remove" size={20} color="#666" />
+                  <Ionicons name="remove" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
                 <Text style={styles.descuentoValue}>{descuentoSegundoTiempo}</Text>
                 <TouchableOpacity
                   style={styles.descuentoButton}
                   onPress={() => setDescuentoSegundoTiempo(prev => String(Math.min(15, Number(prev) + 1)))}
                 >
-                  <Ionicons name="add" size={20} color="#666" />
+                  <Ionicons name="add" size={20} color={theme.colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -510,7 +510,7 @@ const MatchSheetFormContent = ({
               <Ionicons name="people" size={20} color={theme.colors.success} />
               <Text style={styles.playerSelectorTitle}>{t('matchSheet.fields.called')} ({convocados.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
           
           {convocados.length > 0 && (
@@ -532,7 +532,7 @@ const MatchSheetFormContent = ({
               <Ionicons name="close-circle" size={20} color={theme.colors.error} />
               <Text style={styles.playerSelectorTitle}>{t('matchSheet.fields.notCalled')} ({noConvocados.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
           
           {noConvocados.length > 0 && (
@@ -617,7 +617,7 @@ const MatchSheetFormContent = ({
           
           {convocados.length === 0 && (
             <View style={styles.emptyLineupMessage}>
-              <Ionicons name="information-circle-outline" size={24} color="#999" />
+              <Ionicons name="information-circle-outline" size={24} color={theme.colors.textMuted} />
               <Text style={styles.emptyLineupText}>
                 {t('matchSheet.emptyLineupHint')}
               </Text>
@@ -637,7 +637,7 @@ const MatchSheetFormContent = ({
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder={t('matchSheet.fields.notesPlaceholder')}
-            placeholderTextColor="#bbb"
+            placeholderTextColor={theme.colors.textMuted}
             value={notasEntrenador}
             onChangeText={setNotasEntrenador}
             multiline
@@ -664,7 +664,7 @@ const MatchSheetFormContent = ({
               <Ionicons name="football" size={20} color={theme.colors.success} />
               <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.goals')} ({goles.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           {goles.length > 0 && (
@@ -683,7 +683,7 @@ const MatchSheetFormContent = ({
                       {gol.tipo && ` (${gol.tipo})`}
                     </Text>
                     <TouchableOpacity onPress={() => setGoles(goles.filter((_, i) => i !== originalIndex))}>
-                      <Ionicons name="close-circle" size={16} color="#666" />
+                      <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 );
@@ -700,7 +700,7 @@ const MatchSheetFormContent = ({
               <Ionicons name="square" size={20} color="#FFC107" />
               <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.cards')} ({tarjetasAmarillas.length + tarjetasRojas.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           {(tarjetasAmarillas.length > 0 || tarjetasRojas.length > 0) && (
@@ -735,7 +735,7 @@ const MatchSheetFormContent = ({
                         }));
                       }
                     }}>
-                      <Ionicons name="close-circle" size={16} color="#666" />
+                      <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 );
@@ -756,7 +756,7 @@ const MatchSheetFormContent = ({
                     </Text>
                     {!isAutoDobleAmarilla && (
                     <TouchableOpacity onPress={() => setTarjetasRojas(tarjetasRojas.filter((_, i) => i !== originalIndex))}>
-                      <Ionicons name="close-circle" size={16} color="#666" />
+                      <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                     )}
                   </View>
@@ -774,7 +774,7 @@ const MatchSheetFormContent = ({
               <Ionicons name="swap-horizontal" size={20} color="#9C27B0" />
               <Text style={styles.eventSelectorTitle}>{t('matchSheet.fields.changes')} ({cambios.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           {cambios.length > 0 && (
@@ -794,7 +794,7 @@ const MatchSheetFormContent = ({
                       {' → '}{jugadorEntra ? (getPlayerFullName ? getPlayerFullName(jugadorEntra) : jugadorEntra.nombre) : t('matchSheet.events.in')}
                     </Text>
                     <TouchableOpacity onPress={() => setCambios(cambios.filter((_, i) => i !== originalIndex))}>
-                      <Ionicons name="close-circle" size={16} color="#666" />
+                      <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                   </View>
                 );
@@ -804,16 +804,16 @@ const MatchSheetFormContent = ({
 
           {/* Goles del Rival */}
           <TouchableOpacity 
-            style={[styles.eventSelector, { borderLeftWidth: 3, borderLeftColor: '#F44336' }]} 
+            style={[styles.eventSelector, { borderLeftWidth: 3, borderLeftColor: theme.colors.error }]} 
             onPress={onShowGolesRivalModal}
           >
             <View style={styles.eventSelectorHeader}>
-              <View style={{ backgroundColor: '#fee2e2', borderRadius: 16, padding: 4 }}>
+              <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: 16, padding: 4 }}>
                 <Ionicons name="football" size={20} color={theme.colors.error} />
               </View>
-              <Text style={[styles.eventSelectorTitle, { color: '#dc2626' }]}>{t('matchSheet.rivalGoals.title')} ({golesRival.length})</Text>
+              <Text style={[styles.eventSelectorTitle, { color: theme.colors.errorSoftText }]}>{t('matchSheet.rivalGoals.title')} ({golesRival.length})</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           {golesRival.length > 0 && (
@@ -825,12 +825,12 @@ const MatchSheetFormContent = ({
               }).map((gol) => {
                 const originalIndex = golesRival.indexOf(gol);
                 return (
-                  <View key={originalIndex} style={[styles.eventChip, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
-                    <Text style={[styles.eventChipText, { color: '#dc2626' }]}>
+                  <View key={originalIndex} style={[styles.eventChip, { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.errorSoft }]}>
+                    <Text style={[styles.eventChipText, { color: theme.colors.errorSoftText }]}>
                       {gol.minuto}' - {rival || t('matchSheet.rivalGoals.title')}
                     </Text>
                     <TouchableOpacity onPress={() => setGolesRival(golesRival.filter((_, i) => i !== originalIndex))}>
-                      <Ionicons name="close-circle" size={16} color="#ef4444" />
+                      <Ionicons name="close-circle" size={16} color={theme.colors.error} />
                     </TouchableOpacity>
                   </View>
                 );

@@ -23,7 +23,8 @@ import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
-import api from '@/utils/api';
+import api from '@/api/client';
+import { getWellnessTemplates } from '@/utils/api';
 import { BACKEND_URL } from '@/config';
 
 const isMobileDevice = () => {
@@ -67,6 +68,9 @@ export default function WellnessDetailModal({
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState('');
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   
   // Extraer sessionId y sessionDate de la sesión
   const sessionId = session?._id;
@@ -76,8 +80,30 @@ export default function WellnessDetailModal({
   useEffect(() => {
     if (visible && sessionId) {
       loadWellnessData();
+      loadTemplates();
     }
   }, [visible, sessionId]);
+
+  const loadTemplates = async () => {
+    try {
+      const data = await getWellnessTemplates('post');
+      setTemplates(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading wellness templates:', error);
+      setTemplates([]);
+    }
+  };
+
+  const handleSelectTemplate = (template) => {
+    setSelectedTemplate(template?._id || null);
+    if (template?.questions) {
+      setQuestions(template.questions.map((q, i) => ({
+        question: typeof q === 'string' ? q : q.question,
+        order: i,
+      })));
+    }
+    setShowTemplateSelector(false);
+  };
 
   const loadWellnessData = async () => {
     setLoading(true);
@@ -86,6 +112,7 @@ export default function WellnessDetailModal({
       setWellnessData(response.data);
       setExpectedWellness(response.data.expectedWellness);
       setQuestions(response.data.wellnessQuestions || []);
+      setSelectedTemplate(response.data.wellnessTemplate?._id || response.data.wellnessTemplate || null);
     } catch (error) {
       console.error('Error cargando wellness:', error);
       // Si no hay datos, inicializar vacío
@@ -106,7 +133,8 @@ export default function WellnessDetailModal({
     try {
       const response = await api.put(`/wellness/session/${sessionId}`, {
         expectedWellness,
-        wellnessQuestions: questions
+        wellnessQuestions: questions,
+        wellnessTemplateId: selectedTemplate,
       });
       
       // Recargar datos
@@ -499,7 +527,7 @@ export default function WellnessDetailModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalBg}>
         <View style={styles.modalContent}>
           {/* Header */}
@@ -560,6 +588,23 @@ export default function WellnessDetailModal({
                     );
                   })()}
                 </View>
+              </View>
+
+              {/* Plantilla de preguntas */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('preWellness.template') || 'Plantilla'}</Text>
+                <TouchableOpacity
+                  style={styles.templateSelector}
+                  onPress={() => setShowTemplateSelector(true)}
+                >
+                  <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
+                  <Text style={styles.templateSelectorText}>
+                    {selectedTemplate
+                      ? (templates.find(tp => tp._id === selectedTemplate)?.name || t('preWellness.selectTemplate') || 'Seleccionar plantilla')
+                      : (t('preWellness.selectTemplate') || 'Seleccionar plantilla')}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
               </View>
 
               {/* Preguntas personalizadas */}
@@ -807,12 +852,142 @@ export default function WellnessDetailModal({
             </ScrollView>
           )}
         </View>
+
+        {/* Modal selector de plantillas */}
+        <Modal
+          visible={showTemplateSelector}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setShowTemplateSelector(false)}
+        >
+          <View style={styles.templateModalOverlay}>
+            <View style={styles.templateModalContent}>
+              <View style={styles.templateModalHeader}>
+                <Text style={styles.templateModalTitle}>{t('preWellness.selectTemplate') || 'Seleccionar plantilla'}</Text>
+                <TouchableOpacity onPress={() => setShowTemplateSelector(false)}>
+                  <Ionicons name="close" size={24} color={theme.colors.text} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.templateList}>
+                <TouchableOpacity
+                  style={[styles.templateItem, !selectedTemplate && styles.templateItemSelected]}
+                  onPress={() => {
+                    setSelectedTemplate(null);
+                    setShowTemplateSelector(false);
+                  }}
+                >
+                  <Text style={styles.templateItemText}>{t('preWellness.noTemplate') || 'Sin plantilla'}</Text>
+                </TouchableOpacity>
+                {templates.map(template => (
+                  <TouchableOpacity
+                    key={template._id}
+                    style={[styles.templateItem, selectedTemplate === template._id && styles.templateItemSelected]}
+                    onPress={() => handleSelectTemplate(template)}
+                  >
+                    <View style={styles.templateItemContent}>
+                      <Text style={styles.templateItemText}>{template.name}</Text>
+                      {template.isDefault && (
+                        <View style={styles.templateDefaultBadge}>
+                          <Ionicons name="star" size={10} color="#fff" />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.templateItemQuestions}>
+                      {template.questions?.length || 0} {t('preWellness.questions') || 'preguntas'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
 }
 
 const makeStyles = (theme) => StyleSheet.create({
+  templateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  templateSelectorText: {
+    flex: 1,
+    fontSize: 15,
+    color: theme.colors.text,
+    marginLeft: 10,
+  },
+  templateModalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay || 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  templateModalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  templateModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  templateModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  templateList: {
+    padding: 12,
+  },
+  templateItem: {
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 8,
+    backgroundColor: theme.colors.background,
+  },
+  templateItemSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft || (theme.colors.primary + '15'),
+  },
+  templateItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  templateItemText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  templateDefaultBadge: {
+    backgroundColor: theme.colors.warning || '#f59e0b',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  templateItemQuestions: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
   modalBg: {
     flex: 1,
     backgroundColor: theme.colors.overlay,

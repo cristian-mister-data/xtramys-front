@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchTemporadasUsuario } from '@/store/slices/season/seasonThunks';
+import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 
 const Shell = styled.div`
   min-height: 100dvh;
@@ -34,13 +35,27 @@ const Main = styled.main`
 export default function AppLayout() {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.usuario.user);
+  const seasonId = useSelector((s) => s.season.season?._id);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Cargar temporadas del usuario al montar el layout autenticado.
   useEffect(() => {
     if (user?._id) {
       dispatch(fetchTemporadasUsuario({ usuario: user._id }));
     }
   }, [dispatch, user?._id]);
+
+  // Cargar equipos de la temporada actual a nivel global.
+  // Antes cada página lo hacía por su cuenta (training, injuries, home,
+  // matchSheets, statistics, tacticalBoard, season), pero otras
+  // (tournaments, players, rivals, anthropometry, wellness, methodology…)
+  // no lo hacían y al recargar quedaban sin equipos. Centralizamos aquí
+  // para que toda la app tenga el mismo comportamiento al refrescar.
+  useEffect(() => {
+    if (seasonId) {
+      dispatch(fetchEquiposTemporada({ season: seasonId }));
+    }
+  }, [dispatch, seasonId]);
 
   return (
     <Shell>

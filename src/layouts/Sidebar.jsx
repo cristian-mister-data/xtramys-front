@@ -303,10 +303,6 @@ export default function Sidebar({ open, onClose }) {
               <UserHint>{user?.email || ''}</UserHint>
             </UserMeta>
           </UserCard>
-          <LogoutBtn onClick={handleLogout}>
-            <MdLogout size={16} />
-            {t('menu.logout', 'Cerrar sesión')}
-          </LogoutBtn>
           <Version>Xtramys v1.0.0</Version>
         </Footer>
       </Aside>

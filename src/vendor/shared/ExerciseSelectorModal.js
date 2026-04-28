@@ -6,6 +6,7 @@ import {
   TextInput, Image, ActivityIndicator, Alert, useWindowDimensions, Platform,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -17,11 +18,35 @@ import { getFieldById } from '@/utils/fieldTypes';
 import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import { fetchExerciseFolders, fetchExerciseFoldersFlat, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 
-const THEME = {
+const THEME_DEFAULT = {
   primary: '#2474E5', primaryLight: '#5b93ea', primaryDark: '#1a5bb8',
   success: '#10b981', warning: '#f59e0b', danger: '#ef4444',
   bg: '#f8fafc', surface: '#ffffff', text: '#1e293b',
   textSec: '#64748b', textMuted: '#94a3b8', border: '#e2e8f0',
+  surfaceAlt: '#f1f5f9', primarySoft: '#eff6ff', primarySoftBorder: '#bfdbfe',
+  onPrimary: '#ffffff',
+};
+
+const buildTheme = (sc) => {
+  const c = sc?.colors || {};
+  return {
+    primary: c.primary || THEME_DEFAULT.primary,
+    primaryLight: c.primaryHover || c.primary || THEME_DEFAULT.primaryLight,
+    primaryDark: c.primaryActive || c.primary || THEME_DEFAULT.primaryDark,
+    success: c.success || THEME_DEFAULT.success,
+    warning: c.warning || THEME_DEFAULT.warning,
+    danger: c.error || THEME_DEFAULT.danger,
+    bg: c.background || THEME_DEFAULT.bg,
+    surface: c.surface || THEME_DEFAULT.surface,
+    surfaceAlt: c.surfaceAlt || c.backgroundAlt || THEME_DEFAULT.surfaceAlt,
+    text: c.text || THEME_DEFAULT.text,
+    textSec: c.textSecondary || THEME_DEFAULT.textSec,
+    textMuted: c.textMuted || THEME_DEFAULT.textMuted,
+    border: c.border || THEME_DEFAULT.border,
+    primarySoft: c.primarySoft || THEME_DEFAULT.primarySoft,
+    primarySoftBorder: c.primarySoft || THEME_DEFAULT.primarySoftBorder,
+    onPrimary: c.onPrimary || THEME_DEFAULT.onPrimary,
+  };
 };
 
 /* ======================== MAIN COMPONENT ======================== */
@@ -30,6 +55,9 @@ export default function ExerciseSelectorModal({
   multiSelect = true, onSelectSingle = null,
 }) {
   const { t, i18n } = useTranslation();
+  const themeSC = useTheme();
+  const THEME = useMemo(() => buildTheme(themeSC), [themeSC]);
+  const s = useMemo(() => makeS(THEME), [THEME]);
   const dispatch = useDispatch();
   const { width, height } = useWindowDimensions();
   const isPortrait = height >= width;
@@ -346,7 +374,7 @@ export default function ExerciseSelectorModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-              <Ionicons name="close" size={22} color="#374151" />
+              <Ionicons name="close" size={22} color={THEME.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -391,7 +419,7 @@ export default function ExerciseSelectorModal({
               )}
             </View>
             <TouchableOpacity style={[s.filterBtn, hasActiveFilters > 0 && s.filterBtnActive]} onPress={() => setShowFilters(!showFilters)}>
-              <MaterialIcons name="filter-list" size={18} color={hasActiveFilters > 0 ? '#fff' : THEME.primary} />
+              <MaterialIcons name="filter-list" size={18} color={hasActiveFilters > 0 ? THEME.onPrimary : THEME.primary} />
               {hasActiveFilters > 0 && <Text style={s.filterBtnBadge}>{hasActiveFilters}</Text>}
             </TouchableOpacity>
           </View>
@@ -518,7 +546,7 @@ export default function ExerciseSelectorModal({
                         </View>
                         {folderName && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                            <Ionicons name="folder" size={10} color={e.folder?.color || '#64748b'} />
+                            <Ionicons name="folder" size={10} color={e.folder?.color || THEME.textSec} />
                             <Text style={s.exFolderTag}>{folderName}</Text>
                           </View>
                         )}
@@ -619,7 +647,7 @@ export default function ExerciseSelectorModal({
                             {folderName && (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
                                 <Ionicons name="folder" size={9} color={e.folder?.color || '#94a3b8'} />
-                                <Text style={{ fontSize: 9, color: '#94a3b8' }} numberOfLines={1}>{folderName}</Text>
+                                <Text style={{ fontSize: 9, color: THEME.textMuted }} numberOfLines={1}>{folderName}</Text>
                               </View>
                             )}
                           </TouchableOpacity>
@@ -671,117 +699,117 @@ export default function ExerciseSelectorModal({
 /* ═══════════════════════════════════════════════════════════
    STYLES
    ═══════════════════════════════════════════════════════════ */
-const s = StyleSheet.create({
+const makeS = (THEME) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1, width: '100%', backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 50 : 12, paddingBottom: 12 },
+  container: { flex: 1, width: '100%', backgroundColor: THEME.surface, paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 50 : 12, paddingBottom: 12 },
 
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#bfdbfe' },
-  title: { fontSize: 18, fontWeight: '800', color: '#1e293b', letterSpacing: -0.3 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: THEME.primarySoftBorder },
+  title: { fontSize: 18, fontWeight: '800', color: THEME.text, letterSpacing: -0.3 },
   subtitle: { fontSize: 12, color: THEME.primary, fontWeight: '600', marginTop: 1 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: THEME.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
 
   // Breadcrumbs
-  breadcrumbs: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#f8fafc', borderRadius: 10, marginBottom: 6, gap: 2 },
+  breadcrumbs: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 6, paddingHorizontal: 8, backgroundColor: THEME.bg, borderRadius: 10, marginBottom: 6, gap: 2 },
   crumbItem: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 3 },
   crumbText: { fontSize: 12, color: THEME.primary, fontWeight: '600' },
-  crumbActive: { color: '#1e293b', fontWeight: '700' },
+  crumbActive: { color: THEME.text, fontWeight: '700' },
 
   // Search bar
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0', paddingHorizontal: 12, height: 42 },
-  searchInput: { flex: 1, fontSize: 14, color: '#1e293b', paddingVertical: 0 },
-  filterBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#f0f9ff', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#bfdbfe' },
+  searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.bg, borderRadius: 12, borderWidth: 1.5, borderColor: THEME.border, paddingHorizontal: 12, height: 42 },
+  searchInput: { flex: 1, fontSize: 14, color: THEME.text, paddingVertical: 0 },
+  filterBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: THEME.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: THEME.primarySoftBorder },
   filterBtnActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  filterBtnBadge: { fontSize: 10, color: '#fff', fontWeight: '700', marginTop: -2 },
+  filterBtnBadge: { fontSize: 10, color: THEME.surface, fontWeight: '700', marginTop: -2 },
 
   // Filters panel
-  filtersPanel: { backgroundColor: '#f8fafc', borderRadius: 14, padding: 14, marginBottom: 6, borderWidth: 1, borderColor: '#e2e8f0' },
+  filtersPanel: { backgroundColor: THEME.bg, borderRadius: 14, padding: 14, marginBottom: 6, borderWidth: 1, borderColor: THEME.border },
   filtersPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  filtersPanelTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  clearFiltersBtn: { paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#ef4444', borderRadius: 8 },
-  clearFiltersTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  filtersPanelTitle: { fontSize: 14, fontWeight: '700', color: THEME.text },
+  clearFiltersBtn: { paddingHorizontal: 12, paddingVertical: 5, backgroundColor: THEME.danger, borderRadius: 8 },
+  clearFiltersTxt: { color: THEME.surface, fontSize: 12, fontWeight: '600' },
   filtersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterField: { flex: 1, minWidth: 120 },
-  filterLabel: { fontSize: 11, fontWeight: '700', color: '#475569', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
-  filterInput: { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: '#1e293b', backgroundColor: '#fff' },
+  filterLabel: { fontSize: 11, fontWeight: '700', color: THEME.textSec, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 },
+  filterInput: { borderWidth: 1.5, borderColor: THEME.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: THEME.text, backgroundColor: THEME.surface },
 
   // Source filter tabs
   sourceFilterBar: { flexDirection: 'row', gap: 6, marginBottom: 8, paddingHorizontal: 2 },
-  sourceTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1.5, borderColor: '#e2e8f0' },
+  sourceTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: THEME.surfaceAlt, borderWidth: 1.5, borderColor: THEME.border },
   sourceTabActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  sourceTabTxt: { fontSize: 12, fontWeight: '600', color: '#64748b' },
-  sourceTabTxtActive: { color: '#fff' },
+  sourceTabTxt: { fontSize: 12, fontWeight: '600', color: THEME.textSec },
+  sourceTabTxtActive: { color: THEME.surface },
 
   // Info bar
   infoBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  infoText: { fontSize: 11, color: '#64748b', fontWeight: '600' },
+  infoText: { fontSize: 11, color: THEME.textSec, fontWeight: '600' },
   selBadge: { backgroundColor: THEME.primary + '15', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
   selBadgeTxt: { fontSize: 11, color: THEME.primary, fontWeight: '700' },
 
   // Chips (mobile selected)
   chipsScroll: { maxHeight: 36, marginBottom: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.primary, borderRadius: 14, paddingVertical: 5, paddingHorizontal: 10, gap: 5 },
-  chipTxt: { fontSize: 11, color: '#fff', fontWeight: '500', maxWidth: 90 },
+  chipTxt: { fontSize: 11, color: THEME.surface, fontWeight: '500', maxWidth: 90 },
 
   // ── Folder cards (mobile) ──
   folderListMobile: { marginBottom: 4 },
   folderRowMobile: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.surface, borderRadius: 12,
     paddingVertical: 12, paddingHorizontal: 14, marginBottom: 6,
-    borderWidth: 1.5, borderColor: '#e2e8f0',
+    borderWidth: 1.5, borderColor: THEME.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
   },
   folderIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  folderName: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  folderMeta: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
+  folderName: { fontSize: 14, fontWeight: '700', color: THEME.text },
+  folderMeta: { fontSize: 11, color: THEME.textMuted, marginTop: 1 },
 
   // ── Folder cards (desktop) ──
   folderSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  folderSectionTitle: { fontSize: 12, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.4 },
+  folderSectionTitle: { fontSize: 12, fontWeight: '700', color: THEME.textSec, textTransform: 'uppercase', letterSpacing: 0.4 },
   foldersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   folderCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.surface, borderRadius: 12,
     padding: 12, minWidth: 200, maxWidth: 280,
-    borderWidth: 1.5, borderColor: '#e2e8f0',
+    borderWidth: 1.5, borderColor: THEME.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 2,
   },
   folderCardIcon: { width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   folderCardInfo: { flex: 1 },
-  folderCardName: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  folderCardMeta: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
-  divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 10 },
+  folderCardName: { fontSize: 14, fontWeight: '700', color: THEME.text },
+  folderCardMeta: { fontSize: 11, color: THEME.textMuted, marginTop: 1 },
+  divider: { height: 1, backgroundColor: THEME.border, marginVertical: 10 },
 
   // Empty state
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, flex: 1 },
-  emptyTxt: { fontSize: 14, color: '#94a3b8', fontWeight: '600', marginTop: 10, textAlign: 'center' },
+  emptyTxt: { fontSize: 14, color: THEME.textMuted, fontWeight: '600', marginTop: 10, textAlign: 'center' },
 
   // ── Exercise rows (mobile) ──
   exRowMobile: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.surface, borderRadius: 10,
     paddingVertical: 10, paddingHorizontal: 12, marginBottom: 6,
-    borderWidth: 1, borderColor: '#e2e8f0', gap: 10,
+    borderWidth: 1, borderColor: THEME.border, gap: 10,
   },
-  exRowMobileSel: { backgroundColor: '#eff6ff', borderColor: THEME.primary },
+  exRowMobileSel: { backgroundColor: THEME.primarySoft, borderColor: THEME.primary },
   exCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
   exCheckSel: { backgroundColor: THEME.primary, borderColor: THEME.primary },
   exThumb: { width: 46, height: 46, borderRadius: 8, overflow: 'hidden' },
-  exThumbEmpty: { width: 46, height: 46, borderRadius: 8, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
-  exName: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  exThumbEmpty: { width: 46, height: 46, borderRadius: 8, backgroundColor: THEME.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  exName: { fontSize: 13, fontWeight: '600', color: THEME.text },
   exNameSel: { color: THEME.primary },
-  exFolderTag: { fontSize: 10, color: '#64748b' },
+  exFolderTag: { fontSize: 10, color: THEME.textSec },
 
   // ── Exercise grid cards (desktop) ──
   exGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   exCard: {
-    width: 130, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: '#e2e8f0',
+    width: 130, backgroundColor: THEME.surface, borderRadius: 14, borderWidth: 1.5, borderColor: THEME.border,
     padding: 10, alignItems: 'center', position: 'relative',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
   },
-  exCardSel: { backgroundColor: '#eff6ff', borderColor: THEME.primary, borderWidth: 2 },
-  exCardImgEmpty: { width: 56, height: 56, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  exCardName: { fontSize: 11, fontWeight: '600', textAlign: 'center', color: '#1e293b', marginTop: 4 },
+  exCardSel: { backgroundColor: THEME.primarySoft, borderColor: THEME.primary, borderWidth: 2 },
+  exCardImgEmpty: { width: 56, height: 56, borderRadius: 12, backgroundColor: THEME.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  exCardName: { fontSize: 11, fontWeight: '600', textAlign: 'center', color: THEME.text, marginTop: 4 },
   exCardNameSel: { color: '#1e40af', fontWeight: '700' },
   exVidBadge: {
     position: 'absolute', top: 6, left: 6, backgroundColor: '#E91E63', width: 24, height: 24, borderRadius: 12,
@@ -793,16 +821,16 @@ const s = StyleSheet.create({
   },
 
   // Selected panel (desktop)
-  selPanel: { backgroundColor: '#f8fafc', borderRadius: 14, padding: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  selPanel: { backgroundColor: THEME.bg, borderRadius: 14, padding: 8, borderWidth: 1, borderColor: THEME.border },
   selPanelTitle: { fontSize: 11, fontWeight: '700', color: '#374151', marginBottom: 6 },
-  selPanelEmpty: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 12 },
-  selItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 4, marginBottom: 4, gap: 6 },
-  selItemRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' },
-  selItemImgEmpty: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#e2e8f0' },
-  selItemName: { flex: 1, fontSize: 11, color: '#1e293b', fontWeight: '600' },
+  selPanelEmpty: { fontSize: 11, color: THEME.textMuted, textAlign: 'center', marginTop: 12 },
+  selItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.surface, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 4, marginBottom: 4, gap: 6 },
+  selItemRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: THEME.danger, alignItems: 'center', justifyContent: 'center' },
+  selItemImgEmpty: { width: 36, height: 36, borderRadius: 8, backgroundColor: THEME.border },
+  selItemName: { flex: 1, fontSize: 11, color: THEME.text, fontWeight: '600' },
 
   // Main area (desktop)
-  mainArea: { backgroundColor: '#fff', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' },
+  mainArea: { backgroundColor: THEME.surface, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: THEME.border },
 
   // Footer
   footer: { marginTop: 8, alignItems: 'flex-end' },
@@ -811,15 +839,15 @@ const s = StyleSheet.create({
     backgroundColor: THEME.primary, paddingVertical: 11, paddingHorizontal: 22, borderRadius: 12,
     shadowColor: THEME.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
   },
-  doneTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  doneTxt: { color: THEME.surface, fontSize: 14, fontWeight: '700' },
 
   // Video modal
   vidBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   vidContent: { width: '95%', maxWidth: 800, backgroundColor: '#1a1a1a', borderRadius: 16, overflow: 'hidden' },
   vidHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#2a2a2a' },
-  vidTitle: { fontSize: 16, fontWeight: '600', color: '#fff', flex: 1 },
+  vidTitle: { fontSize: 16, fontWeight: '600', color: THEME.surface, flex: 1 },
   vidLoading: { padding: 40, alignItems: 'center' },
-  vidLoadTxt: { marginTop: 12, color: '#fff', fontSize: 14 },
+  vidLoadTxt: { marginTop: 12, color: THEME.surface, fontSize: 14 },
   vidDlBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2196F3', paddingVertical: 12, paddingHorizontal: 20, marginHorizontal: 16, marginVertical: 12, borderRadius: 10, gap: 8 },
-  vidDlTxt: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  vidDlTxt: { color: THEME.surface, fontSize: 14, fontWeight: '600' },
 });

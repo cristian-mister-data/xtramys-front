@@ -918,6 +918,7 @@ export default function WellnessManagement({ navigation }) {
       visible={showTemplateModal}
       animationType="slide"
       transparent
+     
       onRequestClose={() => setShowTemplateModal(false)}
     >
       <View style={styles.modalOverlay}>
@@ -1035,6 +1036,7 @@ export default function WellnessManagement({ navigation }) {
         visible={showSessionModal}
         animationType="slide"
         transparent
+       
         onRequestClose={() => setShowSessionModal(false)}
       >
         <View style={styles.modalOverlay}>

@@ -62,12 +62,12 @@ export default function MatchSheetPDFModals({
         animationType="slide"
         transparent
         onRequestClose={onCloseLineupModal}
-      >
+     >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View style={[styles.modalIconContainer, { backgroundColor: '#e3f2fd' }]}>
+                <View style={[styles.modalIconContainer, { backgroundColor: theme.colors.primarySoft }]}>
                   <Ionicons name="document-text" size={28} color="#4CAF50" />
                 </View>
                 <View>
@@ -180,12 +180,12 @@ export default function MatchSheetPDFModals({
         animationType="slide"
         transparent
         onRequestClose={onCloseConvocatoriaModal}
-      >
+     >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View style={[styles.modalIconContainer, { backgroundColor: '#f3e8ff' }]}>
+                <View style={[styles.modalIconContainer, { backgroundColor: theme.colors.purpleSoft }]}>
                   <Ionicons name="people" size={28} color="#9C27B0" />
                 </View>
                 <View>
@@ -365,7 +365,7 @@ export function MatchSheetPDFButtons({
         {/* PDF de Convocatoria */}
         {matchSheet.convocados && matchSheet.convocados.length > 0 && (
           <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: '#e8f5e9' }]}
+            style={[styles.compactButton, { backgroundColor: theme.colors.successSoft }]}
             onPress={onCallUpPress}
             disabled={generatingPDF}
           >
@@ -379,7 +379,7 @@ export function MatchSheetPDFButtons({
         {/* PDF de Alineación */}
         {matchSheet.alineacion && matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
           <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: '#e3f2fd' }]}
+            style={[styles.compactButton, { backgroundColor: theme.colors.primarySoft }]}
             onPress={onLineupPress}
             disabled={generatingPDF}
           >
@@ -393,7 +393,7 @@ export function MatchSheetPDFButtons({
         {/* PDF Ficha Completa */}
         {showMatchSheetButton && (
           <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: '#fff3e0' }]}
+            style={[styles.compactButton, { backgroundColor: theme.colors.warningSoft }]}
             onPress={onMatchSheetPress}
             disabled={generatingPDF}
           >

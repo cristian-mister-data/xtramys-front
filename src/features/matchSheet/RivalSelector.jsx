@@ -14,28 +14,33 @@ const Trigger = styled.button`
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
+  background: ${({ theme }) => theme.colors.inputBg};
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
   font-size: 14px;
-  color: ${({ $empty, theme }) => ($empty ? theme.colors.muted : theme.colors.text)};
+  color: ${({ $empty, theme }) => ($empty ? theme.colors.textMuted : theme.colors.text)};
+  transition: border-color 0.15s ease, background 0.15s ease;
+  &:hover { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Crest = styled.div`
   width: 32px; height: 32px;
   border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  background: #f1f1f1;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   overflow: hidden;
+  flex-shrink: 0;
   img { width: 100%; height: 100%; object-fit: cover; }
 `;
 
 const SearchBox = styled.div`
   position: relative;
   margin-bottom: 10px;
-  svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888; }
+  svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: ${({ theme }) => theme.colors.textMuted}; }
   input { padding-left: 32px; }
 `;
 
@@ -69,7 +74,8 @@ const ImagePicker = styled.label`
   width: 80px; height: 80px;
   border: 2px dashed ${({ theme }) => theme.colors.border};
   border-radius: 10px;
-  background: ${({ theme }) => theme.colors.surfaceAlt || '#fafafa'};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  color: ${({ theme }) => theme.colors.textMuted};
   cursor: pointer;
   overflow: hidden;
   position: relative;
@@ -176,7 +182,7 @@ export default function RivalSelector({
           {selectedRivalCrest ? (
             <img src={selectedRivalCrest} alt="" />
           ) : (
-            <MdShield size={20} color="#888" />
+            <MdShield size={20} color={theme.colors.textMuted} />
           )}
         </Crest>
         <span style={{ flex: 1 }}>
@@ -224,7 +230,7 @@ export default function RivalSelector({
                 onClick={() => handleSelect(r)}
               >
                 <Crest>
-                  {r.escudo ? <img src={r.escudo} alt="" /> : <MdShield size={18} color="#888" />}
+                  {r.escudo ? <img src={r.escudo} alt="" /> : <MdShield size={18} color={theme.colors.textMuted} />}
                 </Crest>
                 <span style={{ flex: 1, fontWeight: 600 }}>{r.nombre}</span>
                 {r._id === selectedRivalId ? <MdCheck color={theme.colors.primary} size={20} /> : null}
@@ -253,7 +259,7 @@ export default function RivalSelector({
         <Stack $gap={12}>
           <Row $gap={12}>
             <ImagePicker>
-              {newCrest ? <img src={newCrest} alt="" /> : <MdImage size={24} color="#888" />}
+              {newCrest ? <img src={newCrest} alt="" /> : <MdImage size={24} color={theme.colors.textMuted} />}
               <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} />
             </ImagePicker>
             <Field style={{ flex: 1 }}>

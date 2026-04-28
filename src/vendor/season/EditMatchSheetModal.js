@@ -1486,7 +1486,7 @@ export default function EditMatchSheetModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-    >
+   >
       <View style={styles.modalBg}>
         <View style={styles.modalContent}>
           {/* Header */}

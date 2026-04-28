@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import {
   STRENGTH_CATEGORIES,
@@ -27,7 +28,7 @@ import {
 } from '@/data/strengthExercises';
 import StrengthExerciseViewer from './StrengthExerciseViewer';
 
-const THEME = {
+const THEME_DEFAULT = {
   primary: '#3b82f6',
   primaryDark: '#1d4ed8',
   success: '#10b981',
@@ -38,11 +39,40 @@ const THEME = {
   textMuted: '#94a3b8',
   background: '#f8fafc',
   surface: '#ffffff',
+  surfaceAlt: '#f1f5f9',
   border: '#e2e8f0',
+  primarySoft: '#eff6ff',
+  primarySoftBorder: '#bfdbfe',
+  errorSoft: '#fee2e2',
+  errorSoftText: '#dc2626',
+  onPrimary: '#ffffff',
+};
+
+const buildTheme = (sc) => {
+  const c = sc?.colors || {};
+  return {
+    primary: c.primary || THEME_DEFAULT.primary,
+    primaryDark: c.primaryActive || c.primary || THEME_DEFAULT.primaryDark,
+    success: c.success || THEME_DEFAULT.success,
+    danger: c.error || THEME_DEFAULT.danger,
+    warning: c.warning || THEME_DEFAULT.warning,
+    textPrimary: c.text || THEME_DEFAULT.textPrimary,
+    textSecondary: c.textSecondary || THEME_DEFAULT.textSecondary,
+    textMuted: c.textMuted || THEME_DEFAULT.textMuted,
+    background: c.background || THEME_DEFAULT.background,
+    surface: c.surface || THEME_DEFAULT.surface,
+    surfaceAlt: c.surfaceAlt || c.backgroundAlt || THEME_DEFAULT.surfaceAlt,
+    border: c.border || THEME_DEFAULT.border,
+    primarySoft: c.primarySoft || THEME_DEFAULT.primarySoft,
+    primarySoftBorder: c.primarySoft || THEME_DEFAULT.primarySoftBorder,
+    errorSoft: c.errorSoft || THEME_DEFAULT.errorSoft,
+    errorSoftText: c.errorSoftText || c.error || THEME_DEFAULT.errorSoftText,
+    onPrimary: c.onPrimary || THEME_DEFAULT.onPrimary,
+  };
 };
 
 // Componente tarjeta de ejercicio con verificación de video
-const ExerciseCard = ({ exercise, isSelected, onToggle, onView, t, cardWidth }) => {
+const ExerciseCard = ({ exercise, isSelected, onToggle, onView, t, cardWidth, styles, THEME }) => {
   const imageSource = getStrengthExerciseImage(exercise);
   const sectionInfo = getSectionForExercise(exercise);
   const name = t(exercise.i18nKey, exercise.id);
@@ -119,6 +149,9 @@ export default function StrengthExerciseSelectorModal({
   onSelectSingle,
 }) {
   const { t } = useTranslation();
+  const themeSC = useTheme();
+  const THEME = useMemo(() => buildTheme(themeSC), [themeSC]);
+  const styles = useMemo(() => makeStyles(THEME), [THEME]);
   const { width: screenWidth } = useWindowDimensions();
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -221,9 +254,11 @@ export default function StrengthExerciseSelectorModal({
         onView={handleView}
         t={t}
         cardWidth={cardWidth}
+        styles={styles}
+        THEME={THEME}
       />
     ),
-    [selectedIds, handleToggle, handleView, t, cardWidth]
+    [selectedIds, handleToggle, handleView, t, cardWidth, styles, THEME]
   );
 
   const keyExtractor = useCallback((item) => item.id, []);
@@ -239,7 +274,7 @@ export default function StrengthExerciseSelectorModal({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerCloseBtn}>
-            <Ionicons name="close" size={26} color="#fff" />
+            <Ionicons name="close" size={26} color={THEME.onPrimary} />
           </TouchableOpacity>
           <View style={styles.headerTitleArea}>
             <Text style={styles.headerTitle}>{t('strengthExercises.selectExercises')}</Text>
@@ -250,7 +285,7 @@ export default function StrengthExerciseSelectorModal({
           </View>
           {multiSelect && selectedCount > 0 && (
             <TouchableOpacity onPress={onClose} style={styles.confirmBtn}>
-              <Ionicons name="checkmark" size={22} color="#fff" />
+              <Ionicons name="checkmark" size={22} color={THEME.onPrimary} />
               <Text style={styles.confirmBtnText}>{selectedCount}</Text>
             </TouchableOpacity>
           )}
@@ -370,7 +405,7 @@ export default function StrengthExerciseSelectorModal({
               <Ionicons
                 name={showSelectedOnly ? 'checkmark-circle' : 'checkmark-circle-outline'}
                 size={16}
-                color={showSelectedOnly ? '#fff' : THEME.success}
+                color={showSelectedOnly ? THEME.onPrimary : THEME.success}
               />
               <Text
                 style={[
@@ -421,7 +456,7 @@ export default function StrengthExerciseSelectorModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (THEME) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.background,
@@ -429,7 +464,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primaryDark,
+    backgroundColor: THEME.primary,
     paddingTop: Platform.OS === 'ios' ? 54 : 36,
     paddingBottom: 14,
     paddingHorizontal: 16,
@@ -442,12 +477,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    color: '#fff',
+    color: THEME.onPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   headerSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
+    color: THEME.onPrimary,
+    opacity: 0.75,
     fontSize: 12,
     marginTop: 2,
   },
@@ -461,7 +497,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   confirmBtnText: {
-    color: '#fff',
+    color: THEME.onPrimary,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -514,7 +550,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   selectedFilterChipTextActive: {
-    color: '#fff',
+    color: THEME.surface,
   },
   filterList: {
     flexGrow: 0,
@@ -543,7 +579,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filterChipTextActive: {
-    color: '#fff',
+    color: THEME.surface,
   },
   sectionChip: {
     paddingHorizontal: 12,
@@ -585,7 +621,7 @@ const styles = StyleSheet.create({
   cardImageContainer: {
     position: 'relative',
     aspectRatio: 4 / 3,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: THEME.surfaceAlt,
   },
   cardImage: {
     width: '100%',
@@ -594,13 +630,13 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: THEME.border,
   },
   selectedBadge: {
     position: 'absolute',
     top: 6,
     left: 6,
-    backgroundColor: '#fff',
+    backgroundColor: THEME.surface,
     borderRadius: 12,
   },
   levelBadge: {
@@ -612,7 +648,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   levelBadgeText: {
-    color: '#fff',
+    color: THEME.surface,
     fontSize: 10,
     fontWeight: '800',
   },
