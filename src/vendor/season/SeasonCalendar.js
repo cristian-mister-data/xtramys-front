@@ -377,41 +377,40 @@ export default function SeasonCalendar({
   // Renderizar vista previa de partido
   const renderMatchPreview = (match) => {
     const played = isMatchPlayed(match);
-    const result = formatMatchResult(match);
     const rivalEscudo = getRivalEscudo(match);
     const isAway = isAwayMatch(match);
-    
-    // Determinar el orden de los equipos según la ubicación
-    const firstTeamEscudo = isAway ? rivalEscudo : team?.escudo;
-    const firstTeamName = isAway ? (match.rival || t('season.rival')) : (team?.nombre || t('season.myTeam'));
-    const firstTeamIsHome = !isAway;
-    
-    const secondTeamEscudo = isAway ? team?.escudo : rivalEscudo;
-    const secondTeamName = isAway ? (team?.nombre || t('season.myTeam')) : (match.rival || t('season.rival'));
-    const secondTeamIsHome = isAway;
-    
-    // Formatear resultado según ubicación
-    const formattedResult = played 
-      ? (isAway 
-          ? `${match.golesContra || 0} - ${match.golesFavor || 0}` 
+    const isNeutral = match.ubicacion === 'neutral' || match.ubicacion === 'Neutral';
+    const rivalName = match.rival || t('season.rival');
+    const torneoColor = (match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color)
+      ? match.torneoId.color : THEME.primary;
+    const torneoNombre = match.torneoId && typeof match.torneoId === 'object' && match.torneoId.nombre
+      ? match.torneoId.nombre
+      : match.competicion === 'amistoso' ? t('matchSheet.friendly') : t('season.match');
+
+    const formattedResult = played
+      ? (isAway
+          ? `${match.golesContra || 0} - ${match.golesFavor || 0}`
           : `${match.golesFavor || 0} - ${match.golesContra || 0}`)
       : null;
-    
+
+    const ubicLabel = isAway
+      ? t('matchSheet.modals.away', 'Fuera')
+      : isNeutral ? t('matchSheet.modals.neutral', 'Neutral')
+      : t('matchSheet.modals.home', 'Casa');
+    const ubicIcon = isAway ? 'airplane' : isNeutral ? 'location' : 'home';
+
     return (
-      <TouchableOpacity 
-        key={`match-preview-${match._id}`} 
+      <TouchableOpacity
+        key={`match-preview-${match._id}`}
         style={styles.eventPreviewCard}
         onPress={() => onMatchPress && onMatchPress(match)}
         activeOpacity={0.7}
       >
+        {/* Cabecera: torneo + jornada */}
         <View style={styles.matchPreviewHeader}>
-          <View style={[styles.eventTypeBadge, { backgroundColor: (match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color ? match.torneoId.color : THEME.primary) + '20' }]}>
-            <Ionicons name="football" size={10} color={match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color ? match.torneoId.color : THEME.primary} />
-            <Text style={[styles.eventTypeBadgeText, { color: match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color ? match.torneoId.color : THEME.primary }]} numberOfLines={1}>
-              {match.torneoId && typeof match.torneoId === 'object' && match.torneoId.nombre
-                ? match.torneoId.nombre
-                : match.competicion === 'amistoso' ? t('matchSheet.friendly') : t('season.match')}
-            </Text>
+          <View style={[styles.eventTypeBadge, { backgroundColor: torneoColor + '20' }]}>
+            <Ionicons name="football" size={10} color={torneoColor} />
+            <Text style={[styles.eventTypeBadgeText, { color: torneoColor }]} numberOfLines={1}>{torneoNombre}</Text>
           </View>
           {(match.jornada || match.fase === 'eliminatoria' || match.fase === 'grupos') && (
             <Text style={styles.jornadaText}>
@@ -423,77 +422,41 @@ export default function SeasonCalendar({
             </Text>
           )}
         </View>
-        
-        <View style={styles.matchTeamsContainer}>
-          {/* Primer equipo (local o rival si fuera) */}
-          <View style={styles.teamInfoPreview}>
-            {firstTeamEscudo ? (
-              <Image 
-                source={{ uri: firstTeamEscudo }} 
-                style={styles.teamBadgePreview} 
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={[styles.teamBadgePlaceholder, { backgroundColor: firstTeamIsHome ? THEME.primary + '20' : THEME.danger + '20' }]}>
-                <Ionicons name="shield" size={14} color={firstTeamIsHome ? THEME.primary : THEME.danger} />
-              </View>
-            )}
-            <Text style={styles.teamNamePreview} numberOfLines={1}>
-              {firstTeamName}
-            </Text>
-          </View>
-          
-          {/* Resultado si jugado, o hora/por definir si no */}
-          <View style={styles.matchResultContainer}>
+
+        {/* Cuerpo: solo escudo rival + resultado/hora */}
+        <View style={styles.matchPreviewBody}>
+          {rivalEscudo ? (
+            <Image source={{ uri: rivalEscudo }} style={styles.rivalBadgePreview} resizeMode="contain" />
+          ) : (
+            <View style={styles.rivalBadgePlaceholderPreview}>
+              <Ionicons name="shield" size={22} color={THEME.textMuted} />
+            </View>
+          )}
+          <View style={styles.matchPreviewCenter}>
+            <Text style={styles.rivalNamePreviewLarge} numberOfLines={2}>{rivalName}</Text>
             {played ? (
               <Text style={styles.matchResultText}>{formattedResult}</Text>
             ) : (
               <Text style={styles.matchTimePreviewText}>
-                {match.fechaHora 
+                {match.fechaHora
                   ? new Date(match.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
                   : t('season.toBeDefined')}
               </Text>
             )}
           </View>
-          
-          {/* Segundo equipo (rival o mi equipo si fuera) */}
-          <View style={styles.teamInfoPreview}>
-            {secondTeamEscudo ? (
-              <Image 
-                source={{ uri: secondTeamEscudo }} 
-                style={styles.teamBadgePreview} 
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={[styles.teamBadgePlaceholder, { backgroundColor: secondTeamIsHome ? THEME.primary + '20' : THEME.danger + '20' }]}>
-                <Ionicons name="shield" size={14} color={secondTeamIsHome ? THEME.primary : THEME.danger} />
-              </View>
-            )}
-            <Text style={styles.teamNamePreview} numberOfLines={1}>
-              {secondTeamName}
-            </Text>
-          </View>
         </View>
-        
-        {/* Ubicación y hora */}
+
+        {/* Footer: ubicación */}
         <View style={styles.matchDetailsRow}>
-          {match.ubicacion && (
+          <View style={styles.matchDetailItem}>
+            <Ionicons name={ubicIcon} size={11} color={THEME.textSecondary} />
+            <Text style={styles.matchDetailText}>{ubicLabel}</Text>
+          </View>
+          {!played && match.fechaHora && (
             <View style={styles.matchDetailItem}>
-              <Ionicons 
-                name={match.ubicacion === 'Casa' ? 'home' : 'airplane'} 
-                size={10} 
-                color={THEME.textSecondary} 
-              />
-              <Text style={styles.matchDetailText}>{match.ubicacion}</Text>
-            </View>
-          )}
-          {!played && (
-            <View style={styles.matchDetailItem}>
-              <Ionicons name="time" size={10} color={THEME.textSecondary} />
+              <Ionicons name="time" size={11} color={THEME.textSecondary} />
               <Text style={styles.matchDetailText}>
-                {match.fechaHora 
-                  ? new Date(match.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-                  : t('season.toBeDefined')}
+                {new Date(match.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>
           )}
@@ -505,75 +468,52 @@ export default function SeasonCalendar({
   // Renderizar vista previa de sesión de entrenamiento
   const renderSessionPreview = (session) => {
     return (
-      <TouchableOpacity 
-        key={`session-preview-${session._id}`} 
+      <TouchableOpacity
+        key={`session-preview-${session._id}`}
         style={styles.eventPreviewCard}
         onPress={() => onSessionPress && onSessionPress(session)}
         activeOpacity={0.7}
       >
+        {/* Badge */}
         <View style={styles.sessionPreviewHeader}>
           <View style={[styles.eventTypeBadge, { backgroundColor: THEME.success + '20' }]}>
             <Ionicons name="fitness" size={12} color={THEME.success} />
             <Text style={[styles.eventTypeBadgeText, { color: THEME.success }]}>{t('season.training')}</Text>
           </View>
         </View>
-        
-        <View style={styles.sessionInfoContainer}>
-          {/* Equipo */}
-          <View style={styles.sessionTeamRow}>
-            {team?.escudo ? (
-              <Image 
-                source={{ uri: team.escudo }} 
-                style={styles.sessionTeamBadge} 
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={[styles.teamBadgePlaceholder, { backgroundColor: THEME.success + '20' }]}>
-                <Ionicons name="shield" size={12} color={THEME.success} />
-              </View>
-            )}
-            <Text style={styles.sessionTeamName} numberOfLines={1}>
-              {team?.nombre || 'Mi Equipo'}
-            </Text>
-          </View>
-          
-          {/* Detalles */}
-          <View style={styles.sessionDetailsRow}>
-            {session.lugar && (
-              <View style={styles.sessionDetailItem}>
-                <Ionicons name="location" size={12} color={THEME.textSecondary} />
-                <Text style={styles.sessionDetailText} numberOfLines={1}>{session.lugar}</Text>
-              </View>
-            )}
-            {/* Mostrar hora de inicio y fin si están disponibles */}
-            {(session.horaInicio || session.horaFin) ? (
-              <View style={styles.sessionDetailItem}>
-                <Ionicons name="time" size={12} color={THEME.success} />
-                <Text style={[styles.sessionDetailText, styles.sessionTimeText]}>
-                  {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
-                </Text>
-              </View>
-            ) : session.fechaHora && (
-              <View style={styles.sessionDetailItem}>
-                <Ionicons name="time" size={12} color={THEME.textSecondary} />
-                <Text style={styles.sessionDetailText}>
-                  {new Date(session.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-              </View>
-            )}
-            {session.duracion && (
-              <View style={styles.sessionDetailItem}>
-                <Ionicons name="timer" size={12} color={THEME.textSecondary} />
-                <Text style={styles.sessionDetailText}>{session.duracion} min</Text>
-              </View>
-            )}
-          </View>
-          
-          {/* Ejercicios */}
-          {session.ejercicios && session.ejercicios.length > 0 && (
-            <View style={styles.sessionExercisesCount}>
-              <Ionicons name="barbell" size={10} color={THEME.success} />
-              <Text style={styles.sessionExercisesText}>
+
+        {/* Nombre / lugar grande */}
+        <Text style={styles.sessionTitlePreview} numberOfLines={2}>
+          {session.lugar || t('season.training')}
+        </Text>
+
+        {/* Detalles */}
+        <View style={styles.sessionDetailsRow}>
+          {(session.horaInicio || session.horaFin) ? (
+            <View style={styles.sessionDetailItem}>
+              <Ionicons name="time" size={12} color={THEME.success} />
+              <Text style={[styles.sessionDetailText, styles.sessionTimeText]}>
+                {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
+              </Text>
+            </View>
+          ) : session.fechaHora ? (
+            <View style={styles.sessionDetailItem}>
+              <Ionicons name="time" size={12} color={THEME.textSecondary} />
+              <Text style={styles.sessionDetailText}>
+                {new Date(session.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          ) : null}
+          {session.duracion ? (
+            <View style={styles.sessionDetailItem}>
+              <Ionicons name="timer" size={12} color={THEME.textSecondary} />
+              <Text style={styles.sessionDetailText}>{session.duracion} min</Text>
+            </View>
+          ) : null}
+          {session.ejercicios?.length > 0 && (
+            <View style={styles.sessionDetailItem}>
+              <Ionicons name="barbell" size={12} color={THEME.success} />
+              <Text style={[styles.sessionDetailText, { color: THEME.success }]}>
                 {t('season.exerciseCount', { count: session.ejercicios.length })}
               </Text>
             </View>
@@ -658,16 +598,11 @@ export default function SeasonCalendar({
       return (
         <View key={`mini-session-${session._id}`} style={styles.miniSessionCard}>
           <View style={styles.miniSessionRow}>
-            {team?.escudo ? (
-              <Image source={{ uri: team.escudo }} style={styles.miniBadgeSmall} resizeMode="contain" />
-            ) : (
-              <Ionicons name="fitness" size={12} color={THEME.success} />
-            )}
+            <Ionicons name="fitness" size={isMobileDevice() ? 10 : 11} color={THEME.success} />
             <View style={styles.miniSessionInfo}>
               <Text style={styles.miniSessionText} numberOfLines={1}>
                 {session.lugar || t('season.training')}
               </Text>
-              {/* Mostrar hora de inicio y fin */}
               {(session.horaInicio || session.horaFin) && (
                 <Text style={styles.miniSessionTime} numberOfLines={1}>
                   {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
@@ -683,114 +618,60 @@ export default function SeasonCalendar({
     const renderFullMatchCard = (match) => {
       const played = isMatchPlayed(match);
       const rivalEscudo = getRivalEscudo(match);
-      const teamEscudo = team?.escudo || null;
-      const rivalName = match.rival || 'Rival';
+      const rivalName = match.rival || t('season.rival');
       const isAway = isAwayMatch(match);
-      
-      // Determinar escudos según ubicación
-      const firstEscudo = isAway ? rivalEscudo : teamEscudo;
-      const secondEscudo = isAway ? teamEscudo : rivalEscudo;
-      const firstIsTeam = !isAway;
-      
-      // Determinar color de fondo según resultado
+      const isNeutral = match.ubicacion === 'neutral' || match.ubicacion === 'Neutral';
+
+      // Color de fondo según resultado
+      let borderColor = THEME.primary;
       let bgColors = [THEME.primary + '15', THEME.primary + '05'];
       if (played) {
-        const golesFavor = match.golesFavor || 0;
-        const golesContra = match.golesContra || 0;
-        if (golesFavor > golesContra) {
-          bgColors = [THEME.success + '20', THEME.success + '08'];
-        } else if (golesFavor < golesContra) {
-          bgColors = [THEME.danger + '20', THEME.danger + '08'];
-        } else {
-          bgColors = [THEME.warning + '20', THEME.warning + '08'];
-        }
+        const gf = match.golesFavor || 0;
+        const gc = match.golesContra || 0;
+        if (gf > gc) { bgColors = [THEME.success + '22', THEME.success + '06']; borderColor = THEME.success; }
+        else if (gf < gc) { bgColors = [THEME.danger + '22', THEME.danger + '06']; borderColor = THEME.danger; }
+        else { bgColors = [THEME.warning + '22', THEME.warning + '06']; borderColor = THEME.warning; }
       }
-      
-      // Formatear resultado según ubicación
-      const formattedResult = isAway 
+
+      const formattedResult = isAway
         ? `${match.golesContra || 0}-${match.golesFavor || 0}`
         : `${match.golesFavor || 0}-${match.golesContra || 0}`;
-      
+
+      // Icono / label de ubicación
+      const ubicLabel = isAway
+        ? t('matchSheet.modals.away', 'Fuera')
+        : isNeutral ? t('matchSheet.modals.neutral', 'Neutral')
+        : t('matchSheet.modals.home', 'Casa');
+      const ubicIcon = isAway ? 'airplane' : isNeutral ? 'location' : 'home';
+
       return (
-        <LinearGradient
-          colors={bgColors}
-          style={styles.fullMatchCard}
-        >
-          {/* Fila de escudos: según ubicación */}
-          <View style={styles.fullMatchEscudosRow}>
-            {/* Primer escudo (mi equipo si local, rival si visitante) */}
-            <View style={styles.fullMatchEscudoContainer}>
-              {firstEscudo ? (
-                <Image 
-                  source={{ uri: firstEscudo }} 
-                  style={styles.fullMatchEscudo} 
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.fullMatchEscudoPlaceholder}>
-                  <Ionicons name="shield" size={14} color={firstIsTeam ? THEME.primary : THEME.textMuted} />
-                </View>
-              )}
-            </View>
-            
-            {/* Resultado o VS */}
-            <View style={styles.fullMatchVsContainer}>
+        <LinearGradient colors={bgColors} style={[styles.fullMatchCard, { borderLeftColor: borderColor }]}>
+          {/* Escudo del rival + resultado/hora */}
+          <View style={styles.fullMatchMainRow}>
+            {rivalEscudo ? (
+              <Image source={{ uri: rivalEscudo }} style={styles.fullMatchEscudo} resizeMode="contain" />
+            ) : (
+              <View style={styles.fullMatchEscudoPlaceholder}>
+                <Ionicons name="shield" size={isMobileDevice() ? 14 : 18} color={THEME.textMuted} />
+              </View>
+            )}
+            <View style={styles.fullMatchScoreBlock}>
               {played ? (
-                <Text style={styles.fullMatchResult}>
-                  {formattedResult}
-                </Text>
+                <Text style={styles.fullMatchResult}>{formattedResult}</Text>
               ) : (
                 <Text style={styles.fullMatchVs}>vs</Text>
               )}
             </View>
-            
-            {/* Segundo escudo (rival si local, mi equipo si visitante) */}
-            <View style={styles.fullMatchEscudoContainer}>
-              {secondEscudo ? (
-                <Image 
-                  source={{ uri: secondEscudo }} 
-                  style={styles.fullMatchEscudo} 
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.fullMatchEscudoPlaceholder}>
-                  <Ionicons name="shield" size={14} color={!firstIsTeam ? THEME.primary : THEME.textMuted} />
-                </View>
-              )}
-            </View>
           </View>
-          
+
           {/* Nombre del rival */}
-          <Text style={styles.fullMatchRivalName} numberOfLines={1}>
-            {rivalName}
-          </Text>
-          
-          {/* Torneo */}
-          {match.torneoId && typeof match.torneoId === 'object' && match.torneoId.nombre && (
-            <Text style={[styles.fullMatchTime, { color: match.torneoId.color || THEME.primary }]} numberOfLines={1}>
-              {match.torneoId.nombre}
-            </Text>
-          )}
-          
-          {/* Hora si no se ha jugado */}
-          {!played && (
-            <Text style={styles.fullMatchTime}>
-              {match.fechaHora 
-                ? new Date(match.fechaHora).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-                : t('season.toBeDefined')}
-            </Text>
-          )}
-          
-          {/* Indicador de ubicación */}
-          {match.ubicacion && (
-            <View style={styles.fullMatchUbicacion}>
-              <Ionicons 
-                name={match.ubicacion === 'Casa' ? 'home' : 'airplane'} 
-                size={8} 
-                color={THEME.textSecondary} 
-              />
-            </View>
-          )}
+          <Text style={styles.fullMatchRivalName} numberOfLines={1}>{rivalName}</Text>
+
+          {/* Ubicación */}
+          <View style={styles.fullMatchUbicacionRow}>
+            <Ionicons name={ubicIcon} size={isMobileDevice() ? 8 : 9} color={borderColor} />
+            <Text style={[styles.fullMatchUbicLabel, { color: borderColor }]}>{ubicLabel}</Text>
+          </View>
         </LinearGradient>
       );
     };
@@ -1066,101 +947,83 @@ export default function SeasonCalendar({
               ) : (
                 <>
                   {/* Partidos */}
-                  {selectedMobileDayEvents?.matches?.map((match) => (
-                    <TouchableOpacity 
-                      key={`mob-match-${match._id}`} 
-                      style={mobileStyles.eventCard}
-                      onPress={() => onMatchPress && onMatchPress(match)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[mobileStyles.eventBadge, { backgroundColor: THEME.primary + '20' }]}>
-                        <Ionicons name="football" size={14} color={THEME.primary} />
-                        <Text style={[mobileStyles.eventBadgeText, { color: THEME.primary }]}>
-                          {t('season.match')} {match.fase === 'eliminatoria' && match.ronda
-                            ? `- ${t(`tournaments.round${({final:'Final',semifinal:'Semifinal',cuartos:'Quarters',octavos:'Round16',dieciseisavos:'Round32',treintaydosavos:'Round64'})[match.ronda] || 'Final'}`)}`
-                            : match.fase === 'grupos' && match.grupo
-                              ? `- G${match.grupo}${match.jornada ? ` J${match.jornada}` : ''}`
-                              : match.jornada ? `- J${match.jornada}` : ''}
-                        </Text>
-                      </View>
-                      
-                      <View style={mobileStyles.matchTeams}>
-                        {/* Equipo local */}
-                        <View style={mobileStyles.teamCol}>
-                          {(isAwayMatch(match) ? getRivalEscudo(match) : team?.escudo) ? (
-                            <Image 
-                              source={{ uri: isAwayMatch(match) ? getRivalEscudo(match) : team?.escudo }} 
-                              style={mobileStyles.teamBadge} 
-                            />
-                          ) : (
-                            <View style={mobileStyles.teamBadgePlaceholder}>
-                              <Ionicons name="shield" size={20} color={THEME.primary} />
-                            </View>
-                          )}
-                          <Text style={mobileStyles.teamName} numberOfLines={1}>
-                            {isAwayMatch(match) ? (match.rival || t('season.rival')) : (team?.nombre || t('season.myTeam'))}
+                  {selectedMobileDayEvents?.matches?.map((match) => {
+                    const _isAway = isAwayMatch(match);
+                    const _isNeutral = match.ubicacion === 'neutral' || match.ubicacion === 'Neutral';
+                    const _rivalEscudo = getRivalEscudo(match);
+                    const _played = isMatchPlayed(match);
+                    const torneoColor = (match.torneoId && typeof match.torneoId === 'object' && match.torneoId.color) ? match.torneoId.color : THEME.primary;
+                    const ubicLabel = _isAway
+                      ? t('matchSheet.modals.away', 'Fuera')
+                      : _isNeutral ? t('matchSheet.modals.neutral', 'Neutral')
+                      : t('matchSheet.modals.home', 'Casa');
+                    const ubicIcon = _isAway ? 'airplane' : _isNeutral ? 'location' : 'home';
+                    return (
+                      <TouchableOpacity
+                        key={`mob-match-${match._id}`}
+                        style={mobileStyles.eventCard}
+                        onPress={() => onMatchPress && onMatchPress(match)}
+                        activeOpacity={0.7}
+                      >
+                        {/* Badge torneo */}
+                        <View style={[mobileStyles.eventBadge, { backgroundColor: torneoColor + '20' }]}>
+                          <Ionicons name="football" size={14} color={torneoColor} />
+                          <Text style={[mobileStyles.eventBadgeText, { color: torneoColor }]}>
+                            {match.torneoId && typeof match.torneoId === 'object' && match.torneoId.nombre
+                              ? match.torneoId.nombre
+                              : match.competicion === 'amistoso' ? t('matchSheet.friendly') : t('season.match')}
+                            {match.jornada ? ` · J${match.jornada}` : ''}
                           </Text>
                         </View>
-                        
-                        {/* Resultado o VS */}
-                        <View style={mobileStyles.resultCol}>
-                          {isMatchPlayed(match) ? (
-                            <Text style={mobileStyles.resultText}>
-                              {isAwayMatch(match) 
-                                ? `${match.golesContra || 0} - ${match.golesFavor || 0}`
-                                : `${match.golesFavor || 0} - ${match.golesContra || 0}`}
-                            </Text>
+
+                        {/* Rival: escudo + nombre + resultado */}
+                        <View style={mobileStyles.matchRivalRow}>
+                          {_rivalEscudo ? (
+                            <Image source={{ uri: _rivalEscudo }} style={mobileStyles.rivalBadgeLarge} resizeMode="contain" />
                           ) : (
-                            <Text style={mobileStyles.vsText}>vs</Text>
-                          )}
-                        </View>
-                        
-                        {/* Equipo visitante */}
-                        <View style={mobileStyles.teamCol}>
-                          {(isAwayMatch(match) ? team?.escudo : getRivalEscudo(match)) ? (
-                            <Image 
-                              source={{ uri: isAwayMatch(match) ? team?.escudo : getRivalEscudo(match) }} 
-                              style={mobileStyles.teamBadge} 
-                            />
-                          ) : (
-                            <View style={mobileStyles.teamBadgePlaceholder}>
-                              <Ionicons name="shield" size={20} color={THEME.danger} />
+                            <View style={mobileStyles.rivalBadgePlaceholder}>
+                              <Ionicons name="shield" size={26} color={THEME.textMuted} />
                             </View>
                           )}
-                          <Text style={mobileStyles.teamName} numberOfLines={1}>
-                            {isAwayMatch(match) ? (team?.nombre || t('season.myTeam')) : (match.rival || t('season.rival'))}
-                          </Text>
-                        </View>
-                      </View>
-                      
-                      {/* Info adicional */}
-                      <View style={mobileStyles.matchInfo}>
-                        {match.fechaHora && (
-                          <View style={mobileStyles.infoChip}>
-                            <Ionicons name="time" size={12} color={THEME.textSecondary} />
-                            <Text style={mobileStyles.infoText}>
-                              {new Date(match.fechaHora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <View style={mobileStyles.matchRivalInfo}>
+                            <Text style={mobileStyles.rivalNameLarge} numberOfLines={2}>
+                              {match.rival || t('season.rival')}
                             </Text>
+                            {_played ? (
+                              <Text style={mobileStyles.resultText}>
+                                {_isAway
+                                  ? `${match.golesContra || 0} - ${match.golesFavor || 0}`
+                                  : `${match.golesFavor || 0} - ${match.golesContra || 0}`}
+                              </Text>
+                            ) : (
+                              <Text style={mobileStyles.vsText}>vs</Text>
+                            )}
                           </View>
-                        )}
-                        {match.ubicacion && (
+                        </View>
+
+                        {/* Info: ubicación + hora */}
+                        <View style={mobileStyles.matchInfo}>
                           <View style={mobileStyles.infoChip}>
-                            <Ionicons 
-                              name={match.ubicacion === 'Casa' ? 'home' : 'airplane'} 
-                              size={12} 
-                              color={THEME.textSecondary} 
-                            />
-                            <Text style={mobileStyles.infoText}>{match.ubicacion}</Text>
+                            <Ionicons name={ubicIcon} size={12} color={THEME.textSecondary} />
+                            <Text style={mobileStyles.infoText}>{ubicLabel}</Text>
                           </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                          {match.fechaHora && (
+                            <View style={mobileStyles.infoChip}>
+                              <Ionicons name="time" size={12} color={THEME.textSecondary} />
+                              <Text style={mobileStyles.infoText}>
+                                {new Date(match.fechaHora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
                   
                   {/* Sesiones de entrenamiento */}
                   {selectedMobileDayEvents?.sessions?.map((session) => (
-                    <TouchableOpacity 
-                      key={`mob-session-${session._id}`} 
+                    <TouchableOpacity
+                      key={`mob-session-${session._id}`}
                       style={mobileStyles.eventCard}
                       onPress={() => onSessionPress && onSessionPress(session)}
                       activeOpacity={0.7}
@@ -1171,34 +1034,34 @@ export default function SeasonCalendar({
                           {t('season.training')}
                         </Text>
                       </View>
-                      
-                      <View style={mobileStyles.sessionContent}>
-                        {team?.escudo && (
-                          <Image source={{ uri: team.escudo }} style={mobileStyles.sessionBadge} />
-                        )}
-                        <View style={mobileStyles.sessionInfo}>
-                          <Text style={mobileStyles.sessionTitle}>
-                            {session.lugar || t('season.training')}
-                          </Text>
-                          <View style={mobileStyles.sessionMeta}>
-                            {(session.horaInicio || session.horaFin) && (
-                              <View style={mobileStyles.infoChip}>
-                                <Ionicons name="time" size={12} color={THEME.success} />
-                                <Text style={[mobileStyles.infoText, { color: THEME.success }]}>
-                                  {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
-                                </Text>
-                              </View>
-                            )}
-                            {session.ejercicios?.length > 0 && (
-                              <View style={mobileStyles.infoChip}>
-                                <Ionicons name="barbell" size={12} color={THEME.success} />
-                                <Text style={[mobileStyles.infoText, { color: THEME.success }]}>
-                                  {session.ejercicios.length} {t('exercises.title') || 'ejercicios'}
-                                </Text>
-                              </View>
-                            )}
+
+                      <Text style={mobileStyles.sessionTitleLarge} numberOfLines={2}>
+                        {session.lugar || t('season.training')}
+                      </Text>
+
+                      <View style={mobileStyles.sessionMeta}>
+                        {(session.horaInicio || session.horaFin) && (
+                          <View style={mobileStyles.infoChip}>
+                            <Ionicons name="time" size={12} color={THEME.success} />
+                            <Text style={[mobileStyles.infoText, { color: THEME.success }]}>
+                              {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
+                            </Text>
                           </View>
-                        </View>
+                        )}
+                        {session.ejercicios?.length > 0 && (
+                          <View style={mobileStyles.infoChip}>
+                            <Ionicons name="barbell" size={12} color={THEME.success} />
+                            <Text style={[mobileStyles.infoText, { color: THEME.success }]}>
+                              {session.ejercicios.length} {t('exercises.title') || 'ejercicios'}
+                            </Text>
+                          </View>
+                        )}
+                        {session.duracion && (
+                          <View style={mobileStyles.infoChip}>
+                            <Ionicons name="timer" size={12} color={THEME.textSecondary} />
+                            <Text style={mobileStyles.infoText}>{session.duracion} min</Text>
+                          </View>
+                        )}
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -1525,61 +1388,59 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
+    padding: isMobileDevice() ? 3 : 4,
     borderRadius: 6,
+    borderLeftWidth: 3,
   },
-  fullMatchEscudosRow: {
+  fullMatchMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 1,
-  },
-  fullMatchEscudoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: isMobileDevice() ? 2 : 3,
+    marginBottom: 2,
   },
   fullMatchEscudo: {
-    width: isMobileDevice() ? 18 : 24,
-    height: isMobileDevice() ? 18 : 24,
+    width: isMobileDevice() ? 22 : 28,
+    height: isMobileDevice() ? 22 : 28,
   },
   fullMatchEscudoPlaceholder: {
-    width: isMobileDevice() ? 18 : 24,
-    height: isMobileDevice() ? 18 : 24,
-    borderRadius: 3,
+    width: isMobileDevice() ? 22 : 28,
+    height: isMobileDevice() ? 22 : 28,
+    borderRadius: 4,
     backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fullMatchVsContainer: {
-    paddingHorizontal: 4,
+  fullMatchScoreBlock: {
+    alignItems: 'center',
+    paddingHorizontal: 2,
   },
   fullMatchVs: {
-    fontSize: isMobileDevice() ? 8 : 10,
-    fontWeight: '600',
+    fontSize: isMobileDevice() ? 9 : 11,
+    fontWeight: '700',
     color: theme.colors.textMuted,
   },
   fullMatchResult: {
-    fontSize: isMobileDevice() ? 10 : 12,
+    fontSize: isMobileDevice() ? 11 : 13,
     fontWeight: '800',
     color: theme.colors.text,
   },
   fullMatchRivalName: {
-    fontSize: isMobileDevice() ? 7 : 9,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
+    fontSize: isMobileDevice() ? 9 : 11,
+    fontWeight: '700',
+    color: theme.colors.text,
     textAlign: 'center',
-    maxWidth: '90%',
+    maxWidth: '95%',
   },
-  fullMatchTime: {
-    fontSize: isMobileDevice() ? 7 : 9,
-    fontWeight: '600',
-    color: theme.colors.primary,
+  fullMatchUbicacionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     marginTop: 1,
   },
-  fullMatchUbicacion: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
+  fullMatchUbicLabel: {
+    fontSize: isMobileDevice() ? 7 : 8,
+    fontWeight: '600',
   },
   dayNumberOverlay: {
     position: 'absolute',
@@ -1769,58 +1630,60 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   
-  // Contenedor de equipos del partido
-  matchTeamsContainer: {
+  // Preview de partido — nuevo diseño solo-rival
+  matchPreviewBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: 14,
+    marginBottom: 12,
   },
-  teamInfoPreview: {
+  rivalBadgePreview: {
+    width: 52,
+    height: 52,
+    flexShrink: 0,
+  },
+  rivalBadgePlaceholderPreview: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  matchPreviewCenter: {
     flex: 1,
+    gap: 4,
   },
-  teamBadgePreview: {
-    width: 32,
-    height: 32,
-    marginBottom: 4,
-  },
-  teamBadgePlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  teamNamePreview: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: theme.colors.text,
-    textAlign: 'center',
-    maxWidth: 70,
-  },
-  
-  // Resultado del partido
-  matchResultContainer: {
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  matchResultText: {
+  rivalNamePreviewLarge: {
     fontSize: 16,
     fontWeight: '700',
     color: theme.colors.text,
+    lineHeight: 20,
+  },
+  // Resultado del partido
+  matchResultText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.colors.text,
   },
   matchTimePreviewText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: theme.colors.primary,
   },
   matchVsText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.textSecondary,
+  },
+  // Título sesión preview
+  sessionTitlePreview: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 10,
+    lineHeight: 20,
   },
   
   // Detalles del partido
@@ -1853,21 +1716,6 @@ const makeStyles = (theme) => StyleSheet.create({
   // Info de sesión
   sessionInfoContainer: {
     gap: 10,
-  },
-  sessionTeamRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sessionTeamBadge: {
-    width: 28,
-    height: 28,
-  },
-  sessionTeamName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-    flex: 1,
   },
   sessionDetailsRow: {
     flexDirection: 'row',
@@ -2111,51 +1959,45 @@ const makeMobileStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Partido
-  matchTeams: {
+  // Partido móvil — solo rival
+  matchRivalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 14,
     marginBottom: 12,
   },
-  teamCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  teamBadge: {
-    width: 44,
-    height: 44,
-    marginBottom: 6,
+  rivalBadgeLarge: {
+    width: 52,
+    height: 52,
     resizeMode: 'contain',
+    flexShrink: 0,
   },
-  teamBadgePlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  rivalBadgePlaceholder: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    flexShrink: 0,
   },
-  teamName: {
-    fontSize: 12,
-    fontWeight: '500',
+  matchRivalInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  rivalNameLarge: {
+    fontSize: 18,
+    fontWeight: '700',
     color: theme.colors.text,
-    textAlign: 'center',
-    maxWidth: 80,
-  },
-  resultCol: {
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    lineHeight: 22,
   },
   resultText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: theme.colors.text,
   },
   vsText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
@@ -2177,25 +2019,13 @@ const makeMobileStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   
-  // Sesión
-  sessionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sessionBadge: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-  },
-  sessionInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  sessionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+  // Sesión móvil — sin badge de equipo
+  sessionTitleLarge: {
+    fontSize: 18,
+    fontWeight: '700',
     color: theme.colors.text,
+    marginBottom: 10,
+    lineHeight: 22,
   },
   sessionMeta: {
     flexDirection: 'row',
