@@ -1060,8 +1060,8 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: IS_MOBILE ? theme.colors.surface : theme.colors.overlay, alignItems: 'center' }}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: IS_MOBILE ? theme.colors.surface : theme.colors.overlay, alignItems: 'center', justifyContent: 'center' }}>
         <View style={[styles.detailModalContent, IS_MOBILE && styles.detailModalContentMobile]}>
               {/* Header with tournament color */}
               <LinearGradient
@@ -2133,17 +2133,19 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // =================== Detail Modal (larger) ===================
   detailModalContent: {
-    flex: 1,
     backgroundColor: theme.colors.surface,
     width: '100%',
     maxWidth: 750,
+    maxHeight: '94%',
     overflow: 'hidden',
+    borderRadius: 18,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24 },
       android: { elevation: 12 },
     }),
   },
   detailModalContentMobile: {
+    width: '98%',
     maxWidth: '100%',
   },
   createMatchBtn: {
