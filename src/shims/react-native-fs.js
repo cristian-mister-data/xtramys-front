@@ -35,7 +35,10 @@ const RNFS = {
       if (k.startsWith(path)) frames.delete(k);
     }
   },
-  exists: async (path) => frames.has(path),
+  exists: async (path) => {
+    if (typeof path === 'string' && (path.startsWith('blob:') || path.startsWith('data:'))) return true;
+    return frames.has(path);
+  },
   readDir: async (path) => {
     const prefix = path.endsWith('/') ? path : path + '/';
     const out = [];

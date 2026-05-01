@@ -18,8 +18,8 @@
 // Notas:
 // - Para análisis "viejos" sin templateId, mostramos preguntas q1..q11 + q12.
 // - Para análisis nuevos con template, recorremos template.questions ordenadas.
-// - Los videos usan getVideoStreamUrl/getVideoDownloadUrl en lugar de URLs
-//   firmadas como en RN: el navegador descarga directo vía <a download>.
+// - Los videos resuelven primero la URL real guardada en R2 o un job
+//   regenerado antes de reproducir/descargar.
 
 import { useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
@@ -60,7 +60,7 @@ import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { getVideoStreamUrl, getVideoDownloadUrl } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 
 import {
   KNOWN_FIELDS,
@@ -328,6 +328,7 @@ export default function AnalysisDetailModal({
 
   // Estado para el modal de visualización de video (un solo player a la vez).
   const [videoModalUrl, setVideoModalUrl] = useState(null);
+  const [videoModalLoading, setVideoModalLoading] = useState(false);
   // Estado para zoom de imagen.
   const [imgZoomUrl, setImgZoomUrl] = useState(null);
 
@@ -359,21 +360,28 @@ export default function AnalysisDetailModal({
     generateRivalAnalysisPdf(analysis, template, t, selectedTeam);
   };
 
-  const handlePlayVideo = (videoId) => {
+  const handlePlayVideo = async (videoId) => {
     if (!videoId) return;
-    setVideoModalUrl(getVideoStreamUrl(videoId));
+    setVideoModalUrl(null);
+    setVideoModalLoading(true);
+    try {
+      const url = await resolvePlayableVideoUrl(videoId);
+      if (url) setVideoModalUrl(url);
+    } catch (err) {
+      toast.error(err?.message || t('rivalAnalysis.actions.videoLoadError', 'No se pudo cargar el vídeo'));
+    } finally {
+      setVideoModalLoading(false);
+    }
   };
 
-  const handleDownloadVideo = (videoId) => {
+  const handleDownloadVideo = async (videoId) => {
     if (!videoId) return;
-    // En web la descarga es directa: anchor con download attribute.
-    const url = getVideoDownloadUrl(videoId);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `rival-${analysis.rival || 'video'}-${videoId}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      await downloadResolvedVideo(videoId, `rival-${analysis.rival || 'video'}-${videoId}`);
+      toast.success(t('rivalAnalysis.actions.downloadStarted', 'Descarga iniciada'));
+    } catch (err) {
+      toast.error(err?.message || t('rivalAnalysis.actions.downloadError', 'No se pudo descargar el vídeo'));
+    }
   };
 
   // -------- Render helpers --------
@@ -791,14 +799,18 @@ export default function AnalysisDetailModal({
 
       {/* Video viewer modal */}
       <Modal
-        open={!!videoModalUrl}
-        onClose={() => setVideoModalUrl(null)}
+        open={!!videoModalUrl || videoModalLoading}
+        onClose={() => { setVideoModalUrl(null); setVideoModalLoading(false); }}
         title={t('rivalAnalysis.actions.playVideo', 'Reproducir vídeo')}
         width={900}
       >
-        {videoModalUrl && (
-          <VideoPlayer src={videoModalUrl} controls autoPlay preload="metadata" />
-        )}
+        {videoModalLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: theme.colors.textSecondary }}>
+            {t('rivalAnalysis.actions.loadingVideo', 'Cargando vídeo…')}
+          </div>
+        ) : videoModalUrl ? (
+          <VideoPlayer key={videoModalUrl} src={videoModalUrl} controls autoPlay preload="metadata" />
+        ) : null}
       </Modal>
 
       {/* Image zoom modal */}

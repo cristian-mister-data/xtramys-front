@@ -10,7 +10,9 @@
 // devuelve `{ success, folders }`.
 import { getAllVideoFoldersFlat, createVideoFolder } from '@/utils/api';
 
-const FOLDER_COLOR = '#3578e5';
+const ROOT_FOLDER_COLOR = '#FF5722';
+const RIVAL_FOLDER_COLOR = '#FF9800';
+const ROOT_FOLDER_NAMES = ['Análisis Rival', 'Rival Analysis'];
 
 // Devuelve el id de carpeta padre como string, sea string u objeto poblado.
 function parentIdOf(folder) {
@@ -45,12 +47,13 @@ export async function ensureRivalAnalysisFolder({ rootName, rivalName, lang }) {
     let result = await getAllVideoFoldersFlat(lang);
     let folders = result?.folders || result?.data?.folders || [];
 
-    let root = findFolder(folders, rootName, null);
+    const rootNames = Array.from(new Set([rootName, ...ROOT_FOLDER_NAMES]));
+    let root = rootNames.map((name) => findFolder(folders, name, null)).find(Boolean);
     if (!root) {
       const created = await createVideoFolder({
         nombre: rootName,
         parentFolder: null,
-        color: FOLDER_COLOR,
+        color: ROOT_FOLDER_COLOR,
       });
       root = created?.folder;
       // Refrescar listado para que el find del rival funcione bien.
@@ -64,7 +67,7 @@ export async function ensureRivalAnalysisFolder({ rootName, rivalName, lang }) {
       const created = await createVideoFolder({
         nombre: rivalName,
         parentFolder: root._id,
-        color: FOLDER_COLOR,
+        color: RIVAL_FOLDER_COLOR,
       });
       rival = created?.folder;
     }

@@ -535,7 +535,7 @@
         "video": "Video",
         "generatingVideo": "Generando video...",
         "videoPlayError": "No se pudo reproducir el video",
-        "saveToGallery": "Guardar en galería",
+        "saveToGallery": "Descargar",
         "unlinkVideoTitle": "Desasociar video",
         "unlinkVideoMessage": "¿Deseas desasociar este video del ejercicio?",
         "videoUnlinked": "Video desasociado correctamente",
@@ -711,7 +711,7 @@
         "video": "Video",
         "generatingVideo": "Generando video...",
         "videoPlayError": "No se pudo reproducir el video",
-        "saveToGallery": "Guardar en galería",
+        "saveToGallery": "Descargar",
         "unlinkVideoTitle": "Desasociar video",
         "unlinkVideoMessage": "¿Deseas desasociar este video de la estrategia?",
         "videoUnlinked": "Video desasociado correctamente",
@@ -774,7 +774,7 @@
         "clearAllCaptures": "Borrar capturas",
         "generateVideo": "Generar",
         "watchVideo": "Ver vídeo",
-        "saveOnGalery": "Guardar en galería",
+        "saveOnGalery": "Descargar",
         "images": {
             "full": "Campo entero",
             "half": "Medio campo",
@@ -798,7 +798,7 @@
         "eraserMode": "Borrar"
     },
 "video": {
-        "savedToGallery": "Vídeo guardado en galería",
+        "savedToGallery": "Descarga iniciada",
         "saveFailed": "No se pudo guardar el vídeo",
         "deleteTitle": "Eliminar video",
         "deleteMessage": "¿Estás seguro de eliminar este video?",
@@ -806,7 +806,7 @@
         "deleteFailed": "No se pudo eliminar el video",
         "download": "Descargar",
         "downloading": "Descargando...",
-        "permissionRequired": "Se necesitan permisos para guardar en galería",
+        "permissionRequired": "No se pudo iniciar la descarga",
         "downloadError": "No se pudo descargar el video",
         "permissionTitle": "Permiso requerido"
     },
@@ -1499,7 +1499,7 @@
         "errorUpdatingVideo": "Error al actualizar el video",
         "noVideoToDownload": "No hay video para descargar",
         "downloadComplete": "Descarga completada",
-        "videoSavedToGallery": "Video guardado en la galería",
+        "videoSavedToGallery": "Descarga iniciada",
         "errorDownloading": "Error al descargar",
         "couldNotDownload": "No se pudo descargar el archivo",
         "lastPositionDeleted": "Última posición eliminada",
@@ -1576,7 +1576,7 @@
         "videoDeleted": "Video eliminado correctamente",
         "couldNotDeleteVideo": "No se pudo eliminar el video",
         "downloadComplete": "Descarga completada",
-        "videoSavedToGallery": "Video guardado en la galería",
+        "videoSavedToGallery": "Descarga iniciada",
         "errorDownloading": "Error al descargar",
         "couldNotDownload": "No se pudo descargar el archivo",
         "today": "Hoy",
@@ -2666,7 +2666,7 @@
             "video": "Vídeo",
             "graphic": "Gráfico táctico",
             "download": "Descargar",
-            "saveToGallery": "Guardar en galería"
+            "saveToGallery": "Descargar"
         },
         "template": {
             "title": "Plantilla de Preguntas",
@@ -3630,7 +3630,7 @@
         "downloading": "Descargando...",
         "downloadSuccess": "Descargado correctamente",
         "downloadError": "Error al descargar",
-        "savedToGallery": "Guardado en galería",
+        "savedToGallery": "Descarga iniciada",
         "saveError": "Error al guardar",
         "videoError": "Error al reproducir el video",
         "loadingVideo": "Cargando video...",

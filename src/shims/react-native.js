@@ -126,7 +126,11 @@ function PatchedModal({
     right: 0,
     bottom: 0,
     left: 0,
-    zIndex: 9999,
+    // 2147483400: por encima del overlay de TacticalVideoRecorderModal
+    // (zIndex.modal = 2147483000) pero por debajo del Toaster (2147483600).
+    // Necesario para que los modales RN (guardar vídeo, crear carpeta, etc.)
+    // sean visibles e interactivos cuando se abren dentro de un overlay.
+    zIndex: 2147483400,
     backgroundColor: transparent ? 'transparent' : '#fff',
     animation: animationType && animationType !== 'none'
       ? 'rnwShimModalFadeIn 150ms ease-out'

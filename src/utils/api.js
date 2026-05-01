@@ -4,6 +4,7 @@
 import * as videoApi from '@/api/video';
 import api, { apiBase } from '@/api/client';
 import { pollJobUntilDone } from '@/api/client';
+import { API_URL } from '@/config';
 export {
   generateVideo,
   getJobStatus,
@@ -238,8 +239,26 @@ const stub = (name, fallback = { data: null }) => async (..._args) => {
   return fallback;
 };
 
-export const proxyUploadToR2 = async () => {
-  throw new Error('proxyUploadToR2: not implemented on web');
+export const proxyUploadToR2 = async (localVideoPath) => {
+  if (!localVideoPath) throw new Error('No hay archivo de vídeo para subir');
+
+  const fileResponse = await fetch(localVideoPath);
+  if (!fileResponse.ok) {
+    throw new Error(`No se pudo leer el vídeo generado: ${fileResponse.status}`);
+  }
+
+  const blob = await fileResponse.blob();
+  if (!blob || blob.size === 0) {
+    throw new Error('El vídeo generado está vacío');
+  }
+
+  const contentType = blob.type || 'video/webm';
+  const response = await api.post('/video/proxy-upload', blob, {
+    timeout: 120000,
+    headers: { 'Content-Type': contentType },
+    transformRequest: [(data) => data],
+  });
+  return response.data;
 };
 
 // Regenera el MP4 server-side a partir de los keyframes guardados.
@@ -282,10 +301,11 @@ export const unlinkVideoFromStrategy = stub('unlinkVideoFromStrategy');
 export const getAllExercises = stub('getAllExercises', { data: [] });
 export const getAllStrategies = stub('getAllStrategies', { data: [] });
 
-// URLs de video (rutas relativas; el reverse-proxy reescribe /api → backend)
-export const getVideoStreamUrl = (videoId) => `/api/video/stream/${videoId}`;
-export const getVideoDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
-export const getReadyDownloadUrl = (videoId) => `/api/video/download/${videoId}`;
+// URLs de video — absolutas al backend (en dev no hay proxy /api en Vite,
+// así que usar relativas devolvía el index.html del SPA).
+export const getVideoStreamUrl = (videoId) => `${API_URL}/video/stream/${videoId}`;
+export const getVideoDownloadUrl = (videoId) => `${API_URL}/video/download/${videoId}`;
+export const getReadyDownloadUrl = (videoId) => `${API_URL}/video/download/${videoId}`;
 export const getPreWellnessFormUrl = (token) =>
   `${window.location.origin}/public/pre-wellness/${token}`;
 

@@ -39,7 +39,7 @@ import {
   ErrorText,
 } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
-import { getVideoStreamUrl } from '@/utils/api';
+import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
 import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
 import {
@@ -265,6 +265,7 @@ export default function AnalysisFormModal({
   const dispatch = useDispatch();
   const theme = useTheme();
   const fileInputRef = useRef(null);
+  const persistedCustomAnswersRef = useRef({});
   const [videoQuestionId, setVideoQuestionId] = useState(null);
 
   const existingAnalyses = useSelector((s) => s.rivalAnalysis.rivalAnalyses || []);
@@ -284,6 +285,7 @@ export default function AnalysisFormModal({
   const [videoRecorderQuestionId, setVideoRecorderQuestionId] = useState(null);
   const [videoRecorderQuestionText, setVideoRecorderQuestionText] = useState('');
   const [videoViewerUrl, setVideoViewerUrl] = useState('');
+  const [videoViewerLoading, setVideoViewerLoading] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -296,11 +298,13 @@ export default function AnalysisFormModal({
       setRivalId(editing.rivalId || '');
       setRivalEscudo(editing.rivalEscudo || '');
       setDynamicAnswers(buildDynamicAnswers(editing));
+      persistedCustomAnswersRef.current = editing.customAnswers || {};
     } else {
       setRival('');
       setRivalId('');
       setRivalEscudo('');
       setDynamicAnswers({});
+      persistedCustomAnswersRef.current = {};
     }
     setError('');
     setShowRivalPicker(false);
@@ -317,6 +321,24 @@ export default function AnalysisFormModal({
     if (!q) return rivals;
     return rivals.filter((r) => (r.nombre || '').toLowerCase().includes(q));
   }, [rivals, rivalSearch]);
+
+  const buildSavePayload = (answers = dynamicAnswers) => {
+    const { topLevel, customAnswers } = partitionAnswers(answers);
+    const data = {
+      rival: rival.trim(),
+      rivalId: rivalId || undefined,
+      rivalEscudo: rivalEscudo || '',
+      equipo: selectedTeam._id,
+      usuario: userId,
+      templateId: activeTemplate?._id,
+      ...topLevel,
+      customAnswers,
+    };
+    if (data.alineacion) {
+      data.alineacion = normalizeFormation(data.alineacion);
+    }
+    return data;
+  };
 
   const setAnswer = (qid, value) => {
     setDynamicAnswers((prev) => ({ ...prev, [qid]: value }));
@@ -368,14 +390,62 @@ export default function AnalysisFormModal({
     setShowVideoRecorder(true);
   };
 
-  const handleVideoRecorded = (videoId) => {
-    if (videoRecorderQuestionId && videoId) {
-      // Forma `{ videoId }`: AnalysisDetailModal ya sabe renderizarla
-      // como Reproducir/Descargar contra /api/video/stream/:id.
-      setAnswer(videoRecorderQuestionId, { videoId });
+  const handleVideoRecorded = async (videoId, meta = {}) => {
+    if (!videoRecorderQuestionId || !videoId) return;
+
+    const qid = videoRecorderQuestionId;
+    const rivalFolder = meta?.rivalFolder || meta?.folderId || null;
+    const videoAnswer = { videoId, rivalFolder };
+    const nextAnswers = { ...dynamicAnswers, [qid]: videoAnswer };
+
+    setDynamicAnswers(nextAnswers);
+
+    if (!editing?._id) {
       toast.success(
         t('rivalAnalysis.form.videoSavedSuccess', 'Vídeo guardado correctamente')
       );
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { topLevel, customAnswers } = partitionAnswers({ [qid]: videoAnswer });
+      const partialData = { ...topLevel };
+      if (Object.keys(customAnswers).length > 0) {
+        partialData.customAnswers = {
+          ...persistedCustomAnswersRef.current,
+          ...customAnswers,
+        };
+      }
+      await dispatch(updateRivalAnalysis({ id: editing._id, data: partialData })).unwrap();
+      if (partialData.customAnswers) {
+        persistedCustomAnswersRef.current = partialData.customAnswers;
+      }
+      onSaved?.();
+      toast.success(
+        t('rivalAnalysis.form.videoSavedSuccess', 'Vídeo guardado correctamente')
+      );
+    } catch (err) {
+      const msg =
+        err?.message ||
+        t('rivalAnalysis.form.videoSaveError', 'Error al guardar el vídeo');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openVideoViewer = async (videoId) => {
+    if (!videoId) return;
+    setVideoViewerUrl('');
+    setVideoViewerLoading(true);
+    try {
+      const url = await resolvePlayableVideoUrl(videoId);
+      if (url) setVideoViewerUrl(url);
+    } catch (err) {
+      toast.error(err?.message || t('rivalAnalysis.form.videoLoadError', 'No se pudo cargar el vídeo'));
+    } finally {
+      setVideoViewerLoading(false);
     }
   };
 
@@ -429,20 +499,7 @@ export default function AnalysisFormModal({
     setSaving(true);
     setError('');
     try {
-      const { topLevel, customAnswers } = partitionAnswers(dynamicAnswers);
-      const data = {
-        rival: rival.trim(),
-        rivalId: rivalId || undefined,
-        rivalEscudo: rivalEscudo || '',
-        equipo: selectedTeam._id,
-        usuario: userId,
-        templateId: activeTemplate?._id,
-        ...topLevel,
-        customAnswers,
-      };
-      if (data.alineacion) {
-        data.alineacion = normalizeFormation(data.alineacion);
-      }
+      const data = buildSavePayload(dynamicAnswers);
       if (editing) {
         await dispatch(updateRivalAnalysis({ id: editing._id, data })).unwrap();
         toast.success(t('rivalAnalysis.form.updateSuccess', 'Análisis actualizado'));
@@ -548,18 +605,16 @@ export default function AnalysisFormModal({
       const hasVideoId = !!value?.videoId;
       const hasInlineUrl = !!value?.url;
       const hasAny = hasVideoId || hasInlineUrl;
-      const playUrl = hasVideoId
-        ? getVideoStreamUrl(value.videoId)
-        : hasInlineUrl
-        ? value.url
-        : '';
+      const playUrl = hasInlineUrl ? value.url : '';
       body = (
         <Stack $gap={6}>
           {hasAny ? (
-            <VideoThumb type="button" onClick={() => setVideoViewerUrl(playUrl)}>
-              {/* preload="metadata" hace que el navegador pinte el primer
-                  frame como póster sin descargar todo el vídeo */}
-              <video src={playUrl} preload="metadata" muted playsInline />
+            <VideoThumb type="button" onClick={() => hasVideoId ? openVideoViewer(value.videoId) : setVideoViewerUrl(playUrl)}>
+              {hasInlineUrl ? (
+                <video src={playUrl} preload="metadata" muted playsInline />
+              ) : (
+                <MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />
+              )}
               <PlayOverlay theme={theme}>
                 <MdPlayCircle size={56} />
               </PlayOverlay>
@@ -822,19 +877,24 @@ export default function AnalysisFormModal({
 
       {/* Reproductor del vídeo guardado: se abre al pulsar la miniatura */}
       <Modal
-        open={!!videoViewerUrl}
-        onClose={() => setVideoViewerUrl('')}
+        open={!!videoViewerUrl || videoViewerLoading}
+        onClose={() => { setVideoViewerUrl(''); setVideoViewerLoading(false); }}
         title={t('rivalAnalysis.form.videoPreview', 'Vídeo')}
         width={760}
       >
-        {videoViewerUrl && (
+        {videoViewerLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: theme.colors.textSecondary }}>
+            {t('rivalAnalysis.form.loadingVideo', 'Generando vídeo…')}
+          </div>
+        ) : videoViewerUrl ? (
           <video
+            key={videoViewerUrl}
             src={videoViewerUrl}
             controls
             autoPlay
             style={{ width: '100%', maxHeight: '70vh', borderRadius: 6 }}
           />
-        )}
+        ) : null}
       </Modal>
     </>
   );

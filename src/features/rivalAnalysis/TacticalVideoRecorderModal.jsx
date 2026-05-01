@@ -75,6 +75,15 @@ const Stage = styled.div`
   background: ${({ theme }) => theme.colors.background};
 `;
 
+const LoadingState = styled.div`
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+`;
+
 const fillStyle = { flex: 1, width: '100%', height: '100%' };
 
 export default function TacticalVideoRecorderModal({
@@ -92,10 +101,11 @@ export default function TacticalVideoRecorderModal({
   const onSavedRef = useRef(onSaved);
   const onCloseRef = useRef(onClose);
   const onErrorRef = useRef(onError);
-  // Carpeta resuelta async. La resolvemos en background y la pasamos a Field
-  // cuando esté lista; mientras tanto el grabador usa la raíz (selectedFolderId
-  // queda en null hasta que llegue el preset).
+  const folderIdRef = useRef(null);
+  // Carpeta resuelta async. Montamos Field cuando esté lista para que el
+  // grabador guarde directamente dentro de Mis Videos / Análisis Rival / Rival.
   const [folderId, setFolderId] = useState(null);
+  const [folderReady, setFolderReady] = useState(false);
 
   useEffect(() => {
     onSavedRef.current = onSaved;
@@ -103,23 +113,28 @@ export default function TacticalVideoRecorderModal({
     onErrorRef.current = onError;
   });
 
+  useEffect(() => {
+    folderIdRef.current = folderId;
+  }, [folderId]);
+
   // Auto-naming: "Análisis Rival - <Rival> - <Pregunta>"
   const presetVideoName = useMemo(() => {
-    const root = t('rivalAnalysis.folderName', 'Análisis Rival');
+    const root = t('menu.rivalAnalysis', 'Análisis Rival');
     const parts = [root, rivalName?.trim(), questionText?.trim()].filter(Boolean);
     return parts.join(' - ');
   }, [t, rivalName, questionText]);
 
-  // Resolver la carpeta de destino al abrir (no bloquea el render del Field).
+  // Resolver la carpeta de destino antes de montar Field, igual que en móvil.
   useEffect(() => {
     if (!open) {
       setFolderId(null);
+      setFolderReady(false);
       return undefined;
     }
     let cancelled = false;
     (async () => {
       try {
-        const root = t('rivalAnalysis.folderName', 'Análisis Rival');
+        const root = t('menu.rivalAnalysis', 'Análisis Rival');
         const id = await ensureRivalAnalysisFolder({
           rootName: root,
           rivalName: rivalName?.trim() || t('rivalAnalysis.unknownRival', 'Sin rival'),
@@ -128,6 +143,8 @@ export default function TacticalVideoRecorderModal({
         if (!cancelled) setFolderId(id);
       } catch (err) {
         console.warn('[TacticalVideoRecorderModal] folder resolve failed:', err);
+      } finally {
+        if (!cancelled) setFolderReady(true);
       }
     })();
     return () => {
@@ -145,8 +162,14 @@ export default function TacticalVideoRecorderModal({
         onCloseRef.current?.();
       },
       onVideoSaved: (videoId) => {
+        const currentFolderId = folderIdRef.current;
         try {
-          if (videoId) onSavedRef.current?.(videoId);
+          if (videoId) {
+            onSavedRef.current?.(videoId, {
+              folderId: currentFolderId,
+              rivalFolder: currentFolderId,
+            });
+          }
         } finally {
           onCloseRef.current?.();
         }
@@ -191,21 +214,27 @@ export default function TacticalVideoRecorderModal({
         </Close>
       </Header>
       <Stage theme={theme}>
-        <SafeAreaProvider style={fillStyle}>
-          <GestureHandlerRootView style={fillStyle}>
-            {/* Mismo patrón que `pages/TacticalBoard.jsx`: Field con props
-                directas. `mergedParams` (field.js:8097) las acepta sin
-                necesidad de override de NavigationContext. */}
-            <Field
-              sandbox
-              autoOpenVideoRecorder
-              hideFolderPicker
-              presetFolderId={folderId}
-              presetVideoName={presetVideoName}
-              initialFieldType={initialFieldType}
-            />
-          </GestureHandlerRootView>
-        </SafeAreaProvider>
+        {folderReady ? (
+          <SafeAreaProvider style={fillStyle}>
+            <GestureHandlerRootView style={fillStyle}>
+              {/* Mismo patrón que `pages/TacticalBoard.jsx`: Field con props
+                  directas. `mergedParams` (field.js:8097) las acepta sin
+                  necesidad de override de NavigationContext. */}
+              <Field
+                sandbox
+                autoOpenVideoRecorder
+                hideFolderPicker
+                presetFolderId={folderId}
+                presetVideoName={presetVideoName}
+                initialFieldType={initialFieldType}
+              />
+            </GestureHandlerRootView>
+          </SafeAreaProvider>
+        ) : (
+          <LoadingState theme={theme}>
+            {t('rivalAnalysis.form.preparingRecorder', 'Preparando carpeta de vídeo...')}
+          </LoadingState>
+        )}
       </Stage>
     </Overlay>,
     document.body

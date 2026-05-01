@@ -15,9 +15,6 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,10 +25,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { 
   listVideos as apiListVideos,
   deleteVideo as apiDeleteVideo,
-  regenerateVideoWithField,
-  getVideoDownloadUrl,
-  getVideoStreamUrl,
-  getReadyDownloadUrl,
   createVideoFolder,
   listVideoFolders,
   getVideoFolderById,
@@ -48,6 +41,7 @@ import {
   duplicateVideoForEdit,
   listGlobalVideos,
 } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 
@@ -60,6 +54,7 @@ export default function MyVideos() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingAction, setLoadingAction] = useState('video');
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
   const [filter, setFilter] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
@@ -476,67 +471,14 @@ export default function MyVideos() {
 
   const viewVideo = async (video) => {
     try {
+      setLoadingAction('video');
       setIsGenerating(true);
       setSelectedVideo(video);
-      
-      // Si el video tiene URL de R2, reproducir directamente sin servidor
-      if (video.videoUrl) {
-        // Verificar que el archivo existe en R2 (puede que aún esté subiendo)
-        try {
-          const headResp = await fetch(video.videoUrl, { method: 'HEAD' });
-          if (headResp.ok) {
-            setVideoUrl(video.videoUrl);
-            setShowPreviewModal(true);
-            setIsGenerating(false);
-            return;
-          }
-        } catch {}
-        // R2 aún no disponible, esperar un momento y reintentar una vez
-        await new Promise(r => setTimeout(r, 2000));
-        try {
-          const retryResp = await fetch(video.videoUrl, { method: 'HEAD' });
-          if (retryResp.ok) {
-            setVideoUrl(video.videoUrl);
-            setShowPreviewModal(true);
-            setIsGenerating(false);
-            return;
-          }
-        } catch {}
-      }
 
-      // Fallback: regenerar en el servidor para videos antiguos sin R2
-      const result = await regenerateVideoWithField(
-        video.id || video._id,
-        null
-      );
-      
-      if (result.success && result.videoId) {
-        const streamUrl = getVideoStreamUrl(result.videoId);
-        try {
-          let ok = false;
-          try {
-            const headResp = await fetch(streamUrl, { method: 'HEAD' });
-            ok = headResp && (headResp.status === 200 || headResp.status === 206 || headResp.ok);
-          } catch (headErr) {
-            console.warn('HEAD request failed, trying range GET', headErr);
-          }
-
-          if (!ok) {
-            const rangeResp = await fetch(streamUrl, { method: 'GET', headers: { Range: 'bytes=0-1023' } });
-            ok = rangeResp && (rangeResp.status === 200 || rangeResp.status === 206 || rangeResp.ok);
-          }
-
-          if (!ok) throw new Error('Stream inaccesible');
-
-          setVideoUrl(streamUrl);
-          setShowPreviewModal(true);
-        } catch (err) {
-          console.error('Stream no accesible:', err);
-          showNotification(t('myVideos.videoStillUploading') || 'El video aún se está subiendo, intenta de nuevo en unos segundos', 'error');
-        }
-      } else {
-        showNotification(t('myVideos.videoStillUploading') || 'El video aún se está subiendo, intenta de nuevo en unos segundos', 'error');
-      }
+      const resolvedUrl = await resolvePlayableVideoUrl(video);
+      if (!resolvedUrl) throw new Error('No se pudo resolver la URL del vídeo');
+      setVideoUrl(resolvedUrl);
+      setShowPreviewModal(true);
     } catch (error) {
       console.error('Error cargando video:', error);
       showNotification('No se pudo cargar el video', 'error');
@@ -545,58 +487,19 @@ export default function MyVideos() {
     }
   };
 
-  const downloadVideo = async (videoId, videoUrl = null) => {
+  const downloadVideo = async (videoOrId, videoUrl = null) => {
     try {
+      setLoadingAction('download');
       setIsGenerating(true);
-
-      // Usar R2 URL directamente si disponible, sino regenerar en servidor
-      const downloadUrl = videoUrl || await getReadyDownloadUrl(videoId);
-      const fileName = `video_${Date.now()}.mp4`;
-      const fileUri = FileSystem.documentDirectory + fileName;
-
       showNotification('Descargando video...', 'success');
-
-      const downloadResumable = FileSystem.createDownloadResumable(
-        downloadUrl,
-        fileUri,
-        {},
-        (downloadProgress) => {
-          const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-        }
-      );
-
-      const result = await downloadResumable.downloadAsync();
-      
-      if (!result || !result.uri) {
-        throw new Error('No se pudo descargar el archivo');
-      }
-
-      if (Platform.OS === 'android') {
-        try {
-          const asset = await MediaLibrary.createAssetAsync(result.uri);
-          await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          showNotification(t ? t('video.savedToGallery') : i18n.t('video.savedToGallery'), 'success');
-        } catch (saveErr) {
-          const isAvailable = await Sharing.isAvailableAsync();
-          if (isAvailable) {
-            await Sharing.shareAsync(result.uri, { mimeType: 'video/mp4' });
-          } else {
-            throw saveErr;
-          }
-        }
-      } else {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          showNotification('Se necesitan permisos para guardar en galería', 'error');
-          return;
-        }
-        const asset = await MediaLibrary.createAssetAsync(result.uri);
-        await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        showNotification(t ? t('video.savedToGallery') : i18n.t('video.savedToGallery'), 'success');
-      }
+      const video = typeof videoOrId === 'object' && videoOrId
+        ? videoOrId
+        : { id: videoOrId, videoUrl };
+      await downloadResolvedVideo(video, video.nombre || `video_${Date.now()}`);
+      showNotification(t('myVideos.downloadStarted') || 'Descarga iniciada', 'success');
     } catch (error) {
       console.error('Error descargando video:', error);
-      showNotification(t ? t('video.saveFailed') : i18n.t('video.saveFailed'), 'error');
+      showNotification(t('myVideos.downloadError') || 'No se pudo descargar el vídeo', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -949,7 +852,7 @@ export default function MyVideos() {
                 style={styles.actionOption}
                 onPress={() => {
                   setMenuVisible(false);
-                  if (menuVideo) downloadVideo(menuVideo._id || menuVideo.id, menuVideo.videoUrl);
+                  if (menuVideo) downloadVideo(menuVideo);
                 }}
               >
                 <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
@@ -1620,11 +1523,11 @@ export default function MyVideos() {
               <TouchableOpacity
                 style={styles.previewAction}
                 onPress={() => {
-                  if (selectedVideo) downloadVideo(selectedVideo._id || selectedVideo.id, selectedVideo.videoUrl);
+                  if (selectedVideo) downloadVideo(selectedVideo);
                 }}
               >
                 <Feather name="download" size={20} color="#fff" />
-                <Text style={styles.previewActionText}>{t('myVideos.save')}</Text>
+                <Text style={styles.previewActionText}>{t('myVideos.download', 'Descargar')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1636,8 +1539,16 @@ export default function MyVideos() {
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color="#6366F1" />
-            <Text style={styles.loadingTitle}>{t('myVideos.downloading')}</Text>
-            <Text style={styles.loadingSubtitle}>{t('myVideos.downloadingSubtitle')}</Text>
+            <Text style={styles.loadingTitle}>
+              {loadingAction === 'download'
+                ? t('myVideos.downloading')
+                : t('myVideos.loadingVideo', 'Cargando vídeo...')}
+            </Text>
+            <Text style={styles.loadingSubtitle}>
+              {loadingAction === 'download'
+                ? t('myVideos.downloadingSubtitle')
+                : t('myVideos.loadingVideoSubtitle', 'Preparando reproducción...')}
+            </Text>
           </View>
         </View>
       </Modal>

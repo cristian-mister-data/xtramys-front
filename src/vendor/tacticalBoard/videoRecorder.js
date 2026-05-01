@@ -369,6 +369,12 @@ export default function VideoRecorder({
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [videoNombre, setVideoNombre] = useState(editingVideoName || '');
   const [videoDescripcion, setVideoDescripcion] = useState(editingVideoDescription || '');
+
+  useEffect(() => {
+    if (editingVideoName) {
+      setVideoNombre((current) => current || editingVideoName);
+    }
+  }, [editingVideoName]);
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
   const notificationAnim = useRef(new Animated.Value(0)).current;
   const [currentVideoId, setCurrentVideoId] = useState(null);
@@ -428,6 +434,13 @@ export default function VideoRecorder({
   // Estado para selección de carpeta
   const [allFolders, setAllFolders] = useState([]);
   const [selectedFolderId, setSelectedFolderId] = useState(presetFolderId || editingVideoFolderId);
+
+  useEffect(() => {
+    const preferredFolderId = presetFolderId || editingVideoFolderId || null;
+    if (preferredFolderId) {
+      setSelectedFolderId(preferredFolderId);
+    }
+  }, [presetFolderId, editingVideoFolderId]);
   
   // Estados para crear carpeta
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
@@ -989,8 +1002,9 @@ export default function VideoRecorder({
       if (result.success) {
         const savedVideoId = result.video?._id || result.video?.id || result.videoId;
         
-        // Subir MP4 a R2 completamente en segundo plano (fire-and-forget)
-        // El archivo local se limpia DESPUÉS de que la subida termine (o falle)
+        // Subir el vídeo generado a R2. En web esperamos a que termine para
+        // que Mis Vídeos y Análisis Rival ya tengan una URL reproducible.
+        // En móvil se mantiene fire-and-forget como antes.
         const videoPathToUpload = localVideoPath;
         if (videoPathToUpload && savedVideoId) {
           // Marcar como "subiendo" ANTES de limpiar el state para que el useEffect
@@ -998,16 +1012,15 @@ export default function VideoRecorder({
           uploadingPathRef.current = videoPathToUpload;
           setLocalVideoPath(null);
           
-          (async () => {
+          const uploadSavedVideo = async () => {
             try {
               // Verificar que el archivo existe antes de intentar subir
               const exists = await RNFS.exists(videoPathToUpload);
               if (!exists) {
-                console.warn('R2 upload: archivo local no existe:', videoPathToUpload);
-                return;
+                throw new Error(`R2 upload: archivo local no existe: ${videoPathToUpload}`);
               }
               
-              // Proxy upload: envía el MP4 al backend, que lo sube a R2
+              // Proxy upload: envía el vídeo al backend, que lo sube a R2
               // Evita problemas de conectividad directa con R2 (IPv6, etc.)
               let uploadOk = false;
               let key = null;
@@ -1026,20 +1039,25 @@ export default function VideoRecorder({
               }
               
               if (uploadOk && key) {
-                await apiUpdateVideo(savedVideoId, { r2Key: key }).catch(e =>
-                  console.warn('R2 upload ok pero falló guardar r2Key:', e.message)
-                );
+                await apiUpdateVideo(savedVideoId, { r2Key: key });
                 console.log('R2 upload completado:', key);
               } else {
-                console.warn('R2 upload falló tras 2 intentos');
+                throw new Error('R2 upload falló tras 2 intentos');
               }
             } catch (err) {
               console.warn('R2 background upload failed:', err.message);
+              if (Platform.OS === 'web') throw err;
             } finally {
               uploadingPathRef.current = null;
               RNFS.unlink(videoPathToUpload).catch(() => {});
             }
-          })();
+          };
+
+          if (Platform.OS === 'web') {
+            await uploadSavedVideo();
+          } else {
+            uploadSavedVideo();
+          }
         } else if (localVideoPath) {
           // No hay savedVideoId, limpiar archivo local
           RNFS.unlink(localVideoPath).catch(() => {});
@@ -1098,7 +1116,7 @@ export default function VideoRecorder({
     }
   };
 
-  // Descargar video (guardar archivo local en galería)
+  // Descargar video
   const downloadVideo = async () => {
     if (!localVideoPath) {
       showNotification(t('videoRecorder.noVideoToDownload'), 'error');
@@ -1107,7 +1125,7 @@ export default function VideoRecorder({
 
     try {
       setIsGenerating(true);
-      showNotification('Guardando video...', 'success');
+      showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
 
       if (Platform.OS === 'android') {
         try {
@@ -1115,7 +1133,7 @@ export default function VideoRecorder({
           await MediaLibrary.createAlbumAsync('xtramys', asset, false);
           setShowPreviewScreen(false);
           setShowSaveModal(false);
-          setTimeout(() => showNotification(t ? t('video.savedToGallery') : i18n.t('video.savedToGallery'), 'success'), 150);
+          setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
         } catch (saveErr) {
           const isAvailable = await Sharing.isAvailableAsync();
           if (isAvailable) {
@@ -1132,18 +1150,18 @@ export default function VideoRecorder({
       } else {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          showNotification('Se necesitan permisos para guardar en galería', 'error');
+          showNotification(t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo', 'error');
           return;
         }
         const asset = await MediaLibrary.createAssetAsync(localVideoPath);
         await MediaLibrary.createAlbumAsync('xtramys', asset, false);
         setShowPreviewScreen(false);
         setShowSaveModal(false);
-        setTimeout(() => showNotification(t ? t('video.savedToGallery') : i18n.t('video.savedToGallery'), 'success'), 150);
+        setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
       }
     } catch (error) {
-      console.error('Error guardando video:', error);
-      showNotification(t ? t('video.saveFailed') : i18n.t('video.saveFailed'), 'error');
+      console.error('Error descargando video:', error);
+      showNotification(t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -1197,7 +1215,7 @@ export default function VideoRecorder({
     setShowSaveModal(false);
     setVideoNombre('');
     setVideoDescripcion('');
-    setSelectedFolderId(null); // Resetear carpeta seleccionada
+    setSelectedFolderId(presetFolderId || editingVideoFolderId || null);
     setShowPreviewScreen(true); // Volver a la pantalla de preview
   };
 
@@ -1297,6 +1315,10 @@ export default function VideoRecorder({
   const handlePreviewSave = useCallback(async () => {
     setShowPreviewScreen(false);
     setShowSaveModal(true);
+    if (!videoNombre.trim() && editingVideoName) {
+      setVideoNombre(editingVideoName);
+    }
+    setSelectedFolderId(presetFolderId || editingVideoFolderId || null);
     try {
       const lang = i18n.language;
       const result = await getAllVideoFoldersFlat(lang);
@@ -1310,7 +1332,7 @@ export default function VideoRecorder({
     } catch (error) {
       console.error('Error cargando carpetas:', error);
     }
-  }, [shouldBeGlobal]);
+  }, [shouldBeGlobal, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre]);
 
   const handlePreviewDownload = useCallback(() => {
     downloadVideo();
