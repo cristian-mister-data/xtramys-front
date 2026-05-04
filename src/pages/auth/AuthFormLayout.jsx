@@ -105,7 +105,6 @@ export function AuthFormShell({ children, maxWidth = '480px', compact = false, s
         <LogoWrapper $compact={compact}>
           <LogoImage src={xtramysLogo} alt="Xtramys" $compact={compact} />
         </LogoWrapper>
-        {showBrandName && <BrandName $compact={compact}>Xtramys</BrandName>}
       </LogoHeader>
       <AuthCard $maxWidth={maxWidth} $compact={compact}>{children}</AuthCard>
     </Shell>

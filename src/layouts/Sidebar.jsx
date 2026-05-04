@@ -268,8 +268,6 @@ export default function Sidebar({ open, onClose }) {
             <img src={xtramysLogo} alt="Xtramys" />
           </LogoBox>
           <BrandText>
-            <BrandTitle>Xtramys</BrandTitle>
-            <BrandSub>Mister Data</BrandSub>
           </BrandText>
         </Brand>
 
