@@ -255,7 +255,7 @@ function FullscreenStep({
             <MdArrowBack size={20} />
           </IconButton>
           {!isLast ? (
-            <TextButton type="button" onClick={onSkip}>
+            <TextButton type="button" style={{ color: '#ffffff' }} onClick={onSkip}>
               {t('tutorial.skip')}
             </TextButton>
           ) : (

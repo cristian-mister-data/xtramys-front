@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   },
   tooltipBackText: { fontSize: 13, fontWeight: '600', color: THEME.primary },
   tooltipSkipBtn: { paddingVertical: 8, paddingHorizontal: 10 },
-  tooltipSkipText: { fontSize: 13, color: '#94a3b8', fontWeight: '600' },
+  tooltipSkipText: { fontSize: 13, color: '#ffffff', fontWeight: '600' },
   tooltipNextBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10,
