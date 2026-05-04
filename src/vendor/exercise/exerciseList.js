@@ -164,7 +164,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       
       if (result.success && result.videoId) {
         const downloadUrl = getVideoDownloadUrl(result.videoId);
-        const fileName = `${video.nombre || t('exercise.video')}_${Date.now()}.mp4`;
+        const fileName = `${video.nombre || t('exercise.video')}.mp4`;
         const fileUri = FileSystem.documentDirectory + fileName;
         
         const downloadResumable = FileSystem.createDownloadResumable(

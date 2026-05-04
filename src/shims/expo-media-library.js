@@ -6,12 +6,13 @@
  * del browser (anchor `download`) usando el blob URL que produce nuestro
  * MediaRecorder en `videoUtils.js`. Soportamos también `data:` URLs.
  */
+import { getBlobFilename } from './expo-file-system.js';
 export const PermissionStatus = { GRANTED: 'granted', DENIED: 'denied', UNDETERMINED: 'undetermined' };
 export async function requestPermissionsAsync() { return { status: PermissionStatus.GRANTED, granted: true }; }
 export async function getPermissionsAsync() { return { status: PermissionStatus.GRANTED, granted: true }; }
 
 function inferExtensionFromUri(uri) {
-  if (!uri) return 'webm';
+  if (!uri) return 'mp4';
   if (uri.startsWith('data:')) {
     const match = /^data:([^;,]+)/.exec(uri);
     const mime = match ? match[1] : '';
@@ -24,7 +25,9 @@ function inferExtensionFromUri(uri) {
   // blob: o http(s) — buscamos extensión "real"
   const m = /\.([a-z0-9]{2,5})(?:\?|#|$)/i.exec(uri);
   if (m) return m[1].toLowerCase();
-  return 'webm';
+  // Para blob URLs sin extensión en el path (caso habitual en descargas de video)
+  // por defecto usamos mp4 ya que todos los videos del backend son MP4.
+  return 'mp4';
 }
 
 async function triggerBrowserDownload(uri, filename) {
@@ -56,7 +59,8 @@ export async function saveToLibraryAsync(uri) {
 }
 
 export async function createAssetAsync(uri) {
-  await triggerBrowserDownload(uri);
+  const filename = getBlobFilename(uri) || null;
+  await triggerBrowserDownload(uri, filename);
   return { id: 'web', uri, mediaType: uri && /\.(mp4|webm|mov)$/i.test(uri) ? 'video' : 'unknown' };
 }
 

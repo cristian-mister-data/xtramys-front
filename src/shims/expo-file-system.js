@@ -103,11 +103,19 @@ export async function downloadAsync(remoteUri, localUri) {
   });
 }
 
+// Map global: blobUrl → filename. Permite que expo-media-library recupere
+// el nombre de archivo original que el código vendor proporcionó en _localUri.
+export const _blobFilenames = new Map();
+export function getBlobFilename(blobUrl) {
+  return _blobFilenames.get(blobUrl) || null;
+}
+
 /**
  * Shim de FileSystem.createDownloadResumable. En nativo descarga a un fichero
  * local con progreso. En web hacemos `fetch` → blob URL para que el código
  * vendor (myVideos.downloadVideo, etc.) pueda pasar `result.uri` a
  * MediaLibrary.createAssetAsync, que dispara la descarga real del browser.
+ * Los videos WebM se convierten automáticamente a MP4 antes de entregar la URL.
  */
 export function createDownloadResumable(remoteUri, _localUri, _options, onProgress) {
   let cancelled = false;
@@ -139,9 +147,21 @@ export function createDownloadResumable(remoteUri, _localUri, _options, onProgre
       } else {
         blob = await r.blob();
       }
+      // Convertir WebM a MP4 si es necesario
+      try {
+        const { ensureMp4Blob } = await import('@/utils/videoUtils');
+        blob = await ensureMp4Blob(blob);
+      } catch (e) {
+        console.warn('[expo-file-system shim] ensureMp4Blob import failed', e);
+      }
       const url = (typeof URL !== 'undefined' && URL.createObjectURL)
         ? URL.createObjectURL(blob)
         : remoteUri;
+      // Guardar el nombre de archivo para que MediaLibrary pueda usarlo
+      if (url && url.startsWith('blob:') && _localUri) {
+        const filename = String(_localUri).replace(/^.*\//, '');
+        if (filename) _blobFilenames.set(url, filename);
+      }
       return { uri: url, status: r.status, headers: {} };
     },
     async pauseAsync() { /* no-op web */ },

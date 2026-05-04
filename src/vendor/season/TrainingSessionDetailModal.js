@@ -337,6 +337,14 @@ export default function TrainingSessionDetailModal({
     setExerciseForVideo(null);
   };
 
+  const modalImageWidth = Math.round(screenWidth * 0.95);
+  const modalImageHeight = Math.round(screenHeight * 0.8);
+  const modalImageCenter = {
+    x: Math.round(modalImageWidth / 2),
+    y: Math.round(modalImageHeight / 2),
+    scale: 1,
+  };
+
   // Función para descargar video
   const downloadVideo = async () => {
     if (!selectedVideo?._id) return;
@@ -345,7 +353,7 @@ export default function TrainingSessionDetailModal({
       setIsDownloading(true);
 
       const downloadUrl = getVideoDownloadUrl(selectedVideo._id);
-      const fileName = `video_${Date.now()}.mp4`;
+      const fileName = `${selectedVideo.nombre || 'video'}.mp4`;
       const fileUri = FileSystem.documentDirectory + fileName;
 
       const downloadResumable = FileSystem.createDownloadResumable(
@@ -906,9 +914,11 @@ export default function TrainingSessionDetailModal({
             <ImageZoom
               cropWidth={screenWidth}
               cropHeight={screenHeight}
-              imageWidth={screenWidth * 0.95}
-              imageHeight={screenHeight * 0.8}
+              imageWidth={modalImageWidth}
+              imageHeight={modalImageHeight}
+              style={styles.imageZoomWrapper}
               enableCenterFocus={true}
+              centerOn={modalImageCenter}
               minScale={1}
               maxScale={4}
               enableSwipeDown={true}
@@ -920,7 +930,7 @@ export default function TrainingSessionDetailModal({
                     ? `${selectedImage}?t=${Date.now()}`
                     : `data:image/png;base64,${selectedImage}`
                 }}
-                style={styles.fullImage}
+                style={[styles.fullImage, { alignSelf: 'center' }]}
                 resizeMode="contain"
               />
             </ImageZoom>
@@ -1491,6 +1501,12 @@ const makeStyles = (theme) => StyleSheet.create({
     width: '95%',
     height: '80%',
     borderRadius: 12,
+  },
+  imageZoomWrapper: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // Estilos para botón de video en ejercicio (brand pink kept literal)

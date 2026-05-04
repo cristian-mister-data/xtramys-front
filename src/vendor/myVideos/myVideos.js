@@ -518,7 +518,7 @@ export default function MyVideos() {
       const video = typeof videoOrId === 'object' && videoOrId
         ? videoOrId
         : { id: videoOrId, videoUrl };
-      await downloadResolvedVideo(video, video.nombre || `video_${Date.now()}`);
+      await downloadResolvedVideo(video, video.nombre || 'video');
       showNotification(t('myVideos.downloadStarted') || 'Descarga iniciada', 'success');
     } catch (error) {
       console.error('Error descargando video:', error);

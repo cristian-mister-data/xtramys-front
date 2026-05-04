@@ -22,6 +22,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Asset } from 'expo-asset';
+import { ensureMp4Blob } from '@/utils/videoUtils';
 import {
   getStrengthExerciseImage,
   getStrengthExerciseVideoUrl,
@@ -161,7 +162,12 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
         const remoteUrl = getStrengthExerciseVideoUrl(exercise);
         const res = await fetch(remoteUrl);
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const blob = await res.blob();
+        let blob = await res.blob();
+        try {
+          blob = await ensureMp4Blob(blob);
+        } catch (conversionError) {
+          console.warn('StrengthExerciseViewer: no se pudo convertir a MP4, usando blob original', conversionError);
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

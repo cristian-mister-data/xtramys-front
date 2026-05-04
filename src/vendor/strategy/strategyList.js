@@ -172,7 +172,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete }) {
       
       if (result.success && result.videoId) {
         const downloadUrl = getVideoDownloadUrl(result.videoId);
-        const fileName = `${video.nombre || 'video'}_${Date.now()}.mp4`;
+        const fileName = `${video.nombre || 'video'}.mp4`;
         const fileUri = FileSystem.documentDirectory + fileName;
         
         const downloadResumable = FileSystem.createDownloadResumable(

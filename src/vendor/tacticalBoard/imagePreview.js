@@ -38,7 +38,7 @@ export default function Base64ImagePreview({
           alignSelf: 'center',
           borderRadius: 12,
           overflow: 'hidden',
-          backgroundColor: "green",
+          backgroundColor: '#000',
           elevation: 3,
           justifyContent: 'center',
           alignItems: 'center',
@@ -46,12 +46,13 @@ export default function Base64ImagePreview({
       ];
 
   const imageCustomStyle = style
-    ? [style, { resizeMode: style?.resizeMode || 'contain' }]
+    ? [style, { resizeMode: style?.resizeMode || 'contain', alignSelf: 'center' }]
     : [
         {
-          width: forceWidth ? forceWidth : imageWidth,
-          height: forceHeight ? forceHeight : imageHeight,
+          width: '100%',
+          height: '100%',
           resizeMode: 'contain',
+          alignSelf: 'center',
         },
       ];
 

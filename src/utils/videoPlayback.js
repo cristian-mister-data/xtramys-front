@@ -1,4 +1,5 @@
 import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
+import { ensureMp4Blob } from '@/utils/videoUtils';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -67,9 +68,15 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
       const text = await response.text().catch(() => '');
       throw new Error(text || 'La respuesta descargada no es un vídeo válido');
     }
-    const blob = await response.blob();
+    let blob = await response.blob();
     if (!blob || blob.size === 0) {
       throw new Error('El vídeo descargado está vacío');
+    }
+    // Convertir WebM→MP4 si es necesario
+    try {
+      blob = await ensureMp4Blob(blob);
+    } catch (e) {
+      console.warn('[videoPlayback] ensureMp4Blob failed, using original blob', e);
     }
     extension = extensionFrom(blob.type || contentType, url);
     objectUrl = URL.createObjectURL(blob);

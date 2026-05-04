@@ -3,11 +3,71 @@
 // (globalThis.__rnfsFrames). Acá los leemos en orden, los pintamos en
 // un canvas a SPEED_TO_FPS[speed] y grabamos a webm via MediaRecorder.
 //
+// Si el browser graba WebM, se usa FFmpeg.wasm para recodificar a MP4 H.264.
 // `outputPath` devuelto es una blob URL (`blob:http://...`). El shim de
 // RNFS la trata como entrada válida en unlink (URL.revokeObjectURL).
 
 import { SPEED_TO_FPS } from '@/constants/video';
 import RNFS from 'react-native-fs';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
+let _ffmpegInstance = null;
+let _ffmpegLoading = null;
+
+async function getFFmpeg() {
+  if (_ffmpegInstance) return _ffmpegInstance;
+  if (_ffmpegLoading) return _ffmpegLoading;
+  _ffmpegLoading = (async () => {
+    const ff = new FFmpeg();
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+    await ff.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    _ffmpegInstance = ff;
+    return ff;
+  })();
+  return _ffmpegLoading;
+}
+
+// Convierte un blob WebM a MP4 H.264 usando FFmpeg.wasm
+async function webmToMp4(webmBlob) {
+  const ff = await getFFmpeg();
+  const inputName = 'input.webm';
+  const outputName = 'output.mp4';
+  await ff.writeFile(inputName, await fetchFile(webmBlob));
+  await ff.exec([
+    '-i', inputName,
+    '-c:v', 'libx264',
+    '-preset', 'fast',
+    '-crf', '23',
+    '-movflags', '+faststart',
+    '-an',
+    outputName,
+  ]);
+  const data = await ff.readFile(outputName);
+  await ff.deleteFile(inputName).catch(() => {});
+  await ff.deleteFile(outputName).catch(() => {});
+  return new Blob([data.buffer], { type: 'video/mp4' });
+}
+
+/**
+ * Garantiza que un Blob de video sea MP4. Si es WebM lo convierte con FFmpeg.
+ * Si FFmpeg falla, devuelve el blob original con warning.
+ * Exportado para uso en el shim de expo-file-system.
+ */
+export async function ensureMp4Blob(blob) {
+  const type = blob?.type || '';
+  if (type.includes('mp4')) return blob;
+  // Intentar convertir si es webm o tipo desconocido
+  try {
+    return await webmToMp4(blob);
+  } catch (e) {
+    console.warn('[ensureMp4Blob] FFmpeg conversion failed, returning original blob', e);
+    return blob;
+  }
+}
 
 export const warmUpFFmpeg = () => {};
 
@@ -129,13 +189,29 @@ export const generateVideo = async (framesDir, frameCount, speed = 1) => {
   recorder.stop();
   await stopped;
 
-  const blob = new Blob(chunks, { type: mime || 'video/webm' });
-  const outputPath = URL.createObjectURL(blob);
+  const rawMime = mime || 'video/webm';
+  const rawBlob = new Blob(chunks, { type: rawMime });
 
-  // Limpiar frames del store
+  // Limpiar frames del store antes de la conversión
   for (const k of keys) store.delete(k);
 
-  return { outputPath, frameCount: keys.length, mimeType: mime || 'video/webm' };
+  // Si el browser grabó WebM, recodificamos a MP4 con FFmpeg.wasm
+  const isWebm = !rawMime.includes('mp4');
+  let finalBlob = rawBlob;
+  let finalMime = rawMime;
+  if (isWebm) {
+    try {
+      finalBlob = await webmToMp4(rawBlob);
+      finalMime = 'video/mp4';
+    } catch (e) {
+      console.warn('[videoUtils] FFmpeg WebM→MP4 failed, falling back to WebM', e);
+      finalBlob = rawBlob;
+      finalMime = rawMime;
+    }
+  }
+
+  const outputPath = URL.createObjectURL(finalBlob);
+  return { outputPath, frameCount: keys.length, mimeType: finalMime };
 };
 
 export const uploadToR2 = async () => {

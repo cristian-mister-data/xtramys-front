@@ -329,7 +329,7 @@ export default function ExerciseSelectorModal({
     try {
       setIsDownloading(true);
       const url = await getReadyDownloadUrl(selectedVideo._id);
-      const fileUri = FileSystem.documentDirectory + `video_${Date.now()}.mp4`;
+      const fileUri = FileSystem.documentDirectory + `${selectedVideo.nombre || 'video'}.mp4`;
       const dl = FileSystem.createDownloadResumable(url, fileUri, {}, () => {});
       const result = await dl.downloadAsync();
       if (!result?.uri) throw new Error('Download failed');
@@ -708,7 +708,7 @@ export default function ExerciseSelectorModal({
                     <Feather name="x" size={24} color="#fff" />
                   </TouchableOpacity>
                 </View>
-                <ScrollView contentContainerStyle={s.imageScroll} showsVerticalScrollIndicator={false}>
+                <ScrollView style={s.imageScrollWrapper} contentContainerStyle={s.imageScroll} showsVerticalScrollIndicator={false}>
                   <Base64ImagePreview
                     imageUrl={selectedImage}
                     forceWidth={Math.min(width - 64, 840)}
@@ -905,10 +905,11 @@ const makeS = (THEME) => StyleSheet.create({
 
   // Image preview modal
   imageBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center', padding: 16 },
-  imageContent: { width: '100%', maxHeight: '90%', backgroundColor: '#0f172a', borderRadius: 18, padding: 16 },
+  imageContent: { width: '100%', maxHeight: '90%', backgroundColor: '#0f172a', borderRadius: 18, padding: 16, alignItems: 'center' },
   imageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   imageTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
   imageCloseBtn: { padding: 6 },
+  imageScrollWrapper: { flex: 1, width: '100%' },
   imageScroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Video modal
