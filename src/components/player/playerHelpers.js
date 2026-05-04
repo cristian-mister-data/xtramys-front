@@ -1,4 +1,4 @@
-// Position metadata mirroring misterdata mobile app
+// Position metadata mirroring xtramys mobile app
 
 export const POSITION_VALUES = ['portero', 'lateral', 'central', 'centrocampista', 'extremo', 'delantero'];
 

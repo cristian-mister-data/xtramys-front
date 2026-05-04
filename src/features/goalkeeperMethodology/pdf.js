@@ -1,5 +1,5 @@
 // Generación de PDF para Metodología de Porteros (web).
-// Portado 1:1 desde misterdata-source/src/components/pages/goalkeeperMethodology/goalkeeperMethodology.js
+// Portado 1:1 desde xtramys-source/src/components/pages/goalkeeperMethodology/goalkeeperMethodology.js
 import * as Print from 'expo-print';
 import { savePdfToDownloads } from '../../utils/pdfDownload';
 import {

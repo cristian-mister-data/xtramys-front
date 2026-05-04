@@ -4309,7 +4309,7 @@
         },
         "steps": {
             "welcome": {
-                "title": "¡Bienvenido a MisterData!",
+                "title": "¡Bienvenido a xtramys!",
                 "description": "Tu asistente completo para gestionar tu equipo como un profesional. Vamos a recorrer juntos cada herramienta disponible.",
                 "b1": "Gestiona torneos, jugadores y entrenamientos",
                 "b2": "Crea ejercicios con vídeos desde la pizarra táctica",
@@ -4419,7 +4419,7 @@
             },
             "ready": {
                 "title": "¡Todo listo para empezar!",
-                "description": "Ya conoces todas las herramientas de MisterData. Empieza por crear una temporada y registrar tus jugadores. ¡Tu equipo está en buenas manos!"
+                "description": "Ya conoces todas las herramientas de xtramys. Empieza por crear una temporada y registrar tus jugadores. ¡Tu equipo está en buenas manos!"
             }
         }
     }

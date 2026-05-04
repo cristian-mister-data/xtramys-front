@@ -1,4 +1,4 @@
-// Estadísticas derivadas para la Home — fiel a misterdata mobile.
+// Estadísticas derivadas para la Home — fiel a xtramys mobile.
 
 const setStartOfDay = (d) => {
   const x = new Date(d);

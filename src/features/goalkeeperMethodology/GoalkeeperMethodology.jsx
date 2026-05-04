@@ -1,5 +1,5 @@
 // Página Metodología de Porteros — portada de
-// misterdata-source/src/components/pages/goalkeeperMethodology/goalkeeperMethodology.js
+// xtramys-source/src/components/pages/goalkeeperMethodology/goalkeeperMethodology.js
 // Mismo patrón que Methodology (selector + editable) pero estructura plana de planes (3/4/5 días).
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
