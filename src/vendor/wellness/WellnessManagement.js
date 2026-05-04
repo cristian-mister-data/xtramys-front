@@ -45,6 +45,8 @@ import {
   deletePreWellnessResponse,
   getWellnessRange,
   getPreWellnessRange,
+  getWellnessFormUrl,
+  getPreWellnessFormUrl,
 } from '@/utils/api';
 import { BACKEND_URL } from '@/config';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -368,8 +370,9 @@ export default function WellnessManagement({ navigation }) {
     if (!token) return;
     
     const currentLang = t('lang') === 'en' ? 'en' : 'es';
-    const endpoint = wellnessType === 'pre' ? 'prewellness/form' : 'api/wellness/form';
-    const link = `${BACKEND_URL}/${endpoint}/${token}?lang=${currentLang}`;
+    const link = wellnessType === 'pre'
+      ? getPreWellnessFormUrl(token, currentLang)
+      : getWellnessFormUrl(token, currentLang);
     const dateStr = selectedSession?.fecha 
       ? new Date(selectedSession.fecha).toLocaleDateString(currentLang === 'en' ? 'en-US' : 'es-ES') 
       : '';
@@ -391,8 +394,9 @@ export default function WellnessManagement({ navigation }) {
     if (!token) return;
     
     const currentLang = t('lang') === 'en' ? 'en' : 'es';
-    const endpoint = wellnessType === 'pre' ? 'prewellness/form' : 'api/wellness/form';
-    const link = `${BACKEND_URL}/${endpoint}/${token}?lang=${currentLang}`;
+    const link = wellnessType === 'pre'
+      ? getPreWellnessFormUrl(token, currentLang)
+      : getWellnessFormUrl(token, currentLang);
     await Clipboard.setStringAsync(link);
     Alert.alert(t('message.success'), t('session.linkCopied'));
   };
@@ -1043,8 +1047,11 @@ export default function WellnessManagement({ navigation }) {
       ? sessionWellnessData?.preWellnessLinkExpired === true
       : sessionWellnessData?.wellnessLinkExpired === true;
     const currentLang = t('lang') === 'en' ? 'en' : 'es';
-    const linkEndpoint = isPreWellness ? 'prewellness/form' : 'api/wellness/form';
-    const fullLink = token ? `${BACKEND_URL}/${linkEndpoint}/${token}?lang=${currentLang}` : '';
+    const fullLink = token
+      ? isPreWellness
+        ? getPreWellnessFormUrl(token, currentLang)
+        : getWellnessFormUrl(token, currentLang)
+      : '';
     const responses = sessionWellnessData?.responses || [];
     const average = isPreWellness
       ? sessionWellnessData?.averagePreWellness

@@ -17,6 +17,7 @@ import {
   toggleWellnessLink,
   deleteWellnessResponse,
 } from '@/api/wellness';
+import { getWellnessFormUrl } from '@/utils/api';
 
 const HeroCard = styled.div`
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary}, ${({ theme }) => theme.colors.primaryHover});
@@ -243,7 +244,7 @@ export default function WellnessDetailModal({
   const buildLink = () => {
     if (!data?.wellnessToken) return '';
     const lang = i18n.language === 'en' ? 'en' : 'es';
-    return `${BACKEND_URL}/api/wellness/form/${data.wellnessToken}?lang=${lang}`;
+    return getWellnessFormUrl(data.wellnessToken, lang);
   };
 
   const handleCopy = async () => {

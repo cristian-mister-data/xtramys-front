@@ -24,7 +24,7 @@ import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import api from '@/api/client';
-import { getWellnessTemplates } from '@/utils/api';
+import { getWellnessTemplates, getWellnessFormUrl } from '@/utils/api';
 import { BACKEND_URL } from '@/config';
 
 const isMobileDevice = () => {
@@ -180,7 +180,7 @@ export default function WellnessDetailModal({
     // Obtener idioma actual (i18n)
     const currentLang = i18n.language === 'en' ? 'en' : 'es';
     const locale = currentLang === 'en' ? 'en-US' : 'es-ES';
-    const link = `${BACKEND_URL}/api/wellness/form/${wellnessData.wellnessToken}?lang=${currentLang}`;
+    const link = getWellnessFormUrl(wellnessData.wellnessToken, currentLang);
     const dateStr = sessionDate ? new Date(sessionDate).toLocaleDateString(locale) : '';
     
     try {
@@ -199,7 +199,7 @@ export default function WellnessDetailModal({
     
     // Obtener idioma actual (i18n)
     const currentLang = t('lang') === 'en' ? 'en' : 'es';
-    const link = `${BACKEND_URL}/api/wellness/form/${wellnessData.wellnessToken}?lang=${currentLang}`;
+    const link = getWellnessFormUrl(wellnessData.wellnessToken, currentLang);
     await Clipboard.setStringAsync(link);
     Alert.alert(t('message.success'), t('session.linkCopied'));
   };
@@ -744,7 +744,7 @@ export default function WellnessDetailModal({
                       styles.linkText,
                       wellnessData?.wellnessLinkActive === false && styles.linkTextInactive
                     ]} numberOfLines={1}>
-                      {`${BACKEND_URL}/api/wellness/form/${wellnessData.wellnessToken}?lang=${t('lang') === 'en' ? 'en' : 'es'}`}
+                      {getWellnessFormUrl(wellnessData.wellnessToken, t('lang') === 'en' ? 'en' : 'es')}
                     </Text>
                     <View style={styles.linkActions}>
                       <TouchableOpacity 

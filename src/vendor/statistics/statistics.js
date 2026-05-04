@@ -1027,8 +1027,12 @@ playerStatsMap[p._id] = {
     }
 
     return (
-        <AppLayout scrollEnabled={false}>
-            <KeyboardAwareScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <AppLayout>
+            <KeyboardAwareScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Premium Header */}
                 <View style={styles.headerSection}>
                     <LinearGradient
@@ -1834,6 +1838,7 @@ playerStatsMap[p._id] = {
 const makeStyles = (theme) => StyleSheet.create({
     container: {
         flex: 1,
+        minHeight: '100%',
         backgroundColor: theme.colors.background,
     },
     loadingContainer: {
@@ -2104,6 +2109,10 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     contentContainer: {
         padding: isMobile ? 12 : 16,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: isMobile ? 24 : 32,
     },
     animateFadeIn: {
         opacity: 1,

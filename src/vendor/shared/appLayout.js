@@ -22,7 +22,7 @@ export default function AppLayout({ children, scrollEnabled = true, backgroundCo
   const bg = backgroundColor || theme?.colors?.background || '#f2f6fc';
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: bg, width: '100%' }}
+      style={{ flex: 1, minHeight: '100%', backgroundColor: bg, width: '100%' }}
       edges={['left', 'right', 'bottom']}
     >
       <KeyboardAvoidingView

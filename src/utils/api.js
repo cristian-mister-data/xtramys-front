@@ -4,7 +4,7 @@
 import * as videoApi from '@/api/video';
 import api, { apiBase } from '@/api/client';
 import { pollJobUntilDone } from '@/api/client';
-import { API_URL } from '@/config';
+import { API_URL, BACKEND_URL } from '@/config';
 export {
   generateVideo,
   getJobStatus,
@@ -323,8 +323,11 @@ export const getAllStrategies = async () => {
 export const getVideoStreamUrl = (videoId) => `${API_URL}/video/stream/${videoId}`;
 export const getVideoDownloadUrl = (videoId) => `${API_URL}/video/download/${videoId}`;
 export const getReadyDownloadUrl = (videoId) => `${API_URL}/video/download/${videoId}`;
-export const getPreWellnessFormUrl = (token) =>
-  `${window.location.origin}/public/pre-wellness/${token}`;
+export const getPreWellnessFormUrl = (token, lang = null) =>
+  `${BACKEND_URL}/prewellness/form/${token}${lang ? `?lang=${lang}` : ''}`;
+
+export const getWellnessFormUrl = (token, lang = null) =>
+  `${BACKEND_URL}/api/wellness/form/${token}${lang ? `?lang=${lang}` : ''}`;
 
 export const getSessionWellnessStats = async (sessionId) => {
   try {

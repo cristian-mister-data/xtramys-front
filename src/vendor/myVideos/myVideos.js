@@ -44,6 +44,7 @@ import {
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
 
 export default function MyVideos() {
   const navigation = useNavigation();
@@ -361,73 +362,33 @@ export default function MyVideos() {
   };
 
   // Abrir modal para asociar video a ejercicio/estrategia
-  const openLinkModal = async (type) => {
+  const openLinkModal = (type) => {
     setLinkType(type);
     setMenuVisible(false);
-    setLoadingItems(true);
-    setLinkSearchFilter('');
-    setSelectedItemId(null);
     setShowLinkModal(true);
-    
-    try {
-      if (type === 'exercise') {
-        const result = await getAllExercises();
-        const items = Array.isArray(result)
-          ? result
-          : [
-              ...(result?.userExercises || []),
-              ...(result?.globalExercises || []),
-            ];
-        setAllExercises(items);
-      } else {
-        const result = await getAllStrategies();
-        const items = Array.isArray(result)
-          ? result
-          : [
-              ...(result?.userStrategies || []),
-              ...(result?.globalStrategies || []),
-            ];
-        setAllStrategies(items);
-      }
-    } catch (error) {
-      console.error('Error cargando items:', error);
-      showNotification(t('myVideos.couldNotLoadItems'), 'error');
-    } finally {
-      setLoadingItems(false);
-    }
   };
 
   // Asociar video a ejercicio/estrategia
-  const handleLinkVideo = async () => {
-    if (!menuVideo || !selectedItemId) return;
+  const handleLinkVideo = async (itemId) => {
+    if (!menuVideo || !itemId) return;
     
     try {
       const videoId = menuVideo._id || menuVideo.id;
       
       if (linkType === 'exercise') {
-        await linkVideoToExercise({ videoId, exerciseId: selectedItemId });
+        await linkVideoToExercise({ videoId, exerciseId: itemId });
         showNotification(t('myVideos.videoLinkedToExercise'), 'success');
       } else {
-        await linkVideoToStrategy({ videoId, strategyId: selectedItemId });
+        await linkVideoToStrategy({ videoId, strategyId: itemId });
         showNotification(t('myVideos.videoLinkedToStrategy'), 'success');
       }
       
       setShowLinkModal(false);
       setMenuVideo(null);
-      setSelectedItemId(null);
     } catch (error) {
       console.error('Error asociando video:', error);
       showNotification(t('myVideos.couldNotLinkVideo'), 'error');
     }
-  };
-
-  // Filtrar items en el modal de asociación
-  const getFilteredLinkItems = () => {
-    const items = linkType === 'exercise' ? allExercises : allStrategies;
-    if (!linkSearchFilter) return items;
-    return items.filter(item => 
-      item.nombre?.toLowerCase().includes(linkSearchFilter.toLowerCase())
-    );
   };
 
   // Función para editar video - navega a Field con los datos del video
@@ -1382,116 +1343,12 @@ export default function MyVideos() {
       </Modal>
 
       {/* Link to Exercise/Strategy Modal */}
-      <Modal
+      <LinkSelectorModal
+        type={linkType}
         visible={showLinkModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowLinkModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.formModal}>
-            <View style={styles.formModalHeader}>
-              <View style={[styles.formModalIcon, { backgroundColor: linkType === 'exercise' ? '#E0F2FE' : '#FDF4FF' }]}>
-                <Ionicons 
-                  name={linkType === 'exercise' ? 'fitness-outline' : 'football-outline'} 
-                  size={24} 
-                  color={linkType === 'exercise' ? '#0284C7' : '#A855F7'} 
-                />
-              </View>
-              <Text style={styles.formModalTitle}>
-                {linkType === 'exercise' ? t('myVideos.linkToExerciseTitle') : t('myVideos.linkToStrategyTitle')}
-              </Text>
-              <Text style={styles.formModalSubtitle}>
-                {linkType === 'exercise' ? t('myVideos.selectExercise') : t('myVideos.selectStrategy')}
-              </Text>
-            </View>
-            
-            {/* Search Input */}
-            <View style={styles.linkSearchContainer}>
-              <Feather name="search" size={18} color="#94A3B8" />
-              <TextInput
-                style={styles.linkSearchInput}
-                placeholder={t('myVideos.searchPlaceholder')}
-                placeholderTextColor="#94A3B8"
-                value={linkSearchFilter}
-                onChangeText={setLinkSearchFilter}
-              />
-              {linkSearchFilter.length > 0 && (
-                <TouchableOpacity onPress={() => setLinkSearchFilter('')}>
-                  <Feather name="x" size={18} color="#94A3B8" />
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            {loadingItems ? (
-              <View style={styles.linkLoadingContainer}>
-                <ActivityIndicator size="large" color="#6366F1" />
-                <Text style={styles.linkLoadingText}>{t('myVideos.loading')}</Text>
-              </View>
-            ) : (
-              <ScrollView style={styles.folderSelectList} showsVerticalScrollIndicator={false}>
-                {getFilteredLinkItems().length === 0 ? (
-                  <View style={styles.linkEmptyContainer}>
-                    <Feather name={linkType === 'exercise' ? 'activity' : 'target'} size={40} color="#CBD5E1" />
-                    <Text style={styles.linkEmptyText}>
-                      {linkType === 'exercise' ? t('myVideos.noExercises') : t('myVideos.noStrategies')}
-                    </Text>
-                  </View>
-                ) : (
-                  getFilteredLinkItems().map(item => (
-                    <TouchableOpacity
-                      key={item._id}
-                      style={[
-                        styles.folderSelectItem,
-                        selectedItemId === item._id && styles.folderSelectItemActive
-                      ]}
-                      onPress={() => setSelectedItemId(item._id)}
-                    >
-                      <View style={[styles.folderSelectIcon, { backgroundColor: linkType === 'exercise' ? '#E0F2FE' : '#FDF4FF' }]}>
-                        <Ionicons 
-                          name={linkType === 'exercise' ? 'fitness-outline' : 'football-outline'} 
-                          size={16} 
-                          color={linkType === 'exercise' ? '#0284C7' : '#A855F7'} 
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.folderSelectText} numberOfLines={1}>{item.nombre}</Text>
-                        {item.descripcion && (
-                          <Text style={styles.linkItemDescription} numberOfLines={1}>{item.descripcion}</Text>
-                        )}
-                      </View>
-                      {selectedItemId === item._id && (
-                        <Feather name="check-circle" size={20} color="#6366F1" />
-                      )}
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            )}
-            
-            <View style={styles.formModalFooter}>
-              <TouchableOpacity 
-                style={styles.secondaryButton}
-                onPress={() => {
-                  setShowLinkModal(false);
-                  setSelectedItemId(null);
-                  setLinkSearchFilter('');
-                }}
-              >
-                <Text style={styles.secondaryButtonText}>{t('myVideos.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.primaryButton, !selectedItemId && styles.primaryButtonDisabled]}
-                onPress={handleLinkVideo}
-                disabled={!selectedItemId}
-              >
-                <Feather name="link" size={18} color="#fff" />
-                <Text style={styles.primaryButtonText}>{t('myVideos.linkVideo')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => { setShowLinkModal(false); setMenuVideo(null); }}
+        onSelect={(id) => handleLinkVideo(id)}
+      />
 
       {/* Preview Modal */}
       <Modal
