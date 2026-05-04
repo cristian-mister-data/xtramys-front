@@ -10,6 +10,7 @@ const userSlice = createSlice({
   initialState: {
     user: cachedUser || null,
     isAuthenticated: !!cachedUser,
+    authChecked: false,
     loading: false,
     error: null,
   },
@@ -17,10 +18,12 @@ const userSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
+      state.authChecked = true;
     },
     clearUserState: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      state.authChecked = true;
       state.error = null;
     },
   },
@@ -46,29 +49,36 @@ const userSlice = createSlice({
         s.loading = false;
         s.user = a.payload;
         s.isAuthenticated = !!a.payload;
+        s.authChecked = true;
       })
       .addCase(loginThunk.rejected, (s, a) => {
         s.loading = false;
-        s.error = a.payload || a.error.message;
+        s.authChecked = true;
+        s.error = a.payload?.message || a.payload || a.error.message;
       })
 
+      .addCase(fetchMe.pending, (s) => {
+        s.loading = true;
+        s.error = null;
+      })
       .addCase(fetchMe.fulfilled, (s, a) => {
+        s.loading = false;
         s.user = a.payload;
         s.isAuthenticated = !!a.payload;
+        s.authChecked = true;
       })
       .addCase(fetchMe.rejected, (s, a) => {
-        // Solo cerramos sesión si fue un error real de autenticación
-        // (401/403). Un fallo de red o servidor transitorio al recargar
-        // la página NO debe expulsar al usuario ni borrar su cache.
-        if (a.payload?.isAuthError) {
-          s.user = null;
-          s.isAuthenticated = false;
-        }
+        s.loading = false;
+        s.authChecked = true;
+        s.user = null;
+        s.isAuthenticated = false;
+        s.error = a.payload?.message || a.error.message;
       })
 
       .addCase(logoutThunk.fulfilled, (s) => {
         s.user = null;
         s.isAuthenticated = false;
+        s.authChecked = true;
         s.error = null;
       });
   },

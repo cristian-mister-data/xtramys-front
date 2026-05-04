@@ -1,29 +1,58 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { Card, Title, Subtitle, Stack, Button } from '@/ui/primitives';
+import {
+  AuthFormShell,
+  BRAND_TEXT_LIGHT,
+  FormSubtitle,
+  FormTitle,
+  PrimaryButton,
+} from './AuthFormLayout';
 
-const Logo = styled.div`
-  font-size: 32px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.primary};
-  text-align: center;
-  margin-bottom: 24px;
+const ButtonStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+
+  a {
+    text-decoration: none;
+  }
+`;
+
+const SecondaryButton = styled.button`
+  display: inline-flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: ${BRAND_TEXT_LIGHT};
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
 `;
 
 export default function Welcome() {
   const { t } = useTranslation();
+
   return (
-    <Card>
-      <Logo>Xtramys</Logo>
-      <Title style={{ textAlign: 'center' }}>Mister Data</Title>
-      <Subtitle style={{ textAlign: 'center' }}>
-        {t('login.subtitle', 'Accede a tu cuenta para continuar')}
-      </Subtitle>
-      <Stack $gap={12}>
-        <Link to="/auth/login"><Button style={{ width: '100%' }}>{t('login.buttonLogin', 'Iniciar sesión')}</Button></Link>
-        <Link to="/auth/register"><Button $variant="secondary" style={{ width: '100%' }}>{t('login.createAccount', 'Crear cuenta')}</Button></Link>
-      </Stack>
-    </Card>
+    <AuthFormShell maxWidth="480px">
+      <FormTitle $center>Xtramys</FormTitle>
+      <FormSubtitle $center>{t('login.subtitle', 'Accede a tu cuenta para continuar')}</FormSubtitle>
+
+      <ButtonStack>
+        <Link to="/auth/login">
+          <PrimaryButton as="span" type="button" $spacious={false}>{t('login.buttonLogin', 'Iniciar sesión')}</PrimaryButton>
+        </Link>
+        <Link to="/auth/register">
+          <SecondaryButton type="button">{t('login.createAccount', 'Crear cuenta')}</SecondaryButton>
+        </Link>
+      </ButtonStack>
+    </AuthFormShell>
   );
 }

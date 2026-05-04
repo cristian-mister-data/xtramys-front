@@ -35,7 +35,12 @@ export const loginThunk = createAsyncThunk(
       if (user) saveUser(user);
       return user;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        type: error?.type,
+        code: error.code || error.response?.data?.code,
+        data: error.data || error.response?.data,
+      });
     }
   }
 );
@@ -49,19 +54,14 @@ export const fetchMe = createAsyncThunk(
       if (user) saveUser(user);
       return user;
     } catch (error) {
-      // Diferenciamos errores reales de auth (401/403) de fallos de red
-      // o servidor transitorios. Solo en el primer caso debemos cerrar
-      // sesión; un timeout/500 al recargar no debe expulsar al usuario.
       const status = error?.status || error?.response?.status;
-      const isAuthError = status === 401 || status === 403;
-      if (isAuthError) {
-        // Sesión inválida: limpiamos la cache local de usuario.
-        clearUser();
-      }
+      clearUser();
       return rejectWithValue({
         message: error?.response?.data?.message || error.message,
-        isAuthError,
         status,
+        type: error?.type,
+        code: error?.code || error?.response?.data?.code,
+        data: error?.data || error?.response?.data,
       });
     }
   }

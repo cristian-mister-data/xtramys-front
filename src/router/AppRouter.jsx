@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import RequireSeason from './RequireSeason';
 import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
@@ -70,17 +71,28 @@ export default function AppRouter() {
       <Route path="/public/wellness/:token" element={lazy_(<WellnessForm />)} />
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
 
+      {/* Alta inicial: protegida, pero sin menú/header de la app */}
+      <Route
+        path="/season/create"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<CreateSeason />)}
+          </ProtectedRoute>
+        )}
+      />
+
       {/* App (protegidas) */}
       <Route
         element={
           <ProtectedRoute>
-            <AppLayout />
+            <RequireSeason>
+              <AppLayout />
+            </RequireSeason>
           </ProtectedRoute>
         }
       >
         <Route path="/" element={lazy_(<Home />)} />
         <Route path="/season" element={lazy_(<Season />)} />
-        <Route path="/season/create" element={lazy_(<CreateSeason />)} />
         <Route path="/tournaments" element={lazy_(<Tournaments />)} />
         <Route path="/players" element={lazy_(<Players />)} />
         <Route path="/players/:id" element={lazy_(<PlayerProfile />)} />
@@ -109,7 +121,9 @@ export default function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <FullscreenLayout />
+            <RequireSeason>
+              <FullscreenLayout />
+            </RequireSeason>
           </ProtectedRoute>
         }
       >

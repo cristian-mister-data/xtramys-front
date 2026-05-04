@@ -17,6 +17,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
@@ -79,6 +80,7 @@ export default function Home({ navigation: navigationProp }) {
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
   const navigation = navigationProp || navigationFromHook;
+  const routerNavigate = useNavigate();
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -86,6 +88,8 @@ export default function Home({ navigation: navigationProp }) {
 
   // Redux state
   const temporada = useSelector(state => state.season.season);
+  const seasonLoading = useSelector(state => state.season.loading);
+  const user = useSelector(state => state.usuario.user);
   const equipos = useSelector(selectTeams);
   const jugadores = useSelector(selectPlayers);
   const lesiones = useSelector(selectInjuries);
@@ -116,22 +120,46 @@ export default function Home({ navigation: navigationProp }) {
     [equipos]
   );
 
-  // Obtener usuario desde AsyncStorage
+  // Obtener usuario desde Redux y fallback a AsyncStorage para pantallas vendor.
   useEffect(() => {
+    if (user?._id) {
+      setIdUsuario(user._id);
+      return;
+    }
+
     (async () => {
       const stored = await AsyncStorage.getItem('usuario');
       const u = JSON.parse(stored || '{}')?._id;
       if (u) setIdUsuario(u);
     })();
-  }, []);
+  }, [user?._id]);
 
   // Cargar temporada seleccionada solo una vez al inicio
   useEffect(() => {
+    let cancelled = false;
+
     if (idUsuario && !initialSeasonLoaded && !temporada) {
-      dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: idUsuario }));
+      (async () => {
+        try {
+          await dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: idUsuario })).unwrap();
+        } catch (error) {
+          console.warn('Error loading selected season:', error);
+        } finally {
+          if (!cancelled) setInitialSeasonLoaded(true);
+        }
+      })();
+    } else if (temporada && !initialSeasonLoaded) {
       setInitialSeasonLoaded(true);
     }
+
+    return () => { cancelled = true; };
   }, [idUsuario, initialSeasonLoaded, temporada, dispatch]);
+
+  useEffect(() => {
+    if (idUsuario && initialSeasonLoaded && !seasonLoading && !temporada) {
+      routerNavigate('/season/create', { replace: true });
+    }
+  }, [idUsuario, initialSeasonLoaded, seasonLoading, temporada, routerNavigate]);
 
   // Cargar equipos cuando hay temporada
   useEffect(() => {

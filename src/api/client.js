@@ -15,6 +15,15 @@ export const setUnauthorizedHandler = (h) => {
   _onUnauthorized = h;
 };
 
+let _lastWarning = { key: '', at: 0 };
+
+function shouldLogWarning(key) {
+  const now = Date.now();
+  if (_lastWarning.key === key && now - _lastWarning.at < 2000) return false;
+  _lastWarning = { key, at: now };
+  return true;
+}
+
 function classifyNetworkError(error) {
   if (!error.response) {
     if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) return 'TIMEOUT';
@@ -45,17 +54,18 @@ function attachInterceptors(instance) {
     (error) => {
       const url = error.config?.url || 'unknown';
       const method = (error.config?.method || 'unknown').toUpperCase();
+      const errorType = classifyNetworkError(error);
+      const warningKey = `${method} ${url} ${error.response?.status || errorType || error.message}`;
 
-      if (error.response) {
+      if (error.response && shouldLogWarning(warningKey)) {
         console.warn(
           `[API ${method} ${url}] ${error.response.status}:`,
           error.response.data?.mensaje || error.response.data?.message || error.response.statusText,
         );
-      } else {
+      } else if (!error.response && shouldLogWarning(warningKey)) {
         console.warn(`[API ${method} ${url}] ${error.message}`);
       }
 
-      const errorType = classifyNetworkError(error);
       if (errorType && _networkErrorHandler) _networkErrorHandler(errorType, `${method} ${url}`);
       if (errorType === 'SESSION_EXPIRED' && _onUnauthorized) _onUnauthorized();
 

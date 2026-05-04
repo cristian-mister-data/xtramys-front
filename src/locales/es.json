@@ -4283,7 +4283,7 @@
         "newPassword": "Nueva contraseña",
         "resetButton": "Restablecer contraseña",
         "fillFields": "Rellena todos los campos",
-        "minLength": "La contraseña debe tener al menos 6 caracteres",
+        "minLength": "La contraseña debe tener al menos 8 caracteres",
         "doneTitle": "Contraseña actualizada",
         "doneMessage": "Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.",
         "errorGeneric": "Error al restablecer la contraseña",

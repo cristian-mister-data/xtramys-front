@@ -1,71 +1,100 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { loginThunk } from '@/store/slices/user/userThunks';
 import {
-  Card, Title, Subtitle, Field, Label, Input, Button, Stack, ErrorText, Muted, Row,
-} from '@/ui/primitives';
+  AccentLink,
+  AuthFormShell,
+  ErrorMessage,
+  Field,
+  Form,
+  FormSubtitle,
+  FormTitle,
+  InputLabel,
+  PrimaryButton,
+  SecondaryLink,
+  TextInput,
+  normalizeEmail,
+} from './AuthFormLayout';
 
 export default function Login() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error } = useSelector((s) => s.usuario);
+  const { loading, error } = useSelector((state) => state.usuario);
 
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState(null);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (event) => {
+    event.preventDefault();
     setLocalError(null);
+
     if (!correo || !password) {
       setLocalError(t('message.fieldRequired', 'Por favor completa este campo'));
       return;
     }
+
+    const correoNorm = normalizeEmail(correo);
     try {
-      const res = await dispatch(loginThunk({ correo, contraseña: password })).unwrap();
-      if (res) {
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
-      }
+      await dispatch(loginThunk({ correo: correoNorm, contraseña: password })).unwrap();
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err) {
       const code = err?.code || err?.data?.code;
       if (code === 'EMAIL_NOT_VERIFIED') {
-        navigate('/auth/verify-email', { state: { correo } });
+        navigate('/auth/verify-email', { state: { correo: err?.data?.correo || correoNorm } });
         return;
       }
       setLocalError(err?.message || t('login.loginError', 'Correo o contraseña incorrectos'));
     }
   };
 
+  const visibleError = localError || (typeof error === 'string' ? error : error?.message);
+
   return (
-    <Card>
-      <Title>{t('login.buttonLogin', 'Iniciar sesión')}</Title>
-      <Subtitle>{t('login.subtitle', 'Accede a tu cuenta para continuar')}</Subtitle>
-      <form onSubmit={onSubmit}>
+    <AuthFormShell maxWidth="480px">
+      <FormTitle>{t('login.login', 'Login')}</FormTitle>
+      <FormSubtitle>{t('login.subtitle', 'Accede a tu cuenta para continuar')}</FormSubtitle>
+
+      <Form onSubmit={onSubmit} noValidate>
         <Field>
-          <Label>{t('login.email', 'Correo')}</Label>
-          <Input type="email" autoComplete="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+          <InputLabel htmlFor="login-email">{t('login.email', 'Correo')}</InputLabel>
+          <TextInput
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            placeholder={t('login.email', 'Correo')}
+            value={correo}
+            onChange={(event) => setCorreo(event.target.value)}
+          />
         </Field>
+
         <Field>
-          <Label>{t('login.password', 'Contraseña')}</Label>
-          <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <InputLabel htmlFor="login-password">{t('login.password', 'Contraseña')}</InputLabel>
+          <TextInput
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            placeholder={t('login.password', 'Contraseña')}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
         </Field>
-        {(localError || error) && <ErrorText>{localError || error}</ErrorText>}
-        <Stack $gap={10} style={{ marginTop: 16 }}>
-          <Button type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? '...' : t('login.buttonLogin', 'Iniciar sesión')}
-          </Button>
-          <Row $gap={8} style={{ justifyContent: 'space-between' }}>
-            <Link to="/auth/forgot-password"><Muted>{t('login.forgotPassword', 'Olvidé mi contraseña')}</Muted></Link>
-            <Link to="/auth/register"><Muted>{t('login.createAccount', 'Crear cuenta')}</Muted></Link>
-          </Row>
-          <Link to="/auth/welcome"><Muted>{t('navigation.goBack', 'Atrás')}</Muted></Link>
-        </Stack>
-      </form>
-    </Card>
+
+        {visibleError && <ErrorMessage>{visibleError}</ErrorMessage>}
+
+        <PrimaryButton type="submit" disabled={loading}>
+          {loading ? '...' : t('login.buttonLogin', 'Iniciar sesión')}
+        </PrimaryButton>
+      </Form>
+
+      <AccentLink to="/auth/forgot-password">{t('login.forgotPassword', 'Olvidé mi contraseña')}</AccentLink>
+      <SecondaryLink to="/auth/register">{t('login.createAccount', 'Crear cuenta')}</SecondaryLink>
+      <SecondaryLink to="/auth/welcome">{t('register.backToLogin', 'Atrás')}</SecondaryLink>
+    </AuthFormShell>
   );
 }

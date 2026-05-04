@@ -3,7 +3,7 @@ import CreateSeasonAndTeam from '@/vendor/createSeason/createSeason';
 
 export default function CreateSeason() {
   return (
-    <RNWebPage themed>
+    <RNWebPage themed fullscreen>
       <CreateSeasonAndTeam setToken={() => {}} />
     </RNWebPage>
   );

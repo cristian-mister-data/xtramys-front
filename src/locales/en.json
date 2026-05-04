@@ -4273,7 +4273,7 @@
         "newPassword": "New password",
         "resetButton": "Reset password",
         "fillFields": "Fill in all fields",
-        "minLength": "Password must be at least 6 characters",
+        "minLength": "Password must be at least 8 characters",
         "doneTitle": "Password updated",
         "doneMessage": "Your password has been reset successfully. You can now log in.",
         "errorGeneric": "Error resetting your password",

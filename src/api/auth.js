@@ -11,18 +11,18 @@ export const login = ({ correo, contraseña }) =>
     })
     .then((res) => res.data);
 
-export const register = (payload) => api.post('/auth/register', payload);
+export const register = (payload) => api.post('/auth/register', payload).then((res) => res.data);
 
 export const verifyEmail = (correo, codigo) =>
-  api.post('/auth/verify-email', { correo, codigo });
+  api.post('/auth/verify-email', { correo, codigo }).then((res) => res.data);
 
 export const resendVerification = (correo) =>
-  api.post('/auth/resend-verification', { correo });
+  api.post('/auth/resend-verification', { correo }).then((res) => res.data);
 
-export const forgotPassword = (correo) => api.post('/auth/forgot-password', { correo });
+export const forgotPassword = (correo) => api.post('/auth/forgot-password', { correo }).then((res) => res.data);
 
-export const resetPassword = (token, password) =>
-  api.post('/auth/reset-password', { token, password });
+export const resetPassword = ({ correo, token, nuevaContraseña }) =>
+  api.post('/auth/reset-password', { correo, token, nuevaContraseña }).then((res) => res.data);
 
 export const google = (idToken) => api.post('/auth/google', { idToken });
 export const apple = (payload) => api.post('/auth/apple', payload);

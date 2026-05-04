@@ -19,9 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { createTemporadaEquipo } from '@/store/slices/season/seasonThunks';
 import { useTranslation } from 'react-i18next';
-import { RESET_STORE } from '@/store/rootReducer';
+import { logoutThunk } from '@/store/slices/user/userThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import CustomAlertModal from '@/vendor/shared/customAlert';
 
@@ -34,6 +35,7 @@ const isMobileDevice = () => {
 export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const navigate = useNavigate();
 
   const [año, setAño] = useState(new Date().getFullYear().toString());
   const [teamName, setTeamName] = useState('');
@@ -91,13 +93,19 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
 
   const { loading: loadingSeason } = useSelector(state => state.season);
   const { loading: loadingTeam } = useSelector(state => state.team);
+  const user = useSelector(state => state.usuario.user);
 
   useEffect(() => {
+    if (user?._id) {
+      setIdUsuario(user._id);
+      return;
+    }
+
     AsyncStorage.getItem('usuario').then(str => {
       const u = JSON.parse(str);
       setIdUsuario(u?._id);
     });
-  }, []);
+  }, [user?._id]);
 
   const [loading, setLoading] = useState(false);
 
@@ -130,6 +138,11 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const handleCrear = async () => {
     if (!año || !teamName) return;
 
+    if (!idUsuario) {
+      Alert.alert(t('message.error'), t('login.sessionExpired', 'La sesión ha caducado. Vuelve a iniciar sesión.'));
+      return;
+    }
+
     // Validaciones adicionales para categoría
     if (!categoriaKey) {
       Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.category') }));
@@ -158,11 +171,10 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
           escudo,
           user: idUsuario,
         })
-      );
-
-      // Optionally you might want to navigate or update UI
+      ).unwrap();
 
       Alert.alert(t('message.success'), t('season.createSeasonSuccess'));
+      navigate('/', { replace: true });
     } catch (err) {
       console.warn('Error en creación encadenada:', err);
       Alert.alert(t('message.error'), t('season.createSeasonError'));
@@ -172,9 +184,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('usuario');
-    dispatch({ type: RESET_STORE });
+    await dispatch(logoutThunk()).unwrap();
     setToken(null);
   };
 

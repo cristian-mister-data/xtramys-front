@@ -40,6 +40,7 @@ export async function resolvePlayableVideoUrl(videoOrId) {
   const metadata = await getVideoById(videoId).catch(() => null);
   const directUrl = metadata?.video?.videoUrl;
   if (directUrl) return directUrl;
+  if (metadata?.video?.hasStoredVideo) return getVideoStreamUrl(videoId);
 
   const result = await regenerateVideoWithField(videoId, null);
   if (result?.success && result?.videoId) {

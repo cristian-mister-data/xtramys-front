@@ -45,17 +45,17 @@ const darkInvert = css`
 const Frame = styled.div`
   width: 100%;
   height: 100%;
-  min-height: calc(100dvh - 60px - 48px);
-  border-radius: ${({ theme }) => theme.radius.lg};
+  min-height: ${({ $fullscreen }) => ($fullscreen ? '100dvh' : 'calc(100dvh - 60px - 48px)')};
+  border-radius: ${({ $fullscreen, theme }) => ($fullscreen ? '0' : theme.radius.lg)};
   overflow: hidden;
   background: ${({ theme }) => theme.colors.background};
   color-scheme: ${({ $themed, theme }) =>
     $themed ? (theme.mode === 'dark' ? 'dark' : 'light') : 'light'};
   border: 1px solid
-    ${({ theme }) =>
-      theme.mode === 'dark' ? theme.colors.border : 'transparent'};
-  box-shadow: ${({ theme }) =>
-    theme.mode === 'dark' ? theme.shadows.lg : theme.shadows.sm};
+    ${({ $fullscreen, theme }) =>
+      $fullscreen ? 'transparent' : theme.mode === 'dark' ? theme.colors.border : 'transparent'};
+  box-shadow: ${({ $fullscreen, theme }) =>
+    $fullscreen ? 'none' : theme.mode === 'dark' ? theme.shadows.lg : theme.shadows.sm};
   display: flex;
   flex-direction: column;
 `;
@@ -70,9 +70,9 @@ const InvertLayer = styled.div`
     !$themed && theme.mode === 'dark' && darkInvert}
 `;
 
-export default function RNWebPage({ children, themed = false }) {
+export default function RNWebPage({ children, themed = false, fullscreen = false }) {
   return (
-    <Frame $themed={themed}>
+    <Frame $themed={themed} $fullscreen={fullscreen}>
       <InvertLayer $themed={themed}>
         <SafeAreaProvider style={fillStyle}>
           <GestureHandlerRootView style={fillStyle}>
