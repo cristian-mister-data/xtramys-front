@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
+import { TutorialProvider } from '@/components/shared/TutorialProvider';
 
 const Shell = styled.div`
   min-height: 100dvh;
@@ -55,12 +56,14 @@ export default function AppLayout() {
   }, [dispatch, seasonId]);
 
   return (
-    <Shell>
-      <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      <Header onMenu={() => setDrawerOpen((v) => !v)} />
-      <Main>
-        <Outlet />
-      </Main>
-    </Shell>
+    <TutorialProvider>
+      <Shell>
+        <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <Header onMenu={() => setDrawerOpen((v) => !v)} />
+        <Main>
+          <Outlet />
+        </Main>
+      </Shell>
+    </TutorialProvider>
   );
 }

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { MdPlayCircleOutline } from 'react-icons/md';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
@@ -10,6 +11,7 @@ import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
 import api from '@/api/client';
 import { fileToBase64 } from '@/components/player/playerHelpers';
+import { useTutorial } from '@/components/shared/TutorialProvider';
 
 const Hero = styled.div`
   background: linear-gradient(135deg, #1e3a5f, #2563eb 60%, #3b82f6);
@@ -146,7 +148,7 @@ const ActionRow = styled.div`
   flex-wrap: wrap;
 `;
 
-const DangerBtn = styled.button`
+const AccountBtn = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -155,10 +157,15 @@ const DangerBtn = styled.button`
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
-  color: #ef4444;
+  color: ${({ theme }) => theme.colors.text};
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceAlt}; }
+`;
+
+const DangerBtn = styled(AccountBtn)`
+  color: #ef4444;
   &:hover { background: #fef2f2; }
 `;
 
@@ -166,6 +173,7 @@ export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openTutorial } = useTutorial();
   const user = useSelector((s) => s.usuario?.user);
 
   const [editing, setEditing] = useState(false);
@@ -367,6 +375,16 @@ export default function Profile() {
           <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
         </CardHeader>
         <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <AccountBtn type="button" onClick={openTutorial}>
+            <MdPlayCircleOutline size={20} />
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div>{t('tutorial.replayButton', 'Ver tutorial de nuevo')}</div>
+              <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
+                {t('tutorial.replayHint', 'Puedes volver a ver este tutorial desde tu perfil.')}
+              </Muted>
+            </div>
+            <span style={{ color: '#cbd5e1' }}>›</span>
+          </AccountBtn>
           <DangerBtn type="button" onClick={handleLogout}>
             <span>🚪</span>
             <div style={{ flex: 1, textAlign: 'left' }}>

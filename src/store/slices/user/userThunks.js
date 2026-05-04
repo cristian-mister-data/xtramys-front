@@ -15,6 +15,7 @@ export const updateUsuario = createAsyncThunk(
   'usuario/updateUsuario',
   async ({ id, updatedUser }) => {
     const res = await api.post(`/user/${id}`, updatedUser);
+    if (res.data) saveUser(res.data);
     return res.data;
   }
 );
