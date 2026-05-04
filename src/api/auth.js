@@ -24,6 +24,9 @@ export const forgotPassword = (correo) => api.post('/auth/forgot-password', { co
 export const resetPassword = ({ correo, token, nuevaContraseña }) =>
   api.post('/auth/reset-password', { correo, token, nuevaContraseña }).then((res) => res.data);
 
+export const changePassword = ({ userId, contraseñaActual, nuevaContraseña }) =>
+  api.post(`/user/${userId}/password`, { contraseñaActual, nuevaContraseña }).then((res) => res.data);
+
 export const google = (idToken) => api.post('/auth/google', { idToken });
 export const apple = (payload) => api.post('/auth/apple', payload);
 

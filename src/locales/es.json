@@ -118,6 +118,14 @@
         "manageWellnessTemplates": "Gestionar Plantillas",
         "logout": "Cerrar Sesión",
         "logoutConfirm": "¿Estás seguro de que quieres cerrar sesión?",
+        "changePassword": "Cambiar contraseña",
+        "currentPassword": "Contraseña actual",
+        "confirmNewPassword": "Confirmar nueva contraseña",
+        "updatePassword": "Actualizar contraseña",
+        "passwordFieldsRequired": "Rellena todos los campos de contraseña",
+        "passwordsDoNotMatch": "Las contraseñas no coinciden",
+        "passwordUpdated": "Contraseña actualizada correctamente",
+        "passwordUpdateError": "No se pudo actualizar la contraseña",
         "account": "Cuenta"
     },
     "wellnessTemplates": {

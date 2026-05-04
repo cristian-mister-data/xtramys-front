@@ -118,6 +118,14 @@
         "manageWellnessTemplates": "Manage Templates",
         "logout": "Log Out",
         "logoutConfirm": "Are you sure you want to log out?",
+        "changePassword": "Change password",
+        "currentPassword": "Current password",
+        "confirmNewPassword": "Confirm new password",
+        "updatePassword": "Update password",
+        "passwordFieldsRequired": "Fill in all password fields",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "passwordUpdated": "Password updated successfully",
+        "passwordUpdateError": "Could not update password",
         "account": "Account"
     },
     "wellnessTemplates": {

@@ -7,6 +7,7 @@ import { MdPlayCircleOutline } from 'react-icons/md';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
+import { changePassword } from '@/api/auth';
 import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
 import api from '@/api/client';
@@ -189,10 +190,14 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [correo, setCorreo] = useState('');
   const [language, setLanguage] = useState('es');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -279,6 +284,38 @@ export default function Profile() {
     if (!ok) return;
     await dispatch(logoutThunk());
     navigate('/auth/login');
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error(t('profile.passwordFieldsRequired', 'Rellena todos los campos de contraseña'));
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error(t('reset.minLength', 'La contraseña debe tener al menos 8 caracteres'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(t('profile.passwordsDoNotMatch', 'Las contraseñas no coinciden'));
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await changePassword({
+        userId: user._id,
+        contraseñaActual: currentPassword,
+        nuevaContraseña: newPassword,
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success(t('profile.passwordUpdated', 'Contraseña actualizada correctamente'));
+    } catch (error) {
+      toast.error(error.message || t('profile.passwordUpdateError', 'No se pudo actualizar la contraseña'));
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const initials = `${(user.nombre || '?').charAt(0)}${(user.apellido || '').charAt(0)}`.toUpperCase();
@@ -383,6 +420,46 @@ export default function Profile() {
           </Button>
         </ActionRow>
       ) : null}
+
+      <FormCard>
+        <CardHeader>
+          <CardTitle>🔒 {t('profile.changePassword', 'Cambiar contraseña')}</CardTitle>
+        </CardHeader>
+        <Stack style={{ gap: 12 }}>
+          <Field>
+            <Label>{t('profile.currentPassword', 'Contraseña actual')}</Label>
+            <Input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </Field>
+          <Field>
+            <Label>{t('reset.newPassword', 'Nueva contraseña')}</Label>
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
+          <Field>
+            <Label>{t('profile.confirmNewPassword', 'Confirmar nueva contraseña')}</Label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
+        </Stack>
+        <ActionRow>
+          <Button type="button" onClick={handleChangePassword} disabled={changingPassword}>
+            {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
+          </Button>
+        </ActionRow>
+      </FormCard>
 
       <FormCard>
         <CardHeader>
