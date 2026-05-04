@@ -12,6 +12,8 @@ import { setUser } from '@/store/slices/user/userSlice';
 import api from '@/api/client';
 import { fileToBase64 } from '@/components/player/playerHelpers';
 import { useTutorial } from '@/components/shared/TutorialProvider';
+import flagEs from '@/images/spain.png';
+import flagEn from '@/images/united-kingdom.png';
 
 const Hero = styled.div`
   background: linear-gradient(135deg, #1e3a5f, #2563eb 60%, #3b82f6);
@@ -135,9 +137,17 @@ const LangBtn = styled.button`
 `;
 
 const Flag = styled.span`
-  font-size: 24px;
   width: 32px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const FlagImage = styled.img`
+  width: 32px;
+  height: 22px;
+  object-fit: contain;
 `;
 
 const ActionRow = styled.div`
@@ -335,7 +345,9 @@ export default function Profile() {
             disabled={!editing}
             onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
           >
-            <Flag>🇪🇸</Flag>
+            <Flag>
+              <FlagImage src={flagEs} alt="Español" />
+            </Flag>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>Español</div>
               <Muted style={{ fontSize: 12 }}>Spanish</Muted>
@@ -349,7 +361,9 @@ export default function Profile() {
             disabled={!editing}
             onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
           >
-            <Flag>🇬🇧</Flag>
+            <Flag>
+              <FlagImage src={flagEn} alt="English" />
+            </Flag>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>English</div>
               <Muted style={{ fontSize: 12 }}>Inglés</Muted>
