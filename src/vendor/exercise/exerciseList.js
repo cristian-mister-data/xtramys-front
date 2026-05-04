@@ -55,6 +55,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const [exerciseVideos, setExerciseVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const visibleVideos = exerciseVideos.slice(0, 1);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -215,10 +216,8 @@ Alert.alert(
             try {
               await unlinkVideoFromExercise(video._id, exercise._id);
               // Recargar la lista de videos
-              const result = await getVideosByExercise(exercise._id);
-              if (result.success) {
-                setExerciseVideos(result.videos || []);
-              }
+              const videos = await getVideosByExercise(exercise._id);
+              setExerciseVideos(videos || []);
               Alert.alert(t('message.success'), t('exercise.videoUnlinked'));
             } catch (error) {
               console.error('Error desasociando video:', error);
@@ -680,8 +679,8 @@ Alert.alert(
                   </View>
                   {!loadingVideos && exerciseVideos.length > 0 && (
                     <View style={styles.videosGrid}>
-                      {exerciseVideos.map((video) => (
-                        <View key={video._id} style={styles.videoCard}>
+                      {visibleVideos.map((video) => (
+                        <View key={video._id} style={[styles.videoCard, IS_MOBILE && styles.videoCardMobile]}>
                           {/* Botón de desasociar */}
                           {!(exercise?.isGlobal && userRole !== 'admin') && (
                             <TouchableOpacity
@@ -1417,6 +1416,18 @@ export default function ExerciseList({ navigation: navigationProp }) {
     loadUser();
   }, []);
 
+  // Mostrar notificación de éxito cuando se regresa tras editar un video en la pizarra
+  useEffect(() => {
+    if (global.pendingVideoEditSuccess) {
+      global.pendingVideoEditSuccess = false;
+      setTimeout(() => {
+        setNotification({ visible: true, message: t('videoRecorder.videoUpdatedSuccess'), type: 'success' });
+        setTimeout(() => setNotification({ visible: false, message: '', type: 'success' }), 3000);
+      }, 300);
+    }
+  }, [t]);
+
+
   const lang = i18n.language;
 
   useEffect(() => {
@@ -1665,7 +1676,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
       };
 
       setViewingExercise(null);
-      navigation.navigate('VideoEditorDrawer');
+      navigation.navigate('TacticalBoard');
     } catch (error) {
       Alert.alert(t('message.error'), error?.message || t('myVideos.couldNotLoadVideo'));
     }
@@ -2656,6 +2667,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   );
 }
 
+const isWeb = Platform.OS === 'web';
 const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
@@ -3850,22 +3862,28 @@ const styles = StyleSheet.create({
   videosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 12,
     marginTop: 12,
   },
   videoCard: {
-    backgroundColor: '#fef7f9',
-    borderRadius: 12,
+    backgroundColor: '#fdf6f8',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#fce4ec',
-    padding: 12,
-    minWidth: 140,
-    flex: 1,
+    borderColor: '#f6d6e1',
+    padding: 18,
+    flexBasis: '48%',
+    maxWidth: '48%',
+    minWidth: 240,
+    flexGrow: 1,
+  },
+  videoCardMobile: {
+    flexBasis: '100%',
     maxWidth: '100%',
   },
   videoCardContent: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   videoCardTitle: {
     fontSize: 14,
@@ -3882,26 +3900,29 @@ const styles = StyleSheet.create({
   },
   videoCardActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    marginTop: 8,
   },
   videoActionBtn: {
     flex: 1,
+    minWidth: 90,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 10,
+    gap: 6,
   },
   videoPlayBtn: {
-    backgroundColor: '#E91E63',
+    backgroundColor: '#d81b60',
   },
   videoEditBtn: {
-    backgroundColor: '#D97706',
+    backgroundColor: '#fb8c00',
   },
   videoDownloadBtn: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#388e3c',
   },
   videoActionText: {
     color: '#fff',
@@ -3975,7 +3996,7 @@ const styles = StyleSheet.create({
   },
   videoPlayerContainer: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: 1.7778,
     backgroundColor: '#000',
   },
   videoPlayer: {
@@ -3993,7 +4014,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    gap: 8,
   },
   videoModalDownloadBtn: {
     backgroundColor: '#4CAF50',
@@ -4001,6 +4021,7 @@ const styles = StyleSheet.create({
   videoModalBtnText: {
     color: '#fff',
     fontSize: 14,
+    lineHeight: 18,
     fontWeight: '600',
   },
   // Folder styles
@@ -4076,8 +4097,8 @@ const styles = StyleSheet.create({
   // Header
   mvHeader: {
     backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'web' ? 16 : 10,
-    paddingBottom: Platform.OS === 'web' ? 12 : 8,
+    paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
@@ -4085,16 +4106,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.OS === 'web' ? 20 : 12,
-    marginBottom: Platform.OS === 'web' ? 16 : 8,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   mvHeaderTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   mvHeaderTitle: {
-    fontSize: Platform.OS === 'web' ? 24 : 18,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1E293B',
   },
@@ -4118,7 +4138,6 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 12,
-    gap: 6,
     shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -4162,7 +4181,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    gap: 6,
   },
   mvBreadcrumbItemActive: {
     backgroundColor: '#EFF6FF',
@@ -4172,12 +4190,13 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
     maxWidth: 120,
+    minWidth: 0,
   },
   mvBreadcrumbTextActive: {
     color: '#3578e5',
     fontWeight: '600',
   },
-  
+
   // Search
   mvSearchContainer: {
     paddingHorizontal: 20,

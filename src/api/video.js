@@ -14,8 +14,14 @@ export const getMyVideos = () => api.get('/video/list');
 export const getGlobalVideos = () => api.get('/video/global');
 export const linkVideoToExercise = (payload) => api.post('/video/link-exercise', payload);
 export const linkVideoToStrategy = (payload) => api.post('/video/link-strategy', payload);
-export const getVideosByExercise = (exerciseId) => api.get(`/video/exercise/${exerciseId}`);
-export const getVideosByStrategy = (strategyId) => api.get(`/video/strategy/${strategyId}`);
+export const getVideosByExercise = async (exerciseId) => {
+  const response = await api.get(`/video/exercise/${exerciseId}`);
+  return response.data?.videos || [];
+};
+export const getVideosByStrategy = async (strategyId) => {
+  const response = await api.get(`/video/strategy/${strategyId}`);
+  return response.data?.videos || [];
+};
 
 // Carpetas de video
 export const getVideoFolders = () => api.get('/video-folder');

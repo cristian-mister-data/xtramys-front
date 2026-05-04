@@ -65,7 +65,7 @@ export default function CreateExerciseForm({
   const __pendingFieldResult = (() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-      const editingId = editingExercise?._id || null;
+      const editingId = editingExercise?._id || editingExercise?.id || null;
       if (fr && (fr.editingId || null) === editingId && fr.kind === 'exercise') return fr;
     } catch {}
     return null;
@@ -185,7 +185,7 @@ export default function CreateExerciseForm({
   // componente se monta tras volver del editor (en web la navegación
   // desmonta esta pantalla).
   useEffect(() => {
-    const editingId = editingExercise?._id || null;
+    const editingId = editingExercise?._id || editingExercise?.id || null;
     const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'exercise';
@@ -207,6 +207,7 @@ export default function CreateExerciseForm({
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
+      if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
     }
 
     if (resultMatches) {
@@ -214,6 +215,7 @@ export default function CreateExerciseForm({
       if (Array.isArray(fieldResult.fieldElements)) setFieldElements(fieldResult.fieldElements);
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
+      if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
 
     if (draftMatches || resultMatches) {
@@ -228,13 +230,14 @@ export default function CreateExerciseForm({
   const handleOpenField = () => {
     setLoadingField(true);
 
-    const editingId = editingExercise?._id || null;
+    const editingId = editingExercise?._id || editingExercise?.id || null;
     saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
       kind: 'exercise',
       editingId,
       name, duration, description, objective, dimensions, folderId,
       playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
       fieldElements, fieldType, imagen,
+      pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
@@ -249,6 +252,7 @@ export default function CreateExerciseForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
         try {
           setFieldElements(updatedElements);
@@ -264,9 +268,17 @@ export default function CreateExerciseForm({
       },
       // Callback para cuando se guarda un video - guardar ID para asociar después
       onVideoSaved: (videoId) => {
-        if (videoId && !editingExercise?._id) {
+        if (videoId && !editingExercise?._id && !editingExercise?.id) {
           // Si es un ejercicio nuevo, guardar el ID del video para asociar después
           pendingVideoIds.current.push(videoId);
+          saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
+            kind: 'exercise',
+            editingId,
+            name, duration, description, objective, dimensions, folderId,
+            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+            fieldElements, fieldType, imagen,
+            pendingVideoIds: [...pendingVideoIds.current],
+          });
         }
         // Si estamos editando, el video ya se asocia directamente con ejercicioId
       }
@@ -282,7 +294,7 @@ export default function CreateExerciseForm({
       // del ejercicio queremos los botones Guardar/Cancelar.
       sandbox: false,
       // Pasar el ID del ejercicio si estamos editando, para poder asociar videos
-      ejercicioId: editingExercise?._id || null,
+      ejercicioId: editingExercise?._id || editingExercise?.id || null,
       isGlobalExercise: isGlobal && isAdmin,
     });
   };
@@ -363,8 +375,9 @@ export default function CreateExerciseForm({
       </LinearGradient>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start' }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', paddingBottom: Math.max(insets.bottom, 120) }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
           <Text style={styles.subTitle}>{t('exercise.generalData')}</Text>

@@ -45,18 +45,11 @@ export default defineConfig(({ mode }) => ({
     react({
       include: [/\.[jt]sx?$/],
       babel: {
-        plugins: [
-          // Strip Flow types (RN core / RN community libs usan Flow)
-          ['@babel/plugin-transform-flow-strip-types'],
-        ],
         // Vendor files (copia literal del source RN) dependen del transform
         // const/let → var de Metro: sin él TDZ rompe field.js (standardSize, etc.).
-        overrides: [
-          {
-            test: /[\\/]src[\\/]vendor[\\/].*\.jsx?$/,
-            plugins: ['@babel/plugin-transform-block-scoping'],
-          },
-        ],
+        // Aplicado globalmente porque el test regex de overrides no siempre
+        // resuelve rutas absolutas en Windows con @vitejs/plugin-react.
+        plugins: ['@babel/plugin-transform-block-scoping'],
       },
     }),
   ],
@@ -105,6 +98,9 @@ export default defineConfig(({ mode }) => ({
     loader: 'jsx',
     include: /src[\\/].*\.[jt]sx?$/,
     exclude: [],
+    logOverride: {
+      'duplicate-object-key': 'warning',
+    },
   },
   // NOTA: COEP/COOP eliminados — bloqueaban imágenes de R2 (sin header CORP).
   // Si en el futuro se necesita ffmpeg.wasm con SharedArrayBuffer, aplicarlos

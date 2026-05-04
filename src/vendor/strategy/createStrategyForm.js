@@ -50,7 +50,7 @@ export default function CreateStrategyForm({
   const __pendingFieldResult = (() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-      const editingId = editingStrategy?._id || null;
+      const editingId = editingStrategy?._id || editingStrategy?.id || null;
       if (fr && (fr.editingId || null) === editingId && fr.kind === 'strategy') return fr;
     } catch {}
     return null;
@@ -129,7 +129,7 @@ export default function CreateStrategyForm({
   // componente se monta tras volver del editor (en web la navegación
   // desmonta esta pantalla, así que sin esto se pierden todos los datos).
   useEffect(() => {
-    const editingId = editingStrategy?._id || null;
+    const editingId = editingStrategy?._id || editingStrategy?.id || null;
     const draft = loadFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'strategy';
@@ -142,12 +142,14 @@ export default function CreateStrategyForm({
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
+      if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
     }
 
     if (resultMatches) {
       if (Array.isArray(fieldResult.fieldElements)) setFieldElements(fieldResult.fieldElements);
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
+      if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
 
     if (draftMatches || resultMatches) {
@@ -161,7 +163,7 @@ export default function CreateStrategyForm({
   const handleOpenField = () => {
     setLoadingField(true);
 
-    const editingId = editingStrategy?._id || null;
+    const editingId = editingStrategy?._id || editingStrategy?.id || null;
     // Persistir borrador completo: en web esta pantalla se desmonta al
     // navegar al editor del campo y luego se vuelve a montar (perdiendo
     // estado local). El resultado del editor se persiste también desde el
@@ -175,6 +177,7 @@ export default function CreateStrategyForm({
       fieldElements,
       fieldType,
       imagen,
+      pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
@@ -190,6 +193,7 @@ export default function CreateStrategyForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
         try {
           setFieldElements(updatedElements);
@@ -205,9 +209,20 @@ export default function CreateStrategyForm({
       },
       // Callback para cuando se guarda un video - guardar ID para asociar después
       onVideoSaved: (videoId) => {
-        if (videoId && !editingStrategy?._id) {
+        if (videoId && !editingStrategy?._id && !editingStrategy?.id) {
           // Si es una estrategia nueva, guardar el ID del video para asociar después
           pendingVideoIds.current.push(videoId);
+          saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
+            kind: 'strategy',
+            editingId,
+            name,
+            description,
+            folderId,
+            fieldElements,
+            fieldType,
+            imagen,
+            pendingVideoIds: [...pendingVideoIds.current],
+          });
         }
         // Si estamos editando, el video ya se asocia directamente con estrategiaId
       }
@@ -222,7 +237,7 @@ export default function CreateStrategyForm({
       // Forzar sandbox=false: ver nota en createExerciseForm.
       sandbox: false,
       // Pasar el ID de la estrategia si estamos editando, para poder asociar videos
-      estrategiaId: editingStrategy?._id || null,
+      estrategiaId: editingStrategy?._id || editingStrategy?.id || null,
     });
   };
 
@@ -289,8 +304,9 @@ export default function CreateStrategyForm({
       </LinearGradient>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start' }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', paddingBottom: Math.max(insets.bottom, 120) }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
           <Text style={styles.subTitle}>{t('strategy.generalsDatas')}</Text>

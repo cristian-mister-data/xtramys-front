@@ -298,8 +298,25 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
 export const unlinkVideoFromExercise = stub('unlinkVideoFromExercise');
 export const unlinkVideoFromStrategy = stub('unlinkVideoFromStrategy');
 
-export const getAllExercises = stub('getAllExercises', { data: [] });
-export const getAllStrategies = stub('getAllStrategies', { data: [] });
+export const getAllExercises = async () => {
+  try {
+    const response = await api.get('/exercise/all');
+    return response.data;
+  } catch (error) {
+    console.warn('Error loading all exercises:', error);
+    throw error;
+  }
+};
+
+export const getAllStrategies = async () => {
+  try {
+    const response = await api.get('/strategy/all');
+    return response.data;
+  } catch (error) {
+    console.warn('Error loading all strategies:', error);
+    throw error;
+  }
+};
 
 // URLs de video — absolutas al backend (en dev no hay proxy /api en Vite,
 // así que usar relativas devolvía el index.html del SPA).

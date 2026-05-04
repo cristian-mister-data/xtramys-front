@@ -102,6 +102,17 @@ export default function MyVideos() {
     };
     detectAdmin();
   }, []);
+
+  useEffect(() => {
+    if (global.pendingVideoEditSuccess) {
+      global.pendingVideoEditSuccess = false;
+      setNotification({ visible: true, message: t('videoRecorder.videoUpdatedSuccess'), type: 'success' });
+      const timer = setTimeout(() => {
+        setNotification({ visible: false, message: '', type: 'success' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [t]);
   
   // Modal para crear carpeta
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
@@ -361,10 +372,22 @@ export default function MyVideos() {
     try {
       if (type === 'exercise') {
         const result = await getAllExercises();
-        setAllExercises(result || []);
+        const items = Array.isArray(result)
+          ? result
+          : [
+              ...(result?.userExercises || []),
+              ...(result?.globalExercises || []),
+            ];
+        setAllExercises(items);
       } else {
         const result = await getAllStrategies();
-        setAllStrategies(result || []);
+        const items = Array.isArray(result)
+          ? result
+          : [
+              ...(result?.userStrategies || []),
+              ...(result?.globalStrategies || []),
+            ];
+        setAllStrategies(items);
       }
     } catch (error) {
       console.error('Error cargando items:', error);
@@ -382,10 +405,10 @@ export default function MyVideos() {
       const videoId = menuVideo._id || menuVideo.id;
       
       if (linkType === 'exercise') {
-        await linkVideoToExercise(videoId, selectedItemId);
+        await linkVideoToExercise({ videoId, exerciseId: selectedItemId });
         showNotification(t('myVideos.videoLinkedToExercise'), 'success');
       } else {
-        await linkVideoToStrategy(videoId, selectedItemId);
+        await linkVideoToStrategy({ videoId, strategyId: selectedItemId });
         showNotification(t('myVideos.videoLinkedToStrategy'), 'success');
       }
       

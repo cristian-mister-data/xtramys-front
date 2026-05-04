@@ -87,6 +87,8 @@ export default function ExerciseSelectorModal({
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [exerciseForVideo, setExerciseForVideo] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [videoAvailability, setVideoAvailability] = useState({});
 
@@ -316,6 +318,12 @@ export default function ExerciseSelectorModal({
     finally { setIsGeneratingVideo(false); }
   };
   const closeVideoModal = () => { setShowVideoModal(false); setSelectedVideo(null); setVideoUrl(null); setExerciseForVideo(null); };
+  const handleOpenImagePreview = useCallback((image) => {
+    if (!image) return;
+    setSelectedImage(image);
+    setShowImageModal(true);
+  }, []);
+  const closeImageModal = useCallback(() => { setShowImageModal(false); setSelectedImage(null); }, []);
   const downloadVideo = async () => {
     if (!selectedVideo?._id) return;
     try {
@@ -530,33 +538,43 @@ export default function ExerciseSelectorModal({
                   const hasVid = videoAvailability[e._id] === true;
                   const folderName = isSearching && e.folder && typeof e.folder === 'object' ? e.folder.nombre : null;
                   return (
-                    <TouchableOpacity key={e._id} style={[s.exRowMobile, sel && s.exRowMobileSel]} onPress={() => toggle(e._id)} activeOpacity={0.7}>
-                      <View style={[s.exCheck, sel && s.exCheckSel]}>
-                        {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
-                      </View>
-                      {e.imagen ? (
-                        <View style={s.exThumb}><Base64ImagePreview imageUrl={e.imagen} forceWidth={46} forceHeight={46} /></View>
-                      ) : (
-                        <View style={s.exThumbEmpty}><Ionicons name="fitness" size={22} color="#94a3b8" /></View>
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Text style={[s.exName, sel && s.exNameSel]} numberOfLines={2}>{e.nombre}</Text>
-                          {e.isGlobal && <Ionicons name="globe-outline" size={13} color={THEME.primary} />}
+                    <View key={e._id} style={[s.exRowMobile, sel && s.exRowMobileSel]}>
+                      <TouchableOpacity style={s.exRowMobileSelectArea} onPress={() => toggle(e._id)} activeOpacity={0.7}>
+                        <View style={[s.exCheck, sel && s.exCheckSel]}>
+                          {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
                         </View>
-                        {folderName && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                            <Ionicons name="folder" size={10} color={e.folder?.color || THEME.textSec} />
-                            <Text style={s.exFolderTag}>{folderName}</Text>
+                        {e.imagen
+                          ? <View style={s.exThumb}><Base64ImagePreview imageUrl={e.imagen} forceWidth={46} forceHeight={46} /></View>
+                          : <View style={s.exThumbEmpty}><Ionicons name="fitness" size={22} color="#94a3b8" /></View>
+                        }
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                            <Text style={[s.exName, sel && s.exNameSel]} numberOfLines={2}>{e.nombre}</Text>
+                            {e.isGlobal && <Ionicons name="globe-outline" size={13} color={THEME.primary} />}
                           </View>
-                        )}
-                      </View>
-                      {hasVid && (
-                        <TouchableOpacity onPress={(ev) => { ev.stopPropagation(); handlePlayVideo(e); }} style={{ padding: 6 }}>
-                          <Feather name="play-circle" size={22} color="#E91E63" />
-                        </TouchableOpacity>
+                          {folderName && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                              <Ionicons name="folder" size={10} color={e.folder?.color || THEME.textSec} />
+                              <Text style={s.exFolderTag}>{folderName}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                      {(e.imagen || hasVid) && (
+                        <View style={s.exRowActions}>
+                          {e.imagen && (
+                            <TouchableOpacity style={s.exRowActionBtn} onPress={() => handleOpenImagePreview(e.imagen)}>
+                              <Ionicons name="image-outline" size={18} color={THEME.primary} />
+                            </TouchableOpacity>
+                          )}
+                          {hasVid && (
+                            <TouchableOpacity style={s.exRowActionBtn} onPress={() => handlePlayVideo(e)}>
+                              <Feather name="play-circle" size={18} color="#E91E63" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       )}
-                    </TouchableOpacity>
+                    </View>
                   );
                 })}
               </ScrollView>
@@ -626,31 +644,43 @@ export default function ExerciseSelectorModal({
                         const hasVid = videoAvailability[e._id] === true;
                         const folderName = isSearching && e.folder && typeof e.folder === 'object' ? e.folder.nombre : null;
                         return (
-                          <TouchableOpacity key={e._id} style={[s.exCard, sel && s.exCardSel]} onPress={() => toggle(e._id)} activeOpacity={0.75}>
-                            {hasVid && (
-                              <TouchableOpacity style={s.exVidBadge}
-                                onPress={(ev) => { ev.stopPropagation(); handlePlayVideo(e); }}
-                                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                                <Feather name="play-circle" size={16} color="#fff" />
-                              </TouchableOpacity>
-                            )}
-                            {sel && <View style={s.exSelBadge}><Ionicons name="checkmark" size={12} color="#fff" /></View>}
-                            {e.imagen ? <Base64ImagePreview imageUrl={e.imagen} forceWidth={56} forceHeight={56} />
-                              : <View style={s.exCardImgEmpty}><Ionicons name="fitness" size={28} color="#cbd5e1" /></View>}
-                            <Text style={[s.exCardName, sel && s.exCardNameSel]} numberOfLines={2}>{e.nombre}</Text>
-                            {e.isGlobal && (
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                                <Ionicons name="globe-outline" size={9} color={THEME.primary} />
-                                <Text style={{ fontSize: 9, color: THEME.primary, fontWeight: '600' }}>{t('exercise.globalExercise')}</Text>
+                          <View key={e._id} style={[s.exCard, sel && s.exCardSel]}>
+                            <TouchableOpacity style={s.exCardSelectArea} onPress={() => toggle(e._id)} activeOpacity={0.75}>
+                              {sel && <View style={s.exSelBadge}><Ionicons name="checkmark" size={12} color="#fff" /></View>}
+                              {e.imagen
+                                ? <View style={s.exCardImgWrap}><Base64ImagePreview imageUrl={e.imagen} forceWidth={56} forceHeight={56} /></View>
+                                : <View style={s.exCardImgEmpty}><Ionicons name="fitness" size={28} color="#cbd5e1" /></View>}
+                              <Text style={[s.exCardName, sel && s.exCardNameSel]} numberOfLines={2}>{e.nombre}</Text>
+                              {e.isGlobal && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                                  <Ionicons name="globe-outline" size={9} color={THEME.primary} />
+                                  <Text style={{ fontSize: 9, color: THEME.primary, fontWeight: '600' }}>{t('exercise.globalExercise')}</Text>
+                                </View>
+                              )}
+                              {folderName && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                                  <Ionicons name="folder" size={9} color={e.folder?.color || '#94a3b8'} />
+                                  <Text style={{ fontSize: 9, color: THEME.textMuted }} numberOfLines={1}>{folderName}</Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                            {(e.imagen || hasVid) && (
+                              <View style={s.exCardActions}>
+                                {e.imagen && (
+                                  <TouchableOpacity style={s.exCardActionBtn} onPress={() => handleOpenImagePreview(e.imagen)}>
+                                    <Ionicons name="image-outline" size={13} color={THEME.primary} />
+                                    <Text style={s.exCardActionTxt}>{t('exercise.seeImage', 'Imagen')}</Text>
+                                  </TouchableOpacity>
+                                )}
+                                {hasVid && (
+                                  <TouchableOpacity style={[s.exCardActionBtn, (e.imagen ? s.exCardActionBtnSep : null)]} onPress={() => handlePlayVideo(e)}>
+                                    <Feather name="play-circle" size={13} color="#E91E63" />
+                                    <Text style={[s.exCardActionTxt, { color: '#E91E63' }]}>{t('exercise.seeVideo', 'Video')}</Text>
+                                  </TouchableOpacity>
+                                )}
                               </View>
                             )}
-                            {folderName && (
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                                <Ionicons name="folder" size={9} color={e.folder?.color || '#94a3b8'} />
-                                <Text style={{ fontSize: 9, color: THEME.textMuted }} numberOfLines={1}>{folderName}</Text>
-                              </View>
-                            )}
-                          </TouchableOpacity>
+                          </View>
                         );
                       })}
                     </View>
@@ -667,6 +697,27 @@ export default function ExerciseSelectorModal({
               <Text style={s.doneTxt}>{t('common.done')}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* ─── IMAGE PREVIEW MODAL ─── */}
+          <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={closeImageModal}>
+            <View style={s.imageBg}>
+              <View style={[s.imageContent, { maxWidth: Math.min(width - 40, 900) }]}> 
+                <View style={s.imageHeader}>
+                  <Text style={s.imageTitle}>{t('exercise.previewImage', 'Imagen')}</Text>
+                  <TouchableOpacity onPress={closeImageModal} style={s.imageCloseBtn}>
+                    <Feather name="x" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView contentContainerStyle={s.imageScroll} showsVerticalScrollIndicator={false}>
+                  <Base64ImagePreview
+                    imageUrl={selectedImage}
+                    forceWidth={Math.min(width - 64, 840)}
+                    forceHeight={Math.min(height - 220, 580)}
+                  />
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           {/* ─── VIDEO MODAL ─── */}
           <Modal visible={showVideoModal} transparent animationType="fade" onRequestClose={closeVideoModal}>
@@ -794,8 +845,11 @@ const makeS = (THEME) => StyleSheet.create({
   exRowMobileSel: { backgroundColor: THEME.primarySoft, borderColor: THEME.primary },
   exCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
   exCheckSel: { backgroundColor: THEME.primary, borderColor: THEME.primary },
+  exThumbButton: { position: 'relative' },
   exThumb: { width: 46, height: 46, borderRadius: 8, overflow: 'hidden' },
   exThumbEmpty: { width: 46, height: 46, borderRadius: 8, backgroundColor: THEME.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  exCardImageWrapper: { position: 'relative' },
+  imageThumbBadge: { position: 'absolute', bottom: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(15,23,42,0.85)', alignItems: 'center', justifyContent: 'center' },
   exName: { fontSize: 13, fontWeight: '600', color: THEME.text },
   exNameSel: { color: THEME.primary },
   exFolderTag: { fontSize: 10, color: THEME.textSec },
@@ -808,17 +862,25 @@ const makeS = (THEME) => StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
   },
   exCardSel: { backgroundColor: THEME.primarySoft, borderColor: THEME.primary, borderWidth: 2 },
+  exCardSelectArea: { width: '100%', alignItems: 'center' },
+  exCardImgWrap: { width: 56, height: 56, borderRadius: 12, overflow: 'hidden', marginBottom: 6 },
   exCardImgEmpty: { width: 56, height: 56, borderRadius: 12, backgroundColor: THEME.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   exCardName: { fontSize: 11, fontWeight: '600', textAlign: 'center', color: THEME.text, marginTop: 4 },
   exCardNameSel: { color: '#1e40af', fontWeight: '700' },
-  exVidBadge: {
-    position: 'absolute', top: 6, left: 6, backgroundColor: '#E91E63', width: 24, height: 24, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', zIndex: 10,
+  exCardActions: {
+    flexDirection: 'row', width: '100%', borderTopWidth: 1, borderTopColor: THEME.border,
+    marginTop: 6, borderRadius: 6, overflow: 'hidden',
   },
+  exCardActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 6, gap: 3 },
+  exCardActionBtnSep: { borderLeftWidth: 1, borderLeftColor: THEME.border },
+  exCardActionTxt: { fontSize: 10, fontWeight: '600', color: THEME.primary },
   exSelBadge: {
-    position: 'absolute', top: 6, right: 6, backgroundColor: THEME.primary, width: 20, height: 20, borderRadius: 10,
+    position: 'absolute', top: 4, right: 4, backgroundColor: THEME.primary, width: 20, height: 20, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', zIndex: 10,
   },
+  exRowMobileSelectArea: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 },
+  exRowActions: { flexDirection: 'column', alignItems: 'center', gap: 4 },
+  exRowActionBtn: { padding: 7, borderRadius: 8, backgroundColor: THEME.surfaceAlt },
 
   // Selected panel (desktop)
   selPanel: { backgroundColor: THEME.bg, borderRadius: 14, padding: 8, borderWidth: 1, borderColor: THEME.border },
@@ -840,6 +902,14 @@ const makeS = (THEME) => StyleSheet.create({
     shadowColor: THEME.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
   },
   doneTxt: { color: THEME.surface, fontSize: 14, fontWeight: '700' },
+
+  // Image preview modal
+  imageBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  imageContent: { width: '100%', maxHeight: '90%', backgroundColor: '#0f172a', borderRadius: 18, padding: 16 },
+  imageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  imageTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  imageCloseBtn: { padding: 6 },
+  imageScroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Video modal
   vidBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },

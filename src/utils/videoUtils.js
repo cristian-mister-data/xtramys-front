@@ -135,7 +135,7 @@ export const generateVideo = async (framesDir, frameCount, speed = 1) => {
   // Limpiar frames del store
   for (const k of keys) store.delete(k);
 
-  return { outputPath, frameCount: keys.length };
+  return { outputPath, frameCount: keys.length, mimeType: mime || 'video/webm' };
 };
 
 export const uploadToR2 = async () => {

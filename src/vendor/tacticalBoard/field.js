@@ -1,4 +1,5 @@
-﻿import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+﻿// v2
+import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, Pressable, Image, TextInput,
@@ -8088,6 +8089,10 @@ export default function Field(props = {}) {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const players = useSelector(state => state.player.players || []);
+  const season = useSelector(state => state.season.season);
+  const equipos = useSelector(state => state.team.teams || []);
   
   // route.params (vienen de location.state cuando se navegó vía
   // navigation.navigate) siempre tiene prioridad. Los props directos
@@ -8350,10 +8355,11 @@ export default function Field(props = {}) {
   const [showingMaterialsPalette, setShowingMaterialsPalette] = useState(false);
   const [showingStaffPalette, setShowingStaffPalette] = useState(false);
   const [teamPlayerSettingsVisible, setTeamPlayerSettingsVisible] = useState(false);
+  const [standardSize, setStandardSize] = useState(24);
   // Estado para el estilo por defecto de jugadores del equipo
   const [teamPlayerStyle, setTeamPlayerStyle] = useState({
     color: '#2176ff',
-    size: standardSize,
+    size: 24,
     numberColor: '#ffffff',
     textColor: '#000000',
     textBackgroundColor: '#ffffff',
@@ -9340,10 +9346,6 @@ export default function Field(props = {}) {
   }, []);
   
   const canvasRef = useRef();
-  const players = useSelector(state => state.player.players || []);
-  const season = useSelector(state => state.season.season);
-  const equipos = useSelector(state => state.team.teams || []);
-  const dispatch = useDispatch();
   
   // Estado real de clones
   const [actualClones, setActualClones] = useState(
@@ -9625,7 +9627,6 @@ export default function Field(props = {}) {
   const [leftPanelVisible, setLeftPanelVisible] = useState(false);
   const [editingIcon, setEditingIcon] = useState(null);
   const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
-  const [standardSize, setStandardSize] = useState(24);
   const [playersWithNumber, setPlayersWithNumber] = useState(true);
   const [arrowThickness, setArrowThickness] = useState(2);
   const [textEditPanel, setTextEditPanel] = useState({ visible: false, icon: null, isNew: false });
@@ -10455,19 +10456,6 @@ const handleGuardarGrafico = async () => {
   };
 
 const handleCancelar = useCallback(async () => {
-    // Función helper para liberar orientación y navegar
-    const unlockOrientationAndGoBack = async () => {
-      try {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-        setTimeout(() => {
-          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-        }, 300);
-      } catch (e) {
-        // Device may not support orientation lock
-      }
-      navigation.goBack();
-    };
-    
     // Verificar si hay cambios sin guardar
     const hasUnsavedChanges = clones.length > 0 || videoKeyframes.length > 0;
     
@@ -10483,7 +10471,7 @@ const handleCancelar = useCallback(async () => {
           {
             text: sandbox ? t('field.exitConfirmButton') : t('field.closeWithoutSaving'),
             style: 'destructive',
-onPress: async () => {
+            onPress: async () => {
               if (cancelCallback) {
                 cancelCallback();
               }
@@ -10493,7 +10481,7 @@ onPress: async () => {
             },
           },
         ]
-);
+      );
     } else {
       if (cancelCallback) {
         cancelCallback();
@@ -10502,8 +10490,7 @@ onPress: async () => {
       clearBoardState();
       await unlockOrientationAndGoBack();
     }
-  }, [navigation, cancelCallback, clones.length, videoKeyframes.length]);
-
+  }, [cancelCallback, clones.length, videoKeyframes.length, clearBoardState, unlockOrientationAndGoBack, sandbox, t]);
   // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG â†’ base64 via ViewShot)
   useEffect(() => {
     // SVG fields are instant "” mark ready immediately
@@ -10540,6 +10527,31 @@ onPress: async () => {
   }, []); // Sin [clones] "” usa actualClonesRef
   
   // Función para cerrar el grabador de video
+  const unlockOrientationAndGoBack = useCallback(async () => {
+    try {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      setTimeout(() => {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+      }, 300);
+    } catch (e) {
+      // Device may not support orientation lock
+    }
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleEditVideoSaved = useCallback(async () => {
+    // Cerrar primero el grabador para que la transición quede limpia
+    setVideoRecorderVisible(false);
+    setFieldImageForVideo(null);
+    savedClonesOriginalRef.current = null;
+    keepVideoChangesRef.current = false;
+    // Señal global para que la pantalla origen muestre mensaje de éxito
+    global.pendingVideoEditSuccess = true;
+    clearBoardState();
+    await new Promise(resolve => setTimeout(resolve, 120));
+    await unlockOrientationAndGoBack();
+  }, [clearBoardState, unlockOrientationAndGoBack]);
+
   const handleCloseVideoRecorder = useCallback(() => {
     setVideoRecorderVisible(false);
     setFieldImageForVideo(null);
@@ -16391,6 +16403,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             hideFolderPicker={hideFolderPicker}
             presetFolderId={presetFolderId}
             isGlobalExercise={isGlobalExercise}
+            onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
           />
         )}
 

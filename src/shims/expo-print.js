@@ -126,6 +126,11 @@ export async function selectPrinterAsync() {
   return { name: 'Default', url: '' };
 }
 
+export const Orientation = {
+  portrait: 'portrait',
+  landscape: 'landscape',
+};
+
 export const WEB_PRINT_SENTINEL = SENTINEL_URI;
 
-export default { printAsync, printToFileAsync, selectPrinterAsync };
+export default { printAsync, printToFileAsync, selectPrinterAsync, Orientation };

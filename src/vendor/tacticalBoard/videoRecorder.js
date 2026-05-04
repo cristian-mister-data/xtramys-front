@@ -29,6 +29,8 @@ import {
   getAllVideoFoldersFlat,
   createVideoFolder,
   updateVideo as apiUpdateVideo,
+  linkVideoToExercise,
+  linkVideoToStrategy,
 } from '@/utils/api';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -351,6 +353,7 @@ export default function VideoRecorder({
   hideFolderPicker = false, // Ocultar selector de carpeta
   presetFolderId = null, // Carpeta preseleccionada (se usa automáticamente)
   isGlobalExercise = false, // Si el ejercicio es global (app) - solo mostrar carpetas globales
+  onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
 }) {
   const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -379,6 +382,7 @@ export default function VideoRecorder({
   const notificationAnim = useRef(new Animated.Value(0)).current;
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [localVideoPath, setLocalVideoPath] = useState(null); // Ruta local del MP4 generado
+  const [localVideoMime, setLocalVideoMime] = useState(null); // Tipo MIME del video generado
   const generationCancelledRef = useRef(false); // Para cancelar generación en curso
   const uploadingPathRef = useRef(null); // Ruta del archivo que se está subiendo a R2 (no borrar)
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100 porcentaje de generación
@@ -904,7 +908,8 @@ export default function VideoRecorder({
 
       // 6. Codificar con ExpoVideoEncoder
       setGenerationProgress(85);
-      const { outputPath } = await encodeVideo(framesDir, allFrames.length, videoSpeed);
+      const { outputPath, mimeType: encodedMime } = await encodeVideo(framesDir, allFrames.length, videoSpeed);
+      setLocalVideoMime(encodedMime || null);
 
       if (generationCancelledRef.current) {
         RNFS.unlink(outputPath).catch(() => {});
@@ -1001,7 +1006,27 @@ export default function VideoRecorder({
 
       if (result.success) {
         const savedVideoId = result.video?._id || result.video?.id || result.videoId;
-        
+
+        // Si estamos dentro de un ejercicio o estrategia, asegurarnos de que
+        // el video quede asociado a ese recurso para aparecer en listados y
+        // poder seleccionarlo desde entrenamientos.
+        if (savedVideoId) {
+          if (ejercicioId) {
+            try {
+              await linkVideoToExercise({ videoId: savedVideoId, exerciseId: ejercicioId });
+            } catch (err) {
+              console.warn('Error forzando enlace video->ejercicio:', err);
+            }
+          }
+          if (estrategiaId) {
+            try {
+              await linkVideoToStrategy({ videoId: savedVideoId, strategyId: estrategiaId });
+            } catch (err) {
+              console.warn('Error forzando enlace video->estrategia:', err);
+            }
+          }
+        }
+
         // Subir el vídeo generado a R2. En web esperamos a que termine para
         // que Mis Vídeos y Análisis Rival ya tengan una URL reproducible.
         // En móvil se mantiene fire-and-forget como antes.
@@ -1091,8 +1116,12 @@ export default function VideoRecorder({
         setTimeout(() => showNotification(successMessage, 'success'), 150);
         
         // Si estamos editando, cerrar y volver atrás
-        if (isEditingVideo && onClose) {
-          setTimeout(() => onClose(), 300);
+        if (isEditingVideo) {
+          if (onEditVideoSaved) {
+            setTimeout(() => onEditVideoSaved(), 300);
+          } else if (onClose) {
+            setTimeout(() => onClose(), 300);
+          }
         }
       }
     } catch (error) {
@@ -1126,6 +1155,26 @@ export default function VideoRecorder({
     try {
       setIsGenerating(true);
       showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
+
+      if (Platform.OS === 'web') {
+        const safeName = (videoNombre || editingVideoName || 'video')
+          .trim()
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+          .replace(/\s+/g, '_') || 'video';
+        const ext = (localVideoMime || '').includes('mp4') ? 'mp4' : 'webm';
+        const a = document.createElement('a');
+        a.href = localVideoPath;
+        a.download = `${safeName}.${ext}`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        await new Promise(r => setTimeout(r, 0));
+        a.click();
+        setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 100);
+        setShowPreviewScreen(false);
+        setShowSaveModal(false);
+        setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
+        return;
+      }
 
       if (Platform.OS === 'android') {
         try {
@@ -1313,6 +1362,12 @@ export default function VideoRecorder({
 
   // Callbacks estables para el preview (useCallback evita que React.memo se invalide)
   const handlePreviewSave = useCallback(async () => {
+    // En modo edición, guardar directamente sin mostrar el modal de nombre/carpeta
+    if (isEditingVideo && editingVideoId) {
+      setShowPreviewScreen(false);
+      await saveVideoToDB();
+      return;
+    }
     setShowPreviewScreen(false);
     setShowSaveModal(true);
     if (!videoNombre.trim() && editingVideoName) {
@@ -1332,7 +1387,7 @@ export default function VideoRecorder({
     } catch (error) {
       console.error('Error cargando carpetas:', error);
     }
-  }, [shouldBeGlobal, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre]);
+  }, [isEditingVideo, editingVideoId, shouldBeGlobal, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre, saveVideoToDB]);
 
   const handlePreviewDownload = useCallback(() => {
     downloadVideo();
