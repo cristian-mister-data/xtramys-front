@@ -190,6 +190,24 @@ const computeDuration = (h1, h2) => {
   return h > 0 ? `${h}h ${m}min` : `${m} min`;
 };
 
+const normalizeTextValue = (value) => {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') return item.observacion || item.text || JSON.stringify(item);
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+  if (value && typeof value === 'object') {
+    return value.observacion || value.text || JSON.stringify(value);
+  }
+  return '';
+};
+
 // Hydrates exercises from session payload (supports both ejerciciosDetalle and legacy ejercicios + observaciones array)
 function hydrateExercises(session) {
   const ids = [];
@@ -217,18 +235,11 @@ function hydrateExercises(session) {
         if (exId) {
           ids.push(exId);
           if (e.tiempoDescanso != null) restMap[exId] = e.tiempoDescanso;
+          if (Array.isArray(e.teamAssignments)) teamsMap[exId] = e.teamAssignments;
         }
       } else if (e?._id) {
         ids.push(e._id);
-      }
-    });
-  }
-
-  // observaciones polymorphic on load
-  if (Array.isArray(session?.observaciones)) {
-    session.observaciones.forEach((o) => {
-      if (o?.ejercicioId) obsMap[o.ejercicioId] = o.observacion || '';
-    });
+        if (Array.isArray(e.teamAssignments)) teamsMap[e._id] = e.teamAssignments;
   }
 
   return { ids, restMap, obsMap, teamsMap };
@@ -297,7 +308,7 @@ export default function SessionFormModal({
       setHoraFin(session.horaFin || '18:30');
       setObservaciones(typeof session.observaciones === 'string'
         ? session.observaciones
-        : (session.observacionesGenerales || ''));
+        : normalizeTextValue(session.observacionesGenerales || ''));
       setSelectedPlayers((session.jugadores || []).map(getPlayerId).filter(Boolean));
       setExtraPlayerIds((session.jugadoresExtras || []).map(getPlayerId).filter(Boolean));
       const { ids, restMap, obsMap, teamsMap } = hydrateExercises(session);

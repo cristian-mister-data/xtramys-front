@@ -96,17 +96,17 @@ export default function TeamAssignmentModal({
 
   useEffect(() => {
     if (!open) return;
-    if (initialAssignments && initialAssignments.length === equipos) {
-      // deep clone to avoid mutating redux frozen state
-      setAssignments(initialAssignments.map((a) => ({
+    const base = buildEmpty(equipos);
+    const assignmentMap = new Map((initialAssignments || []).map((a) => [
+      a.teamNumber,
+      {
         teamNumber: a.teamNumber,
         players: [...(a.players || [])],
         extraPlayers: [...(a.extraPlayers || [])],
-      })));
-    } else {
-      setAssignments(buildEmpty(equipos));
-    }
-  }, [open, equipos]); // eslint-disable-line react-hooks/exhaustive-deps
+      },
+    ]));
+    setAssignments(base.map((a) => assignmentMap.get(a.teamNumber) || a));
+  }, [open, equipos, initialAssignments]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const usedRoster = useMemo(() => {
     const m = new Map();

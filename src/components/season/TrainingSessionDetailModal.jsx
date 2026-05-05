@@ -118,6 +118,24 @@ const ExerciseItem = styled.div`
   &:last-child { border-bottom: 0; }
 `;
 
+const normalizeTextValue = (value) => {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') return item.observacion || item.text || JSON.stringify(item);
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+  if (value && typeof value === 'object') {
+    return value.observacion || value.text || JSON.stringify(value);
+  }
+  return '';
+};
+
 const ExName = styled.div`
   font-weight: 600;
   font-size: 14px;
@@ -377,7 +395,7 @@ export default function TrainingSessionDetailModal({
             </SectionTitle>
             <Card>
               <Notes>
-                {data.observacionesGenerales || data.observaciones || data.notasGenerales}
+                {normalizeTextValue(data.observacionesGenerales ?? data.observaciones ?? data.notasGenerales)}
               </Notes>
             </Card>
           </Section>

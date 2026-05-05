@@ -225,7 +225,7 @@ export default function EditSessionModal({
       setFecha(session.fecha ? new Date(session.fecha) : new Date());
       setHoraInicio(session.horaInicio || '17:00');
       setHoraFin(session.horaFin || '18:30');
-      setObservaciones(session.observaciones || '');
+      setObservaciones(session.observacionesGenerales || (typeof session.observaciones === 'string' ? session.observaciones : '') || '');
       
       // Cargar jugadores (extraer IDs)
       const playerIds = (session.jugadores || []).map(j => typeof j === 'object' ? j._id : j);
@@ -368,6 +368,24 @@ export default function EditSessionModal({
   const getPlayerName = (playerId) => {
     const player = players.find(p => p._id === playerId);
     return player ? getPlayerFullName(player) : '';
+  };
+
+  const normalizeTextValue = (value) => {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      return value
+        .map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') return item.observacion || item.text || JSON.stringify(item);
+          return '';
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+    if (value && typeof value === 'object') {
+      return value.observacion || value.text || JSON.stringify(value);
+    }
+    return '';
   };
 
   // Añadir ejercicio
@@ -1317,8 +1335,11 @@ export default function EditSessionModal({
                       const currentAssignment = teamAssignments.find(ta => ta.teamNumber === teamNumber) || { teamNumber, players: [], extraPlayers: [] };
                       
                       // Combinar jugadores y extras disponibles
+                      const rosterForTeams = selectedPlayers.length > 0
+                        ? players.filter(p => !p.extra && selectedPlayers.includes(p._id))
+                        : players.filter(p => !p.extra);
                       const allAvailable = [
-                        ...players.filter(p => selectedPlayers.includes(p._id)).map(p => ({ 
+                        ...rosterForTeams.map(p => ({ 
                           id: p._id, 
                           name: getPlayerFullName(p) || p.dorsal?.toString() || 'Sin nombre',
                           dorsal: p.dorsal,
