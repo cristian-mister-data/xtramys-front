@@ -1254,6 +1254,14 @@ const FreeTextTool = React.memo(({
         }
         if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
           setIsNearDeleteZone(false);
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          if (pendingUpdateRef.current) {
+            setClones(pendingUpdateRef.current);
+            pendingUpdateRef.current = null;
+          }
           // Verificar si elementos están fuera del campo y eliminarlos
           if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
             const start = dragStart.current[dragKey];
@@ -1289,11 +1297,6 @@ const FreeTextTool = React.memo(({
             }
           }
           delete dragStart.current[dragKey];
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-          }
-          pendingUpdateRef.current = null;
           // Guardar en historial al finalizar el drag
           if (saveClonesHistory) saveClonesHistory();
         }
@@ -5334,6 +5337,14 @@ return (
         if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED) {
           isDragging.current = false;
           setIsNearDeleteZone(false); // Resetear indicador visual
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          if (pendingDragUpdateRef.current) {
+            setClones(pendingDragUpdateRef.current);
+            pendingDragUpdateRef.current = null;
+          }
           
           // Verificar si elementos están fuera del campo y eliminarlos
           if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
@@ -5377,11 +5388,6 @@ return (
           }
           
           delete dragStart.current[dragKey];
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-          }
-          pendingDragUpdateRef.current = null;
           // Guardar en historial al finalizar el drag
           if (saveClonesHistory) saveClonesHistory();
         }
@@ -5729,6 +5735,154 @@ function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
   // Escalamos el tamaño según el ancho de la imagen
   const scaleFactor = Math.max(0.5, Math.min(1.5, imageWidth / 500));
   return baseSize * scaleFactor;
+}
+
+const BOARD_OBJECT_HIT_TOLERANCE = 24;
+
+function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const segmentLengthSq = segmentX * segmentX + segmentY * segmentY;
+  if (segmentLengthSq === 0) return Math.hypot(pointX - startX, pointY - startY);
+  const projection = Math.max(0, Math.min(1, ((pointX - startX) * segmentX + (pointY - startY) * segmentY) / segmentLengthSq));
+  return Math.hypot(pointX - (startX + projection * segmentX), pointY - (startY + projection * segmentY));
+}
+
+function isPointInsidePolygon(pointX, pointY, points) {
+  let inside = false;
+  for (let currentIndex = 0, previousIndex = points.length - 1; currentIndex < points.length; previousIndex = currentIndex++) {
+    const currentPoint = points[currentIndex];
+    const previousPoint = points[previousIndex];
+    const crossesY = (currentPoint.y > pointY) !== (previousPoint.y > pointY);
+    const intersectionX = ((previousPoint.x - currentPoint.x) * (pointY - currentPoint.y)) / ((previousPoint.y - currentPoint.y) || 1) + currentPoint.x;
+    if (crossesY && pointX < intersectionX) inside = !inside;
+  }
+  return inside;
+}
+
+function getCloneDisplayPoints(clone, viewMode, imageWidth, imageHeight) {
+  if (!Array.isArray(clone.points)) return [];
+  return clone.points.map(point => ratioToDisplay(point.x, point.y, viewMode, imageWidth, imageHeight));
+}
+
+function getCloneHitTolerance(clone, imageWidth, imageHeight) {
+  const originalWidth = clone.imageWidth || imageWidth;
+  const originalHeight = clone.imageHeight || imageHeight;
+  const renderScale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
+  const strokeWidth = (clone.thickness || 2) * renderScale * 0.7;
+  return Math.max(strokeWidth / 2 + 16, BOARD_OBJECT_HIT_TOLERANCE);
+}
+
+function isPointNearPointList(pointX, pointY, points, tolerance, closed = false) {
+  const lastSegmentIndex = closed ? points.length : points.length - 1;
+  for (let pointIndex = 0; pointIndex < lastSegmentIndex; pointIndex++) {
+    const currentPoint = points[pointIndex];
+    const nextPoint = points[(pointIndex + 1) % points.length];
+    if (distanceToBoardSegment(pointX, pointY, currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y) <= tolerance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageHeight, standardSize = 24) {
+  if (!clone || clone.type === 'custom-shape-button') return false;
+  const tolerance = getCloneHitTolerance(clone, imageWidth, imageHeight);
+
+  if ((clone.type === 'straight-line' || clone.type === 'straight-arrow' || clone.type === 'curve-line' || clone.type === 'curve-arrow') && clone.points?.length >= 2) {
+    return isPointNearPointList(pointX, pointY, getCloneDisplayPoints(clone, viewMode, imageWidth, imageHeight), tolerance, false);
+  }
+
+  if (clone.type === 'circle' && clone.points?.length === 2) {
+    const firstPoint = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
+    const secondPoint = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
+    const centerX = (firstPoint.x + secondPoint.x) / 2;
+    const centerY = (firstPoint.y + secondPoint.y) / 2;
+    const radius = Math.hypot(secondPoint.x - firstPoint.x, secondPoint.y - firstPoint.y) / 2;
+    return Math.hypot(pointX - centerX, pointY - centerY) <= radius + tolerance;
+  }
+
+  if (clone.type === 'rectangle' && clone.points?.length === 2) {
+    const firstPoint = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
+    const secondPoint = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
+    const minX = Math.min(firstPoint.x, secondPoint.x) - tolerance;
+    const maxX = Math.max(firstPoint.x, secondPoint.x) + tolerance;
+    const minY = Math.min(firstPoint.y, secondPoint.y) - tolerance;
+    const maxY = Math.max(firstPoint.y, secondPoint.y) + tolerance;
+    return pointX >= minX && pointX <= maxX && pointY >= minY && pointY <= maxY;
+  }
+
+  if (clone.type === 'custom-shape' && clone.points?.length >= 3) {
+    const points = getCloneDisplayPoints(clone, viewMode, imageWidth, imageHeight);
+    return isPointNearPointList(pointX, pointY, points, tolerance, true) || isPointInsidePolygon(pointX, pointY, points);
+  }
+
+  if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
+    const center = ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
+    if (clone.type === 'free-text') {
+      const fontSize = clone.size || 18;
+      const textWidth = Math.max(40, String(clone.value || '').length * fontSize * 0.6 + 8);
+      const textHeight = Math.max(30, fontSize * 1.4 + 8);
+      return pointX >= center.x - tolerance && pointX <= center.x + textWidth + tolerance
+        && pointY >= center.y - tolerance && pointY <= center.y + textHeight + tolerance;
+    }
+    const iconSize = getProportionalIconSize(clone, imageWidth, standardSize);
+    const hitRadius = Math.max(iconSize / 2 + tolerance, BOARD_OBJECT_HIT_TOLERANCE);
+    return Math.abs(pointX - center.x) <= hitRadius && Math.abs(pointY - center.y) <= hitRadius;
+  }
+
+  return false;
+}
+
+function getCloneInteractionZIndex(clone, originalIndex, selectedCloneId) {
+  if (clone.locked === true) return 1;
+  if (selectedCloneId === clone.id) return 99999;
+  return clone.zIndex || getZIndexBaseForType(clone.type) + originalIndex;
+}
+
+function findTopBoardCloneAtPoint(clones, pointX, pointY, viewMode, imageWidth, imageHeight, standardSize, selectedCloneId) {
+  return clones
+    .map((clone, originalIndex) => ({ clone, originalIndex, zIndex: getCloneInteractionZIndex(clone, originalIndex, selectedCloneId) }))
+    .sort((first, second) => first.zIndex - second.zIndex || first.originalIndex - second.originalIndex)
+    .reverse()
+    .find(({ clone }) => !clone.locked && isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageHeight, standardSize))?.clone || null;
+}
+
+function createBoardDragSnapshot(clone) {
+  if (!clone) return null;
+  if (clone.points && Array.isArray(clone.points)) {
+    return { points: clone.points.map(point => ({ x: point.x, y: point.y })) };
+  }
+  if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
+    return { xRatio: clone.xRatio, yRatio: clone.yRatio };
+  }
+  if (clone.x !== undefined && clone.y !== undefined) {
+    return { x: clone.x, y: clone.y };
+  }
+  return null;
+}
+
+function applyBoardDragSnapshot(clone, snapshot, dxRatio, dyRatio, dxDisplay, dyDisplay) {
+  if (!snapshot) return clone;
+  if (snapshot.points) {
+    return { ...clone, points: snapshot.points.map(point => ({ x: point.x + dxRatio, y: point.y + dyRatio })) };
+  }
+  if (snapshot.xRatio !== undefined && snapshot.yRatio !== undefined) {
+    return { ...clone, xRatio: snapshot.xRatio + dxRatio, yRatio: snapshot.yRatio + dyRatio };
+  }
+  if (snapshot.x !== undefined && snapshot.y !== undefined) {
+    return { ...clone, x: snapshot.x + dxDisplay, y: snapshot.y + dyDisplay };
+  }
+  return clone;
+}
+
+function buildBoardDragSnapshots(clones, selectedIds) {
+  return selectedIds.reduce((snapshots, selectedId) => {
+    const clone = clones.find(item => item.id === selectedId);
+    const snapshot = createBoardDragSnapshot(clone);
+    if (snapshot) snapshots[selectedId] = snapshot;
+    return snapshots;
+  }, {});
 }
 
 function getArrowHeadForStraightLine(start, end, size = 24, ratio = 0.5, thickness = 2) {
@@ -6179,7 +6333,7 @@ const MemoizedStraightLineDetector = React.memo(({
   zoomLevel = 1
 }) => {
   if (!icon.points || icon.points.length !== 2) return null;
-  if (isAnyDrawingMode) return <View pointerEvents="none" />;
+  if (isAnyDrawingMode) return null;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
   
@@ -6194,37 +6348,196 @@ const MemoizedStraightLineDetector = React.memo(({
   
   const lineThickness = (icon.thickness || 2) * scale;
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
   const centerX = (x1 + x2) / 2;
   const centerY = (y1 + y2) / 2;
+  const minX = Math.min(x1, x2);
+  const minY = Math.min(y1, y2);
+  const maxX = Math.max(x1, x2);
+  const maxY = Math.max(y1, y2);
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
   
   const touchTolerance = Math.max(lineThickness / 2 + 12, 18);
-  const touchAreaWidth = distance + touchTolerance * 2;
-  const touchAreaHeight = touchTolerance * 2;
+  const touchMargin = 22;
+  const touchWidth = maxX - minX + touchMargin * 2;
+  const touchHeight = maxY - minY + touchMargin * 2;
+  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
+    ? 99999
+    : (icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx));
   
   // Dimensiones del botón de opciones (3 puntos)
   const optionsButtonSize = 28;
-  const optionsButtonCenterX = touchAreaWidth / 2;
-  const optionsButtonCenterY = touchAreaHeight / 2 - lineThickness;
+  const optionsButtonLeft = centerX - minX + touchMargin - 14;
+  const optionsButtonTop = centerY - minY + touchMargin - 14;
   
   // Función para verificar si el toque está en el área del botón de opciones
   const isTouchOnOptionsButton = (touchX, touchY) => {
     if (selectedCloneId !== icon.id || multiSelectMode) return false;
-    const dx = touchX - optionsButtonCenterX;
-    const dy = touchY - optionsButtonCenterY;
+    const buttonCenterX = optionsButtonLeft + optionsButtonSize / 2;
+    const buttonCenterY = optionsButtonTop + optionsButtonSize / 2;
+    const dx = touchX - buttonCenterX;
+    const dy = touchY - buttonCenterY;
     const distFromButton = Math.sqrt(dx * dx + dy * dy);
     return distFromButton <= optionsButtonSize / 2 + 5; // 5px de margen extra
   };
   
-  // Función para verificar si el toque está cerca de la línea
-  const isTouchNearLine = (touchX, touchY) => {
-    // Si el toque está en el botón de opciones, no capturar
-    if (isTouchOnOptionsButton(touchX, touchY)) return false;
-    const distFromCenter = Math.abs(touchY - touchAreaHeight / 2);
-    return distFromCenter <= touchTolerance;
+  const handleResponderGrant = (e) => {
+    if (selectedCloneId && selectedCloneId !== icon.id) {
+      setSelectedCloneId(null);
+    }
+    if (!canDrag) {
+      if (!multiSelectMode) setSelectedCloneId(icon.id);
+      return;
+    }
+
+    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+      const initialPositions = {};
+      selectedCloneIds.forEach(id => {
+        const c = clones.find(cl => cl.id === id);
+        if (!c) return;
+        if (c.points && Array.isArray(c.points)) {
+          initialPositions[id] = c.points.map(p => ({ x: p.x, y: p.y }));
+        } else {
+          initialPositions[id] = { xRatio: c.xRatio, yRatio: c.yRatio };
+        }
+      });
+      dragStart.current[icon.id] = { multiSelect: true, selectedIds: [...selectedCloneIds], initialPositions, isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
+    } else {
+      dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
+    }
+  };
+
+  const handleResponderMove = (e) => {
+    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    const base = dragStart.current[icon.id];
+    const { dxRatio: dx, dyRatio: dy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
+
+    if (base.multiSelect && base.selectedIds && base.initialPositions) {
+      pendingUpdateRef.current = (prev) => prev.map(c => {
+        if (!base.selectedIds.includes(c.id)) return c;
+        const init = base.initialPositions[c.id];
+        if (!init) return c;
+        if (Array.isArray(init)) {
+          return { ...c, points: init.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) };
+        }
+        return { ...c, xRatio: (init.xRatio || 0) + dx, yRatio: (init.yRatio || 0) + dy };
+      });
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          if (pendingUpdateRef.current) {
+            setClones(pendingUpdateRef.current);
+            pendingUpdateRef.current = null;
+          }
+          rafRef.current = null;
+        });
+      }
+      return;
+    }
+
+    pendingUpdateRef.current = (prev) => {
+      const correctIndex = prev.findIndex(c => c.id === icon.id);
+      if (correctIndex === -1) return prev;
+      const next = [...prev];
+      next[correctIndex] = { ...next[correctIndex], points: base.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) };
+      return next;
+    };
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        if (pendingUpdateRef.current) {
+          setClones(pendingUpdateRef.current);
+          pendingUpdateRef.current = null;
+        }
+        rafRef.current = null;
+      });
+    }
+  };
+
+  const handleResponderRelease = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (pendingUpdateRef.current) {
+      setClones(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
+    const base = dragStart.current[icon.id];
+    if (base?.multiSelect && base.selectedIds) {
+      // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+      setClones((prev) => {
+        const remaining = prev.filter(c => {
+          if (!base.selectedIds.includes(c.id) || c.locked) return true;
+          if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
+            return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
+          }
+          if (c.xRatio !== undefined) {
+            return !isOutsideVisibleField(c.xRatio, c.yRatio, viewMode, imageWidth, imageHeight);
+          }
+          return true;
+        });
+        return remaining.length < prev.length ? remaining : prev;
+      });
+    } else {
+      // Single drag: solo eliminar este elemento
+      setClones((prev) => {
+        const currentClone = prev.find(c => c.id === icon.id);
+        if (currentClone && !currentClone.locked && currentClone.points) {
+          if (areAllPointsOutside(currentClone.points, viewMode, imageWidth, imageHeight)) {
+            return prev.filter(c => c.id !== icon.id);
+          }
+        }
+        return prev;
+      });
+    }
+    delete dragStart.current[icon.id];
+    if (!multiSelectMode) setSelectedCloneId(icon.id);
+    if (saveClonesHistory) saveClonesHistory();
+  };
+
+  const responderProps = {
+    onStartShouldSetResponderCapture: (e) => {
+      return !isTouchOnOptionsButton(e.nativeEvent.pageX - (minX - touchMargin), e.nativeEvent.pageY - (minY - touchMargin));
+    },
+    onStartShouldSetResponder: (e) => {
+      return !isTouchOnOptionsButton(e.nativeEvent.pageX - (minX - touchMargin), e.nativeEvent.pageY - (minY - touchMargin));
+    },
+    onMoveShouldSetResponder: () => canDrag,
+    onResponderGrant: handleResponderGrant,
+    onResponderMove: handleResponderMove,
+    onResponderRelease: handleResponderRelease,
+    onResponderTerminate: handleResponderRelease,
+  };
+
+  const generateTouchSegments = () => {
+    const segments = [];
+    const segmentSize = Math.max(8, touchTolerance);
+    const numSegments = Math.max(2, Math.ceil(distance / segmentSize) + 1);
+
+    for (let pointIndex = 0; pointIndex < numSegments; pointIndex++) {
+      const t = numSegments === 1 ? 0.5 : pointIndex / (numSegments - 1);
+      const x = x1 + (x2 - x1) * t;
+      const y = y1 + (y2 - y1) * t;
+
+      segments.push(
+        <View
+          key={`straight-seg-${pointIndex}`}
+          pointerEvents="auto"
+          style={{
+            position: 'absolute',
+            left: x - minX + touchMargin - touchTolerance,
+            top: y - minY + touchMargin - touchTolerance,
+            width: touchTolerance * 2,
+            height: touchTolerance * 2,
+            backgroundColor: 'transparent',
+            borderRadius: touchTolerance,
+          }}
+          {...responderProps}
+        />
+      );
+    }
+
+    return segments;
   };
   
   return (
@@ -6232,140 +6545,15 @@ const MemoizedStraightLineDetector = React.memo(({
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        left: centerX - touchAreaWidth / 2,
-        top: centerY - touchAreaHeight / 2,
-        width: touchAreaWidth,
-        height: touchAreaHeight,
-        transform: [{ rotate: `${angle}deg` }],
+        left: minX - touchMargin,
+        top: minY - touchMargin,
+        width: touchWidth,
+        height: touchHeight,
         backgroundColor: 'transparent',
-        zIndex: selectedCloneId === icon.id ? 9999 : 10 + originalIdx,
+        zIndex: detectorZIndex,
       }}
     >
-      <View
-        pointerEvents="auto"
-        style={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'transparent',
-        }}
-        onStartShouldSetResponderCapture={(e) => {
-          // Fase de captura: solo capturar si está cerca de la línea
-          // Si no está cerca, retornar false para que el toque pase a elementos debajo
-          const touchY = e.nativeEvent.locationY;
-          const isNear = isTouchNearLine(e.nativeEvent.locationX, touchY);
-          return isNear; // true = capturar, false = dejar pasar
-        }}
-        onStartShouldSetResponder={(e) => {
-          const touchY = e.nativeEvent.locationY;
-          return isTouchNearLine(e.nativeEvent.locationX, touchY);
-        }}
-        onMoveShouldSetResponder={(e) => {
-          if (!canDrag) return false;
-          return isTouchNearLine(e.nativeEvent.locationX, e.nativeEvent.locationY);
-        }}
-        onResponderGrant={(e) => {
-          if (!canDrag) return;
-          const touchY = e.nativeEvent.locationY;
-          if (!isTouchNearLine(e.nativeEvent.locationX, touchY)) return;
-          
-          if (selectedCloneId && selectedCloneId !== icon.id) {
-            setSelectedCloneId(null);
-          }
-          if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
-            const initialPositions = {};
-            selectedCloneIds.forEach(id => {
-              const c = clones.find(cl => cl.id === id);
-              if (!c) return;
-              if (c.points && Array.isArray(c.points)) {
-                initialPositions[id] = c.points.map(p => ({ x: p.x, y: p.y }));
-              } else {
-                initialPositions[id] = { xRatio: c.xRatio, yRatio: c.yRatio };
-              }
-            });
-            dragStart.current[icon.id] = { multiSelect: true, selectedIds: [...selectedCloneIds], initialPositions, isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
-          } else {
-            dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
-          }
-        }}
-        onResponderMove={(e) => {
-          if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
-          const base = dragStart.current[icon.id];
-          const { dxRatio: dx, dyRatio: dy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
-          
-          if (base.multiSelect && base.selectedIds && base.initialPositions) {
-            setClones(prev => prev.map(c => {
-              if (!base.selectedIds.includes(c.id)) return c;
-              const init = base.initialPositions[c.id];
-              if (!init) return c;
-              if (Array.isArray(init)) {
-                return { ...c, points: init.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) };
-              }
-              return { ...c, xRatio: (init.xRatio || 0) + dx, yRatio: (init.yRatio || 0) + dy };
-            }));
-            return;
-          }
-          setClones(prev => {
-            const correctIndex = prev.findIndex(c => c.id === icon.id);
-            if (correctIndex === -1) return prev;
-            const next = [...prev];
-            next[correctIndex] = { ...next[correctIndex], points: base.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) };
-            return next;
-          });
-        }}
-        onResponderRelease={() => {
-          const base = dragStart.current[icon.id];
-          if (base?.multiSelect && base.selectedIds) {
-            // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
-            setClones((prev) => {
-              const remaining = prev.filter(c => {
-                if (!base.selectedIds.includes(c.id) || c.locked) return true;
-                if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
-                  return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
-                }
-                if (c.xRatio !== undefined) {
-                  return !isOutsideVisibleField(c.xRatio, c.yRatio, viewMode, imageWidth, imageHeight);
-                }
-                return true;
-              });
-              return remaining.length < prev.length ? remaining : prev;
-            });
-          } else {
-            // Single drag: solo eliminar este elemento
-            setClones((prev) => {
-              const currentClone = prev.find(c => c.id === icon.id);
-              if (currentClone && !currentClone.locked && currentClone.points) {
-                if (areAllPointsOutside(currentClone.points, viewMode, imageWidth, imageHeight)) {
-                  return prev.filter(c => c.id !== icon.id);
-                }
-              }
-              return prev;
-            });
-          }
-          delete dragStart.current[icon.id];
-          if (!multiSelectMode) setSelectedCloneId(icon.id);
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-          }
-          if (pendingUpdateRef.current) {
-            setClones(pendingUpdateRef.current);
-            pendingUpdateRef.current = null;
-          }
-          if (saveClonesHistory) saveClonesHistory();
-        }}
-        onResponderTerminate={() => {
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-          }
-          if (pendingUpdateRef.current) {
-            setClones(pendingUpdateRef.current);
-            pendingUpdateRef.current = null;
-          }
-          delete dragStart.current[icon.id];
-          if (saveClonesHistory) saveClonesHistory();
-        }}
-      />
+      {generateTouchSegments()}
       
       {/* Indicador visual para selección múltiple en líneas rectas */}
       {multiSelectMode && isSelected && (
@@ -6382,7 +6570,6 @@ const MemoizedStraightLineDetector = React.memo(({
           zIndex: 10001,
           borderWidth: 2,
           borderColor: '#fff',
-          transform: [{ rotate: `${-angle}deg` }],
         }}>
           <Feather name="check" size={10} color="#fff" />
         </View>
@@ -6400,7 +6587,7 @@ const MemoizedStraightLineDetector = React.memo(({
             backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center',
             shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.5,
             elevation: 10, borderWidth: 1, borderColor: '#dddddd', zIndex: 10000,
-            left: touchAreaWidth / 2 - 14, top: touchAreaHeight / 2 - 14 - lineThickness,
+            left: optionsButtonLeft, top: optionsButtonTop,
           }}
         >
           <Feather name="more-vertical" size={16} color="#444444" />
@@ -6479,6 +6666,9 @@ const MemoizedCurveLineDetector = React.memo(({
   const touchMargin = 22;
   const touchWidth = maxX - minX + touchMargin * 2;
   const touchHeight = maxY - minY + touchMargin * 2;
+  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
+    ? 99999
+    : (icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx));
   
   // Dimensiones del botón de opciones (3 puntos)
   const optionsButtonSize = 28;
@@ -6568,6 +6758,14 @@ const MemoizedCurveLineDetector = React.memo(({
   };
   
   const handleResponderRelease = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (pendingUpdateRef.current) {
+      setClones(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
       // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
@@ -6598,11 +6796,6 @@ const MemoizedCurveLineDetector = React.memo(({
     }
     delete dragStart.current[icon.id];
     if (!multiSelectMode) setSelectedCloneId(icon.id);
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    pendingUpdateRef.current = null;
     // Guardar en historial al finalizar el drag
     if (saveClonesHistory) saveClonesHistory();
   };
@@ -6678,7 +6871,7 @@ const MemoizedCurveLineDetector = React.memo(({
         width: touchWidth,
         height: touchHeight,
         backgroundColor: 'transparent',
-        zIndex: selectedCloneId === icon.id ? 9999 : 10 + originalIdx,
+        zIndex: detectorZIndex,
       }}
     >
       {/* Segmentos de toque a lo largo de la curva */}
@@ -7055,6 +7248,9 @@ const MemoizedCircleDetector = React.memo(({
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
+  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
+    ? 99999
+    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
   
   // Bounding box del círculo
   const minX = centerX - radius;
@@ -7125,6 +7321,11 @@ const MemoizedCircleDetector = React.memo(({
   };
   
   const handleResponderRelease = () => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (pendingUpdateRef.current) {
+      setClones(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
       setClones((prev) => {
@@ -7153,8 +7354,6 @@ const MemoizedCircleDetector = React.memo(({
     }
     delete dragStart.current[icon.id];
     if (!multiSelectMode) setSelectedCloneId(icon.id);
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    pendingUpdateRef.current = null;
     if (saveClonesHistory) saveClonesHistory();
   };
   
@@ -7295,7 +7494,7 @@ const MemoizedCircleDetector = React.memo(({
         width: touchWidth,
         height: touchHeight,
         backgroundColor: 'transparent',
-        zIndex: selectedCloneId === icon.id ? 9999 : 9,
+        zIndex: detectorZIndex,
       }}
     >
       {/* Segmentos de toque a lo largo del perímetro del círculo */}
@@ -7407,6 +7606,9 @@ const MemoizedRectangleDetector = React.memo(({
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
+  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
+    ? 99999
+    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
   
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
@@ -7470,6 +7672,11 @@ const MemoizedRectangleDetector = React.memo(({
   };
   
   const handleResponderRelease = () => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (pendingUpdateRef.current) {
+      setClones(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
       setClones((prev) => {
@@ -7498,8 +7705,6 @@ const MemoizedRectangleDetector = React.memo(({
     }
     delete dragStart.current[icon.id];
     if (!multiSelectMode) setSelectedCloneId(icon.id);
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-    pendingUpdateRef.current = null;
     if (saveClonesHistory) saveClonesHistory();
   };
   
@@ -7606,7 +7811,7 @@ const MemoizedRectangleDetector = React.memo(({
         width: width + touchTolerance * 2,
         height: height + touchTolerance * 2,
         backgroundColor: 'transparent',
-        zIndex: selectedCloneId === icon.id ? 9999 : 9,
+        zIndex: detectorZIndex,
       }}
     >
       {/* Banda superior */}
@@ -7787,6 +7992,9 @@ const MemoizedCustomShapeDetector = React.memo(({
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
+  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
+    ? 99999
+    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
   
   // Handlers para arrastre
   const handleResponderGrant = (e) => {
@@ -7803,7 +8011,8 @@ const MemoizedCustomShapeDetector = React.memo(({
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
         if (!c) return;
-        initialPositions[id] = c.points ? c.points.map(p => ({ x: p.x, y: p.y })) : [];
+        const snapshot = createBoardDragSnapshot(c);
+        if (snapshot) initialPositions[id] = snapshot;
       });
       dragStart.current[icon.id] = { multiSelect: true, selectedIds: [...selectedCloneIds], initialPositions, isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
     } else {
@@ -7821,7 +8030,7 @@ const MemoizedCustomShapeDetector = React.memo(({
         if (!base.selectedIds.includes(c.id)) return c;
         const init = base.initialPositions[c.id];
         if (!init) return c;
-        return { ...c, points: init.map(pt => ({ x: pt.x + ddx, y: pt.y + ddy })) };
+        return applyBoardDragSnapshot(c, init, ddx, ddy, 0, 0);
       });
     } else {
       pendingUpdateRef.current = prev => {
@@ -8003,7 +8212,7 @@ const MemoizedCustomShapeDetector = React.memo(({
         width: width + touchMargin * 2,
         height: height + touchMargin * 2,
         backgroundColor: 'transparent',
-        zIndex: selectedCloneId === icon.id ? 9999 : 9,
+        zIndex: detectorZIndex,
       }}
     >
       {/* Segmentos de toque a lo largo del perímetro */}
@@ -11524,67 +11733,108 @@ const handleCancelar = useCallback(async () => {
   // Ref para detectar taps (toque corto sin movimiento) en el campo
   const fieldTouchStartRef = useRef(null);
 
-  // Función auxiliar para verificar si un punto está cerca del borde de un rectángulo
-  const isNearRectangleEdgeForDrag = useCallback((px, py, rect, tolerance = 25) => {
-    if (!rect.points || rect.points.length !== 2) return false;
-    const { x: p1x, y: p1y } = ratioToDisplay(rect.points[0].x, rect.points[0].y, viewMode, imageWidth, imageHeight);
-    const { x: p2x, y: p2y } = ratioToDisplay(rect.points[1].x, rect.points[1].y, viewMode, imageWidth, imageHeight);
-    const minX = Math.min(p1x, p2x);
-    const maxX = Math.max(p1x, p2x);
-    const minY = Math.min(p1y, p2y);
-    const maxY = Math.max(p1y, p2y);
-    
-    // Verificar cada borde
-    if (py >= minY - tolerance && py <= minY + tolerance && px >= minX - tolerance && px <= maxX + tolerance) return true;
-    if (py >= maxY - tolerance && py <= maxY + tolerance && px >= minX - tolerance && px <= maxX + tolerance) return true;
-    if (px >= minX - tolerance && px <= minX + tolerance && py >= minY - tolerance && py <= maxY + tolerance) return true;
-    if (px >= maxX - tolerance && px <= maxX + tolerance && py >= minY - tolerance && py <= maxY + tolerance) return true;
-    return false;
-  }, [imageWidth, imageHeight]);
+  const findInteractiveCloneAtPosition = useCallback((touchX, touchY) => {
+    return findTopBoardCloneAtPoint(
+      actualClonesRef.current,
+      touchX,
+      touchY,
+      viewMode,
+      imageWidth,
+      imageHeight,
+      standardSize,
+      selectedCloneId
+    );
+  }, [viewMode, imageWidth, imageHeight, standardSize, selectedCloneId]);
 
-  // Handler para iniciar arrastre de elementos existentes (rectángulos, etc.)
+  // Handler para iniciar arrastre de cualquier elemento existente si su detector específico no captura el gesto.
   const handleElementDragStart = useCallback((e) => {
-    const { locationX, locationY } = e.nativeEvent;
-    
-    // Buscar si el toque está cerca del borde de algún rectángulo
-    for (const rect of rectangleElements) {
-      if (rect.locked) continue;
-      if (isNearRectangleEdgeForDrag(locationX, locationY, rect)) {
-        elementDragState.current = {
-          elementId: rect.id,
-          elementType: 'rectangle',
-          startX: locationX,
-          startY: locationY,
-          initialPoints: rect.points.map(p => ({ x: p.x, y: p.y }))
-        };
-        setSelectedCloneId(rect.id);
-        return true; // Indica que se inició un arrastre
-      }
+    if (multiSelectMode && selectionInteractionMode === 'select') return false;
+
+    const { locationX, locationY, pageX, pageY } = e.nativeEvent;
+    const hitClone = findInteractiveCloneAtPosition(locationX, locationY);
+    if (!hitClone) {
+      elementDragState.current = null;
+      return false;
     }
-    return false;
-  }, [rectangleElements, isNearRectangleEdgeForDrag, setSelectedCloneId]);
+
+    const isMultiSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(hitClone.id) : selectedCloneIds.includes(hitClone.id);
+    if (multiSelectMode && selectionInteractionMode === 'move' && !isMultiSelected) {
+      elementDragState.current = null;
+      return false;
+    }
+
+    const selectedIds = multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected
+      ? selectedCloneIds.filter(id => actualClonesRef.current.some(clone => clone.id === id && !clone.locked))
+      : [hitClone.id];
+    const initialPositions = buildBoardDragSnapshots(actualClonesRef.current, selectedIds);
+    if (Object.keys(initialPositions).length === 0) {
+      elementDragState.current = null;
+      return false;
+    }
+
+    elementDragState.current = {
+      primaryId: hitClone.id,
+      selectedIds,
+      initialPositions,
+      startPageX: pageX,
+      startPageY: pageY,
+    };
+
+    if (!multiSelectMode) {
+      setSelectedCloneId(hitClone.id);
+    } else if (cancelSelectionRect) {
+      cancelSelectionRect();
+    }
+
+    return true;
+  }, [multiSelectMode, selectionInteractionMode, findInteractiveCloneAtPosition, selectedCloneIdsSet, selectedCloneIds, setSelectedCloneId, cancelSelectionRect]);
 
   // Handler para mover elementos existentes
   const handleElementDragMove = useCallback((e) => {
     if (!elementDragState.current) return;
-    
-    const { locationX, locationY } = e.nativeEvent;
-    const { elementId, initialPoints, startX, startY } = elementDragState.current;
-    
-    // Dividir por zoomLevel para compensar la escala del contenedor
-    const dx = (locationX - startX) / (imageWidth * zoomLevel);
-    const dy = (locationY - startY) / (imageHeight * zoomLevel);
-    
+
+    const { pageX, pageY } = e.nativeEvent;
+    const { selectedIds, initialPositions, startPageX, startPageY } = elementDragState.current;
+    const dxDisplay = (pageX - startPageX) / zoomLevel;
+    const dyDisplay = (pageY - startPageY) / zoomLevel;
+    const { dxRatio, dyRatio } = deltaToRatio(dxDisplay, dyDisplay, viewMode, imageWidth, imageHeight);
+
     setClones(prev => prev.map(c => {
-      if (c.id !== elementId) return c;
-      return { ...c, points: initialPoints.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) };
+      if (!selectedIds.includes(c.id) || c.locked) return c;
+      return applyBoardDragSnapshot(c, initialPositions[c.id], dxRatio, dyRatio, dxDisplay, dyDisplay);
     }));
-  }, [imageWidth, imageHeight, zoomLevel, setClones]);
+  }, [viewMode, imageWidth, imageHeight, zoomLevel, setClones]);
 
   // Handler para finalizar arrastre de elementos
   const handleElementDragEnd = useCallback(() => {
+    const dragState = elementDragState.current;
     elementDragState.current = null;
-  }, []);
+    if (!dragState) return;
+
+    setClones(prev => {
+      const deleted = [];
+      const remaining = prev.filter(clone => {
+        if (!dragState.selectedIds.includes(clone.id) || clone.locked) return true;
+        if (clone.points && Array.isArray(clone.points) && clone.points.length >= 2) {
+          const outside = areAllPointsOutside(clone.points, viewMode, imageWidth, imageHeight);
+          if (outside) deleted.push(clone);
+          return !outside;
+        }
+        if (clone.xRatio !== undefined) {
+          const outside = isOutsideVisibleField(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
+          if (outside) deleted.push(clone);
+          return !outside;
+        }
+        return true;
+      });
+      if (deleted.length > 0) {
+        setTimeout(() => deleted.forEach(clone => handleElementDeleted(clone)), 0);
+      }
+      return deleted.length > 0 ? remaining : prev;
+    });
+
+    if (saveClonesHistory) saveClonesHistory();
+  }, [viewMode, imageWidth, imageHeight, setClones, handleElementDeleted, saveClonesHistory]);
 
   // Funciones para dibujar líneas rectas
   const handleStraightLineDrawStart = useCallback((e) => {
@@ -15329,79 +15579,12 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           const dist = Math.sqrt(dx * dx + dy * dy);
                           
                           if (dist < 15) {
-                            // Es un tap - ejecutar lógica de selección/deselección
-                            const distanceToSegment = (px, py, x1, y1, x2, y2) => {
-                              const sdx = x2 - x1;
-                              const sdy = y2 - y1;
-                              const lenSq = sdx * sdx + sdy * sdy;
-                              if (lenSq === 0) return Math.hypot(px - x1, py - y1);
-                              let t = ((px - x1) * sdx + (py - y1) * sdy) / lenSq;
-                              t = Math.max(0, Math.min(1, t));
-                              return Math.hypot(px - (x1 + t * sdx), py - (y1 + t * sdy));
-                            };
-                            
-                            const isNearRectangleEdge = (px, py, rect, tolerance) => {
-                              if (!rect.points || rect.points.length !== 2) return false;
-                              const { x: p1x, y: p1y } = ratioToDisplay(rect.points[0].x, rect.points[0].y, viewMode, imageWidth, imageHeight);
-                              const { x: p2x, y: p2y } = ratioToDisplay(rect.points[1].x, rect.points[1].y, viewMode, imageWidth, imageHeight);
-                              const minX = Math.min(p1x, p2x);
-                              const maxX = Math.max(p1x, p2x);
-                              const minY = Math.min(p1y, p2y);
-                              const maxY = Math.max(p1y, p2y);
-                              if (py >= minY - tolerance && py <= minY + tolerance && px >= minX - tolerance && px <= maxX + tolerance) return true;
-                              if (py >= maxY - tolerance && py <= maxY + tolerance && px >= minX - tolerance && px <= maxX + tolerance) return true;
-                              if (px >= minX - tolerance && px <= minX + tolerance && py >= minY - tolerance && py <= maxY + tolerance) return true;
-                              if (px >= maxX - tolerance && px <= maxX + tolerance && py >= minY - tolerance && py <= maxY + tolerance) return true;
-                              return false;
-                            };
-                            
-                            // Verificar rectángulos
-                            let tapped = false;
-                            for (const rect of rectangleElements) {
-                              if (rect.id === selectedCloneId) continue;
-                              if (isNearRectangleEdge(touchX, touchY, rect, 25)) {
-                                if (!multiSelectMode) setSelectedCloneId(rect.id);
-                                tapped = true;
-                                break;
-                              }
-                            }
-                            
-                            // Verificar líneas curvas
-                            if (!tapped) {
-                              for (const curveLine of curveLines) {
-                                if (curveLine.id === selectedCloneId) continue;
-                                if (!curveLine.points || curveLine.points.length < 2) continue;
-                                const pts = curveLine.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
-                                for (let i = 0; i < pts.length - 1; i++) {
-                                  const d = distanceToSegment(touchX, touchY, pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
-                                  if (d <= 30) {
-                                    if (!multiSelectMode) setSelectedCloneId(curveLine.id);
-                                    tapped = true;
-                                    break;
-                                  }
-                                }
-                                if (tapped) break;
-                              }
-                            }
-                            
-                            // Verificar iconos y deseleccionar si no se tocó nada
-                            if (!tapped) {
-                              const touchedIcon = actualClonesRef.current.find(clone => {
-                                if (clone.type === 'straight-line' || clone.type === 'straight-arrow' || 
-                                    clone.type === 'curve-line' || clone.type === 'curve-arrow' ||
-                                    clone.type === 'circle' || clone.type === 'rectangle' ||
-                                    clone.type === 'custom-shape' || clone.type === 'free-text') {
-                                  return false;
-                                }
-                                const { x: iconX, y: iconY } = ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
-                                const iconSize = (clone.size || 24) * 1.5;
-                                return Math.abs(touchX - iconX) < iconSize && Math.abs(touchY - iconY) < iconSize;
-                              });
-                              
+                            const tappedClone = findInteractiveCloneAtPosition(touchX, touchY);
+                            if (tappedClone) {
+                              if (!multiSelectMode) setSelectedCloneId(tappedClone.id);
+                            } else {
                               const timeSinceLastSelection = Date.now() - lastIconSelectionTime;
-                              if (!touchedIcon && timeSinceLastSelection > 100) {
-                                setSelectedCloneId(null);
-                              }
+                              if (timeSinceLastSelection > 100) setSelectedCloneId(null);
                             }
                           }
                         }
