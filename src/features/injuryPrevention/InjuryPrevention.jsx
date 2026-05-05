@@ -35,7 +35,17 @@ import { Button } from '../../ui/primitives';
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px 20px 24px;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    padding: 18px 14px 20px;
+    gap: 16px;
+  }
 `;
 
 const HeaderHero = styled.div`
@@ -45,6 +55,10 @@ const HeaderHero = styled.div`
   color: #fff;
   text-align: center;
   box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
+
+  @media (max-width: 720px) {
+    padding: 22px 18px;
+  }
 `;
 
 const HeroIcon = styled.div`
@@ -56,12 +70,22 @@ const HeroIcon = styled.div`
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
+
+  @media (max-width: 720px) {
+    width: 62px;
+    height: 62px;
+    margin-bottom: 10px;
+  }
 `;
 
 const HeroTitle = styled.h1`
   margin: 0 0 6px;
   font-size: 24px;
   font-weight: 800;
+
+  @media (max-width: 720px) {
+    font-size: 22px;
+  }
 `;
 
 const HeroSubtitle = styled.p`
@@ -69,6 +93,10 @@ const HeroSubtitle = styled.p`
   font-size: 14px;
   opacity: 0.92;
   line-height: 1.5;
+
+  @media (max-width: 720px) {
+    font-size: 13px;
+  }
 `;
 
 const SectionHeader = styled.div`
@@ -86,18 +114,31 @@ const SectionTitle = styled.div`
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
   svg { color: ${({ theme }) => theme.colors.primary}; }
+
+  @media (max-width: 720px) {
+    font-size: 16px;
+  }
 `;
 
 const SectionSubtitle = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   padding-left: 30px;
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    padding-left: 26px;
+  }
 `;
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const ProtocolCard = styled.button`
@@ -116,6 +157,11 @@ const ProtocolCard = styled.button`
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  @media (max-width: 720px) {
+    padding: 16px;
+    min-height: 140px;
   }
 `;
 
@@ -137,6 +183,10 @@ const ProtocolTitle = styled.div`
   color: ${({ theme }) => theme.colors.text};
   margin-bottom: 10px;
   line-height: 1.35;
+
+  @media (max-width: 720px) {
+    font-size: 15px;
+  }
 `;
 
 const ProtocolMeta = styled.div`
@@ -147,6 +197,11 @@ const ProtocolMeta = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
 
   span { display: inline-flex; align-items: center; gap: 4px; }
+
+  @media (max-width: 720px) {
+    font-size: 11px;
+    gap: 10px;
+  }
 `;
 
 const ProtocolArrow = styled.div`
@@ -176,6 +231,11 @@ const InfoCard = styled.div`
   line-height: 1.5;
 
   svg { color: ${({ theme }) => theme.colors.primary}; flex-shrink: 0; margin-top: 2px; }
+
+  @media (max-width: 720px) {
+    padding: 12px 14px;
+    font-size: 12px;
+  }
 `;
 
 // ----- Detail view -----
@@ -185,6 +245,10 @@ const DetailHero = styled.div`
   border-radius: 20px;
   padding: 24px 20px;
   text-align: center;
+
+  @media (max-width: 720px) {
+    padding: 20px 16px;
+  }
 `;
 
 const BackBar = styled.div`
@@ -192,6 +256,10 @@ const BackBar = styled.div`
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
+
+  @media (max-width: 720px) {
+    margin-bottom: 10px;
+  }
 `;
 
 const StatBadgeRow = styled.div`
@@ -211,6 +279,11 @@ const StatBadge = styled.span`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+
+  @media (max-width: 720px) {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
 `;
 
 const PdfDownloadBar = styled.div`
@@ -219,6 +292,11 @@ const PdfDownloadBar = styled.div`
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.25);
+
+  @media (max-width: 720px) {
+    margin-top: 18px;
+    padding-top: 16px;
+  }
 `;
 
 const PdfDownloadButton = styled.button`
@@ -237,6 +315,13 @@ const PdfDownloadButton = styled.button`
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 
+  @media (max-width: 720px) {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
@@ -254,6 +339,10 @@ const Panel = styled.div`
   border-radius: 16px;
   padding: 18px;
   box-shadow: ${({ theme }) => theme.shadows.sm};
+
+  @media (max-width: 720px) {
+    padding: 16px;
+  }
 `;
 
 const IntroHeader = styled.div`
@@ -266,11 +355,20 @@ const IntroHeader = styled.div`
   margin-bottom: 14px;
   padding-bottom: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 720px) {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
 `;
 
 const IntroBlock = styled.div`
   margin-bottom: 14px;
   &:last-child { margin-bottom: 0; }
+
+  @media (max-width: 720px) {
+    margin-bottom: 12px;
+  }
 `;
 
 const IntroBlockHeader = styled.div`
@@ -290,6 +388,11 @@ const IntroBlockHeader = styled.div`
     justify-content: center;
   }
   .title { font-size: 14px; font-weight: 600; color: ${({ theme }) => theme.colors.text}; }
+
+  @media (max-width: 720px) {
+    margin-bottom: 8px;
+    .title { font-size: 13px; }
+  }
 `;
 
 const FactorList = styled.ul`
@@ -314,6 +417,11 @@ const FactorItem = styled.li`
     border-radius: 50%;
     background: ${({ $bullet }) => $bullet};
   }
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    margin-bottom: 7px;
+  }
 `;
 
 const SectionCard = styled.div`
@@ -326,6 +434,7 @@ const SectionCard = styled.div`
 const SectionCardHeader = styled.button`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 14px 16px;
   width: 100%;
@@ -334,7 +443,15 @@ const SectionCardHeader = styled.button`
   text-align: left;
   border: none;
 
+  > div {
+    min-width: 0;
+  }
+
   &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
+
+  @media (max-width: 720px) {
+    padding: 12px 14px;
+  }
 `;
 
 const SectionNumber = styled.div`
@@ -347,6 +464,12 @@ const SectionNumber = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
+  @media (max-width: 720px) {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
 `;
 
 const ExerciseList = styled.div`
@@ -367,6 +490,7 @@ const ExerciseCard = styled.div`
 const ExerciseHeader = styled.button`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
@@ -374,6 +498,15 @@ const ExerciseHeader = styled.button`
   border: none;
   cursor: pointer;
   text-align: left;
+
+  > div {
+    min-width: 0;
+  }
+
+  @media (max-width: 720px) {
+    gap: 10px;
+    padding: 10px 12px;
+  }
 `;
 
 const ExerciseIcon = styled.div`
@@ -397,14 +530,23 @@ const ExerciseName = styled.div`
       -webkit-box-orient: vertical;
       overflow: hidden;
     `}
+
+  @media (max-width: 720px) {
+    font-size: 13px;
+  }
 `;
 
 const ExerciseDetails = styled.div`
   padding: 0 14px 14px;
+
+  @media (max-width: 720px) {
+    padding: 0 12px 12px;
+  }
 `;
 
 const DetailRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: flex-start;
   margin-top: 12px;
@@ -415,6 +557,15 @@ const DetailRow = styled.div`
       padding: 10px;
       border-radius: 10px;
     `}
+
+  > div {
+    min-width: 0;
+  }
+
+  @media (max-width: 720px) {
+    gap: 10px;
+    margin-top: 10px;
+  }
 `;
 
 const DetailIcon = styled.div`
@@ -433,6 +584,10 @@ const DetailLabel = styled.div`
   letter-spacing: 0.5px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: 2px;
+
+  @media (max-width: 720px) {
+    font-size: 10px;
+  }
 `;
 
 const DetailText = styled.div`
@@ -441,6 +596,10 @@ const DetailText = styled.div`
   line-height: 1.5;
   ${({ $dosage }) => $dosage && css` font-weight: 600; color: #10b981; `}
   ${({ $tips }) => $tips && css` font-style: italic; color: #92400e; `}
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+  }
 `;
 
 // ---------- Components ----------

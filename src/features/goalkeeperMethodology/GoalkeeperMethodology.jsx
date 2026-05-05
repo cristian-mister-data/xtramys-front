@@ -75,10 +75,9 @@ const PlanCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
 `;
 
-const PlanHeader = styled.button`
+const PlanHeader = styled.div`
   width: 100%;
   text-align: left;
-  border: 0;
   background: linear-gradient(90deg, ${GK_GRADIENT[0]} 0%, ${GK_GRADIENT[1]} 100%);
   color: #fff;
   padding: 12px 16px;
