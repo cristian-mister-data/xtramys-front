@@ -1117,10 +1117,15 @@ export default function MatchSheetList() {
             <View style={styles.mobileMenuOverlay}>
               <KeyboardAwareScrollView style={[styles.filtersSection, styles.filtersSectionMobile, { marginTop: 'auto', marginBottom: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' }]} showsVerticalScrollIndicator={false}>
                 <View style={styles.filtersHeader}>
-                  <Text style={styles.filtersTitle}>{t('matchSheet.actions.filters')}</Text>
-                  <Text style={styles.resultsCount}>
-                    {t('matchSheet.filters.resultsCount', { count: filteredMatchSheets.length })}
-                  </Text>
+                  <View>
+                    <Text style={styles.filtersTitle}>{t('matchSheet.actions.filters')}</Text>
+                    <Text style={styles.resultsCount}>
+                      {t('matchSheet.filters.resultsCount', { count: filteredMatchSheets.length })}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.filterCloseButton} onPress={() => setFiltersVisible(false)}>
+                    <Ionicons name="close" size={18} color={theme.colors.textMuted} />
+                  </TouchableOpacity>
                 </View>
                 
                 <View style={[styles.filtersGrid, styles.filtersGridMobile]}>
@@ -3274,7 +3279,8 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   filtersGridMobile: {
-    gap: 8,
+    flexDirection: 'column',
+    gap: 10,
   },
   filterInputContainer: {
     flex: 1,
@@ -3329,6 +3335,14 @@ const makeStyles = (theme) => StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  filterCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   // Estilos para men� m�vil
   mobileMenuButton: {

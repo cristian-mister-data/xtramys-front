@@ -930,17 +930,16 @@ export default function LineupEditor({
               </View>
             </View>
             
-            {/* En móvil: Panel de jugadores abajo (horizontal) */}
-            <View style={styles.playersPanelMobileVertical}>
+            {/* En móvil: Panel de jugadores abajo */}
+            <View style={styles.playersPanelMobile}>
               <View style={styles.panelHeaderMobile}>
                 <View style={styles.panelHeaderLeft}>
-                  <Ionicons name="people" size={14} color={theme.colors.primary} />
-                  <Text style={styles.panelTitleMobile}>{t('matchSheet.lineup.called')}</Text>
+                  <Ionicons name="people" size={16} color={theme.colors.primary} />
+                  <View>
+                    <Text style={styles.panelTitleMobile}>{t('matchSheet.lineup.called')}</Text>
+                    <Text style={styles.panelSubtitleMobile}>{`${convocadosPlayers.length} ${t('matchSheet.lineup.called')}`}</Text>
+                  </View>
                 </View>
-                <View style={styles.panelBadgeMobile}>
-                  <Text style={styles.panelBadgeTextMobile}>{convocadosPlayers.length}</Text>
-                </View>
-                {/* Botón suplentes inline */}
                 {remainingPlayers > 0 && (
                   <TouchableOpacity
                     style={styles.suplentesButtonMobile}
@@ -955,9 +954,8 @@ export default function LineupEditor({
               </View>
               
               <ScrollView 
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.playersListMobileHorizontal}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.playersListMobileGrid}
               >
                 {convocadosPlayers.map(player => (
                   <TouchableOpacity
@@ -989,6 +987,9 @@ export default function LineupEditor({
                       numberOfLines={1}
                     >
                       {getPlayerFirstName(player)}
+                    </Text>
+                    <Text style={styles.playerItemMobilePos} numberOfLines={1}>
+                      {player.posicion ? translatePosition(player.posicion) : ''}
                     </Text>
                     {selectedPlayer?._id === player._id && (
                       <View style={styles.selectedIndicatorMobile}>
@@ -1202,66 +1203,63 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  playersPanelMobileVertical: {
+  playersPanelMobile: {
     width: '100%',
     backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
   panelHeaderMobile: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    gap: 8,
+    gap: 10,
   },
   panelTitleMobile: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-  },
-  panelBadgeMobile: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  panelBadgeTextMobile: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: theme.colors.text,
+  },
+  panelSubtitleMobile: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   suplentesButtonMobile: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.purple,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginLeft: 'auto',
-    gap: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 6,
   },
   suplentesButtonTextMobile: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#fff',
   },
-  playersListMobileHorizontal: {
+  playersListMobileGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 10,
     paddingVertical: 4,
   },
   playerItemMobile: {
-    width: 64,
+    width: '48%',
+    minWidth: 140,
     alignItems: 'center',
-    padding: 6,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 14,
     backgroundColor: theme.colors.surface,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: theme.colors.border,
   },
   playerItemMobileSelected: {
@@ -1269,41 +1267,48 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.primarySoft,
   },
   playerItemMobileAssigned: {
-    opacity: 0.55,
+    opacity: 0.9,
     backgroundColor: theme.colors.backgroundAlt,
     borderColor: theme.colors.border,
   },
   playerItemMobilePhoto: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   playerItemMobileCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerItemMobileNumber: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#fff',
   },
   playerItemMobileName: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: theme.colors.text,
-    marginTop: 4,
+    marginTop: 8,
     textAlign: 'center',
   },
   playerItemMobileNameAssigned: {
     color: theme.colors.textDisabled,
   },
+  playerItemMobilePos: {
+    fontSize: 10,
+    color: theme.colors.textMuted,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
   selectedIndicatorMobile: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: 8,
+    right: 8,
   },
   assignedBadgeMobile: {
     position: 'absolute',
