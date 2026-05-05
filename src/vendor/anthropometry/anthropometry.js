@@ -410,13 +410,8 @@ const Anthropometry = ({ navigation }) => {
   return (
     <AppLayout scrollEnabled={false}>
       <View style={{ flex: 1 }}>
-        {/* Header estilo unificado (acciones inline, sin menú de 3 puntos) */}
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
-            <View style={[styles.topBarTitleContainer, { flexShrink: 1, minWidth: 0 }]}>
-              <Ionicons name="body" size={IS_MOBILE ? 22 : 28} color="#2474E5" />
-              <Text style={styles.topBarTitle} numberOfLines={1}>{t('anthropometry.anthropometry')}</Text>
-            </View>
             <View style={styles.headerActions}>
               {/* Filtro por fechas */}
               <TouchableOpacity
@@ -1322,7 +1317,7 @@ const makeStyles = (theme) => StyleSheet.create({
   topBarHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: Platform.OS === 'web' ? 20 : 12,
   },
   topBarTitleContainer: {

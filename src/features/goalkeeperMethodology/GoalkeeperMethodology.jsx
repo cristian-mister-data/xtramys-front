@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { MdLock, MdAdd, MdDelete, MdEdit, MdPictureAsPdf } from 'react-icons/md';
+import { MdLock, MdAdd, MdDelete, MdEdit, MdPictureAsPdf, MdSportsHandball } from 'react-icons/md';
 import { generateGoalkeeperMethodologyPdf } from './pdf';
 
 import {
@@ -21,7 +21,8 @@ import {
   updateGkMethodology,
   deleteGkMethodology,
 } from '../../api/nutritionMethodology';
-import { PageHeader, PageTitle, Button, Input, Stack, Row, Muted, TextArea } from '../../ui/primitives';
+import { Button, Input, Stack, Row, Muted, TextArea } from '../../ui/primitives';
+import SectionHeader from '../../ui/SectionHeader';
 import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
@@ -340,12 +341,12 @@ export default function GoalkeeperMethodology() {
 
   return (
     <Container>
-      <PageHeader>
-        <Row $gap={10}>
-          <PageTitle>{t('goalkeeperMethodology.title', 'Metodología de Porteros')}</PageTitle>
-          {!isEditable && <ReadOnlyBadge><MdLock size={12} /> {t('methodology.readOnly', 'Solo lectura')}</ReadOnlyBadge>}
-        </Row>
-      </PageHeader>
+      <SectionHeader
+        title={t('goalkeeperMethodology.title', 'Metodología de Porteros')}
+        subtitle={t('sectionHeaders.goalkeeperMethodology', 'Planifica microciclos y tareas específicas para porteros.')}
+        icon={MdSportsHandball}
+        meta={!isEditable ? <ReadOnlyBadge><MdLock size={12} /> {t('methodology.readOnly', 'Solo lectura')}</ReadOnlyBadge> : null}
+      />
 
       <SelectorRow>
         <Chip $active={selectedId === 'recommended'} onClick={() => setSelectedId('recommended')}>

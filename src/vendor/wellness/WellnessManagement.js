@@ -19,7 +19,6 @@ import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -93,19 +92,6 @@ export default function WellnessManagement({ navigation }) {
     textMuted: theme.colors.textMuted,
     border: theme.colors.border,
   }), [theme]);
-  const isDark = theme.mode === 'dark';
-  // Gradiente de cabecera adaptado al tema (en oscuro utiliza tonos
-  // de superficie para no romper el contraste suave del resto de la app).
-  const headerGradient = isDark
-    ? [theme.colors.surface, theme.colors.surfaceAlt, theme.colors.surfaceElevated]
-    : ['#1a237e', '#3949ab', '#5c6bc0'];
-  const headerTextColor = isDark ? theme.colors.text : '#fff';
-  const headerTextMutedColor = isDark
-    ? theme.colors.textSecondary
-    : 'rgba(255,255,255,0.8)';
-  const headerActionBg = isDark
-    ? theme.colors.backgroundAlt
-    : 'rgba(255,255,255,0.2)';
   const sessions = useSelector(state => state.session.session) || [];
   const equipos = useSelector(state => state.team.teams) || [];
   
@@ -1345,27 +1331,17 @@ export default function WellnessManagement({ navigation }) {
   return (
     <AppLayout>
       <View style={styles.container}>
-        <LinearGradient
-          colors={headerGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.header, isDark && { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}
-        >
+        <View style={styles.header}>
           <View style={styles.headerContent}>
-            <MaterialIcons name="favorite" size={28} color={headerTextColor} />
-            <Text style={[styles.headerTitle, { color: headerTextColor }]}>{t('wellness.title')}</Text>
             <TouchableOpacity
-              style={{ marginLeft: 'auto', backgroundColor: headerActionBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: isDark ? 1 : 0, borderColor: theme.colors.border }}
+              style={styles.headerPdfButton}
               onPress={() => setShowRangePDFModal(true)}
             >
-              <Ionicons name="document-text-outline" size={18} color={headerTextColor} />
-              <Text style={{ color: headerTextColor, fontSize: 12, fontWeight: '600' }}>{t('wellness.pdfButton')}</Text>
+              <Ionicons name="document-text-outline" size={18} color={theme.colors.primary} />
+              <Text style={styles.headerPdfButtonText}>{t('wellness.pdfButton')}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={[styles.headerSubtitle, { color: headerTextMutedColor }]}>
-            {t('wellness.subtitle')}
-          </Text>
-        </LinearGradient>
+        </View>
 
         {renderTabs()}
         
@@ -1473,16 +1449,37 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    paddingTop: 16,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  headerPdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  headerPdfButtonText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 24,

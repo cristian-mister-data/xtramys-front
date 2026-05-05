@@ -16,6 +16,7 @@ import {
   MdUnfoldLess,
   MdFolderOpen,
   MdPictureAsPdf,
+  MdLibraryBooks,
 } from 'react-icons/md';
 
 import {
@@ -31,7 +32,8 @@ import {
   updateMethodology,
   deleteMethodology,
 } from '../../api/nutritionMethodology';
-import { PageHeader, PageTitle, Button, Input, Stack, Row, Muted } from '../../ui/primitives';
+import { Button, Input, Stack, Row, Muted } from '../../ui/primitives';
+import SectionHeader from '../../ui/SectionHeader';
 import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
@@ -653,14 +655,14 @@ export default function Methodology() {
   return (
     <Container>
       {saving && <SavingBanner>{t('methodology.saving', 'Guardando...')}</SavingBanner>}
-      <PageHeader>
-        <Row $gap={10}>
-          <PageTitle>{t('methodology.title', 'Metodología')}</PageTitle>
-          {!isEditable && (
-            <ReadOnlyBadge><MdLock size={12} /> {t('methodology.readOnly', 'Solo lectura')}</ReadOnlyBadge>
-          )}
-        </Row>
-      </PageHeader>
+      <SectionHeader
+        title={t('methodology.title', 'Metodología')}
+        subtitle={t('sectionHeaders.methodology', 'Estructura modelos, categorías y planes de trabajo del club.')}
+        icon={MdLibraryBooks}
+        meta={!isEditable ? (
+          <ReadOnlyBadge><MdLock size={12} /> {t('methodology.readOnly', 'Solo lectura')}</ReadOnlyBadge>
+        ) : null}
+      />
 
       <MethodologySelector
         methodologies={methodologies}

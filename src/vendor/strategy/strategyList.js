@@ -1550,13 +1550,8 @@ const handleDelete = (strategy) => {
   return (
     <AppLayout>
       <View style={styles.mvContainer}>
-        {/* Header estilo myVideos */}
         <View style={styles.mvHeader}>
           <View style={styles.mvHeaderTop}>
-            <View style={styles.mvHeaderTitleContainer}>
-              <Ionicons name="football-outline" size={28} color="#8B5CF6" />
-              <Text style={styles.mvHeaderTitle}>{t('strategy.strategies')}</Text>
-            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {folderPath.length < 2 && (
                 <TouchableOpacity 
@@ -3124,9 +3119,9 @@ const styles = StyleSheet.create({
   mvHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: Platform.OS === 'web' ? 20 : 12,
-    marginBottom: Platform.OS === 'web' ? 16 : 8,
+    marginBottom: Platform.OS === 'web' ? 12 : 8,
   },
   mvHeaderTitleContainer: {
     flexDirection: 'row',

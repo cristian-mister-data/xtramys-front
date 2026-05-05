@@ -27,8 +27,6 @@ import {
   deleteRival,
 } from '../../store/slices/rival/rivalThunks';
 import {
-  PageHeader,
-  PageTitle,
   Button,
   Input,
   Field,
@@ -38,6 +36,7 @@ import {
   Muted,
   ErrorText,
 } from '../../ui/primitives';
+import SectionHeader from '../../ui/SectionHeader';
 import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
@@ -322,9 +321,11 @@ export default function Rivals() {
   if (!selectedTeam) {
     return (
       <Container>
-        <PageHeader>
-          <PageTitle>{t('rivals.title', 'Rivales')}</PageTitle>
-        </PageHeader>
+        <SectionHeader
+          title={t('rivals.title', 'Rivales')}
+          subtitle={t('rivals.noTeamSelectedSubtitle', 'Selecciona un equipo para ver y gestionar sus rivales.')}
+          icon={MdShield}
+        />
         <EmptyState>
           <MdGroups size={56} />
           <div style={{ fontWeight: 600, fontSize: 16 }}>
@@ -343,17 +344,21 @@ export default function Rivals() {
 
   return (
     <Container>
-      <PageHeader>
-        <PageTitle>{t('rivals.title', 'Rivales')}</PageTitle>
-        <Row $gap={8}>
-          <Button $variant="primary" onClick={openCreate}>
-            <Row $gap={6}>
-              <MdAdd size={18} />
-              {t('rivals.add', 'Añadir rival')}
-            </Row>
-          </Button>
-        </Row>
-      </PageHeader>
+      <SectionHeader
+        title={t('rivals.title', 'Rivales')}
+        subtitle={selectedTeam?.nombre || t('rivals.subtitle', 'Gestión de equipos rivales')}
+        icon={MdShield}
+        actions={(
+          <Row $gap={8}>
+            <Button $variant="primary" onClick={openCreate}>
+              <Row $gap={6}>
+                <MdAdd size={18} />
+                {t('rivals.add', 'Añadir rival')}
+              </Row>
+            </Button>
+          </Row>
+        )}
+      />
 
       <Row $gap={8} $wrap>
         <SearchBar>

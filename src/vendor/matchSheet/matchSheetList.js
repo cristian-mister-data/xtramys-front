@@ -631,13 +631,8 @@ export default function MatchSheetList() {
   return (
     <AppLayout scrollEnabled={false}>
       <View style={{ flex: 1 }}>
-        {/* Header estilo unificado */}
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
-            <View style={styles.topBarTitleContainer}>
-              <Ionicons name="document-text-outline" size={28} color={theme.colors.primary} />
-              <Text style={styles.topBarTitle}>{t('matchSheet.title')}</Text>
-            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {/* Bot�n de filtros */}
               <TouchableOpacity
@@ -1434,7 +1429,7 @@ const makeStyles = (theme) => StyleSheet.create({
   topBarHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: Platform.OS === 'web' ? 20 : 12,
   },
   topBarTitleContainer: {

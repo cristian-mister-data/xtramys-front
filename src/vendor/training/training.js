@@ -1610,14 +1610,14 @@ export default function Training() {
 
   return (
     <View style={styles.container}>
-      {/* Header Profesional con Gradiente Visual */}
-      <View style={[styles.proHeader, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
-        {/* Título y equipo */}
+      <View style={[styles.proHeader, { paddingTop: Math.max(insets.top, 10) + 2 }]}>
         <View style={styles.proHeaderTop}>
-          <View style={styles.proHeaderTitleSection}>
-            <Text style={styles.proHeaderTitle}>{t('session.trainingSessions')}</Text>
-            <Text style={styles.proHeaderTeam}>{selectedTeam?.nombre || ''}</Text>
-          </View>
+          {selectedTeam?.nombre ? (
+            <View style={styles.proHeaderTeamPill}>
+              <MaterialIcons name="groups" size={18} color="#2474E5" />
+              <Text style={styles.proHeaderTeamPillText} numberOfLines={1}>{selectedTeam.nombre}</Text>
+            </View>
+          ) : <View style={styles.proHeaderTeamPillSpacer} />}
           <TouchableOpacity
             style={styles.proCreateButton}
             onPress={openCrearModal}
@@ -2335,21 +2335,24 @@ const styles = StyleSheet.create({
   // --- Pro Header ---
   proHeader: {
     backgroundColor: '#ffffff',
-    paddingBottom: 0,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#1e3a5a',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 10,
+    paddingBottom: 14,
+    marginHorizontal: isMobileDevice() ? 10 : 16,
+    marginTop: isMobileDevice() ? 10 : 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   proHeaderTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: isMobileDevice() ? 12 : 16,
+    marginBottom: 14,
   },
   proHeaderTitleSection: {
     flex: 1,
@@ -2365,6 +2368,30 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontWeight: '600',
     marginTop: 4,
+  },
+  proHeaderTeamPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  proHeaderTeamPillText: {
+    flex: 1,
+    minWidth: 0,
+    color: '#1d4ed8',
+    fontSize: isMobileDevice() ? 13 : 14,
+    fontWeight: '700',
+  },
+  proHeaderTeamPillSpacer: {
+    flex: 1,
   },
   proCreateButton: {
     flexDirection: 'row',

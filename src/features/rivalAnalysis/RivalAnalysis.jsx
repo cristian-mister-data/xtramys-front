@@ -23,12 +23,11 @@ import {
 } from '@/store/slices/rivalAnalysis/rivalAnalysisThunks';
 import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
 import {
-  PageHeader,
-  PageTitle,
   Button,
   Row,
   Muted,
 } from '@/ui/primitives';
+import SectionHeader from '@/ui/SectionHeader';
 
 import {
   ALINEACIONES,
@@ -251,9 +250,11 @@ export default function RivalAnalysis() {
   if (!selectedTeam) {
     return (
       <Container>
-        <PageHeader>
-          <PageTitle>{t('rivalAnalysis.title', 'Análisis del Rival')}</PageTitle>
-        </PageHeader>
+        <SectionHeader
+          title={t('rivalAnalysis.title', 'Análisis del Rival')}
+          subtitle={t('rivalAnalysis.noTeamSelectedSubtitle', 'Selecciona un equipo para gestionar los análisis de sus rivales.')}
+          icon={MdAnalytics}
+        />
         <EmptyState>
           <MdAnalytics size={56} />
           <div style={{ fontWeight: 600, fontSize: 16 }}>
@@ -272,23 +273,27 @@ export default function RivalAnalysis() {
 
   return (
     <Container>
-      <PageHeader>
-        <PageTitle>{t('rivalAnalysis.title', 'Análisis del Rival')}</PageTitle>
-        <Row $gap={8}>
-          <Button $variant="secondary" onClick={() => setShowTemplates(true)}>
-            <Row $gap={6}>
-              <MdLibraryBooks size={18} />
-              {t('rivalAnalysis.templates', 'Plantillas')}
-            </Row>
-          </Button>
-          <Button $variant="primary" onClick={openCreate}>
-            <Row $gap={6}>
-              <MdAdd size={18} />
-              {t('rivalAnalysis.add', 'Nuevo análisis')}
-            </Row>
-          </Button>
-        </Row>
-      </PageHeader>
+      <SectionHeader
+        title={t('rivalAnalysis.title', 'Análisis del Rival')}
+        subtitle={selectedTeam?.nombre || t('rivalAnalysis.subtitle', 'Scouting y seguimiento del oponente')}
+        icon={MdAnalytics}
+        actions={(
+          <Row $gap={8}>
+            <Button $variant="secondary" onClick={() => setShowTemplates(true)}>
+              <Row $gap={6}>
+                <MdLibraryBooks size={18} />
+                {t('rivalAnalysis.templates', 'Plantillas')}
+              </Row>
+            </Button>
+            <Button $variant="primary" onClick={openCreate}>
+              <Row $gap={6}>
+                <MdAdd size={18} />
+                {t('rivalAnalysis.add', 'Nuevo análisis')}
+              </Row>
+            </Button>
+          </Row>
+        )}
+      />
 
       <Toolbar>
         <SearchBar>

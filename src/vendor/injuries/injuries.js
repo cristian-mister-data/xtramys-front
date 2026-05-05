@@ -472,21 +472,11 @@ export default function InjuriesManagement({ navigation }) {
   return (
     <AppLayout>
       <KeyboardAwareScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header con Gradiente */}
         <View style={styles.headerSection}>
-          <LinearGradient
-            colors={['#1a237e', '#3949ab', '#5c6bc0']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.headerGradient}
-          >
+          <View style={styles.headerGradient}>
             <View style={styles.headerContent}>
               <View style={styles.headerLeft}>
-                <View style={styles.headerIconContainer}>
-                  <MaterialIcons name="medical-services" size={24} color="#fff" />
-                </View>
                 <View style={styles.headerTextContainer}>
-                  <Text style={styles.headerTitle}>{t('injury.management')}</Text>
                   <Text style={styles.headerSubtitle}>
                     {getFilteredInjuries().length || 0} {getFilteredInjuries().length === 1 ? t('injury.injury_one') : t('injury.injury_other')}
                     {getFilteredInjuries().length !== injuries?.length && ` ${t('common.of')} ${injuries?.length || 0} ${t('common.total')}`}
@@ -503,7 +493,7 @@ export default function InjuriesManagement({ navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Injuries List */}
@@ -1259,23 +1249,26 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
   },
   headerSection: {
-    marginBottom: isMobileDevice() ? 20 : 24,
-    marginTop: isMobileDevice() ? 12 : 16,
+    marginBottom: isMobileDevice() ? 14 : 18,
+    marginTop: isMobileDevice() ? 10 : 16,
   },
   headerGradient: {
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
     marginHorizontal: isMobileDevice() ? 12 : 16,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: isMobileDevice() ? 18 : 22,
+    padding: isMobileDevice() ? 14 : 16,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -1291,7 +1284,6 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
   },
   headerTextContainer: {
-    marginLeft: 14,
     flex: 1,
   },
   headerTitle: {
@@ -1304,9 +1296,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: isMobileDevice() ? 13 : 14,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '500',
-    marginTop: 4,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   headerButtons: {
     flexDirection: 'row',

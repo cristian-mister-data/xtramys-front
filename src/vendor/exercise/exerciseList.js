@@ -1900,13 +1900,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
   return (
     <AppLayout>
       <View style={styles.mvContainer}>
-        {/* Header estilo myVideos */}
         <View style={styles.mvHeader}>
           <View style={styles.mvHeaderTop}>
-            <View style={styles.mvHeaderTitleContainer}>
-              <Ionicons name="fitness" size={28} color="#3578e5" />
-              <Text style={styles.mvHeaderTitle}>{t('exercise.exercises')}</Text>
-            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {folderPath.length < 2 && (
                 <TouchableOpacity 
@@ -4097,9 +4092,9 @@ const styles = StyleSheet.create({
   mvHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   mvHeaderTitleContainer: {
     flexDirection: 'row',

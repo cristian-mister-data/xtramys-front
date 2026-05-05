@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Card, Button, Input, PageHeader, PageTitle, Row, Stack, Muted } from '@/ui/primitives';
+import { MdAdd, MdPeople } from 'react-icons/md';
+import { Card, Button, Input, Row, Stack, Muted } from '@/ui/primitives';
+import SectionHeader from '@/ui/SectionHeader';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
@@ -208,15 +210,17 @@ export default function Players() {
 
   return (
     <Stack style={{ gap: 16 }}>
-      <PageHeader>
-        <div>
-          <PageTitle>{t('player.players', 'Jugadores')}</PageTitle>
-          <Muted>{selectedTeam?.nombre || t('player.noTeamSelected', 'Selecciona un equipo')}</Muted>
-        </div>
-        {selectedTeam ? (
-          <Button onClick={() => setCreateOpen(true)}>+ {t('player.createPlayer', 'Nuevo jugador')}</Button>
+      <SectionHeader
+        title={t('player.players', 'Jugadores')}
+        subtitle={selectedTeam?.nombre || t('player.noTeamSelected', 'Selecciona un equipo')}
+        icon={MdPeople}
+        actions={selectedTeam ? (
+          <Button onClick={() => setCreateOpen(true)}>
+            <MdAdd size={18} />
+            {t('player.createPlayer', 'Nuevo jugador')}
+          </Button>
         ) : null}
-      </PageHeader>
+      />
 
       {!selectedTeam ? (
         <TeamRequiredCard />

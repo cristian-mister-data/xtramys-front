@@ -18,7 +18,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -621,14 +621,9 @@ export default function MyVideos() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerTitleContainer}>
-            <MaterialCommunityIcons name="video-vintage" size={28} color="#6366F1" />
-            <Text style={styles.headerTitle}>{t('myVideos.title')}</Text>
-          </View>
-          {folderPath.length < 2 && !(sourceFilter === 'global' && !isAdmin) && (
+        {folderPath.length < 2 && !(sourceFilter === 'global' && !isAdmin) && (
+          <View style={styles.headerTop}>
             <TouchableOpacity 
               style={styles.addFolderButton}
               onPress={() => setShowCreateFolderModal(true)}
@@ -636,8 +631,8 @@ export default function MyVideos() {
             >
               <Feather name="folder-plus" size={20} color="#fff" />
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
         
         {/* Breadcrumb */}
         <View style={styles.breadcrumb}>
@@ -1515,9 +1510,9 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerTitleContainer: {
     flexDirection: 'row',

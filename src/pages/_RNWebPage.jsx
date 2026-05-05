@@ -13,6 +13,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import styled, { css } from 'styled-components';
+import SectionHeader from '@/ui/SectionHeader';
 
 const fillStyle = { flex: 1, width: '100%', height: '100%' };
 
@@ -45,7 +46,11 @@ const darkInvert = css`
 const Frame = styled.div`
   width: 100%;
   height: 100%;
-  min-height: ${({ $fullscreen }) => ($fullscreen ? '100dvh' : 'calc(100dvh - 60px - 48px)')};
+  min-height: ${({ $fullscreen, $hasHeader }) => {
+    if ($fullscreen) return '100dvh';
+    return $hasHeader ? '0' : 'calc(100dvh - 60px - 48px)';
+  }};
+  flex: ${({ $hasHeader }) => ($hasHeader ? '1 1 auto' : 'initial')};
   border-radius: ${({ $fullscreen, theme }) => ($fullscreen ? '0' : theme.radius.lg)};
   overflow: hidden;
   background: ${({ theme }) => theme.colors.background};
@@ -60,6 +65,13 @@ const Frame = styled.div`
   flex-direction: column;
 `;
 
+const PageStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100dvh - 60px - 48px);
+`;
+
 const InvertLayer = styled.div`
   flex: 1;
   width: 100%;
@@ -70,9 +82,31 @@ const InvertLayer = styled.div`
     !$themed && theme.mode === 'dark' && darkInvert}
 `;
 
-export default function RNWebPage({ children, themed = false, fullscreen = false }) {
-  return (
-    <Frame $themed={themed} $fullscreen={fullscreen}>
+export default function RNWebPage({
+  children,
+  themed = false,
+  fullscreen = false,
+  title,
+  subtitle,
+  eyebrow,
+  icon,
+  actions,
+  meta,
+  header,
+}) {
+  const headerNode = header || (title ? (
+    <SectionHeader
+      title={title}
+      subtitle={subtitle}
+      eyebrow={eyebrow}
+      icon={icon}
+      actions={actions}
+      meta={meta}
+    />
+  ) : null);
+
+  const frame = (
+    <Frame $themed={themed} $fullscreen={fullscreen} $hasHeader={!!headerNode}>
       <InvertLayer $themed={themed}>
         <SafeAreaProvider style={fillStyle}>
           <GestureHandlerRootView style={fillStyle}>
@@ -81,5 +115,14 @@ export default function RNWebPage({ children, themed = false, fullscreen = false
         </SafeAreaProvider>
       </InvertLayer>
     </Frame>
+  );
+
+  if (!headerNode || fullscreen) return frame;
+
+  return (
+    <PageStack>
+      {headerNode}
+      {frame}
+    </PageStack>
   );
 }
