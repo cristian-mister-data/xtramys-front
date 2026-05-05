@@ -399,6 +399,8 @@ export default function VideoRecorder({
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [localVideoPath, setLocalVideoPath] = useState(null); // Ruta local del MP4 generado
   const [localVideoMime, setLocalVideoMime] = useState(null); // Tipo MIME del video generado
+  const [videoThumbnail, setVideoThumbnail] = useState(null);
+  const videoThumbnailRef = useRef(null);
   const generationCancelledRef = useRef(false); // Para cancelar generación en curso
   const uploadingPathRef = useRef(null); // Ruta del archivo que se está subiendo a R2 (no borrar)
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100 porcentaje de generación
@@ -857,6 +859,8 @@ export default function VideoRecorder({
       setGenerationProgress(0);
       setGenerationPhase('generationPreparing');
       generationCancelledRef.current = false;
+      videoThumbnailRef.current = null;
+      setVideoThumbnail(null);
 
       const fps = SPEED_TO_FPS[videoSpeed] || 30;
       const moveDuration = 0.9;  // 90% movimiento a x1
@@ -965,6 +969,17 @@ export default function VideoRecorder({
           cacheBust: false,
           backgroundColor: '#ffffff',
         });
+
+        if (i === 0) {
+          try {
+            const firstFrameBase64 = await RNFS.readFile(frameCapture, 'base64');
+            const firstFrame = `data:image/jpeg;base64,${firstFrameBase64}`;
+            videoThumbnailRef.current = firstFrame;
+            setVideoThumbnail(firstFrame);
+          } catch (thumbnailError) {
+            console.warn('[videoRecorder] No se pudo crear miniatura:', thumbnailError);
+          }
+        }
 
         const destPath = `${framesDir}/frame${String(i).padStart(4, '0')}.${VIDEO_CAPTURE_EXTENSION}`;
         await RNFS.moveFile(frameCapture, destPath);
@@ -1106,6 +1121,8 @@ export default function VideoRecorder({
         nombre: videoNombre,
         descripcion: videoDescripcion,
       };
+      const thumbnailToSave = videoThumbnailRef.current || videoThumbnail;
+      if (thumbnailToSave) videoData.thumbnail = thumbnailToSave;
 
       // Guardar en BD primero (rápido, solo JSON)
       let result;
@@ -1224,6 +1241,8 @@ export default function VideoRecorder({
         setShowPreviewScreen(false);
         setVideoNombre('');
         setVideoDescripcion('');
+        setVideoThumbnail(null);
+        videoThumbnailRef.current = null;
         setSelectedFolderId(null);
         onClearKeyframes();
         setCurrentVideoId(null);

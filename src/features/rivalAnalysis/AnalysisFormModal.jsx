@@ -40,6 +40,7 @@ import {
 } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import VideoPoster from '@/components/shared/VideoPoster';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
 import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
 import {
@@ -156,18 +157,6 @@ const VideoThumb = styled.button`
     max-height: 240px;
     border-radius: 6px;
   }
-`;
-
-const PlayOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
-  pointer-events: none;
-  border-radius: ${({ theme }) => theme.radius.md};
 `;
 
 const RivalOption = styled.button`
@@ -610,14 +599,15 @@ export default function AnalysisFormModal({
         <Stack $gap={6}>
           {hasAny ? (
             <VideoThumb type="button" onClick={() => hasVideoId ? openVideoViewer(value.videoId) : setVideoViewerUrl(playUrl)}>
-              {hasInlineUrl ? (
-                <video src={playUrl} preload="metadata" muted playsInline />
-              ) : (
-                <MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />
-              )}
-              <PlayOverlay theme={theme}>
-                <MdPlayCircle size={56} />
-              </PlayOverlay>
+              <VideoPoster
+                video={hasVideoId ? value : null}
+                src={hasInlineUrl ? playUrl : ''}
+                poster={value?.thumbnailUrl || value?.thumbnail}
+                fallback={<MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />}
+                playSize={56}
+                style={{ minHeight: 160 }}
+                alt={getQuestionText(q, t)}
+              />
             </VideoThumb>
           ) : (
             <SnapshotPreview>

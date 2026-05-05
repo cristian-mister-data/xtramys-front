@@ -149,6 +149,20 @@ export default function Modal({ open, onClose, title, children, footer, width })
       const focusables = contentRef.current?.querySelectorAll(
         'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
+      const autoFocusEl = contentRef.current?.querySelector(
+        '[autofocus]:not([disabled])'
+      );
+      if (autoFocusEl && typeof autoFocusEl.focus === 'function') {
+        autoFocusEl.focus();
+        return;
+      }
+      const firstInput = contentRef.current?.querySelector(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      );
+      if (firstInput && typeof firstInput.focus === 'function') {
+        firstInput.focus();
+        return;
+      }
       if (focusables && focusables.length > 0) focusables[0].focus();
       else contentRef.current?.focus();
     });

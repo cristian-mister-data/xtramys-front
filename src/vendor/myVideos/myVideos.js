@@ -42,6 +42,7 @@ import {
   listGlobalVideos,
 } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import VideoPoster from '@/components/shared/VideoPoster';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
@@ -585,12 +586,13 @@ export default function MyVideos() {
       activeOpacity={0.7}
     >
       <View style={styles.videoThumbnail}>
-        <LinearGradient
-          colors={['#1E293B', '#334155']}
-          style={styles.thumbnailGradient}
-        >
-          <Feather name="play-circle" size={32} color="#fff" />
-        </LinearGradient>
+        <VideoPoster
+          video={video}
+          poster={video.thumbnailUrl || video.thumbnail}
+          fallback={<Feather name="play-circle" size={32} color="#fff" />}
+          playSize={34}
+          alt={video.nombre || 'Video'}
+        />
       </View>
       <View style={styles.videoContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

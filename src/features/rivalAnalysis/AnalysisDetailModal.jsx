@@ -61,6 +61,7 @@ import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import VideoPoster from '@/components/shared/VideoPoster';
 
 import {
   KNOWN_FIELDS,
@@ -237,6 +238,23 @@ const VideoActions = styled.div`
   gap: 8px;
   margin-top: 4px;
   flex-wrap: wrap;
+`;
+
+const VideoPreviewButton = styled.button`
+  width: min(100%, 360px);
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  overflow: hidden;
+  cursor: pointer;
+  background: #0f172a;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
 `;
 
 const VideoBtn = styled.button`
@@ -436,6 +454,18 @@ export default function AnalysisDetailModal({
           <QTitle>{label}</QTitle>
         </QHead>
         <div style={{ paddingLeft: 36, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <VideoPreviewButton
+            type="button"
+            onClick={() => (videoId ? handlePlayVideo(videoId) : inlineUrl ? setVideoModalUrl(inlineUrl) : null)}
+          >
+            <VideoPoster
+              video={videoId ? value : null}
+              src={inlineUrl || ''}
+              poster={value?.thumbnailUrl || value?.thumbnail}
+              playSize={54}
+              alt={label}
+            />
+          </VideoPreviewButton>
           <VideoStatusRow>
             <MdCheckCircle size={18} />
             {t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}

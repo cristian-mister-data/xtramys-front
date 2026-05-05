@@ -1,5 +1,7 @@
 import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
 import { ensureMp4Blob } from '@/utils/videoUtils';
+import { API_URL, USE_COOKIE_AUTH } from '@/config';
+import { loadToken } from '@/auth/storage';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -9,7 +11,55 @@ const getId = (videoOrId) => {
 
 const getKnownUrl = (videoOrId) => {
   if (!videoOrId || typeof videoOrId === 'string') return null;
-  return videoOrId.videoUrl || videoOrId.url || null;
+  return videoOrId.videoUrl || videoOrId.streamUrl || videoOrId.sourceUrl || videoOrId.url || null;
+};
+
+const getAuthHeaders = () => {
+  if (USE_COOKIE_AUTH) return {};
+  const token = loadToken?.();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const isBackendApiUrl = (url) => {
+  if (!url || typeof window === 'undefined') return false;
+  try {
+    const target = new URL(url, window.location.origin);
+    const api = new URL(API_URL, window.location.origin);
+    return target.origin === api.origin && target.pathname.startsWith(api.pathname);
+  } catch (_) {
+    return false;
+  }
+};
+
+const fetchVideoBlob = async (url) => {
+  const response = await fetch(url, {
+    credentials: USE_COOKIE_AUTH ? 'include' : 'same-origin',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`No se pudo cargar el vídeo (${response.status})`);
+  }
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType && !contentType.toLowerCase().startsWith('video/')) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || 'La respuesta no es un vídeo válido');
+  }
+  const blob = await response.blob();
+  if (!blob || blob.size === 0) throw new Error('El vídeo descargado está vacío');
+  return blob;
+};
+
+const maybeObjectUrl = async (url, { objectUrl = true } = {}) => {
+  if (!objectUrl || !isBackendApiUrl(url) || typeof URL === 'undefined') return url;
+  const blob = await fetchVideoBlob(url);
+  return URL.createObjectURL(blob);
+};
+
+export const isVideoObjectUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
+
+export const revokeVideoObjectUrl = (url) => {
+  if (!isVideoObjectUrl(url) || typeof URL === 'undefined') return;
+  try { URL.revokeObjectURL(url); } catch (_) {}
 };
 
 export const sanitizeVideoFilename = (name = 'video') => {
@@ -28,26 +78,26 @@ const extensionFrom = (contentType, url) => {
   return match ? match[1].toLowerCase() : 'mp4';
 };
 
-export async function resolvePlayableVideoUrl(videoOrId) {
+export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
-    return getVideoStreamUrl(videoId);
+    return maybeObjectUrl(getVideoStreamUrl(videoId), options);
   }
-  if (knownUrl) return knownUrl;
+  if (knownUrl) return maybeObjectUrl(knownUrl, options);
   if (!videoId) return '';
 
   const metadata = await getVideoById(videoId).catch(() => null);
-  const directUrl = metadata?.video?.videoUrl;
-  if (directUrl) return directUrl;
-  if (metadata?.video?.hasStoredVideo) return getVideoStreamUrl(videoId);
+  const directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
+  if (directUrl) return maybeObjectUrl(directUrl, options);
+  if (metadata?.video?.hasStoredVideo) return maybeObjectUrl(getVideoStreamUrl(videoId), options);
 
   const result = await regenerateVideoWithField(videoId, null);
   if (result?.success && result?.videoId) {
-    return getVideoStreamUrl(result.videoId);
+    return maybeObjectUrl(getVideoStreamUrl(result.videoId), options);
   }
 
-  return getVideoStreamUrl(videoId);
+  return maybeObjectUrl(getVideoStreamUrl(videoId), options);
 }
 
 export async function triggerVideoDownload(url, filenameBase = 'video') {
@@ -60,7 +110,10 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
   const isSameOrigin = targetUrl.origin === window.location.origin;
 
   try {
-    const response = await fetch(targetUrl.href, { credentials: 'include' });
+    const response = await fetch(targetUrl.href, {
+      credentials: USE_COOKIE_AUTH ? 'include' : 'same-origin',
+      headers: isBackendApiUrl(targetUrl.href) ? getAuthHeaders() : {},
+    });
     if (!response.ok) {
       throw new Error(`No se pudo descargar el vídeo (${response.status})`);
     }
