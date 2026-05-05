@@ -122,41 +122,47 @@ function lerpPoint(pA, pB, t) {
   return { x: lerp(pA.x, pB.x, t), y: lerp(pA.y, pB.y, t) };
 }
 
+function lerpNumericProp(out, from, to, prop, t) {
+  if (typeof from[prop] === 'number' && typeof to[prop] === 'number') {
+    out[prop] = lerp(from[prop], to[prop], t);
+  }
+}
+
+function lerpPointArray(fromPoints, toPoints, t) {
+  if (!Array.isArray(fromPoints) || !Array.isArray(toPoints)) return undefined;
+  const minLen = Math.min(fromPoints.length, toPoints.length);
+  const out = [];
+  for (let i = 0; i < minLen; i++) {
+    out.push(lerpPoint(fromPoints[i], toPoints[i], t));
+  }
+  const longer = fromPoints.length >= toPoints.length ? fromPoints : toPoints;
+  for (let i = minLen; i < longer.length; i++) {
+    out.push({ ...longer[i] });
+  }
+  return out;
+}
+
 // Interpola dos snapshots de un mismo elemento
 function interpolateElement(from, to, t) {
-  const out = { ...from };
-  // Ratios de posición  
-  if (from.xRatio !== undefined && to.xRatio !== undefined) {
-    out.xRatio = lerp(from.xRatio, to.xRatio, t);
-    out.yRatio = lerp(from.yRatio, to.yRatio, t);
-  }
-  // Tamaño
-  if (from.baseSize !== undefined && to.baseSize !== undefined) {
-    out.baseSize = lerp(from.baseSize, to.baseSize, t);
-  }
-  // Rotación
-  if (from.rotation !== undefined && to.rotation !== undefined) {
-    out.rotation = lerp(from.rotation, to.rotation, t);
-  }
-  // pointsRatio (líneas, curvas, formas)
-  if (from.pointsRatio && to.pointsRatio) {
-    const minLen = Math.min(from.pointsRatio.length, to.pointsRatio.length);
-    out.pointsRatio = [];
-    for (let i = 0; i < minLen; i++) {
-      out.pointsRatio.push(lerpPoint(from.pointsRatio[i], to.pointsRatio[i], t));
-    }
-    // Si hay más puntos en uno u otro, mantener los extras sin interpolar
-    const longer = from.pointsRatio.length >= to.pointsRatio.length ? from.pointsRatio : to.pointsRatio;
-    for (let i = minLen; i < longer.length; i++) {
-      out.pointsRatio.push({ ...longer[i] });
-    }
-  }
-  // Texto: posición lerp
-  if (from.type === 'free-text' || from.type === 'text') {
-    if (from.baseFontSize !== undefined && to.baseFontSize !== undefined) {
-      out.baseFontSize = lerp(from.baseFontSize, to.baseFontSize, t);
-    }
-  }
+  const out = { ...to };
+
+  [
+    'xRatio', 'yRatio',
+    'x', 'y',
+    'x1', 'y1', 'x2', 'y2',
+    'width', 'height', 'radius',
+    'size', 'baseSize',
+    'fontSize', 'baseFontSize',
+    'thickness', 'baseThickness',
+    'rotation',
+  ].forEach((prop) => lerpNumericProp(out, from, to, prop, t));
+
+  const pointsRatio = lerpPointArray(from.pointsRatio, to.pointsRatio, t);
+  if (pointsRatio) out.pointsRatio = pointsRatio;
+
+  const points = lerpPointArray(from.points, to.points, t);
+  if (points) out.points = points;
+
   return out;
 }
 

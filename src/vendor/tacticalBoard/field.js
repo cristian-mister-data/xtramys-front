@@ -1398,6 +1398,7 @@ const FreeTextTool = React.memo(({
               minWidth: 40,
               minHeight: 30,
               padding: 4,
+              userSelect: 'none',
               backgroundColor: selectedCloneId === textObj.id 
                 ? 'rgba(255, 255, 224, 0.7)' 
                 : (textObj.backgroundColor || 'transparent'),
@@ -1408,10 +1409,12 @@ const FreeTextTool = React.memo(({
             }}
           >
             <Text
+              selectable={false}
               style={{
                 fontSize: textObj.size || 18,
                 color: textObj.color || "#000",
                 fontWeight: "bold",
+                userSelect: 'none',
               }}
             >
               {textObj.value}
@@ -6198,10 +6201,9 @@ const MemoizedStraightLineDetector = React.memo(({
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
   
-  // Ãrea de toque MUY estrecha, justo en el trazado
-const touchTolerance = Math.max(lineThickness / 2 + 5, 8); // Solo 5px extra del grosor
-  const touchAreaWidth = distance;
-  const touchAreaHeight = Math.max(lineThickness + 10, 16); // Mínimo 16px
+  const touchTolerance = Math.max(lineThickness / 2 + 12, 18);
+  const touchAreaWidth = distance + touchTolerance * 2;
+  const touchAreaHeight = touchTolerance * 2;
   
   // Dimensiones del botón de opciones (3 puntos)
   const optionsButtonSize = 28;
@@ -6341,9 +6343,27 @@ const touchTolerance = Math.max(lineThickness / 2 + 5, 8); // Solo 5px extra del
           }
           delete dragStart.current[icon.id];
           if (!multiSelectMode) setSelectedCloneId(icon.id);
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          if (pendingUpdateRef.current) {
+            setClones(pendingUpdateRef.current);
+            pendingUpdateRef.current = null;
+          }
+          if (saveClonesHistory) saveClonesHistory();
         }}
         onResponderTerminate={() => {
+          if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          if (pendingUpdateRef.current) {
+            setClones(pendingUpdateRef.current);
+            pendingUpdateRef.current = null;
+          }
           delete dragStart.current[icon.id];
+          if (saveClonesHistory) saveClonesHistory();
         }}
       />
       
@@ -6454,10 +6474,9 @@ const MemoizedCurveLineDetector = React.memo(({
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
   
-const lineThickness = (icon.thickness || 2) * scale;
-  // Tolerancia MUY ajustada al trazado
-  const touchTolerance = Math.max(lineThickness / 2 + 5, 10); // Solo 5px extra del grosor
-  const touchMargin = 15;
+  const lineThickness = (icon.thickness || 2) * scale;
+  const touchTolerance = Math.max(lineThickness / 2 + 12, 18);
+  const touchMargin = 22;
   const touchWidth = maxX - minX + touchMargin * 2;
   const touchHeight = maxY - minY + touchMargin * 2;
   
@@ -7031,9 +7050,8 @@ const MemoizedCircleDetector = React.memo(({
   const radius = Math.sqrt(dx * dx + dy * dy) / 2;
   const thickness = (icon.thickness || 1) * scale * 0.7;
   
-  // Tolerancia ajustada al trazado (igual que líneas curvas)
-  const touchTolerance = Math.max(thickness / 2 + 5, 10);
-  const touchMargin = 15;
+  const touchTolerance = Math.max(thickness / 2 + 12, 18);
+  const touchMargin = 22;
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
@@ -7384,7 +7402,7 @@ const MemoizedRectangleDetector = React.memo(({
   const width = Math.abs(p2x - p1x);
   const height = Math.abs(p2y - p1y);
   const thickness = (icon.thickness || 1) * scale * 0.7;
-  const touchTolerance = Math.max(thickness / 2 + 5, 8);
+  const touchTolerance = Math.max(thickness / 2 + 12, 18);
   const centerY = minY + height / 2;
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
@@ -7764,9 +7782,8 @@ const MemoizedCustomShapeDetector = React.memo(({
   const height = maxY - minY;
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
-  // Tolerancia MUY ajustada al trazado
-  const touchTolerance = Math.max(8, 8 * renderScale); // Solo ~8px
-  const touchMargin = 15;
+  const touchTolerance = Math.max(16, 12 * renderScale);
+  const touchMargin = 22;
   
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
@@ -8990,20 +9007,25 @@ export default function Field(props = {}) {
   videoFrameControlRef.current = {
     // Pone un snapshot de elementos en el campo SIN tocar el historial de undo
     setFrame: (elementSnapshots, frameConnectors) => {
-      // Deseleccionar todo para que no aparezcan handles de selección en la captura
-      setSelectedCloneId(null);
-      clearMultiSelect();
-      const newClones = elementSnapshots.map(elem => snapshotToClone(elem));
-      setActualClones(newClones);
-      if (frameConnectors && Array.isArray(frameConnectors)) {
-        setConnectors(frameConnectors.map(c => ({
-          id: c.id,
-          fromId: c.fromId,
-          toId: c.toId,
-          color: c.color || '#000000',
-          thickness: c.thickness || 2,
-        })));
-      }
+      return new Promise((resolve) => {
+        // Deseleccionar todo para que no aparezcan handles de selección en la captura
+        setSelectedCloneId(null);
+        clearMultiSelect();
+        const newClones = elementSnapshots.map(elem => snapshotToClone(elem));
+        setActualClones(newClones);
+        if (frameConnectors && Array.isArray(frameConnectors)) {
+          setConnectors(frameConnectors.map(c => ({
+            id: c.id,
+            fromId: c.fromId,
+            toId: c.toId,
+            color: c.color || '#000000',
+            thickness: c.thickness || 2,
+          })));
+        } else {
+          setConnectors([]);
+        }
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      });
     },
     // Guarda zoom/pan actuales y resetea a 1/0 para captura limpia
     resetZoom: () => {
@@ -10982,13 +11004,30 @@ const handleCancelar = useCallback(async () => {
     const rectTop = rect.y;
     const rectBottom = rect.y + rect.height;
 
-    function segIn(x1, y1, x2, y2, l, t, r, b) {
-      // segmento totalmente contenido en bbox
-      return x1 >= l && x1 <= r && y1 >= t && y1 <= b
-          && x2 >= l && x2 <= r && y2 >= t && y2 <= b;
+    function rectsOverlap(aL, aT, aR, aB, bL, bT, bR, bB) {
+      return aL <= bR && aR >= bL && aT <= bB && aB >= bT;
+    }
+    function pointInRect(x, y, l, t, r, b) {
+      return x >= l && x <= r && y >= t && y <= b;
+    }
+    function ccw(ax, ay, bx, by, cx, cy) {
+      return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
+    }
+    function segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
+      return ccw(ax, ay, cx, cy, dx, dy) !== ccw(bx, by, cx, cy, dx, dy)
+          && ccw(ax, ay, bx, by, cx, cy) !== ccw(ax, ay, bx, by, dx, dy);
+    }
+    function segmentIntersectsRect(x1, y1, x2, y2, l, t, r, b) {
+      if (pointInRect(x1, y1, l, t, r, b) || pointInRect(x2, y2, l, t, r, b)) return true;
+      return segmentsIntersect(x1, y1, x2, y2, l, t, r, t)
+          || segmentsIntersect(x1, y1, x2, y2, r, t, r, b)
+          || segmentsIntersect(x1, y1, x2, y2, r, b, l, b)
+          || segmentsIntersect(x1, y1, x2, y2, l, b, l, t);
     }
     function circleIn(cx, cy, rad, l, t, r, b) {
-      return (cx - rad) >= l && (cx + rad) <= r && (cy - rad) >= t && (cy + rad) <= b;
+      const closestX = Math.max(l, Math.min(cx, r));
+      const closestY = Math.max(t, Math.min(cy, b));
+      return Math.hypot(cx - closestX, cy - closestY) <= rad;
     }
 
     return clonesNow.filter((clone) => {
@@ -11018,7 +11057,7 @@ const handleCancelar = useCallback(async () => {
         const maxX = Math.max(pts[0].x, pts[1].x) + strokeTol;
         const minY = Math.min(pts[0].y, pts[1].y) - strokeTol;
         const maxY = Math.max(pts[0].y, pts[1].y) + strokeTol;
-        return minX >= L && maxX <= R && minY >= T && maxY <= B;
+        return rectsOverlap(minX, minY, maxX, maxY, L, T, R, B);
       }
 
       // LÃNEAS / FLECHAS / SHAPES con array de puntos
@@ -11026,7 +11065,20 @@ const handleCancelar = useCallback(async () => {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
         );
-        return pts.every(p => p.x >= L && p.x <= R && p.y >= T && p.y <= B);
+        const xs = pts.map(p => p.x);
+        const ys = pts.map(p => p.y);
+        if (!rectsOverlap(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys), L, T, R, B)) {
+          return false;
+        }
+        for (let i = 0; i < pts.length - 1; i++) {
+          if (segmentIntersectsRect(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y, L, T, R, B)) return true;
+        }
+        if (clone.type === 'custom-shape' && pts.length > 2) {
+          const first = pts[0];
+          const last = pts[pts.length - 1];
+          if (segmentIntersectsRect(last.x, last.y, first.x, first.y, L, T, R, B)) return true;
+        }
+        return pts.some(p => pointInRect(p.x, p.y, L, T, R, B));
       }
 
       // PUNTUALES (jugadores, balón, conos, textos)
@@ -11042,8 +11094,7 @@ const handleCancelar = useCallback(async () => {
       const origH = clone.imageHeight || imgH;
       const scale = ((imgW / origW) + (imgH / origH)) / 2;
       const half = ((clone.size || 24) * scale) / 2;
-      return (elemX - half) >= rectLeft && (elemX + half) <= rectRight
-          && (elemY - half) >= rectTop && (elemY + half) <= rectBottom;
+      return rectsOverlap(elemX - half, elemY - half, elemX + half, elemY + half, rectLeft, rectTop, rectRight, rectBottom);
     }).map(c => c.id);
   }, []);
 
@@ -11097,14 +11148,25 @@ const handleCancelar = useCallback(async () => {
 
     const overlayRect = () => overlay.getBoundingClientRect();
 
-    const drawRect = () => {
+    const clientToLocal = (clientX, clientY) => {
       const r = overlayRect();
-      const left = Math.min(sCx, cCx) - r.left;
-      const top = Math.min(sCy, cCy) - r.top;
+      const scaleX = r.width && overlay.offsetWidth ? r.width / overlay.offsetWidth : 1;
+      const scaleY = r.height && overlay.offsetHeight ? r.height / overlay.offsetHeight : 1;
+      return {
+        x: (clientX - r.left) / (scaleX || 1),
+        y: (clientY - r.top) / (scaleY || 1),
+      };
+    };
+
+    const drawRect = () => {
+      const start = clientToLocal(sCx, sCy);
+      const current = clientToLocal(cCx, cCy);
+      const left = Math.min(start.x, current.x);
+      const top = Math.min(start.y, current.y);
       rectEl.style.left = left + 'px';
       rectEl.style.top = top + 'px';
-      rectEl.style.width = Math.abs(cCx - sCx) + 'px';
-      rectEl.style.height = Math.abs(cCy - sCy) + 'px';
+      rectEl.style.width = Math.abs(current.x - start.x) + 'px';
+      rectEl.style.height = Math.abs(current.y - start.y) + 'px';
       rectEl.style.display = 'block';
     };
 
@@ -11159,12 +11221,13 @@ const handleCancelar = useCallback(async () => {
         return;
       }
 
-      // Convertir coords client â†’ coords overlay
-      const r = overlayRect();
-      const left = Math.min(sCx, cCx) - r.left;
-      const top = Math.min(sCy, cCy) - r.top;
-      const w = Math.abs(cCx - sCx);
-      const h = Math.abs(cCy - sCy);
+      // Convertir coords client a coords locales del overlay, compensando zoom/pan CSS.
+      const start = clientToLocal(sCx, sCy);
+      const current = clientToLocal(cCx, cCy);
+      const left = Math.min(start.x, current.x);
+      const top = Math.min(start.y, current.y);
+      const w = Math.abs(current.x - start.x);
+      const h = Math.abs(current.y - start.y);
       console.log('[ms] UP drag size=' + w.toFixed(0) + 'x' + h.toFixed(0) + ' rect=', { left, top, w, h });
 
       if (w < 8 || h < 8) return;
@@ -15190,6 +15253,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         width: imageWidth, 
                         height: imageHeight, 
                         opacity: fieldImageReady ? 1 : 0,
+                        userSelect: 'none',
                         zIndex: multiSelectMode ? 9999 : 
                                (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle || 
                                  drawingCurveLine || drawingCurveArrow || drawingCustomShape || eraserMode) ? 9999 : 0
@@ -16055,9 +16119,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   </View>
                   
                 </ViewShot>
-              </View>
               
-              {/* Capa de overlay para multi-select (fuera de transformaciones).
+              {/* Capa de overlay para multi-select dentro de las mismas transformaciones.
                   En web usamos un <div> nativo en lugar de <View> para tener
                   control total sobre los eventos de mouse/touch "” el sistema
                   de responder de RN no se dispara de forma fiable con mouse
@@ -16087,6 +16150,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
               )}
             </View>
           </View>
+        </View>
         </View>
 
         {showingPlayersPalette ? (
