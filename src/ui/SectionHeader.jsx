@@ -25,6 +25,10 @@ const Identity = styled.div`
   align-items: center;
   gap: 14px;
   min-width: 0;
+
+  @media (max-width: 720px) {
+    align-items: flex-start;
+  }
 `;
 
 const IconBox = styled.div`
@@ -91,6 +95,18 @@ const Actions = styled.div`
 
   @media (max-width: 720px) {
     justify-content: flex-start;
+    width: 100%;
+
+    > * {
+      width: 100%;
+      min-width: 0;
+    }
+
+    button,
+    a {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
   }
 `;
 

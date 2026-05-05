@@ -32,12 +32,25 @@ const Toolbar = styled(Card)`
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
+
+  @media (max-width: 600px) {
+    padding: 12px;
+    gap: 10px;
+
+    > * {
+      min-width: 0;
+    }
+  }
 `;
 
 const ChipRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+
+  @media (max-width: 600px) {
+    width: 100%;
+  }
 `;
 
 const Chip = styled.button`
@@ -56,9 +69,22 @@ const Chip = styled.button`
   font-size: 12px;
   cursor: pointer;
   transition: all 0.12s;
+
+  @media (max-width: 600px) {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    min-width: 0;
+    padding: 8px 10px;
+  }
 `;
 
-const Spacer = styled.div`flex: 1;`;
+const Spacer = styled.div`
+  flex: 1;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+`;
 
 const ViewSwitch = styled.div`
   display: inline-flex;
@@ -66,6 +92,11 @@ const ViewSwitch = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   padding: 4px;
   border-radius: ${({ theme }) => theme.radius.full};
+
+  @media (max-width: 600px) {
+    width: 100%;
+    border-radius: ${({ theme }) => theme.radius.md};
+  }
 `;
 
 const ViewBtn = styled.button`
@@ -77,6 +108,12 @@ const ViewBtn = styled.button`
   font-weight: 600;
   border-radius: ${({ theme }) => theme.radius.full};
   cursor: pointer;
+
+  @media (max-width: 600px) {
+    flex: 1;
+    padding: 9px 10px;
+    border-radius: ${({ theme }) => theme.radius.sm};
+  }
 `;
 
 const List = styled.div`
@@ -89,6 +126,15 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 380px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const EmptyCard = styled(Card)`
@@ -228,7 +274,7 @@ export default function Players() {
         <>
           <Toolbar>
             <Input
-              style={{ flex: '1 1 200px', minWidth: 180 }}
+              style={{ flex: '1 1 240px', minWidth: 0 }}
               placeholder={t('player.searchPlaceholder', 'Buscar jugador...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}

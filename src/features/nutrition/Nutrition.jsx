@@ -60,14 +60,30 @@ const GRAD_PURPLE = 'linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa)';
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 18px 24px;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    padding: 16px 14px 20px;
+    gap: 16px;
+  }
 `;
 
 const TopBar = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const ModePill = styled.button`
@@ -106,27 +122,42 @@ const PdfBtn = styled.button`
   cursor: pointer;
   margin-left: auto;
   &:hover { opacity: 0.9; }
+
+  @media (max-width: 720px) {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
 `;
 
 const OptionRow = styled.div`
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 `;
 
 const OptionPill = styled.button`
-  flex: 1;
+  flex: 1 1 140px;
+  min-width: 120px;
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.border)};
   background: ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.surface)};
   color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.text)};
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
+
+  @media (max-width: 600px) {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
 `;
 
 const TabBar = styled.div`
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
   background: ${({ theme }) => theme.colors.surface};
   padding: 6px;
   border-radius: ${({ theme }) => theme.radius.lg};
@@ -144,8 +175,14 @@ const TabBtn = styled.button`
   border: 0;
   cursor: pointer;
   font-weight: 600;
+  font-size: 14px;
   background: ${({ $active }) => ($active ? GRAD_BLUE : 'transparent')};
   color: ${({ $active, theme }) => ($active ? '#fff' : theme.colors.textSecondary)};
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+    padding: 10px 10px;
+  }
 `;
 
 const SeasonHeader = styled.div`
@@ -162,19 +199,33 @@ const SeasonHeader = styled.div`
 
 const SectionTitle = styled.h3`
   font-size: 14px;
-  margin: 8px 0 4px;
+  margin: 10px 0 6px;
   color: ${({ theme }) => theme.colors.text};
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+    margin: 8px 0 5px;
+  }
 `;
 
 const HScroll = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  overflow-x: auto;
   padding: 4px 2px 8px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const MealTile = styled.button`
-  min-width: 160px;
+  width: 100%;
+  min-width: 0;
   border-radius: ${({ theme }) => theme.radius.lg};
   border: 0;
   padding: 18px 14px;
@@ -191,11 +242,19 @@ const MealTile = styled.button`
 const MealTileTitle = styled.div`
   font-weight: 700;
   font-size: 15px;
+
+  @media (max-width: 600px) {
+    font-size: 14px;
+  }
 `;
 
 const MealTileCount = styled.div`
   font-size: 12px;
   opacity: 0.85;
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+  }
 `;
 
 const CardGrid = styled.div`
@@ -256,6 +315,10 @@ const DayName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+  }
 `;
 
 const DayTag = styled.div`
@@ -265,6 +328,10 @@ const DayTag = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.4px;
   font-weight: 600;
+
+  @media (max-width: 600px) {
+    font-size: 9px;
+  }
 `;
 
 const DayBody = styled.div`
@@ -304,6 +371,10 @@ const MealLabel = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 2px;
+
+  @media (max-width: 600px) {
+    font-size: 9px;
+  }
 `;
 
 const MealDescription = styled.div`
@@ -316,6 +387,10 @@ const MealDescription = styled.div`
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+
+  @media (max-width: 600px) {
+    font-size: 11.5px;
+  }
 `;
 
 const ContextCardWrap = styled.button`
@@ -327,6 +402,7 @@ const ContextCardWrap = styled.button`
   background: ${({ $bg }) => $bg};
   color: #fff;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -337,18 +413,28 @@ const ContextLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
 `;
 
 const ContextRight = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+  justify-content: flex-end;
 `;
 
 const ContextStat = styled.div`
   text-align: center;
   font-size: 11px;
   strong { display: block; font-size: 18px; }
+
+  @media (max-width: 600px) {
+    font-size: 10px;
+    strong { font-size: 16px; }
+  }
 `;
 
 const RefCard = styled.div`
@@ -367,6 +453,11 @@ const RefHeader = styled.div`
   gap: 10px;
   font-weight: 700;
   font-size: 14px;
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+    gap: 8px;
+  }
 `;
 
 const Collapsible = styled.button`
@@ -384,10 +475,20 @@ const Collapsible = styled.button`
 
 const Table = styled.table`
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 12px;
-  th, td { padding: 6px 8px; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; text-align: left; }
+  th, td {
+    padding: 6px 8px;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    text-align: left;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
   th { background: ${({ theme }) => theme.colors.backgroundAlt}; font-weight: 600; }
+  td:first-child { min-width: 0; }
   tr:nth-child(even) td { background: #fafbfd; }
 `;
 

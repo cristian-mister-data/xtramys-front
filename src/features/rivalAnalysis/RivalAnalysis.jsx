@@ -43,6 +43,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @media (max-width: 600px) {
+    gap: 12px;
+    padding: 12px;
+  }
 `;
 
 const Toolbar = styled.div`
@@ -50,6 +55,10 @@ const Toolbar = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+
+  @media (max-width: 600px) {
+    align-items: stretch;
+  }
 `;
 
 const SearchBar = styled.div`
@@ -62,6 +71,11 @@ const SearchBar = styled.div`
   padding: 8px 12px;
   flex: 1;
   min-width: 220px;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    min-width: 0;
+  }
 
   input {
     border: none;
@@ -83,12 +97,27 @@ const FilterPill = styled.button`
   border-radius: 999px;
   font-size: 12px;
   cursor: pointer;
+
+  @media (max-width: 600px) {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 82px;
+    padding: 8px 10px;
+  }
 `;
 
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 380px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Card = styled.button`
@@ -111,6 +140,12 @@ const Card = styled.button`
     box-shadow: ${({ theme }) => theme.shadows.md};
     border-color: ${({ theme }) => theme.colors.primary};
   }
+
+  @media (max-width: 600px) {
+    padding: 14px 10px 12px;
+    gap: 8px;
+    border-radius: ${({ theme }) => theme.radius.md};
+  }
 `;
 
 const EscudoBox = styled.div`
@@ -129,6 +164,11 @@ const EscudoBox = styled.div`
     max-height: 100%;
     object-fit: contain;
   }
+
+  @media (max-width: 600px) {
+    width: 64px;
+    height: 64px;
+  }
 `;
 
 const RivalName = styled.div`
@@ -136,6 +176,10 @@ const RivalName = styled.div`
   font-size: 15px;
   color: ${({ theme }) => theme.colors.text};
   word-break: break-word;
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+  }
 `;
 
 const FormationBadge = styled.span`
@@ -159,6 +203,10 @@ const EmptyState = styled.div`
   border-radius: ${({ theme }) => theme.radius.lg};
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 600px) {
+    padding: 36px 18px;
+  }
 `;
 
 // ---------- component ----------

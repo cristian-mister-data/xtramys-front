@@ -58,6 +58,11 @@ const TemplateCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    padding: 12px;
+  }
 `;
 
 const TemplateHead = styled.div`
@@ -65,6 +70,17 @@ const TemplateHead = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    flex-direction: column;
+
+    > * {
+      width: 100%;
+      min-width: 0;
+    }
+  }
 `;
 
 const TemplateName = styled.div`
@@ -74,6 +90,9 @@ const TemplateName = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
 `;
 
 const Badge = styled.span`
@@ -103,6 +122,8 @@ const DashedBtn = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-width: 0;
+  text-align: center;
   &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
 `;
 
@@ -114,6 +135,12 @@ const QuestionCard = styled.div`
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    padding: 12px;
+    gap: 10px;
+  }
 `;
 
 const IconBox = styled.div`
@@ -157,6 +184,10 @@ const TypeGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const TypeCard = styled.button`
@@ -173,6 +204,8 @@ const TypeCard = styled.button`
   cursor: pointer;
   font-weight: 500;
   font-size: 13px;
+  min-width: 0;
+  text-align: left;
 `;
 
 const IconPickerRow = styled.div`
@@ -219,6 +252,13 @@ const OptionRow = styled.div`
   padding: 6px 10px;
   border-radius: ${({ theme }) => theme.radius.sm};
   font-size: 13px;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+  }
 `;
 
 // ---------- component ----------

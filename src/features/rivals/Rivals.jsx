@@ -46,6 +46,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @media (max-width: 600px) {
+    gap: 12px;
+    padding: 12px;
+  }
 `;
 
 const SearchBar = styled.div`
@@ -58,6 +63,11 @@ const SearchBar = styled.div`
   padding: 8px 12px;
   flex: 1;
   min-width: 220px;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    min-width: 0;
+  }
 
   input {
     border: none;
@@ -73,6 +83,15 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 380px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 // Usamos div con role=button para evitar anidar <button> (IconBtn) dentro de <button>.
@@ -97,6 +116,12 @@ const RivalCardEl = styled.div`
     box-shadow: ${({ theme }) => theme.shadows.md};
     border-color: ${({ theme }) => theme.colors.primary};
   }
+
+  @media (max-width: 600px) {
+    padding: 14px 10px 12px;
+    gap: 8px;
+    border-radius: ${({ theme }) => theme.radius.md};
+  }
 `;
 
 const EscudoBox = styled.div`
@@ -111,6 +136,11 @@ const EscudoBox = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
 
   img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  @media (max-width: 600px) {
+    width: 72px;
+    height: 72px;
+  }
 `;
 
 const RivalName = styled.div`
@@ -118,6 +148,10 @@ const RivalName = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.text};
   word-break: break-word;
+
+  @media (max-width: 600px) {
+    font-size: 13px;
+  }
 `;
 
 const CardActions = styled.div`
@@ -127,6 +161,12 @@ const CardActions = styled.div`
   display: flex;
   gap: 4px;
   opacity: 0.8;
+
+  @media (max-width: 600px) {
+    position: static;
+    order: 3;
+    opacity: 1;
+  }
 `;
 
 const IconBtn = styled.button`
@@ -159,6 +199,10 @@ const EmptyState = styled.div`
   border-radius: ${({ theme }) => theme.radius.lg};
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 600px) {
+    padding: 36px 18px;
+  }
 `;
 
 const EscudoPreview = styled.div`
@@ -189,6 +233,11 @@ const DetailEscudo = styled.div`
   overflow: hidden;
 
   img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  @media (max-width: 600px) {
+    width: min(220px, 70vw);
+    height: min(220px, 70vw);
+  }
 `;
 
 // ---------- component ----------

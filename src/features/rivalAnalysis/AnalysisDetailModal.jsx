@@ -82,12 +82,24 @@ const HeaderCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    padding: 12px;
+  }
 `;
 
 const RivalTitle = styled.div`
   font-size: 18px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 600px) {
+    font-size: 16px;
+  }
 `;
 
 const StatsRow = styled.div`
@@ -105,12 +117,15 @@ const StatCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-left: 4px solid ${({ $accent }) => $accent};
   border-radius: ${({ theme }) => theme.radius.md};
+  min-width: 0;
 `;
 
 const StatValue = styled.div`
   font-weight: 700;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.text};
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const StatLabel = styled.div`
@@ -128,6 +143,11 @@ const SectionCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    padding: 12px;
+  }
 `;
 
 const SectionHead = styled.div`
@@ -139,6 +159,8 @@ const SectionHead = styled.div`
   color: ${({ theme }) => theme.colors.text};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   padding-bottom: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const QBlock = styled.div`
@@ -149,12 +171,14 @@ const QBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 `;
 
 const QHead = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 `;
 
 const QIcon = styled.div`
@@ -173,6 +197,8 @@ const QTitle = styled.div`
   font-weight: 600;
   font-size: 13px;
   color: ${({ theme }) => theme.colors.text};
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const Value = styled.div`
@@ -180,6 +206,11 @@ const Value = styled.div`
   color: ${({ theme }) => theme.colors.text};
   white-space: pre-wrap;
   padding-left: 36px;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 600px) {
+    padding-left: 0;
+  }
 `;
 
 const NoValue = styled.span`
@@ -187,6 +218,28 @@ const NoValue = styled.span`
   font-style: italic;
   font-size: 13px;
   padding-left: 36px;
+
+  @media (max-width: 600px) {
+    padding-left: 0;
+  }
+`;
+
+const AnswerSlot = styled.div`
+  padding-left: 36px;
+  min-width: 0;
+
+  ${({ $stack }) =>
+    $stack
+      ? `
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  `
+      : ''}
+
+  @media (max-width: 600px) {
+    padding-left: 0;
+  }
 `;
 
 const Chip = styled.span`
@@ -206,6 +259,7 @@ const PlayerItem = styled.div`
   padding: 8px 12px;
   border-radius: ${({ theme }) => theme.radius.sm};
   margin-bottom: 6px;
+  min-width: 0;
 
   &:last-child {
     margin-bottom: 0;
@@ -216,12 +270,14 @@ const PlayerName = styled.div`
   font-weight: 600;
   font-size: 14px;
   color: ${({ $danger }) => ($danger ? '#dc2626' : 'inherit')};
+  overflow-wrap: anywhere;
 `;
 
 const PlayerObs = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
+  overflow-wrap: anywhere;
 `;
 
 const ImageBox = styled.img`
@@ -250,6 +306,7 @@ const VideoPreviewButton = styled.button`
   cursor: pointer;
   background: #0f172a;
   box-shadow: ${({ theme }) => theme.shadows.sm};
+  max-width: 100%;
 
   &:focus-visible {
     outline: none;
@@ -270,6 +327,7 @@ const VideoBtn = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
+  min-width: 0;
 
   &:hover {
     opacity: 0.9;
@@ -291,6 +349,7 @@ const VideoStatusRow = styled.div`
 `;
 
 const VideoPlayer = styled.video`
+  width: 100%;
   max-width: 100%;
   max-height: 70vh;
   border-radius: 6px;
@@ -432,13 +491,13 @@ export default function AnalysisDetailModal({
         </QIcon>
         <QTitle>{label}</QTitle>
       </QHead>
-      <div style={{ paddingLeft: 36 }}>
+      <AnswerSlot>
         <ImageBox
           src={imageBase64}
           alt={label}
           onClick={() => setImgZoomUrl(imageBase64)}
         />
-      </div>
+      </AnswerSlot>
     </QBlock>
   );
 
@@ -453,7 +512,7 @@ export default function AnalysisDetailModal({
           </QIcon>
           <QTitle>{label}</QTitle>
         </QHead>
-        <div style={{ paddingLeft: 36, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <AnswerSlot $stack>
           <VideoPreviewButton
             type="button"
             onClick={() => (videoId ? handlePlayVideo(videoId) : inlineUrl ? setVideoModalUrl(inlineUrl) : null)}
@@ -484,7 +543,7 @@ export default function AnalysisDetailModal({
           ) : inlineUrl ? (
             <VideoPlayer src={inlineUrl} controls preload="metadata" />
           ) : null}
-        </div>
+        </AnswerSlot>
       </QBlock>
     );
   };
@@ -514,14 +573,14 @@ export default function AnalysisDetailModal({
                 {qText} ({answer.length})
               </QTitle>
             </QHead>
-            <div style={{ paddingLeft: 36 }}>
+            <AnswerSlot>
               {answer.map((p, i) => (
                 <PlayerItem key={i} $accent={color}>
                   <PlayerName>{getPlayerFullName(p) || p.nombre || p.name || t('player.player', 'Jugador')}</PlayerName>
                   {p.observacion && <PlayerObs>{p.observacion}</PlayerObs>}
                 </PlayerItem>
               ))}
-            </div>
+            </AnswerSlot>
           </QBlock>
         );
       }

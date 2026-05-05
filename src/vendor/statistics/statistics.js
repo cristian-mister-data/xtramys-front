@@ -6,11 +6,11 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    Dimensions,
     Platform,
     TextInput,
     Modal,
     Alert,
+    useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
@@ -41,17 +41,15 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 // Helper para obtener locale basado en i18n
 const getLocale = () => i18n.language === 'en' ? 'en-US' : 'es-ES';
 
-const { width } = Dimensions.get('window');
-const isMobile = width < 768;
-
-
 export default function Statistics({ navigation }) {
     const { t } = useTranslation();
     const dispatch = useDispatch();
     const route = useRoute();
     const insets = useSafeAreaInsets();
     const theme = useTheme();
-    const styles = useMemo(() => makeStyles(theme), [theme]);
+    const { width: viewportWidth } = useWindowDimensions();
+    const isMobile = viewportWidth < 768;
+    const styles = useMemo(() => makeStyles(theme, isMobile), [theme, isMobile]);
     const matchSheets = useSelector(state => state.matchSheet.matchSheets) || [];
     const loading = useSelector(state => state.matchSheet.loading);
     const temporada = useSelector(state => state.season.season);
@@ -1036,7 +1034,7 @@ playerStatsMap[p._id] = {
                 {/* Premium Header */}
                 <View style={styles.headerSection}>
                     <LinearGradient
-                        colors={['#1a237e', '#3949ab', '#5c6bc0']}
+                        colors={['#0f172a', '#1d4ed8', '#0891b2']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.headerGradient}
@@ -1083,7 +1081,7 @@ playerStatsMap[p._id] = {
                                 <Ionicons 
                                     name={icons[tab]} 
                                     size={isMobile ? 14 : 18} 
-                                    color={activeTab === tab ? '#ffffff' : theme.colors.textSecondary} 
+                                    color={activeTab === tab ? theme.colors.primary : theme.colors.textSecondary}
                                     style={{ marginRight: isMobile ? 4 : 6 }}
                                 />
                                 <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
@@ -1125,7 +1123,9 @@ playerStatsMap[p._id] = {
                             {/* Performance Ring Card */}
                             <View style={styles.performanceRingCard}>
                                 <LinearGradient
-                                    colors={['#1e293b', '#0f172a']}
+                                    colors={['#0f172a', '#172554', '#164e63']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
                                     style={styles.performanceRingGradient}
                                 >
                                     <View style={styles.performanceRingContent}>
@@ -1175,7 +1175,7 @@ playerStatsMap[p._id] = {
                             <View style={styles.goalsComparisonCard}>
                                 <View style={styles.goalsComparisonHeader}>
                                     <View style={styles.goalsComparisonIconWrap}>
-                                        <Ionicons name="football" size={20} color="#ffffff" />
+                                        <Ionicons name="football" size={20} color={theme.colors.primary} />
                                     </View>
                                     <Text style={styles.goalsComparisonTitle}>{t('statistics.goalsBalance')}</Text>
                                 </View>
@@ -1377,7 +1377,7 @@ playerStatsMap[p._id] = {
                             {/* Players Summary Header */}
                             <View style={styles.playersSummaryCard}>
                                 <LinearGradient
-                                    colors={['#1e293b', '#334155']}
+                                    colors={['#0f172a', '#1e3a8a', '#155e75']}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                     style={styles.playersSummaryGradient}
@@ -1445,6 +1445,11 @@ playerStatsMap[p._id] = {
                                             style={[styles.sortChip, sortBy === item.key && styles.sortChipActive]}
                                             onPress={() => handleSort(item.key)}
                                         >
+                                            <Ionicons
+                                                name={item.icon}
+                                                size={isMobile ? 13 : 15}
+                                                color={sortBy === item.key ? theme.colors.onPrimary : theme.colors.textSecondary}
+                                            />
                                             <Text style={[styles.sortChipText, sortBy === item.key && styles.sortChipTextActive]}>
                                                 {item.label}
                                             </Text>
@@ -1835,7 +1840,7 @@ playerStatsMap[p._id] = {
     );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
+const makeStyles = (theme, isMobile) => StyleSheet.create({
     container: {
         flex: 1,
         minHeight: '100%',
@@ -1882,19 +1887,19 @@ const makeStyles = (theme) => StyleSheet.create({
         textAlign: 'center',
     },
     headerSection: {
-        marginBottom: isMobile ? 20 : 24,
-        marginTop: isMobile ? 12 : 16,
+        marginBottom: isMobile ? 16 : 20,
+        marginTop: isMobile ? 10 : 14,
     },
     headerGradient: {
-        borderRadius: 20,
+        borderRadius: isMobile ? 16 : 20,
         marginHorizontal: isMobile ? 12 : 16,
-        paddingVertical: isMobile ? 20 : 24,
-        paddingHorizontal: isMobile ? 18 : 24,
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 12,
+        paddingVertical: isMobile ? 18 : 24,
+        paddingHorizontal: isMobile ? 16 : 24,
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 14 },
+        shadowOpacity: 0.18,
+        shadowRadius: 24,
+        elevation: 10,
     },
     headerContent: {
         flexDirection: isMobile ? 'column' : 'row',
@@ -1906,48 +1911,59 @@ const makeStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
+        width: '100%',
+        minWidth: 0,
     },
     headerIconContainer: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        width: isMobile ? 46 : 54,
+        height: isMobile ? 46 : 54,
+        borderRadius: isMobile ? 12 : 14,
+        backgroundColor: 'rgba(255,255,255,0.16)',
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.24)',
     },
     headerTextContainer: {
         marginLeft: 14,
         flex: 1,
+        minWidth: 0,
     },
     seasonLabel: {
         color: 'rgba(255,255,255,0.75)',
         fontSize: 11,
         fontWeight: '600',
-        letterSpacing: 1.5,
+        letterSpacing: 0.8,
         marginBottom: 4,
         textTransform: 'uppercase',
+        flexShrink: 1,
     },
     teamName: {
         color: '#ffffff',
-        fontSize: isMobile ? 20 : 24,
-        fontWeight: '700',
+        fontSize: isMobile ? 21 : 28,
+        fontWeight: '800',
         textShadowColor: 'rgba(0,0,0,0.2)',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
+        flexShrink: 1,
     },
     headerStats: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(255,255,255,0.12)',
         borderRadius: 14,
         padding: 14,
         alignItems: 'center',
         width: isMobile ? '100%' : 'auto',
         justifyContent: isMobile ? 'space-around' : 'flex-start',
         marginTop: isMobile ? 8 : 0,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.18)',
     },
     headerStatItem: {
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: isMobile ? 8 : 16,
+        flex: isMobile ? 1 : 0,
+        minWidth: isMobile ? 0 : 74,
     },
     headerStatValue: {
         color: '#ffffff',
@@ -1968,27 +1984,27 @@ const makeStyles = (theme) => StyleSheet.create({
     tabsContainer: {
         flexDirection: 'row',
         paddingHorizontal: isMobile ? 12 : 16,
-        marginTop: isMobile ? -10 : -20,
-        gap: isMobile ? 6 : 10,
+        marginTop: isMobile ? -6 : -10,
+        gap: isMobile ? 8 : 10,
     },
     tab: {
         flex: 1,
         flexDirection: 'row',
         backgroundColor: theme.colors.surface,
-        paddingVertical: isMobile ? 12 : 14,
-        borderRadius: isMobile ? 12 : 14,
+        paddingVertical: isMobile ? 11 : 13,
+        borderRadius: isMobile ? 10 : 12,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.05,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 2,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
     activeTab: {
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme.colors.primarySoft,
         borderColor: theme.colors.primary,
     },
     tabText: {
@@ -1997,7 +2013,7 @@ const makeStyles = (theme) => StyleSheet.create({
         color: theme.colors.text,
     },
     activeTabText: {
-        color: '#ffffff',
+        color: theme.colors.primarySoftText,
     },
     competitionFilterContainer: {
         paddingHorizontal: isMobile ? 12 : 16,
@@ -2006,9 +2022,11 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     competitionTabs: {
         flexDirection: 'row',
-        backgroundColor: theme.colors.backgroundAlt,
-        borderRadius: 10,
-        padding: 3,
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     competitionTab: {
         paddingVertical: isMobile ? 10 : 8,
@@ -2019,12 +2037,12 @@ const makeStyles = (theme) => StyleSheet.create({
         marginHorizontal: 2,
     },
     competitionTabActive: {
-        backgroundColor: theme.colors.surface,
+        backgroundColor: theme.colors.primarySoft,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.06,
         shadowRadius: 3,
-        elevation: 2,
+        elevation: 1,
     },
     competitionTabText: {
         fontSize: isMobile ? 12 : 13,
@@ -2108,7 +2126,10 @@ const makeStyles = (theme) => StyleSheet.create({
         borderRadius: 6,
     },
     contentContainer: {
-        padding: isMobile ? 12 : 16,
+        padding: isMobile ? 12 : 18,
+        maxWidth: 1180,
+        width: '100%',
+        alignSelf: 'center',
     },
     scrollContent: {
         flexGrow: 1,
@@ -2170,14 +2191,14 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     sectionCard: {
         backgroundColor: theme.colors.surface,
-        borderRadius: 20,
-        padding: 20,
+        borderRadius: isMobile ? 14 : 18,
+        padding: isMobile ? 14 : 18,
         marginBottom: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 18,
+        elevation: 3,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -2800,17 +2821,19 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     // New Team Statistics Styles
     performanceRingCard: {
-        marginBottom: isMobile ? 12 : 16,
-        borderRadius: isMobile ? 16 : 20,
+        marginBottom: isMobile ? 12 : 18,
+        borderRadius: isMobile ? 14 : 18,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 6,
     },
     performanceRingGradient: {
         padding: isMobile ? 16 : 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.12)',
     },
     performanceRingContent: {
         flexDirection: isMobile ? 'column' : 'row',
@@ -2825,9 +2848,9 @@ const makeStyles = (theme) => StyleSheet.create({
         justifyContent: 'center',
     },
     performanceRingOuter: {
-        width: isMobile ? 100 : 120,
-        height: isMobile ? 100 : 120,
-        borderRadius: isMobile ? 50 : 60,
+        width: isMobile ? 104 : 132,
+        height: isMobile ? 104 : 132,
+        borderRadius: isMobile ? 52 : 66,
         backgroundColor: 'rgba(255,255,255,0.1)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -2835,17 +2858,17 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     performanceRingProgress: {
         position: 'absolute',
-        width: isMobile ? 100 : 120,
-        height: isMobile ? 100 : 120,
-        borderRadius: isMobile ? 50 : 60,
+        width: isMobile ? 104 : 132,
+        height: isMobile ? 104 : 132,
+        borderRadius: isMobile ? 52 : 66,
         borderWidth: isMobile ? 6 : 8,
         borderColor: 'rgba(255,255,255,0.1)',
     },
     performanceRingInner: {
-        width: isMobile ? 80 : 96,
-        height: isMobile ? 80 : 96,
-        borderRadius: isMobile ? 40 : 48,
-        backgroundColor: 'rgba(15,23,42,0.8)',
+        width: isMobile ? 80 : 100,
+        height: isMobile ? 80 : 100,
+        borderRadius: isMobile ? 40 : 50,
+        backgroundColor: 'rgba(15,23,42,0.72)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -2872,9 +2895,11 @@ const makeStyles = (theme) => StyleSheet.create({
     performanceRingStat: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.09)',
         borderRadius: isMobile ? 10 : 12,
         padding: isMobile ? 10 : 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     performanceStatDot: {
         width: isMobile ? 8 : 10,
@@ -2932,14 +2957,14 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     goalsComparisonCard: {
         backgroundColor: theme.colors.surface,
-        borderRadius: isMobile ? 16 : 20,
+        borderRadius: isMobile ? 14 : 18,
         overflow: 'hidden',
-        marginBottom: isMobile ? 12 : 16,
+        marginBottom: isMobile ? 12 : 18,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 18,
+        elevation: 3,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -2947,13 +2972,15 @@ const makeStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: isMobile ? 14 : 18,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: theme.colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
     },
     goalsComparisonIconWrap: {
         width: isMobile ? 30 : 36,
         height: isMobile ? 30 : 36,
         borderRadius: isMobile ? 8 : 10,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: theme.colors.primarySoft,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: isMobile ? 10 : 12,
@@ -2961,7 +2988,7 @@ const makeStyles = (theme) => StyleSheet.create({
     goalsComparisonTitle: {
         fontSize: isMobile ? 14 : 16,
         fontWeight: '700',
-        color: '#ffffff',
+        color: theme.colors.text,
     },
     goalsComparisonBody: {
         flexDirection: isMobile ? 'column' : 'row',
@@ -2970,7 +2997,12 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     goalsComparisonSide: {
         flex: 1,
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
+        backgroundColor: theme.colors.surfaceAlt,
+        borderRadius: isMobile ? 12 : 14,
+        padding: isMobile ? 14 : 16,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     goalsComparisonSideLabel: {
         fontSize: 11,
@@ -2997,7 +3029,7 @@ const makeStyles = (theme) => StyleSheet.create({
     goalsComparisonDivider: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: isMobile ? 0 : 12,
     },
     goalsComparisonDiffBadge: {
         backgroundColor: theme.colors.background,
@@ -3042,14 +3074,14 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     rivalGoalCard: {
         backgroundColor: theme.colors.surface,
-        borderRadius: isMobile ? 16 : 20,
+        borderRadius: isMobile ? 14 : 18,
         overflow: 'hidden',
         marginBottom: isMobile ? 12 : 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 18,
+        elevation: 3,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -3144,18 +3176,18 @@ const makeStyles = (theme) => StyleSheet.create({
     tacticalStatsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: isMobile ? 8 : 12,
+        gap: isMobile ? 8 : 14,
     },
     tacticalStatCard: {
         flex: 1,
-        minWidth: isMobile ? '30%' : 140,
-        borderRadius: isMobile ? 12 : 16,
+        minWidth: isMobile ? '31%' : 170,
+        borderRadius: isMobile ? 12 : 14,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        elevation: 3,
     },
     tacticalStatGradient: {
         padding: isMobile ? 12 : 18,
@@ -3181,17 +3213,19 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     // New Player Statistics Styles
     playersSummaryCard: {
-        marginBottom: isMobile ? 12 : 16,
-        borderRadius: isMobile ? 16 : 20,
+        marginBottom: isMobile ? 12 : 18,
+        borderRadius: isMobile ? 14 : 18,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.12,
-        shadowRadius: 12,
+        shadowRadius: 24,
         elevation: 6,
     },
     playersSummaryGradient: {
         padding: isMobile ? 14 : 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.12)',
     },
     playersSummaryContent: {
         flexDirection: 'row',
@@ -3229,7 +3263,7 @@ const makeStyles = (theme) => StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
     },
     sortControlsContainer: {
-        marginBottom: isMobile ? 10 : 16,
+        marginBottom: isMobile ? 10 : 14,
     },
     sortControlsLabel: {
         fontSize: isMobile ? 11 : 12,
@@ -3246,9 +3280,9 @@ const makeStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        paddingHorizontal: isMobile ? 10 : 14,
-        paddingVertical: isMobile ? 8 : 10,
-        borderRadius: isMobile ? 16 : 20,
+        paddingHorizontal: isMobile ? 10 : 13,
+        paddingVertical: isMobile ? 8 : 9,
+        borderRadius: isMobile ? 10 : 12,
         marginRight: isMobile ? 6 : 10,
         borderWidth: 1,
         borderColor: theme.colors.border,
@@ -3268,11 +3302,10 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     positionLegendContainer: {
         paddingHorizontal: isMobile ? 12 : 16,
-        paddingVertical: isMobile ? 8 : 10,
-        backgroundColor: theme.colors.surface,
-        borderRadius: 10,
-        marginHorizontal: isMobile ? 12 : 16,
-        marginBottom: isMobile ? 8 : 12,
+        paddingVertical: isMobile ? 9 : 11,
+        backgroundColor: theme.colors.surfaceAlt,
+        borderRadius: 12,
+        marginBottom: isMobile ? 10 : 14,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -3465,12 +3498,17 @@ const makeStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: isMobile ? 10 : 12,
-        paddingHorizontal: isMobile ? 10 : 14,
-        paddingVertical: isMobile ? 8 : 10,
+        borderRadius: isMobile ? 12 : 14,
+        paddingHorizontal: isMobile ? 12 : 14,
+        paddingVertical: isMobile ? 10 : 12,
         borderWidth: 1,
         borderColor: theme.colors.border,
         gap: isMobile ? 8 : 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 1,
     },
     playerSearchInput: {
         flex: 1,
@@ -3480,27 +3518,33 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     compactPlayerList: {
         backgroundColor: theme.colors.surface,
-        borderRadius: isMobile ? 12 : 16,
+        borderRadius: isMobile ? 14 : 18,
         overflow: 'hidden',
         marginBottom: isMobile ? 16 : 20,
         borderWidth: 1,
         borderColor: theme.colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.05,
+        shadowRadius: 18,
+        elevation: 2,
     },
     compactPlayerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
         justifyContent: 'space-between',
-        paddingVertical: isMobile ? 10 : 12,
-        paddingHorizontal: isMobile ? 10 : 14,
+        paddingVertical: isMobile ? 12 : 13,
+        paddingHorizontal: isMobile ? 12 : 16,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
+        gap: isMobile ? 10 : 12,
     },
     compactPlayerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
         minWidth: 0,
-        maxWidth: isMobile ? '40%' : '50%',
+        maxWidth: isMobile ? '100%' : '42%',
     },
     compactPlayerRank: {
         fontSize: isMobile ? 10 : 11,
@@ -3516,19 +3560,30 @@ const makeStyles = (theme) => StyleSheet.create({
     },
     compactPlayerName: {
         fontSize: isMobile ? 12 : 14,
-        fontWeight: '600',
+        fontWeight: '700',
         color: theme.colors.text,
         flex: 1,
     },
     compactPlayerStats: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: isMobile ? 4 : 8,
-        flexWrap: isMobile ? 'nowrap' : 'nowrap',
+        justifyContent: isMobile ? 'space-between' : 'flex-end',
+        gap: isMobile ? 6 : 10,
+        flexWrap: isMobile ? 'wrap' : 'nowrap',
+        flex: isMobile ? 0 : 1,
+        width: isMobile ? '100%' : 'auto',
     },
     compactStatBox: {
         alignItems: 'center',
-        minWidth: isMobile ? 28 : 32,
+        minWidth: isMobile ? 0 : 42,
+        flexBasis: isMobile ? '30%' : 'auto',
+        flexGrow: isMobile ? 1 : 0,
+        backgroundColor: theme.colors.surfaceAlt,
+        borderRadius: 10,
+        paddingVertical: isMobile ? 6 : 7,
+        paddingHorizontal: isMobile ? 4 : 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
     compactStatValue: {
         fontSize: isMobile ? 12 : 13,
@@ -3544,7 +3599,14 @@ const makeStyles = (theme) => StyleSheet.create({
     compactCardsContainer: {
         flexDirection: 'row',
         gap: 3,
-        minWidth: isMobile ? 32 : 40,
+        minWidth: isMobile ? 0 : 40,
+        flexBasis: isMobile ? '30%' : 'auto',
+        flexGrow: isMobile ? 1 : 0,
+        minHeight: isMobile ? 45 : 'auto',
+        backgroundColor: isMobile ? theme.colors.surfaceAlt : 'transparent',
+        borderRadius: isMobile ? 10 : 0,
+        borderWidth: isMobile ? 1 : 0,
+        borderColor: theme.colors.border,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -3580,10 +3642,17 @@ const makeStyles = (theme) => StyleSheet.create({
         fontWeight: '600',
     },
     compactAttendance: {
-        fontSize: isMobile ? 11 : 12,
+        fontSize: isMobile ? 12 : 12,
         fontWeight: '700',
-        minWidth: isMobile ? 32 : 38,
-        textAlign: 'right',
+        minWidth: isMobile ? 0 : 38,
+        flexBasis: isMobile ? '30%' : 'auto',
+        flexGrow: isMobile ? 1 : 0,
+        textAlign: 'center',
+        backgroundColor: isMobile ? theme.colors.surfaceAlt : 'transparent',
+        borderRadius: isMobile ? 10 : 0,
+        borderWidth: isMobile ? 1 : 0,
+        borderColor: theme.colors.border,
+        paddingVertical: isMobile ? 12 : 0,
     },
 });
 

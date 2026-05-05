@@ -3,10 +3,17 @@ import { createGlobalStyle } from 'styled-components';
 export const GlobalStyles = createGlobalStyle`
   *, *::before, *::after { box-sizing: border-box; }
 
-  html, body, #root { height: 100%; margin: 0; padding: 0; }
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 0;
+  }
 
   html {
     color-scheme: ${({ theme }) => theme.mode};
+    overflow-x: hidden;
   }
 
   body {
@@ -16,6 +23,11 @@ export const GlobalStyles = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 200ms ease, color 200ms ease;
+    overflow-x: hidden;
+  }
+
+  #root {
+    overflow-x: clip;
   }
 
   a { color: inherit; text-decoration: none; }

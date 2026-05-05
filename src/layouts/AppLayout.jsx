@@ -30,6 +30,14 @@ const Main = styled.main`
   padding: 24px;
   overflow: auto;
   min-width: 0;
+
+  @media (max-width: 900px) {
+    padding: 16px;
+  }
+
+  @media (max-width: 600px) {
+    padding: 0;
+  }
 `;
 
 export default function AppLayout() {

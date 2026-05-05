@@ -25,6 +25,12 @@ const ListWrap = styled.button`
     transform: translateY(-1px);
     box-shadow: ${({ theme }) => theme.shadows.md};
   }
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
 `;
 
 const Stripe = styled.div`
@@ -48,6 +54,12 @@ const Avatar = styled.div`
   overflow: hidden;
   flex-shrink: 0;
   img { width: 100%; height: 100%; object-fit: cover; }
+
+  @media (max-width: 600px) {
+    width: 42px;
+    height: 42px;
+    font-size: 14px;
+  }
 `;
 
 const Body = styled.div`
@@ -69,6 +81,10 @@ const Tags = styled.div`
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
+
+  @media (max-width: 600px) {
+    gap: 5px;
+  }
 `;
 
 const Tag = styled.span`
@@ -82,6 +98,12 @@ const Tag = styled.span`
   background: ${({ $bg, theme }) => $bg || theme.colors.backgroundAlt};
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
   border: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 600px) {
+    font-size: 10.5px;
+    padding: 4px 7px;
+    max-width: 100%;
+  }
 `;
 
 // ====== GRID CARD ======
@@ -110,6 +132,10 @@ const GridHeader = styled.div`
   align-items: center;
   justify-content: center;
   position: relative;
+
+  @media (max-width: 600px) {
+    height: 76px;
+  }
 `;
 
 const GridAvatar = styled.div`
@@ -126,6 +152,12 @@ const GridAvatar = styled.div`
   overflow: hidden;
   border: 3px solid rgba(255, 255, 255, 0.5);
   img { width: 100%; height: 100%; object-fit: cover; }
+
+  @media (max-width: 600px) {
+    width: 54px;
+    height: 54px;
+    font-size: 18px;
+  }
 `;
 
 const GridBody = styled.div`
@@ -133,6 +165,10 @@ const GridBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
+
+  @media (max-width: 600px) {
+    padding: 9px;
+  }
 `;
 
 const GridName = styled.div`

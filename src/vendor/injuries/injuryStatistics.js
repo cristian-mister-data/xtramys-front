@@ -3,23 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useTheme } from 'styled-components';
 import { MaterialIcons, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PieChart, BarChart } from 'react-native-chart-kit';
-
-const { width: screenWidth } = Dimensions.get('window');
-
-const isMobileDevice = () => {
-  const { width, height } = Dimensions.get('window');
-  return Math.min(width, height) < 768;
-};
 
 const makeChartConfig = (theme) => ({
   backgroundGradientFrom: theme.colors.surface,
@@ -31,7 +24,8 @@ const makeChartConfig = (theme) => ({
   decimalPlaces: 0,
   labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
   propsForLabels: {
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 
@@ -55,7 +49,7 @@ const FILTER_OPTIONS = ['all', 'active', 'recovered'];
 // Componente para selector de tipo de gráfico
 const ChartTypeSelector = ({ selected, onSelect, isMobile }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const styles = useMemo(() => makeStyles(theme, isMobile), [theme, isMobile]);
   const iconSize = isMobile ? 16 : 20;
   const inactiveColor = theme.colors.textSecondary;
   return (
@@ -91,7 +85,7 @@ const ChartTypeSelector = ({ selected, onSelect, isMobile }) => {
 // Componente para mostrar tabla
 const DataTable = ({ data, isMobile }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const styles = useMemo(() => makeStyles(theme, isMobile), [theme, isMobile]);
   const total = data.reduce((acc, item) => acc + item.count, 0);
   return (
     <View style={styles.tableContainer}>
@@ -119,7 +113,7 @@ const DataTable = ({ data, isMobile }) => {
 // Componente para gráfico de barras horizontal
 const HorizontalBarChart = ({ data, isMobile }) => {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const styles = useMemo(() => makeStyles(theme, isMobile), [theme, isMobile]);
   const maxValue = Math.max(...data.map(d => d.count), 1);
   return (
     <View style={styles.horizontalBarContainer}>
@@ -212,7 +206,9 @@ const ChartRenderer = ({ type, data, chartWidth, chartHeight, isMobile, selected
 export default function InjuryStatistics() {
   const { t } = useTranslation();
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const isMobile = Math.min(viewportWidth, viewportHeight) < 768;
+  const styles = useMemo(() => makeStyles(theme, isMobile), [theme, isMobile]);
   const injuries = useSelector(state => state.injury.injuries);
   const jugadores = useSelector(state => state.player.players);
   const loading = useSelector(state => state.injury.loading);
@@ -528,8 +524,7 @@ export default function InjuryStatistics() {
     );
   };
 
-  const isMobile = isMobileDevice();
-  const chartWidth = isMobile ? screenWidth - 80 : Math.min(screenWidth * 0.8, 500);
+  const chartWidth = isMobile ? Math.max(viewportWidth - 72, 260) : Math.min(viewportWidth * 0.62, 520);
   const chartHeight = isMobile ? 180 : 220;
   const iconSizeLarge = isMobile ? 26 : 32;
   const iconSizeMedium = isMobile ? 20 : 24;
@@ -904,12 +899,10 @@ export default function InjuryStatistics() {
   );
 }
 
-const isMobile = isMobileDevice();
-
-const makeStyles = (theme) => StyleSheet.create({
+const makeStyles = (theme, isMobile) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -946,10 +939,10 @@ const makeStyles = (theme) => StyleSheet.create({
   globalFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: isMobile ? 12 : 16,
-    paddingTop: isMobile ? 12 : 16,
-    paddingBottom: isMobile ? 8 : 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: isMobile ? 10 : 14,
     gap: isMobile ? 8 : 12,
     flexWrap: 'wrap',
   },
@@ -961,11 +954,12 @@ const makeStyles = (theme) => StyleSheet.create({
   filterButtons: {
     flexDirection: 'row',
     gap: isMobile ? 6 : 8,
+    flexWrap: 'wrap',
   },
   filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: isMobile ? 11 : 14,
+    paddingVertical: isMobile ? 8 : 9,
+    borderRadius: 12,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -985,12 +979,17 @@ const makeStyles = (theme) => StyleSheet.create({
   // Chart type selector
   chartTypeSelector: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 5,
+    backgroundColor: theme.colors.surfaceAlt,
+    padding: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   chartTypeButton: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: theme.colors.surfaceAlt,
+    padding: isMobile ? 6 : 7,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
   },
   chartTypeButtonActive: {
     backgroundColor: theme.colors.primary,
@@ -1014,7 +1013,7 @@ const makeStyles = (theme) => StyleSheet.create({
   yearButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 10,
     backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -1034,7 +1033,7 @@ const makeStyles = (theme) => StyleSheet.create({
   // Table styles
   tableContainer: {
     width: '100%',
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -1117,14 +1116,14 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   horizontalBarTrack: {
     flex: 1,
-    height: 20,
+    height: isMobile ? 18 : 22,
     backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 4,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   horizontalBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 8,
   },
   horizontalBarValue: {
     width: 30,
@@ -1134,18 +1133,21 @@ const makeStyles = (theme) => StyleSheet.create({
     textAlign: 'left',
   },
   summaryContainer: {
-    padding: isMobile ? 12 : 16,
+    padding: 0,
+    marginBottom: isMobile ? 12 : 16,
   },
   summaryCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: isMobile ? 10 : 12,
-    padding: isMobile ? 12 : 16,
+    borderRadius: isMobile ? 14 : 18,
+    padding: isMobile ? 14 : 18,
     marginBottom: isMobile ? 10 : 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   summaryItem: {
     flexDirection: 'row',
@@ -1176,7 +1178,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   summarySmall: {
     flex: 1,
-    minWidth: isMobile ? '30%' : 150,
+    minWidth: isMobile ? '31%' : 150,
     alignItems: 'center',
     paddingVertical: isMobile ? 14 : 20,
   },
@@ -1204,15 +1206,17 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   chartContainer: {
     backgroundColor: theme.colors.surface,
-    borderRadius: isMobile ? 10 : 12,
-    padding: isMobile ? 12 : 16,
-    marginHorizontal: isMobile ? 12 : 16,
+    borderRadius: isMobile ? 14 : 18,
+    padding: isMobile ? 14 : 18,
+    marginHorizontal: 0,
     marginBottom: isMobile ? 12 : 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -1226,7 +1230,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   chartTitle: {
     fontSize: isMobile ? 14 : 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: theme.colors.text,
     marginLeft: isMobile ? 6 : 8,
     flexShrink: 1,
@@ -1237,12 +1241,19 @@ const makeStyles = (theme) => StyleSheet.create({
   customLegend: {
     marginTop: isMobile ? 12 : 16,
     width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: isMobile ? 6 : 8,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: isMobile ? 4 : 6,
-    paddingHorizontal: isMobile ? 6 : 8,
+    paddingVertical: isMobile ? 6 : 7,
+    paddingHorizontal: isMobile ? 8 : 10,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   legendDot: {
     width: isMobile ? 10 : 12,

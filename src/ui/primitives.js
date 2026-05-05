@@ -100,6 +100,7 @@ export const Button = styled.button`
     background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   border: 1px solid transparent;
   white-space: nowrap;
+  min-width: 0;
 
   &:disabled { opacity: 0.55; cursor: not-allowed; }
   &:not(:disabled):active { transform: translateY(1px); }
@@ -158,6 +159,11 @@ export const Button = styled.button`
       &:hover:not(:disabled) { text-decoration: underline; }
     `;
   }}
+
+  @media (max-width: 600px) {
+    white-space: normal;
+    padding: 10px 12px;
+  }
 `;
 
 export const Row = styled.div`
@@ -165,6 +171,11 @@ export const Row = styled.div`
   align-items: center;
   gap: ${({ $gap = 12 }) => `${$gap}px`};
   flex-wrap: ${({ $wrap }) => ($wrap ? 'wrap' : 'nowrap')};
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    max-width: 100%;
+  }
 `;
 
 export const Stack = styled.div`

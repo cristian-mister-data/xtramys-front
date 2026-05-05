@@ -63,12 +63,18 @@ const QBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    padding: 12px;
+  }
 `;
 
 const QHead = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 `;
 
 const QIcon = styled.div`
@@ -87,6 +93,8 @@ const QTitle = styled.div`
   font-weight: 600;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.text};
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const Pill = styled.button`
@@ -100,6 +108,13 @@ const Pill = styled.button`
   font-size: 13px;
   cursor: pointer;
   transition: all 0.12s;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    flex: 1 1 calc(50% - 6px);
+    padding: 8px 10px;
+    text-align: center;
+  }
 `;
 
 const PillRow = styled.div`
@@ -115,6 +130,19 @@ const PlayerRow = styled.div`
   background: ${({ theme }) => theme.colors.backgroundAlt};
   border-radius: ${({ theme }) => theme.radius.sm};
   padding: 8px;
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    gap: 8px;
+    padding: 10px;
+
+    > button {
+      width: 40px;
+      min-width: 40px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
 `;
 
 const SnapshotPreview = styled.div`
@@ -172,6 +200,7 @@ const RivalOption = styled.button`
   cursor: pointer;
   width: 100%;
   text-align: left;
+  min-width: 0;
 `;
 
 const RivalEscudoSm = styled.div`

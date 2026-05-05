@@ -63,6 +63,16 @@ const Frame = styled.div`
     $fullscreen ? 'none' : theme.mode === 'dark' ? theme.shadows.lg : theme.shadows.sm};
   display: flex;
   flex-direction: column;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    border-radius: 0;
+    border-color: transparent;
+    box-shadow: none;
+    min-height: ${({ $fullscreen, $hasHeader }) => {
+      if ($fullscreen) return '100dvh';
+      return $hasHeader ? '0' : 'calc(100dvh - 56px)';
+    }};
+  }
 `;
 
 const PageStack = styled.div`
@@ -70,6 +80,11 @@ const PageStack = styled.div`
   flex-direction: column;
   gap: 16px;
   min-height: calc(100dvh - 60px - 48px);
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    gap: 10px;
+    min-height: calc(100dvh - 56px);
+  }
 `;
 
 const InvertLayer = styled.div`

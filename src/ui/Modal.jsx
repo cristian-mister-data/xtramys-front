@@ -32,6 +32,11 @@ const Overlay = styled.div`
      se dispara un repaint (por ejemplo un click), generando justo el
      síntoma "el modal no aparece hasta que pulso en cualquier sitio". */
   animation: ${fadeIn} 150ms ease-out;
+
+  @media (max-width: 600px) {
+    align-items: stretch;
+    padding: 0;
+  }
 `;
 
 const Content = styled.div`
@@ -47,6 +52,15 @@ const Content = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.xl};
   overflow: hidden;
   animation: ${pop} 180ms cubic-bezier(0.2, 0, 0, 1);
+
+  @media (max-width: 600px) {
+    max-width: 100%;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
 `;
 
 const Header = styled.div`
@@ -57,6 +71,10 @@ const Header = styled.div`
   padding: 16px 20px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
+
+  @media (max-width: 600px) {
+    padding: 14px 16px;
+  }
 `;
 
 const Title = styled.h2`
@@ -67,6 +85,10 @@ const Title = styled.h2`
   line-height: 1.3;
   flex: 1;
   min-width: 0;
+
+  @media (max-width: 600px) {
+    font-size: 16px;
+  }
 `;
 
 const Close = styled.button`
@@ -100,6 +122,11 @@ const Body = styled.div`
   overflow-y: auto;
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
+  min-width: 0;
+
+  @media (max-width: 600px) {
+    padding: 16px;
+  }
 `;
 
 const Footer = styled.div`
@@ -109,6 +136,18 @@ const Footer = styled.div`
   padding: 14px 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.backgroundAlt};
+
+  @media (max-width: 600px) {
+    padding: 12px 16px 16px;
+    flex-wrap: wrap;
+
+    > button,
+    > a {
+      flex: 1 1 140px;
+      justify-content: center;
+      min-width: 0;
+    }
+  }
 `;
 
 export default function Modal({ open, onClose, title, children, footer, width }) {
