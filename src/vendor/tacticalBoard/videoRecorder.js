@@ -21,7 +21,7 @@ import * as Sharing from 'expo-sharing';
 import RNFS from 'react-native-fs';
 import { captureRef } from 'react-native-view-shot';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
-import { initRecordingSession, generateVideo as encodeVideo } from '@/utils/videoUtils';
+import { initRecordingSession, generateVideo as encodeVideo, warmUpFFmpeg, createStreamingVideoEncoder } from '@/utils/videoUtils';
 import { SPEED_TO_FPS } from '@/constants/video';
 import { 
   saveVideo as apiSaveVideo,
@@ -39,6 +39,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
 const LINE_TYPE_ELEMENTS = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
+const VIDEO_CAPTURE_FORMAT = 'jpg';
+const VIDEO_CAPTURE_EXTENSION = 'jpg';
+const VIDEO_CAPTURE_QUALITY = 0.92;
+const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 1.4;
+const STREAMING_ENCODE_BACKLOG = 6;
+
+function getVideoCapturePixelRatio() {
+  const ratio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  return Math.max(1, Math.min(ratio, VIDEO_CAPTURE_MAX_PIXEL_RATIO));
+}
 
 // ============================================================
 // COMPONENTE AISLADO DE PREVIEW — React.memo + su propio player
@@ -392,6 +402,7 @@ export default function VideoRecorder({
   const generationCancelledRef = useRef(false); // Para cancelar generación en curso
   const uploadingPathRef = useRef(null); // Ruta del archivo que se está subiendo a R2 (no borrar)
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100 porcentaje de generación
+  const [generationPhase, setGenerationPhase] = useState('generationPreparing');
   const [isSaving, setIsSaving] = useState(false); // Estado de guardado (separado de generación)
   
   // Detección de admin
@@ -463,6 +474,10 @@ export default function VideoRecorder({
   const [videoSpeed, setVideoSpeed] = useState(1.0); // 0.5, 1.0, 2.0
   
   const SCREEN_WIDTH = Dimensions.get('window').width;
+
+  useEffect(() => {
+    warmUpFFmpeg();
+  }, []);
   
   // Calcular duración total estimada del video
   const getVideoDuration = () => {
@@ -832,22 +847,20 @@ export default function VideoRecorder({
     }
 
     let savedZoom = null;
-    let encodingProgressTimer = null;
-    const stopEncodingProgress = () => {
-      if (encodingProgressTimer) {
-        clearInterval(encodingProgressTimer);
-        encodingProgressTimer = null;
-      }
-    };
+    let streamingEncoder = null;
+    let streamingChain = Promise.resolve();
+    let streamingBacklog = 0;
+    let streamingError = null;
 
     try {
       setIsGenerating(true);
       setGenerationProgress(0);
+      setGenerationPhase('generationPreparing');
       generationCancelledRef.current = false;
 
       const fps = SPEED_TO_FPS[videoSpeed] || 30;
-      const moveDuration = 0.8;  // 0.8s movimiento a x1
-      const holdDuration = 0.2;  // 0.2s pausa en destino a x1
+      const moveDuration = 0.9;  // 90% movimiento a x1
+      const holdDuration = 0.1;  // 10% pausa en destino a x1
       const extraDurationEnd = 0.5;
 
       // 1. Interpolar todos los frames
@@ -870,19 +883,65 @@ export default function VideoRecorder({
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
 
-      // Delay adaptativo por plataforma
-      const frameDelay = Platform.OS === 'android' ? 80 : 50;
+      const totalFrames = allFrames.length;
+      let capturedFrames = 0;
+      let encodedFrames = 0;
+      let lastLinearProgress = 0;
+      const updateLinearProgress = () => {
+        const totalWork = Math.max(1, totalFrames * 2);
+        const completedWork = Math.min(totalWork, capturedFrames + encodedFrames);
+        const nextProgress = Math.min(99, Math.round((completedWork / totalWork) * 99));
+        if (nextProgress <= lastLinearProgress) return;
+        lastLinearProgress = nextProgress;
+        setGenerationProgress((currentProgress) => Math.max(currentProgress, nextProgress));
+      };
 
-      // Warmup: capturar y descartar 3 frames para estabilizar el pipeline de renderizado
-      for (let warmup = 0; warmup < 3; warmup++) {
-        await videoFrameControl.current.setFrame(allFrames[0].elements, allFrames[0].connectors);
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const disableStreamingEncoder = (streamingErrorToReport) => {
+        console.warn('[videoRecorder] Streaming WebCodecs falló, se usara fallback al final', streamingErrorToReport);
+        streamingEncoder?.abort?.();
+        streamingEncoder = null;
+        encodedFrames = 0;
+        streamingError = null;
+      };
+
+      const enqueueStreamingFrame = async (frameCapture, frameIndex) => {
+        if (!streamingEncoder || streamingError) return;
+        streamingBacklog += 1;
+        streamingChain = streamingChain
+          .then(() => streamingEncoder.addFrame(frameCapture, frameIndex))
+          .catch((error) => {
+            streamingError = error;
+          });
+
+        if (streamingBacklog >= STREAMING_ENCODE_BACKLOG) {
+          await streamingChain;
+          streamingBacklog = 0;
+          if (streamingError) disableStreamingEncoder(streamingError);
+        }
+      };
+
+      try {
+        streamingEncoder = await createStreamingVideoEncoder({
+          speed: videoSpeed,
+          frameCount: totalFrames,
+          onProgress: (encodeProgress) => {
+            encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
+            updateLinearProgress();
+          },
+        });
+      } catch (streamingError) {
+        console.warn('[videoRecorder] WebCodecs streaming no disponible, se usara fallback', streamingError);
+        streamingEncoder = null;
       }
 
-      // 4. Capturar cada frame con formato PNG (JPG produce archivos corruptos en Android)
-      const totalFrames = allFrames.length;
+      // Primer render estable antes de empezar a guardar frames.
+      await videoFrameControl.current.setFrame(allFrames[0].elements, allFrames[0].connectors);
+      setGenerationPhase('generationCapturing');
+
+      // 4. Capturar cada frame en JPEG: suficiente para H.264 y bastante mas rapido que PNG.
       for (let i = 0; i < totalFrames; i++) {
         if (generationCancelledRef.current) {
+          streamingEncoder?.abort?.();
           RNFS.unlink(framesDir).catch(() => {});
           setGenerationProgress(0);
           // Restaurar zoom si fue guardado
@@ -897,22 +956,26 @@ export default function VideoRecorder({
         // setFrame devuelve Promise que resuelve DESPUÉS del commit de React
         await videoFrameControl.current.setFrame(frame.elements, frame.connectors);
 
-        // 2 rAFs para que la vista nativa pinte + delay adaptativo de seguridad
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        await new Promise(r => setTimeout(r, frameDelay));
-
-        // Capturar como PNG para evitar artefactos JPEG en Android
-        const tmpUri = await captureRef(fieldRef.current, {
-          format: 'png',
-          quality: 1.0,
-          result: 'tmpfile',
+        // Captura web optimizada para video; H.264 ya es lossy, asi evitamos PNG por frame.
+        const frameCapture = await captureRef(fieldRef.current, {
+          format: VIDEO_CAPTURE_FORMAT,
+          quality: VIDEO_CAPTURE_QUALITY,
+          result: 'blob',
+          pixelRatio: getVideoCapturePixelRatio(),
+          cacheBust: false,
+          backgroundColor: '#ffffff',
         });
 
-        const destPath = `${framesDir}/frame${String(i).padStart(4, '0')}.png`;
-        await RNFS.moveFile(tmpUri, destPath);
+        const destPath = `${framesDir}/frame${String(i).padStart(4, '0')}.${VIDEO_CAPTURE_EXTENSION}`;
+        await RNFS.moveFile(frameCapture, destPath);
 
-        // Actualizar progreso (captura = 80%, encoding = 20%)
-        setGenerationProgress(Math.round((i + 1) / totalFrames * 80));
+        capturedFrames = i + 1;
+
+        if (streamingEncoder) {
+          await enqueueStreamingFrame(frameCapture, i);
+        }
+
+        updateLinearProgress();
       }
 
       // 5. Restaurar zoom antes de codificar
@@ -920,15 +983,49 @@ export default function VideoRecorder({
         videoFrameControl.current.restoreZoom(savedZoom);
       }
 
-      // 6. Codificar con ExpoVideoEncoder
-      setGenerationProgress(85);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      encodingProgressTimer = setInterval(() => {
-        setGenerationProgress((current) => Math.min(98, current + 1));
-      }, 150);
-      const { outputPath, mimeType: encodedMime } = await encodeVideo(framesDir, allFrames.length, videoSpeed);
-      stopEncodingProgress();
+      // 6. Finalizar/codificar el vídeo. El progreso es lineal por trabajo total:
+      // frames capturados + frames codificados, sin reparto fijo tipo 80/20.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      setGenerationPhase('generationEncoding');
+      let outputPath;
+      let encodedMime;
+
+      if (streamingEncoder) {
+        await streamingChain;
+        streamingBacklog = 0;
+        if (streamingError) disableStreamingEncoder(streamingError);
+      }
+
+      if (streamingEncoder) {
+        try {
+          const result = await streamingEncoder.finish();
+          outputPath = result.outputPath;
+          encodedMime = result.mimeType;
+          encodedFrames = totalFrames;
+          updateLinearProgress();
+        } catch (streamingError) {
+          console.warn('[videoRecorder] Finalizacion streaming falló, usando fallback', streamingError);
+          streamingEncoder.abort?.();
+          streamingEncoder = null;
+          encodedFrames = 0;
+        }
+      }
+
+      if (!outputPath) {
+        const result = await encodeVideo(
+          framesDir,
+          allFrames.length,
+          videoSpeed,
+          (encodeProgress) => {
+            encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
+            updateLinearProgress();
+          }
+        );
+        outputPath = result.outputPath;
+        encodedMime = result.mimeType;
+      }
       setLocalVideoMime(encodedMime || null);
+      RNFS.unlink(framesDir).catch(() => {});
 
       if (generationCancelledRef.current) {
         RNFS.unlink(outputPath).catch(() => {});
@@ -936,8 +1033,9 @@ export default function VideoRecorder({
         return;
       }
 
+      setGenerationPhase('generationFinalizing');
       setGenerationProgress(100);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 120));
 
       // 7. Reproducir video local
       const fileUri = Platform.OS === 'android' ? `file://${outputPath}` : outputPath;
@@ -954,6 +1052,7 @@ export default function VideoRecorder({
         onGoToLastKeyframe();
       }
     } catch (error) {
+      streamingEncoder?.abort?.();
       // Restaurar zoom en caso de error
       if (savedZoom && videoFrameControl?.current?.restoreZoom) {
         videoFrameControl.current.restoreZoom(savedZoom);
@@ -962,8 +1061,8 @@ export default function VideoRecorder({
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
     } finally {
-      stopEncodingProgress();
       setIsGenerating(false);
+      setGenerationPhase('generationPreparing');
     }
   };
 
@@ -999,8 +1098,8 @@ export default function VideoRecorder({
           fieldWidth: refW,
           fieldHeight: refH,
           fps: 30,
-          moveDuration: 0.8,
-          holdDuration: 0.2,
+          moveDuration: 0.9,
+          holdDuration: 0.1,
           speedMultiplier: videoSpeed,
           extraDurationEnd: 0.5,
         },
@@ -1191,8 +1290,6 @@ export default function VideoRecorder({
         await new Promise(r => setTimeout(r, 0));
         a.click();
         setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 100);
-        setShowPreviewScreen(false);
-        setShowSaveModal(false);
         setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
         return;
       }
@@ -1201,18 +1298,15 @@ export default function VideoRecorder({
         try {
           const asset = await MediaLibrary.createAssetAsync(localVideoPath);
           await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          setShowPreviewScreen(false);
-          setShowSaveModal(false);
           setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
         } catch (saveErr) {
           const isAvailable = await Sharing.isAvailableAsync();
           if (isAvailable) {
-            setShowPreviewScreen(false);
-            setShowSaveModal(false);
             await Sharing.shareAsync(
               Platform.OS === 'android' ? `file://${localVideoPath}` : localVideoPath,
               { mimeType: 'video/mp4' }
             );
+            setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
           } else {
             throw saveErr;
           }
@@ -1225,8 +1319,6 @@ export default function VideoRecorder({
         }
         const asset = await MediaLibrary.createAssetAsync(localVideoPath);
         await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        setShowPreviewScreen(false);
-        setShowSaveModal(false);
         setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
       }
     } catch (error) {
@@ -1413,6 +1505,8 @@ export default function VideoRecorder({
   const handlePreviewDownload = useCallback(() => {
     downloadVideo();
   }, [localVideoPath]);
+
+  const progressPhaseLabel = generationPhase ? t(`videoRecorder.${generationPhase}`) : '';
 
   return (
     <>
@@ -1871,12 +1965,17 @@ export default function VideoRecorder({
       >
         <View style={styles.progressOverlay}>
           <View style={styles.progressModal}>
-            <Feather name="film" size={28} color="#2196F3" style={{ marginBottom: 12 }} />
+            <View style={styles.progressIconWrap}>
+              <Feather name="film" size={24} color="#2563EB" />
+            </View>
             <Text style={styles.progressTitle}>{t('videoRecorder.generating')}</Text>
+            <View style={styles.progressStatusRow}>
+              <Text style={styles.progressPhase}>{progressPhaseLabel}</Text>
+              <Text style={styles.progressPercent}>{generationProgress}%</Text>
+            </View>
             <View style={styles.progressBarOuter}>
               <View style={[styles.progressBarInner, { width: `${generationProgress}%` }]} />
             </View>
-            <Text style={styles.progressPercent}>{generationProgress}%</Text>
             <TouchableOpacity
               style={styles.progressCancelBtn}
               onPress={() => {
@@ -2595,50 +2694,76 @@ const styles = StyleSheet.create({
   // ── Progress modal ──
   progressOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15,23,42,0.58)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   progressModal: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 28,
-    width: 260,
-    alignItems: 'center',
+    borderRadius: 12,
+    padding: 24,
+    width: 320,
+    alignItems: 'stretch',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  progressIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   progressTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  progressStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  progressPhase: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+    paddingRight: 12,
   },
   progressBarOuter: {
     width: '100%',
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 999,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 18,
   },
   progressBarInner: {
     height: '100%',
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
+    backgroundColor: '#2563EB',
+    borderRadius: 999,
   },
   progressPercent: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2196F3',
-    marginBottom: 16,
+    minWidth: 48,
+    textAlign: 'right',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   progressCancelBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,

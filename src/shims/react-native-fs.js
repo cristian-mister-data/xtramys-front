@@ -1,6 +1,6 @@
 // shim for react-native-fs — implementación parcial para web.
 // Almacén en memoria de "frames" para grabación de video: las capturas
-// (data URLs) que el flujo nativo movería a /virtual/frames_XXX/frameNNNN.png
+// (Blob o data URLs) que el flujo nativo movería a /virtual/frames_XXX/frameNNNN.png
 // se guardan acá indexadas por destPath. videoUtils.generateVideo las lee
 // y arma el video con canvas + MediaRecorder.
 //
@@ -13,6 +13,8 @@ const frames = G.__rnfsFrames;
 const NOT_IMPL = (name) => () => {
   throw new Error(`react-native-fs.${name}: not implemented on web`);
 };
+
+const isBlob = (value) => typeof Blob !== 'undefined' && value instanceof Blob;
 
 const RNFS = {
   CachesDirectoryPath: '/virtual/caches',
@@ -55,7 +57,7 @@ const RNFS = {
   // generateVideo (videoUtils) pueda recuperarla.
   moveFile: async (src, dst) => {
     if (!dst) return;
-    if (typeof src === 'string' && src.startsWith('data:')) {
+    if (isBlob(src) || (typeof src === 'string' && src.startsWith('data:'))) {
       frames.set(dst, src);
     } else if (frames.has(src)) {
       frames.set(dst, frames.get(src));
@@ -64,7 +66,7 @@ const RNFS = {
   },
   copyFile: async (src, dst) => {
     if (!dst) return;
-    if (typeof src === 'string' && src.startsWith('data:')) {
+    if (isBlob(src) || (typeof src === 'string' && src.startsWith('data:'))) {
       frames.set(dst, src);
     } else if (frames.has(src)) {
       frames.set(dst, frames.get(src));
@@ -90,6 +92,17 @@ const RNFS = {
         }
       }
       return payload;
+    }
+    if (isBlob(value)) {
+      const buffer = await value.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let index = 0; index < bytes.length; index++) {
+        binary += String.fromCharCode(bytes[index]);
+      }
+      if (encoding === 'base64') return btoa(binary);
+      if (encoding === 'utf8') return binary;
+      return binary;
     }
     throw new Error(`react-native-fs.readFile: unsupported source on web (${String(path).slice(0, 60)})`);
   },

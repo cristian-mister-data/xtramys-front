@@ -2,19 +2,17 @@
  * Shim de react-native-view-shot para web.
  * Usa html-to-image (foreignObject + motor del browser) para capturar un nodo DOM como dataURL.
  *
- * captureRef(refOrNode, options) → Promise<string dataURL>
+ * captureRef(refOrNode, options) → Promise<string dataURL | Blob>
  *
  * Soporta dos patrones de uso típicos del código vendor:
  *   1) `captureRef(viewShotRef.current, options)` — directo
  *   2) `viewShotRef.current.capture(options)` — método imperativo
  *
- * Devuelve siempre una `dataURL` (`data:image/png;base64,...`). El shim de
- * `expo-file-system` reconoce este formato en `readAsStringAsync` y devuelve
- * directamente la parte base64, por lo que el código RN sigue funcionando
- * sin cambios (`FileSystem.readAsStringAsync(uri, { encoding: Base64 })`).
+ * Por defecto devuelve una `dataURL` (`data:image/png;base64,...`). Para video
+ * puede devolver `Blob` con `result: 'blob'`, evitando base64 por frame.
  */
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { toPng, toJpeg } from 'html-to-image';
+import { toPng, toJpeg, toBlob } from 'html-to-image';
 
 function resolveNode(refOrNode) {
   if (!refOrNode) return null;
@@ -47,12 +45,23 @@ export async function captureRef(refOrNode, options = {}) {
   const isJpeg = options.format === 'jpg' || options.format === 'jpeg';
   const commonOpts = {
     pixelRatio,
-    cacheBust: true,
+    cacheBust: options.cacheBust ?? true,
     backgroundColor: options.backgroundColor || undefined,
     // Fuerza el tamaño exacto del nodo evitando recortes por scroll/transform.
     width: node.offsetWidth,
     height: node.offsetHeight,
   };
+
+  if (options.result === 'blob') {
+    const blob = await toBlob(node, {
+      ...commonOpts,
+      type: isJpeg ? 'image/jpeg' : 'image/png',
+      quality: isJpeg ? options.quality ?? 0.92 : 1,
+    });
+    if (!blob) throw new Error('view-shot shim: no se pudo generar Blob');
+    return blob;
+  }
+
   const dataUrl = isJpeg
     ? await toJpeg(node, { ...commonOpts, quality: options.quality ?? 0.92 })
     : await toPng(node, commonOpts);

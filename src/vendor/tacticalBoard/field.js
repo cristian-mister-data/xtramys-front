@@ -782,6 +782,27 @@ function getZIndexBaseForType(type) {
   return ZINDEX_BASE_ICONS;
 }
 
+const ACTIVE_BOARD_DRAG_KEY = '__activeBoardDragKey';
+
+function acquireBoardDrag(dragStart, dragKey) {
+  if (!dragStart?.current) return false;
+  const key = String(dragKey);
+  const activeKey = dragStart.current[ACTIVE_BOARD_DRAG_KEY];
+  if (activeKey && activeKey !== key) return false;
+  dragStart.current[ACTIVE_BOARD_DRAG_KEY] = key;
+  return true;
+}
+
+function isBoardDragOwner(dragStart, dragKey) {
+  return dragStart?.current?.[ACTIVE_BOARD_DRAG_KEY] === String(dragKey);
+}
+
+function releaseBoardDrag(dragStart, dragKey) {
+  if (isBoardDragOwner(dragStart, dragKey)) {
+    delete dragStart.current[ACTIVE_BOARD_DRAG_KEY];
+  }
+}
+
 // Función para obtener los iconos de materiales con etiquetas traducidas
 const getMaterialsIcons = () => [
   { id: 'ball', type: 'ball', label: i18n.t('tacticalBoard.icons.ball'), color: '#fff', size: 14, editable: true },
@@ -1227,6 +1248,7 @@ const FreeTextTool = React.memo(({
       onHandlerStateChange={e => {
         // Iniciar drag en BEGAN para respuesta inmediata
         if (e.nativeEvent.state === State.BEGAN && !textObj.locked) {
+          if (!acquireBoardDrag(dragStart, dragKey)) return;
           // Multi-drag support
           if (multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected) {
             const initialPositions = {};
@@ -1297,12 +1319,13 @@ const FreeTextTool = React.memo(({
             }
           }
           delete dragStart.current[dragKey];
+          releaseBoardDrag(dragStart, dragKey);
           // Guardar en historial al finalizar el drag
           if (saveClonesHistory) saveClonesHistory();
         }
       }}
       onGestureEvent={e => {
-        if (e.nativeEvent.state === State.ACTIVE && !textObj.locked && dragStart.current[dragKey]) {
+        if (e.nativeEvent.state === State.ACTIVE && !textObj.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
           const base = dragStart.current[dragKey];
           // Dividir translación por zoomLevel para compensar la escala del contenedor
           const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
@@ -5286,6 +5309,7 @@ return (
         // ACTIVE: El gesto de pan fue reconocido (el dedo se movió lo suficiente)
         // Inicializar el arrastre aquí
         if (e.nativeEvent.state === State.ACTIVE && !icon.locked && !isDragging.current) {
+          if (!acquireBoardDrag(dragStart, dragKey)) return;
           isDragging.current = true;
           
           // Si estamos en modo multi-select, cancelar el rectángulo de selección
@@ -5334,7 +5358,7 @@ return (
           lastUpdateRef.current = { x: icon.xRatio, y: icon.yRatio };
         }
         
-        if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED) {
+        if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
           isDragging.current = false;
           setIsNearDeleteZone(false); // Resetear indicador visual
           if (rafRef.current) {
@@ -5388,12 +5412,13 @@ return (
           }
           
           delete dragStart.current[dragKey];
+          releaseBoardDrag(dragStart, dragKey);
           // Guardar en historial al finalizar el drag
           if (saveClonesHistory) saveClonesHistory();
         }
       }}
       onGestureEvent={(e) => {
-        if (e.nativeEvent.state === State.ACTIVE && !icon.locked && dragStart.current[dragKey]) {
+        if (e.nativeEvent.state === State.ACTIVE && !icon.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
           const start = dragStart.current[dragKey];
           // Dividir translación por zoomLevel para compensar la escala del contenedor
           const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
@@ -6391,6 +6416,8 @@ const MemoizedStraightLineDetector = React.memo(({
       return;
     }
 
+    if (!acquireBoardDrag(dragStart, icon.id)) return;
+
     if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
@@ -6409,7 +6436,7 @@ const MemoizedStraightLineDetector = React.memo(({
   };
 
   const handleResponderMove = (e) => {
-    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: dx, dyRatio: dy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
 
@@ -6491,6 +6518,7 @@ const MemoizedStraightLineDetector = React.memo(({
       });
     }
     delete dragStart.current[icon.id];
+    releaseBoardDrag(dragStart, icon.id);
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
@@ -6695,6 +6723,7 @@ const MemoizedCurveLineDetector = React.memo(({
       if (!multiSelectMode) setSelectedCloneId(icon.id);
       return;
     }
+    if (!acquireBoardDrag(dragStart, icon.id)) return;
     
     if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
@@ -6714,7 +6743,7 @@ const MemoizedCurveLineDetector = React.memo(({
   };
   
   const handleResponderMove = (e) => {
-    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: dx, dyRatio: dy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
     
@@ -6795,6 +6824,7 @@ const MemoizedCurveLineDetector = React.memo(({
       });
     }
     delete dragStart.current[icon.id];
+    releaseBoardDrag(dragStart, icon.id);
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     // Guardar en historial al finalizar el drag
     if (saveClonesHistory) saveClonesHistory();
@@ -7267,6 +7297,7 @@ const MemoizedCircleDetector = React.memo(({
       if (!multiSelectMode) setSelectedCloneId(icon.id);
       return;
     }
+    if (!acquireBoardDrag(dragStart, icon.id)) return;
     
     if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
@@ -7286,7 +7317,7 @@ const MemoizedCircleDetector = React.memo(({
   };
   
   const handleResponderMove = (e) => {
-    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
     
@@ -7353,6 +7384,7 @@ const MemoizedCircleDetector = React.memo(({
       });
     }
     delete dragStart.current[icon.id];
+    releaseBoardDrag(dragStart, icon.id);
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
@@ -7618,6 +7650,7 @@ const MemoizedRectangleDetector = React.memo(({
       if (!multiSelectMode) setSelectedCloneId(icon.id);
       return;
     }
+    if (!acquireBoardDrag(dragStart, icon.id)) return;
     
     if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
@@ -7637,7 +7670,7 @@ const MemoizedRectangleDetector = React.memo(({
   };
   
   const handleResponderMove = (e) => {
-    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
     
@@ -7704,6 +7737,7 @@ const MemoizedRectangleDetector = React.memo(({
       });
     }
     delete dragStart.current[icon.id];
+    releaseBoardDrag(dragStart, icon.id);
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
@@ -8005,6 +8039,7 @@ const MemoizedCustomShapeDetector = React.memo(({
       if (!multiSelectMode) setSelectedCloneId(icon.id);
       return;
     }
+    if (!acquireBoardDrag(dragStart, icon.id)) return;
     
     if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
@@ -8021,7 +8056,7 @@ const MemoizedCustomShapeDetector = React.memo(({
   };
   
   const handleResponderMove = (e) => {
-    if (!canDrag || !dragStart.current[icon.id]?.isValid) return;
+    if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
     
@@ -8087,6 +8122,7 @@ const MemoizedCustomShapeDetector = React.memo(({
       });
     }
     delete dragStart.current[icon.id];
+    releaseBoardDrag(dragStart, icon.id);
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
@@ -9233,7 +9269,7 @@ export default function Field(props = {}) {
         } else {
           setConnectors([]);
         }
-        requestAnimationFrame(() => requestAnimationFrame(resolve));
+        requestAnimationFrame(resolve);
       });
     },
     // Guarda zoom/pan actuales y resetea a 1/0 para captura limpia
