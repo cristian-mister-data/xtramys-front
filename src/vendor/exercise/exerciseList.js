@@ -10,7 +10,7 @@ import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, up
 import { clearCurrentFolder } from '@/store/slices/exercise/exerciseSlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
+import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -242,10 +242,11 @@ Alert.alert(
       // Preparar la imagen
       let imageBase64 = '';
       if (exercise.imagen) {
-        if (exercise.imagen.startsWith('http')) {
+        const normalizedImage = normalizeImageSource(exercise.imagen, { cacheBust: false });
+        if (normalizedImage.startsWith('http')) {
           // Si es URL, intentar descargar
           try {
-            const response = await fetch(exercise.imagen);
+            const response = await fetch(normalizedImage);
             const blob = await response.blob();
             const reader = new FileReader();
             imageBase64 = await new Promise((resolve) => {
@@ -255,11 +256,8 @@ Alert.alert(
           } catch (error) {
             console.error('Error descargando imagen:', error);
           }
-        } else if (exercise.imagen.startsWith('data:image')) {
-          imageBase64 = exercise.imagen;
         } else {
-          // Es base64 sin prefijo
-          imageBase64 = `data:image/png;base64,${exercise.imagen}`;
+          imageBase64 = normalizedImage;
         }
       }
 
@@ -848,13 +846,7 @@ Alert.alert(
             >
               <Image
                 source={{ uri: (() => {
-                  if (selectedImage?.startsWith('http')) {
-                    const timestamp = new Date().getTime();
-                    return selectedImage.includes('?') 
-                      ? `${selectedImage}&t=${timestamp}` 
-                      : `${selectedImage}?t=${timestamp}`;
-                  }
-                  return `data:image/png;base64,${selectedImage}`;
+                  return normalizeImageSource(selectedImage);
                 })() }}
                 style={{
                   width: width * 0.95,

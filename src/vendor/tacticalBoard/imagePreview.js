@@ -1,6 +1,30 @@
 import React from 'react';
 import { View, Image, useWindowDimensions, Text } from 'react-native';
 
+export function normalizeImageSource(imageSource, { cacheBust = true } = {}) {
+  const normalizedSource = typeof imageSource === 'string' ? imageSource.trim() : imageSource;
+  if (!normalizedSource) return '';
+
+  const isHttpUrl = typeof normalizedSource === 'string' && (normalizedSource.startsWith('http://') || normalizedSource.startsWith('https://'));
+  const isUri = typeof normalizedSource === 'string' && (
+    normalizedSource.startsWith('data:') ||
+    normalizedSource.startsWith('blob:') ||
+    normalizedSource.startsWith('file:') ||
+    normalizedSource.startsWith('content:')
+  );
+
+  if (isHttpUrl) {
+    if (!cacheBust) return normalizedSource;
+    const timestamp = new Date().getTime();
+    return normalizedSource.includes('?')
+      ? `${normalizedSource}&t=${timestamp}`
+      : `${normalizedSource}?t=${timestamp}`;
+  }
+
+  if (isUri) return normalizedSource;
+  return `data:image/png;base64,${normalizedSource}`;
+}
+
 // Recibe imagen URL o base64, aspecto (ratio), ancho/alto base opcional, y estilos personalizados
 export default function Base64ImagePreview({
   base64,
@@ -38,7 +62,7 @@ export default function Base64ImagePreview({
           alignSelf: 'center',
           borderRadius: 12,
           overflow: 'hidden',
-          backgroundColor: '#000',
+          backgroundColor: 'green',
           elevation: 3,
           justifyContent: 'center',
           alignItems: 'center',
@@ -46,13 +70,12 @@ export default function Base64ImagePreview({
       ];
 
   const imageCustomStyle = style
-    ? [style, { resizeMode: style?.resizeMode || 'contain', alignSelf: 'center' }]
+    ? [style, { resizeMode: style?.resizeMode || 'contain' }]
     : [
         {
-          width: '100%',
-          height: '100%',
+          width: forceWidth ? forceWidth : imageWidth,
+          height: forceHeight ? forceHeight : imageHeight,
           resizeMode: 'contain',
-          alignSelf: 'center',
         },
       ];
 
@@ -66,19 +89,7 @@ export default function Base64ImagePreview({
     );
   }
 
-  // Determinar si es URL o base64
-  const isUrl = typeof imageSource === 'string' && (imageSource.startsWith('http://') || imageSource.startsWith('https://'));
-  
-  // Agregar cache busting para URLs de Cloudflare
-  let uri;
-  if (isUrl) {
-    const timestamp = new Date().getTime();
-    uri = imageSource.includes('?') 
-      ? `${imageSource}&t=${timestamp}` 
-      : `${imageSource}?t=${timestamp}`;
-  } else {
-    uri = `data:image/png;base64,${imageSource}`;
-  }
+  const uri = normalizeImageSource(imageSource);
 
   return (
     <View style={customStyle}>

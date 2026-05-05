@@ -29,6 +29,35 @@ import { getPlayerFullName } from '@/components/player/playerHelpers';
 import { FieldSVGRenderer, decomposeFieldId, composeFieldId, getAspectForView, ratioToDisplay, displayToRatio, deltaToRatio, isVisibleInView, isOutsideVisibleField, areAllPointsOutside } from './fields';
 import FieldSelectorModal from './FieldSelectorModal';
 
+const FIELD_CAPTURE_BACKGROUND = '#4a8c3f';
+const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND };
+
+function getFieldCaptureOptions(extraOptions = {}) {
+  return Platform.OS === 'web'
+    ? { ...FIELD_CAPTURE_OPTIONS, result: 'base64', ...extraOptions }
+    : { ...FIELD_CAPTURE_OPTIONS, ...extraOptions };
+}
+
+async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
+  const ref = viewShotRef?.current || viewShotRef;
+  if (!ref?.capture) return '';
+
+  const captured = await ref.capture(getFieldCaptureOptions(extraOptions));
+  if (typeof captured === 'string') {
+    if (captured.startsWith('data:')) {
+      const commaIndex = captured.indexOf(',');
+      return commaIndex >= 0 ? captured.slice(commaIndex + 1) : captured;
+    }
+    if (Platform.OS === 'web' && !/^(file|content|blob|https?):/i.test(captured)) {
+      return captured;
+    }
+  }
+
+  return FileSystem.readAsStringAsync(captured, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+}
+
 // Variable de m�dulo para proteger la selecci�n de deselecci�n inmediata
 // Cuando un icono es seleccionado, se guarda el timestamp para evitar
 // que el onPress del campo lo deseleccione inmediatamente
@@ -10776,13 +10805,7 @@ const handleGuardarGrafico = async () => {
 
     if (canvasRef.current) {
       try {
-        const uri = await canvasRef.current.capture();
-        console.log('[saveGraph] capture URI len=', uri?.length, 'prefix=', uri?.slice(0, 50));
-
-        // Ahora funcionar� correctamente con la API legacy
-        const imageBase64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        const imageBase64 = await captureViewShotBase64(canvasRef);
         console.log('[saveGraph] base64 len=', imageBase64?.length, 'saveCallback?', !!saveCallback);
 
         if (saveCallback) {
@@ -10852,10 +10875,7 @@ const handleCancelar = useCallback(async () => {
     const timer = setTimeout(async () => {
       try {
         if (fieldBaseRef.current) {
-          const uri = await fieldBaseRef.current.capture();
-          const imageBase64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
+          const imageBase64 = await captureViewShotBase64(fieldBaseRef);
           setFieldImageForVideo(`data:image/png;base64,${imageBase64}`);
         }
       } catch (error) {
@@ -11853,6 +11873,12 @@ const handleCancelar = useCallback(async () => {
   // Ref para detectar taps (toque corto sin movimiento) en el campo
   const fieldTouchStartRef = useRef(null);
 
+  const releaseElementDragLock = useCallback((dragState = elementDragState.current) => {
+    if (dragState?.dragKey) {
+      releaseBoardDrag(dragStart, dragState.dragKey);
+    }
+  }, [dragStart]);
+
   const findInteractiveCloneAtPosition = useCallback((touchX, touchY) => {
     return findTopBoardCloneAtPoint(
       actualClonesRef.current,
@@ -11892,7 +11918,14 @@ const handleCancelar = useCallback(async () => {
       return false;
     }
 
+    const dragKey = `fallback-${hitClone.id}`;
+    if (!acquireBoardDrag(dragStart, dragKey)) {
+      elementDragState.current = null;
+      return false;
+    }
+
     elementDragState.current = {
+      dragKey,
       primaryId: hitClone.id,
       selectedIds,
       initialPositions,
@@ -11907,11 +11940,11 @@ const handleCancelar = useCallback(async () => {
     }
 
     return true;
-  }, [multiSelectMode, selectionInteractionMode, findInteractiveCloneAtPosition, selectedCloneIdsSet, selectedCloneIds, setSelectedCloneId, cancelSelectionRect]);
+  }, [multiSelectMode, selectionInteractionMode, findInteractiveCloneAtPosition, selectedCloneIdsSet, selectedCloneIds, dragStart, setSelectedCloneId, cancelSelectionRect]);
 
   // Handler para mover elementos existentes
   const handleElementDragMove = useCallback((e) => {
-    if (!elementDragState.current) return;
+    if (!elementDragState.current || !isBoardDragOwner(dragStart, elementDragState.current.dragKey)) return;
 
     const { pageX, pageY } = e.nativeEvent;
     const { selectedIds, initialPositions, startPageX, startPageY } = elementDragState.current;
@@ -11923,13 +11956,14 @@ const handleCancelar = useCallback(async () => {
       if (!selectedIds.includes(c.id) || c.locked) return c;
       return applyBoardDragSnapshot(c, initialPositions[c.id], dxRatio, dyRatio, dxDisplay, dyDisplay);
     }));
-  }, [viewMode, imageWidth, imageHeight, zoomLevel, setClones]);
+  }, [viewMode, imageWidth, imageHeight, zoomLevel, dragStart, setClones]);
 
   // Handler para finalizar arrastre de elementos
   const handleElementDragEnd = useCallback(() => {
     const dragState = elementDragState.current;
     elementDragState.current = null;
     if (!dragState) return;
+    if (!isBoardDragOwner(dragStart, dragState.dragKey)) return;
 
     setClones(prev => {
       const deleted = [];
@@ -11953,8 +11987,9 @@ const handleCancelar = useCallback(async () => {
       return deleted.length > 0 ? remaining : prev;
     });
 
+    releaseElementDragLock(dragState);
     if (saveClonesHistory) saveClonesHistory();
-  }, [viewMode, imageWidth, imageHeight, setClones, handleElementDeleted, saveClonesHistory]);
+  }, [viewMode, imageWidth, imageHeight, dragStart, setClones, handleElementDeleted, releaseElementDragLock, saveClonesHistory]);
 
   // Funciones para dibujar l�neas rectas
   const handleStraightLineDrawStart = useCallback((e) => {
@@ -15588,7 +15623,11 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
               ]}
             >
               <View style={{ position: 'absolute', left: -10000, top: 0, width: imageWidth, height: imageHeight }}>
-                <ViewShot ref={fieldBaseRef} options={{ format: "png", quality: 1 }}>
+                <ViewShot
+                  ref={fieldBaseRef}
+                  options={FIELD_CAPTURE_OPTIONS}
+                  style={{ width: imageWidth, height: imageHeight, backgroundColor: FIELD_CAPTURE_BACKGROUND }}
+                >
                   <FieldSVGRenderer
                     lineType={fieldLineType}
                     viewMode={viewMode}
@@ -15610,18 +15649,24 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   ]
                 }}
               >
-                <ViewShot ref={(ref) => { canvasRef.current = ref; fieldRef.current = ref; }} options={{ format: "png", quality: 1 }}>
+                <ViewShot
+                  ref={(ref) => { canvasRef.current = ref; fieldRef.current = ref; }}
+                  options={FIELD_CAPTURE_OPTIONS}
+                  style={{ width: imageWidth, height: imageHeight, backgroundColor: FIELD_CAPTURE_BACKGROUND }}
+                >
                   <View
                     style={{
                       width: imageWidth,
                       height: imageHeight,
-                      overflow: 'visible'
+                      overflow: 'visible',
+                      backgroundColor: FIELD_CAPTURE_BACKGROUND
                     }}
                   >
                     <View
                       style={{
                         width: imageWidth,
                         height: imageHeight,
+                        backgroundColor: FIELD_CAPTURE_BACKGROUND,
                         opacity: fieldImageReady ? 1 : 0,
                         userSelect: 'none',
                         zIndex: multiSelectMode ? 9999 :
@@ -15712,6 +15757,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                       }}
                       onResponderTerminate={() => {
                         if (eraserMode) handleEraserEnd();
+                        releaseElementDragLock();
                         elementDragState.current = null;
                         fieldTouchStartRef.current = null;
                       }}
