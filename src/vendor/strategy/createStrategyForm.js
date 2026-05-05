@@ -154,8 +154,9 @@ export default function CreateStrategyForm({
 
     if (draftMatches || resultMatches) {
       // No limpiamos FIELD_RESULT aquí: lazy initializers de useState lo
-      // necesitan si el componente se remonta. Se limpia en save/cancel.
-      clearFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT);
+      // necesitan si el componente se remonta. Tampoco limpiamos el borrador
+      // del formulario porque React 18 StrictMode puede remontar una segunda vez.
+      // Ambos se limpian en save/cancel.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

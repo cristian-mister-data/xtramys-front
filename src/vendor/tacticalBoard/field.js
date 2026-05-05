@@ -1,4 +1,4 @@
-﻿// v2
+// v2
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
@@ -29,7 +29,7 @@ import { getPlayerFullName } from '@/components/player/playerHelpers';
 import { FieldSVGRenderer, decomposeFieldId, composeFieldId, getAspectForView, ratioToDisplay, displayToRatio, deltaToRatio, isVisibleInView, isOutsideVisibleField, areAllPointsOutside } from './fields';
 import FieldSelectorModal from './FieldSelectorModal';
 
-// Variable de módulo para proteger la selección de deselección inmediata
+// Variable de m�dulo para proteger la selecci�n de deselecci�n inmediata
 // Cuando un icono es seleccionado, se guarda el timestamp para evitar
 // que el onPress del campo lo deseleccione inmediatamente
 let lastIconSelectionTime = 0;
@@ -47,14 +47,14 @@ function fromRatioCoords(xRatio, yRatio, imageWidth, imageHeight, viewMode) {
 // Componentes memoizados para iconos SVG personalizados
 const BallImage = React.memo(({ size }) => {
   return (
-    <View style={{ 
-      width: size, 
-      height: size, 
-      justifyContent: 'center', 
+    <View style={{
+      width: size,
+      height: size,
+      justifyContent: 'center',
       alignItems: 'center',
     }}>
-      <Text style={{ 
-        fontSize: size * 0.85, 
+      <Text style={{
+        fontSize: size * 0.9,
         lineHeight: size,
         textAlign: 'center',
       }}>
@@ -64,22 +64,22 @@ const BallImage = React.memo(({ size }) => {
   );
 }, (prevProps, nextProps) => prevProps.size === nextProps.size);
 
-// Portería grande profesional (11 jugadores)
+// Porter�a grande profesional (11 jugadores)
 const GoalLargeImage = React.memo(({ size, rotation }) => {
   const width = size;
   const height = size * 0.6;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
       ]}
     >
       <Svg width={width} height={height} viewBox="0 0 120 70">
-        {/* Marco exterior de la portería */}
+        {/* Marco exterior de la porter�a */}
         <Path d="M 5 65 L 5 10 L 115 10 L 115 65" stroke="#FFFFFF" strokeWidth="4" fill="none" />
-        {/* Red - líneas verticales */}
+        {/* Red - l�neas verticales */}
         <Path d="M 15 10 L 15 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 30 10 L 30 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 45 10 L 45 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
@@ -87,31 +87,31 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
         <Path d="M 75 10 L 75 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 90 10 L 90 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 105 10 L 105 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        {/* Red - líneas horizontales */}
+        {/* Red - l�neas horizontales */}
         <Path d="M 5 25 L 115 25" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 5 40 L 115 40" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
         <Path d="M 5 55 L 115 55" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation
 );
 
-// Portería pequeña (fútbol 7 / mini)
+// Porter�a peque�a (f�tbol 7 / mini)
 const GoalSmallImage = React.memo(({ size, rotation }) => {
   const width = size * 0.7;
   const height = size * 0.5;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
       ]}
     >
       <Svg width={width} height={height} viewBox="0 0 80 50">
-        {/* Marco de portería pequeña */}
+        {/* Marco de porter�a peque�a */}
         <Path d="M 5 45 L 5 8 L 75 8 L 75 45" stroke="#FF6B00" strokeWidth="3" fill="none" />
         {/* Red simplificada */}
         <Path d="M 20 8 L 20 45" stroke="#CCCCCC" strokeWidth="1" opacity="0.5" />
@@ -121,7 +121,7 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation
 );
 
@@ -129,9 +129,9 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
 const BarrierImage = React.memo(({ size, rotation, color = '#FFFFFF' }) => {
   const width = size;
   const height = size * 0.4;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
@@ -143,19 +143,19 @@ const BarrierImage = React.memo(({ size, rotation, color = '#FFFFFF' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation && prevProps.color === nextProps.color
 );
 
-// Maniquí de entrenamiento
+// Maniqu� de entrenamiento
 const DummyImage = React.memo(({ size, rotation, color = '#2196F3' }) => {
   const width = size * 0.5;
   const height = size;
-  // Calcular color más oscuro para el borde
+  // Calcular color m�s oscuro para el borde
   const darkerColor = color === '#2196F3' ? '#1565C0' : color;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
@@ -166,7 +166,7 @@ const DummyImage = React.memo(({ size, rotation, color = '#2196F3' }) => {
         <Circle cx="20" cy="75" r="8" fill="#333333" />
         {/* Poste central */}
         <Rect x="18" y="25" width="4" height="50" fill="#444444" />
-        {/* Torso del maniquí */}
+        {/* Torso del maniqu� */}
         <Path d="M 8 25 Q 20 20 32 25 L 30 50 Q 20 52 10 50 Z" fill={color} stroke={darkerColor} strokeWidth="1" />
         {/* Hombros */}
         <Path d="M 5 28 Q 20 22 35 28" stroke={darkerColor} strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -175,7 +175,7 @@ const DummyImage = React.memo(({ size, rotation, color = '#2196F3' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation && prevProps.color === nextProps.color
 );
 
@@ -183,9 +183,9 @@ const DummyImage = React.memo(({ size, rotation, color = '#2196F3' }) => {
 const PoleImage = React.memo(({ size, rotation, color = '#FFD700' }) => {
   const width = size * 0.3;
   const height = size;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
@@ -194,28 +194,28 @@ const PoleImage = React.memo(({ size, rotation, color = '#FFD700' }) => {
       <Svg width={width} height={height} viewBox="0 0 24 80">
         {/* Palo vertical */}
         <Rect x="10" y="5" width="4" height="60" fill={color} />
-        {/* Cono pequeño en la base */}
+        {/* Cono peque�o en la base */}
         <Path d="M 4 75 L 12 55 L 20 75 Z" fill="#FF6B00" stroke="#E65100" strokeWidth="1" />
         {/* Base del cono */}
         <Rect x="2" y="73" width="20" height="4" fill="#E65100" rx="1" />
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation && prevProps.color === nextProps.color
 );
 
-// Cono de fútbol profesional
+// Cono de f�tbol profesional
 const ConeProImage = React.memo(({ size, color = '#FF6B00' }) => {
   const width = size;
   const height = size;
-  
+
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height} viewBox="0 0 50 50">
         {/* Cono con degradado visual */}
         <Path d="M 10 45 L 25 8 L 40 45 Z" fill={color} stroke="#000" strokeWidth="1" />
-        {/* Líneas blancas reflectantes */}
+        {/* L�neas blancas reflectantes */}
         <Path d="M 15 38 L 25 15 L 35 38" stroke="#FFFFFF" strokeWidth="2" fill="none" opacity="0.7" />
         {/* Base del cono */}
         <Rect x="8" y="43" width="34" height="5" fill={color} stroke="#000" strokeWidth="1" rx="1" />
@@ -224,11 +224,11 @@ const ConeProImage = React.memo(({ size, color = '#FF6B00' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.color === nextProps.color
 );
 
-// Cono plano/disco (pequeño y circular)
+// Cono plano/disco (peque�o y circular)
 const ConeFlatImage = React.memo(({ size, color = '#FF6B00' }) => {
   const actualSize = size || 18;
   return (
@@ -251,18 +251,18 @@ const ConeFlatImage = React.memo(({ size, color = '#FF6B00' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.color === nextProps.color
 );
 
-// Aro de entrenamiento (círculo hueco)
+// Aro de entrenamiento (c�rculo hueco)
 const RingImage = React.memo(({ size, color = '#FFD700' }) => {
   const actualSize = size || 24;
   const strokeWidth = Math.max(2, actualSize * 0.12);
   return (
     <View style={{ width: actualSize, height: actualSize, justifyContent: 'center', alignItems: 'center' }}>
       <Svg width={actualSize} height={actualSize} viewBox="0 0 40 40">
-        {/* Círculo hueco (aro) */}
+        {/* C�rculo hueco (aro) */}
         <Circle
           cx="20"
           cy="20"
@@ -283,7 +283,7 @@ const RingImage = React.memo(({ size, color = '#FFD700' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.color === nextProps.color
 );
 
@@ -309,7 +309,7 @@ const WeightsImage = React.memo(({ size, color = '#333333' }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.color === nextProps.color
 );
 
@@ -317,20 +317,20 @@ const WeightsImage = React.memo(({ size, color = '#333333' }) => {
 const GoalImage = React.memo(({ size, rotation }) => {
   const width = size;
   const height = size;
-  
+
   return (
-    <View 
+    <View
       style={[
         { width, height },
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
       ]}
     >
-      <Svg 
-        width={width} 
-        height={height} 
+      <Svg
+        width={width}
+        height={height}
         viewBox="0 0 100 100"
       >
-        {/* Portería - 3 lados blancos más estirada (sin lado frontal para mostrar orientación) */}
+        {/* Porter�a - 3 lados blancos m�s estirada (sin lado frontal para mostrar orientaci�n) */}
         {/* Lado izquierdo */}
         <Path d="M 10 30 L 10 70" stroke="#FFFFFF" strokeWidth="3" />
         {/* Lado superior */}
@@ -340,14 +340,14 @@ const GoalImage = React.memo(({ size, rotation }) => {
       </Svg>
     </View>
   );
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation
 );
 
-// Definiciones de formaciones de fútbol con posiciones en ratios (0-1)
+// Definiciones de formaciones de f�tbol con posiciones en ratios (0-1)
 // yRatio: 0 = arriba (ataque), 1 = abajo (defensa)
 // xRatio: 0 = izquierda, 1 = derecha
-// Posiciones estándar disponibles
+// Posiciones est�ndar disponibles
 const POSITION_TYPES = [
   'GK',  // Portero
   'LB',  // Lateral Izquierdo
@@ -364,8 +364,8 @@ const POSITION_TYPES = [
   'CF',  // Centro Delantero
 ];
 
-// Etiquetas por defecto para posiciones (máximo 2 caracteres)
-// Función que retorna las etiquetas traducidas según el idioma actual
+// Etiquetas por defecto para posiciones (m�ximo 2 caracteres)
+// Funci�n que retorna las etiquetas traducidas seg�n el idioma actual
 const getDefaultPositionLabels = () => ({
   GK: i18n.t('formations.positionLabels.GK'),
   LB: i18n.t('formations.positionLabels.LB'),
@@ -581,7 +581,7 @@ const FORMATIONS = {
   },
 };
 
-// Formaciones para 8 jugadores (fútbol 8)
+// Formaciones para 8 jugadores (f�tbol 8)
 const FORMATIONS_8 = {
   '1-3-3-1': {
     name: '1-3-3-1',
@@ -663,7 +663,7 @@ const FORMATIONS_8 = {
   },
 };
 
-// Formaciones para 7 jugadores (fútbol 7)
+// Formaciones para 7 jugadores (f�tbol 7)
 const FORMATIONS_7 = {
   '1-3-2-1': {
     name: '1-3-2-1',
@@ -746,9 +746,9 @@ const FORMATIONS_BY_PLAYER_COUNT = {
   11: FORMATIONS,
 };
 
-// Legacy helper removed "” field selection now uses lineType + viewMode directly
+// Legacy helper removed "� field selection now uses lineType + viewMode directly
 
-// Función para obtener los iconos iniciales con etiquetas traducidas
+// Funci�n para obtener los iconos iniciales con etiquetas traducidas
 const getInitialIcons = () => [
   { id: 'icon1', type: 'player', label: i18n.t('tacticalBoard.icons.bluePlayer'), color: '#2176ff', size: 24, number: 1 },
   { id: 'icon2', type: 'player', label: i18n.t('tacticalBoard.icons.redPlayer'), color: '#ff3838', size: 24, number: 1 },
@@ -765,13 +765,13 @@ const getInitialIcons = () => [
   { id: 'custom-shape-button', type: 'custom-shape-button', label: i18n.t('tacticalBoard.icons.customShape'), color: '#000000', size: 32, thickness: 1, inPalette: true },
 ];
 
-// Set de tipos de materiales/herramientas para filtrado rápido
+// Set de tipos de materiales/herramientas para filtrado r�pido
 const MATERIAL_TYPES_SET = new Set(['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights']);
 
-// Set de tipos de líneas/formas
+// Set de tipos de l�neas/formas
 const LINE_TYPES_SET = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
 
-// Bases de z-index por grupo (líneas abajo, materiales medio, jugadores/staff arriba)
+// Bases de z-index por grupo (l�neas abajo, materiales medio, jugadores/staff arriba)
 const ZINDEX_BASE_LINES = 1000;
 const ZINDEX_BASE_MATERIALS = 5000;
 const ZINDEX_BASE_ICONS = 10000;
@@ -803,7 +803,7 @@ function releaseBoardDrag(dragStart, dragKey) {
   }
 }
 
-// Función para obtener los iconos de materiales con etiquetas traducidas
+// Funci�n para obtener los iconos de materiales con etiquetas traducidas
 const getMaterialsIcons = () => [
   { id: 'ball', type: 'ball', label: i18n.t('tacticalBoard.icons.ball'), color: '#fff', size: 14, editable: true },
   { id: 'cone-pro', type: 'cone-pro', label: i18n.t('tacticalBoard.icons.cone'), color: '#FF6B00', size: 18, editable: true },
@@ -822,7 +822,7 @@ function isValidHexColor(color) {
   return typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color);
 }
 
-// Función para obtener abreviatura de posición de jugador
+// Funci�n para obtener abreviatura de posici�n de jugador
 function getPositionAbbreviation(position) {
   if (!position) return '';
   const positionLower = position.toLowerCase();
@@ -869,11 +869,11 @@ function useScreenDimensions() {
   return dimensions;
 }
 
-function OptionsMenu({ 
-  visible, 
-  onClose, 
-  onDelete, 
-  onDuplicate, 
+function OptionsMenu({
+  visible,
+  onClose,
+  onDelete,
+  onDuplicate,
   onRotate = null,
   onEdit = null,
   onIncreaseSize = null,
@@ -890,8 +890,8 @@ function OptionsMenu({
   // Detectar si es tablet
   const { width, height } = Dimensions.get('window');
   const isTablet = width >= 768;
-  
-  // Tamaños fijos del menú (sin escalar según la imagen)
+
+  // Tama�os fijos del men� (sin escalar seg�n la imagen)
   const menuWidth = isTablet ? 160 : 145;
   const menuItemHeight = isTablet ? 42 : 38;
   const fontSize = isTablet ? 14 : 13;
@@ -899,10 +899,10 @@ function OptionsMenu({
   const horizontalPadding = isTablet ? 14 : 12;
   const verticalPadding = isTablet ? 10 : 9;
   const iconTextGap = isTablet ? 12 : 10;
-  
+
   if (!visible) return null;
-  
-  // Calcular el número de items visibles
+
+  // Calcular el n�mero de items visibles
   const itemCount = [
     true, // Duplicar
     onRotate,
@@ -914,16 +914,16 @@ function OptionsMenu({
     onSendToBack,
     true // Eliminar
   ].filter(Boolean).length;
-  
+
   const estimatedMenuHeight = itemCount * menuItemHeight;
-  
-  // Ajustar posición para que no se salga de la pantalla
+
+  // Ajustar posici�n para que no se salga de la pantalla
   let adjustedX = position.x;
   let adjustedY = position.y;
-  
-  // Offset para que el menú aparezca al lado del icono, no encima
-  const offsetX = 10; // Pequeño margen a la derecha
-  
+
+  // Offset para que el men� aparezca al lado del icono, no encima
+  const offsetX = 10; // Peque�o margen a la derecha
+
   // Ajuste horizontal - intentar mostrar a la derecha del elemento
   if (adjustedX + menuWidth + offsetX > width - 10) {
     // Si no cabe a la derecha, mostrarlo a la izquierda
@@ -931,27 +931,27 @@ function OptionsMenu({
   } else {
     adjustedX = adjustedX + offsetX;
   }
-  
+
   // Asegurar que no se salga por la izquierda
   if (adjustedX < 10) {
     adjustedX = 10;
   }
-  
-  // Ajuste vertical - centrar el menú verticalmente respecto al punto de toque
-  // En móvil, mostrar más abajo para no interferir con los botones flotantes
-  const verticalOffset = isMobile ? 60 : 0; // Offset adicional para móvil
+
+  // Ajuste vertical - centrar el men� verticalmente respecto al punto de toque
+  // En m�vil, mostrar m�s abajo para no interferir con los botones flotantes
+  const verticalOffset = isMobile ? 60 : 0; // Offset adicional para m�vil
   adjustedY = adjustedY - (estimatedMenuHeight / 2) + verticalOffset;
-  
+
   // Asegurar que no se salga por arriba
   if (adjustedY < 10) {
     adjustedY = 10;
   }
-  
+
   // Asegurar que no se salga por abajo
   if (adjustedY + estimatedMenuHeight > height - 10) {
     adjustedY = height - estimatedMenuHeight - 10;
   }
-  
+
   // Estilos multiplataforma optimizados
   const menuStyle = {
     position: 'absolute',
@@ -973,13 +973,13 @@ function OptionsMenu({
         elevation: 10,
       },
     }),
-    // Borde para mejor definición
+    // Borde para mejor definici�n
     borderColor: '#e0e0e0',
   };
 
   const menuItemStyle = {
-    flexDirection: 'row', 
-    alignItems: 'center', 
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: horizontalPadding,
     paddingVertical: verticalPadding,
     minHeight: menuItemHeight,
@@ -988,19 +988,19 @@ function OptionsMenu({
   };
 
   const lastItemStyle = {
-    flexDirection: 'row', 
-    alignItems: 'center', 
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: horizontalPadding,
     paddingVertical: verticalPadding,
     minHeight: menuItemHeight,
   };
 
   const textStyle = {
-    fontSize, 
+    fontSize,
     color: '#2c3e50',
     fontWeight: '600',
     flexShrink: 0,
-    // Optimización multiplataforma
+    // Optimizaci�n multiplataforma
     includeFontPadding: false,
     textAlignVertical: 'center',
   };
@@ -1015,7 +1015,7 @@ function OptionsMenu({
   };
 
   const MenuItem = ({ onPress, iconName, iconColor, label, isLast = false }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={isLast ? lastItemStyle : menuItemStyle}
       onPress={onPress}
       activeOpacity={0.7}
@@ -1027,92 +1027,92 @@ function OptionsMenu({
       <Text style={textStyle}>{label}</Text>
     </TouchableOpacity>
   );
-  
+
   return (
     <>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           zIndex: 999,
         }} />
       </TouchableWithoutFeedback>
-      
+
       <View style={menuStyle}>
-        <MenuItem 
+        <MenuItem
           onPress={() => { onDuplicate(); onClose(); }}
           iconName="copy"
           iconColor="#27ae60"
           label={t('tacticalBoard.menu.duplicate')}
         />
-        
+
         {onRotate && (
-          <MenuItem 
+          <MenuItem
             onPress={onRotate}
             iconName="rotate-cw"
             iconColor="#007aff"
             label={t('tacticalBoard.menu.rotate')}
           />
         )}
-        
+
         {onIncreaseSize && (
-          <MenuItem 
+          <MenuItem
             onPress={onIncreaseSize}
             iconName="plus-circle"
             iconColor="#27ae60"
             label={t('tacticalBoard.menu.increase')}
           />
         )}
-        
+
         {onDecreaseSize && (
-          <MenuItem 
+          <MenuItem
             onPress={onDecreaseSize}
             iconName="minus-circle"
             iconColor="#e74c3c"
             label={t('tacticalBoard.menu.decrease')}
           />
         )}
-        
+
         {onEdit && !hideEdit && (
-          <MenuItem 
+          <MenuItem
             onPress={() => { onEdit(); onClose(); }}
             iconName="settings"
             iconColor="#8e44ad"
             label={t('tacticalBoard.menu.moreOptions')}
           />
         )}
-        
+
         {onLock && (
-          <MenuItem 
+          <MenuItem
             onPress={() => { onLock(); onClose(); }}
             iconName={isLocked ? "unlock" : "lock"}
             iconColor={isLocked ? "#f39c12" : "#3498db"}
             label={isLocked ? t('tacticalBoard.menu.unlock') : t('tacticalBoard.menu.lock')}
           />
         )}
-        
+
         {onBringToFront && (
-          <MenuItem 
+          <MenuItem
             onPress={() => { onBringToFront(); onClose(); }}
             iconName="arrow-up-circle"
             iconColor="#9b59b6"
             label={t('tacticalBoard.menu.bringToFront')}
           />
         )}
-        
+
         {onSendToBack && (
-          <MenuItem 
+          <MenuItem
             onPress={() => { onSendToBack(); onClose(); }}
             iconName="arrow-down-circle"
             iconColor="#8e44ad"
             label={t('tacticalBoard.menu.sendToBack')}
           />
         )}
-        
-        <MenuItem 
+
+        <MenuItem
           onPress={() => { onDelete(); onClose(); }}
           iconName="trash-2"
           iconColor="#ff3b30"
@@ -1128,17 +1128,17 @@ function OptionsMenu({
 function ControlButton({ onPress, color, position, scale = 1 }) {
   const buttonSize = 28 * scale;
   const iconSize = 16 * scale;
-  
-  // Definir posiciones para cada tipo de botón
+
+  // Definir posiciones para cada tipo de bot�n
   let positionStyle;
   if (position === 'delete') {
     positionStyle = { top: -buttonSize/4, right: -buttonSize/4 };
   } else if (position === 'duplicate') {
-    positionStyle = { top: -buttonSize/4, right: buttonSize }; // Posicionado a la izquierda del botón de eliminar
+    positionStyle = { top: -buttonSize/4, right: buttonSize }; // Posicionado a la izquierda del bot�n de eliminar
   } else {
-    positionStyle = { top: -buttonSize/4, left: -buttonSize/4 }; // Botón de rotación
+    positionStyle = { top: -buttonSize/4, left: -buttonSize/4 }; // Bot�n de rotaci�n
   }
-    
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -1194,21 +1194,21 @@ const FreeTextTool = React.memo(({
   viewMode,
   zoomLevel = 1
 }) => {
-  // Detectar si es móvil
+  // Detectar si es m�vil
   const { width, height } = Dimensions.get('window');
   const isMobile = Math.min(width, height) < 768;
-  // Factor de escala aumentado para móviles
+  // Factor de escala aumentado para m�viles
   const baseScale = Math.min(imageWidth, imageHeight) / 500;
   const scale = isMobile ? baseScale * 1.35 : baseScale;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
 
   const dragKey = `text-${textObj.id}`;
-  
+
   // Usar Set para O(1) lookup
   const isMultiSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(textObj.id) : selectedCloneIds.includes(textObj.id);
 
-  // Indicador visual de zona de eliminación (ref para evitar re-renders innecesarios durante drag)
+  // Indicador visual de zona de eliminaci�n (ref para evitar re-renders innecesarios durante drag)
   const isNearDeleteZoneRef = useRef(false);
   const [deleteZoneTick, setDeleteZoneTick] = useState(0);
   const isNearDeleteZone = isNearDeleteZoneRef.current;
@@ -1230,10 +1230,10 @@ const FreeTextTool = React.memo(({
     });
   }, [setClones]);
 
-  // En multi-drag, derivar indicador de eliminación de la posición actual del elemento
+  // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
   const textDisplayX = textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth;
   const textDisplayY = textObj.y !== undefined ? textObj.y : (textObj.yRatio || 0.5) * imageHeight;
-  const isOutsideInMultiDrag = multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected &&
+  const isOutsideInMultiDrag = ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected &&
     (textDisplayX < 0 || textDisplayX > imageWidth || textDisplayY < 0 || textDisplayY > imageHeight);
   const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
 
@@ -1250,7 +1250,7 @@ const FreeTextTool = React.memo(({
         if (e.nativeEvent.state === State.BEGAN && !textObj.locked) {
           if (!acquireBoardDrag(dragStart, dragKey)) return;
           // Multi-drag support
-          if (multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected) {
+          if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected) {
             const initialPositions = {};
             selectedCloneIds.forEach(id => {
               const c = clones.find(cl => cl.id === id);
@@ -1284,11 +1284,11 @@ const FreeTextTool = React.memo(({
             setClones(pendingUpdateRef.current);
             pendingUpdateRef.current = null;
           }
-          // Verificar si elementos están fuera del campo y eliminarlos
+          // Verificar si elementos est�n fuera del campo y eliminarlos
           if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
             const start = dragStart.current[dragKey];
             if (start.multiSelect && start.selectedIds) {
-              // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+              // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
               setClones((prev) => {
                 const toDelete = [];
                 const remaining = prev.filter(c => {
@@ -1327,12 +1327,12 @@ const FreeTextTool = React.memo(({
       onGestureEvent={e => {
         if (e.nativeEvent.state === State.ACTIVE && !textObj.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
           const base = dragStart.current[dragKey];
-          // Dividir translación por zoomLevel para compensar la escala del contenedor
+          // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
           const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
-          
+
           const newX = (base.multiSelect ? (textObj.xRatio || 0) : base.xRatio) + dx;
           const newY = (base.multiSelect ? (textObj.yRatio || 0) : base.yRatio) + dy;
-          
+
           // Multi-drag update
           if (base.multiSelect && base.selectedIds && base.initialPositions) {
             scheduleTextDragUpdate(prev => prev.map(c => {
@@ -1355,7 +1355,7 @@ const FreeTextTool = React.memo(({
             return;
           }
 
-          // Actualizar indicador visual de zona de eliminación
+          // Actualizar indicador visual de zona de eliminaci�n
           const inDeleteZone = isOutsideVisibleField(newX, newY, viewMode, imageWidth, imageHeight);
           if (inDeleteZone !== isNearDeleteZone) {
             setIsNearDeleteZone(inDeleteZone);
@@ -1364,7 +1364,7 @@ const FreeTextTool = React.memo(({
           scheduleTextDragUpdate(prev => {
             const correctIndex = prev.findIndex(c => c.id === textObj.id);
             if (correctIndex === -1) return prev;
-            
+
             const next = [...prev];
             next[correctIndex] = {
               ...next[correctIndex],
@@ -1389,7 +1389,7 @@ const FreeTextTool = React.memo(({
         transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
       }}
     >
-          {/* Indicador visual de zona de eliminación */}
+          {/* Indicador visual de zona de eliminaci�n */}
           {showDeleteIndicator && (
             <View style={{
               position: 'absolute',
@@ -1408,14 +1408,14 @@ const FreeTextTool = React.memo(({
           )}
           <Pressable
             onPress={() => {
-              // Si está en modo borrador, borrar el elemento
+              // Si est� en modo borrador, borrar el elemento
               if (eraserMode) {
                 if (onEraseElement) {
                   onEraseElement(textObj.id);
                 }
                 return;
               }
-              // No togglear selección individual en modo multi-select
+              // No togglear selecci�n individual en modo multi-select
               if (!multiSelectMode) {
                 setSelectedCloneId(textObj.id);
               }
@@ -1425,8 +1425,8 @@ const FreeTextTool = React.memo(({
               minHeight: 30,
               padding: 4,
               userSelect: 'none',
-              backgroundColor: selectedCloneId === textObj.id 
-                ? 'rgba(255, 255, 224, 0.7)' 
+              backgroundColor: selectedCloneId === textObj.id
+                ? 'rgba(255, 255, 224, 0.7)'
                 : (textObj.backgroundColor || 'transparent'),
               borderRadius: 6,
               borderWidth: selectedCloneId === textObj.id ? 1 : 0,
@@ -1445,7 +1445,7 @@ const FreeTextTool = React.memo(({
             >
               {textObj.value}
             </Text>
-            {/* Indicador visual para selección múltiple en textos */}
+            {/* Indicador visual para selecci�n m�ltiple en textos */}
             {multiSelectMode && isMultiSelected && (
               <View style={{
                 position: 'absolute',
@@ -1464,17 +1464,17 @@ const FreeTextTool = React.memo(({
                 <Feather name="check" size={10} color="#fff" />
               </View>
             )}
-            
+
             {selectedCloneId === textObj.id && !multiSelectMode && (
               <TouchableOpacity
                 onPress={(e) => {
                   e.stopPropagation();
-                  // Usar measure para obtener la posición absoluta en pantalla
+                  // Usar measure para obtener la posici�n absoluta en pantalla
                   e.target.measure((x, y, width, height, pageX, pageY) => {
                     setOptionsMenu({
                       visible: true,
-                      position: { 
-                        x: pageX + width, // Posición a la derecha del elemento
+                      position: {
+                        x: pageX + width, // Posici�n a la derecha del elemento
                         y: pageY + (height / 2) // Centrado verticalmente
                       },
                       iconId: textObj.id,
@@ -1506,7 +1506,7 @@ const FreeTextTool = React.memo(({
                 <Feather name="more-vertical" size={16} color="#444444" />
               </TouchableOpacity>
             )}
-            
+
             </Pressable>
           </View>
         </PanGestureHandler>
@@ -1514,25 +1514,25 @@ const FreeTextTool = React.memo(({
 }, (prevProps, nextProps) => {
   const textObj = prevProps.textObj;
   const nextTextObj = nextProps.textObj;
-  
-  // Comparación optimizada solo de propiedades críticas
-  if (prevProps.imageWidth !== nextProps.imageWidth || 
+
+  // Comparaci�n optimizada solo de propiedades cr�ticas
+  if (prevProps.imageWidth !== nextProps.imageWidth ||
       prevProps.imageHeight !== nextProps.imageHeight) {
     return false;
   }
-  
+
   if (prevProps.viewMode !== nextProps.viewMode) return false;
   if (prevProps.eraserMode !== nextProps.eraserMode) return false;
-  
+
   const wasSelected = prevProps.selectedCloneId === textObj.id;
   const isSelected = nextProps.selectedCloneId === nextTextObj.id;
-  
+
   if (textObj.id !== nextTextObj.id) return false;
   if (wasSelected !== isSelected) return false;
   if (textObj.xRatio !== nextTextObj.xRatio || textObj.yRatio !== nextTextObj.yRatio) return false;
   if (textObj.x !== nextTextObj.x || textObj.y !== nextTextObj.y) return false;
   if (textObj.locked !== nextTextObj.locked) return false;
-  
+
   // Multi-select state
   if (prevProps.multiSelectMode !== nextProps.multiSelectMode) return false;
   if (prevProps.selectionInteractionMode !== nextProps.selectionInteractionMode) return false;
@@ -1541,9 +1541,9 @@ const FreeTextTool = React.memo(({
   const wasMultiSelected = prevSet ? prevSet.has(textObj.id) : prevProps.selectedCloneIds.includes(textObj.id);
   const isMultiSelected = nextSet ? nextSet.has(nextTextObj.id) : nextProps.selectedCloneIds.includes(nextTextObj.id);
   if (wasMultiSelected !== isMultiSelected) return false;
-  
-  // Solo verificar propiedades visuales si está seleccionado o cambió
-  if (isSelected || wasSelected || 
+
+  // Solo verificar propiedades visuales si est� seleccionado o cambi�
+  if (isSelected || wasSelected ||
       textObj.value !== nextTextObj.value ||
       textObj.color !== nextTextObj.color ||
       textObj.size !== nextTextObj.size) {
@@ -1553,7 +1553,7 @@ const FreeTextTool = React.memo(({
         textObj.backgroundColor !== nextTextObj.backgroundColor ||
         textObj.rotation !== nextTextObj.rotation) return false;
   }
-  
+
   return true;
 });
 
@@ -1569,7 +1569,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
   const [value, setValue] = useState(icon?.value || "");
   const [pickerVisible, setPickerVisible] = useState(false);
   const [backgroundPickerVisible, setBackgroundPickerVisible] = useState(false);
-  
+
   // Guardar valores iniciales para restaurar al cancelar
   const initialValuesRef = useRef({
     color: icon?.color || "#000000",
@@ -1591,7 +1591,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
       value: icon?.value ?? ""
     };
   }, [icon]);
-  
+
   // Enviar vista previa en tiempo real cuando cambian los valores
   useEffect(() => {
     if (onPreviewChange && icon) {
@@ -1604,10 +1604,10 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
       });
     }
   }, [color, backgroundColor, size, value, icon, onPreviewChange]);
-  
-  // Manejar cierre/cancelación - restaurar valores originales o eliminar si está vacío
+
+  // Manejar cierre/cancelaci�n - restaurar valores originales o eliminar si est� vac�o
   const handleClose = useCallback(() => {
-    // Si es un elemento nuevo y el valor está vacío, eliminarlo
+    // Si es un elemento nuevo y el valor est� vac�o, eliminarlo
     if (isNewElement && (!value || value.trim() === '')) {
       if (onDelete && icon?.id) {
         onDelete(icon.id);
@@ -1615,8 +1615,8 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
       onClose();
       return;
     }
-    
-    // Si no es nuevo pero el valor se dejó vacío, también eliminar
+
+    // Si no es nuevo pero el valor se dej� vac�o, tambi�n eliminar
     if (!isNewElement && (!value || value.trim() === '') && initialValuesRef.current.value === '') {
       if (onDelete && icon?.id) {
         onDelete(icon.id);
@@ -1624,7 +1624,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
       onClose();
       return;
     }
-    
+
     if (onPreviewChange && icon) {
       // Restaurar valores originales
       onPreviewChange({
@@ -1652,20 +1652,20 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.proModalOverlay}>
             <TouchableWithoutFeedback>
-<View style={[styles.proModalContainer, isMobile && { width: Math.min(SCREEN_WIDTH * 0.70, 320), maxHeight: SCREEN_HEIGHT * 0.85 }]}> 
+<View style={[styles.proModalContainer, isMobile && { width: Math.min(SCREEN_WIDTH * 0.70, 320), maxHeight: SCREEN_HEIGHT * 0.85 }]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>ðŸ“</Text>
+                    <Text style={{ fontSize: 14 }}>📝</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.textPanel.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={handleClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Body */}
                 <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={false}>
                   {/* Campo de texto */}
@@ -1688,7 +1688,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                       ]}
                     />
                   </View>
-                  
+
                   {/* Color del texto */}
                   <View style={styles.proModalSection}>
                     <View style={styles.proModalRow}>
@@ -1704,14 +1704,14 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                       />
                     </View>
                   </View>
-                  
+
                   <MiniColorPickerModal
                     visible={pickerVisible}
                     initialColor={color}
                     onClose={() => setPickerVisible(false)}
                     onSelect={setColor}
                   />
-                  
+
                   {/* Color de fondo */}
                   <View style={styles.proModalSection}>
                     <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
@@ -1721,7 +1721,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                       <TouchableOpacity
                         style={[
                           isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: backgroundColor === 'transparent' ? '#fff' : backgroundColor,
                             opacity: backgroundColor === 'transparent' ? 0.4 : 1
                           }
@@ -1744,15 +1744,15 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                       </TouchableOpacity>
                     </View>
                   </View>
-                  
+
                   <MiniColorPickerModal
                     visible={backgroundPickerVisible}
                     initialColor={backgroundColor === 'transparent' ? '#ffffff' : backgroundColor}
                     onClose={() => setBackgroundPickerVisible(false)}
                     onSelect={setBackgroundColor}
                   />
-                  
-                  {/* Tamaño */}
+
+                  {/* Tama�o */}
                   <View style={styles.proModalSection}>
                     <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
                       {t('tacticalBoard.textPanel.sizeLabel')}
@@ -1781,7 +1781,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                       </TouchableOpacity>
                     </View>
                   </View>
-                  
+
                   {/* Preview */}
                   <View style={styles.proModalPreview}>
                     <Text style={{
@@ -1796,7 +1796,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                     </Text>
                   </View>
                 </KeyboardAwareScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -1845,18 +1845,18 @@ function ConnectorsModal({
   const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
-  
+
   const [selectedIcon1, setSelectedIcon1] = useState(null);
   const [selectedIcon2, setSelectedIcon2] = useState(null);
   const [lineColor, setLineColor] = useState('#000000');
   const [lineThickness, setLineThickness] = useState('2');
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [editingConnector, setEditingConnector] = useState(null);
-  
+
   // Filtrar solo los elementos que pueden tener conectores (jugadores e iconos)
   const connectableElements = useMemo(() => {
-    return clones.filter(clone => 
-      clone.type === 'player' || 
+    return clones.filter(clone =>
+      clone.type === 'player' ||
       clone.playerData || // Jugadores del equipo
       clone.type === 'ball' ||
       clone.type === 'cone' ||
@@ -1873,12 +1873,12 @@ function ConnectorsModal({
       clone.type === 'weights'
     );
   }, [clones]);
-  
+
   const handleAddConnector = () => {
     if (!selectedIcon1 || !selectedIcon2 || selectedIcon1 === selectedIcon2) {
       return;
     }
-    
+
     const newConnector = {
       id: `connector-${Date.now()}`,
       fromId: selectedIcon1,
@@ -1886,37 +1886,37 @@ function ConnectorsModal({
       color: lineColor,
       thickness: parseInt(lineThickness) || 2,
     };
-    
+
     setConnectors(prev => [...prev, newConnector]);
     setSelectedIcon1(null);
     setSelectedIcon2(null);
   };
-  
+
   const handleUpdateConnector = () => {
     if (!editingConnector) return;
-    
-    setConnectors(prev => prev.map(c => 
-      c.id === editingConnector.id 
+
+    setConnectors(prev => prev.map(c =>
+      c.id === editingConnector.id
         ? { ...c, color: lineColor, thickness: parseInt(lineThickness) || 2 }
         : c
     ));
     setEditingConnector(null);
   };
-  
+
   const handleDeleteConnector = (connectorId) => {
     setConnectors(prev => prev.filter(c => c.id !== connectorId));
   };
-  
+
   const handleEditConnector = (connector) => {
     setEditingConnector(connector);
     setLineColor(connector.color);
     setLineThickness(connector.thickness.toString());
   };
-  
+
   const getElementLabel = (id) => {
     const element = clones.find(c => c.id === id);
     if (!element) return t('tacticalBoard.connectors.unknown');
-    
+
     if (element.playerData) {
       return element.playerData.nombre || element.playerData.name || t('tacticalBoard.connectors.teamPlayer');
     }
@@ -1937,9 +1937,9 @@ function ConnectorsModal({
     if (element.type === 'weights') return t('tacticalBoard.elements.weights');
     return t('tacticalBoard.connectors.element');
   };
-  
+
   if (!visible) return null;
-  
+
   return (
     <Modal
       animationType="fade"
@@ -1951,36 +1951,36 @@ function ConnectorsModal({
       <View style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && { 
-                width: SCREEN_WIDTH * 0.80, 
+<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
+                width: SCREEN_WIDTH * 0.80,
                 maxWidth: 340,
-              }]}> 
+              }]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>ðŸ”—</Text>
+                    <Text style={{ fontSize: 14 }}>🔗</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.connectors.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 18, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
                   {/* Crear nuevo conector */}
                   <View style={styles.proModalSection}>
                     <Text style={styles.proModalSectionTitle}>
                       {editingConnector ? t('tacticalBoard.connectors.editConnector') : t('tacticalBoard.connectors.createConnector')}
                     </Text>
-                    
+
                     {!editingConnector && (
                       <>
                         {/* Selector de primer elemento */}
                         <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.fromElement')}</Text>
-                        <ScrollView 
-                          horizontal 
+                        <ScrollView
+                          horizontal
                           showsHorizontalScrollIndicator={false}
                           style={{ marginBottom: 12 }}
                         >
@@ -2004,11 +2004,11 @@ function ConnectorsModal({
                             ))}
                           </View>
                         </ScrollView>
-                        
+
                         {/* Selector de segundo elemento */}
                         <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.toElement')}</Text>
-                        <ScrollView 
-                          horizontal 
+                        <ScrollView
+                          horizontal
                           showsHorizontalScrollIndicator={false}
                           style={{ marginBottom: 12 }}
                         >
@@ -2034,7 +2034,7 @@ function ConnectorsModal({
                         </ScrollView>
                       </>
                     )}
-                    
+
                     {/* Color y grosor */}
                     <View style={styles.proModalRow}>
                       <View style={{ flex: 1 }}>
@@ -2057,11 +2057,11 @@ function ConnectorsModal({
                         />
                       </View>
                     </View>
-                    
-                    {/* Botón de crear/actualizar */}
+
+                    {/* Bot�n de crear/actualizar */}
                     <TouchableOpacity
                       style={[
-                        styles.proModalBtn, 
+                        styles.proModalBtn,
                         styles.proModalBtnPrimary,
                         { marginTop: 12 },
                         (!editingConnector && (!selectedIcon1 || !selectedIcon2)) && { opacity: 0.5 }
@@ -2073,7 +2073,7 @@ function ConnectorsModal({
                         {editingConnector ? t('tacticalBoard.connectors.update') : t('tacticalBoard.connectors.add')}
                       </Text>
                     </TouchableOpacity>
-                    
+
                     {editingConnector && (
                       <TouchableOpacity
                         style={[styles.proModalBtn, styles.proModalBtnSecondary, { marginTop: 8 }]}
@@ -2089,15 +2089,15 @@ function ConnectorsModal({
                       </TouchableOpacity>
                     )}
                   </View>
-                  
+
                   <View style={styles.proModalDivider} />
-                  
+
                   {/* Lista de conectores existentes */}
                   <View style={styles.proModalSection}>
                     <Text style={styles.proModalSectionTitle}>
                       {t('tacticalBoard.connectors.existingConnectors')} ({connectors.length})
                     </Text>
-                    
+
                     {connectors.length === 0 ? (
                       <Text style={styles.proModalHint}>
                         {t('tacticalBoard.connectors.noConnectors')}
@@ -2107,7 +2107,7 @@ function ConnectorsModal({
                         <View key={connector.id} style={styles.connectorItem}>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.connectorItemText} numberOfLines={1}>
-                              {getElementLabel(connector.fromId)} â†’ {getElementLabel(connector.toId)}
+                              {getElementLabel(connector.fromId)} → {getElementLabel(connector.toId)}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                               <View style={[styles.connectorColorPreview, { backgroundColor: connector.color }]} />
@@ -2135,7 +2135,7 @@ function ConnectorsModal({
                     )}
                   </View>
                 </KeyboardAwareScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -2147,7 +2147,7 @@ function ConnectorsModal({
                     </Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Color Picker */}
                 <MiniColorPickerModal
                   visible={colorPickerVisible}
@@ -2163,27 +2163,27 @@ function ConnectorsModal({
 }
 
 // =====================================================
-// COMPONENTE PARA RENDERIZAR LAS LÃNEAS DE CONECTORES
+// COMPONENTE PARA RENDERIZAR LAS LÍNEAS DE CONECTORES
 // =====================================================
-const ConnectorsRenderer = React.memo(({ 
-  connectors, 
-  clones, 
-  imageWidth, 
+const ConnectorsRenderer = React.memo(({
+  connectors,
+  clones,
+  imageWidth,
   imageHeight,
   viewMode
 }) => {
-  // Calcular las posiciones de las líneas basándose en las posiciones de los elementos
+  // Calcular las posiciones de las l�neas bas�ndose en las posiciones de los elementos
   const lines = useMemo(() => {
     return connectors.map(connector => {
       const fromElement = clones.find(c => c.id === connector.fromId);
       const toElement = clones.find(c => c.id === connector.toId);
-      
+
       if (!fromElement || !toElement) return null;
-      
+
       // Obtener coordenadas del centro de cada elemento
       const from = ratioToDisplay(fromElement.xRatio || 0, fromElement.yRatio || 0, viewMode, imageWidth, imageHeight);
       const to = ratioToDisplay(toElement.xRatio || 0, toElement.yRatio || 0, viewMode, imageWidth, imageHeight);
-      
+
       return {
         id: connector.id,
         x1: from.x,
@@ -2195,9 +2195,9 @@ const ConnectorsRenderer = React.memo(({
       };
     }).filter(Boolean);
   }, [connectors, clones, imageWidth, imageHeight, viewMode]);
-  
+
   if (lines.length === 0) return null;
-  
+
   return (
     <Svg
       style={{
@@ -2225,12 +2225,12 @@ const ConnectorsRenderer = React.memo(({
     </Svg>
   );
 }, (prevProps, nextProps) => {
-  // Comparación profunda optimizada
+  // Comparaci�n profunda optimizada
   if (prevProps.connectors.length !== nextProps.connectors.length) return false;
   if (prevProps.imageWidth !== nextProps.imageWidth) return false;
   if (prevProps.imageHeight !== nextProps.imageHeight) return false;
   if (prevProps.viewMode !== nextProps.viewMode) return false;
-  
+
   // Comparar conectores
   for (let i = 0; i < prevProps.connectors.length; i++) {
     const prev = prevProps.connectors[i];
@@ -2239,7 +2239,7 @@ const ConnectorsRenderer = React.memo(({
       return false;
     }
   }
-  
+
   // Comparar posiciones de los clones relevantes
   const relevantIds = new Set(prevProps.connectors.flatMap(c => [c.fromId, c.toId]));
   for (const id of relevantIds) {
@@ -2250,16 +2250,16 @@ const ConnectorsRenderer = React.memo(({
       return false;
     }
   }
-  
+
   return true;
 });
 
-function SettingsPanel({ 
-  visible, 
-  onClose, 
-  standardSize, 
-  setStandardSize, 
-  playersWithNumber, 
+function SettingsPanel({
+  visible,
+  onClose,
+  standardSize,
+  setStandardSize,
+  playersWithNumber,
   setPlayersWithNumber,
   boardSettings,
   setBoardSettings,
@@ -2273,25 +2273,25 @@ function SettingsPanel({
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
   const [size, setSize] = useState(standardSize.toString());
-  const MIN_SIZE = 16;  // Tamaño mínimo para que quepa el número
+  const MIN_SIZE = 16;  // Tama�o m�nimo para que quepa el n�mero
   const [savingSettings, setSavingSettings] = useState(false);
-  
-  // Estados locales para los tamaños de cada jugador (para permitir edición libre)
+
+  // Estados locales para los tama�os de cada jugador (para permitir edici�n libre)
   const [size1, setSize1] = useState((boardSettings?.playerIcon1?.size || 24).toString());
   const [size2, setSize2] = useState((boardSettings?.playerIcon2?.size || 24).toString());
   const [size3, setSize3] = useState((boardSettings?.playerIcon3?.size || 24).toString());
   const [sizeTeam, setSizeTeam] = useState((boardSettings?.teamPlayers?.size || 24).toString());
-  
+
   // Estados para color pickers
   const [colorPicker1Visible, setColorPicker1Visible] = useState(false);
   const [colorPicker2Visible, setColorPicker2Visible] = useState(false);
   const [colorPicker3Visible, setColorPicker3Visible] = useState(false);
   const [colorPickerTeamVisible, setColorPickerTeamVisible] = useState(false);
-  
+
   useEffect(() => {
     setSize(standardSize.toString());
   }, [standardSize]);
-  
+
   // Sincronizar estados locales cuando cambia boardSettings
   useEffect(() => {
     if (boardSettings) {
@@ -2301,33 +2301,33 @@ function SettingsPanel({
       setSizeTeam((boardSettings.teamPlayers?.size || 24).toString());
     }
   }, [boardSettings]);
-  
+
   if (!visible) return null;
-  
+
   const handleApply = () => {
     const parsedSize = parseInt(size);
     if (!isNaN(parsedSize)) {
-      // Validar solo el mínimo
+      // Validar solo el m�nimo
       const validSize = Math.max(MIN_SIZE, parsedSize);
       setStandardSize(validSize);
       setSize(validSize.toString()); // Actualizar el input con el valor validado
     }
     onClose();
   };
-  
+
   const handleSave = async () => {
     const parsedSize = parseInt(size);
     if (!isNaN(parsedSize)) {
       const validSize = Math.max(MIN_SIZE, parsedSize);
       setStandardSize(validSize);
     }
-    
-    // Validar y actualizar tamaños de jugadores antes de guardar
+
+    // Validar y actualizar tama�os de jugadores antes de guardar
     const validSize1 = size1.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size1) || 24);
     const validSize2 = size2.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size2) || 24);
     const validSize3 = size3.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size3) || 24);
     const validSizeTeam = sizeTeam.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(sizeTeam) || 24);
-    
+
     // Construir objeto con los nuevos settings y aplicarlo directamente
     const newSettings = {
       ...boardSettings,
@@ -2338,13 +2338,13 @@ function SettingsPanel({
     };
 
     setBoardSettings(newSettings);
-    
+
     // Actualizar estados locales con valores validados
     setSize1(validSize1.toString());
     setSize2(validSize2.toString());
     setSize3(validSize3.toString());
     setSizeTeam(validSizeTeam.toString());
-    
+
     if (onSaveBoardSettings) {
       setSavingSettings(true);
       try {
@@ -2355,7 +2355,7 @@ function SettingsPanel({
       }
     }
   };
-  
+
   return (
     <Modal
       animationType="fade"
@@ -2367,25 +2367,25 @@ function SettingsPanel({
       <View style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && { 
-                width: SCREEN_WIDTH * 0.75, 
+<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
+                width: SCREEN_WIDTH * 0.75,
                 maxWidth: 320,
-              }]}> 
+              }]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>⚙️</Text>
+                    <Text style={{ fontSize: 14 }}>??�</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.settings.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 18, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
-                  {/* Tamaño de íconos */}
+                  {/* Tama�o de �conos */}
                   <View style={styles.proModalSection}>
                     <Text style={styles.proModalSectionTitle}>{t('tacticalBoard.settings.iconSizeLabel')}</Text>
                     <TextInput
@@ -2394,15 +2394,15 @@ function SettingsPanel({
                       autoComplete="off"
                       value={size}
                       onChangeText={setSize}
-                      placeholder={`Mínimo ${MIN_SIZE}`}
+                      placeholder={`M�nimo ${MIN_SIZE}`}
                       placeholderTextColor="#999"
                     />
                     <Text style={styles.proModalHint}>
-                      Tamaño mínimo: {MIN_SIZE} píxeles
+                      Tama�o m�nimo: {MIN_SIZE} p�xeles
                     </Text>
                   </View>
-                  
-                  {/* Switch números */}
+
+                  {/* Switch n�meros */}
                   <View style={styles.proModalSwitch}>
                     <Text style={styles.proModalSwitchLabel}>
                       {t('tacticalBoard.settings.showPlayerNumbers')}
@@ -2414,8 +2414,8 @@ function SettingsPanel({
                       thumbColor={playersWithNumber ? "#2176ff" : "#f4f3f4"}
                     />
                   </View>
-                  
-                  {/* Botón de Conectores */}
+
+                  {/* Bot�n de Conectores */}
                   <TouchableOpacity
                     style={[styles.proModalBtn, styles.proModalBtnPrimary, { marginTop: 12, marginBottom: 12 }]}
                     onPress={() => {
@@ -2424,27 +2424,27 @@ function SettingsPanel({
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 16, marginRight: 8 }}>ðŸ”—</Text>
+                      <Text style={{ fontSize: 16, marginRight: 8 }}>🔗</Text>
                       <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
                         {t('tacticalBoard.connectors.title')}
                       </Text>
                     </View>
                   </TouchableOpacity>
-                  
+
                   <View style={styles.proModalDivider} />
-                  
+
                   {/* Colores de jugadores */}
                   <View style={styles.proModalSection}>
                     <Text style={styles.proModalSectionTitle}>
                       {t('tacticalBoard.settings.playerColors')}
                     </Text>
-                    
+
                     {/* Jugador 1 */}
                     <View style={styles.proModalCard}>
                       <View style={styles.proModalCardHeader}>
                         <View style={[
                           styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff',
                             width: 32, height: 32, borderRadius: 16
                           }
@@ -2465,18 +2465,18 @@ function SettingsPanel({
                           autoComplete="off"
                           value={size1}
                           onChangeText={setSize1}
-                          placeholder="Tamaño"
+                          placeholder="Tama�o"
                           placeholderTextColor="#999"
                         />
                       </View>
                     </View>
-                    
+
                     {/* Jugador 2 */}
                     <View style={styles.proModalCard}>
                       <View style={styles.proModalCardHeader}>
                         <View style={[
                           styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838',
                             width: 32, height: 32, borderRadius: 16
                           }
@@ -2497,18 +2497,18 @@ function SettingsPanel({
                           autoComplete="off"
                           value={size2}
                           onChangeText={setSize2}
-                          placeholder="Tamaño"
+                          placeholder="Tama�o"
                           placeholderTextColor="#999"
                         />
                       </View>
                     </View>
-                    
+
                     {/* Jugador 3 */}
                     <View style={styles.proModalCard}>
                       <View style={styles.proModalCardHeader}>
                         <View style={[
                           styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600',
                             width: 32, height: 32, borderRadius: 16
                           }
@@ -2529,18 +2529,18 @@ function SettingsPanel({
                           autoComplete="off"
                           value={size3}
                           onChangeText={setSize3}
-                          placeholder="Tamaño"
+                          placeholder="Tama�o"
                           placeholderTextColor="#999"
                         />
                       </View>
                     </View>
-                    
+
                     {/* Jugadores del equipo */}
                     <View style={styles.proModalCard}>
                       <View style={styles.proModalCardHeader}>
                         <View style={[
                           styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff',
                             width: 32, height: 32, borderRadius: 16
                           }
@@ -2561,14 +2561,14 @@ function SettingsPanel({
                           autoComplete="off"
                           value={sizeTeam}
                           onChangeText={setSizeTeam}
-                          placeholder="Tamaño"
+                          placeholder="Tama�o"
                           placeholderTextColor="#999"
                         />
                       </View>
                     </View>
                   </View>
                 </KeyboardAwareScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -2591,7 +2591,7 @@ function SettingsPanel({
                     onPress={handleSave}
                     disabled={savingSettings}
                     style={[
-                      styles.proModalBtn, 
+                      styles.proModalBtn,
                       styles.proModalBtnPrimary,
                       savingSettings && { opacity: 0.6 }
                     ]}
@@ -2601,7 +2601,7 @@ function SettingsPanel({
                     </Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Color Pickers */}
                 <MiniColorPickerModal
                   visible={colorPicker1Visible}
@@ -2668,10 +2668,10 @@ function LeftEditPanel({
   const isCurveType = icon?.type === 'curve-arrow' || icon?.type === 'curve-line';
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  
+
   // Determinar si el elemento puede tener color
-  const canHaveColor = icon?.type === 'player' || 
-                       icon?.type === 'cone' || 
+  const canHaveColor = icon?.type === 'player' ||
+                       icon?.type === 'cone' ||
                        icon?.type === 'cone-pro' ||
                        icon?.type === 'cone-flat' ||
                        icon?.type === 'ring' ||
@@ -2679,14 +2679,14 @@ function LeftEditPanel({
                        icon?.type === 'barrier' ||
                        icon?.type === 'pole' ||
                        icon?.type === 'ladder' ||
-                       isArrowType || 
+                       isArrowType ||
                        isCurveType ||
-                       icon?.type === 'circle' || 
-                       icon?.type === 'rectangle' || 
+                       icon?.type === 'circle' ||
+                       icon?.type === 'rectangle' ||
                        icon?.type === 'custom-shape' ||
                        icon?.type === 'custom-shape-button' ||
                        icon?.type === 'goal';
-  
+
   const [size, setSize] = useState(
     isNaN(Number(icon?.size)) ? (standardSize?.toString() || '24') : icon.size?.toString()
   );
@@ -2700,20 +2700,20 @@ function LeftEditPanel({
   const [textBackgroundColor, setTextBackgroundColor] = useState(icon?.textBackgroundColor || '#ffffff');
   const [textPickerVisible, setTextPickerVisible] = useState(false);
   const [textBackgroundPickerVisible, setTextBackgroundPickerVisible] = useState(false);
-  // Nuevos estados para tipo de línea y relleno
+  // Nuevos estados para tipo de l�nea y relleno
   const [localLineType, setLocalLineType] = useState(icon?.lineType || 'solid');
   const [fillColor, setFillColor] = useState(icon?.fillColor || 'transparent');
   const [fillPickerVisible, setFillPickerVisible] = useState(false);
-  // Estado para el color del número
+  // Estado para el color del n�mero
   const [numberColor, setNumberColor] = useState(icon?.numberColor || '#ffffff');
   const [numberColorPickerVisible, setNumberColorPickerVisible] = useState(false);
-  // Estados para el tamaño y espaciado de los puntos
+  // Estados para el tama�o y espaciado de los puntos
   const [localDotSize, setLocalDotSize] = useState(icon?.dotSize ?? 2);
   const [localDotSpacing, setLocalDotSpacing] = useState(icon?.dotSpacing ?? 4);
   // Estados para portero
   const [goalkeeperStripeColor, setGoalkeeperStripeColor] = useState(icon?.goalkeeperStripeColor || teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
   const [goalkeeperStripePickerVisible, setGoalkeeperStripePickerVisible] = useState(false);
-  
+
   // Detectar si el jugador es portero
   const isGoalkeeper = icon?.type === 'player' && (
     icon?.isGoalkeeper ||
@@ -2721,20 +2721,20 @@ function LeftEditPanel({
     icon?.playerData?.position === 'goalkeeper' ||
     icon?.playerData?.demarcacion === 'POR'
   );
-  
+
   // Tipos que pueden tener lineType (tipo de trazado)
-  const canHaveLineType = isArrowType || isCurveType || 
-    icon?.type === 'circle' || 
-    icon?.type === 'rectangle' || 
+  const canHaveLineType = isArrowType || isCurveType ||
+    icon?.type === 'circle' ||
+    icon?.type === 'rectangle' ||
     icon?.type === 'custom-shape' ||
     icon?.type === 'custom-shape-button';
-    
+
   // Tipos que pueden tener relleno
-  const canHaveFill = icon?.type === 'circle' || 
-    icon?.type === 'rectangle' || 
+  const canHaveFill = icon?.type === 'circle' ||
+    icon?.type === 'rectangle' ||
     icon?.type === 'custom-shape' ||
     icon?.type === 'custom-shape-button';
-  
+
   useEffect(() => {
     setSize(isNaN(Number(icon?.size)) ? (standardSize?.toString() || '24') : icon?.size?.toString());
     setColor(isValidHexColor(icon?.color) ? icon.color : '#000000');
@@ -2751,27 +2751,27 @@ function LeftEditPanel({
     setLocalDotSpacing(icon?.dotSpacing ?? 4);
     setGoalkeeperStripeColor(icon?.goalkeeperStripeColor || teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
   }, [icon, standardSize, teamPlayerStyle]);
-  
+
   if (!visible || !icon) return null;
   const isPaletteIcon = typeof icon.paletteIndex === "number";
   const isPalettePlayer = icon.isPalettePlayer === true; // Jugador de la paleta de jugadores con nombre
-  
+
   // Tipos de materiales que se pueden aplicar a la paleta
   const materialTypes = ['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights'];
   const isMaterialType = materialTypes.includes(icon.type);
-  
+
   // Tipos que pueden aplicarse a la paleta
   // Para jugadores del equipo solo si es de la paleta (isPalettePlayer)
   // Para otros elementos, si ya tienen paletteIndex o son del tipo correcto
   const canApplyToPalette = isPalettePlayer || isPaletteIcon || isMaterialType ||
-    (icon.type === 'straight-arrow' || 
-    icon.type === 'straight-line' || 
-    icon.type === 'curve-arrow' || 
-    icon.type === 'curve-line' || 
-    icon.type === 'circle' || 
-    icon.type === 'rectangle' || 
+    (icon.type === 'straight-arrow' ||
+    icon.type === 'straight-line' ||
+    icon.type === 'curve-arrow' ||
+    icon.type === 'curve-line' ||
+    icon.type === 'circle' ||
+    icon.type === 'rectangle' ||
     icon.type === 'custom-shape') && (!icon.playerData || isPalettePlayer); // No mostrar para jugadores ya pintados en el campo, excepto si son de la paleta
-  
+
   return (
     <Modal
       animationType="fade"
@@ -2788,13 +2788,13 @@ function LeftEditPanel({
                 <View style={[styles.proModalHeader, { paddingVertical: 8, paddingHorizontal: 10 }]}>
                   <Text style={[isMobile ? styles.proModalTitleMobile : styles.proModalTitle, { fontSize: isMobile ? 12 : 14 }]}>
                     {t('tacticalBoard.editPanel.editTitle')} {
-                      icon.type === 'straight-arrow' ? t('tacticalBoard.elements.straightArrow') : 
-                      icon.type === 'straight-line' ? t('tacticalBoard.elements.straightLine') :  
+                      icon.type === 'straight-arrow' ? t('tacticalBoard.elements.straightArrow') :
+                      icon.type === 'straight-line' ? t('tacticalBoard.elements.straightLine') :
                       icon.type === 'curve-arrow' ? t('tacticalBoard.elements.curveArrow') :
                       icon.type === 'curve-line' ? t('tacticalBoard.elements.curveLine') :
-                      icon.type === 'circle' ? t('tacticalBoard.elements.circle') : 
-                      icon.type === 'rectangle' ? t('tacticalBoard.elements.rectangle') : 
-                      icon.type === 'custom-shape' ? t('tacticalBoard.elements.customShape') : 
+                      icon.type === 'circle' ? t('tacticalBoard.elements.circle') :
+                      icon.type === 'rectangle' ? t('tacticalBoard.elements.rectangle') :
+                      icon.type === 'custom-shape' ? t('tacticalBoard.elements.customShape') :
                       icon.type === 'goal' ? t('tacticalBoard.elements.barrier') :
                       icon.type === 'goal-large' ? t('tacticalBoard.elements.goalLarge') :
                       icon.type === 'goal-small' ? t('tacticalBoard.elements.goalSmall') :
@@ -2811,7 +2811,7 @@ function LeftEditPanel({
                     }
                   </Text>
                   <TouchableOpacity style={[styles.proModalCloseBtn, { width: 28, height: 28 }]} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -2822,9 +2822,9 @@ function LeftEditPanel({
                     </Text>
                   </View>
                 )}
-                
+
                 <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 14 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
-                
+
                 {/* Color para todos los tipos que lo soporten */}
                 {canHaveColor && (
                   <>
@@ -2846,8 +2846,8 @@ function LeftEditPanel({
                     />
                   </>
                 )}
-                
-                {/* Número para jugadores */}
+
+                {/* N�mero para jugadores */}
                 {(icon.type === 'player' && playersWithNumber) && (
                   <>
                     <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.numberLabel')}</Text>
@@ -2857,11 +2857,11 @@ function LeftEditPanel({
                       autoComplete="off"
                       value={number}
                       onChangeText={setNumber}
-                      placeholder="Número"
+                      placeholder="N�mero"
                       placeholderTextColor="#888"
                     />
-                    
-                    {/* Color del número */}
+
+                    {/* Color del n�mero */}
                     <View style={[styles.proModalRow, { marginTop: 10 }]}>
                       <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.textColorLabel')}</Text>
                       <TouchableOpacity
@@ -2880,7 +2880,7 @@ function LeftEditPanel({
                     />
                   </>
                 )}
-              
+
               {/* Color del texto para jugadores con nombre o de paleta */}
               {icon.type === 'player' && (icon.playerData || isPalettePlayer) && (
                 <>
@@ -2902,7 +2902,7 @@ function LeftEditPanel({
                   />
                 </>
               )}
-              
+
               {/* Color de fondo del texto para jugadores con nombre o de paleta */}
               {icon.type === 'player' && (icon.playerData || isPalettePlayer) && (
                 <>
@@ -2911,7 +2911,7 @@ function LeftEditPanel({
                     <TouchableOpacity
                       style={[
                         isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                        { 
+                        {
                           backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
                           opacity: textBackgroundColor === 'transparent' ? 0.4 : 1
                         }
@@ -2941,8 +2941,8 @@ function LeftEditPanel({
                   />
                 </>
               )}
-              
-              {/* Opciones de portero - solo si es portero y está activa la diferenciación */}
+
+              {/* Opciones de portero - solo si es portero y est� activa la diferenciaci�n */}
               {isGoalkeeper && teamPlayerStyle?.differentiateGoalkeeper && (
                 <>
                   <View style={[styles.proModalRow, { marginTop: 12, alignItems: 'center', backgroundColor: '#f0f7ff', padding: 8, borderRadius: 8 }]}>
@@ -2971,8 +2971,8 @@ function LeftEditPanel({
                   />
                 </>
               )}
-              
-              {/* Tamaño - NO mostrar para líneas, flechas, figuras ni custom-shape */}
+
+              {/* Tama�o - NO mostrar para l�neas, flechas, figuras ni custom-shape */}
               {!['custom-shape', 'custom-shape-button', 'straight-arrow', 'straight-line', 'curve-line', 'curve-arrow', 'circle', 'rectangle'].includes(icon.type) && (
                 <>
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 10 }]}>{t('tacticalBoard.editPanel.sizeLabel')}</Text>
@@ -3001,8 +3001,8 @@ function LeftEditPanel({
                   </View>
                 </>
               )}
-              
-              {/* Grosor para líneas, flechas, círculos y custom-shape */}
+
+              {/* Grosor para l�neas, flechas, c�rculos y custom-shape */}
               {(isArrowType || isCurveType || icon.type === 'circle' || icon.type === 'rectangle' || icon.type === 'custom-shape' || icon.type === 'custom-shape-button') && (
                 <>
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 10 }]}>{t('tacticalBoard.editPanel.strokeLabel')}</Text>
@@ -3031,8 +3031,8 @@ function LeftEditPanel({
                   </View>
                 </>
               )}
-              
-              {/* Tipo de trazado (sólido/punteado) para líneas, flechas y figuras */}
+
+              {/* Tipo de trazado (s�lido/punteado) para l�neas, flechas y figuras */}
               {canHaveLineType && (
                 <>
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>{t('tacticalBoard.editPanel.strokeTypeLabel')}</Text>
@@ -3066,7 +3066,7 @@ function LeftEditPanel({
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   {/* Opciones de espaciado cuando es punteado */}
                   {localLineType === 'dotted' && (
                     <>
@@ -3095,7 +3095,7 @@ function LeftEditPanel({
                           </TouchableOpacity>
                         ))}
                       </View>
-                      
+
                       <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 10 }]}>{t('tacticalBoard.editPanel.dotSpacing')}:</Text>
                       <View style={[styles.proModalGrid, { marginTop: 6 }]}>
                         {[2, 4, 6, 8, 10].map(spacing => (
@@ -3123,12 +3123,12 @@ function LeftEditPanel({
                       </View>
                     </>
                   )}
-                  
+
                   {/* Vista previa del trazado */}
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 14 }]}>{t('tacticalBoard.editPanel.preview')}:</Text>
                   <View style={styles.proModalPreview}>
                     <Svg width="180" height="60" key={`preview-${localLineType}-${localDotSize}-${localDotSpacing}-${color}-${thickness}-${fillColor}`}>
-                      {/* Vista previa según el tipo de forma */}
+                      {/* Vista previa seg�n el tipo de forma */}
                       {(icon.type === 'straight-line') && (
                         localLineType === 'dotted' ? (
                           <Path
@@ -3307,8 +3307,8 @@ function LeftEditPanel({
                   </View>
                 </>
               )}
-              
-              {/* Color de relleno para círculos, rectángulos y custom-shape */}
+
+              {/* Color de relleno para c�rculos, rect�ngulos y custom-shape */}
               {canHaveFill && (
                 <>
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>{t('tacticalBoard.editPanel.fillColorLabel')}</Text>
@@ -3316,7 +3316,7 @@ function LeftEditPanel({
                     <TouchableOpacity
                       style={[
                         isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                        { 
+                        {
                           backgroundColor: fillColor === 'transparent' ? '#fff' : fillColor,
                           opacity: fillColor === 'transparent' ? 0.4 : 1
                         }
@@ -3346,7 +3346,7 @@ function LeftEditPanel({
                   />
                 </>
               )}
-              
+
               {/* Checkbox para aplicar a la paleta */}
               {canApplyToPalette && !hideApplyToPalette && !icon?.isMaterialPalette && (
                 <View style={[styles.proModalSwitch, { marginTop: 14 }]}>
@@ -3361,7 +3361,7 @@ function LeftEditPanel({
                   />
                 </View>
               )}
-              
+
               {/* Checkbox para aplicar a todos los elementos del mismo tipo */}
               {/* Mostrar "Aplicar a todos" cuando estamos editando un elemento del campo (no de la paleta) */}
               {!hideApplyToPalette && !isPalettePlayer && !icon?.isMaterialPalette && icon.type !== 'free-text' && (
@@ -3377,9 +3377,9 @@ function LeftEditPanel({
                   />
                 </View>
               )}
-              
+
                 </KeyboardAwareScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -3395,31 +3395,31 @@ function LeftEditPanel({
                     onPress={() => {
                     const updatedIcon = {
                       ...icon,
-                      // No actualizar size para custom-shape (su tamaño viene de los puntos dibujados)
-                      size: (icon.type === 'custom-shape' || icon.type === 'custom-shape-button') 
-                        ? icon.size 
+                      // No actualizar size para custom-shape (su tama�o viene de los puntos dibujados)
+                      size: (icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
+                        ? icon.size
                         : parseInt(size),
                       color: canHaveColor && isValidHexColor(color) ? color : icon.color,
                       number: icon.type === 'player' ? number : undefined,
                       numberColor: icon.type === 'player' ? numberColor : icon.numberColor,
-                      thickness: (isArrowType || isCurveType || icon.type === 'circle' || icon.type === 'rectangle' || icon.type === 'custom-shape' || icon.type === 'custom-shape-button') 
+                      thickness: (isArrowType || isCurveType || icon.type === 'circle' || icon.type === 'rectangle' || icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
                         ? parseInt(thickness) || 5
                         : icon.thickness,
                       textColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textColor : icon.textColor,
                       textBackgroundColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textBackgroundColor : icon.textBackgroundColor,
                       // Propiedades de portero
                       goalkeeperStripeColor: isGoalkeeper ? goalkeeperStripeColor : icon.goalkeeperStripeColor,
-                      // Nuevas propiedades para tipo de línea y relleno
+                      // Nuevas propiedades para tipo de l�nea y relleno
                       lineType: canHaveLineType ? localLineType : icon.lineType,
                       fillColor: canHaveFill ? fillColor : icon.fillColor,
-                      // Propiedades de espaciado para líneas punteadas
+                      // Propiedades de espaciado para l�neas punteadas
                       dotSize: canHaveLineType ? localDotSize : icon.dotSize,
                       dotSpacing: canHaveLineType ? localDotSpacing : icon.dotSpacing,
                     };
-                    
+
                     // Si es un material de la paleta (isMaterialPalette)
                     if (icon.isMaterialPalette) {
-                      // Actualizar la Configuración de materiales
+                      // Actualizar la Configuraci�n de materiales
                       if (onMaterialsConfigUpdate) {
                         onMaterialsConfigUpdate(icon.materialType || icon.type, {
                           color: updatedIcon.color,
@@ -3429,11 +3429,11 @@ function LeftEditPanel({
                       onClose();
                       return;
                     }
-                    
+
                     // Si es un jugador de la paleta (isPalettePlayer)
                     if (isPalettePlayer) {
                       // Solo cerrar el panel, no hay nada que aplicar en el campo
-                      // Si se marcó aplicar a paleta, actualizar teamPlayerStyle
+                      // Si se marc� aplicar a paleta, actualizar teamPlayerStyle
                       if (applyToPalette && setTeamPlayerStyle) {
                         setTeamPlayerStyle(prev => ({
                           ...prev,
@@ -3448,13 +3448,13 @@ function LeftEditPanel({
                     } else {
                       // Aplicar cambios al elemento pintado
                       onApply(updatedIcon, applyToAll);
-                      
-                      // Si se marcó aplicar a paleta
+
+                      // Si se marc� aplicar a paleta
                       if (applyToPalette && canApplyToPalette) {
                         // Tipos de materiales
                         const materialTypes = ['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights'];
                         const isMaterial = materialTypes.includes(icon.type);
-                        
+
                         if (isMaterial) {
                           // Para materiales, usar onMaterialsConfigUpdate
                           if (onMaterialsConfigUpdate) {
@@ -3467,20 +3467,20 @@ function LeftEditPanel({
                           // Si no tiene paletteIndex, buscarlo por tipo
                           let paletteIdx = icon.paletteIndex;
                           if (typeof paletteIdx !== "number") {
-                            // Buscar el índice en la paleta según el tipo
+                            // Buscar el �ndice en la paleta seg�n el tipo
                             const searchType = icon.type === 'custom-shape' ? 'custom-shape-button' : icon.type;
                             paletteIdx = paletteIcons.findIndex(ic => ic.type === searchType);
                           }
-                          
+
                           if (typeof paletteIdx === "number" && paletteIdx >= 0) {
-                            // Para jugadores sin nombre, solo aplicar color y tamaño
+                            // Para jugadores sin nombre, solo aplicar color y tama�o
                             const paletteUpdate = icon.type === 'player' && !icon.playerData
                               ? {
                                   ...updatedIcon,
                                   paletteIndex: paletteIdx,
                                   color: updatedIcon.color,
                                   size: updatedIcon.size,
-                                  numberColor: updatedIcon.numberColor, // incluir color del número
+                                  numberColor: updatedIcon.numberColor, // incluir color del n�mero
                                   textColor: updatedIcon.textColor, // incluir color del texto
                                   textBackgroundColor: updatedIcon.textBackgroundColor, // incluir fondo del texto
                                   // No incluir number ni thickness
@@ -3489,7 +3489,7 @@ function LeftEditPanel({
                                   ...updatedIcon,
                                   paletteIndex: paletteIdx,
                                 };
-                            
+
                             onPaletteUpdate && onPaletteUpdate(paletteUpdate);
                           }
                         }
@@ -3509,12 +3509,12 @@ function LeftEditPanel({
   );
 }
 
-function LockedElementsPanel({ 
-  visible, 
-  onClose, 
-  lockedElements, 
-  onUnlock, 
-  scale = 1 
+function LockedElementsPanel({
+  visible,
+  onClose,
+  lockedElements,
+  onUnlock,
+  scale = 1
 }) {
   const { t } = useTranslation();
   const dimensions = useScreenDimensions();
@@ -3535,18 +3535,18 @@ function LockedElementsPanel({
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer, 
-                isMobile && { 
-                  width: SCREEN_WIDTH * 0.80, 
+<View style={[styles.proModalContainer,
+                isMobile && {
+                  width: SCREEN_WIDTH * 0.80,
                   maxWidth: 320,
-                  maxHeight: SCREEN_HEIGHT * 0.80 
+                  maxHeight: SCREEN_HEIGHT * 0.80
                 },
                 !isMobile && { width: Math.min(300 * scale, 340), maxHeight: '75%' }
               ]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>ðŸ”’</Text>
+                    <Text style={{ fontSize: 14 }}>🔒</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
@@ -3554,10 +3554,10 @@ function LockedElementsPanel({
                     </Text>
                   </View>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
-              
+
               {lockedElements.length === 0 ? (
                 <View style={[styles.proModalBody, { alignItems: 'center', paddingVertical: 40 }]}>
                   <Text style={{ fontSize: 14, color: '#666', fontStyle: 'italic' }}>
@@ -3682,7 +3682,7 @@ function LockedElementsPanel({
                         <View style={styles.lockedElementDetails}>
                           <Text style={styles.lockedElementName}>
                             {element.type === 'player' && `Jugador ${element.number ? `#${element.number}` : ''}${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'ball' && 'Balón'}
+                            {element.type === 'ball' && 'Bal�n'}
                             {(element.type === 'cone' || element.type === 'cone-pro') && `Cono${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'cone-flat' && `Cono plano${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'ring' && `Aro${element.color ? ` (${element.color})` : ''}`}
@@ -3690,15 +3690,15 @@ function LockedElementsPanel({
                             {element.type === 'free-text' && `Texto libre: "${element.value?.substring(0, 15) || 'Sin contenido'}${element.value?.length > 15 ? '...' : ''}"`}
                             {element.type === 'straight-arrow' && `Flecha recta${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'curve-arrow' && `Flecha curva${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'straight-line' && `Línea recta${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'curve-line' && `Línea curva${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'circle' && `Círculo${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'rectangle' && `Rectángulo${element.color ? ` (${element.color})` : ''}`}
+                            {element.type === 'straight-line' && `L�nea recta${element.color ? ` (${element.color})` : ''}`}
+                            {element.type === 'curve-line' && `L�nea curva${element.color ? ` (${element.color})` : ''}`}
+                            {element.type === 'circle' && `C�rculo${element.color ? ` (${element.color})` : ''}`}
+                            {element.type === 'rectangle' && `Rect�ngulo${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'custom-shape' && `Forma personalizada${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'goal-large' && 'Portería grande'}
-                            {element.type === 'goal-small' && 'Portería pequeña'}
+                            {element.type === 'goal-large' && 'Porter�a grande'}
+                            {element.type === 'goal-small' && 'Porter�a peque�a'}
                             {element.type === 'barrier' && `Valla${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'dummy' && `Maniquí${element.color ? ` (${element.color})` : ''}`}
+                            {element.type === 'dummy' && `Maniqu�${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'pole' && `Pica${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'ladder' && `Escalera${element.color ? ` (${element.color})` : ''}`}
                             {element.type === 'weights' && `Pesas${element.color ? ` (${element.color})` : ''}`}
@@ -3706,29 +3706,29 @@ function LockedElementsPanel({
                           <Text style={styles.lockedElementType}>
                             Tipo: {
                               element.type === 'player' ? 'Jugador' :
-                              element.type === 'ball' ? 'Balón' :
+                              element.type === 'ball' ? 'Bal�n' :
                               element.type === 'cone' || element.type === 'cone-pro' ? 'Cono' :
                               element.type === 'cone-flat' ? 'Cono plano' :
                               element.type === 'ring' ? 'Aro' :
                               element.type === 'text' || element.type === 'free-text' ? 'Texto' :
                               element.type === 'straight-arrow' ? 'Flecha recta' :
                               element.type === 'curve-arrow' ? 'Flecha curva' :
-                              element.type === 'straight-line' ? 'Línea recta' :
-                              element.type === 'curve-line' ? 'Línea curva' :
-                              element.type === 'circle' ? 'Círculo' :
-                              element.type === 'rectangle' ? 'Rectángulo' :
+                              element.type === 'straight-line' ? 'L�nea recta' :
+                              element.type === 'curve-line' ? 'L�nea curva' :
+                              element.type === 'circle' ? 'C�rculo' :
+                              element.type === 'rectangle' ? 'Rect�ngulo' :
                               element.type === 'custom-shape' ? 'Forma personalizada' :
-                              element.type === 'goal-large' ? 'Portería grande' :
-                              element.type === 'goal-small' ? 'Portería pequeña' :
+                              element.type === 'goal-large' ? 'Porter�a grande' :
+                              element.type === 'goal-small' ? 'Porter�a peque�a' :
                               element.type === 'barrier' ? 'Valla' :
-                              element.type === 'dummy' ? 'Maniquí' :
+                              element.type === 'dummy' ? 'Maniqu�' :
                               element.type === 'pole' ? 'Pica' :
                               element.type === 'ladder' ? 'Escalera' :
                               element.type === 'weights' ? 'Pesas' :
                               'Desconocido'
                             }
-                            {element.size && ` "¢ Tamaño: ${element.size}`}
-                            {element.thickness && ` "¢ Grosor: ${element.thickness}`}
+                            {element.size && ` "� Tama�o: ${element.size}`}
+                            {element.thickness && ` "� Grosor: ${element.thickness}`}
                           </Text>
                           <View style={styles.lockedElementBadge}>
                             <Feather name="lock" size={12} color="#f39c12" />
@@ -3747,7 +3747,7 @@ function LockedElementsPanel({
                   ))}
                 </ScrollView>
               )}
-              
+
               {/* Footer */}
               <View style={styles.proModalFooter}>
                 <TouchableOpacity
@@ -3774,13 +3774,13 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
   const insets = useSafeAreaInsets();
-  
+
   // Obtener jugadores del equipo actual
   const players = useSelector(state => state.player.players || []);
   const equipos = useSelector(state => state.team.teams || []);
   const selectedTeam = equipos.find(e => e.seleccionado === true);
   const teamPlayerCount = selectedTeam?.jugadoresPorEquipo || 11;
-  
+
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [selectedSize, setSelectedSize] = useState(initialSize.toString());
@@ -3790,15 +3790,15 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
   const [textColorPickerVisible, setTextColorPickerVisible] = useState(false);
   const [textBgColorPickerVisible, setTextBgColorPickerVisible] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  
+
   // Estados para jugadores reales
   const [useRealPlayers, setUseRealPlayers] = useState(false);
   const [playerSelectorVisible, setPlayerSelectorVisible] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [pendingFormationKey, setPendingFormationKey] = useState(null);
   const [selectedPlayerCount, setSelectedPlayerCount] = useState(teamPlayerCount);
-  
-  // Configuración de visualización (número o posición)
+
+  // Configuraci�n de visualizaci�n (n�mero o posici�n)
   const displayMode = formationSettings?.displayMode || 'number'; // 'number' o 'position'
   const customLabels = formationSettings?.customLabels || { ...getDefaultPositionLabels() };
   // Para equipo LOCAL, usar los colores de teamPlayerStyle (sincronizados con la paleta)
@@ -3806,12 +3806,12 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
   const numberColor = teamPlayerStyle?.numberColor || '#ffffff';
   const textColor = teamPlayerStyle?.textColor || '#000000';
   const textBackgroundColor = teamPlayerStyle?.textBackgroundColor || '#ffffff';
-  
+
   useEffect(() => {
     setSelectedColor(initialColor);
   }, [initialColor]);
   useEffect(() => {
-    // Usar el tamaño de teamPlayerStyle si está disponible
+    // Usar el tama�o de teamPlayerStyle si est� disponible
     setSelectedSize(teamPlayerStyle?.size?.toString() || initialSize?.toString() || '24');
   }, [initialSize, teamPlayerStyle?.size]);
 
@@ -3824,20 +3824,20 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       setSelectedColor(teamPlayerStyle?.color || initialColor);
     }
   }, [isOpponent, initialColor, teamPlayerStyle?.color]);
-  
+
   if (!visible) return null;
-  
+
   const currentFormations = FORMATIONS_BY_PLAYER_COUNT[selectedPlayerCount] || FORMATIONS;
   const formationKeys = Object.keys(currentFormations);
-  
-  // Función para asignar jugadores a posiciones según la formación
+
+  // Funci�n para asignar jugadores a posiciones seg�n la formaci�n
   const assignPlayersToPositions = (formation, selectedPlayersList) => {
     const positions = formation.positions;
     const numPositions = positions.length;
     const assignedPlayers = new Array(numPositions).fill(null);
     const usedPlayers = new Set();
-    
-    // Mapeo de posiciones de la app a posiciones de formación
+
+    // Mapeo de posiciones de la app a posiciones de formaci�n
     const positionMapping = {
       'portero': ['GK'],
       'central': ['CB'],
@@ -3846,44 +3846,44 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       'extremo': ['LW', 'RW'],
       'delantero': ['ST', 'CF']
     };
-    
+
     // Primero asignar jugadores a sus posiciones naturales
     positions.forEach((pos, idx) => {
       const posType = pos.position;
-      
-      // Buscar jugador con posición compatible
+
+      // Buscar jugador con posici�n compatible
       const compatiblePlayer = selectedPlayersList.find(player => {
         if (usedPlayers.has(player._id)) return false;
         const playerPos = player.posicion?.toLowerCase() || '';
-        
-        // Verificar si la posición del jugador es compatible
+
+        // Verificar si la posici�n del jugador es compatible
         const compatiblePositions = positionMapping[playerPos] || [];
         return compatiblePositions.includes(posType);
       });
-      
+
       if (compatiblePlayer) {
         assignedPlayers[idx] = compatiblePlayer;
         usedPlayers.add(compatiblePlayer._id);
       }
     });
-    
-    // Rellenar posiciones vacías con jugadores restantes
+
+    // Rellenar posiciones vac�as con jugadores restantes
     const remainingPlayers = selectedPlayersList.filter(p => !usedPlayers.has(p._id));
     let remainingIdx = 0;
-    
+
     assignedPlayers.forEach((player, idx) => {
       if (!player && remainingIdx < remainingPlayers.length) {
         assignedPlayers[idx] = remainingPlayers[remainingIdx];
         remainingIdx++;
       }
     });
-    
+
     return assignedPlayers;
   };
-  
+
   function handleSelectFormation(key) {
     const sizeNum = Math.max(8, Math.min(96, Number(selectedSize) || initialSize));
-    
+
     if (useRealPlayers && !isOpponent) {
       // Si quiere usar jugadores reales, abrir el selector
       setPendingFormationKey(key);
@@ -3892,9 +3892,9 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
     } else {
       // Comportamiento normal
       setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode, customLabels, numberColor, textColor, textBackgroundColor }));
-      onSelectFormation(key, { 
-        color: selectedColor, 
-        size: sizeNum, 
+      onSelectFormation(key, {
+        color: selectedColor,
+        size: sizeNum,
         opponent: isOpponent,
         displayMode,
         customLabels,
@@ -3904,17 +3904,17 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       });
     }
   }
-  
+
   const handleConfirmPlayers = () => {
     if (!pendingFormationKey) return;
-    
+
     const formation = currentFormations[pendingFormationKey];
     const sizeNum = Math.max(8, Math.min(96, Number(selectedSize) || initialSize));
-    
+
     // Asignar jugadores a posiciones
     const assignedPlayers = assignPlayersToPositions(formation, selectedPlayers);
-    
-    // Generar números para posiciones sin jugador asignado
+
+    // Generar n�meros para posiciones sin jugador asignado
     const usedDorsals = new Set(assignedPlayers.filter(p => p).map(p => p.dorsal));
     let nextNumber = 1;
     const getNextNumber = () => {
@@ -3924,11 +3924,11 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       usedDorsals.add(nextNumber);
       return nextNumber;
     };
-    
+
     setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode, customLabels, numberColor, textColor, textBackgroundColor }));
-    onSelectFormation(pendingFormationKey, { 
-      color: selectedColor, 
-      size: sizeNum, 
+    onSelectFormation(pendingFormationKey, {
+      color: selectedColor,
+      size: sizeNum,
       opponent: false,
       displayMode: 'name', // Modo especial para mostrar nombres
       customLabels,
@@ -3959,13 +3959,13 @@ realPlayers: assignedPlayers.map((player, idx) => {
         }
       })
     });
-    
+
     setPlayerSelectorVisible(false);
     setPendingFormationKey(null);
     setSelectedPlayers([]);
     onClose();
   };
-  
+
   const togglePlayerSelection = (player) => {
     setSelectedPlayers(prev => {
       const isSelected = prev.some(p => p._id === player._id);
@@ -3977,22 +3977,22 @@ realPlayers: assignedPlayers.map((player, idx) => {
       return prev;
     });
   };
-  
-  // Ordenar jugadores por posición
+
+  // Ordenar jugadores por posici�n
   const sortedPlayers = [...players].sort((a, b) => {
     const posOrder = { 'portero': 1, 'central': 2, 'lateral': 3, 'centrocampista': 4, 'extremo': 5, 'delantero': 6 };
     return (posOrder[a.posicion] || 99) - (posOrder[b.posicion] || 99);
   });
-  
+
   const handleLabelChange = (posKey, value) => {
-    // Máximo 2 caracteres
+    // M�ximo 2 caracteres
     const newValue = value.slice(0, 2).toUpperCase();
     setFormationSettings && setFormationSettings(prev => ({
       ...prev,
       customLabels: { ...(prev.customLabels || {}), [posKey]: newValue }
     }));
-  }; 
-  
+  };
+
   return (
     <Modal
       animationType="fade"
@@ -4004,7 +4004,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
       <View style={{ flex: 1 }}>
         <View style={[styles.proModalOverlay, { alignItems: 'flex-end' }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { 
+<View style={[styles.proModalContainerSide, {
                 top: insets.top,
                 bottom: 0,
                 paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
@@ -4016,7 +4016,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>⚽</Text>
+                    <Text style={{ fontSize: 14 }}>?</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('formations.title')}
@@ -4031,7 +4031,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                     <Feather name="settings" size={14} color={showSettings ? '#fff' : '#666'} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
+                    <Text style={{ fontSize: 16, color: '#666' }}>?</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -4064,14 +4064,14 @@ realPlayers: assignedPlayers.map((player, idx) => {
                   ))}
                 </View>
 
-                {/* Panel de Configuración */}
+                {/* Panel de Configuraci�n */}
                 {showSettings && (
                   <View style={[styles.proModalCard, { margin: 12, marginBottom: 8 }]}>
                     <Text style={styles.proModalSectionTitle}>
                       {t('formations.displaySettings')}
                     </Text>
-                    
-                    {/* Selector de modo: Número o Posición */}
+
+                    {/* Selector de modo: N�mero o Posici�n */}
                     <View style={[styles.proModalGrid, { marginBottom: 12 }]}>
                       <TouchableOpacity
                         onPress={() => setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode: 'number' }))}
@@ -4104,8 +4104,8 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    
-                    {/* Color del número/texto */}
+
+                    {/* Color del n�mero/texto */}
                     <View style={[styles.proModalRow, { marginBottom: 10 }]}>
                       <Text style={styles.proModalHint}>
                         {t('formations.textColor')}:
@@ -4118,7 +4118,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         ]}
                       />
                     </View>
-                    
+
                     {/* Color del texto del nombre (debajo del icono) */}
                     <View style={[styles.proModalRow, { marginBottom: 10 }]}>
                       <Text style={styles.proModalHint}>
@@ -4132,7 +4132,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         ]}
                       />
                     </View>
-                    
+
                     {/* Color del fondo del texto del nombre */}
                     <View style={styles.proModalRow}>
                       <Text style={styles.proModalHint}>
@@ -4142,7 +4142,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         onPress={() => setTextBgColorPickerVisible(true)}
                         style={[
                           styles.proModalColorBtnMobile,
-                          { 
+                          {
                             backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
                             opacity: textBackgroundColor === 'transparent' ? 0.5 : 1
                           }
@@ -4164,8 +4164,8 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    
-                    {/* Configuración de etiquetas de posiciones (solo si está en modo posición) */}
+
+                    {/* Configuraci�n de etiquetas de posiciones (solo si est� en modo posici�n) */}
                     {displayMode === 'position' && (
                       <View>
                         <Text style={{ fontSize: isMobile ? 11 : 12, color: '#666', marginBottom: 6 }}>
@@ -4198,7 +4198,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       </View>
                     )}
 
-                    {/* Botón para guardar la Configuración en la base de datos */}
+                    {/* Bot�n para guardar la Configuraci�n en la base de datos */}
                     <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end' }}>
                       <TouchableOpacity
                         onPress={async () => {
@@ -4307,12 +4307,12 @@ realPlayers: assignedPlayers.map((player, idx) => {
                 <View style={[styles.proModalCard, { flexDirection: 'row', alignItems: 'center', padding: 12, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
                   <TouchableOpacity
                     onPress={() => setColorPickerVisible(true)}
-                    style={{ 
-                      width: isMobile ? 40 : 48, 
-                      height: isMobile ? 40 : 48, 
-                      borderRadius: 10, 
-                      backgroundColor: selectedColor, 
-                      borderWidth: 3, 
+                    style={{
+                      width: isMobile ? 40 : 48,
+                      height: isMobile ? 40 : 48,
+                      borderRadius: 10,
+                      backgroundColor: selectedColor,
+                      borderWidth: 3,
                       borderColor: '#fff',
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 2 },
@@ -4326,7 +4326,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       {t('formations.playerSize')}
                     </Text>
                     <View style={styles.proModalStepperRow}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.proModalStepperBtn}
                         onPress={() => {
                           setSelectedSize(s => {
@@ -4341,7 +4341,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       <View style={styles.proModalStepperValue}>
                         <Text style={styles.proModalStepperValueText}>{selectedSize}</Text>
                       </View>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.proModalStepperBtn}
                         onPress={() => {
                           setSelectedSize(s => {
@@ -4386,24 +4386,24 @@ realPlayers: assignedPlayers.map((player, idx) => {
                           }}
                           onPress={() => {
                             handleSelectFormation(key);
-                            // Solo cerrar si NO usamos jugadores reales (porque abrirá el selector)
+                            // Solo cerrar si NO usamos jugadores reales (porque abrir� el selector)
                             if (!useRealPlayers || isOpponent) {
                               onClose();
                             }
                           }}
                           activeOpacity={0.7}
                         >
-                          {/* Icono de formación mini */}
-                          <View style={{ 
-                            width: isMobile ? 40 : 50, 
-                            height: isMobile ? 28 : 32, 
-                            backgroundColor: isOpponent ? 'rgba(255,59,48,0.1)' : 'rgba(33,118,255,0.1)', 
-                            borderRadius: 6, 
-                            alignItems: 'center', 
+                          {/* Icono de formaci�n mini */}
+                          <View style={{
+                            width: isMobile ? 40 : 50,
+                            height: isMobile ? 28 : 32,
+                            backgroundColor: isOpponent ? 'rgba(255,59,48,0.1)' : 'rgba(33,118,255,0.1)',
+                            borderRadius: 6,
+                            alignItems: 'center',
                             justifyContent: 'center',
                             marginBottom: 6
                           }}>
-                            <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>⚽</Text>
+                            <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>?</Text>
                           </View>
                           <Text style={{
                             fontSize: isMobile ? 16 : 20,
@@ -4463,21 +4463,21 @@ realPlayers: assignedPlayers.map((player, idx) => {
                     setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, color: c }));
                   }}
                 />
-                
+
                 <MiniColorPickerModal
                   visible={numberColorPickerVisible}
                   initialColor={numberColor}
                   onClose={() => setNumberColorPickerVisible(false)}
                   onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, numberColor: c }))}
                 />
-                
+
                 <MiniColorPickerModal
                   visible={textColorPickerVisible}
                   initialColor={textColor}
                   onClose={() => setTextColorPickerVisible(false)}
                   onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textColor: c }))}
                 />
-                
+
                 <MiniColorPickerModal
                   visible={textBgColorPickerVisible}
                   initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
@@ -4485,7 +4485,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                   onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textBackgroundColor: c }))}
                 />
 
-                {/* Modal de selección de jugadores */}
+                {/* Modal de selecci�n de jugadores */}
                 <Modal
                   animationType="slide"
                   transparent={true}
@@ -4494,20 +4494,20 @@ realPlayers: assignedPlayers.map((player, idx) => {
                   statusBarTranslucent={true}
                 >
                   <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-                    <View style={{ 
-                      width: isMobile ? SCREEN_WIDTH * 0.9 : 450, 
-                      maxHeight: SCREEN_HEIGHT * 0.8, 
-                      backgroundColor: '#fff', 
+                    <View style={{
+                      width: isMobile ? SCREEN_WIDTH * 0.9 : 450,
+                      maxHeight: SCREEN_HEIGHT * 0.8,
+                      backgroundColor: '#fff',
                       borderRadius: 16,
                       overflow: 'hidden'
                     }}>
                       {/* Header */}
-                      <View style={{ 
-                        backgroundColor: '#2176ff', 
-                        padding: 16, 
-                        flexDirection: 'row', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center' 
+                      <View style={{
+                        backgroundColor: '#2176ff',
+                        padding: 16,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}>
                         <View>
                           <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
@@ -4523,11 +4523,11 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       </View>
 
                       {/* Toggle mostrar fotos */}
-                      <View style={{ 
-                        flexDirection: 'row', 
-                        alignItems: 'center', 
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: 12, 
+                        padding: 12,
                         backgroundColor: '#f8f9fa',
                         borderBottomWidth: 1,
                         borderBottomColor: '#eee'
@@ -4539,17 +4539,17 @@ realPlayers: assignedPlayers.map((player, idx) => {
                               {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
                             </Text>
                             <Text style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                              {t('formations.showPhotosInFormation') || 'Mostrar foto en lugar de número'}
+                              {t('formations.showPhotosInFormation') || 'Mostrar foto en lugar de n�mero'}
                             </Text>
                           </View>
                         </View>
                         <Switch
                           value={teamPlayerStyle?.showPhotos || false}
                           onValueChange={(val) => {
-                            setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ 
-                              ...prev, 
+                            setTeamPlayerStyle && setTeamPlayerStyle(prev => ({
+                              ...prev,
                               showPhotos: val,
-                              // Si se activan fotos, desactivar mostrar posición
+                              // Si se activan fotos, desactivar mostrar posici�n
                               showPosition: val ? false : prev.showPosition
                             }));
                           }}
@@ -4607,7 +4607,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                                 }}>
                                   {isSelected && <Feather name="check" size={14} color="#fff" />}
                                 </View>
-                                
+
                                 {/* Dorsal o Foto */}
                                 <View style={{
                                   width: 36,
@@ -4622,13 +4622,13 @@ realPlayers: assignedPlayers.map((player, idx) => {
                                   overflow: 'hidden',
                                 }}>
                                   {teamPlayerStyle?.showPhotos && player.foto ? (
-                                    <Image 
-                                      source={{ uri: player.foto }} 
-                                      style={{ 
-                                        width: 32, 
-                                        height: 32, 
+                                    <Image
+                                      source={{ uri: player.foto }}
+                                      style={{
+                                        width: 32,
+                                        height: 32,
                                         borderRadius: 16,
-                                      }} 
+                                      }}
                                       resizeMode="cover"
                                     />
                                   ) : (
@@ -4637,7 +4637,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                                     </Text>
                                   )}
                                 </View>
-                                
+
                                 {/* Info del jugador */}
                                 <View style={{ flex: 1 }}>
 <Text style={{ fontWeight: '600', fontSize: 14, color: '#333' }}>
@@ -4647,8 +4647,8 @@ realPlayers: assignedPlayers.map((player, idx) => {
                                     {positionLabels[player.posicion] || player.posicion || '-'}
                                   </Text>
                                 </View>
-                                
-                                {/* Badge de posición */}
+
+                                {/* Badge de posici�n */}
                                 <View style={{
                                   paddingHorizontal: 8,
                                   paddingVertical: 4,
@@ -4669,11 +4669,11 @@ realPlayers: assignedPlayers.map((player, idx) => {
                       </ScrollView>
 
                       {/* Footer con botones */}
-                      <View style={{ 
-                        flexDirection: 'row', 
-                        padding: 12, 
-                        borderTopWidth: 1, 
-                        borderTopColor: '#eee' 
+                      <View style={{
+                        flexDirection: 'row',
+                        padding: 12,
+                        borderTopWidth: 1,
+                        borderTopColor: '#eee'
                       }}>
                         <TouchableOpacity
                           onPress={() => {
@@ -4718,12 +4718,12 @@ realPlayers: assignedPlayers.map((player, idx) => {
   );
 }
 
-function FieldCarouselModal({ 
-  visible, 
-  FIELD_IMAGES, 
-  carouselIndex, 
-  setCarouselIndex, 
-  handleFieldChangeFromCarousel, 
+function FieldCarouselModal({
+  visible,
+  FIELD_IMAGES,
+  carouselIndex,
+  setCarouselIndex,
+  handleFieldChangeFromCarousel,
   closeCarouselModal,
   SCREEN_WIDTH,
   SCREEN_HEIGHT
@@ -4731,7 +4731,7 @@ function FieldCarouselModal({
   const { t } = useTranslation();
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
   if (!visible) return null;
-  
+
   return (
     <Modal
       animationType="fade"
@@ -4743,25 +4743,25 @@ function FieldCarouselModal({
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <View style={[
-            styles.proModalContainer, 
-            { 
-              width: isMobile ? Math.min(SCREEN_WIDTH * 0.65, 280) : Math.min(SCREEN_WIDTH * 0.9, 420), 
-              maxHeight: SCREEN_HEIGHT * 0.8 
+            styles.proModalContainer,
+            {
+              width: isMobile ? Math.min(SCREEN_WIDTH * 0.65, 280) : Math.min(SCREEN_WIDTH * 0.9, 420),
+              maxHeight: SCREEN_HEIGHT * 0.8
             }
           ]}>
             {/* Header */}
             <View style={styles.proModalHeader}>
               <View style={styles.proModalHeaderIcon}>
-                <Text style={{ fontSize: 16 }}>ðŸŸï¸</Text>
+                <Text style={{ fontSize: 16 }}>🏟️</Text>
               </View>
               <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                 {t('field.selectField')}
               </Text>
               <TouchableOpacity style={styles.proModalCloseBtn} onPress={closeCarouselModal}>
-                <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
+                <Text style={{ fontSize: 16, color: '#666' }}>?</Text>
               </TouchableOpacity>
             </View>
-          
+
           <ScrollView contentContainerStyle={styles.proModalBody}>
             {FIELD_IMAGES.map((field, idx) => (
               <TouchableOpacity
@@ -4769,8 +4769,8 @@ function FieldCarouselModal({
                 style={[
                   styles.proModalCard,
                   { padding: 14, marginBottom: 8 },
-                  carouselIndex === idx && { 
-                    backgroundColor: '#e8f4ff', 
+                  carouselIndex === idx && {
+                    backgroundColor: '#e8f4ff',
                     borderColor: '#2176ff',
                     borderWidth: 2
                   }
@@ -4786,7 +4786,7 @@ function FieldCarouselModal({
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
+
           {/* Footer */}
           <View style={styles.proModalFooter}>
             <TouchableOpacity
@@ -4816,19 +4816,19 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
   const color = isValidHexColor(icon.color) ? icon.color : '#000000';
   const style = rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined;
   const halfSize = size / 2;
-  
-  // Determinar qué mostrar: displayLabel (posición) o number
+
+  // Determinar qu� mostrar: displayLabel (posici�n) o number
   const displayText = displayLabel !== undefined ? displayLabel : number;
   const isPositionLabel = displayLabel !== undefined;
   const textColor = icon.numberColor || numberColor;
   const fontSize = isPositionLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
-  
+
   // Determinar si mostrar rayas de portero
   const showGoalkeeperStripes = isGoalkeeper && differentiateGoalkeeper && !showPhotos;
-  // Color de las rayas más vivo (70% opacidad)
+  // Color de las rayas m�s vivo (70% opacidad)
   const stripeColor = goalkeeperStripeColor || '#ffffff';
-  
-  // Determinar si mostrar foto (solo si showPhotos está activo y hay foto)
+
+  // Determinar si mostrar foto (solo si showPhotos est� activo y hay foto)
   const shouldShowPhoto = showPhotos && photoUrl;
 
   switch (icon.type) {
@@ -4836,24 +4836,24 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
       return (
         <View style={[
           {
-            width: size, height: size, borderRadius: halfSize, 
+            width: size, height: size, borderRadius: halfSize,
             backgroundColor: shouldShowPhoto ? 'transparent' : color,
-            alignItems: 'center', justifyContent: 'center', 
-            borderWidth: shouldShowPhoto ? 2 : 1, 
+            alignItems: 'center', justifyContent: 'center',
+            borderWidth: shouldShowPhoto ? 2 : 1,
             borderColor: shouldShowPhoto ? color : '#222',
             overflow: 'hidden',
           },
           style,
         ]}>
-          {/* Foto del jugador si está activo */}
+          {/* Foto del jugador si est� activo */}
           {shouldShowPhoto && (
-            <Image 
-              source={{ uri: photoUrl }} 
-              style={{ 
-                width: size - 4, 
-                height: size - 4, 
+            <Image
+              source={{ uri: photoUrl }}
+              style={{
+                width: size - 4,
+                height: size - 4,
                 borderRadius: (size - 4) / 2,
-              }} 
+              }}
               resizeMode="cover"
             />
           )}
@@ -4866,14 +4866,14 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
               <View style={{ position: 'absolute', top: size * 0.85, left: 0, right: 0, height: 2, backgroundColor: stripeColor, opacity: 0.85 }} />
             </>
           )}
-          {/* Número/posición solo si no hay foto */}
+          {/* N�mero/posici�n solo si no hay foto */}
           {!shouldShowPhoto && playersWithNumber && displayText !== undefined &&
             <Text style={{
               color: textColor,
               fontWeight: isPositionLabel ? '600' : 'bold',
               fontSize,
-              // En RNW <Text> es un <div>; sin lineHeight explícito el alto de línea
-              // arrastra padding vertical y el número aparece descentrado.
+              // En RNW <Text> es un <div>; sin lineHeight expl�cito el alto de l�nea
+              // arrastra padding vertical y el n�mero aparece descentrado.
               lineHeight: fontSize,
               textAlign: 'center',
               includeFontPadding: false,
@@ -4883,16 +4883,16 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         </View>
       );
     case 'staff':
-      // Icono para el cuerpo técnico (círculo con código)
+      // Icono para el cuerpo t�cnico (c�rculo con c�digo)
       const staffDisplayText = icon.displayLabel || 'CT';
       const staffFontSize = String(staffDisplayText).length > 2 ? size * 0.4 : size * 0.5;
       return (
         <View style={[
           {
-            width: size, height: size, borderRadius: halfSize, 
+            width: size, height: size, borderRadius: halfSize,
             backgroundColor: color,
-            alignItems: 'center', justifyContent: 'center', 
-            borderWidth: 2, 
+            alignItems: 'center', justifyContent: 'center',
+            borderWidth: 2,
             borderColor: '#666',
           },
           style,
@@ -4911,7 +4911,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
     case 'ball':
       return <BallImage size={size} />;
     case 'cone':
-      // Cono de fútbol con base negra y cuerpo naranja
+      // Cono de f�tbol con base negra y cuerpo naranja
       return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
           <View style={{
@@ -4952,14 +4952,14 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
     case 'ring':
       return <RingImage size={size} color={color} />;
     case 'ladder':
-      // Escalera de agilidad - líneas verticales y horizontales
+      // Escalera de agilidad - l�neas verticales y horizontales
       return (
         <Svg width={size} height={size * 0.4} style={style}>
-          {/* Línea horizontal superior */}
+          {/* L�nea horizontal superior */}
           <Path d={`M 0,${size * 0.05} H${size}`} stroke={color} strokeWidth={2} />
-          {/* Línea horizontal inferior */}
+          {/* L�nea horizontal inferior */}
           <Path d={`M 0,${size * 0.35} H${size}`} stroke={color} strokeWidth={2} />
-          {/* Líneas verticales (peldaños) */}
+          {/* L�neas verticales (pelda�os) */}
           {[0.2, 0.4, 0.6, 0.8].map((f, i) => (
             <Path key={i} d={`M${size * f},${size * 0.05} V${size * 0.35}`} stroke={color} strokeWidth={2} />
           ))}
@@ -4968,7 +4968,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
     case 'weights':
       return <WeightsImage size={size} color={color} />;
     case 'materials-button':
-      // Icono para el botón de materiales (cono + valla)
+      // Icono para el bot�n de materiales (cono + valla)
       return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="construct-outline" size={size * 0.8} color="#000000" />
@@ -5090,13 +5090,13 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
     case 'custom-shape-button':
     // IMPORTANTE: Este case solo debe usarse en la paleta, NUNCA en el canvas
     if (!icon.inPalette) {
-      return null; // No renderizar si no está explícitamente marcado como de paleta
+      return null; // No renderizar si no est� expl�citamente marcado como de paleta
     }
-    
+
     return (
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={size} height={size}>
-          {/* Icono de lápiz/estrella para representar dibujo libre */}
+          {/* Icono de l�piz/estrella para representar dibujo libre */}
           <Path
             d={`M${size*0.5},${size*0.1} L${size*0.7},${size*0.4} L${size*0.9},${size*0.45} L${size*0.7},${size*0.6} L${size*0.8},${size*0.9} L${size*0.5},${size*0.7} L${size*0.2},${size*0.9} L${size*0.3},${size*0.6} L${size*0.1},${size*0.45} L${size*0.3},${size*0.4} Z`}
             stroke={color}
@@ -5107,7 +5107,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         </Svg>
       </View>
     );
-    
+
     case 'team-players':
       return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -5123,9 +5123,9 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
           </View>
         </View>
       );
-    
+
     case 'coaching-staff':
-      // Icono de cuerpo técnico - persona con portapapeles
+      // Icono de cuerpo t�cnico - persona con portapapeles
       return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{
@@ -5140,7 +5140,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
           </View>
         </View>
       );
-    
+
     default:
       return null;
   }
@@ -5174,10 +5174,10 @@ const MemoizedIcon = React.memo(({ icon, size, rotation, number, playersWithNumb
 });
 
 // Componente memoizado completo para cada icono individual
-const DraggableIcon = React.memo(({ 
-  icon, 
+const DraggableIcon = React.memo(({
+  icon,
   idx,
-  imageWidth, 
+  imageWidth,
   imageHeight,
   selectedCloneId,
   setSelectedCloneId,
@@ -5192,7 +5192,7 @@ const DraggableIcon = React.memo(({
   drawingStates,
   multiSelectMode,
   selectedCloneIds,
-  selectedCloneIdsSet, // OPTIMIZACIÃ“N: Set para búsqueda O(1)
+  selectedCloneIdsSet, // OPTIMIZACIÓN: Set para b�squeda O(1)
   setSelectedCloneIds,
   cancelSelection,
   selectionInteractionMode,
@@ -5229,44 +5229,44 @@ const DraggableIcon = React.memo(({
       rafRef.current = null;
     });
   }, [setClones]);
-  
+
   // Refs para coordinar gestos
   const panRef = useRef(null);
   const tapRef = useRef(null);
-  
-  const isDrawingMode = drawingStates?.drawingStraightArrow || drawingStates?.drawingStraightLine || 
-                        drawingStates?.drawingCurveArrow || drawingStates?.drawingCurveLine || 
-                        drawingStates?.drawingCircle || drawingStates?.drawingRectangle || 
+
+  const isDrawingMode = drawingStates?.drawingStraightArrow || drawingStates?.drawingStraightLine ||
+                        drawingStates?.drawingCurveArrow || drawingStates?.drawingCurveLine ||
+                        drawingStates?.drawingCircle || drawingStates?.drawingRectangle ||
                         drawingStates?.drawingCustomShape || drawingStates?.eraserMode;
-  
-  // OPTIMIZACIÃ“N: Usar Set para búsqueda O(1) si está disponible
+
+  // OPTIMIZACIÓN: Usar Set para b�squeda O(1) si est� disponible
   const isSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id);
-  const canDrag = !icon.locked && !isDrawingMode && 
+  const canDrag = !icon.locked && !isDrawingMode &&
                   (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  
-  // En multi-drag, derivar indicador de eliminación de la posición actual del elemento
-  const isOutsideInMultiDrag = multiSelectMode && selectionInteractionMode === 'move' && isSelected &&
+
+  // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
+  const isOutsideInMultiDrag = ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected &&
     (icon.x < 0 || icon.x > imageWidth || icon.y < 0 || icon.y > imageHeight);
   const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
-  
-  // Detectar si está fuera del campo visible (zona de eliminación)
+
+  // Detectar si est� fuera del campo visible (zona de eliminaci�n)
   const checkDeleteZone = useCallback((xRatio, yRatio) => {
     return isOutsideVisibleField(xRatio, yRatio, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
-  
+
   // Handler para tap - selecciona el elemento
   // Usamos solo State.END para evitar doble disparo
   const handleTap = useCallback((e) => {
     if (e.nativeEvent.state === State.END) {
       // Solo seleccionar si no estamos arrastrando
       if (!isDragging.current && !isDrawingMode && !multiSelectMode && !icon.locked) {
-        // Marcar el tiempo de selección para proteger contra deselección inmediata
+        // Marcar el tiempo de selecci�n para proteger contra deselecci�n inmediata
         lastIconSelectionTime = Date.now();
         setSelectedCloneId(icon.id);
       }
     }
   }, [isDrawingMode, multiSelectMode, icon.locked, icon.id, setSelectedCloneId]);
-  
+
   // Cleanup RAF on unmount
   useEffect(() => {
     return () => {
@@ -5275,7 +5275,7 @@ const DraggableIcon = React.memo(({
       }
     };
   }, []);
-  
+
 return (
     <View
       pointerEvents="box-none"
@@ -5306,26 +5306,26 @@ return (
       activeOffsetX={[-5, 5]}
       activeOffsetY={[-5, 5]}
       onHandlerStateChange={(e) => {
-        // ACTIVE: El gesto de pan fue reconocido (el dedo se movió lo suficiente)
-        // Inicializar el arrastre aquí
+        // ACTIVE: El gesto de pan fue reconocido (el dedo se movi� lo suficiente)
+        // Inicializar el arrastre aqu�
         if (e.nativeEvent.state === State.ACTIVE && !icon.locked && !isDragging.current) {
           if (!acquireBoardDrag(dragStart, dragKey)) return;
           isDragging.current = true;
-          
-          // Si estamos en modo multi-select, cancelar el rectángulo de selección
+
+          // Si estamos en modo multi-select, cancelar el rect�ngulo de selecci�n
           if (multiSelectMode && cancelSelection) {
             cancelSelection();
           }
-          
-          // Si hay selección múltiple y este icono está en la selección
-          if (multiSelectMode && isSelected && clones && Array.isArray(clones)) {
+
+          // Si hay selecci�n m�ltiple y este icono est� en la selecci�n
+          if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && isSelected && clones && Array.isArray(clones)) {
             // Guardar posiciones iniciales de TODOS los elementos seleccionados
-            // Incluyendo iconos (xRatio/yRatio) y líneas/figuras (points)
+            // Incluyendo iconos (xRatio/yRatio) y l�neas/figuras (points)
             const initialPositions = {};
             selectedCloneIds.forEach(id => {
               const clone = clones.find(c => c.id === id);
               if (clone) {
-                // Para líneas y figuras, guardar los puntos
+                // Para l�neas y figuras, guardar los puntos
                 if (clone.points && Array.isArray(clone.points)) {
                   initialPositions[id] = {
                     points: clone.points.map(p => ({ x: p.x, y: p.y }))
@@ -5339,7 +5339,7 @@ return (
                 }
               }
             });
-            
+
             dragStart.current[dragKey] = {
               xRatio: icon.xRatio,
               yRatio: icon.yRatio,
@@ -5357,7 +5357,7 @@ return (
           }
           lastUpdateRef.current = { x: icon.xRatio, y: icon.yRatio };
         }
-        
+
         if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
           isDragging.current = false;
           setIsNearDeleteZone(false); // Resetear indicador visual
@@ -5369,12 +5369,12 @@ return (
             setClones(pendingDragUpdateRef.current);
             pendingDragUpdateRef.current = null;
           }
-          
-          // Verificar si elementos están fuera del campo y eliminarlos
+
+          // Verificar si elementos est�n fuera del campo y eliminarlos
           if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
             const start = dragStart.current[dragKey];
             if (start.multiSelect && start.selectedIds) {
-              // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+              // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
               setClones((prev) => {
                 const toDelete = [];
                 const remaining = prev.filter(c => {
@@ -5410,7 +5410,7 @@ return (
               });
             }
           }
-          
+
           delete dragStart.current[dragKey];
           releaseBoardDrag(dragStart, dragKey);
           // Guardar en historial al finalizar el drag
@@ -5420,10 +5420,10 @@ return (
       onGestureEvent={(e) => {
         if (e.nativeEvent.state === State.ACTIVE && !icon.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
           const start = dragStart.current[dragKey];
-          // Dividir translación por zoomLevel para compensar la escala del contenedor
+          // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
           const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
-          
-          // Si es arrastre de múltiples elementos
+
+          // Si es arrastre de m�ltiples elementos
           if (start.multiSelect && start.selectedIds && start.initialPositions) {
             // Actualizar inmediatamente para mejor respuesta
             scheduleDragUpdate((prev) => {
@@ -5433,13 +5433,13 @@ return (
                 if (cloneIndex !== -1 && !next[cloneIndex].locked) {
                   const initialPos = start.initialPositions[selectedId];
                   if (initialPos) {
-                    // Si tiene puntos (líneas/figuras), mover los puntos
+                    // Si tiene puntos (l�neas/figuras), mover los puntos
                     if (initialPos.points && Array.isArray(initialPos.points)) {
                       next[cloneIndex] = {
                         ...next[cloneIndex],
-                        points: initialPos.points.map(pt => ({ 
-                          x: pt.x + dx, 
-                          y: pt.y + dy 
+                        points: initialPos.points.map(pt => ({
+                          x: pt.x + dx,
+                          y: pt.y + dy
                         }))
                       };
                     } else {
@@ -5461,20 +5461,20 @@ return (
             // Arrastre de un solo elemento - permitir valores fuera de 0-1
             const newXRatio = start.xRatio + dx;
             const newYRatio = start.yRatio + dy;
-            
-            // Actualizar indicador visual de zona de eliminación
+
+            // Actualizar indicador visual de zona de eliminaci�n
             const inDeleteZone = checkDeleteZone(newXRatio, newYRatio);
             if (inDeleteZone !== isNearDeleteZone) {
               setIsNearDeleteZone(inDeleteZone);
             }
-            
+
             if (Platform.OS === 'android') {
               scheduleDragUpdate((prev) => {
                 const correctIndex = idx;
                 if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
                   const fallbackIndex = prev.findIndex(c => c.id === icon.id);
                   if (fallbackIndex === -1) return prev;
-                  
+
                   const next = [...prev];
                   next[fallbackIndex] = {
                     ...next[fallbackIndex],
@@ -5483,7 +5483,7 @@ return (
                   };
                   return next;
                 }
-                
+
                 const next = [...prev];
                 next[correctIndex] = {
                   ...next[correctIndex],
@@ -5495,18 +5495,18 @@ return (
             } else {
               const deltaX = Math.abs(newXRatio - lastUpdateRef.current.x);
               const deltaY = Math.abs(newYRatio - lastUpdateRef.current.y);
-              
+
               if (deltaX < 0.002 && deltaY < 0.002) {
                 return;
               }
-              
+
               lastUpdateRef.current = { x: newXRatio, y: newYRatio };
               scheduleDragUpdate((prev) => {
                 const correctIndex = idx;
                 if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
                   const fallbackIndex = prev.findIndex(c => c.id === icon.id);
                   if (fallbackIndex === -1) return prev;
-                  
+
                   const next = [...prev];
                   next[fallbackIndex] = {
                     ...next[fallbackIndex],
@@ -5515,7 +5515,7 @@ return (
                   };
                   return next;
                 }
-                
+
                 const next = [...prev];
                 next[correctIndex] = {
                   ...next[correctIndex],
@@ -5551,7 +5551,7 @@ return (
           pointerEvents={isDrawingMode ? "none" : "box-none"}
           style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
         >
-          {/* Indicador visual de selección múltiple */}
+          {/* Indicador visual de selecci�n m�ltiple */}
           {multiSelectMode && isSelected && (
             <View style={{
               position: 'absolute',
@@ -5570,8 +5570,8 @@ return (
               <Feather name="check" size={12} color="#fff" />
             </View>
           )}
-          
-          {/* Borde para elementos seleccionados en modo multi-selección */}
+
+          {/* Borde para elementos seleccionados en modo multi-selecci�n */}
           {multiSelectMode && isSelected && (
             <View style={{
               position: 'absolute',
@@ -5585,8 +5585,8 @@ return (
               pointerEvents: 'none'
             }} />
           )}
-          
-          {/* Botón de opciones - solo para selección individual o primer elemento de multi-selección */}
+
+          {/* Bot�n de opciones - solo para selecci�n individual o primer elemento de multi-selecci�n */}
           {selectedCloneId === icon.id && !multiSelectMode && (
             <TouchableOpacity
               onPress={(e) => {
@@ -5594,9 +5594,9 @@ return (
                 e.target.measure((x, y, width, height, pageX, pageY) => {
                   setOptionsMenu({
                     visible: true,
-                    position: { 
-                      x: pageX + width, 
-                      y: pageY + 40 + (height / 2) 
+                    position: {
+                      x: pageX + width,
+                      y: pageY + 40 + (height / 2)
                     },
                     iconId: icon.id,
                     canRotate: !!icon.rotatable,
@@ -5620,15 +5620,15 @@ return (
                 borderWidth: 1,
                 borderColor: '#dddddd',
                 zIndex: 100,
-                top: -7, 
+                top: -7,
                 right: -7
               }}
             >
               <Feather name="more-vertical" size={16} color="#444444" />
             </TouchableOpacity>
           )}
-          
-          <MemoizedIcon 
+
+          <MemoizedIcon
             icon={icon}
             size={size}
             rotation={icon.rotation || 0}
@@ -5642,9 +5642,9 @@ return (
             showPhotos={showPhotos && icon.playerData}
             photoUrl={icon.playerData?.foto}
           />
-          
+
           {icon.playerData && (
-            <Text 
+            <Text
               style={{
                 position: 'absolute',
                 bottom: -22,
@@ -5674,95 +5674,97 @@ return (
 }, (prevProps, nextProps) => {
   const icon = prevProps.icon;
   const nextIcon = nextProps.icon;
-  
+
   // Quick identity check - if same reference, nothing changed
   if (prevProps === nextProps) return true;
-  
-  // Comparación ultra-rápida: solo verificar cambios relevantes
-  if (prevProps.imageWidth !== nextProps.imageWidth || 
+
+  // Comparaci�n ultra-r�pida: solo verificar cambios relevantes
+  if (prevProps.imageWidth !== nextProps.imageWidth ||
       prevProps.imageHeight !== nextProps.imageHeight) {
     return false;
   }
-  
+
   // ID check first (most common bailout)
   if (icon.id !== nextIcon.id) return false;
-  
+
   // Position changes - most frequent update
   if (icon.xRatio !== nextIcon.xRatio || icon.yRatio !== nextIcon.yRatio) return false;
-  
+
   // Lock state
   if (icon.locked !== nextIcon.locked) return false;
-  
+
   // Selection state - only re-render if selection changed FOR THIS element
   const wasSelected = prevProps.selectedCloneId === icon.id;
   const isSelected = nextProps.selectedCloneId === nextIcon.id;
   if (wasSelected !== isSelected) return false;
-  
+
   // Multi-select state
   if (prevProps.multiSelectMode !== nextProps.multiSelectMode) return false;
   if (prevProps.selectionInteractionMode !== nextProps.selectionInteractionMode) return false;
-  
+
   // Multi-select inclusion - use Set lookup for O(1) instead of includes O(n)
   const prevSet = prevProps.selectedCloneIdsSet;
   const nextSet = nextProps.selectedCloneIdsSet;
   const wasMultiSelected = prevSet ? prevSet.has(icon.id) : prevProps.selectedCloneIds.includes(icon.id);
   const isMultiSelected = nextSet ? nextSet.has(icon.id) : nextProps.selectedCloneIds.includes(icon.id);
   if (wasMultiSelected !== isMultiSelected) return false;
-  
+
   // Drawing mode - check if drawing state affects this element
   const prevDrawing = prevProps.drawingStates;
   const nextDrawing = nextProps.drawingStates;
-  const wasDrawingMode = prevDrawing?.drawingStraightArrow || prevDrawing?.drawingStraightLine || 
-                         prevDrawing?.drawingCurveArrow || prevDrawing?.drawingCurveLine || 
-                         prevDrawing?.drawingCircle || prevDrawing?.drawingRectangle || 
+  const wasDrawingMode = prevDrawing?.drawingStraightArrow || prevDrawing?.drawingStraightLine ||
+                         prevDrawing?.drawingCurveArrow || prevDrawing?.drawingCurveLine ||
+                         prevDrawing?.drawingCircle || prevDrawing?.drawingRectangle ||
                          prevDrawing?.drawingCustomShape || prevDrawing?.eraserMode;
-  const isDrawingMode = nextDrawing?.drawingStraightArrow || nextDrawing?.drawingStraightLine || 
-                        nextDrawing?.drawingCurveArrow || nextDrawing?.drawingCurveLine || 
-                        nextDrawing?.drawingCircle || nextDrawing?.drawingRectangle || 
+  const isDrawingMode = nextDrawing?.drawingStraightArrow || nextDrawing?.drawingStraightLine ||
+                        nextDrawing?.drawingCurveArrow || nextDrawing?.drawingCurveLine ||
+                        nextDrawing?.drawingCircle || nextDrawing?.drawingRectangle ||
                         nextDrawing?.drawingCustomShape || nextDrawing?.eraserMode;
   if (wasDrawingMode !== isDrawingMode) return false;
-  
+
   // Visual props - SIEMPRE verificar para detectar cambios de "Aplicar a todos"
-  if (icon.size !== nextIcon.size || 
-      icon.color !== nextIcon.color || 
-      icon.rotation !== nextIcon.rotation || 
+  if (icon.size !== nextIcon.size ||
+      icon.color !== nextIcon.color ||
+      icon.rotation !== nextIcon.rotation ||
       icon.number !== nextIcon.number ||
       icon.displayLabel !== nextIcon.displayLabel ||
       icon.numberColor !== nextIcon.numberColor ||
       icon.textColor !== nextIcon.textColor ||
       icon.textBackgroundColor !== nextIcon.textBackgroundColor ||
       icon._lastUpdate !== nextIcon._lastUpdate) return false;
-  
+
   // Goalkeeper differentiation setting
   if (prevProps.differentiateGoalkeeper !== nextProps.differentiateGoalkeeper) return false;
   if (prevProps.goalkeeperStripeColor !== nextProps.goalkeeperStripeColor) return false;
-  
+
   // Show photos setting
   if (prevProps.showPhotos !== nextProps.showPhotos) return false;
-  
+
   // Players with number setting
   if (prevProps.playersWithNumber !== nextProps.playersWithNumber) return false;
-  
+
   // Photo URL for player
   if (icon.playerData?.foto !== nextIcon.playerData?.foto) return false;
-  
+
   // View mode changes affect display coordinates
   if (prevProps.viewMode !== nextProps.viewMode) return false;
-  
+
   // Display coords (computed from ratioToDisplay)
   if (icon.x !== nextIcon.x || icon.y !== nextIcon.y) return false;
-  
+
   return true;
 });
 
 function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
   const baseSize = icon.size || standardSize;
-  // Escalamos el tamaño según el ancho de la imagen
+  // Escalamos el tama�o seg�n el ancho de la imagen
   const scaleFactor = Math.max(0.5, Math.min(1.5, imageWidth / 500));
   return baseSize * scaleFactor;
 }
 
 const BOARD_OBJECT_HIT_TOLERANCE = 24;
+const SHAPE_BORDER_HIT_TOLERANCE = 10;
+const ALLOW_MULTI_ELEMENT_DRAG = false;
 
 function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
   const segmentX = endX - startX;
@@ -5771,6 +5773,59 @@ function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
   if (segmentLengthSq === 0) return Math.hypot(pointX - startX, pointY - startY);
   const projection = Math.max(0, Math.min(1, ((pointX - startX) * segmentX + (pointY - startY) * segmentY) / segmentLengthSq));
   return Math.hypot(pointX - (startX + projection * segmentX), pointY - (startY + projection * segmentY));
+}
+
+function getResponderLocalPoint(event, offsetX = 0, offsetY = 0) {
+  const nativeEvent = event?.nativeEvent || {};
+  return {
+    x: (nativeEvent.locationX || 0) + offsetX,
+    y: (nativeEvent.locationY || 0) + offsetY,
+  };
+}
+
+function isCircleBorderTouch(localX, localY, centerX, centerY, radius, tolerance) {
+  if (!Number.isFinite(radius) || radius <= 0) return false;
+  const usableTolerance = Math.min(tolerance, SHAPE_BORDER_HIT_TOLERANCE, Math.max(4, radius * 0.14));
+  return Math.abs(Math.hypot(localX - centerX, localY - centerY) - radius) <= usableTolerance;
+}
+
+function isRectangleBorderTouch(localX, localY, rectX, rectY, rectWidth, rectHeight, tolerance) {
+  if (rectWidth <= 0 || rectHeight <= 0) return false;
+  const outerLeft = rectX - tolerance;
+  const outerRight = rectX + rectWidth + tolerance;
+  const outerTop = rectY - tolerance;
+  const outerBottom = rectY + rectHeight + tolerance;
+  if (localX < outerLeft || localX > outerRight || localY < outerTop || localY > outerBottom) return false;
+
+  const insideX = localX >= rectX && localX <= rectX + rectWidth;
+  const insideY = localY >= rectY && localY <= rectY + rectHeight;
+  if (insideX && insideY) {
+    const innerTolerance = Math.min(tolerance, SHAPE_BORDER_HIT_TOLERANCE, Math.max(4, Math.min(rectWidth, rectHeight) * 0.14));
+    return Math.min(
+      localX - rectX,
+      rectX + rectWidth - localX,
+      localY - rectY,
+      rectY + rectHeight - localY,
+    ) <= innerTolerance;
+  }
+
+  const dx = Math.max(rectX - localX, 0, localX - (rectX + rectWidth));
+  const dy = Math.max(rectY - localY, 0, localY - (rectY + rectHeight));
+  return Math.hypot(dx, dy) <= tolerance;
+}
+
+function isPolygonBorderTouch(localX, localY, points, tolerance, minX, minY, touchMargin, width, height) {
+  const pointX = localX + minX - touchMargin;
+  const pointY = localY + minY - touchMargin;
+  const usableTolerance = Math.min(tolerance, SHAPE_BORDER_HIT_TOLERANCE, Math.max(4, Math.min(width, height) * 0.14));
+  for (let index = 0; index < points.length; index++) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    if (distanceToBoardSegment(pointX, pointY, current.x, current.y, next.x, next.y) <= usableTolerance) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isPointInsidePolygon(pointX, pointY, points) {
@@ -5824,22 +5879,29 @@ function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageH
     const centerX = (firstPoint.x + secondPoint.x) / 2;
     const centerY = (firstPoint.y + secondPoint.y) / 2;
     const radius = Math.hypot(secondPoint.x - firstPoint.x, secondPoint.y - firstPoint.y) / 2;
-    return Math.hypot(pointX - centerX, pointY - centerY) <= radius + tolerance;
+    return isCircleBorderTouch(pointX, pointY, centerX, centerY, radius, tolerance);
   }
 
   if (clone.type === 'rectangle' && clone.points?.length === 2) {
     const firstPoint = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
     const secondPoint = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
-    const minX = Math.min(firstPoint.x, secondPoint.x) - tolerance;
-    const maxX = Math.max(firstPoint.x, secondPoint.x) + tolerance;
-    const minY = Math.min(firstPoint.y, secondPoint.y) - tolerance;
-    const maxY = Math.max(firstPoint.y, secondPoint.y) + tolerance;
-    return pointX >= minX && pointX <= maxX && pointY >= minY && pointY <= maxY;
+    const minX = Math.min(firstPoint.x, secondPoint.x);
+    const minY = Math.min(firstPoint.y, secondPoint.y);
+    const width = Math.abs(secondPoint.x - firstPoint.x);
+    const height = Math.abs(secondPoint.y - firstPoint.y);
+    return isRectangleBorderTouch(pointX, pointY, minX, minY, width, height, tolerance);
   }
 
   if (clone.type === 'custom-shape' && clone.points?.length >= 3) {
     const points = getCloneDisplayPoints(clone, viewMode, imageWidth, imageHeight);
-    return isPointNearPointList(pointX, pointY, points, tolerance, true) || isPointInsidePolygon(pointX, pointY, points);
+    const xs = points.map(point => point.x);
+    const ys = points.map(point => point.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const width = Math.max(...xs) - minX;
+    const height = Math.max(...ys) - minY;
+    const usableTolerance = Math.min(tolerance, SHAPE_BORDER_HIT_TOLERANCE, Math.max(4, Math.min(width, height) * 0.14));
+    return isPointNearPointList(pointX, pointY, points, usableTolerance, true);
   }
 
   if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
@@ -5861,7 +5923,6 @@ function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageH
 
 function getCloneInteractionZIndex(clone, originalIndex, selectedCloneId) {
   if (clone.locked === true) return 1;
-  if (selectedCloneId === clone.id) return 99999;
   return clone.zIndex || getZIndexBaseForType(clone.type) + originalIndex;
 }
 
@@ -5914,46 +5975,46 @@ function getArrowHeadForStraightLine(start, end, size = 24, ratio = 0.5, thickne
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const length = Math.sqrt(dx * dx + dy * dy);
-  
+
   if (length === 0) return { arrowPoints: "", lineEnd: end };
-  
-  // Calcular el ángulo de la línea
+
+  // Calcular el �ngulo de la l�nea
   const angle = Math.atan2(dy, dx);
-  // Tamaño de flecha proporcional al grosor de la línea (más fino = flecha más pequeña)
+  // Tama�o de flecha proporcional al grosor de la l�nea (m�s fino = flecha m�s peque�a)
   const arrowSize = Math.max(6 * thickness, 8);
-  
+
   // Calcular los puntos para la punta de flecha
   const x3 = end.x - arrowSize * Math.cos(angle - Math.PI / 6);
   const y3 = end.y - arrowSize * Math.sin(angle - Math.PI / 6);
   const x4 = end.x - arrowSize * Math.cos(angle + Math.PI / 6);
   const y4 = end.y - arrowSize * Math.sin(angle + Math.PI / 6);
-  
-  // Calcular el punto donde debe terminar la línea (base de la flecha)
+
+  // Calcular el punto donde debe terminar la l�nea (base de la flecha)
   const lineEndX = end.x - arrowSize * 0.85 * Math.cos(angle);
   const lineEndY = end.y - arrowSize * 0.85 * Math.sin(angle);
-  
+
   return {
     arrowPoints: `${end.x},${end.y} ${x3},${y3} ${x4},${y4}`,
     lineEnd: { x: lineEndX, y: lineEndY }
   };
 }
 
-// Función para generar el path SVG para líneas curvas
+// Funci�n para generar el path SVG para l�neas curvas
 function generateCurvePath(points) {
   if (!points || points.length < 2) return '';
-  
+
   // Comenzamos con un 'M' (move to) para el primer punto
   let path = `M${points[0].x},${points[0].y}`;
-  
-  // Para cada punto restante, añadimos un comando 'L' (line to)
+
+  // Para cada punto restante, a�adimos un comando 'L' (line to)
   for (let i = 1; i < points.length; i++) {
     path += ` L${points[i].x},${points[i].y}`;
   }
-  
+
   return path;
 }
 
-// Función auxiliar para calcular la distancia de un punto a un segmento de línea
+// Funci�n auxiliar para calcular la distancia de un punto a un segmento de l�nea
 function distanceToLineSegment(px, py, x1, y1, x2, y2) {
   const A = px - x1;
   const B = py - y1;
@@ -5985,33 +6046,33 @@ function distanceToLineSegment(px, py, x1, y1, x2, y2) {
 }
 
 // =====================================================
-// COMPONENTES MEMOIZADOS PARA LÃNEAS - OPTIMIZACIÃ“N CRÃTICA
+// COMPONENTES MEMOIZADOS PARA LÍNEAS - OPTIMIZACIÓN CRÍTICA
 // =====================================================
 
-// Componente memoizado para líneas rectas - evita re-renders innecesarios
-const MemoizedStraightLine = React.memo(({ 
-  id, 
-  x1, y1, x2, y2, 
-  color, 
-  thickness, 
-  lineType, 
-  dotSize, 
+// Componente memoizado para l�neas rectas - evita re-renders innecesarios
+const MemoizedStraightLine = React.memo(({
+  id,
+  x1, y1, x2, y2,
+  color,
+  thickness,
+  lineType,
+  dotSize,
   dotSpacing,
   isArrow,
   arrowPoints,
   lineEndX,
   lineEndY,
-  isMultiSelected 
+  isMultiSelected
 }) => {
   const actualEndX = isArrow ? lineEndX : x2;
   const actualEndY = isArrow ? lineEndY : y2;
   const pathD = `M${x1},${y1} L${actualEndX},${actualEndY}`;
   const strokeColor = isMultiSelected ? '#3498db' : color;
   const strokeDasharray = lineType === 'dotted' ? `${dotSize || 2}, ${dotSpacing || 4}` : null;
-  
+
   return (
     <G>
-      {/* Highlight para multi-selección */}
+      {/* Highlight para multi-selecci�n */}
       {isMultiSelected && (
         <Path
           d={pathD}
@@ -6022,18 +6083,18 @@ const MemoizedStraightLine = React.memo(({
           strokeLinecap="round"
         />
       )}
-      
-      {/* Línea principal (con o sin punteado) */}
-      <Path 
+
+      {/* L�nea principal (con o sin punteado) */}
+      <Path
         key={`line-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
         d={pathD}
-        stroke={strokeColor} 
+        stroke={strokeColor}
         strokeWidth={thickness}
         strokeDasharray={strokeDasharray}
-        fill="none" 
-        strokeLinecap="round" 
+        fill="none"
+        strokeLinecap="round"
       />
-      
+
       {/* Punta de flecha */}
       {isArrow && arrowPoints && (
         <Polygon
@@ -6045,7 +6106,7 @@ const MemoizedStraightLine = React.memo(({
     </G>
   );
 }, (prevProps, nextProps) => {
-  // Comparación profunda para evitar re-renders innecesarios
+  // Comparaci�n profunda para evitar re-renders innecesarios
   return (
     prevProps.id === nextProps.id &&
     prevProps.x1 === nextProps.x1 &&
@@ -6065,25 +6126,25 @@ const MemoizedStraightLine = React.memo(({
   );
 });
 
-// Componente memoizado para líneas curvas - evita re-renders innecesarios
-const MemoizedCurveLine = React.memo(({ 
+// Componente memoizado para l�neas curvas - evita re-renders innecesarios
+const MemoizedCurveLine = React.memo(({
   id,
   pathData,
-  color, 
-  thickness, 
-  lineType, 
-  dotSize, 
+  color,
+  thickness,
+  lineType,
+  dotSize,
   dotSpacing,
   isArrow,
   arrowPoints,
-  isMultiSelected 
+  isMultiSelected
 }) => {
   const strokeColor = isMultiSelected ? '#3498db' : color;
   const strokeDasharray = lineType === 'dotted' ? `${dotSize || 2}, ${dotSpacing || 4}` : null;
-  
+
   return (
     <G>
-      {/* Highlight para multi-selección */}
+      {/* Highlight para multi-selecci�n */}
       {isMultiSelected && (
         <Path
           d={pathData}
@@ -6095,19 +6156,19 @@ const MemoizedCurveLine = React.memo(({
           strokeLinejoin="round"
         />
       )}
-      
-      {/* Línea principal (con o sin punteado) */}
-      <Path 
+
+      {/* L�nea principal (con o sin punteado) */}
+      <Path
         key={`curve-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
         d={pathData}
-        stroke={strokeColor} 
+        stroke={strokeColor}
         strokeWidth={thickness}
         strokeDasharray={strokeDasharray}
-        fill="none" 
+        fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      
+
       {/* Punta de flecha */}
       {isArrow && arrowPoints && (
         <Polygon
@@ -6133,9 +6194,9 @@ const MemoizedCurveLine = React.memo(({
   );
 });
 
-// Componente batch para renderizar muchas líneas en un solo SVG Group
-const BatchLinesRenderer = React.memo(({ 
-  straightLines, 
+// Componente batch para renderizar muchas l�neas en un solo SVG Group
+const BatchLinesRenderer = React.memo(({
+  straightLines,
   curveLines,
   imageWidth,
   imageHeight,
@@ -6149,32 +6210,32 @@ const BatchLinesRenderer = React.memo(({
     return ratioToDisplay(xR, yR, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
 
-  // Pre-calcular todos los datos de líneas rectas
+  // Pre-calcular todos los datos de l�neas rectas
   const straightLineData = useMemo(() => {
     return straightLines.map(icon => {
       if (!icon.points || icon.points.length !== 2) return null;
-      
+
       const originalWidth = icon.imageWidth || imageWidth;
       const originalHeight = icon.imageHeight || imageHeight;
       const widthRatio = imageWidth / originalWidth;
       const heightRatio = imageHeight / originalHeight;
       const scale = (widthRatio + heightRatio) / 2;
-      
+
       const p1 = tp(icon.points[0].x, icon.points[0].y);
       const p2 = tp(icon.points[1].x, icon.points[1].y);
       const x1 = p1.x;
       const y1 = p1.y;
       const x2 = p2.x;
       const y2 = p2.y;
-      
+
       const thickness = (icon.thickness || 1) * scale * 0.7;
       const isMultiSelected = multiSelectMode && selectedCloneIdsSet?.has(icon.id);
       const isArrow = icon.type === 'straight-arrow';
-      
+
       let arrowPoints = '';
       let lineEndX = x2;
       let lineEndY = y2;
-      
+
       if (isArrow) {
         const arrowData = getArrowHeadForStraightLine(
           { x: x1, y: y1 },
@@ -6187,7 +6248,7 @@ const BatchLinesRenderer = React.memo(({
         lineEndX = arrowData.lineEnd.x;
         lineEndY = arrowData.lineEnd.y;
       }
-      
+
       return {
         id: icon.id,
         x1, y1, x2, y2,
@@ -6204,30 +6265,30 @@ const BatchLinesRenderer = React.memo(({
       };
     }).filter(Boolean);
   }, [straightLines, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
-  
-  // Pre-calcular todos los datos de líneas curvas
+
+  // Pre-calcular todos los datos de l�neas curvas
   const curveLineData = useMemo(() => {
     return curveLines.map(icon => {
       if (!icon.points || icon.points.length < 2) return null;
-      
+
       const originalWidth = icon.imageWidth || imageWidth;
       const originalHeight = icon.imageHeight || imageHeight;
       const widthRatio = imageWidth / originalWidth;
       const heightRatio = imageHeight / originalHeight;
       const scale = (widthRatio + heightRatio) / 2;
-      
+
       const pts = icon.points.map(p => tp(p.x, p.y));
-      
+
       const pathData = generateCurvePath(pts);
       const thickness = (icon.thickness || 1) * scale * 0.7;
       const isMultiSelected = multiSelectMode && selectedCloneIdsSet?.has(icon.id);
       const isArrow = icon.type === 'curve-arrow';
-      
+
       let arrowPoints = '';
       if (isArrow && pts.length >= 2) {
         const lastIdx = pts.length - 1;
         let secondLastIdx = lastIdx - 1;
-        
+
         while (secondLastIdx >= 0 && lastIdx > 0) {
           const dist = Math.sqrt(
             Math.pow(pts[lastIdx].x - pts[secondLastIdx].x, 2) +
@@ -6237,14 +6298,14 @@ const BatchLinesRenderer = React.memo(({
           secondLastIdx--;
         }
         if (secondLastIdx < 0) secondLastIdx = 0;
-        
+
         const lastPoint = pts[lastIdx];
         const secondLastPoint = pts[secondLastIdx];
-        
+
         const dx = lastPoint.x - secondLastPoint.x;
         const dy = lastPoint.y - secondLastPoint.y;
         const length = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (length > 0) {
           const angle = Math.atan2(dy, dx);
           const arrowSize = Math.max(6 * thickness, 8);
@@ -6255,7 +6316,7 @@ const BatchLinesRenderer = React.memo(({
           arrowPoints = `${lastPoint.x},${lastPoint.y} ${x3},${y3} ${x4},${y4}`;
         }
       }
-      
+
       return {
         id: icon.id,
         pathData,
@@ -6270,34 +6331,34 @@ const BatchLinesRenderer = React.memo(({
       };
     }).filter(Boolean);
   }, [curveLines, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
-  
+
   return (
     <G>
-      {/* Renderizar líneas rectas */}
+      {/* Renderizar l�neas rectas */}
       {straightLineData.map(data => (
         <MemoizedStraightLine key={`sl-${data.id}`} {...data} />
       ))}
-      
-      {/* Renderizar líneas curvas */}
+
+      {/* Renderizar l�neas curvas */}
       {curveLineData.map(data => (
         <MemoizedCurveLine key={`cl-${data.id}`} {...data} />
       ))}
     </G>
   );
 }, (prevProps, nextProps) => {
-  // Solo re-renderizar si realmente cambiaron las líneas
+  // Solo re-renderizar si realmente cambiaron las l�neas
   if (prevProps.straightLines.length !== nextProps.straightLines.length) return false;
   if (prevProps.curveLines.length !== nextProps.curveLines.length) return false;
   if (prevProps.imageWidth !== nextProps.imageWidth) return false;
   if (prevProps.imageHeight !== nextProps.imageHeight) return false;
   if (prevProps.multiSelectMode !== nextProps.multiSelectMode) return false;
-  
-  // Comparar referencias de líneas
+
+  // Comparar referencias de l�neas
   for (let i = 0; i < prevProps.straightLines.length; i++) {
     const prev = prevProps.straightLines[i];
     const next = nextProps.straightLines[i];
-    if (prev.id !== next.id || 
-        prev.color !== next.color || 
+    if (prev.id !== next.id ||
+        prev.color !== next.color ||
         prev.thickness !== next.thickness ||
         prev.lineType !== next.lineType ||
         prev.dotSize !== next.dotSize ||
@@ -6306,12 +6367,12 @@ const BatchLinesRenderer = React.memo(({
       return false;
     }
   }
-  
+
   for (let i = 0; i < prevProps.curveLines.length; i++) {
     const prev = prevProps.curveLines[i];
     const next = nextProps.curveLines[i];
-    if (prev.id !== next.id || 
-        prev.color !== next.color || 
+    if (prev.id !== next.id ||
+        prev.color !== next.color ||
         prev.thickness !== next.thickness ||
         prev.lineType !== next.lineType ||
         prev.dotSize !== next.dotSize ||
@@ -6320,7 +6381,7 @@ const BatchLinesRenderer = React.memo(({
       return false;
     }
   }
-  
+
   return true;
 });
 
@@ -6335,7 +6396,7 @@ function arraysEqual(a, b) {
 }
 
 // =====================================================
-// COMPONENTE MEMOIZADO PARA DETECTORES DE LÃNEAS RECTAS
+// COMPONENTE MEMOIZADO PARA DETECTORES DE LÍNEAS RECTAS
 // =====================================================
 const MemoizedStraightLineDetector = React.memo(({
   icon,
@@ -6361,16 +6422,16 @@ const MemoizedStraightLineDetector = React.memo(({
   if (isAnyDrawingMode) return null;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
-  
+
   const originalWidth = icon.imageWidth || imageWidth;
   const originalHeight = icon.imageHeight || imageHeight;
   const widthRatio = imageWidth / originalWidth;
   const heightRatio = imageHeight / originalHeight;
   const scale = (widthRatio + heightRatio) / 2;
-  
+
   const { x: x1, y: y1 } = ratioToDisplay(icon.points[0].x, icon.points[0].y, viewMode, imageWidth, imageHeight);
   const { x: x2, y: y2 } = ratioToDisplay(icon.points[1].x, icon.points[1].y, viewMode, imageWidth, imageHeight);
-  
+
   const lineThickness = (icon.thickness || 2) * scale;
   const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
   const centerX = (x1 + x2) / 2;
@@ -6379,24 +6440,22 @@ const MemoizedStraightLineDetector = React.memo(({
   const minY = Math.min(y1, y2);
   const maxX = Math.max(x1, x2);
   const maxY = Math.max(y1, y2);
-  
+
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  
+
   const touchTolerance = Math.max(lineThickness / 2 + 12, 18);
   const touchMargin = 22;
   const touchWidth = maxX - minX + touchMargin * 2;
   const touchHeight = maxY - minY + touchMargin * 2;
-  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
-    ? 99999
-    : (icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx));
-  
-  // Dimensiones del botón de opciones (3 puntos)
+  const detectorZIndex = icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx);
+
+  // Dimensiones del bot�n de opciones (3 puntos)
   const optionsButtonSize = 28;
   const optionsButtonLeft = centerX - minX + touchMargin - 14;
   const optionsButtonTop = centerY - minY + touchMargin - 14;
-  
-  // Función para verificar si el toque está en el área del botón de opciones
+
+  // Funci�n para verificar si el toque est� en el �rea del bot�n de opciones
   const isTouchOnOptionsButton = (touchX, touchY) => {
     if (selectedCloneId !== icon.id || multiSelectMode) return false;
     const buttonCenterX = optionsButtonLeft + optionsButtonSize / 2;
@@ -6406,7 +6465,7 @@ const MemoizedStraightLineDetector = React.memo(({
     const distFromButton = Math.sqrt(dx * dx + dy * dy);
     return distFromButton <= optionsButtonSize / 2 + 5; // 5px de margen extra
   };
-  
+
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
       setSelectedCloneId(null);
@@ -6418,7 +6477,7 @@ const MemoizedStraightLineDetector = React.memo(({
 
     if (!acquireBoardDrag(dragStart, icon.id)) return;
 
-    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+    if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
@@ -6491,7 +6550,7 @@ const MemoizedStraightLineDetector = React.memo(({
     }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
-      // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+      // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
       setClones((prev) => {
         const remaining = prev.filter(c => {
           if (!base.selectedIds.includes(c.id) || c.locked) return true;
@@ -6567,7 +6626,7 @@ const MemoizedStraightLineDetector = React.memo(({
 
     return segments;
   };
-  
+
   return (
     <View
       pointerEvents="box-none"
@@ -6582,8 +6641,8 @@ const MemoizedStraightLineDetector = React.memo(({
       }}
     >
       {generateTouchSegments()}
-      
-      {/* Indicador visual para selección múltiple en líneas rectas */}
+
+      {/* Indicador visual para selecci�n m�ltiple en l�neas rectas */}
       {multiSelectMode && isSelected && (
         <View pointerEvents="none" style={{
           position: 'absolute',
@@ -6602,7 +6661,7 @@ const MemoizedStraightLineDetector = React.memo(({
           <Feather name="check" size={10} color="#fff" />
         </View>
       )}
-      
+
       {selectedCloneId === icon.id && !multiSelectMode && (
         <TouchableOpacity
           onPress={(e) => {
@@ -6642,7 +6701,7 @@ const MemoizedStraightLineDetector = React.memo(({
 });
 
 // =====================================================
-// COMPONENTE MEMOIZADO PARA DETECTORES DE LÃNEAS CURVAS
+// COMPONENTE MEMOIZADO PARA DETECTORES DE LÍNEAS CURVAS
 // =====================================================
 const MemoizedCurveLineDetector = React.memo(({
   icon,
@@ -6666,16 +6725,16 @@ const MemoizedCurveLineDetector = React.memo(({
 }) => {
   if (!icon.points || icon.points.length < 2) return null;
   if (isAnyDrawingMode) return null;
-  
+
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
-  
+
   const originalWidth = icon.imageWidth || imageWidth;
   const originalHeight = icon.imageHeight || imageHeight;
   const widthRatio = imageWidth / originalWidth;
   const heightRatio = imageHeight / originalHeight;
   const scale = (widthRatio + heightRatio) / 2;
-  
+
   const pts = icon.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
   const xs = pts.map(p => p.x);
   const ys = pts.map(p => p.y);
@@ -6685,25 +6744,23 @@ const MemoizedCurveLineDetector = React.memo(({
   const maxY = Math.max(...ys);
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
-  
+
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  
+
   const lineThickness = (icon.thickness || 2) * scale;
   const touchTolerance = Math.max(lineThickness / 2 + 12, 18);
   const touchMargin = 22;
   const touchWidth = maxX - minX + touchMargin * 2;
   const touchHeight = maxY - minY + touchMargin * 2;
-  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
-    ? 99999
-    : (icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx));
-  
-  // Dimensiones del botón de opciones (3 puntos)
+  const detectorZIndex = icon.calculatedZIndex || (ZINDEX_BASE_LINES + originalIdx);
+
+  // Dimensiones del bot�n de opciones (3 puntos)
   const optionsButtonSize = 28;
   const optionsButtonLeft = touchWidth / 2 - 14;
   const optionsButtonTop = touchHeight / 2 - 14;
-  
-  // Función para verificar si el toque está en el área del botón de opciones
+
+  // Funci�n para verificar si el toque est� en el �rea del bot�n de opciones
   const isTouchOnOptionsButton = (touchX, touchY) => {
     if (selectedCloneId !== icon.id || multiSelectMode) return false;
     const buttonCenterX = optionsButtonLeft + optionsButtonSize / 2;
@@ -6713,7 +6770,7 @@ const MemoizedCurveLineDetector = React.memo(({
     const distFromButton = Math.sqrt(dx * dx + dy * dy);
     return distFromButton <= optionsButtonSize / 2 + 5; // 5px de margen extra
   };
-  
+
   // Handlers para arrastre
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
@@ -6724,8 +6781,8 @@ const MemoizedCurveLineDetector = React.memo(({
       return;
     }
     if (!acquireBoardDrag(dragStart, icon.id)) return;
-    
-    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+
+    if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
@@ -6741,12 +6798,12 @@ const MemoizedCurveLineDetector = React.memo(({
       dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
     }
   };
-  
+
   const handleResponderMove = (e) => {
     if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: dx, dyRatio: dy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
-    
+
     if (base.multiSelect && base.selectedIds && base.initialPositions) {
       pendingUpdateRef.current = (prev) => prev.map(c => {
         if (!base.selectedIds.includes(c.id)) return c;
@@ -6785,7 +6842,7 @@ const MemoizedCurveLineDetector = React.memo(({
       });
     }
   };
-  
+
   const handleResponderRelease = () => {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -6797,7 +6854,7 @@ const MemoizedCurveLineDetector = React.memo(({
     }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
-      // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+      // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
       setClones((prev) => {
         const remaining = prev.filter(c => {
           if (!base.selectedIds.includes(c.id) || c.locked) return true;
@@ -6812,7 +6869,7 @@ const MemoizedCurveLineDetector = React.memo(({
         return remaining.length < prev.length ? remaining : prev;
       });
     } else {
-      // Single drag: solo eliminar esta línea
+      // Single drag: solo eliminar esta l�nea
       setClones((prev) => {
         const currentClone = prev.find(c => c.id === icon.id);
         if (currentClone && !currentClone.locked && currentClone.points) {
@@ -6829,15 +6886,15 @@ const MemoizedCurveLineDetector = React.memo(({
     // Guardar en historial al finalizar el drag
     if (saveClonesHistory) saveClonesHistory();
   };
-  
+
   // Props comunes de responder
   const responderProps = {
     onStartShouldSetResponderCapture: (e) => {
-      // No capturar si el toque está en el botón de opciones
+      // No capturar si el toque est� en el bot�n de opciones
       return !isTouchOnOptionsButton(e.nativeEvent.pageX - (minX - touchMargin), e.nativeEvent.pageY - (minY - touchMargin));
     },
     onStartShouldSetResponder: (e) => {
-      // No capturar si el toque está en el botón de opciones
+      // No capturar si el toque est� en el bot�n de opciones
       return !isTouchOnOptionsButton(e.nativeEvent.pageX - (minX - touchMargin), e.nativeEvent.pageY - (minY - touchMargin));
     },
     onMoveShouldSetResponder: () => canDrag,
@@ -6846,13 +6903,13 @@ const MemoizedCurveLineDetector = React.memo(({
     onResponderRelease: handleResponderRelease,
     onResponderTerminate: handleResponderRelease,
   };
-  
+
   // Generar segmentos de toque a lo largo de la curva
-  // Cada segmento es un pequeño View posicionado sobre el trazado
+  // Cada segmento es un peque�o View posicionado sobre el trazado
   const generateTouchSegments = () => {
     const segments = [];
     const segmentSize = touchTolerance * 2;
-    
+
     for (let i = 0; i < pts.length - 1; i++) {
       const p1 = pts[i];
       const p2 = pts[i + 1];
@@ -6860,15 +6917,15 @@ const MemoizedCurveLineDetector = React.memo(({
       const dy = p2.y - p1.y;
       const length = Math.sqrt(dx * dx + dy * dy);
       const angle = Math.atan2(dy, dx);
-      
+
       // Crear un segmento por cada trozo del path
       const numSegments = Math.max(1, Math.ceil(length / segmentSize));
-      
+
       for (let j = 0; j < numSegments; j++) {
         const t = numSegments === 1 ? 0.5 : j / (numSegments - 1 || 1);
         const x = p1.x + dx * t;
         const y = p1.y + dy * t;
-        
+
         segments.push(
           <View
             key={`seg-${i}-${j}`}
@@ -6887,10 +6944,10 @@ const MemoizedCurveLineDetector = React.memo(({
         );
       }
     }
-    
+
     return segments;
   };
-  
+
   return (
     <View
       pointerEvents="box-none"
@@ -6906,8 +6963,8 @@ const MemoizedCurveLineDetector = React.memo(({
     >
       {/* Segmentos de toque a lo largo de la curva */}
       {generateTouchSegments()}
-      
-      {/* Indicador visual para selección múltiple */}
+
+      {/* Indicador visual para selecci�n m�ltiple */}
       {multiSelectMode && isSelected && (
         <View pointerEvents="none" style={{
           position: 'absolute',
@@ -6926,8 +6983,8 @@ const MemoizedCurveLineDetector = React.memo(({
           <Feather name="check" size={10} color="#fff" />
         </View>
       )}
-      
-      {/* Botón de menú cuando está seleccionado */}
+
+      {/* Bot�n de men� cuando est� seleccionado */}
       {selectedCloneId === icon.id && !multiSelectMode && (
         <TouchableOpacity
           onPress={(e) => {
@@ -6966,12 +7023,12 @@ const MemoizedCurveLineDetector = React.memo(({
 });
 
 // =====================================================
-// COMPONENTES SVG MEMOIZADOS PARA CÃRCULOS Y RECTÃNGULOS
+// COMPONENTES SVG MEMOIZADOS PARA CÍRCULOS Y RECTÁNGULOS
 // =====================================================
 
-// Círculo SVG memoizado - solo renderiza el SVG
-const MemoizedCircleSvg = React.memo(({ 
-  id, centerX, centerY, radius, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected 
+// C�rculo SVG memoizado - solo renderiza el SVG
+const MemoizedCircleSvg = React.memo(({
+  id, centerX, centerY, radius, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
   return (
@@ -7000,9 +7057,9 @@ const MemoizedCircleSvg = React.memo(({
   prev.isMultiSelected === next.isMultiSelected
 ));
 
-// Rectángulo SVG memoizado - solo renderiza el SVG
-const MemoizedRectangleSvg = React.memo(({ 
-  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected 
+// Rect�ngulo SVG memoizado - solo renderiza el SVG
+const MemoizedRectangleSvg = React.memo(({
+  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
   return (
@@ -7034,8 +7091,8 @@ const MemoizedRectangleSvg = React.memo(({
 ));
 
 // Custom Shape SVG memoizado
-const MemoizedCustomShapeSvg = React.memo(({ 
-  id, pathData, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected 
+const MemoizedCustomShapeSvg = React.memo(({
+  id, pathData, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
   return (
@@ -7061,10 +7118,10 @@ const MemoizedCustomShapeSvg = React.memo(({
   prev.isMultiSelected === next.isMultiSelected
 ));
 
-// Batch renderer para todas las figuras geométricas
-const BatchShapesRenderer = React.memo(({ 
-  circles, 
-  rectangles, 
+// Batch renderer para todas las figuras geom�tricas
+const BatchShapesRenderer = React.memo(({
+  circles,
+  rectangles,
   customShapes,
   imageWidth,
   imageHeight,
@@ -7078,29 +7135,29 @@ const BatchShapesRenderer = React.memo(({
     return ratioToDisplay(xR, yR, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
 
-  // Pre-calcular datos de círculos
+  // Pre-calcular datos de c�rculos
   const circleData = useMemo(() => {
     return circles.map(icon => {
       if (!icon.points || icon.points.length !== 2) return null;
-      
+
       const originalWidth = icon.imageWidth || imageWidth;
       const originalHeight = icon.imageHeight || imageHeight;
       const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-      
+
       const p1 = tp(icon.points[0].x, icon.points[0].y);
       const p2 = tp(icon.points[1].x, icon.points[1].y);
       const p1x = p1.x;
       const p1y = p1.y;
       const p2x = p2.x;
       const p2y = p2.y;
-      
+
       const centerX = (p1x + p2x) / 2;
       const centerY = (p1y + p2y) / 2;
       const dx = p2x - p1x;
       const dy = p2y - p1y;
       const radius = Math.sqrt(dx * dx + dy * dy) / 2;
       const thickness = (icon.thickness || 1) * scale * 0.7;
-      
+
       return {
         id: icon.id,
         shapeType: 'circle',
@@ -7116,29 +7173,29 @@ const BatchShapesRenderer = React.memo(({
       };
     }).filter(Boolean);
   }, [circles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
-  
-  // Pre-calcular datos de rectángulos
+
+  // Pre-calcular datos de rect�ngulos
   const rectangleData = useMemo(() => {
     return rectangles.map(icon => {
       if (!icon.points || icon.points.length !== 2) return null;
-      
+
       const originalWidth = icon.imageWidth || imageWidth;
       const originalHeight = icon.imageHeight || imageHeight;
       const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-      
+
       const p1 = tp(icon.points[0].x, icon.points[0].y);
       const p2 = tp(icon.points[1].x, icon.points[1].y);
       const p1x = p1.x;
       const p1y = p1.y;
       const p2x = p2.x;
       const p2y = p2.y;
-      
+
       const x = Math.min(p1x, p2x);
       const y = Math.min(p1y, p2y);
       const width = Math.abs(p2x - p1x);
       const height = Math.abs(p2y - p1y);
       const thickness = (icon.thickness || 1) * scale * 0.7;
-      
+
       return {
         id: icon.id,
         shapeType: 'rectangle',
@@ -7154,20 +7211,20 @@ const BatchShapesRenderer = React.memo(({
       };
     }).filter(Boolean);
   }, [rectangles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
-  
+
   // Pre-calcular datos de custom shapes
   const customShapeData = useMemo(() => {
     return customShapes.map(icon => {
       if (!icon.points || icon.points.length < 3 || !icon.isCustomShapeComplete) return null;
-      
+
       const originalWidth = icon.imageWidth || imageWidth;
       const originalHeight = icon.imageHeight || imageHeight;
       const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-      
+
       const pts = icon.points.map(p => tp(p.x, p.y));
       const pathData = `M${pts.map(p => `${p.x},${p.y}`).join(' L')} Z`;
       const thickness = (icon.thickness || 1) * scale * 0.7;
-      
+
       return {
         id: icon.id,
         shapeType: 'custom-shape',
@@ -7190,7 +7247,7 @@ const BatchShapesRenderer = React.memo(({
     shapes.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     return shapes;
   }, [circleData, rectangleData, customShapeData]);
-  
+
   return (
     <G>
       {allShapes.map(data => {
@@ -7207,8 +7264,8 @@ const BatchShapesRenderer = React.memo(({
   if (prevProps.imageWidth !== nextProps.imageWidth) return false;
   if (prevProps.imageHeight !== nextProps.imageHeight) return false;
   if (prevProps.multiSelectMode !== nextProps.multiSelectMode) return false;
-  
-  // Comparar círculos
+
+  // Comparar c�rculos
   for (let i = 0; i < prevProps.circles.length; i++) {
     const prev = prevProps.circles[i];
     const next = nextProps.circles[i];
@@ -7218,8 +7275,8 @@ const BatchShapesRenderer = React.memo(({
         prev.zIndex !== next.zIndex ||
         !arraysEqual(prev.points, next.points)) return false;
   }
-  
-  // Comparar rectángulos
+
+  // Comparar rect�ngulos
   for (let i = 0; i < prevProps.rectangles.length; i++) {
     const prev = prevProps.rectangles[i];
     const next = nextProps.rectangles[i];
@@ -7229,7 +7286,7 @@ const BatchShapesRenderer = React.memo(({
         prev.zIndex !== next.zIndex ||
         !arraysEqual(prev.points, next.points)) return false;
   }
-  
+
   // Comparar custom shapes
   for (let i = 0; i < prevProps.customShapes.length; i++) {
     const prev = prevProps.customShapes[i];
@@ -7240,15 +7297,15 @@ const BatchShapesRenderer = React.memo(({
         prev.zIndex !== next.zIndex ||
         !arraysEqual(prev.points, next.points)) return false;
   }
-  
+
   return true;
 });
 
 // =====================================================
-// DETECTORES MEMOIZADOS PARA FIGURAS GEOMÃ‰TRICAS
+// DETECTORES MEMOIZADOS PARA FIGURAS GEOMÉTRICAS
 // =====================================================
 
-// Detector memoizado para círculos
+// Detector memoizado para c�rculos
 const MemoizedCircleDetector = React.memo(({
   icon, imageWidth, imageHeight, viewMode, selectedCloneId, setSelectedCloneId, setClones, dragStart,
   clones, selectedCloneIds, selectedCloneIdsSet, multiSelectMode, selectionInteractionMode,
@@ -7258,36 +7315,34 @@ const MemoizedCircleDetector = React.memo(({
   if (isAnyDrawingMode) return null;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
-  
+
   const originalWidth = icon.imageWidth || imageWidth;
   const originalHeight = icon.imageHeight || imageHeight;
   const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-  
+
   const { x: p1x, y: p1y } = ratioToDisplay(icon.points[0].x, icon.points[0].y, viewMode, imageWidth, imageHeight);
   const { x: p2x, y: p2y } = ratioToDisplay(icon.points[1].x, icon.points[1].y, viewMode, imageWidth, imageHeight);
-  
+
   const centerX = (p1x + p2x) / 2;
   const centerY = (p1y + p2y) / 2;
   const dx = p2x - p1x;
   const dy = p2y - p1y;
   const radius = Math.sqrt(dx * dx + dy * dy) / 2;
   const thickness = (icon.thickness || 1) * scale * 0.7;
-  
+
   const touchTolerance = Math.max(thickness / 2 + 12, 18);
   const touchMargin = 22;
-  
+
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
-    ? 99999
-    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
-  
-  // Bounding box del círculo
+  const detectorZIndex = icon.calculatedZIndex || ZINDEX_BASE_LINES;
+
+  // Bounding box del c�rculo
   const minX = centerX - radius;
   const minY = centerY - radius;
   const touchWidth = radius * 2 + touchMargin * 2;
   const touchHeight = radius * 2 + touchMargin * 2;
-  
+
   // Handlers para arrastre
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
@@ -7298,8 +7353,8 @@ const MemoizedCircleDetector = React.memo(({
       return;
     }
     if (!acquireBoardDrag(dragStart, icon.id)) return;
-    
-    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+
+    if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
@@ -7315,12 +7370,12 @@ const MemoizedCircleDetector = React.memo(({
       dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
     }
   };
-  
+
   const handleResponderMove = (e) => {
     if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
-    
+
     if (base.multiSelect && base.selectedIds && base.initialPositions) {
       pendingUpdateRef.current = prev => prev.map(c => {
         if (!base.selectedIds.includes(c.id)) return c;
@@ -7350,7 +7405,7 @@ const MemoizedCircleDetector = React.memo(({
       });
     }
   };
-  
+
   const handleResponderRelease = () => {
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     if (pendingUpdateRef.current) {
@@ -7388,7 +7443,7 @@ const MemoizedCircleDetector = React.memo(({
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
-  
+
   // Resize handlers for circle diameter
   const handleCircleResizeGrant = (handle, e) => {
     const cxR = (icon.points[0].x + icon.points[1].x) / 2;
@@ -7405,43 +7460,43 @@ const MemoizedCircleDetector = React.memo(({
   const handleCircleResizeMove = (e) => {
     const base = dragStart.current[`${icon.id}-resize`];
     if (!base) return;
-    
+
     const { dxRatio, dyRatio } = deltaToRatio(
       (e.nativeEvent.pageX - base.startX) / zoomLevel,
       (e.nativeEvent.pageY - base.startY) / zoomLevel,
       viewMode, imageWidth, imageHeight
     );
-    
+
     const halfDxR = (base.origPoints[1].x - base.origPoints[0].x) / 2;
     const halfDyR = (base.origPoints[1].y - base.origPoints[0].y) / 2;
     const halfDxPx = halfDxR * imageWidth;
     const halfDyPx = halfDyR * imageHeight;
     const origRadiusPx = Math.sqrt(halfDxPx * halfDxPx + halfDyPx * halfDyPx);
-    
+
     if (origRadiusPx < 1) return;
-    
+
     let radiusChangePx = 0;
     const dragDxPx = dxRatio * imageWidth;
     const dragDyPx = dyRatio * imageHeight;
-    
+
     switch (base.handle) {
       case 'right':  radiusChangePx = dragDxPx; break;
       case 'left':   radiusChangePx = -dragDxPx; break;
       case 'top':    radiusChangePx = -dragDyPx; break;
       case 'bottom': radiusChangePx = dragDyPx; break;
     }
-    
+
     const newRadiusPx = Math.max(10, origRadiusPx + radiusChangePx);
     const scaleFactor = newRadiusPx / origRadiusPx;
-    
+
     const newHalfDxR = halfDxR * scaleFactor;
     const newHalfDyR = halfDyR * scaleFactor;
-    
+
     const newP0x = Math.max(0, Math.min(1, base.cxR - newHalfDxR));
     const newP0y = Math.max(0, Math.min(1, base.cyR - newHalfDyR));
     const newP1x = Math.max(0, Math.min(1, base.cxR + newHalfDxR));
     const newP1y = Math.max(0, Math.min(1, base.cyR + newHalfDyR));
-    
+
     pendingUpdateRef.current = prev => {
       const idx = prev.findIndex(c => c.id === icon.id);
       if (idx === -1) return prev;
@@ -7470,52 +7525,63 @@ const MemoizedCircleDetector = React.memo(({
     if (saveClonesHistory) saveClonesHistory();
   };
 
+  const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
+    const point = getResponderLocalPoint(e, offsetX, offsetY);
+    return isCircleBorderTouch(point.x, point.y, touchMargin + radius, touchMargin + radius, radius, touchTolerance);
+  };
+
   // Props comunes de responder
   const responderProps = {
-    onStartShouldSetResponder: () => true,
-    onMoveShouldSetResponder: () => canDrag,
+    onStartShouldSetResponder: (e) => isBorderResponderHit(e),
+    onMoveShouldSetResponder: (e) => canDrag && isBorderResponderHit(e),
     onResponderGrant: handleResponderGrant,
     onResponderMove: handleResponderMove,
     onResponderRelease: handleResponderRelease,
     onResponderTerminate: handleResponderRelease,
   };
-  
-  // Generar segmentos de toque a lo largo del perímetro del círculo
+
+  // Generar segmentos de toque a lo largo del per�metro del c�rculo
   const generateTouchSegments = () => {
     const segments = [];
     const segmentSize = touchTolerance * 2;
-    
-    // Calcular cuántos segmentos necesitamos para cubrir todo el perímetro
+
+    // Calcular cu�ntos segmentos necesitamos para cubrir todo el per�metro
     const perimeter = 2 * Math.PI * radius;
     const numSegments = Math.max(12, Math.ceil(perimeter / segmentSize));
-    
+
     for (let i = 0; i < numSegments; i++) {
       const angle = (i / numSegments) * 2 * Math.PI;
-      // Posición en el perímetro del círculo
+      // Posici�n en el per�metro del c�rculo
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
-      
+      const segmentLeft = x - minX + touchMargin - touchTolerance;
+      const segmentTop = y - minY + touchMargin - touchTolerance;
+
       segments.push(
         <View
           key={`seg-${i}`}
           pointerEvents="auto"
           style={{
             position: 'absolute',
-            left: x - minX + touchMargin - touchTolerance,
-            top: y - minY + touchMargin - touchTolerance,
+            left: segmentLeft,
+            top: segmentTop,
             width: touchTolerance * 2,
             height: touchTolerance * 2,
             backgroundColor: 'transparent',
             borderRadius: touchTolerance,
           }}
-          {...responderProps}
+          {...{
+            ...responderProps,
+            onStartShouldSetResponder: (e) => isBorderResponderHit(e, segmentLeft, segmentTop),
+            onMoveShouldSetResponder: (e) => canDrag && isBorderResponderHit(e, segmentLeft, segmentTop),
+          }}
         />
       );
     }
-    
+
     return segments;
   };
-  
+
   return (
     <View
       pointerEvents="box-none"
@@ -7529,10 +7595,10 @@ const MemoizedCircleDetector = React.memo(({
         zIndex: detectorZIndex,
       }}
     >
-      {/* Segmentos de toque a lo largo del perímetro del círculo */}
+      {/* Segmentos de toque a lo largo del per�metro del c�rculo */}
       {generateTouchSegments()}
-      
-      {/* Resize handles en los puntos cardinales del círculo */}
+
+      {/* Resize handles en los puntos cardinales del c�rculo */}
       {selectedCloneId === icon.id && !multiSelectMode && (
         <>
           {[
@@ -7566,8 +7632,8 @@ const MemoizedCircleDetector = React.memo(({
           ))}
         </>
       )}
-      
-      {/* Indicador visual para selección múltiple en círculos */}
+
+      {/* Indicador visual para selecci�n m�ltiple en c�rculos */}
       {multiSelectMode && isSelected && (
         <View pointerEvents="none" style={{
           position: 'absolute',
@@ -7586,7 +7652,7 @@ const MemoizedCircleDetector = React.memo(({
           <Feather name="check" size={10} color="#fff" />
         </View>
       )}
-      
+
       {selectedCloneId === icon.id && !multiSelectMode && (
         <TouchableOpacity onPress={(e) => { e.stopPropagation(); setOptionsMenu({ visible: true, position: { x: centerX + radius + 20, y: centerY }, iconId: icon.id, canRotate: false, hideEdit: false }); }}
           style={{ position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 10, borderWidth: 1, borderColor: '#ddd', zIndex: 10000, right: -14, top: touchHeight / 2 - 14 }}>
@@ -7610,7 +7676,7 @@ const MemoizedCircleDetector = React.memo(({
   (prev.selectedCloneIdsSet?.has(prev.icon.id) === next.selectedCloneIdsSet?.has(next.icon.id))
 ));
 
-// Detector memoizado para rectángulos - Solo detecta toques en los BORDES
+// Detector memoizado para rect�ngulos - Solo detecta toques en los BORDES
 const MemoizedRectangleDetector = React.memo(({
   icon, imageWidth, imageHeight, viewMode, selectedCloneId, setSelectedCloneId, setClones, dragStart,
   clones, selectedCloneIds, selectedCloneIdsSet, multiSelectMode, selectionInteractionMode,
@@ -7620,14 +7686,14 @@ const MemoizedRectangleDetector = React.memo(({
   if (isAnyDrawingMode) return null;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
-  
+
   const originalWidth = icon.imageWidth || imageWidth;
   const originalHeight = icon.imageHeight || imageHeight;
   const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-  
+
   const { x: p1x, y: p1y } = ratioToDisplay(icon.points[0].x, icon.points[0].y, viewMode, imageWidth, imageHeight);
   const { x: p2x, y: p2y } = ratioToDisplay(icon.points[1].x, icon.points[1].y, viewMode, imageWidth, imageHeight);
-  
+
   const minX = Math.min(p1x, p2x);
   const minY = Math.min(p1y, p2y);
   const width = Math.abs(p2x - p1x);
@@ -7635,13 +7701,11 @@ const MemoizedRectangleDetector = React.memo(({
   const thickness = (icon.thickness || 1) * scale * 0.7;
   const touchTolerance = Math.max(thickness / 2 + 12, 18);
   const centerY = minY + height / 2;
-  
+
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
-    ? 99999
-    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
-  
+  const detectorZIndex = icon.calculatedZIndex || ZINDEX_BASE_LINES;
+
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
       setSelectedCloneId(null);
@@ -7651,8 +7715,8 @@ const MemoizedRectangleDetector = React.memo(({
       return;
     }
     if (!acquireBoardDrag(dragStart, icon.id)) return;
-    
-    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+
+    if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
@@ -7668,12 +7732,12 @@ const MemoizedRectangleDetector = React.memo(({
       dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
     }
   };
-  
+
   const handleResponderMove = (e) => {
     if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
-    
+
     if (base.multiSelect && base.selectedIds && base.initialPositions) {
       pendingUpdateRef.current = prev => prev.map(c => {
         if (!base.selectedIds.includes(c.id)) return c;
@@ -7703,7 +7767,7 @@ const MemoizedRectangleDetector = React.memo(({
       });
     }
   };
-  
+
   const handleResponderRelease = () => {
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     if (pendingUpdateRef.current) {
@@ -7741,7 +7805,7 @@ const MemoizedRectangleDetector = React.memo(({
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
-  
+
   // Resize handlers for corner drag
   const handleResizeGrant = (corner, e) => {
     dragStart.current[`${icon.id}-resize`] = {
@@ -7755,28 +7819,28 @@ const MemoizedRectangleDetector = React.memo(({
   const handleResizeMove = (e) => {
     const base = dragStart.current[`${icon.id}-resize`];
     if (!base) return;
-    
+
     const { dxRatio, dyRatio } = deltaToRatio(
       (e.nativeEvent.pageX - base.startX) / zoomLevel,
       (e.nativeEvent.pageY - base.startY) / zoomLevel,
       viewMode, imageWidth, imageHeight
     );
-    
+
     const origMinX = Math.min(base.origPoints[0].x, base.origPoints[1].x);
     const origMinY = Math.min(base.origPoints[0].y, base.origPoints[1].y);
     const origMaxX = Math.max(base.origPoints[0].x, base.origPoints[1].x);
     const origMaxY = Math.max(base.origPoints[0].y, base.origPoints[1].y);
-    
+
     let nMinX = origMinX, nMinY = origMinY, nMaxX = origMaxX, nMaxY = origMaxY;
     const minDim = 0.03;
-    
+
     switch (base.corner) {
       case 'tl': nMinX += dxRatio; nMinY += dyRatio; break;
       case 'tr': nMaxX += dxRatio; nMinY += dyRatio; break;
       case 'bl': nMinX += dxRatio; nMaxY += dyRatio; break;
       case 'br': nMaxX += dxRatio; nMaxY += dyRatio; break;
     }
-    
+
     if (nMaxX - nMinX < minDim) {
       if (base.corner === 'tl' || base.corner === 'bl') nMinX = nMaxX - minDim;
       else nMaxX = nMinX + minDim;
@@ -7785,12 +7849,12 @@ const MemoizedRectangleDetector = React.memo(({
       if (base.corner === 'tl' || base.corner === 'tr') nMinY = nMaxY - minDim;
       else nMaxY = nMinY + minDim;
     }
-    
+
     nMinX = Math.max(0, Math.min(1, nMinX));
     nMinY = Math.max(0, Math.min(1, nMinY));
     nMaxX = Math.max(0, Math.min(1, nMaxX));
     nMaxY = Math.max(0, Math.min(1, nMaxY));
-    
+
     pendingUpdateRef.current = prev => {
       const idx = prev.findIndex(c => c.id === icon.id);
       if (idx === -1) return prev;
@@ -7824,17 +7888,28 @@ const MemoizedRectangleDetector = React.memo(({
     position: 'absolute',
     backgroundColor: 'transparent',
   };
-  
-  // Props comunes de responder para las bandas
-  const responderProps = {
-    onStartShouldSetResponder: () => true,
-    onMoveShouldSetResponder: () => canDrag,
+
+  const makeEdgeResponderProps = (offsetX = 0, offsetY = 0) => ({
+    onStartShouldSetResponder: (e) => {
+      const point = getResponderLocalPoint(e, offsetX, offsetY);
+      return isRectangleBorderTouch(point.x, point.y, touchTolerance, touchTolerance, width, height, touchTolerance);
+    },
+    onMoveShouldSetResponder: (e) => {
+      const point = getResponderLocalPoint(e, offsetX, offsetY);
+      return canDrag && isRectangleBorderTouch(point.x, point.y, touchTolerance, touchTolerance, width, height, touchTolerance);
+    },
     onResponderGrant: handleResponderGrant,
     onResponderMove: handleResponderMove,
     onResponderRelease: handleResponderRelease,
     onResponderTerminate: handleResponderRelease,
-  };
-  
+  });
+
+  // Props comunes de responder para las bandas
+  const topEdgeResponderProps = makeEdgeResponderProps(0, 0);
+  const bottomEdgeResponderProps = makeEdgeResponderProps(0, height);
+  const leftEdgeResponderProps = makeEdgeResponderProps(0, touchTolerance * 2);
+  const rightEdgeResponderProps = makeEdgeResponderProps(width, touchTolerance * 2);
+
   return (
     <View
       pointerEvents="box-none"
@@ -7857,9 +7932,9 @@ const MemoizedRectangleDetector = React.memo(({
           width: width + touchTolerance * 2,
           height: touchTolerance * 2,
         }]}
-        {...responderProps}
+        {...topEdgeResponderProps}
       />
-      
+
       {/* Banda inferior */}
       <View
         pointerEvents="auto"
@@ -7869,9 +7944,9 @@ const MemoizedRectangleDetector = React.memo(({
           width: width + touchTolerance * 2,
           height: touchTolerance * 2,
         }]}
-        {...responderProps}
+        {...bottomEdgeResponderProps}
       />
-      
+
       {/* Banda izquierda (solo la parte central, para no superponer con superior/inferior) */}
       <View
         pointerEvents="auto"
@@ -7881,9 +7956,9 @@ const MemoizedRectangleDetector = React.memo(({
           width: touchTolerance * 2,
           height: height - touchTolerance * 2,
         }]}
-        {...responderProps}
+        {...leftEdgeResponderProps}
       />
-      
+
       {/* Banda derecha (solo la parte central) */}
       <View
         pointerEvents="auto"
@@ -7893,10 +7968,10 @@ const MemoizedRectangleDetector = React.memo(({
           width: touchTolerance * 2,
           height: height - touchTolerance * 2,
         }]}
-        {...responderProps}
+        {...rightEdgeResponderProps}
       />
-      
-      {/* Resize handles en las esquinas del rectángulo */}
+
+      {/* Resize handles en las esquinas del rect�ngulo */}
       {selectedCloneId === icon.id && !multiSelectMode && (
         <>
           {[
@@ -7930,8 +8005,8 @@ const MemoizedRectangleDetector = React.memo(({
           ))}
         </>
       )}
-      
-      {/* Indicador visual para selección múltiple en rectángulos */}
+
+      {/* Indicador visual para selecci�n m�ltiple en rect�ngulos */}
       {multiSelectMode && isSelected && (
         <View pointerEvents="none" style={{
           position: 'absolute',
@@ -7950,28 +8025,28 @@ const MemoizedRectangleDetector = React.memo(({
           <Feather name="check" size={10} color="#fff" />
         </View>
       )}
-      
-      {/* Botón de menú - solo visible cuando está seleccionado */}
+
+      {/* Bot�n de men� - solo visible cuando est� seleccionado */}
       {selectedCloneId === icon.id && !multiSelectMode && (
-        <TouchableOpacity 
-          onPress={(e) => { 
-            e.stopPropagation(); 
-            setOptionsMenu({ visible: true, position: { x: minX + width + 20, y: centerY }, iconId: icon.id, canRotate: false, hideEdit: false }); 
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            setOptionsMenu({ visible: true, position: { x: minX + width + 20, y: centerY }, iconId: icon.id, canRotate: false, hideEdit: false });
           }}
-          style={{ 
-            position: 'absolute', 
-            width: 28, 
-            height: 28, 
-            borderRadius: 14, 
-            backgroundColor: '#fff', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            elevation: 10, 
-            borderWidth: 1, 
-            borderColor: '#ddd', 
-            zIndex: 10000, 
-            right: -14, 
-            top: (height + touchTolerance * 2) / 2 - 14 
+          style={{
+            position: 'absolute',
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: '#fff',
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 10,
+            borderWidth: 1,
+            borderColor: '#ddd',
+            zIndex: 10000,
+            right: -14,
+            top: (height + touchTolerance * 2) / 2 - 14
           }}
         >
           <Feather name="more-vertical" size={16} color="#444" />
@@ -7994,7 +8069,7 @@ const MemoizedRectangleDetector = React.memo(({
   (prev.selectedCloneIdsSet?.has(prev.icon.id) === next.selectedCloneIdsSet?.has(next.icon.id))
 ));
 
-// Detector memoizado para custom shapes - Solo detecta toques en el PERÃMETRO
+// Detector memoizado para custom shapes - Solo detecta toques en el PERÍMETRO
 const MemoizedCustomShapeDetector = React.memo(({
   icon, imageWidth, imageHeight, viewMode, selectedCloneId, setSelectedCloneId, setClones, dragStart,
   clones, selectedCloneIds, selectedCloneIdsSet, multiSelectMode, selectionInteractionMode,
@@ -8005,11 +8080,11 @@ const MemoizedCustomShapeDetector = React.memo(({
 
   if (!icon.points || icon.points.length < 3 || !icon.isCustomShapeComplete) return null;
   if (isAnyDrawingMode) return null;
-  
+
   const originalWidth = icon.imageWidth || imageWidth;
   const originalHeight = icon.imageHeight || imageHeight;
   const scale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
-  
+
   const pts = icon.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
   const xs = pts.map(p => p.x);
   const ys = pts.map(p => p.y);
@@ -8023,13 +8098,11 @@ const MemoizedCustomShapeDetector = React.memo(({
   const centerY = (minY + maxY) / 2;
   const touchTolerance = Math.max(16, 12 * renderScale);
   const touchMargin = 22;
-  
+
   const isSelected = selectedCloneIdsSet?.has(icon.id);
   const canDrag = !icon.locked && !isAnyDrawingMode && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
-  const detectorZIndex = selectedCloneId === icon.id && !multiSelectMode
-    ? 99999
-    : (icon.calculatedZIndex || ZINDEX_BASE_LINES);
-  
+  const detectorZIndex = icon.calculatedZIndex || ZINDEX_BASE_LINES;
+
   // Handlers para arrastre
   const handleResponderGrant = (e) => {
     if (selectedCloneId && selectedCloneId !== icon.id) {
@@ -8040,8 +8113,8 @@ const MemoizedCustomShapeDetector = React.memo(({
       return;
     }
     if (!acquireBoardDrag(dragStart, icon.id)) return;
-    
-    if (multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
+
+    if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected) {
       const initialPositions = {};
       selectedCloneIds.forEach(id => {
         const c = clones.find(cl => cl.id === id);
@@ -8054,12 +8127,12 @@ const MemoizedCustomShapeDetector = React.memo(({
       dragStart.current[icon.id] = { points: icon.points.map(p => ({ x: p.x, y: p.y })), isValid: true, startX: e.nativeEvent.pageX, startY: e.nativeEvent.pageY };
     }
   };
-  
+
   const handleResponderMove = (e) => {
     if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id)) return;
     const base = dragStart.current[icon.id];
     const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio((e.nativeEvent.pageX - base.startX) / zoomLevel, (e.nativeEvent.pageY - base.startY) / zoomLevel, viewMode, imageWidth, imageHeight);
-    
+
     if (base.multiSelect && base.selectedIds && base.initialPositions) {
       pendingUpdateRef.current = prev => prev.map(c => {
         if (!base.selectedIds.includes(c.id)) return c;
@@ -8086,7 +8159,7 @@ const MemoizedCustomShapeDetector = React.memo(({
       });
     }
   };
-  
+
   const handleResponderRelease = () => {
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     if (pendingUpdateRef.current) {
@@ -8095,7 +8168,7 @@ const MemoizedCustomShapeDetector = React.memo(({
     }
     const base = dragStart.current[icon.id];
     if (base?.multiSelect && base.selectedIds) {
-      // Multi-drag: eliminar TODOS los seleccionados que estén fuera del campo
+      // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
       setClones((prev) => {
         const remaining = prev.filter(c => {
           if (!base.selectedIds.includes(c.id) || c.locked) return true;
@@ -8126,7 +8199,7 @@ const MemoizedCustomShapeDetector = React.memo(({
     if (!multiSelectMode) setSelectedCloneId(icon.id);
     if (saveClonesHistory) saveClonesHistory();
   };
-  
+
   // Vertex resize handlers for custom-shape
   const handleVertexGrant = (vertexIdx, e) => {
     dragStart.current[`${icon.id}-vertex`] = {
@@ -8140,13 +8213,13 @@ const MemoizedCustomShapeDetector = React.memo(({
   const handleVertexMove = (e) => {
     const base = dragStart.current[`${icon.id}-vertex`];
     if (!base) return;
-    
+
     const { dxRatio, dyRatio } = deltaToRatio(
       (e.nativeEvent.pageX - base.startX) / zoomLevel,
       (e.nativeEvent.pageY - base.startY) / zoomLevel,
       viewMode, imageWidth, imageHeight
     );
-    
+
     const newPoints = base.origPoints.map((p, i) => {
       if (i === base.vertexIdx) {
         return {
@@ -8156,7 +8229,7 @@ const MemoizedCustomShapeDetector = React.memo(({
       }
       return { ...p };
     });
-    
+
     pendingUpdateRef.current = prev => {
       const idx = prev.findIndex(c => c.id === icon.id);
       if (idx === -1) return prev;
@@ -8185,59 +8258,70 @@ const MemoizedCustomShapeDetector = React.memo(({
     if (saveClonesHistory) saveClonesHistory();
   };
 
+  const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
+    const point = getResponderLocalPoint(e, offsetX, offsetY);
+    return isPolygonBorderTouch(point.x, point.y, pts, touchTolerance, minX, minY, touchMargin, width, height);
+  };
+
   // Props comunes de responder
   const responderProps = {
-    onStartShouldSetResponder: () => true,
-    onMoveShouldSetResponder: () => canDrag,
+    onStartShouldSetResponder: (e) => isBorderResponderHit(e),
+    onMoveShouldSetResponder: (e) => canDrag && isBorderResponderHit(e),
     onResponderGrant: handleResponderGrant,
     onResponderMove: handleResponderMove,
     onResponderRelease: handleResponderRelease,
     onResponderTerminate: handleResponderRelease,
   };
-  
-  // Generar segmentos de toque a lo largo del perímetro del polígono
+
+  // Generar segmentos de toque a lo largo del per�metro del pol�gono
   const generateTouchSegments = () => {
     const segments = [];
     const segmentSize = touchTolerance * 2;
-    
-    // Recorrer cada lado del polígono (incluyendo el que cierra la forma)
+
+    // Recorrer cada lado del pol�gono (incluyendo el que cierra la forma)
     for (let i = 0; i < pts.length; i++) {
       const p1 = pts[i];
-      const p2 = pts[(i + 1) % pts.length]; // El último punto conecta con el primero
+      const p2 = pts[(i + 1) % pts.length]; // El �ltimo punto conecta con el primero
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
       const length = Math.sqrt(dx * dx + dy * dy);
-      
+
       // Crear segmentos a lo largo de cada lado
       const numSegments = Math.max(1, Math.ceil(length / segmentSize));
-      
+
       for (let j = 0; j < numSegments; j++) {
         const t = numSegments === 1 ? 0.5 : j / (numSegments - 1 || 1);
         const x = p1.x + dx * t;
         const y = p1.y + dy * t;
-        
+        const segmentLeft = x - minX + touchMargin - touchTolerance;
+        const segmentTop = y - minY + touchMargin - touchTolerance;
+
         segments.push(
           <View
             key={`seg-${i}-${j}`}
             pointerEvents="auto"
             style={{
               position: 'absolute',
-              left: x - minX + touchMargin - touchTolerance,
-              top: y - minY + touchMargin - touchTolerance,
+              left: segmentLeft,
+              top: segmentTop,
               width: touchTolerance * 2,
               height: touchTolerance * 2,
               backgroundColor: 'transparent',
               borderRadius: touchTolerance,
             }}
-            {...responderProps}
+            {...{
+              ...responderProps,
+              onStartShouldSetResponder: (e) => isBorderResponderHit(e, segmentLeft, segmentTop),
+              onMoveShouldSetResponder: (e) => canDrag && isBorderResponderHit(e, segmentLeft, segmentTop),
+            }}
           />
         );
       }
     }
-    
+
     return segments;
   };
-  
+
   return (
     <View
       pointerEvents="box-none"
@@ -8251,10 +8335,10 @@ const MemoizedCustomShapeDetector = React.memo(({
         zIndex: detectorZIndex,
       }}
     >
-      {/* Segmentos de toque a lo largo del perímetro */}
+      {/* Segmentos de toque a lo largo del per�metro */}
       {generateTouchSegments()}
-      
-      {/* Vertex resize handles en cada vértice del custom-shape */}
+
+      {/* Vertex resize handles en cada v�rtice del custom-shape */}
       {selectedCloneId === icon.id && !multiSelectMode && (
         <>
           {pts.map((pt, i) => (
@@ -8283,8 +8367,8 @@ const MemoizedCustomShapeDetector = React.memo(({
           ))}
         </>
       )}
-      
-      {/* Indicador visual para selección múltiple */}
+
+      {/* Indicador visual para selecci�n m�ltiple */}
       {multiSelectMode && isSelected && (
         <View pointerEvents="none" style={{
           position: 'absolute',
@@ -8303,28 +8387,28 @@ const MemoizedCustomShapeDetector = React.memo(({
           <Feather name="check" size={10} color="#fff" />
         </View>
       )}
-      
-      {/* Botón de menú cuando está seleccionado */}
+
+      {/* Bot�n de men� cuando est� seleccionado */}
       {selectedCloneId === icon.id && !multiSelectMode && (
-        <TouchableOpacity 
-          onPress={(e) => { 
-            e.stopPropagation(); 
-            setOptionsMenu({ visible: true, position: { x: maxX + 20, y: centerY }, iconId: icon.id, canRotate: false, hideEdit: false }); 
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            setOptionsMenu({ visible: true, position: { x: maxX + 20, y: centerY }, iconId: icon.id, canRotate: false, hideEdit: false });
           }}
-          style={{ 
-            position: 'absolute', 
-            width: 28, 
-            height: 28, 
-            borderRadius: 14, 
-            backgroundColor: '#fff', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            elevation: 10, 
-            borderWidth: 1, 
-            borderColor: '#ddd', 
-            zIndex: 10000, 
-            right: -14, 
-            top: (height + touchMargin * 2) / 2 - 14 
+          style={{
+            position: 'absolute',
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: '#fff',
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 10,
+            borderWidth: 1,
+            borderColor: '#ddd',
+            zIndex: 10000,
+            right: -14,
+            top: (height + touchMargin * 2) / 2 - 14
           }}
         >
           <Feather name="more-vertical" size={16} color="#444" />
@@ -8355,11 +8439,11 @@ export default function Field(props = {}) {
   const players = useSelector(state => state.player.players || []);
   const season = useSelector(state => state.season.season);
   const equipos = useSelector(state => state.team.teams || []);
-  
-  // route.params (vienen de location.state cuando se navegó vía
+
+  // route.params (vienen de location.state cuando se naveg� v�a
   // navigation.navigate) siempre tiene prioridad. Los props directos
   // (p.ej. <Field sandbox /> en TacticalBoardPage standalone) se usan
-  // sólo como FALLBACK para los flags que no estén en params, para no
+  // s�lo como FALLBACK para los flags que no est�n en params, para no
   // pisar las navegaciones reales desde ejercicios/estrategias.
   const mergedParams = { ...(props || {}), ...(route.params || {}) };
 
@@ -8372,12 +8456,12 @@ export default function Field(props = {}) {
     ejercicioId = null, // ID del ejercicio para asociar videos
     estrategiaId = null, // ID de la estrategia para asociar videos
     editVideoData: editVideoDataParam = null, // Datos del video a editar (desde params)
-    autoOpenVideoRecorder = false, // Abrir grabador de video automáticamente
+    autoOpenVideoRecorder = false, // Abrir grabador de video autom�ticamente
     hideFolderPicker = false, // Ocultar selector de carpeta en el grabador de video
     presetFolderId = null, // Carpeta preseleccionada para guardar videos
     presetVideoName = '', // Nombre preseleccionado para el video (auto-naming)
     isGlobalExercise = false, // Si el ejercicio es global (admin)
-    // Eliminar onSave y onCancel de los parámetros para evitar el warning
+    // Eliminar onSave y onCancel de los par�metros para evitar el warning
     // onSave,
     // onCancel
   } = mergedParams;
@@ -8385,13 +8469,13 @@ export default function Field(props = {}) {
   // Obtener editVideoData de global si no viene en params
   const editVideoData = editVideoDataParam || global.editVideoData || null;
 
-  // Estado para modo de edición de video - inicializar basado en editVideoData
+  // Estado para modo de edici�n de video - inicializar basado en editVideoData
   const [isEditingVideo, setIsEditingVideo] = useState(!!editVideoData);
   const [editingVideoId, setEditingVideoId] = useState(editVideoData?.videoId || null);
   const [editingVideoName, setEditingVideoName] = useState(editVideoData?.nombre || presetVideoName || '');
   const [editingVideoDescription, setEditingVideoDescription] = useState(editVideoData?.descripcion || '');
   const [editingVideoFolderId, setEditingVideoFolderId] = useState(editVideoData?.folderId || null);
-  // Dimensiones originales del video para conversión correcta de coordenadas
+  // Dimensiones originales del video para conversi�n correcta de coordenadas
   const editingVideoConfigRef = useRef(editVideoData?.config || null);
 
   // Estado para almacenar callbacks
@@ -8403,16 +8487,16 @@ export default function Field(props = {}) {
     // Capturar referencias locales: si pasamos `() => global.fieldCallbacks.onSave`
     // a setState, React lo trata como functional updater y lo invoca al flush.
     // Para entonces el cleanup (strict mode doble mount) ya puede haber nulado
-    // global.fieldCallbacks â†’ crash. Capturando aquí evitamos ese race.
+    // global.fieldCallbacks → crash. Capturando aqu� evitamos ese race.
     const cb = global.fieldCallbacks;
     const savedOnSave = cb && cb.onSave ? cb.onSave : null;
     const savedOnCancel = cb && cb.onCancel ? cb.onCancel : null;
 
-    // En modo sandbox o edición de video, saltar loading pero registrar callbacks si existen
+    // En modo sandbox o edici�n de video, saltar loading pero registrar callbacks si existen
     if (sandbox || editVideoData) {
       setIsLoadingField(false);
       setFieldImageReady(true);
-      // Aun así registrar callbacks si existen (necesario para análisis rival con video)
+      // Aun as� registrar callbacks si existen (necesario para an�lisis rival con video)
       if (savedOnSave) setSaveCallback(() => savedOnSave);
       if (savedOnCancel) setCancelCallback(() => savedOnCancel);
       return;
@@ -8422,12 +8506,12 @@ export default function Field(props = {}) {
     if (savedOnCancel) setCancelCallback(() => savedOnCancel);
 
     // NOTA: NO nulamos global.fieldCallbacks en cleanup. En React 18 strict
-    // mode dev el efecto se ejecuta dos veces (mountâ†’cleanupâ†’mount), y si
+    // mode dev el efecto se ejecuta dos veces (mount→cleanup→mount), y si
     // nulamos en el primer cleanup el segundo mount no encuentra los
-    // callbacks. El próximo `handleOpenField` siempre reasigna fresco.
+    // callbacks. El pr�ximo `handleOpenField` siempre reasigna fresco.
   }, [sandbox, editVideoData]);
 
-  // Abrir automáticamente el grabador de video si se solicita
+  // Abrir autom�ticamente el grabador de video si se solicita
   useEffect(() => {
     if (autoOpenVideoRecorder && !editVideoData) {
       setTimeout(() => {
@@ -8442,14 +8526,14 @@ export default function Field(props = {}) {
     }
   }, [autoOpenVideoRecorder]);
 
-  // Forzar orientación horizontal cuando la pantalla tiene el foco
+  // Forzar orientaci�n horizontal cuando la pantalla tiene el foco
   // y liberar cuando pierde el foco
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
       let subscription = null;
       let reinforceInterval = null;
-      
+
       const lockToLandscape = async () => {
         if (!isMounted) return;
         try {
@@ -8457,14 +8541,14 @@ export default function Field(props = {}) {
             ScreenOrientation.OrientationLock.LANDSCAPE
           );
       } catch (error) {
-        console.warn('Error al bloquear orientación:', error);
+        console.warn('Error al bloquear orientaci�n:', error);
       }
     };
 
-    // Bloquear orientación al inicio
+    // Bloquear orientaci�n al inicio
     lockToLandscape();
-    
-    // Reforzar el bloqueo varias veces durante los primeros segundos (para Android problemático)
+
+    // Reforzar el bloqueo varias veces durante los primeros segundos (para Android problem�tico)
     let reinforceCount = 0;
     reinforceInterval = setInterval(() => {
       if (!isMounted || reinforceCount >= 5) {
@@ -8477,43 +8561,43 @@ export default function Field(props = {}) {
       lockToLandscape();
       reinforceCount++;
     }, 500);
-    
-    // Añadir listener para detectar si cambia la orientación y re-bloquear
+
+    // A�adir listener para detectar si cambia la orientaci�n y re-bloquear
     const setupOrientationListener = async () => {
       try {
         subscription = ScreenOrientation.addOrientationChangeListener((event) => {
           if (!isMounted) return;
           const orientation = event.orientationInfo.orientation;
-          // Si detectamos orientación vertical, forzar landscape de nuevo
-          if (orientation === ScreenOrientation.Orientation.PORTRAIT_UP || 
+          // Si detectamos orientaci�n vertical, forzar landscape de nuevo
+          if (orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
               orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN) {
             lockToLandscape();
           }
         });
       } catch (error) {
-        console.warn('Error configurando listener de orientación:', error);
+        console.warn('Error configurando listener de orientaci�n:', error);
       }
     };
-    
+
     setupOrientationListener();
 
-    // Cleanup: desbloquear orientación al desmontar
+    // Cleanup: desbloquear orientaci�n al desmontar
     return () => {
       // Marcar como desmontado PRIMERO para evitar que lockToLandscape se ejecute
       isMounted = false;
-      
+
       // Limpiar intervalo
       if (reinforceInterval) {
         clearInterval(reinforceInterval);
         reinforceInterval = null;
       }
-      
-      // Eliminar listener de orientación
+
+      // Eliminar listener de orientaci�n
       if (subscription) {
         ScreenOrientation.removeOrientationChangeListener(subscription);
         subscription = null;
       }
-      
+
       // Forzar portrait primero (necesario en iOS), luego desbloquear a ALL
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
         .then(() => {
@@ -8526,14 +8610,14 @@ export default function Field(props = {}) {
   }, [])
   );
 
-  // Efecto para controlar el estado de carga "” SVG fields render instantly
+  // Efecto para controlar el estado de carga "� SVG fields render instantly
   // (defined here, but runs after render when fieldLineType/viewMode are available)
 
   const dimensions = useScreenDimensions();
   const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
-  
-  // Detectar si es móvil (menor a 768px en el lado más corto)
+
+  // Detectar si es m�vil (menor a 768px en el lado m�s corto)
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
   // Decompose initialFieldType (may be legacy ID like 'full' or compound 'full:entire')
   const initialDecomposed = useMemo(() => decomposeFieldId(initialFieldType), [initialFieldType]);
@@ -8545,16 +8629,16 @@ export default function Field(props = {}) {
     setIsLoadingField(false);
     setFieldImageReady(true);
   }, [fieldLineType, viewMode, initialElements, sandbox, editVideoData]);
-  
+
   // Obtener iconos traducidos
   const INITIAL_ICONS = useMemo(() => getInitialIcons(), []);
-  
-  // Filtrar iconos según el modo estrategia
+
+  // Filtrar iconos seg�n el modo estrategia
   const filteredIcons = useMemo(() => {
     if (isStrategyMode) {
-      // En modo estrategia, solo mostrar: jugadores, team-players, materiales (para balón), flechas, líneas, figuras
-      return INITIAL_ICONS.filter(icon => 
-        icon.type === 'player' || 
+      // En modo estrategia, solo mostrar: jugadores, team-players, materiales (para bal�n), flechas, l�neas, figuras
+      return INITIAL_ICONS.filter(icon =>
+        icon.type === 'player' ||
         icon.type === 'team-players' ||
         icon.type === 'materials-button' ||
         icon.type === 'straight-arrow' ||
@@ -8568,7 +8652,7 @@ export default function Field(props = {}) {
     }
     return INITIAL_ICONS.map(i => ({ ...i }));
   }, [isStrategyMode, INITIAL_ICONS]);
-  
+
   const [paletteIcons, setPaletteIcons] = useState(filteredIcons);
   const [drawingStraightArrow, setDrawingStraightArrow] = useState(false);
   const [drawingStraightLine, setDrawingStraightLine] = useState(false);
@@ -8589,7 +8673,7 @@ export default function Field(props = {}) {
   // Container refs for measuring absolute positions
   const containerRef = useRef();
   const containerOriginRef = useRef({ px: 0, py: 0 });
-  // Estados para selección múltiple
+  // Estados para selecci�n m�ltiple
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedCloneIds, setSelectedCloneIds] = useState([]);
   const [selectionRect, setSelectionRect] = useState(null);
@@ -8599,7 +8683,7 @@ export default function Field(props = {}) {
   // Ref al overlay del multi-select para calcular coords relativas en web
   // (en react-native-web, e.nativeEvent.locationX/Y a veces es undefined en eventos de mouse)
   const selectionOverlayRef = useRef(null);
-  // Agregar estos dos nuevos estados después de showCloseCircle
+  // Agregar estos dos nuevos estados despu�s de showCloseCircle
   const [previewPoint, setPreviewPoint] = useState(null);
   const [isPreviewingPoint, setIsPreviewingPoint] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -8630,7 +8714,7 @@ export default function Field(props = {}) {
     goalkeeperStripeColor: '#ffffff',
     showPhotos: false
   });
-  // Estado para Configuración de materiales de entrenamiento (colores personalizados)
+  // Estado para Configuraci�n de materiales de entrenamiento (colores personalizados)
   const [materialsConfig, setMaterialsConfig] = useState({
     'cone-pro': { color: '#FF6B00', size: 18 },
     'cone-flat': { color: '#FF6B00', size: 24 },
@@ -8642,8 +8726,8 @@ export default function Field(props = {}) {
   const [fieldImageForVideo, setFieldImageForVideo] = useState(null);
   const [videoKeyframes, setVideoKeyframes] = useState([]); // Estado para persistir keyframes
   const [formationModalVisible, setFormationModalVisible] = useState(false);
-  
-  // Estado para Configuración de formaciones (número vs posición, etiquetas personalizadas, color del número)
+
+  // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
   const [formationSettings, setFormationSettings] = useState({
     displayMode: 'number', // 'number' o 'position'
     customLabels: { ...getDefaultPositionLabels() },
@@ -8652,7 +8736,7 @@ export default function Field(props = {}) {
     textBackgroundColor: '#ffffff'
   });
 
-  // Estado para Configuración de la pizarra (colores y tamaños de iconos de jugadores)
+  // Estado para Configuraci�n de la pizarra (colores y tama�os de iconos de jugadores)
   const [boardSettings, setBoardSettings] = useState({
     playerIcon1: { color: '#2176ff', size: 24 },
     playerIcon2: { color: '#ff3838', size: 24 },
@@ -8660,11 +8744,11 @@ export default function Field(props = {}) {
     teamPlayers: { color: '#2176ff', size: 24, numberColor: '#ffffff', textColor: '#000000', textBackgroundColor: '#ffffff', differentiateGoalkeeper: true, goalkeeperStripeColor: '#ffffff', showPhotos: false }
   });
 
-  // Estado para conectores (líneas que conectan elementos)
+  // Estado para conectores (l�neas que conectan elementos)
   const [connectors, setConnectors] = useState([]);
   const [connectorsModalVisible, setConnectorsModalVisible] = useState(false);
 
-  // Persistir formación en Configuración de usuario (debounced)
+  // Persistir formaci�n en Configuraci�n de usuario (debounced)
   useEffect(() => {
     let timer = setTimeout(async () => {
       try {
@@ -8689,10 +8773,10 @@ export default function Field(props = {}) {
   const userSettingsLoadedRef = useRef(false);
 
   // Sincronizar teamPlayerStyle con boardSettings.teamPlayers cuando cambie
-  // Solo sincronizar DESPUÃ‰S de que se hayan cargado los datos del usuario
+  // Solo sincronizar DESPUÉS de que se hayan cargado los datos del usuario
   useEffect(() => {
     if (!userSettingsLoadedRef.current) return;
-    
+
     setBoardSettings(prev => ({
       ...prev,
       teamPlayers: {
@@ -8707,16 +8791,16 @@ export default function Field(props = {}) {
       }
     }));
   }, [teamPlayerStyle]);
-  
+
   // ViewShot refs para video
-  const fieldRef = useRef(null); // Ref para el campo completo (con elementos) "” se wirea al ViewShot
+  const fieldRef = useRef(null); // Ref para el campo completo (con elementos) "� se wirea al ViewShot
   const fieldBaseRef = useRef(null); // Ref para el campo base (sin overlays)
 
-  // Control ref para generación de video client-side
-  // Expone métodos que VideoRecorder invoca para capturar frames
+  // Control ref para generaci�n de video client-side
+  // Expone m�todos que VideoRecorder invoca para capturar frames
   const videoFrameControlRef = useRef({});
-  
-  // Ref para bloquear deselección temporal después de seleccionar un icono
+
+  // Ref para bloquear deselecci�n temporal despu�s de seleccionar un icono
   // Esto evita que el onPress del campo deseleccione inmediatamente
   const selectionProtectedRef = useRef(false);
 
@@ -8724,7 +8808,7 @@ export default function Field(props = {}) {
   const savedClonesOriginalRef = useRef(null);
   const keepVideoChangesRef = useRef(false);
 
-  // Función para abrir el grabador de video (guardamos el estado actual de clones)
+  // Funci�n para abrir el grabador de video (guardamos el estado actual de clones)
   const openVideoRecorder = useCallback(() => {
     try {
       savedClonesOriginalRef.current = JSON.parse(JSON.stringify(actualClonesRef.current || []));
@@ -8733,9 +8817,9 @@ export default function Field(props = {}) {
     }
     keepVideoChangesRef.current = false;
     setVideoRecorderVisible(true);
-  }, []); // Sin [clones] "” usa actualClonesRef
+  }, []); // Sin [clones] "� usa actualClonesRef
 
-  // Guardado inmediato de formationSettings (botón Guardar)
+  // Guardado inmediato de formationSettings (bot�n Guardar)
   const handleSaveFormationSettings = useCallback(async () => {
     try {
       const str = await AsyncStorage.getItem('usuario');
@@ -8748,17 +8832,17 @@ export default function Field(props = {}) {
       if (updated && typeof updated === 'object') {
         await AsyncStorage.setItem('usuario', JSON.stringify(updated));
 
-        // Mostrar mensaje temporal de confirmación
+        // Mostrar mensaje temporal de confirmaci�n
         setInstructionMessage({ visible: true, text: t('formations.settingsSaved') });
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
-      Alert.alert(t('message.error'), t('formations.saveError') || 'Error al guardar la Configuración');
+      Alert.alert(t('message.error'), t('formations.saveError') || 'Error al guardar la Configuraci�n');
     }
   }, [dispatch, formationSettings, t]);
 
-  // Guardado inmediato de boardSettings (botón Guardar en panel de ajustes)
-  // Ahora acepta un parámetro opcional settingsParam para evitar efectos de estado stale
+  // Guardado inmediato de boardSettings (bot�n Guardar en panel de ajustes)
+  // Ahora acepta un par�metro opcional settingsParam para evitar efectos de estado stale
   const handleSaveBoardSettings = useCallback(async (settingsParam) => {
     const settingsToSave = settingsParam || boardSettings;
     try {
@@ -8771,7 +8855,7 @@ export default function Field(props = {}) {
       const updated = result?.payload;
       if (updated && typeof updated === 'object') {
         await AsyncStorage.setItem('usuario', JSON.stringify(updated));
-        
+
         // Actualizar los iconos de la paleta con los nuevos valores (usar settingsToSave)
         setPaletteIcons(prev => prev.map(icon => {
           if (icon.id === 'icon1') {
@@ -8785,7 +8869,7 @@ export default function Field(props = {}) {
           }
           return icon;
         }));
-        
+
         // Actualizar teamPlayerStyle
         setTeamPlayerStyle(prev => ({
           ...prev,
@@ -8799,31 +8883,31 @@ export default function Field(props = {}) {
           showPhotos: settingsToSave.teamPlayers.showPhotos !== undefined ? settingsToSave.teamPlayers.showPhotos : prev.showPhotos
         }));
 
-        // Mostrar mensaje temporal de confirmación
-        setInstructionMessage({ visible: true, text: t('settings.settingsSaved') || 'Configuración guardada' });
+        // Mostrar mensaje temporal de confirmaci�n
+        setInstructionMessage({ visible: true, text: t('settings.settingsSaved') || 'Configuraci�n guardada' });
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
-      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la Configuración');
+      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la Configuraci�n');
     }
   }, [dispatch, boardSettings, t]);
 
-  // Cargar Configuración guardada del usuario al entrar a la pantalla
+  // Cargar Configuraci�n guardada del usuario al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
       const loadUserSettings = async () => {
-        // Si ya se cargaron los datos en esta sesión, no volver a cargar
+        // Si ya se cargaron los datos en esta sesi�n, no volver a cargar
         if (userSettingsLoadedRef.current) return;
-        
+
         try {
           const str = await AsyncStorage.getItem('usuario');
           if (!str) {
             userSettingsLoadedRef.current = true;
             return;
           }
-          
+
           const usuario = JSON.parse(str);
-          
+
           if (usuario && usuario.formationSettings) {
             // Normalizar customLabels que puedan venir como Map u objeto desde el servidor
             const serverLabelsRaw = usuario.formationSettings.customLabels;
@@ -8844,7 +8928,7 @@ export default function Field(props = {}) {
               customLabels: { ...(prev.customLabels || {}), ...serverLabels }
             }));
           }
-          
+
           // Cargar boardSettings del usuario
           if (usuario && usuario.boardSettings) {
             setBoardSettings(prev => ({
@@ -8854,8 +8938,8 @@ export default function Field(props = {}) {
               playerIcon3: { ...prev.playerIcon3, ...usuario.boardSettings.playerIcon3 },
               teamPlayers: { ...prev.teamPlayers, ...usuario.boardSettings.teamPlayers }
             }));
-            
-            // Actualizar también los iconos de la paleta y teamPlayerStyle con los valores del usuario
+
+            // Actualizar tambi�n los iconos de la paleta y teamPlayerStyle con los valores del usuario
             setPaletteIcons(prev => prev.map(icon => {
               if (icon.id === 'icon1' && usuario.boardSettings.playerIcon1) {
                 return { ...icon, color: usuario.boardSettings.playerIcon1.color || icon.color, size: usuario.boardSettings.playerIcon1.size || icon.size };
@@ -8868,7 +8952,7 @@ export default function Field(props = {}) {
               }
               return icon;
             }));
-            
+
             // Actualizar teamPlayerStyle con los valores del usuario
             if (usuario.boardSettings.teamPlayers) {
               const tp = usuario.boardSettings.teamPlayers;
@@ -8884,7 +8968,7 @@ export default function Field(props = {}) {
               });
             }
           }
-          
+
           // Marcar que se cargaron los datos del usuario
           userSettingsLoadedRef.current = true;
         } catch (err) {
@@ -8893,7 +8977,7 @@ export default function Field(props = {}) {
           userSettingsLoadedRef.current = true;
         }
       };
-      
+
       loadUserSettings();
     }, [])
   );
@@ -8965,11 +9049,11 @@ export default function Field(props = {}) {
     setDrawingRectangle(false);
     setDrawingCustomShape(false);
     setPendingLineAction(null);
-    
+
     // Resetear la referencia de carga de usuario para que al volver a entrar cargue datos frescos
     userSettingsLoadedRef.current = false;
-    
-    // Resetear Configuración de dibujo a valores por defecto
+
+    // Resetear Configuraci�n de dibujo a valores por defecto
     setLineType('solid');
     setDotSize(2);
     setDotSpacing(4);
@@ -8977,8 +9061,8 @@ export default function Field(props = {}) {
     setEraserMode(false);
     setStandardSize(24);
     setPlayersWithNumber(true);
-    
-    // Resetear estilos de jugadores y Configuración de pizarra a valores por defecto
+
+    // Resetear estilos de jugadores y Configuraci�n de pizarra a valores por defecto
     setTeamPlayerStyle({
       color: '#2176ff',
       size: 24,
@@ -9009,10 +9093,10 @@ export default function Field(props = {}) {
       'ring': { color: '#FFD700', size: 24 },
       'dummy': { color: '#2196F3', size: 40 },
     });
-    
+
     // Resetear iconos de paleta a valores iniciales
     setPaletteIcons(filteredIcons.map(i => ({ ...i })));
-    
+
     // Resetear contadores de iconos
     iconCounters.current = {};
 
@@ -9028,13 +9112,13 @@ export default function Field(props = {}) {
     setCanUndo(prev => prev === false ? prev : false);
     setCanRedo(prev => prev === false ? prev : false);
   }, [exitDrawingMode, filteredIcons]);
-  
-  // Función para cerrar el grabador de video
+
+  // Funci�n para cerrar el grabador de video
   const closeVideoRecorder = useCallback(() => {
     setVideoRecorderVisible(false);
   }, []);
-  
-  // Función para limpiar keyframes
+
+  // Funci�n para limpiar keyframes
   const clearVideoKeyframes = useCallback(() => {
     setVideoKeyframes([]);
   }, []);
@@ -9045,16 +9129,16 @@ export default function Field(props = {}) {
     // sino usar las dimensiones actuales del campo
     const sourceWidth = originalDimensions?.fieldWidth || imageWidth || 1;
     const sourceHeight = originalDimensions?.fieldHeight || imageHeight || 1;
-    
+
     const pxToRatioX = (x) => (sourceWidth > 0 ? x / sourceWidth : 0);
     const pxToRatioY = (y) => (sourceHeight > 0 ? y / sourceHeight : 0);
 
     const id = snap.id || `${snap.type || 'elem'}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const clone = { id, type: snap.type || 'unknown' };
 
-    // Posición puntual - PRIORIZAR ratios originales si están disponibles
+    // Posici�n puntual - PRIORIZAR ratios originales si est�n disponibles
     if (typeof snap.xRatio === 'number' && typeof snap.yRatio === 'number') {
-      // Usar ratios originales directamente (más preciso)
+      // Usar ratios originales directamente (m�s preciso)
       clone.xRatio = snap.xRatio;
       clone.yRatio = snap.yRatio;
     } else if (typeof snap.x === 'number' && typeof snap.y === 'number') {
@@ -9065,10 +9149,10 @@ export default function Field(props = {}) {
 
     // Size / color / rotation / lock / zIndex / paletteIndex
     if (snap.baseSize !== undefined) {
-      // Restaurar el tamaño lógico original si está disponible
+      // Restaurar el tama�o l�gico original si est� disponible
       clone.size = snap.baseSize;
     } else if (snap.size) {
-      // Si solo tenemos tamaño en px, aproximar
+      // Si solo tenemos tama�o en px, aproximar
       clone.size = Math.round(snap.size);
     }
     if (snap.color) clone.color = snap.color;
@@ -9081,7 +9165,7 @@ export default function Field(props = {}) {
     if (snap.type === 'player') {
       if (snap.number !== undefined) clone.number = snap.number;
       if (snap.playerData) clone.playerData = snap.playerData;
-      // Mantener color y tamaño
+      // Mantener color y tama�o
       if (!clone.size) clone.size = standardSize;
       if (!clone.color) clone.color = teamPlayerStyle.color || '#2176ff';
       clone.numberColor = snap.numberColor || clone.numberColor || '#ffffff';
@@ -9089,7 +9173,7 @@ export default function Field(props = {}) {
       if (snap.ownerType) clone.ownerType = snap.ownerType;
     }
 
-    // Staff (cuerpo técnico)
+    // Staff (cuerpo t�cnico)
     if (snap.type === 'staff') {
       if (snap.staffRole) clone.staffRole = snap.staffRole;
       if (snap.displayLabel) clone.displayLabel = snap.displayLabel;
@@ -9108,9 +9192,9 @@ export default function Field(props = {}) {
       if (snap.rotation) clone.rotation = snap.rotation;
     }
 
-    // Líneas / curvas / shapes con puntos - PRIORIZAR pointsRatio si están disponibles
+    // L�neas / curvas / shapes con puntos - PRIORIZAR pointsRatio si est�n disponibles
     if (snap.pointsRatio && Array.isArray(snap.pointsRatio)) {
-      // Usar ratios originales directamente (más preciso)
+      // Usar ratios originales directamente (m�s preciso)
       clone.points = snap.pointsRatio.map(p => ({ x: p.x, y: p.y }));
       clone.thickness = snap.baseThickness !== undefined ? snap.baseThickness : (snap.thickness !== undefined ? snap.thickness : clone.thickness);
       if (snap.color) clone.color = snap.color;
@@ -9139,7 +9223,7 @@ export default function Field(props = {}) {
       }
     }
 
-    // Líneas rectas (x1,y1,x2,y2) - solo si no se procesaron puntos arriba
+    // L�neas rectas (x1,y1,x2,y2) - solo si no se procesaron puntos arriba
     if (!clone.points && typeof snap.x1 === 'number' && typeof snap.x2 === 'number') {
       clone.points = [
         { x: pxToRatioX(snap.x1), y: pxToRatioY(snap.y1) },
@@ -9152,12 +9236,12 @@ export default function Field(props = {}) {
       if (snap.dotSpacing !== undefined) clone.dotSpacing = snap.dotSpacing;
     }
 
-    // Círculos (x=center, y=center, radius) - solo si no se procesaron puntos arriba
+    // C�rculos (x=center, y=center, radius) - solo si no se procesaron puntos arriba
     if (!clone.points && typeof snap.radius === 'number' && typeof snap.x === 'number') {
       const cx = snap.x;
       const cy = snap.y;
       const r = snap.radius;
-      // Representar círculo con dos puntos (izquierda/derecha)
+      // Representar c�rculo con dos puntos (izquierda/derecha)
       const p1 = { x: cx - r, y: cy };
       const p2 = { x: cx + r, y: cy };
       clone.points = [ { x: pxToRatioX(p1.x), y: pxToRatioY(p1.y) }, { x: pxToRatioX(p2.x), y: pxToRatioY(p2.y) } ];
@@ -9170,7 +9254,7 @@ export default function Field(props = {}) {
       clone.type = 'circle';
     }
 
-    // Rectángulos (x,y,width,height) -> dos puntos (tl, br) - solo si no se procesaron puntos arriba
+    // Rect�ngulos (x,y,width,height) -> dos puntos (tl, br) - solo si no se procesaron puntos arriba
     if (!clone.points && typeof snap.width === 'number' && typeof snap.height === 'number' && typeof snap.x === 'number') {
       const x1 = snap.x;
       const y1 = snap.y;
@@ -9194,7 +9278,7 @@ export default function Field(props = {}) {
   const goToKeyframe = useCallback((index) => {
     const kf = videoKeyframes && videoKeyframes[index];
     if (!kf || !kf.elements) return;
-    // Usar dimensiones originales del video si estamos editando, para conversión correcta de coordenadas
+    // Usar dimensiones originales del video si estamos editando, para conversi�n correcta de coordenadas
     const originalDimensions = editingVideoConfigRef.current;
     const newClones = kf.elements.map(elem => snapshotToClone(elem, originalDimensions));
     // Deseleccionar y limpiar multi-select para evitar conflictos
@@ -9216,21 +9300,21 @@ export default function Field(props = {}) {
     }
   }, [videoKeyframes, snapshotToClone, clearMultiSelect]);
 
-  // Ir al último keyframe (usado después de generar video)
-  // Mantiene el estado actual del campo (última captura) en lugar de restaurar al primero
-  // NO sobreescribe savedClonesOriginalRef para poder restaurar al estado original después
+  // Ir al �ltimo keyframe (usado despu�s de generar video)
+  // Mantiene el estado actual del campo (�ltima captura) en lugar de restaurar al primero
+  // NO sobreescribe savedClonesOriginalRef para poder restaurar al estado original despu�s
   const goToLastKeyframe = useCallback(() => {
     if (videoKeyframes && videoKeyframes.length > 0) {
       const lastIndex = videoKeyframes.length - 1;
       const kf = videoKeyframes[lastIndex];
       if (!kf || !kf.elements) return;
-      // Usar dimensiones originales del video si estamos editando, para conversión correcta de coordenadas
+      // Usar dimensiones originales del video si estamos editando, para conversi�n correcta de coordenadas
       const originalDimensions = editingVideoConfigRef.current;
       const newClones = kf.elements.map(elem => snapshotToClone(elem, originalDimensions));
       setSelectedCloneId(null);
       clearMultiSelect();
       setClones(newClones);
-      // Restaurar conectores del último keyframe (si existen)
+      // Restaurar conectores del �ltimo keyframe (si existen)
       if (kf.connectors && Array.isArray(kf.connectors)) {
         setConnectors(kf.connectors.map(c => ({
           id: c.id,
@@ -9242,18 +9326,18 @@ export default function Field(props = {}) {
       } else {
         setConnectors([]);
       }
-      // NO actualizamos savedClonesOriginalRef aquí para poder restaurar al estado original
+      // NO actualizamos savedClonesOriginalRef aqu� para poder restaurar al estado original
       // cuando el usuario elimine keyframes o guarde el video
     }
   }, [videoKeyframes, snapshotToClone, clearMultiSelect]);
 
-  // â”€â”€â”€ Video frame control para captura client-side â”€â”€â”€
-  // Se actualiza en cada render para que siempre tenga las funciones más recientes
+  // ─── Video frame control para captura client-side ───
+  // Se actualiza en cada render para que siempre tenga las funciones m�s recientes
   videoFrameControlRef.current = {
     // Pone un snapshot de elementos en el campo SIN tocar el historial de undo
     setFrame: (elementSnapshots, frameConnectors) => {
       return new Promise((resolve) => {
-        // Deseleccionar todo para que no aparezcan handles de selección en la captura
+        // Deseleccionar todo para que no aparezcan handles de selecci�n en la captura
         setSelectedCloneId(null);
         clearMultiSelect();
         const newClones = elementSnapshots.map(elem => snapshotToClone(elem));
@@ -9317,14 +9401,14 @@ export default function Field(props = {}) {
   const applyKeyframe = useCallback((index) => {
     const kf = videoKeyframes && videoKeyframes[index];
     if (!kf || !kf.elements) return;
-    // Usar dimensiones originales del video si estamos editando, para conversión correcta de coordenadas
+    // Usar dimensiones originales del video si estamos editando, para conversi�n correcta de coordenadas
     const originalDimensions = editingVideoConfigRef.current;
     const newClones = kf.elements.map(elem => snapshotToClone(elem, originalDimensions));
     setSelectedCloneId(null);
     clearMultiSelect();
     setClones(newClones);
 
-    // Registrar en historial (acción explícita) - deferir para asegurarnos que commitToHistory esté definido
+    // Registrar en historial (acci�n expl�cita) - deferir para asegurarnos que commitToHistory est� definido
     setTimeout(() => {
       try {
         commitToHistory(JSON.stringify(newClones));
@@ -9333,81 +9417,81 @@ export default function Field(props = {}) {
       }
     }, 0);
 
-    // Marcar que el usuario aplicó cambios: no restaurar al cerrar
+    // Marcar que el usuario aplic� cambios: no restaurar al cerrar
     keepVideoChangesRef.current = true;
-    // Además actualizar savedClonesOriginalRef para reflejar nuevo estado como base
+    // Adem�s actualizar savedClonesOriginalRef para reflejar nuevo estado como base
     try {
       savedClonesOriginalRef.current = JSON.parse(JSON.stringify(newClones));
     } catch (e) {
       savedClonesOriginalRef.current = newClones;
     }
-  }, [videoKeyframes, snapshotToClone, clearMultiSelect]);  
+  }, [videoKeyframes, snapshotToClone, clearMultiSelect]);
 
   // =====================================================
-  // CARGA DE VIDEO PARA EDICIÃ“N
+  // CARGA DE VIDEO PARA EDICIÓN
   // =====================================================
-  // Ref para almacenar el ID del último video cargado (para detectar cambios)
+  // Ref para almacenar el ID del �ltimo video cargado (para detectar cambios)
   const lastLoadedVideoIdRef = useRef(null);
-  
-  // Efecto para cargar datos del video cuando estamos en modo edición
+
+  // Efecto para cargar datos del video cuando estamos en modo edici�n
   // Usamos useFocusEffect para que se ejecute cada vez que la pantalla gana el foco
   useFocusEffect(
     useCallback(() => {
       // Obtener editVideoData fresco desde global cada vez que ganamos el foco
       const currentEditVideoData = global.editVideoData;
-      
+
       // Si no hay datos de video para editar, no hacer nada
       if (!currentEditVideoData) {
         return;
       }
-      
+
       lastLoadedVideoIdRef.current = currentEditVideoData.videoId;
-      
-      // Limpiar global.editVideoData después de usarlo
+
+      // Limpiar global.editVideoData despu�s de usarlo
       global.editVideoData = null;
-      
-      // Establecer modo edición
+
+      // Establecer modo edici�n
       setIsEditingVideo(true);
       setEditingVideoId(currentEditVideoData.videoId);
       setEditingVideoName(currentEditVideoData.nombre || '');
       setEditingVideoDescription(currentEditVideoData.descripcion || '');
       setEditingVideoFolderId(currentEditVideoData.folderId || null);
-      
+
       // Cambiar el tipo de campo si es diferente
       if (currentEditVideoData.fieldType) {
         const decomposed = decomposeFieldId(currentEditVideoData.fieldType);
         setFieldLineType(decomposed.lineType);
         setViewMode(decomposed.viewMode);
       }
-      
+
       // Cargar keyframes
       if (currentEditVideoData.keyframes && currentEditVideoData.keyframes.length > 0) {
-        // Obtener dimensiones originales del video para conversión correcta de coordenadas
+        // Obtener dimensiones originales del video para conversi�n correcta de coordenadas
         const originalDimensions = currentEditVideoData.config || { fieldWidth: 1280, fieldHeight: 720 };
         // Guardar en ref para uso posterior (goToKeyframe, goToLastKeyframe)
         editingVideoConfigRef.current = originalDimensions;
-        
+
         // Convertir keyframes del formato de BD al formato de videoKeyframes
         const loadedKeyframes = currentEditVideoData.keyframes.map(kf => ({
           timestamp: kf.timestamp,
           elements: kf.elements || [],
           connectors: kf.connectors || [],
-          // No incluimos fieldImageData porque se generará al capturar
+          // No incluimos fieldImageData porque se generar� al capturar
         }));
-        
+
         setVideoKeyframes(loadedKeyframes);
-        
+
         // Cargar el primer keyframe en el campo
         if (loadedKeyframes[0] && loadedKeyframes[0].elements) {
           // Pasar dimensiones originales para convertir correctamente las coordenadas absolutas a ratios
           const firstKeyframeElements = loadedKeyframes[0].elements.map(elem => snapshotToClone(elem, originalDimensions));
           setClones(firstKeyframeElements);
-          
+
           // Cargar conectores del primer keyframe si existen
           if (loadedKeyframes[0].connectors && loadedKeyframes[0].connectors.length > 0) {
             setConnectors(loadedKeyframes[0].connectors);
           }
-          
+
           // Guardar como estado original
           try {
             savedClonesOriginalRef.current = JSON.parse(JSON.stringify(firstKeyframeElements));
@@ -9415,8 +9499,8 @@ export default function Field(props = {}) {
             savedClonesOriginalRef.current = firstKeyframeElements;
           }
         }
-        
-        // Abrir automáticamente el grabador de video
+
+        // Abrir autom�ticamente el grabador de video
         setTimeout(() => {
           setVideoRecorderVisible(true);
         }, 300);
@@ -9426,47 +9510,47 @@ export default function Field(props = {}) {
           setVideoRecorderVisible(true);
         }, 300);
       }
-      
-      // Cleanup cuando se sale de la pantalla - resetear el ID del último video cargado
+
+      // Cleanup cuando se sale de la pantalla - resetear el ID del �ltimo video cargado
       return () => {
         lastLoadedVideoIdRef.current = null;
       };
     }, [fieldLineType, viewMode, snapshotToClone])
   );
   // =====================================================
-  // FIN CARGA DE VIDEO PARA EDICIÃ“N
+  // FIN CARGA DE VIDEO PARA EDICIÓN
   // =====================================================
 
   const handleZoomIn = useCallback(() => {
     setZoomLevel(prev => Math.min(prev + 0.2, 3));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handleZoomOut = useCallback(() => {
     setZoomLevel(prev => Math.max(prev - 0.2, 1));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handlePanLeft = useCallback(() => {
     setPanOffset(prev => ({ ...prev, x: prev.x + 30 }));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handlePanRight = useCallback(() => {
     setPanOffset(prev => ({ ...prev, x: prev.x - 30 }));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handlePanUp = useCallback(() => {
     setPanOffset(prev => ({ ...prev, y: prev.y + 30 }));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handlePanDown = useCallback(() => {
     setPanOffset(prev => ({ ...prev, y: prev.y - 30 }));
-  }, []); // Array de dependencias VACÃO
+  }, []); // Array de dependencias VACÍO
 
   const handleResetView = useCallback(() => {
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
   }, []);
-  
-  // Función para aplicar una formación al campo
+
+  // Funci�n para aplicar una formaci�n al campo
   const rotateToHorizontal = useCallback((pos) => {
     // Rotate so goalkeeper (defensa) appears on the left and forwards on the right.
     // New mapping: x' = 1 - y, y' = x
@@ -9480,7 +9564,7 @@ export default function Field(props = {}) {
   }, []);
 
   const applyFormation = useCallback((formationKey, options = {}) => {
-    // Buscar la formación en todos los mapas de formaciones
+    // Buscar la formaci�n en todos los mapas de formaciones
     const formation = FORMATIONS[formationKey] || FORMATIONS_8[formationKey] || FORMATIONS_7[formationKey];
     if (!formation) return;
 
@@ -9499,20 +9583,20 @@ export default function Field(props = {}) {
       const rotated = rotateToHorizontal(pos);
       // Mirror horizontally if this is opponent alignment (keep goalkeeper on right)
       const finalX = options.opponent ? Math.max(0, Math.min(1, 1 - rotated.xRatio)) : rotated.xRatio;
-      
-      // Determinar qué mostrar: número, posición o nombre de jugador real
+
+      // Determinar qu� mostrar: n�mero, posici�n o nombre de jugador real
       let displayLabel = undefined;
       let playerNumber = playersWithNumber ? pos.number : undefined;
       let isRealPlayer = false;
       let playerInfo = null;
-      
+
       if (realPlayers && realPlayers[idx]) {
         // Usar jugador real
         const rp = realPlayers[idx];
         isRealPlayer = !rp.isPlaceholder;
-        // Para jugadores reales: mostrar dorsal en círculo, nombre debajo
+        // Para jugadores reales: mostrar dorsal en c�rculo, nombre debajo
         playerNumber = rp.dorsal || pos.number;
-        displayLabel = undefined; // No mostrar texto en el círculo, solo el número/dorsal
+        displayLabel = undefined; // No mostrar texto en el c�rculo, solo el n�mero/dorsal
         playerInfo = {
           fullName: rp.fullName,
           playerId: rp.playerId,
@@ -9522,7 +9606,7 @@ export default function Field(props = {}) {
       } else if (displayMode === 'position' && pos.position) {
         displayLabel = customLabels[pos.position] || getDefaultPositionLabels()[pos.position] || pos.position;
       }
-      
+
       return {
         id,
         type: 'player',
@@ -9539,15 +9623,15 @@ export default function Field(props = {}) {
         rotation: 0,
         locked: false,
         zIndex: 200 + (pos.number || 0),
-        position: pos.position, // Guardar la posición original
+        position: pos.position, // Guardar la posici�n original
         isRealPlayer, // Indicar si es un jugador real
         playerInfo, // Info adicional del jugador
-        // Añadir playerData para mostrar nombre debajo del icono
+        // A�adir playerData para mostrar nombre debajo del icono
         playerData: isRealPlayer && playerInfo?.fullName ? {
           nombre: playerInfo.fullName.split(' ')[0], // Solo el primer nombre
           fullName: playerInfo.fullName,
           foto: playerInfo.foto, // Incluir foto
-          posicion: playerInfo.posicion // Incluir posición para detectar portero
+          posicion: playerInfo.posicion // Incluir posici�n para detectar portero
         } : null,
       };
     });
@@ -9575,7 +9659,7 @@ export default function Field(props = {}) {
     });
     setTimeout(() => setInstructionMessage(null), 2500);
   }, [t]);
-  
+
   // Memoizar estados de dibujo para evitar recrear el objeto
   const drawingStates = useMemo(() => ({
     drawingStraightArrow,
@@ -9587,11 +9671,11 @@ export default function Field(props = {}) {
     drawingCustomShape,
     eraserMode
   }), [drawingStraightArrow, drawingStraightLine, drawingCurveArrow, drawingCurveLine, drawingCircle, drawingRectangle, drawingCustomShape, eraserMode]);
-  
-  // OPTIMIZACIÃ“N: Set de IDs seleccionados para búsqueda O(1)
+
+  // OPTIMIZACIÓN: Set de IDs seleccionados para b�squeda O(1)
   const selectedCloneIdsSet = useMemo(() => new Set(selectedCloneIds), [selectedCloneIds]);
-  
-  // Función para deseleccionar cualquier herramienta de dibujo activa
+
+  // Funci�n para deseleccionar cualquier herramienta de dibujo activa
   const handleDeselectDrawingTool = useCallback(() => {
     setDrawingStraightArrow(false);
     setDrawingStraightLine(false);
@@ -9611,9 +9695,9 @@ export default function Field(props = {}) {
     setPreviewPoint(null);
     setIsPreviewingPoint(false);
   }, []);
-  
+
   const canvasRef = useRef();
-  
+
   // Estado real de clones
   const [actualClones, setActualClones] = useState(
     (initialElements ?? []).map(clone => {
@@ -9639,67 +9723,67 @@ export default function Field(props = {}) {
       }
     })
   );
-  
+
   // Alias y wrapper para setClones
   const clones = actualClones;
-  
+
   // =====================================================
   // SISTEMA DE UNDO/REDO OPTIMIZADO CON DEBOUNCE (INCLUYE CONECTORES)
   // =====================================================
-  const MAX_HISTORY_SIZE = 50; // Máximo de estados en el historial
+  const MAX_HISTORY_SIZE = 50; // M�ximo de estados en el historial
   // El historial ahora guarda objetos con { clones, connectors }
   const historyRef = useRef([JSON.stringify({ clones: actualClones, connectors: [] })]); // Historial de estados
-  const historyIndexRef = useRef(0); // Ãndice actual en el historial
+  const historyIndexRef = useRef(0); // Índice actual en el historial
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors: [] })); // Ãšltimo estado guardado
+  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors: [] })); // Último estado guardado
   const debounceTimerRef = useRef(null); // Timer para debounce
   const pendingStateRef = useRef(null); // Estado pendiente de guardar
   const DEBOUNCE_DELAY = 300; // ms - tiempo para agrupar cambios de drag
   const connectorsRef = useRef([]); // Referencia actual de conectores para undo/redo
-  
-  // Función para guardar estado en el historial
+
+  // Funci�n para guardar estado en el historial
   const commitToHistory = useCallback((stateStr) => {
-    // No guardar si es idéntico al último estado guardado
+    // No guardar si es id�ntico al �ltimo estado guardado
     if (stateStr === lastSavedStateRef.current) return;
-    
+
     // Eliminar estados futuros si estamos en medio del historial
     if (historyIndexRef.current < historyRef.current.length - 1) {
       historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
     }
-    
-    // Añadir nuevo estado
+
+    // A�adir nuevo estado
     historyRef.current.push(stateStr);
-    
-    // Limitar tamaño del historial
+
+    // Limitar tama�o del historial
     if (historyRef.current.length > MAX_HISTORY_SIZE) {
       historyRef.current.shift();
     } else {
       historyIndexRef.current++;
     }
-    
+
     lastSavedStateRef.current = stateStr;
-    // Usar updater funcional para que React haga bail-out si el valor no cambió
-    // Esto evita re-renders innecesarios que podrían acumular "nested updates"
+    // Usar updater funcional para que React haga bail-out si el valor no cambi�
+    // Esto evita re-renders innecesarios que podr�an acumular "nested updates"
     setCanUndo(prev => {
       const next = historyIndexRef.current > 0;
       return prev === next ? prev : next;
     });
     setCanRedo(prev => prev === false ? prev : false);
   }, []);
-  
-  // Función con debounce para guardar estado (agrupa cambios rápidos de drag)
+
+  // Funci�n con debounce para guardar estado (agrupa cambios r�pidos de drag)
   const saveToHistoryDebounced = useCallback((newClones, newConnectors) => {
     const stateObj = { clones: newClones, connectors: newConnectors || connectorsRef.current };
     const newStateStr = JSON.stringify(stateObj);
     pendingStateRef.current = newStateStr;
-    
+
     // Cancelar timer anterior
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
-    // Programar guardado después del debounce
+
+    // Programar guardado despu�s del debounce
     debounceTimerRef.current = setTimeout(() => {
       if (pendingStateRef.current) {
         commitToHistory(pendingStateRef.current);
@@ -9708,7 +9792,7 @@ export default function Field(props = {}) {
       debounceTimerRef.current = null;
     }, DEBOUNCE_DELAY);
   }, [commitToHistory]);
-  
+
   // Ref para skip de guardado en historial durante undo/redo
   const skipHistoryRef = useRef(false);
   // Ref para acceso estable a actualClones (evita dependencias inestables en callbacks)
@@ -9719,10 +9803,10 @@ export default function Field(props = {}) {
 
   // =====================================================
   // SISTEMA IMPERATIVO DE GUARDADO DE HISTORIAL
-  // No usa useEffect sobre actualClones "” evita "Maximum update depth exceeded"
-  // El historial se guarda explícitamente:
+  // No usa useEffect sobre actualClones "� evita "Maximum update depth exceeded"
+  // El historial se guarda expl�citamente:
   //   1) Desde setClones (diferido, solo si no hay drag activo)
-  //   2) Desde saveClonesHistory (llamado explícitamente al finalizar cualquier drag)
+  //   2) Desde saveClonesHistory (llamado expl�citamente al finalizar cualquier drag)
   // =====================================================
 
   // Guarda el estado actual en historial de forma imperativa
@@ -9734,15 +9818,15 @@ export default function Field(props = {}) {
     saveToHistoryDebounced(actualClonesRef.current, connectorsRef.current);
   }, [saveToHistoryDebounced]);
 
-  // Ref estable para saveClonesHistory "” permite que setClones no dependa de saveClonesHistory
-  // y así setClones tenga identidad estable (evita que todos los hijos re-rendericen por cambio de callback)
+  // Ref estable para saveClonesHistory "� permite que setClones no dependa de saveClonesHistory
+  // y as� setClones tenga identidad estable (evita que todos los hijos re-rendericen por cambio de callback)
   const saveClonesHistoryRef = useRef(saveClonesHistory);
   saveClonesHistoryRef.current = saveClonesHistory;
 
   // Timer para guardado diferido (se programa desde setClones cuando no hay drag)
   const historyIdleTimerRef = useRef(null);
 
-  // Wrapper de setClones PURO "” sin side effects en el state updater.
+  // Wrapper de setClones PURO "� sin side effects en el state updater.
   // Programa guardado de historial solo cuando NO hay drag activo.
   // Durante drag, el guardado se delega al handler de fin de drag (saveClonesHistory).
   const setClones = useCallback((updater) => {
@@ -9755,9 +9839,9 @@ export default function Field(props = {}) {
         saveClonesHistoryRef.current();
       }, 0);
     }
-  }, []); // SIN dependencias "” identidad 100% estable
-  
-  // Función UNDO optimizada (restaura clones y conectores)
+  }, []); // SIN dependencias "� identidad 100% estable
+
+  // Funci�n UNDO optimizada (restaura clones y conectores)
   const undo = useCallback(() => {
     // Primero, forzar guardado de cualquier cambio pendiente
     if (debounceTimerRef.current) {
@@ -9768,12 +9852,12 @@ export default function Field(props = {}) {
         pendingStateRef.current = null;
       }
     }
-    
+
     if (historyIndexRef.current > 0) {
       historyIndexRef.current--;
       const stateStr = historyRef.current[historyIndexRef.current];
       lastSavedStateRef.current = stateStr;
-      
+
       try {
         const parsedState = JSON.parse(stateStr);
         // Marcar como skip para que el useEffect de historial no re-guarde el estado restaurado
@@ -9792,19 +9876,19 @@ export default function Field(props = {}) {
       } catch (e) {
         console.warn('Error parsing undo state:', e);
       }
-      
+
       setCanUndo(prev => { const n = historyIndexRef.current > 0; return prev === n ? prev : n; });
       setCanRedo(prev => prev === true ? prev : true);
     }
   }, [commitToHistory]);
-  
-  // Función REDO optimizada (restaura clones y conectores)
+
+  // Funci�n REDO optimizada (restaura clones y conectores)
   const redo = useCallback(() => {
     if (historyIndexRef.current < historyRef.current.length - 1) {
       historyIndexRef.current++;
       const stateStr = historyRef.current[historyIndexRef.current];
       lastSavedStateRef.current = stateStr;
-      
+
       try {
         const parsedState = JSON.parse(stateStr);
         // Marcar como skip para que el useEffect de historial no re-guarde el estado restaurado
@@ -9823,12 +9907,12 @@ export default function Field(props = {}) {
       } catch (e) {
         console.warn('Error parsing redo state:', e);
       }
-      
+
       setCanUndo(prev => prev === true ? prev : true);
       setCanRedo(prev => { const n = historyIndexRef.current < historyRef.current.length - 1; return prev === n ? prev : n; });
     }
   }, []);
-  
+
   // Limpiar historial cuando se resetea el campo
   // Usa actualClonesRef (ref estable) en lugar de actualClones (cambia cada render durante drag)
   const clearHistory = useCallback(() => {
@@ -9844,7 +9928,7 @@ export default function Field(props = {}) {
     setCanUndo(prev => prev === false ? prev : false);
     setCanRedo(prev => prev === false ? prev : false);
   }, []);
-  
+
   // Limpiar timer al desmontar
   useEffect(() => {
     return () => {
@@ -9856,7 +9940,7 @@ export default function Field(props = {}) {
       }
     };
   }, []);
-  
+
   // Wrapper de setConnectors que guarda en el historial
   // Usa actualClonesRef (ref estable) para evitar que cambie de identidad en cada drag frame
   const setConnectorsWithHistory = useCallback((updater) => {
@@ -9865,12 +9949,12 @@ export default function Field(props = {}) {
       connectorsRef.current = newConnectors;
       return newConnectors;
     });
-    // setTimeout fuera del state updater: correcto según React
+    // setTimeout fuera del state updater: correcto seg�n React
     setTimeout(() => {
       saveToHistoryDebounced(actualClonesRef.current, connectorsRef.current);
     }, 0);
   }, [saveToHistoryDebounced]);
-  
+
   // Sincronizar connectorsRef cuando cambien los conectores
   useEffect(() => {
     connectorsRef.current = connectors;
@@ -9878,8 +9962,8 @@ export default function Field(props = {}) {
   // =====================================================
   // FIN SISTEMA UNDO/REDO
   // =====================================================
-  
-  // Map de IDs a índices para búsqueda O(1)
+
+  // Map de IDs a �ndices para b�squeda O(1)
   const cloneIndexMap = useRef(new Map());
   useEffect(() => {
     cloneIndexMap.current.clear();
@@ -9889,7 +9973,7 @@ export default function Field(props = {}) {
       }
     });
   }, [clones]);
-  
+
   const [selectedCloneId, setSelectedCloneId] = useState(null);
   const [leftPanelVisible, setLeftPanelVisible] = useState(false);
   const [editingIcon, setEditingIcon] = useState(null);
@@ -9922,19 +10006,19 @@ export default function Field(props = {}) {
       dispatch(fetchJugadoresEquipo({ team: teamId }));
     }
   }, [equipos, players.length, dispatch]);
-  
-  // Mantener el tamaño de teamPlayerStyle sincronizado con standardSize
+
+  // Mantener el tama�o de teamPlayerStyle sincronizado con standardSize
   useEffect(() => {
     setTeamPlayerStyle(prev => ({
       ...prev,
       size: standardSize
     }));
   }, [standardSize]);
-  
-  const [useSmootherMovement] = useState(true); // Flag para movimientos más suaves
+
+  const [useSmootherMovement] = useState(true); // Flag para movimientos m�s suaves
   const rafRef = useRef(null); // Referencia para requestAnimationFrame
-  
-  // Estado para el menú de opciones
+
+  // Estado para el men� de opciones
   const [optionsMenu, setOptionsMenu] = useState({
     visible: false,
     position: { x: 0, y: 0 },
@@ -9946,57 +10030,57 @@ export default function Field(props = {}) {
   // Estado para el panel de elementos bloqueados
   const [lockedElementsVisible, setLockedElementsVisible] = useState(false);
 
-  // Función para rotar un elemento
+  // Funci�n para rotar un elemento
   const handleRotateIcon = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => prev.map(clone => {
       if (clone.id !== iconId) return clone;
-      
-      // Para custom-shapes y líneas, rotar los puntos alrededor del centro
-      if (clone.type === 'custom-shape' || 
-          clone.type === 'straight-line' || 
+
+      // Para custom-shapes y l�neas, rotar los puntos alrededor del centro
+      if (clone.type === 'custom-shape' ||
+          clone.type === 'straight-line' ||
           clone.type === 'straight-arrow' ||
           clone.type === 'curve-line' ||
           clone.type === 'curve-arrow' ||
           clone.type === 'circle') {
-        
+
         if (!clone.points || clone.points.length < 2) return clone;
-        
+
         // Calcular el centro de la figura
         const centerX = clone.points.reduce((sum, p) => sum + p.x, 0) / clone.points.length;
         const centerY = clone.points.reduce((sum, p) => sum + p.y, 0) / clone.points.length;
-        
+
         // Rotar cada punto 45 grados alrededor del centro
         const rotatedPoints = clone.points.map(point => {
           const dx = point.x - centerX;
           const dy = point.y - centerY;
           const angle = Math.PI / 4; // 45 grados
-          
+
           return {
             x: centerX + (dx * Math.cos(angle) - dy * Math.sin(angle)),
             y: centerY + (dx * Math.sin(angle) + dy * Math.cos(angle))
           };
         });
-        
+
         return {
           ...clone,
           points: rotatedPoints
         };
       }
-      
-      // Para otros elementos, usar la rotación normal
-      return { 
-        ...clone, 
-        rotation: ((clone.rotation || 0) + 45) % 360 
+
+      // Para otros elementos, usar la rotaci�n normal
+      return {
+        ...clone,
+        rotation: ((clone.rotation || 0) + 45) % 360
       };
     }));
   }, []);
 
-  // Función para aplicar movimientos suaves con InteractionManager
+  // Funci�n para aplicar movimientos suaves con InteractionManager
   const applySmootherMovement = useCallback((updateFn) => {
     if (useSmootherMovement) {
-      // Usar InteractionManager para ejecutar después de las animaciones
+      // Usar InteractionManager para ejecutar despu�s de las animaciones
       InteractionManager.runAfterInteractions(() => {
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
@@ -10010,21 +10094,21 @@ export default function Field(props = {}) {
       updateFn();
     }
   }, [useSmootherMovement]);
-  
-  // 1. Añadir estos estados en el componente Field principal
+
+  // 1. A�adir estos estados en el componente Field principal
   const [lineStyleModalVisible, setLineStyleModalVisible] = useState(false);
 
   const [lineType, setLineType] = useState('solid'); // 'solid', 'dotted', 'wavy'
   const [dotSize, setDotSize] = useState(2);
   const [dotSpacing, setDotSpacing] = useState(4);
   const [pendingLineAction, setPendingLineAction] = useState(null);
-  
+
   const [panelVisible] = useState(true);
   const [carouselModalVisible, setCarouselModalVisible] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const panelAnim = useRef(new Animated.Value(0)).current;
-  
-  // Ajusta el panel según el tamaño de la pantalla
+
+  // Ajusta el panel seg�n el tama�o de la pantalla
   const isSmallScreen = SCREEN_WIDTH < 360;
 
   useEffect(() => {
@@ -10034,26 +10118,26 @@ export default function Field(props = {}) {
       useNativeDriver: false,
     }).start();
   }, [panelVisible]);
-  
+
   const iconCounters = useRef({});
   paletteIcons.forEach((icon) => {
     if (!iconCounters.current[icon.id]) iconCounters.current[icon.id] = 1;
   });
 
-  // Contador incremental de z-index para ordenar elementos por orden de creación
+  // Contador incremental de z-index para ordenar elementos por orden de creaci�n
   const zIndexCounter = useRef(0);
   const getNextZIndex = useCallback((type) => {
     zIndexCounter.current += 1;
     return getZIndexBaseForType(type) + zIndexCounter.current;
   }, []);
-  
+
   const safetyTimerRef = useRef(null);
-  
+
   const dragStart = useRef({});
-  
+
   const aspect = getAspectForView(viewMode);
-  
-  // Calcular tamaño óptimo para el campo (memoizado para estabilidad de referencias)
+
+  // Calcular tama�o �ptimo para el campo (memoizado para estabilidad de referencias)
   const { imageWidth, imageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
@@ -10061,10 +10145,10 @@ export default function Field(props = {}) {
       const bottomButtonsSpace = 60;
       const usableWidth = SCREEN_WIDTH - 16;
       const usableHeight = SCREEN_HEIGHT - topButtonsSpace - bottomButtonsSpace;
-      
+
       w = usableWidth;
       h = w * aspect;
-      
+
       if (h > usableHeight) {
         h = usableHeight;
         w = h / aspect;
@@ -10074,13 +10158,13 @@ export default function Field(props = {}) {
       const verticalMargin = Platform.OS === 'ios' ? (16 + headerHeight) : headerHeight;
       const horizontalMargin = 16;
       const PANEL_HEIGHT = 150;
-      
+
       const maxFieldHeight = SCREEN_HEIGHT - verticalMargin - PANEL_HEIGHT - 8;
       const maxFieldWidth = SCREEN_WIDTH - horizontalMargin * 2;
-      
+
       w = maxFieldWidth;
       h = w * aspect;
-      
+
       if (h > maxFieldHeight) {
         h = maxFieldHeight;
         w = h / aspect;
@@ -10088,45 +10172,45 @@ export default function Field(props = {}) {
     }
     return { imageWidth: w, imageHeight: h };
   }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect]);
-  
-  // Helper: calcular el centro visible del campo según el viewMode activo
+
+  // Helper: calcular el centro visible del campo seg�n el viewMode activo
   const getVisibleCenterRatio = useCallback(() => {
     return displayToRatio(imageWidth / 2, imageHeight / 2, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
 
-  // 3. Reemplazar la función handleIconPalettePress con esta versión
+  // 3. Reemplazar la funci�n handleIconPalettePress con esta versi�n
   const handleIconPalettePress = useCallback((icon, paletteIndex) => {
     // Deseleccionar cualquier elemento seleccionado
     setSelectedCloneId(null);
     clearMultiSelect();
-    
 
-    
-    // Manejar el botón de jugadores del equipo
+
+
+    // Manejar el bot�n de jugadores del equipo
     if (icon.type === 'team-players') {
       setShowingPlayersPalette(true);
       setShowingMaterialsPalette(false);
       setShowingStaffPalette(false);
       return;
     }
-    
-    // Manejar el botón de cuerpo técnico
+
+    // Manejar el bot�n de cuerpo t�cnico
     if (icon.type === 'coaching-staff') {
       setShowingStaffPalette(true);
       setShowingPlayersPalette(false);
       setShowingMaterialsPalette(false);
       return;
     }
-    
-    // Manejar el botón de materiales
+
+    // Manejar el bot�n de materiales
     if (icon.type === 'materials-button') {
       setShowingMaterialsPalette(true);
       setShowingPlayersPalette(false);
       setShowingStaffPalette(false);
       return;
     }
-    
-    // Manejar el botón de figura personalizada de manera especial
+
+    // Manejar el bot�n de figura personalizada de manera especial
     if (icon.type === 'custom-shape-button') {
       setPendingLineAction({
         type: 'custom-shape',
@@ -10144,9 +10228,9 @@ export default function Field(props = {}) {
       setEraserMode(false);
       return;
     }
-    
-    // Iniciar modo de dibujo directamente desde la paleta para líneas, flechas y formas (no abrir modal de estilo)
-    if (icon.type === 'straight-arrow' || icon.type === 'straight-line' || 
+
+    // Iniciar modo de dibujo directamente desde la paleta para l�neas, flechas y formas (no abrir modal de estilo)
+    if (icon.type === 'straight-arrow' || icon.type === 'straight-line' ||
         icon.type === 'curve-arrow' || icon.type === 'curve-line' ||
         icon.type === 'circle' || icon.type === 'rectangle') {
       setPendingLineAction({
@@ -10155,17 +10239,17 @@ export default function Field(props = {}) {
         icon: icon
       });
 
-      // Cargar Configuración guardada en la paleta (si existe)
+      // Cargar Configuraci�n guardada en la paleta (si existe)
       const pIcon = paletteIcons[paletteIndex] || icon || {};
       setLineType(pIcon.lineType ? pIcon.lineType : 'solid');
       setDotSize((pIcon.dotSize !== undefined && pIcon.dotSize !== null) ? pIcon.dotSize : 2);
       setDotSpacing((pIcon.dotSpacing !== undefined && pIcon.dotSpacing !== null) ? pIcon.dotSpacing : 4);
       setArrowThickness((pIcon.thickness !== undefined && pIcon.thickness !== null) ? pIcon.thickness : (pIcon.thickness || 2));
       // Si la paleta tiene fillColor/lineType/dotSize/dotSpacing, guardarlas en pending para shapes
-      setPendingLineAction(prev => prev ? { 
-        ...prev, 
-        icon: { 
-          ...prev.icon, 
+      setPendingLineAction(prev => prev ? {
+        ...prev,
+        icon: {
+          ...prev.icon,
           fillColor: pIcon.fillColor !== undefined ? pIcon.fillColor : prev.icon?.fillColor,
           lineType: pIcon.lineType ? pIcon.lineType : prev.icon?.lineType,
           dotSize: (pIcon.dotSize !== undefined && pIcon.dotSize !== null) ? pIcon.dotSize : prev.icon?.dotSize,
@@ -10183,7 +10267,7 @@ export default function Field(props = {}) {
       setDrawingRectangle(false);
       setDrawingCustomShape(false);
       setEraserMode(false);
-      
+
       // Activar solo el modo de dibujo correspondiente
       if (icon.type === 'straight-arrow') {
         setDrawingStraightArrow(true);
@@ -10200,7 +10284,7 @@ export default function Field(props = {}) {
       }
       return;
     }
-    
+
     // Para otros tipos de iconos (jugadores, conos, etc.)
     let number = undefined;
     if (icon.type === 'player') {
@@ -10214,22 +10298,22 @@ export default function Field(props = {}) {
         )
       );
     }
-    
-    // Usar la Configuración actual de la paleta (color, tamaño, thickness)
-    // Obtener el icono actualizado de la paleta para usar su Configuración más reciente
+
+    // Usar la Configuraci�n actual de la paleta (color, tama�o, thickness)
+    // Obtener el icono actualizado de la paleta para usar su Configuraci�n m�s reciente
     const currentPaletteIcon = paletteIcons[paletteIndex];
-    
+
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
-    
+
     setClones((prev) => [
       {
         ...icon,
         id: `${icon.id}-clone-${Date.now()}-${Math.random()}`,
-        xRatio: centerX, 
+        xRatio: centerX,
         yRatio: centerY,
         number,
         rotation: 0,
-        size: currentPaletteIcon.size || standardSize, // Usar el tamaño actual de la paleta
+        size: currentPaletteIcon.size || standardSize, // Usar el tama�o actual de la paleta
         color: isValidHexColor(currentPaletteIcon.color) ? currentPaletteIcon.color : '#000000', // Color actual de la paleta
         paletteIndex,
         thickness: currentPaletteIcon.thickness || icon.thickness, // Thickness actual de la paleta
@@ -10240,23 +10324,23 @@ export default function Field(props = {}) {
       ...prev,
     ]);
 
-    // Al añadir un elemento, quitar multi-select y salir de cualquier modo de dibujo
+    // Al a�adir un elemento, quitar multi-select y salir de cualquier modo de dibujo
     clearMultiSelect();
     exitDrawingMode();
   }, [paletteIcons, standardSize, iconCounters, clearMultiSelect, exitDrawingMode, getNextZIndex, getVisibleCenterRatio]);
-  
-  // Función para manejar la selección de un jugador del equipo
+
+  // Funci�n para manejar la selecci�n de un jugador del equipo
   const handleSelectPlayer = (player) => {
-    // Determinar la etiqueta a mostrar según la Configuración
+    // Determinar la etiqueta a mostrar seg�n la Configuraci�n
     let displayLabel = undefined;
     if (teamPlayerStyle.showPosition && player.posicion) {
-      // Obtener abreviatura de posición
+      // Obtener abreviatura de posici�n
       const positionAbbreviation = getPositionAbbreviation(player.posicion);
       displayLabel = positionAbbreviation;
     }
-    
+
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
-    
+
     // Crear un clone con los datos del jugador
     setClones((prev) => [
       {
@@ -10274,27 +10358,27 @@ export default function Field(props = {}) {
         paletteIndex: 0, // No importa mucho
         thickness: 1,
         playerData: player, // Guardar los datos del jugador
-        displayLabel: displayLabel, // Etiqueta de posición si está habilitada
+        displayLabel: displayLabel, // Etiqueta de posici�n si est� habilitada
         zIndex: getNextZIndex('player')
       },
       ...prev,
     ]);
-    
+
     // Remover el jugador de la lista de disponibles
     setAvailablePlayers((prev) => prev.filter(p => p.uniqueId !== player.uniqueId));
     setSelectedPlayerIds((prev) => [...prev, player.uniqueId]);
-    
+
     // Desactivar modo dibujo al seleccionar un jugador
     exitDrawingMode();
   };
 
-  // Función para manejar la selección de un material de entrenamiento
+  // Funci�n para manejar la selecci�n de un material de entrenamiento
   const handleSelectMaterial = useCallback((material) => {
-    // Obtener Configuración personalizada del material
+    // Obtener Configuraci�n personalizada del material
     const customConfig = materialsConfig[material.type] || {};
-    
+
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
-    
+
     // Crear un clone del material seleccionado
     setClones((prev) => [
       {
@@ -10312,15 +10396,15 @@ export default function Field(props = {}) {
       },
       ...prev,
     ]);
-    
+
     // Desactivar modo dibujo al seleccionar un material
     exitDrawingMode();
   }, [standardSize, materialsConfig, exitDrawingMode, getNextZIndex, getVisibleCenterRatio]);
 
-  // Función para manejar la selección de un miembro del cuerpo técnico
+  // Funci�n para manejar la selecci�n de un miembro del cuerpo t�cnico
   const handleSelectStaff = useCallback((staffRole) => {
     const { x: centerX, y: centerY } = getVisibleCenterRatio();
-    
+
     // Crear un clone del staff seleccionado
     setClones((prev) => [
       {
@@ -10333,7 +10417,7 @@ export default function Field(props = {}) {
         size: standardSize,
         color: '#333333',
         numberColor: '#ffffff',
-        displayLabel: staffRole.code, // Mostrar el código (E1, E2, PF, etc)
+        displayLabel: staffRole.code, // Mostrar el c�digo (E1, E2, PF, etc)
         staffLabel: staffRole.label, // Etiqueta completa para referencia
         paletteIndex: 0,
         thickness: 1,
@@ -10341,17 +10425,17 @@ export default function Field(props = {}) {
       },
       ...prev,
     ]);
-    
-    // Añadir a la lista de staff seleccionados (para que desaparezca de la paleta)
+
+    // A�adir a la lista de staff seleccionados (para que desaparezca de la paleta)
     setSelectedStaffIds((prev) => [...prev, staffRole.id]);
-    
+
     // Desactivar modo dibujo al seleccionar un staff
     exitDrawingMode();
   }, [standardSize, exitDrawingMode, getNextZIndex, getVisibleCenterRatio]);
 
   // Manejador para editar material de la paleta (long press)
   const handleLongPressMaterial = useCallback((material, idx) => {
-    // Crear un objeto icon ficticio para abrir el panel de edición
+    // Crear un objeto icon ficticio para abrir el panel de edici�n
     const customConfig = materialsConfig[material.type] || {};
     const fakeIcon = {
       id: `palette-material-${material.type}`,
@@ -10365,7 +10449,7 @@ export default function Field(props = {}) {
     setLeftPanelVisible(true);
   }, [materialsConfig]);
 
-  // Manejador para actualizar Configuración de materiales desde el panel de edición
+  // Manejador para actualizar Configuraci�n de materiales desde el panel de edici�n
   const handleMaterialsConfigUpdate = useCallback((materialType, newConfig) => {
     setMaterialsConfig(prev => ({
       ...prev,
@@ -10378,7 +10462,7 @@ export default function Field(props = {}) {
 
   // Manejador para editar jugador de la paleta (long press)
   const handleLongPressTeamPlayer = (player) => {
-    // Crear un objeto icon ficticio para abrir el panel de edición
+    // Crear un objeto icon ficticio para abrir el panel de edici�n
     const fakeIcon = {
       id: `palette-player-${player.uniqueId}`,
       type: 'player',
@@ -10395,13 +10479,13 @@ export default function Field(props = {}) {
     setLeftPanelVisible(true);
   };
 
-  // 4. Añadir el manejador para aplicar el estilo de línea seleccionado
+  // 4. A�adir el manejador para aplicar el estilo de l�nea seleccionado
   const handleLineStyleSelect = ({ lineType, dotSize, dotSpacing, color, thickness, fillColor }) => {
     if (!pendingLineAction) return;
 
     const { type, icon, paletteIndex } = pendingLineAction;
 
-    // Actualizar solo el estilo global si el tipo de elemento es uno que utiliza la Configuración global
+    // Actualizar solo el estilo global si el tipo de elemento es uno que utiliza la Configuraci�n global
     const GLOBAL_STYLE_TYPES = ['straight-arrow','straight-line','curve-arrow','curve-line','circle','rectangle'];
     if (GLOBAL_STYLE_TYPES.includes(type)) {
       setLineType(lineType);
@@ -10418,7 +10502,7 @@ export default function Field(props = {}) {
             color: color || ic.color,
             thickness: (thickness !== undefined && thickness !== null) ? thickness : ic.thickness,
             fillColor: (fillColor !== undefined && fillColor !== null) ? fillColor : (ic.fillColor || 'transparent'),
-            // Añadir tipo de trazo y parámetros punteado
+            // A�adir tipo de trazo y par�metros punteado
             lineType: lineType || ic.lineType || 'solid',
             dotSize: (dotSize !== undefined && dotSize !== null) ? dotSize : ic.dotSize,
             dotSpacing: (dotSpacing !== undefined && dotSpacing !== null) ? dotSpacing : ic.dotSpacing
@@ -10427,15 +10511,15 @@ export default function Field(props = {}) {
         return ic;
       }));
     }
-    
+
     // Guardar el grosor para usar al dibujar
     setArrowThickness((thickness !== undefined && thickness !== null) ? thickness : (parseInt(icon.thickness) || 2));
-    
-    // Guardar la Configuración de estilo en pendingLineAction para usarla después
-    setPendingLineAction(prev => prev ? { 
-      ...prev, 
-      icon: { 
-        ...prev.icon, 
+
+    // Guardar la Configuraci�n de estilo en pendingLineAction para usarla despu�s
+    setPendingLineAction(prev => prev ? {
+      ...prev,
+      icon: {
+        ...prev.icon,
         color: color || prev.icon?.color,
         thickness: (thickness !== undefined && thickness !== null) ? thickness : prev.icon?.thickness,
         fillColor: (fillColor !== undefined && fillColor !== null) ? fillColor : (prev.icon?.fillColor || 'transparent'),
@@ -10444,11 +10528,11 @@ export default function Field(props = {}) {
         dotSpacing: (dotSpacing !== undefined && dotSpacing !== null) ? dotSpacing : prev.icon?.dotSpacing
       }
     } : null);
-    
+
     // Cerrar la paleta de elementos
     setPaletteVisible(false);
-    
-    // Activar el modo de dibujo correspondiente y guardar la Configuración
+
+    // Activar el modo de dibujo correspondiente y guardar la Configuraci�n
     if (type === 'straight-arrow') {
       setDrawingStraightArrow(true);
       setDrawingStraightLine(false);
@@ -10507,48 +10591,48 @@ export default function Field(props = {}) {
       setDrawingStraightArrow(false);
       setCustomShapePoints([]);
       setShowCloseCircle(false);
-      
+
       setInstructionMessage({
         visible: true,
-        text: 'Toca para añadir puntos y crear tu figura',
-        subtext: 'Cuando tengas 3 o más puntos, toca el círculo inicial para cerrar'
+        text: 'Toca para a�adir puntos y crear tu figura',
+        subtext: 'Cuando tengas 3 o m�s puntos, toca el c�rculo inicial para cerrar'
       });
-      
+
       setTimeout(() => {
         setInstructionMessage(null);
       }, 5000);
     }
-    
-    // No anulamos pendingLineAction aquí, se usa para obtener las propiedades al crear las figuras
+
+    // No anulamos pendingLineAction aqu�, se usa para obtener las propiedades al crear las figuras
   };
-  
+
 
 
   const handleCustomShapeStart = useCallback((e) => {
     if (!drawingCustomShape) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
-    
+
     if (customShapePoints.length >= 3) {
       const firstPoint = customShapePoints[0];
       const { x: firstPointX, y: firstPointY } = ratioToDisplay(firstPoint.x, firstPoint.y, viewMode, imageWidth, imageHeight);
       const distance = Math.sqrt(
         Math.pow(locationX - firstPointX, 2) + Math.pow(locationY - firstPointY, 2)
       );
-      
+
       if (distance <= 15) {
         const uniqueId = `custom-shape-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Obtener Configuración de la paleta
+
+        // Obtener Configuraci�n de la paleta
         const paletteIcon = paletteIcons.find(ic => ic.type === 'custom-shape-button');
         const paletteIndex = paletteIcons.findIndex(ic => ic.type === 'custom-shape-button');
-        
+
         // Usar valores de la paleta de custom-shape en lugar de los globales
         const shapeLineType = pendingLineAction?.icon?.lineType || paletteIcon?.lineType || 'solid';
         const shapeDotSize = pendingLineAction?.icon?.dotSize ?? paletteIcon?.dotSize ?? 2;
         const shapeDotSpacing = pendingLineAction?.icon?.dotSpacing ?? paletteIcon?.dotSpacing ?? 4;
-        
+
         const newShape = {
           id: uniqueId,
           type: 'custom-shape',
@@ -10568,9 +10652,9 @@ export default function Field(props = {}) {
           paletteIndex: paletteIndex >= 0 ? paletteIndex : undefined,
           zIndex: getNextZIndex('custom-shape')
         };
-        
+
         setClones(prev => [newShape, ...prev]);
-        
+
         setCustomShapePoints([]);
         setShowCloseCircle(false);
         setDrawingCustomShape(false);
@@ -10580,23 +10664,23 @@ export default function Field(props = {}) {
         return;
       }
     }
-    
+
     setPreviewPoint(newPoint);
     setIsPreviewingPoint(true);
   }, [drawingCustomShape, customShapePoints, viewMode, imageWidth, imageHeight, paletteIcons, pendingLineAction, lineType, dotSize, dotSpacing, standardSize, getNextZIndex]);
 
   const handleCustomShapeMove = useCallback((e) => {
     if (!drawingCustomShape || !isPreviewingPoint) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
-    
+
     setPreviewPoint(newPoint);
   }, [drawingCustomShape, isPreviewingPoint, viewMode, imageWidth, imageHeight]);
 
   const handleCustomShapeEnd = useCallback((e) => {
     if (!drawingCustomShape || !isPreviewingPoint || !previewPoint) return;
-    
+
     setCustomShapePoints(prev => {
       const newPoints = [...prev, previewPoint];
       if (newPoints.length >= 3) {
@@ -10604,98 +10688,98 @@ export default function Field(props = {}) {
       }
       return newPoints;
     });
-    
+
     setPreviewPoint(null);
     setIsPreviewingPoint(false);
   }, [drawingCustomShape, isPreviewingPoint, previewPoint]);
 
   function renderCustomShape({ icon, imageWidth, imageHeight }) {
-    // VALIDACIÃ“N ESTRICTA con la bandera de completado
-    if (!icon.isCustomShapeComplete || 
-        !icon.points || 
-        icon.points.length < 3 || 
-        !icon.imageWidth || 
+    // VALIDACIÓN ESTRICTA con la bandera de completado
+    if (!icon.isCustomShapeComplete ||
+        !icon.points ||
+        icon.points.length < 3 ||
+        !icon.imageWidth ||
         !icon.imageHeight ||
         icon.imageWidth === 0 ||
         icon.imageHeight === 0) {
       return null;
     }
-    
+
     const originalWidth = icon.imageWidth;
     const originalHeight = icon.imageHeight;
     const widthRatio = imageWidth / originalWidth;
     const heightRatio = imageHeight / originalHeight;
     const scale = (widthRatio + heightRatio) / 2;
-    
+
     const pts = icon.points.map(p => ({
       x: p.x * imageWidth,
       y: p.y * imageHeight,
     }));
-    
-    // Grosor reducido para líneas más finas
+
+    // Grosor reducido para l�neas m�s finas
     const thickness = (icon.thickness || 1) * scale * 0.7;
-    
-    // Crear el path cerrando la figura - SOLO las líneas dibujadas por el usuario
-    const pathData = pts.map((pt, i) => 
+
+    // Crear el path cerrando la figura - SOLO las l�neas dibujadas por el usuario
+    const pathData = pts.map((pt, i) =>
       i === 0 ? `M${pt.x},${pt.y}` : `L${pt.x},${pt.y}`
     ).join(' ') + ' Z';
-    
+
     // Determinar el color de relleno con transparencia
-    const fillColor = icon.fillColor && icon.fillColor !== 'transparent' 
+    const fillColor = icon.fillColor && icon.fillColor !== 'transparent'
       ? icon.fillColor + '99' // Agregar 60% de opacidad (hex 99)
       : 'transparent';
-    
+
     const customShapeElements = [];
-    
+
     // Relleno (si existe)
     if (fillColor !== 'transparent') {
       customShapeElements.push(
-        <Path 
+        <Path
           key={`fill-custom-shape-${icon.id}`}
-          d={pathData} 
+          d={pathData}
           stroke="none"
           fill={fillColor}
         />
       );
     }
-    
-    // Línea principal (con o sin punteado)
-    const customShapeStrokeDasharray = icon.lineType === 'dotted' 
-      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}` 
+
+    // L�nea principal (con o sin punteado)
+    const customShapeStrokeDasharray = icon.lineType === 'dotted'
+      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
-    
+
     customShapeElements.push(
-      <Path 
+      <Path
         key={`custom-shape-${icon.id}-${icon.color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}-${icon.fillColor || 'transparent'}`}
-        d={pathData} 
-        stroke={icon.color} 
+        d={pathData}
+        stroke={icon.color}
         strokeWidth={thickness}
         strokeDasharray={customShapeStrokeDasharray}
-        fill="none" 
+        fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
     );
-    
+
     return customShapeElements;
   }
 
 const handleGuardarGrafico = async () => {
     setSelectedCloneId(null);
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // En modo sandbox, abrir directamente el grabador de video sin guardar
     if (sandbox) {
       setVideoRecorderVisible(true);
       return;
     }
-    
+
     if (canvasRef.current) {
       try {
         const uri = await canvasRef.current.capture();
         console.log('[saveGraph] capture URI len=', uri?.length, 'prefix=', uri?.slice(0, 50));
 
-        // Ahora funcionará correctamente con la API legacy
+        // Ahora funcionar� correctamente con la API legacy
         const imageBase64 = await FileSystem.readAsStringAsync(uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -10706,7 +10790,7 @@ const handleGuardarGrafico = async () => {
         }
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);
-        // Liberar orientación antes de navegar
+        // Liberar orientaci�n antes de navegar
         try {
           await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
           setTimeout(() => {
@@ -10725,7 +10809,7 @@ const handleGuardarGrafico = async () => {
 const handleCancelar = useCallback(async () => {
     // Verificar si hay cambios sin guardar
     const hasUnsavedChanges = clones.length > 0 || videoKeyframes.length > 0;
-    
+
     if (hasUnsavedChanges) {
       Alert.alert(
         sandbox ? t('field.exitConfirmTitle') : t('field.unsavedChangesTitle'),
@@ -10758,12 +10842,12 @@ const handleCancelar = useCallback(async () => {
       await unlockOrientationAndGoBack();
     }
   }, [cancelCallback, clones.length, videoKeyframes.length, clearBoardState, unlockOrientationAndGoBack, sandbox, t]);
-  // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG â†’ base64 via ViewShot)
+  // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG → base64 via ViewShot)
   useEffect(() => {
-    // SVG fields are instant "” mark ready immediately
+    // SVG fields are instant "� mark ready immediately
     setFieldImageReady(true);
     setIsLoadingField(false);
-    
+
     // Capture field base image for video after a short delay to allow SVG render
     const timer = setTimeout(async () => {
       try {
@@ -10778,11 +10862,11 @@ const handleCancelar = useCallback(async () => {
         console.error('Error capturing field image for video:', error);
       }
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, [selectedField]);
-  
-  // Función para abrir el grabador de video (desde otras rutas)
+
+  // Funci�n para abrir el grabador de video (desde otras rutas)
   const handleOpenVideoRecorder = useCallback(() => {
     try {
       savedClonesOriginalRef.current = JSON.parse(JSON.stringify(actualClonesRef.current || []));
@@ -10791,9 +10875,9 @@ const handleCancelar = useCallback(async () => {
     }
     keepVideoChangesRef.current = false;
     setVideoRecorderVisible(true);
-  }, []); // Sin [clones] "” usa actualClonesRef
-  
-  // Función para cerrar el grabador de video
+  }, []); // Sin [clones] "� usa actualClonesRef
+
+  // Funci�n para cerrar el grabador de video
   const unlockOrientationAndGoBack = useCallback(async () => {
     try {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
@@ -10807,12 +10891,12 @@ const handleCancelar = useCallback(async () => {
   }, [navigation]);
 
   const handleEditVideoSaved = useCallback(async () => {
-    // Cerrar primero el grabador para que la transición quede limpia
+    // Cerrar primero el grabador para que la transici�n quede limpia
     setVideoRecorderVisible(false);
     setFieldImageForVideo(null);
     savedClonesOriginalRef.current = null;
     keepVideoChangesRef.current = false;
-    // Señal global para que la pantalla origen muestre mensaje de éxito
+    // Se�al global para que la pantalla origen muestre mensaje de �xito
     global.pendingVideoEditSuccess = true;
     clearBoardState();
     await new Promise(resolve => setTimeout(resolve, 120));
@@ -10823,8 +10907,8 @@ const handleCancelar = useCallback(async () => {
     setVideoRecorderVisible(false);
     setFieldImageForVideo(null);
 
-    // Restaurar clones originales si el usuario NO aplicó cambios permanentemente
-    // Esto SÃ se guarda en el historial para poder hacer undo
+    // Restaurar clones originales si el usuario NO aplic� cambios permanentemente
+    // Esto SÍ se guarda en el historial para poder hacer undo
     if (!keepVideoChangesRef.current && savedClonesOriginalRef.current) {
       try {
         const toRestore = Array.isArray(savedClonesOriginalRef.current)
@@ -10845,7 +10929,7 @@ const handleCancelar = useCallback(async () => {
         // Error silencioso
       }
     }
-    
+
     // Limpiar referencias
     savedClonesOriginalRef.current = null;
     keepVideoChangesRef.current = false;
@@ -10880,12 +10964,12 @@ const handleCancelar = useCallback(async () => {
     });
     return unsubscribe;
   }, [navigation, clearBoardState]);
-  
-  // Función para alternar modo de selección múltiple
+
+  // Funci�n para alternar modo de selecci�n m�ltiple
   const handleToggleMultiSelect = useCallback(() => {
     setMultiSelectMode(prev => {
       const newMode = !prev;
-      // Si estamos desactivando el modo, limpiar selección completa
+      // Si estamos desactivando el modo, limpiar selecci�n completa
       if (!newMode) {
         setSelectedCloneIds([]);
         setSelectionRect(null);
@@ -10894,8 +10978,8 @@ const handleCancelar = useCallback(async () => {
         selectionStartRef.current = null;
         setSelectedCloneId(null);
       } else {
-        // Al activar, limpiar selección individual y preparar modo 'select'
-        // Además cancelar cualquier modo de dibujo/paleta activo y deseleccionar
+        // Al activar, limpiar selecci�n individual y preparar modo 'select'
+        // Adem�s cancelar cualquier modo de dibujo/paleta activo y deseleccionar
         setSelectedCloneId(null);
         setSelectedCloneIds([]);
         setSelectionRect(null);
@@ -10903,7 +10987,7 @@ const handleCancelar = useCallback(async () => {
         setSelectionInteractionMode('select');
         selectionStartRef.current = null;
 
-        // Si hay alguna selección que sea una línea, flecha o forma, quitarla para evitar pintar
+        // Si hay alguna selecci�n que sea una l�nea, flecha o forma, quitarla para evitar pintar
         if (selectedCloneId) {
           const sel = actualClonesRef.current.find(c => c.id === selectedCloneId);
           const drawableTypes = ['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape'];
@@ -10912,7 +10996,7 @@ const handleCancelar = useCallback(async () => {
           }
         }
 
-        // Cancelar modos de dibujo o acción pendiente de paleta
+        // Cancelar modos de dibujo o acci�n pendiente de paleta
         try {
           exitDrawingMode();
         } catch (e) {
@@ -10929,17 +11013,17 @@ const handleCancelar = useCallback(async () => {
       }
       return newMode;
     });
-  }, [selectedCloneId, exitDrawingMode, handleDeselectDrawingTool]); // Sin [clones] "” usa actualClonesRef
-  
-  // Función para limpiar selección múltiple
+  }, [selectedCloneId, exitDrawingMode, handleDeselectDrawingTool]); // Sin [clones] "� usa actualClonesRef
+
+  // Funci�n para limpiar selecci�n m�ltiple
   const clearSelection = useCallback(() => {
     setSelectedCloneIds([]);
     setSelectionRect(null);
     setIsSelecting(false);
     selectionStartRef.current = null;
   }, []);
-  
-  // Función para cancelar el rectángulo de selección (sin limpiar los seleccionados)
+
+  // Funci�n para cancelar el rect�ngulo de selecci�n (sin limpiar los seleccionados)
   const cancelSelectionRect = useCallback(() => {
     setIsSelecting(false);
     setSelectionRect(null);
@@ -10947,50 +11031,50 @@ const handleCancelar = useCallback(async () => {
       selectionStartRef.current.isDragging = true;
     }
   }, []);
-  
+
   const toggleSelectionInteractionMode = useCallback(() => {
     setSelectionInteractionMode(prev => prev === 'select' ? 'move' : 'select');
-    // Limpiar el rectángulo al cambiar de modo
+    // Limpiar el rect�ngulo al cambiar de modo
     setSelectionRect(null);
     setIsSelecting(false);
     selectionStartRef.current = null;
   }, []);
-  
-  // Función para eliminar elementos seleccionados
+
+  // Funci�n para eliminar elementos seleccionados
   const deleteSelectedElements = useCallback(() => {
     if (selectedCloneIds.length === 0) return;
-    
+
     // Encontrar los elementos que se van a eliminar
     const clonesBeingDeleted = actualClonesRef.current.filter(clone => selectedCloneIds.includes(clone.id));
-    
+
     // Encontrar los jugadores del equipo que se van a eliminar para liberarlos
     const playersToRestore = clonesBeingDeleted
       .filter(clone => clone.playerData && clone.playerData.uniqueId)
       .map(clone => clone.playerData);
     const playerUniqueIds = playersToRestore.map(p => p.uniqueId);
-    
+
     // Liberar los jugadores del equipo de selectedPlayerIds para que reaparezcan en la paleta
     if (playerUniqueIds.length > 0) {
       setSelectedPlayerIds(prev => prev.filter(uid => !playerUniqueIds.includes(uid)));
       setAvailablePlayers(prev => [...prev, ...playersToRestore]);
     }
-    
+
     // Encontrar los miembros del staff que se van a eliminar para liberarlos
     const staffToRestore = clonesBeingDeleted
       .filter(clone => clone.type === 'staff' && clone.staffRole)
       .map(clone => clone.staffRole);
-    
+
     // Liberar los miembros del staff de selectedStaffIds para que reaparezcan en la paleta
     if (staffToRestore.length > 0) {
       setSelectedStaffIds(prev => prev.filter(staffId => !staffToRestore.includes(staffId)));
     }
-    
+
     setClones(prev => prev.filter(clone => !selectedCloneIds.includes(clone.id)));
     clearSelection();
-    // Desactivar el modo multi-select después de borrar
+    // Desactivar el modo multi-select despu�s de borrar
     setMultiSelectMode(false);
-  }, [selectedCloneIds, clearSelection]); // Sin [clones] "” usa actualClonesRef
-  
+  }, [selectedCloneIds, clearSelection]); // Sin [clones] "� usa actualClonesRef
+
   // Helper: obtener coords del evento relativas al overlay.
   // En react-native-web, locationX/locationY a veces es undefined en eventos de mouse,
   // por lo que calculamos desde pageX/pageY menos el bounding rect del overlay.
@@ -11015,7 +11099,7 @@ const handleCancelar = useCallback(async () => {
     return { x: x || 0, y: y || 0 };
   }, []);
 
-  // Funciones simplificadas para selección múltiple
+  // Funciones simplificadas para selecci�n m�ltiple
   const handleSelectionStart = useCallback((e) => {
     if (!multiSelectMode || selectionInteractionMode !== 'select') return;
 
@@ -11033,7 +11117,7 @@ const handleCancelar = useCallback(async () => {
     const startX = selectionStartRef.current.x;
     const startY = selectionStartRef.current.y;
 
-    // Activar selección solo si se movió más de 10px
+    // Activar selecci�n solo si se movi� m�s de 10px
     const distance = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
     if (distance > 10) {
       setIsSelecting(true);
@@ -11045,7 +11129,7 @@ const handleCancelar = useCallback(async () => {
       });
     }
   }, [multiSelectMode, selectionInteractionMode, getEventCoords]);
-  
+
   const handleSelectionEnd = useCallback(() => {
     if (!multiSelectMode) {
       selectionStartRef.current = null;
@@ -11053,7 +11137,7 @@ const handleCancelar = useCallback(async () => {
       setIsSelecting(false);
       return;
     }
-    
+
     // Si fue solo un clic (no arrastre), no seleccionar nada
     if (!isSelecting || !selectionRect || selectionRect.width < 10 || selectionRect.height < 10) {
       selectionStartRef.current = null;
@@ -11061,9 +11145,9 @@ const handleCancelar = useCallback(async () => {
       setIsSelecting(false);
       return;
     }
-    
-    // Buscar elementos dentro del rectángulo
-    const padding = 12; // expansión mínima para capturar líneas finas y textos
+
+    // Buscar elementos dentro del rect�ngulo
+    const padding = 12; // expansi�n m�nima para capturar l�neas finas y textos
     const rectLeft = selectionRect.x;
     const rectRight = selectionRect.x + selectionRect.width;
     const rectTop = selectionRect.y;
@@ -11078,9 +11162,9 @@ const handleCancelar = useCallback(async () => {
       return (0 <= lambda && lambda <= 1) && (0 <= gamma && gamma <= 1);
     }
 
-    // Helper: verificar si la circunferencia de un círculo está completamente contenida en un rectángulo
+    // Helper: verificar si la circunferencia de un c�rculo est� completamente contenida en un rect�ngulo
     function isCircleContainedInRect(centerX, centerY, radius, left, top, right, bottom) {
-      // La circunferencia está contenida si el centro + radio en todas direcciones está dentro
+      // La circunferencia est� contenida si el centro + radio en todas direcciones est� dentro
       return (
         (centerX - radius) >= left &&
         (centerX + radius) <= right &&
@@ -11089,7 +11173,7 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // Helper: verificar si un rectángulo (shape) está completamente contenido
+    // Helper: verificar si un rect�ngulo (shape) est� completamente contenido
     function isRectShapeContainedInRect(minX, minY, maxX, maxY, left, top, right, bottom) {
       return (
         minX >= left &&
@@ -11104,40 +11188,40 @@ const handleCancelar = useCallback(async () => {
       const strokeTolerance = (clone.thickness || clone.size || 0) / 2;
       const pad = Math.max(2, padding) + strokeTolerance;
 
-      // CÃRCULOS: verificar si la circunferencia está contenida
+      // CÍRCULOS: verificar si la circunferencia est� contenida
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
           return { x: p.x, y: p.y };
         });
-        
-        // Calcular centro y radio del círculo
+
+        // Calcular centro y radio del c�rculo
         const centerX = (pts[0].x + pts[1].x) / 2;
         const centerY = (pts[0].y + pts[1].y) / 2;
         const dx = pts[1].x - pts[0].x;
         const dy = pts[1].y - pts[0].y;
         const radius = Math.sqrt(dx * dx + dy * dy) / 2;
-        
-        // Verificar si la circunferencia (incluyendo el grosor del trazo) está contenida
+
+        // Verificar si la circunferencia (incluyendo el grosor del trazo) est� contenida
         return isCircleContainedInRect(
           centerX, centerY, radius + strokeTolerance,
           rectLeft - pad, rectTop - pad, rectRight + pad, rectBottom + pad
         );
       }
 
-      // RECTÃNGULOS: verificar si el perímetro está contenido
+      // RECTÁNGULOS: verificar si el per�metro est� contenido
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
           return { x: p.x, y: p.y };
         });
-        
+
         const minX = Math.min(pts[0].x, pts[1].x);
         const maxX = Math.max(pts[0].x, pts[1].x);
         const minY = Math.min(pts[0].y, pts[1].y);
         const maxY = Math.max(pts[0].y, pts[1].y);
-        
-        // Verificar si el rectángulo (incluyendo grosor del trazo) está contenido
+
+        // Verificar si el rect�ngulo (incluyendo grosor del trazo) est� contenido
         return isRectShapeContainedInRect(
           minX - strokeTolerance, minY - strokeTolerance,
           maxX + strokeTolerance, maxY + strokeTolerance,
@@ -11145,7 +11229,7 @@ const handleCancelar = useCallback(async () => {
         );
       }
 
-      // Si el elemento tiene puntos (líneas, flechas, shapes), seleccionar SOLO si el recuadro recubre completamente el trazado
+      // Si el elemento tiene puntos (l�neas, flechas, shapes), seleccionar SOLO si el recuadro recubre completamente el trazado
       if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
         // Normalizar puntos a coords en pixels (algunos pueden estar en ratio 0..1)
         const pts = clone.points.map(p => {
@@ -11158,18 +11242,18 @@ const handleCancelar = useCallback(async () => {
         const expandedTop = rectTop - pad;
         const expandedBottom = rectBottom + pad;
 
-        // Para considerar que el recuadro recubre el trazado completo, TODOS los puntos del trazado deben estar dentro del rectángulo expandido
+        // Para considerar que el recuadro recubre el trazado completo, TODOS los puntos del trazado deben estar dentro del rect�ngulo expandido
         const allPointsInside = pts.every(pt => (
           pt.x >= expandedLeft && pt.x <= expandedRight && pt.y >= expandedTop && pt.y <= expandedBottom
         ));
 
         if (allPointsInside) return true;
 
-        // No seleccionamos si solo hay intersección parcial; requerimos cobertura completa del trazado
+        // No seleccionamos si solo hay intersecci�n parcial; requerimos cobertura completa del trazado
         return false;
       }
 
-      // Para elementos puntuales (jugadores, balón, conos, textos), usar xRatio/yRatio o x/y en pixels
+      // Para elementos puntuales (jugadores, bal�n, conos, textos), usar xRatio/yRatio o x/y en pixels
       let elemX, elemY;
       if (typeof clone.x === 'number') {
         elemX = clone.x;
@@ -11185,36 +11269,36 @@ const handleCancelar = useCallback(async () => {
 
       if (elemX === null || elemY === null) return false;
 
-      // Calcular el scale del elemento basado en su tamaño original vs actual
+      // Calcular el scale del elemento basado en su tama�o original vs actual
       const originalWidth = clone.imageWidth || imageWidth;
       const originalHeight = clone.imageHeight || imageHeight;
       const widthRatio = imageWidth / originalWidth;
       const heightRatio = imageHeight / originalHeight;
       const elementScale = (widthRatio + heightRatio) / 2;
-      
-      // Calcular el tamaño visual real del elemento (size * scale) - sin padding extra
+
+      // Calcular el tama�o visual real del elemento (size * scale) - sin padding extra
       const baseSize = clone.size || 24;
       const visualSize = baseSize * elementScale;
-      
-      // Usar exactamente el tamaño visual del icono (mitad del tamaño a cada lado del centro)
+
+      // Usar exactamente el tama�o visual del icono (mitad del tama�o a cada lado del centro)
       const halfSize = visualSize / 2;
       const elementLeft = elemX - halfSize;
       const elementRight = elemX + halfSize;
       const elementTop = elemY - halfSize;
       const elementBottom = elemY + halfSize;
 
-      // Requerir contención completa del elemento dentro del rectángulo de selección
+      // Requerir contenci�n completa del elemento dentro del rect�ngulo de selecci�n
       const fullyContained = (elementLeft >= rectLeft && elementRight <= rectRight && elementTop >= rectTop && elementBottom <= rectBottom);
       return fullyContained;
     }).map(c => c.id);
-    
+
     setSelectedCloneIds(selected);
-    
-    // Cambiar automáticamente a modo mover si se seleccionaron elementos
+
+    // Cambiar autom�ticamente a modo mover si se seleccionaron elementos
     if (selected.length > 0) {
       setSelectionInteractionMode('move');
     }
-    
+
     selectionStartRef.current = null;
     setSelectionRect(null);
     setIsSelecting(false);
@@ -11224,21 +11308,21 @@ const handleCancelar = useCallback(async () => {
   // Multi-select web v3: rewrite completo desde cero (DOM nativo).
   //
   // - Overlay div nativo (en JSX) escucha pointer events.
-  // - Rectángulo de selección dibujado por DOM puro durante el drag,
-  //   sin tocar React state hasta el pointerup â†’ cero re-renders intra-drag.
-  // - Detección de elementos contenidos vía función pura `findContainedIds`
-  //   que lee refs estables (actualClonesRef, refs de tamaño/viewMode).
+  // - Rect�ngulo de selecci�n dibujado por DOM puro durante el drag,
+  //   sin tocar React state hasta el pointerup → cero re-renders intra-drag.
+  // - Detecci�n de elementos contenidos v�a funci�n pura `findContainedIds`
+  //   que lee refs estables (actualClonesRef, refs de tama�o/viewMode).
   // - Listeners attachados al `window` para move/up: el browser garantiza
-  //   que llegan aunque el puntero salga del overlay (más robusto que
+  //   que llegan aunque el puntero salga del overlay (m�s robusto que
   //   setPointerCapture, que a veces falla con elementos React encima).
   // ============================================================
 
-  // Refs estables para tamaño/viewMode (evitan re-attach del effect)
+  // Refs estables para tama�o/viewMode (evitan re-attach del effect)
   const fieldSizeRef = useRef({ w: imageWidth, h: imageHeight, viewMode });
   fieldSizeRef.current = { w: imageWidth, h: imageHeight, viewMode };
 
-  // Función pura: dado un rect en coords del overlay, devuelve los IDs
-  // de clones contenidos. Replica la lógica original de handleSelectionEnd
+  // Funci�n pura: dado un rect en coords del overlay, devuelve los IDs
+  // de clones contenidos. Replica la l�gica original de handleSelectionEnd
   // pero sin depender de React state.
   const findContainedIds = useCallback((rect) => {
     const { w: imgW, h: imgH, viewMode: vm } = fieldSizeRef.current;
@@ -11280,7 +11364,7 @@ const handleCancelar = useCallback(async () => {
       const pad = padding + strokeTol;
       const L = rectLeft - pad, R = rectRight + pad, T = rectTop - pad, B = rectBottom + pad;
 
-      // CÃRCULOS
+      // CÍRCULOS
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -11293,7 +11377,7 @@ const handleCancelar = useCallback(async () => {
         return circleIn(cx, cy, radius + strokeTol, L, T, R, B);
       }
 
-      // RECTÃNGULOS
+      // RECTÁNGULOS
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -11305,7 +11389,7 @@ const handleCancelar = useCallback(async () => {
         return rectsOverlap(minX, minY, maxX, maxY, L, T, R, B);
       }
 
-      // LÃNEAS / FLECHAS / SHAPES con array de puntos
+      // LÍNEAS / FLECHAS / SHAPES con array de puntos
       if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
         const pts = clone.points.map(p =>
           (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
@@ -11326,7 +11410,7 @@ const handleCancelar = useCallback(async () => {
         return pts.some(p => pointInRect(p.x, p.y, L, T, R, B));
       }
 
-      // PUNTUALES (jugadores, balón, conos, textos)
+      // PUNTUALES (jugadores, bal�n, conos, textos)
       let elemX, elemY;
       if (typeof clone.x === 'number') {
         elemX = clone.x; elemY = clone.y;
@@ -11343,8 +11427,8 @@ const handleCancelar = useCallback(async () => {
     }).map(c => c.id);
   }, []);
 
-  // Setup de listeners pointer + dibujo del rectángulo. Solo corre cuando
-  // se entra a modo selección. Estrategia: TODOS los listeners en window
+  // Setup de listeners pointer + dibujo del rect�ngulo. Solo corre cuando
+  // se entra a modo selecci�n. Estrategia: TODOS los listeners en window
   // con capture=true. Validamos manualmente que el evento empieza dentro
   // del overlay. Esto evita cualquier problema de elementos hijos del
   // overlay que pudieran interceptar pointerdown.
@@ -11354,7 +11438,7 @@ const handleCancelar = useCallback(async () => {
 
     const overlay = selectionOverlayRef.current;
     if (!(overlay instanceof Element)) {
-      console.warn('[ms] overlay ref vacío');
+      console.warn('[ms] overlay ref vac�o');
       return;
     }
 
@@ -11362,12 +11446,12 @@ const handleCancelar = useCallback(async () => {
     overlay.style.userSelect = 'none';
     overlay.style.cursor = 'crosshair';
 
-    // Crear el rectángulo visual una sola vez. Lo agregamos DENTRO del
-    // overlay (position:absolute relativo a él) para evitar interferencias
+    // Crear el rect�ngulo visual una sola vez. Lo agregamos DENTRO del
+    // overlay (position:absolute relativo a �l) para evitar interferencias
     // del CSS global `body > div:not(#root) { position:fixed; inset:0; ... }`
     // (GlobalStyles.js:95) que afecta a hijos directos del body. Como el
     // overlay es un div web nativo (no react-native View con transform),
-    // position:absolute es seguro aquí.
+    // position:absolute es seguro aqu�.
     const rectEl = document.createElement('div');
     rectEl.setAttribute('data-ms-rect', '');
     Object.assign(rectEl.style, {
@@ -11491,7 +11575,7 @@ const handleCancelar = useCallback(async () => {
     };
 
     // TODOS los listeners en window con capture=true para garantizar
-    // recepción antes que cualquier handler del overlay/hijos.
+    // recepci�n antes que cualquier handler del overlay/hijos.
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onUp, true);
@@ -11507,11 +11591,11 @@ const handleCancelar = useCallback(async () => {
       if (rectEl.parentNode) rectEl.parentNode.removeChild(rectEl);
     };
   }, [multiSelectMode, selectionInteractionMode, findContainedIds]);
-  
+
   const openCarouselModal = () => {
     setCarouselModalVisible(true);
   };
-  
+
   const closeCarouselModal = () => setCarouselModalVisible(false);
 
   // Handler for the new SVG FieldSelectorModal (lineType + viewMode)
@@ -11521,31 +11605,31 @@ const handleCancelar = useCallback(async () => {
     setFieldImageReady(true);
     setIsLoadingField(false);
   }, []);
-  
+
   const [paletteEdit, setPaletteEdit] = useState({ visible: false, icon: null, paletteIndex: null });
-  
+
   const handleLongPressPaletteIcon = (icon, paletteIndex) => {
     setPaletteEdit({ visible: true, icon: { ...icon, paletteIndex }, paletteIndex });
   };
-  
+
   const handleApplyPaletteEdit = (iconEdited) => {
     handlePaletteIconEdit(iconEdited);
     setPaletteEdit({ visible: false, icon: null, paletteIndex: null });
   };
-  
+
   const handleApplyTextEdit = useCallback((iconEdited) => {
     setClones(clones => clones.map(cl => cl.id === iconEdited.id ? { ...cl, ...iconEdited } : cl));
     setTextEditPanel({ visible: false, icon: null, isNew: false });
   }, []);
-  
+
   // Vista previa en tiempo real para texto mientras se edita
   const handleTextPreviewChange = useCallback((previewIcon) => {
     if (!previewIcon || !previewIcon.id) return;
-    setActualClones(prev => prev.map(cl => 
+    setActualClones(prev => prev.map(cl =>
       cl.id === previewIcon.id ? { ...cl, ...previewIcon } : cl
     ));
   }, []);
-  
+
   const handleAddText = useCallback(() => {
     const newTextId = `free-text-${Date.now()}`;
     const newTextElement = {
@@ -11559,17 +11643,17 @@ const handleCancelar = useCallback(async () => {
       backgroundColor: "transparent",
       zIndex: getNextZIndex('free-text')
     };
-    
+
     setClones(prev => [newTextElement, ...prev]);
-    
-    // Abrir inmediatamente el panel de edición para el nuevo texto (marcado como nuevo)
+
+    // Abrir inmediatamente el panel de edici�n para el nuevo texto (marcado como nuevo)
     setTimeout(() => {
       setTextEditPanel({ visible: true, icon: newTextElement, isNew: true });
       setSelectedCloneId(newTextId);
     }, 100);
   }, [getNextZIndex]);
 
-  // Función para activar/desactivar el modo goma de borrar
+  // Funci�n para activar/desactivar el modo goma de borrar
   const handleToggleEraser = useCallback(() => {
     // Desactivar todas las herramientas de dibujo
     setDrawingStraightArrow(false);
@@ -11586,35 +11670,35 @@ const handleCancelar = useCallback(async () => {
     clearMultiSelect();
   }, [clearMultiSelect]);
 
-  // Función para actualizar estados relacionados cuando se elimina un elemento (sin hacer setClones)
+  // Funci�n para actualizar estados relacionados cuando se elimina un elemento (sin hacer setClones)
   const handleElementDeleted = useCallback((cloneToDelete) => {
     if (!cloneToDelete) return;
-    
+
     setSelectedCloneId(null);
-    
+
     // Eliminar conectores relacionados
     setConnectors(prev => prev.filter(c => c.fromId !== cloneToDelete.id && c.toId !== cloneToDelete.id));
-    
-    // Si es un jugador del equipo, removerlo de selectedPlayerIds y añadirlo a availablePlayers
+
+    // Si es un jugador del equipo, removerlo de selectedPlayerIds y a�adirlo a availablePlayers
     if (cloneToDelete.playerData) {
       setSelectedPlayerIds(prev => prev.filter(uid => uid !== cloneToDelete.playerData.uniqueId));
       setAvailablePlayers(prev => [...prev, cloneToDelete.playerData]);
     }
-    
-    // Si es un miembro del cuerpo técnico, removerlo de selectedStaffIds para que vuelva a la paleta
+
+    // Si es un miembro del cuerpo t�cnico, removerlo de selectedStaffIds para que vuelva a la paleta
     if (cloneToDelete.type === 'staff' && cloneToDelete.staffRole) {
       setSelectedStaffIds(prev => prev.filter(staffId => staffId !== cloneToDelete.staffRole));
     }
   }, []);
 
-  // Función para borrar un elemento por ID (incluyendo setClones)
+  // Funci�n para borrar un elemento por ID (incluyendo setClones)
   const eraseElementById = useCallback((id) => {
     const cloneToDelete = actualClonesRef.current.find(clone => clone.id === id);
     setClones(prev => prev.filter(clone => clone.id !== id));
     handleElementDeleted(cloneToDelete);
-  }, [handleElementDeleted]); // Sin [clones] "” usa actualClonesRef
+  }, [handleElementDeleted]); // Sin [clones] "� usa actualClonesRef
 
-  // Función auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
+  // Funci�n auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
   const distanceToSegment = useCallback((px, py, x1, y1, x2, y2) => {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -11625,33 +11709,33 @@ const handleCancelar = useCallback(async () => {
     return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }, []);
 
-  // Función para encontrar elemento en una posición (para la goma)
+  // Funci�n para encontrar elemento en una posici�n (para la goma)
   // Tolerancia ajustada para detectar elementos bajo el dedo
   const findElementAtPosition = useCallback((touchX, touchY) => {
-    const LINE_TOLERANCE = 8; // Tolerancia para líneas
+    const LINE_TOLERANCE = 8; // Tolerancia para l�neas
     const ICON_TOLERANCE = 8; // Tolerancia para iconos
-    
+
     // Buscar en clones (iconos, jugadores, textos, etc.)
     for (let i = actualClonesRef.current.length - 1; i >= 0; i--) {
       const clone = actualClonesRef.current[i];
-      
-      // Para elementos con puntos (líneas, formas)
+
+      // Para elementos con puntos (l�neas, formas)
       if (clone.points && clone.points.length > 0) {
-        // Para líneas (rectas o curvas)
-        if (clone.type === 'straight-line' || clone.type === 'straight-arrow' || 
+        // Para l�neas (rectas o curvas)
+        if (clone.type === 'straight-line' || clone.type === 'straight-arrow' ||
             clone.type === 'curve-line' || clone.type === 'curve-arrow') {
           const pts = clone.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
-          
-          // Verificar proximidad a cada segmento de la línea
+
+          // Verificar proximidad a cada segmento de la l�nea
           for (let j = 0; j < pts.length - 1; j++) {
             const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[j+1].x, pts[j+1].y);
-            // Solo borrar si está MUY cerca de la línea
+            // Solo borrar si est� MUY cerca de la l�nea
             if (dist <= LINE_TOLERANCE) {
               return clone.id;
             }
           }
         }
-        // Para rectángulos - solo borrar si está sobre el borde, no dentro
+        // Para rect�ngulos - solo borrar si est� sobre el borde, no dentro
         else if (clone.type === 'rectangle' && clone.points.length === 2) {
           const { x: p1x, y: p1y } = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
           const { x: p2x, y: p2y } = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
@@ -11659,38 +11743,38 @@ const handleCancelar = useCallback(async () => {
           const maxX = Math.max(p1x, p2x);
           const minY = Math.min(p1y, p2y);
           const maxY = Math.max(p1y, p2y);
-          
-          // Verificar si está sobre algún borde del rectángulo (no dentro)
+
+          // Verificar si est� sobre alg�n borde del rect�ngulo (no dentro)
           const onTopEdge = touchY >= minY - LINE_TOLERANCE && touchY <= minY + LINE_TOLERANCE && touchX >= minX && touchX <= maxX;
           const onBottomEdge = touchY >= maxY - LINE_TOLERANCE && touchY <= maxY + LINE_TOLERANCE && touchX >= minX && touchX <= maxX;
           const onLeftEdge = touchX >= minX - LINE_TOLERANCE && touchX <= minX + LINE_TOLERANCE && touchY >= minY && touchY <= maxY;
           const onRightEdge = touchX >= maxX - LINE_TOLERANCE && touchX <= maxX + LINE_TOLERANCE && touchY >= minY && touchY <= maxY;
-          
+
           if (onTopEdge || onBottomEdge || onLeftEdge || onRightEdge) {
             return clone.id;
           }
         }
-        // Para círculos - detectar si está sobre el borde (igual que rectángulo)
+        // Para c�rculos - detectar si est� sobre el borde (igual que rect�ngulo)
         else if (clone.type === 'circle' && clone.points.length === 2) {
           const { x: centerX, y: centerY } = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
           const { x: edgeX, y: edgeY } = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
           const radius = Math.hypot(edgeX - centerX, edgeY - centerY);
           const distFromCenter = Math.hypot(touchX - centerX, touchY - centerY);
-          
-          // Detectar si está en la zona del borde del círculo (como rectángulo)
+
+          // Detectar si est� en la zona del borde del c�rculo (como rect�ngulo)
           // Zona externa: desde radius - tolerancia hasta radius + tolerancia
           const innerRadius = Math.max(0, radius - LINE_TOLERANCE);
           const outerRadius = radius + LINE_TOLERANCE;
-          
+
           if (distFromCenter >= innerRadius && distFromCenter <= outerRadius) {
             return clone.id;
           }
         }
-        // Para formas personalizadas - solo si está sobre un borde
+        // Para formas personalizadas - solo si est� sobre un borde
         else if (clone.type === 'custom-shape') {
           const pts = clone.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
-          
-          // Verificar si está cerca de algún borde de la forma
+
+          // Verificar si est� cerca de alg�n borde de la forma
           for (let j = 0; j < pts.length; j++) {
             const nextIdx = (j + 1) % pts.length;
             const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[nextIdx].x, pts[nextIdx].y);
@@ -11700,17 +11784,17 @@ const handleCancelar = useCallback(async () => {
           }
         }
       }
-      // Para elementos con posición (iconos, jugadores, textos)
+      // Para elementos con posici�n (iconos, jugadores, textos)
       else if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
         const { x: elemX, y: elemY } = ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
-        
-        // Para textos, usar un área más grande basada en el texto
+
+        // Para textos, usar un �rea m�s grande basada en el texto
         if (clone.type === 'free-text') {
           const textLength = (clone.value || '').length;
           const fontSize = clone.size || 18;
           const textWidth = Math.max(textLength * fontSize * 0.6, 40);
           const textHeight = fontSize + 10;
-          
+
           if (touchX >= elemX - textWidth/2 - ICON_TOLERANCE && touchX <= elemX + textWidth/2 + ICON_TOLERANCE &&
               touchY >= elemY - textHeight/2 - ICON_TOLERANCE && touchY <= elemY + textHeight/2 + ICON_TOLERANCE) {
             return clone.id;
@@ -11719,8 +11803,8 @@ const handleCancelar = useCallback(async () => {
           // Para iconos y jugadores
           const elemSize = clone.size || 40;
           const halfSize = elemSize / 2;
-          
-          // Solo borrar si el dedo está DENTRO del área del elemento
+
+          // Solo borrar si el dedo est� DENTRO del �rea del elemento
           if (touchX >= elemX - halfSize - ICON_TOLERANCE && touchX <= elemX + halfSize + ICON_TOLERANCE &&
               touchY >= elemY - halfSize - ICON_TOLERANCE && touchY <= elemY + halfSize + ICON_TOLERANCE) {
             return clone.id;
@@ -11729,7 +11813,7 @@ const handleCancelar = useCallback(async () => {
       }
     }
     return null;
-  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] "” usa actualClonesRef
+  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] "� usa actualClonesRef
 
   // Ref para trackear elementos ya borrados durante un arrastre
   const erasedElementsRef = useRef(new Set());
@@ -11782,7 +11866,7 @@ const handleCancelar = useCallback(async () => {
     );
   }, [viewMode, imageWidth, imageHeight, standardSize, selectedCloneId]);
 
-  // Handler para iniciar arrastre de cualquier elemento existente si su detector específico no captura el gesto.
+  // Handler para iniciar arrastre de cualquier elemento existente si su detector espec�fico no captura el gesto.
   const handleElementDragStart = useCallback((e) => {
     if (multiSelectMode && selectionInteractionMode === 'select') return false;
 
@@ -11799,7 +11883,7 @@ const handleCancelar = useCallback(async () => {
       return false;
     }
 
-    const selectedIds = multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected
+    const selectedIds = ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected
       ? selectedCloneIds.filter(id => actualClonesRef.current.some(clone => clone.id === id && !clone.locked))
       : [hitClone.id];
     const initialPositions = buildBoardDragSnapshots(actualClonesRef.current, selectedIds);
@@ -11872,20 +11956,20 @@ const handleCancelar = useCallback(async () => {
     if (saveClonesHistory) saveClonesHistory();
   }, [viewMode, imageWidth, imageHeight, setClones, handleElementDeleted, saveClonesHistory]);
 
-  // Funciones para dibujar líneas rectas
+  // Funciones para dibujar l�neas rectas
   const handleStraightLineDrawStart = useCallback((e) => {
-    if (!drawingStraightArrow && !drawingStraightLine && 
+    if (!drawingStraightArrow && !drawingStraightLine &&
         !drawingCircle && !drawingRectangle) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     setStraightLineStart(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
     setTemporaryLinePoints([displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight)]);
   }, [drawingStraightArrow, drawingStraightLine, drawingCircle, drawingRectangle, viewMode, imageWidth, imageHeight]);
 
   const handleStraightLineDrawMove = useCallback((e) => {
-    if ((!drawingStraightArrow && !drawingStraightLine && 
+    if ((!drawingStraightArrow && !drawingStraightLine &&
         !drawingCircle && !drawingRectangle) || !straightLineStart) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     setStraightLineEnd(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
     setTemporaryLinePoints([
@@ -11894,32 +11978,32 @@ const handleCancelar = useCallback(async () => {
     ]);
   }, [drawingStraightArrow, drawingStraightLine, drawingCircle, drawingRectangle, straightLineStart, viewMode, imageWidth, imageHeight]);
 
-  // 5. Reemplazar la función handleStraightLineDrawEnd
+  // 5. Reemplazar la funci�n handleStraightLineDrawEnd
   const handleStraightLineDrawEnd = () => {
-    if ((!drawingStraightArrow && !drawingStraightLine && 
-        !drawingCircle && !drawingRectangle) || 
+    if ((!drawingStraightArrow && !drawingStraightLine &&
+        !drawingCircle && !drawingRectangle) ||
         !straightLineStart || !straightLineEnd) {
       setStraightLineStart(null);
       setStraightLineEnd(null);
       setTemporaryLinePoints([]);
       return;
     }
-    
+
     let type = '';
     if (drawingStraightArrow) type = 'straight-arrow';
     else if (drawingStraightLine) type = 'straight-line';
     else if (drawingCircle) type = 'circle';
     else if (drawingRectangle) type = 'rectangle';
-    
+
     let points = [
       { x: straightLineStart.x, y: straightLineStart.y },
       { x: straightLineEnd.x, y: straightLineEnd.y }
     ];
-    
-    // Obtener el icono de la paleta para usar su Configuración
+
+    // Obtener el icono de la paleta para usar su Configuraci�n
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
-    
+
     const newObj = {
       id: `${type}-${Date.now()}`,
       type: type,
@@ -11928,7 +12012,7 @@ const handleCancelar = useCallback(async () => {
       lineType: lineType,
       dotSize: dotSize,
       dotSpacing: dotSpacing,
-      // Relleno para formas geométricas
+      // Relleno para formas geom�tricas
       fillColor: (pendingLineAction?.icon?.fillColor !== undefined) ? pendingLineAction.icon.fillColor : (paletteIcon?.fillColor || 'transparent'),
       size: standardSize, // Usar standardSize directamente
       points: points,
@@ -11939,14 +12023,14 @@ const handleCancelar = useCallback(async () => {
       paletteIndex: paletteIndex >= 0 ? paletteIndex : undefined,
       zIndex: getNextZIndex(type)
     };
-    
+
     setClones(prev => [newObj, ...prev]);
-    
+
     setStraightLineStart(null);
     setStraightLineEnd(null);
     setTemporaryLinePoints([]);
-    // Mantener el modo de dibujo activo para formas geométricas (círculos y rectángulos)
-    // Solo resetear para líneas y flechas rectas
+    // Mantener el modo de dibujo activo para formas geom�tricas (c�rculos y rect�ngulos)
+    // Solo resetear para l�neas y flechas rectas
     // setDrawingStraightArrow(false);
     // setDrawingStraightLine(false);
     // No resetear drawingCircle y drawingRectangle para permitir dibujo continuo
@@ -11955,37 +12039,37 @@ const handleCancelar = useCallback(async () => {
   // Funciones para dibujar curvas
   const handleCurveDrawStart = useCallback((e) => {
     if (!drawingCurveLine && !drawingCurveArrow) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
-    
+
     setCurvePoints([newPoint]);
     setIsDrawing(true);
   }, [drawingCurveLine, drawingCurveArrow, viewMode, imageWidth, imageHeight]);
 
   const handleCurveDrawMove = useCallback((e) => {
     if ((!drawingCurveLine && !drawingCurveArrow) || !isDrawing) return;
-    
+
     const { locationX, locationY } = e.nativeEvent;
     const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
-    
+
     setCurvePoints(prev => [...prev, newPoint]);
   }, [drawingCurveLine, drawingCurveArrow, isDrawing, viewMode, imageWidth, imageHeight]);
 
-  // 6. Reemplazar la función handleCurveDrawEnd
+  // 6. Reemplazar la funci�n handleCurveDrawEnd
   const handleCurveDrawEnd = () => {
     if ((!drawingCurveLine && !drawingCurveArrow) || !isDrawing || curvePoints.length < 2) {
       setCurvePoints([]);
       setIsDrawing(false);
       return;
     }
-  
+
     const type = drawingCurveArrow ? 'curve-arrow' : 'curve-line';
-    
-    // Obtener el icono de la paleta para usar su Configuración
+
+    // Obtener el icono de la paleta para usar su Configuraci�n
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
-    
+
     const newObj = {
       id: `${type}-${Date.now()}`,
       type: type,
@@ -12001,47 +12085,47 @@ const handleCancelar = useCallback(async () => {
       paletteIndex: paletteIndex >= 0 ? paletteIndex : undefined,
       zIndex: getNextZIndex(type)
     };
-    
+
     setClones(prev => [newObj, ...prev]);
-    
+
     setCurvePoints([]);
     setIsDrawing(false);
   };
 
-  // 7. Función para renderizar líneas rectas directamente en SVG
+  // 7. Funci�n para renderizar l�neas rectas directamente en SVG
   function renderStraightLine({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length !== 2) return null;
-    
+
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const widthRatio = imageWidth / originalWidth;
     const heightRatio = imageHeight / originalHeight;
     const scale = (widthRatio + heightRatio) / 2;
-    
+
     const pts = icon.points.map(p => ({
       x: p.x * imageWidth,
       y: p.y * imageHeight,
     }));
-    
+
     const x1 = pts[0].x;
     const y1 = pts[0].y;
     const x2 = pts[1].x;
     const y2 = pts[1].y;
-    
-    // Grosor reducido para líneas más finas
+
+    // Grosor reducido para l�neas m�s finas
     const thickness = (icon.thickness || 1) * scale * 0.7;
-    
-    // Determinar si está seleccionado en modo multi-selección (O(1) con Set)
+
+    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
-    
-    // Crear elementos SVG para la línea
+
+    // Crear elementos SVG para la l�nea
     const lineElements = [];
-    
-    // Calcular punto final de la línea si es una flecha
+
+    // Calcular punto final de la l�nea si es una flecha
     let lineEndX = x2;
     let lineEndY = y2;
     let arrowPoints = '';
-    
+
     if (icon.type === 'straight-arrow') {
       const arrowData = getArrowHeadForStraightLine(
         { x: x1, y: y1 },
@@ -12054,8 +12138,8 @@ const handleCancelar = useCallback(async () => {
       lineEndX = arrowData.lineEnd.x;
       lineEndY = arrowData.lineEnd.y;
     }
-    
-    // Si está multi-seleccionada, añadir una capa exterior para destacar
+
+    // Si est� multi-seleccionada, a�adir una capa exterior para destacar
     if (isMultiSelected) {
       lineElements.push(
         <Path
@@ -12069,24 +12153,24 @@ const handleCancelar = useCallback(async () => {
         />
       );
     }
-    
-    // Línea principal (con o sin punteado)
-    const lineStrokeDasharray = icon.lineType === 'dotted' 
-      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}` 
+
+    // L�nea principal (con o sin punteado)
+    const lineStrokeDasharray = icon.lineType === 'dotted'
+      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
-    
+
     lineElements.push(
-      <Path 
+      <Path
         key={`line-${icon.id}-${icon.color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}`}
-        d={`M${x1},${y1} L${lineEndX},${lineEndY}`} 
-        stroke={isMultiSelected ? '#3498db' : icon.color} 
+        d={`M${x1},${y1} L${lineEndX},${lineEndY}`}
+        stroke={isMultiSelected ? '#3498db' : icon.color}
         strokeWidth={thickness}
         strokeDasharray={lineStrokeDasharray}
-        fill="none" 
-        strokeLinecap="round" 
+        fill="none"
+        strokeLinecap="round"
       />
     );
-    
+
     // Punta de flecha si es necesario
     if (icon.type === 'straight-arrow') {
       lineElements.push(
@@ -12098,7 +12182,7 @@ const handleCancelar = useCallback(async () => {
         />
       );
     }
-    
+
     return lineElements;
   }
 
@@ -12106,54 +12190,54 @@ const handleCancelar = useCallback(async () => {
     const cloneToDelete = actualClonesRef.current.find(clone => clone.id === id);
     setClones(prev => prev.filter(clone => clone.id !== id));
     setSelectedCloneId(null);
-    
+
     // Eliminar conectores relacionados con el elemento eliminado
     setConnectors(prev => prev.filter(c => c.fromId !== id && c.toId !== id));
-    
-    // Si es un jugador del equipo, removerlo de selectedPlayerIds y añadirlo a availablePlayers
+
+    // Si es un jugador del equipo, removerlo de selectedPlayerIds y a�adirlo a availablePlayers
     if (cloneToDelete && cloneToDelete.playerData) {
       setSelectedPlayerIds(prev => prev.filter(uid => uid !== cloneToDelete.playerData.uniqueId));
       setAvailablePlayers(prev => [...prev, cloneToDelete.playerData]);
     }
-    
-    // Si es un miembro del cuerpo técnico, removerlo de selectedStaffIds para que vuelva a la paleta
+
+    // Si es un miembro del cuerpo t�cnico, removerlo de selectedStaffIds para que vuelva a la paleta
     if (cloneToDelete && cloneToDelete.type === 'staff' && cloneToDelete.staffRole) {
       setSelectedStaffIds(prev => prev.filter(staffId => staffId !== cloneToDelete.staffRole));
     }
-  }, []); // Sin [clones] "” usa actualClonesRef para identidad estable
+  }, []); // Sin [clones] "� usa actualClonesRef para identidad estable
 
-  // Función para duplicar un elemento
+  // Funci�n para duplicar un elemento
   const handleDuplicateClone = useCallback((id) => {
     const elementToDuplicate = actualClonesRef.current.find(clone => clone.id === id);
-    
+
     if (elementToDuplicate) {
       // Crear una copia con un nuevo ID y ligeramente desplazada
       const duplicatedElement = {
         ...elementToDuplicate,
         id: `${elementToDuplicate.type}-${Date.now()}`, // Generar un nuevo ID
       };
-      
-      // Desplazar ligeramente el elemento duplicado según su tipo
+
+      // Desplazar ligeramente el elemento duplicado seg�n su tipo
       if (duplicatedElement.points && duplicatedElement.points.length > 0) {
-        // Para formas con puntos (líneas, polígonos, etc.)
+        // Para formas con puntos (l�neas, pol�gonos, etc.)
         duplicatedElement.points = duplicatedElement.points.map(point => ({
           x: Math.min(1, point.x + 0.05), // Desplazar a la derecha un 5%
           y: Math.min(1, point.y + 0.05)  // Desplazar hacia abajo un 5%
         }));
       } else {
-        // Para elementos con posición por ratio (iconos, textos, etc.)
+        // Para elementos con posici�n por ratio (iconos, textos, etc.)
         duplicatedElement.xRatio = Math.min(1, (duplicatedElement.xRatio || 0.5) + 0.05);
         duplicatedElement.yRatio = Math.min(1, (duplicatedElement.yRatio || 0.5) + 0.05);
       }
-      
-      // Añadir el elemento duplicado al array de clones (con nuevo zIndex)
+
+      // A�adir el elemento duplicado al array de clones (con nuevo zIndex)
       const duplicatedWithZIndex = { ...duplicatedElement, zIndex: getNextZIndex(duplicatedElement.type) };
       setClones(prev => [duplicatedWithZIndex, ...prev]);
-      
+
       // Seleccionar el nuevo elemento duplicado
       setSelectedCloneId(duplicatedWithZIndex.id);
     }
-  }, [getNextZIndex]); // Sin [clones] "” usa actualClonesRef
+  }, [getNextZIndex]); // Sin [clones] "� usa actualClonesRef
   const duplicateSelectedElements = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12181,10 +12265,10 @@ const handleCancelar = useCallback(async () => {
         count++;
       }
     });
-    
+
     const centroidX = count > 0 ? sumX / count : 0.5;
     const centroidY = count > 0 ? sumY / count : 0.5;
-    
+
     // Offset fijo para todo el grupo (5% hacia abajo y derecha)
     const offsetX = 0.05;
     const offsetY = 0.05;
@@ -12197,13 +12281,13 @@ const handleCancelar = useCallback(async () => {
       };
 
       if (duplicatedElement.points && duplicatedElement.points.length > 0) {
-        // Mantener la posición relativa: aplicar el mismo offset a todos los puntos
+        // Mantener la posici�n relativa: aplicar el mismo offset a todos los puntos
         duplicatedElement.points = duplicatedElement.points.map(point => ({
           x: Math.max(0, Math.min(1, point.x + offsetX)),
           y: Math.max(0, Math.min(1, point.y + offsetY))
         }));
       } else {
-        // Mantener la posición relativa: aplicar el mismo offset
+        // Mantener la posici�n relativa: aplicar el mismo offset
         duplicatedElement.xRatio = Math.max(0, Math.min(1, (duplicatedElement.xRatio || 0.5) + offsetX));
         duplicatedElement.yRatio = Math.max(0, Math.min(1, (duplicatedElement.yRatio || 0.5) + offsetY));
       }
@@ -12216,9 +12300,9 @@ const handleCancelar = useCallback(async () => {
     setClones(prev => [...duplicates, ...prev]);
     setSelectedCloneIds(duplicates.map(d => d.id));
     setSelectedCloneId(duplicates[0].id);
-  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] "” usa actualClonesRef
+  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] "� usa actualClonesRef
 
-  // Función para rotar elementos seleccionados alrededor del centroide del grupo
+  // Funci�n para rotar elementos seleccionados alrededor del centroide del grupo
   const rotateSelectedElements = useCallback((angleDegrees = 15) => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12244,11 +12328,11 @@ const handleCancelar = useCallback(async () => {
         count++;
       }
     });
-    
+
     const centroidX = count > 0 ? sumX / count : 0.5;
     const centroidY = count > 0 ? sumY / count : 0.5;
-    
-    // Convertir ángulo a radianes
+
+    // Convertir �ngulo a radianes
     const angleRad = (angleDegrees * Math.PI) / 180;
     const cosAngle = Math.cos(angleRad);
     const sinAngle = Math.sin(angleRad);
@@ -12270,7 +12354,7 @@ const handleCancelar = useCallback(async () => {
         });
         return { ...c, points: newPoints };
       } else {
-        // Rotar la posición del elemento alrededor del centroide
+        // Rotar la posici�n del elemento alrededor del centroide
         const dx = (c.xRatio || 0.5) - centroidX;
         const dy = (c.yRatio || 0.5) - centroidY;
         const newX = centroidX + (dx * cosAngle - dy * sinAngle);
@@ -12282,9 +12366,9 @@ const handleCancelar = useCallback(async () => {
         };
       }
     }));
-  }, [selectedCloneIds]); // Sin [clones] "” usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] "� usa actualClonesRef
 
-  // Función para alternar bloquear/desbloquear todos los seleccionados
+  // Funci�n para alternar bloquear/desbloquear todos los seleccionados
   const toggleLockSelected = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12296,8 +12380,8 @@ const handleCancelar = useCallback(async () => {
     setClones(prev => prev.map(c => {
       if (selectedCloneIds.includes(c.id)) {
         const isLocking = anyUnlocked;
-        return { 
-          ...c, 
+        return {
+          ...c,
           locked: isLocking,
           zIndex: isLocking ? 1 : (c.originalZIndex || getZIndexBaseForType(c.type)),
           originalZIndex: isLocking ? (c.zIndex || getZIndexBaseForType(c.type)) : c.originalZIndex
@@ -12305,9 +12389,9 @@ const handleCancelar = useCallback(async () => {
       }
       return c;
     }));
-  }, [selectedCloneIds]); // Sin [clones] "” usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] "� usa actualClonesRef
 
-  // Función para traer los seleccionados al frente
+  // Funci�n para traer los seleccionados al frente
   const bringSelectedToFront = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12322,7 +12406,7 @@ const handleCancelar = useCallback(async () => {
     });
   }, [selectedCloneIds]);
 
-  // Función para enviar los seleccionados al fondo
+  // Funci�n para enviar los seleccionados al fondo
   const sendSelectedToBack = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12336,10 +12420,10 @@ const handleCancelar = useCallback(async () => {
     });
   }, [selectedCloneIds]);
 
-  // Función para aumentar el tamaño de un elemento
+  // Funci�n para aumentar el tama�o de un elemento
   const handleIncreaseSize = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => prev.map(c => {
       if (c.id === iconId) {
         // Para circle, rectangle, custom-shape: escalar puntos desde el centro
@@ -12355,16 +12439,16 @@ const handleCancelar = useCallback(async () => {
             }))
           };
         }
-        
-        // Para líneas/flechas, aumentamos el grosor
+
+        // Para l�neas/flechas, aumentamos el grosor
         if (c.type === 'straight-line' || c.type === 'straight-arrow' || c.type === 'curve-line' || c.type === 'curve-arrow') {
           return {
             ...c,
             thickness: Math.min(20, (c.thickness || 2) + 1)
           };
         }
-        
-        // Para iconos y otros elementos, aumentamos el tamaño (sin límite máximo)
+
+        // Para iconos y otros elementos, aumentamos el tama�o (sin l�mite m�ximo)
         return {
           ...c,
           size: (c.size || standardSize) + 2
@@ -12374,10 +12458,10 @@ const handleCancelar = useCallback(async () => {
     }));
   }, [standardSize]);
 
-  // Función para disminuir el tamaño de un elemento
+  // Funci�n para disminuir el tama�o de un elemento
   const handleDecreaseSize = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => prev.map(c => {
       if (c.id === iconId) {
         // Para circle, rectangle, custom-shape: escalar puntos hacia el centro
@@ -12389,7 +12473,7 @@ const handleCancelar = useCallback(async () => {
             x: Math.max(0, Math.min(1, cx + (p.x - cx) * sf)),
             y: Math.max(0, Math.min(1, cy + (p.y - cy) * sf))
           }));
-          // Verificar tamaño mínimo
+          // Verificar tama�o m�nimo
           const xs = newPts.map(p => p.x);
           const ys = newPts.map(p => p.y);
           const w = Math.max(...xs) - Math.min(...xs);
@@ -12397,16 +12481,16 @@ const handleCancelar = useCallback(async () => {
           if (w < 0.02 || h < 0.02) return c;
           return { ...c, points: newPts };
         }
-        
-        // Para líneas/flechas, disminuimos el grosor
+
+        // Para l�neas/flechas, disminuimos el grosor
         if (c.type === 'straight-line' || c.type === 'straight-arrow' || c.type === 'curve-line' || c.type === 'curve-arrow') {
           return {
             ...c,
             thickness: Math.max(1, (c.thickness || 2) - 1)
           };
         }
-        
-        // Para iconos y otros elementos, disminuimos el tamaño
+
+        // Para iconos y otros elementos, disminuimos el tama�o
         return {
           ...c,
           size: Math.max(10, (c.size || standardSize) - 2)
@@ -12416,10 +12500,10 @@ const handleCancelar = useCallback(async () => {
     }));
   }, [standardSize]);
 
-  // Función para bloquear/desbloquear un elemento
+  // Funci�n para bloquear/desbloquear un elemento
   const handleToggleLock = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => prev.map(c => {
       if (c.id === iconId) {
         const isLocking = c.locked !== true;
@@ -12434,106 +12518,106 @@ const handleCancelar = useCallback(async () => {
     }));
   }, []);
 
-  // Función para subir un elemento a la primera capa (solo dentro de su grupo)
+  // Funci�n para subir un elemento a la primera capa (solo dentro de su grupo)
   const handleBringToFront = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => {
       const element = prev.find(c => c.id === iconId);
       if (!element) return prev;
-      
+
       const base = getZIndexBaseForType(element.type);
       // Filtrar solo elementos del mismo grupo de tipo
       const sameGroup = prev.filter(c => getZIndexBaseForType(c.type) === base);
       const maxGroupZIndex = Math.max(...sameGroup.map(c => c.zIndex || base), base);
       const newZIndex = maxGroupZIndex + 1;
-      
+
       const withoutElement = prev.filter(c => c.id !== iconId);
       return [...withoutElement, { ...element, zIndex: newZIndex }];
     });
   }, []);
 
-  // Función para enviar un elemento al fondo (solo dentro de su grupo)
+  // Funci�n para enviar un elemento al fondo (solo dentro de su grupo)
   const handleSendToBack = useCallback((iconId) => {
     if (!iconId) return;
-    
+
     setClones(prev => {
       const element = prev.find(c => c.id === iconId);
       if (!element) return prev;
-      
+
       const base = getZIndexBaseForType(element.type);
       // Filtrar solo elementos del mismo grupo de tipo
       const sameGroup = prev.filter(c => getZIndexBaseForType(c.type) === base && c.id !== iconId);
       const minGroupZIndex = sameGroup.length > 0 ? Math.min(...sameGroup.map(c => c.zIndex || base)) : base;
       const newZIndex = Math.max(minGroupZIndex - 1, base);
-      
+
       const withoutElement = prev.filter(c => c.id !== iconId);
       return [{ ...element, zIndex: newZIndex }, ...withoutElement];
     });
   }, []);
 
-  // Función para desbloquear un elemento desde el panel de elementos bloqueados
+  // Funci�n para desbloquear un elemento desde el panel de elementos bloqueados
   const handleUnlockFromPanel = useCallback((iconId) => {
-    setClones(prev => prev.map(clone => 
-      clone.id === iconId 
-        ? { 
-            ...clone, 
+    setClones(prev => prev.map(clone =>
+      clone.id === iconId
+        ? {
+            ...clone,
             locked: false,
-            // Restaurar zIndex original o usar valor por defecto según tipo
+            // Restaurar zIndex original o usar valor por defecto seg�n tipo
             zIndex: clone.originalZIndex || getZIndexBaseForType(clone.type)
           }
         : clone
     ));
   }, []);
 
-  // 8. Función para renderizar líneas curvas directamente en SVG
+  // 8. Funci�n para renderizar l�neas curvas directamente en SVG
   function renderCurveLine({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length < 2) return null;
-    
+
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const widthRatio = imageWidth / originalWidth;
     const heightRatio = imageHeight / originalHeight;
     const scale = (widthRatio + heightRatio) / 2;
-    
+
     // Transformar puntos relativos a coordenadas absolutas
     const pts = icon.points.map(p => ({
       x: p.x * imageWidth,
       y: p.y * imageHeight,
     }));
-    
-    // Determinar si está seleccionado en modo multi-selección (O(1) con Set)
+
+    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
-    
+
     // Generar path para SVG
     const pathData = generateCurvePath(pts);
-    
-    // Grosor reducido para líneas más finas
+
+    // Grosor reducido para l�neas m�s finas
     const thickness = (icon.thickness || 1) * scale * 0.7;
-    
-    // Encontrar los dos últimos puntos significativos para calcular la dirección de la flecha
+
+    // Encontrar los dos �ltimos puntos significativos para calcular la direcci�n de la flecha
     let lastIdx = pts.length - 1;
     let secondLastIdx = lastIdx - 1;
-    
-    // Si los últimos puntos están muy cerca, buscar uno más alejado para mejor dirección
+
+    // Si los �ltimos puntos est�n muy cerca, buscar uno m�s alejado para mejor direcci�n
     while (secondLastIdx >= 0 && lastIdx > 0) {
       const dist = Math.sqrt(
         Math.pow(pts[lastIdx].x - pts[secondLastIdx].x, 2) +
         Math.pow(pts[lastIdx].y - pts[secondLastIdx].y, 2)
       );
-      if (dist > 5) break; // Al menos 5 píxeles de diferencia
+      if (dist > 5) break; // Al menos 5 p�xeles de diferencia
       secondLastIdx--;
     }
-    
+
     if (secondLastIdx < 0) secondLastIdx = 0;
-    
+
     const lastPoint = pts[lastIdx];
     const secondLastPoint = pts[secondLastIdx];
-    
+
     // Crear elementos SVG para la curva
     const curveElements = [];
-    
-    // Si está multi-seleccionada, añadir una capa exterior para destacar
+
+    // Si est� multi-seleccionada, a�adir una capa exterior para destacar
     if (isMultiSelected) {
       curveElements.push(
         <Path
@@ -12549,25 +12633,25 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // Línea principal (con o sin punteado)
-    const curveStrokeDasharray = icon.lineType === 'dotted' 
-      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}` 
+    // L�nea principal (con o sin punteado)
+    const curveStrokeDasharray = icon.lineType === 'dotted'
+      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
-    
+
     curveElements.push(
-      <Path 
+      <Path
         key={`curve-${icon.id}-${icon.color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}`}
-        d={pathData} 
-        stroke={isMultiSelected ? '#3498db' : icon.color} 
+        d={pathData}
+        stroke={isMultiSelected ? '#3498db' : icon.color}
         strokeWidth={thickness}
         strokeDasharray={curveStrokeDasharray}
-        fill="none" 
+        fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
     );
-    
-    // Punta de flecha si es necesario - CORRECCIÃ“N AQUÃ
+
+    // Punta de flecha si es necesario - CORRECCIÓN AQUÍ
     if (icon.type === 'curve-arrow' && pts.length >= 2) {
       const arrowData = getArrowHeadForStraightLine(
         secondLastPoint,
@@ -12576,48 +12660,48 @@ const handleCancelar = useCallback(async () => {
         0.5,
         thickness
       );
-      
-      // Recalcular pathData sin el último segmento completo, terminando en lineEnd
+
+      // Recalcular pathData sin el �ltimo segmento completo, terminando en lineEnd
       let adjustedPathData = pathData;
       if (pts.length > 1) {
-        // Reconstruir el path hasta el penúltimo punto y luego hasta lineEnd
+        // Reconstruir el path hasta el pen�ltimo punto y luego hasta lineEnd
         adjustedPathData = `M${pts[0].x},${pts[0].y}`;
         for (let i = 1; i < pts.length - 1; i++) {
           adjustedPathData += ` L${pts[i].x},${pts[i].y}`;
         }
         adjustedPathData += ` L${arrowData.lineEnd.x},${arrowData.lineEnd.y}`;
       }
-      
+
       // Actualizar el path de la curva para terminar antes de la flecha
       if (icon.lineType === 'dotted') {
-        // Reemplazar el último elemento de punteado
+        // Reemplazar el �ltimo elemento de punteado
         curveElements[curveElements.length - 1] = (
-          <Path 
+          <Path
             key={`dotted-curve-${icon.id}`}
-            d={adjustedPathData} 
-            stroke={icon.color} 
+            d={adjustedPathData}
+            stroke={icon.color}
             strokeWidth={thickness}
             strokeDasharray={`${icon.dotSize || 2}, ${icon.dotSpacing || 4}`}
-            fill="none" 
+            fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         );
       } else {
-        // Reemplazar el último elemento sólido
+        // Reemplazar el �ltimo elemento s�lido
         curveElements[curveElements.length - 1] = (
-          <Path 
+          <Path
             key={`curve-${icon.id}`}
-            d={adjustedPathData} 
-            stroke={icon.color} 
-            strokeWidth={thickness} 
-            fill="none" 
+            d={adjustedPathData}
+            stroke={icon.color}
+            strokeWidth={thickness}
+            fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         );
       }
-      
+
       curveElements.push(
         <Polygon
           key={`curve-arrow-${icon.id}`}
@@ -12627,29 +12711,29 @@ const handleCancelar = useCallback(async () => {
         />
       );
     }
-    
+
     return curveElements;
   }
 
-  // 9. Función para renderizar custom-shape directamente en SVG
+  // 9. Funci�n para renderizar custom-shape directamente en SVG
   function renderCustomShape({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length < 2) return null;
-    
+
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const widthRatio = imageWidth / originalWidth;
     const heightRatio = imageHeight / originalHeight;
     const scale = (widthRatio + heightRatio) / 2;
-    
+
     // Transformar puntos relativos a coordenadas absolutas
     const pts = icon.points.map(p => ({
       x: p.x * imageWidth,
       y: p.y * imageHeight,
     }));
-    
-    // Determinar si está seleccionado en modo multi-selección (O(1) con Set)
+
+    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
-    
+
     // Generar path para custom-shape (conectar todos los puntos)
     let pathData = `M${pts[0].x},${pts[0].y}`;
     for (let i = 1; i < pts.length; i++) {
@@ -12659,13 +12743,13 @@ const handleCancelar = useCallback(async () => {
     if (icon.isCustomShapeComplete) {
       pathData += ' Z';
     }
-    
-    // Grosor reducido para líneas más finas
+
+    // Grosor reducido para l�neas m�s finas
     const thickness = (icon.thickness || 5) * scale * 0.7;
-    
+
     // Crear elementos SVG para el custom-shape
     const customShapeElements = [];
-    
+
     // Highlight for multi-selection
     if (isMultiSelected) {
       customShapeElements.push(
@@ -12682,60 +12766,60 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // Línea principal (con o sin punteado)
-    const customShapeStrokeDasharray2 = icon.lineType === 'dotted' 
-      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}` 
+    // L�nea principal (con o sin punteado)
+    const customShapeStrokeDasharray2 = icon.lineType === 'dotted'
+      ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
-    
+
     customShapeElements.push(
-      <Path 
+      <Path
         key={`custom-shape-${icon.id}-${icon.color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}-${icon.fillColor || 'transparent'}`}
-        d={pathData} 
-        stroke={isMultiSelected ? '#3498db' : icon.color} 
+        d={pathData}
+        stroke={isMultiSelected ? '#3498db' : icon.color}
         strokeWidth={thickness}
         strokeDasharray={customShapeStrokeDasharray2}
-        fill="none" 
+        fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
     );
-    
+
     return customShapeElements;
   }
-  
+
   const { width: canvasWidth, height: canvasHeight } = { width: imageWidth, height: imageHeight };
-  
-  // Cache de positionedClones para evitar recalcular todo en cada cambio de posición
+
+  // Cache de positionedClones para evitar recalcular todo en cada cambio de posici�n
   const positionedClonesCache = useRef({ clones: [], result: [], clonesLength: 0 });
-  
-  // Memoizar el cálculo y ordenamiento de clones para evitar recalcular en cada render
+
+  // Memoizar el c�lculo y ordenamiento de clones para evitar recalcular en cada render
   const positionedClones = useMemo(() => {
     const cache = positionedClonesCache.current;
-    
-    // Forzar recálculo completo si la longitud cambió
+
+    // Forzar rec�lculo completo si la longitud cambi�
     if (cache.clonesLength !== clones.length) {
       cache.clonesLength = clones.length;
       cache.clones = [];
       cache.result = [];
     }
-    
-    // Optimización: si solo cambió la posición de un elemento (drag), actualizar solo ese
-    // Pero si cambió más de un elemento o propiedades distintas a posición, recalcular todo
+
+    // Optimizaci�n: si solo cambi� la posici�n de un elemento (drag), actualizar solo ese
+    // Pero si cambi� m�s de un elemento o propiedades distintas a posici�n, recalcular todo
     if (cache.clones.length === clones.length && cache.result.length > 0) {
       let changedCount = 0;
       let changedIndex = -1;
       let onlyPositionChanged = true;
-      
+
       for (let i = 0; i < clones.length; i++) {
         if (cache.clones[i] !== clones[i]) {
           changedCount++;
           changedIndex = i;
-          
-          // Verificar si solo cambió la posición o si cambiaron otras propiedades
+
+          // Verificar si solo cambi� la posici�n o si cambiaron otras propiedades
           if (changedCount === 1 && cache.clones[i]) {
             const oldClone = cache.clones[i];
             const newClone = clones[i];
-            // Si cambiaron propiedades visuales (no solo posición), forzar recálculo completo
+            // Si cambiaron propiedades visuales (no solo posici�n), forzar rec�lculo completo
             if (oldClone.color !== newClone.color ||
                 oldClone.size !== newClone.size ||
                 oldClone.thickness !== newClone.thickness ||
@@ -12750,22 +12834,22 @@ const handleCancelar = useCallback(async () => {
               onlyPositionChanged = false;
             }
           }
-          
+
           if (changedCount > 1) {
             onlyPositionChanged = false;
             break;
           }
         }
       }
-      
-      // Si solo cambió la posición de un elemento (drag), actualizar solo ese
+
+      // Si solo cambi� la posici�n de un elemento (drag), actualizar solo ese
       if (changedCount === 1 && onlyPositionChanged) {
         const clone = clones[changedIndex];
         const coords = fromRatioCoords(clone.xRatio, clone.yRatio, canvasWidth, canvasHeight, viewMode);
-        
+
         const updatedResult = [...cache.result];
         const resultIndex = updatedResult.findIndex(r => r.id === clone.id);
-        
+
         if (resultIndex !== -1) {
           updatedResult[resultIndex] = {
             ...updatedResult[resultIndex],
@@ -12773,24 +12857,24 @@ const handleCancelar = useCallback(async () => {
             x: coords.x,
             y: coords.y
           };
-          
+
           cache.clones = clones;
           cache.result = updatedResult;
           return updatedResult;
         }
       }
-      // Si cambiaron propiedades visuales o múltiples elementos, continuar para recalcular todo
+      // Si cambiaron propiedades visuales o m�ltiples elementos, continuar para recalcular todo
     }
-    
-    // Sin límite artificial - manejar cualquier cantidad de elementos
-    
+
+    // Sin l�mite artificial - manejar cualquier cantidad de elementos
+
     // Calcular z-index de manera optimizada
     const clonesWithZIndex = clones.map((clone, originalIndex) => {
       const isLineType = LINE_TYPES_SET.has(clone.type);
       const isMaterialType = MATERIAL_TYPES_SET.has(clone.type);
       const coords = fromRatioCoords(clone.xRatio, clone.yRatio, canvasWidth, canvasHeight, viewMode);
-      
-      // Calcular zIndex: usar el zIndex asignado en creación, con fallbacks
+
+      // Calcular zIndex: usar el zIndex asignado en creaci�n, con fallbacks
       let zIndex;
       if (clone.locked === true) {
         zIndex = 1;
@@ -12805,7 +12889,7 @@ const handleCancelar = useCallback(async () => {
         else if (isMaterialType) zIndex = ZINDEX_BASE_MATERIALS;
         else zIndex = ZINDEX_BASE_ICONS;
       }
-      
+
       return {
         ...clone,
         calculatedZIndex: zIndex,
@@ -12815,17 +12899,17 @@ const handleCancelar = useCallback(async () => {
         originalIndex
       };
     });
-    
+
     // Ordenar solo si es necesario
     const sorted = clonesWithZIndex.sort((a, b) => a.calculatedZIndex - b.calculatedZIndex);
-    
+
     // Guardar en cache
     positionedClonesCache.current.clones = clones;
     positionedClonesCache.current.result = sorted;
-    
+
     return sorted;
   }, [clones, selectedCloneId, canvasWidth, canvasHeight, viewMode]);
-  
+
   // Helper: check if a clone is visible in the current viewport
   // Elements being actively dragged are always visible (so gesture handlers survive for delete-on-drop)
   const isCloneVisible = useCallback((clone) => {
@@ -12844,51 +12928,51 @@ const handleCancelar = useCallback(async () => {
     return true;
   }, [viewMode]);
 
-  // Memoizar textos libres con virtualización optimizada
+  // Memoizar textos libres con virtualizaci�n optimizada
   const freeTextElements = useMemo(() => {
     const textClones = positionedClones.filter(clone => clone.type === 'free-text' && isCloneVisible(clone));
-    
-    // Si hay muy pocos elementos, retornar todos sin virtualización
+
+    // Si hay muy pocos elementos, retornar todos sin virtualizaci�n
     if (textClones.length < 30) {
       return textClones;
     }
-    
-    // Virtualización con cálculo más rápido
+
+    // Virtualizaci�n con c�lculo m�s r�pido
     const MARGIN = 150;
     const minX = -MARGIN;
     const maxX = imageWidth + MARGIN;
     const minY = -MARGIN;
     const maxY = imageHeight + MARGIN;
     const size = 100;
-    
+
     return textClones.filter(clone => {
       const x = clone.x || 0;
       const y = clone.y || 0;
       return x + size >= minX && x - size <= maxX && y + size >= minY && y - size <= maxY;
     });
   }, [positionedClones, imageWidth, imageHeight, isCloneVisible]);
-  
+
   // Memoizar elementos de herramientas/materiales (se renderizan en capa inferior)
   const materialElements = useMemo(() => {
     return positionedClones.filter(clone => MATERIAL_TYPES_SET.has(clone.type) && isCloneVisible(clone));
   }, [positionedClones, isCloneVisible]);
 
-  // Memoizar elementos regulares con virtualización optimizada (sin materiales ni texto)
+  // Memoizar elementos regulares con virtualizaci�n optimizada (sin materiales ni texto)
   const regularElements = useMemo(() => {
     const nonTextClones = positionedClones.filter(clone => clone.type !== 'free-text' && !MATERIAL_TYPES_SET.has(clone.type) && isCloneVisible(clone));
-    
-    // Si hay pocos elementos, retornar todos sin virtualización
+
+    // Si hay pocos elementos, retornar todos sin virtualizaci�n
     if (nonTextClones.length < 30) {
       return nonTextClones;
     }
-    
-    // Virtualización con cálculo más rápido
+
+    // Virtualizaci�n con c�lculo m�s r�pido
     const MARGIN = 150;
     const minX = -MARGIN;
     const maxX = imageWidth + MARGIN;
     const minY = -MARGIN;
     const maxY = imageHeight + MARGIN;
-    
+
     return nonTextClones.filter(clone => {
       const x = clone.x || 0;
       const y = clone.y || 0;
@@ -12896,41 +12980,41 @@ const handleCancelar = useCallback(async () => {
       return x + size >= minX && x - size <= maxX && y + size >= minY && y - size <= maxY;
     });
   }, [positionedClones, imageWidth, imageHeight, standardSize, isCloneVisible]);
-  
-  // OPTIMIZACIÃ“N: Arrays separados para líneas rectas y curvas (para BatchLinesRenderer)
+
+  // OPTIMIZACIÓN: Arrays separados para l�neas rectas y curvas (para BatchLinesRenderer)
   const straightLines = useMemo(() => {
-    return positionedClones.filter(clone => 
+    return positionedClones.filter(clone =>
       (clone.type === 'straight-line' || clone.type === 'straight-arrow') && isCloneVisible(clone)
     );
   }, [positionedClones, isCloneVisible]);
-  
+
   const curveLines = useMemo(() => {
-    return positionedClones.filter(clone => 
+    return positionedClones.filter(clone =>
       (clone.type === 'curve-line' || clone.type === 'curve-arrow') && isCloneVisible(clone)
     );
   }, [positionedClones, isCloneVisible]);
-  
-  // OPTIMIZACIÃ“N: Arrays separados para figuras geométricas (para BatchShapesRenderer)
+
+  // OPTIMIZACIÓN: Arrays separados para figuras geom�tricas (para BatchShapesRenderer)
   const circleElements = useMemo(() => {
     return positionedClones.filter(clone => clone.type === 'circle' && isCloneVisible(clone));
   }, [positionedClones, isCloneVisible]);
-  
+
   const rectangleElements = useMemo(() => {
     return positionedClones.filter(clone => clone.type === 'rectangle' && isCloneVisible(clone));
   }, [positionedClones, isCloneVisible]);
-  
+
   const customShapeElements = useMemo(() => {
-    return positionedClones.filter(clone => 
+    return positionedClones.filter(clone =>
       clone.type === 'custom-shape' && clone.isCustomShapeComplete && isCloneVisible(clone)
     );
   }, [positionedClones, isCloneVisible]);
-  
-  // OPTIMIZACIÃ“N: Memoizar elementos de línea para BatchSvgRenderer
+
+  // OPTIMIZACIÓN: Memoizar elementos de l�nea para BatchSvgRenderer
   const lineElements = useMemo(() => {
     return positionedClones.filter(clone => {
-      return (clone.type === 'straight-line' || 
-             clone.type === 'straight-arrow' || 
-             clone.type === 'curve-line' || 
+      return (clone.type === 'straight-line' ||
+             clone.type === 'straight-arrow' ||
+             clone.type === 'curve-line' ||
              clone.type === 'curve-arrow' ||
              (clone.type === 'custom-shape' && clone.isCustomShapeComplete)) && isCloneVisible(clone);
     }).map(clone => {
@@ -12953,36 +13037,36 @@ const handleCancelar = useCallback(async () => {
     }).filter(Boolean);
   }, [positionedClones, isCloneVisible]);
 
-  // OPTIMIZACIÃ“N: Escala memoizada
+  // OPTIMIZACIÓN: Escala memoizada
   const renderScale = useMemo(() => {
     const baseScale = Math.min(imageWidth, imageHeight) / 500;
     return isMobile ? baseScale * 1.35 : baseScale;
   }, [imageWidth, imageHeight, isMobile]);
-  
-  // OPTIMIZACIÃ“N: Verificar si hay algún modo de dibujo activo (incluye eraserMode)
+
+  // OPTIMIZACIÓN: Verificar si hay alg�n modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
-    return drawingStraightArrow || drawingStraightLine || 
-           drawingCurveArrow || drawingCurveLine || 
+    return drawingStraightArrow || drawingStraightLine ||
+           drawingCurveArrow || drawingCurveLine ||
            drawingCircle || drawingRectangle || drawingCustomShape || eraserMode;
   }, [drawingStraightArrow, drawingStraightLine, drawingCurveArrow, drawingCurveLine, drawingCircle, drawingRectangle, drawingCustomShape, eraserMode]);
-  
+
   const handleApplyEdit = (iconEdited, applyToAll = false) => {
-    // Asegurarse de que el grosor se convierta a número
+    // Asegurarse de que el grosor se convierta a n�mero
     if (iconEdited.thickness && typeof iconEdited.thickness === 'string') {
       iconEdited.thickness = parseInt(iconEdited.thickness) || 2;
     }
-    
+
     if (applyToAll) {
       // Aplicar cambios a todos los elementos del mismo tipo
       // Criterios para "mismo tipo":
       // 1. Para jugadores de equipo (playerData): mismo tipo + mismo estilo (color de paleta)
       // 2. Para jugadores sin nombre: mismo paletteIndex
-      // 3. Para líneas/flechas/figuras: mismo tipo (type)
+      // 3. Para l�neas/flechas/figuras: mismo tipo (type)
       // 4. Para materiales: mismo tipo (type)
-      
+
       setClones(prev => prev.map(cl => {
         let shouldApply = false;
-        
+
         // Para jugadores de equipo con playerData
         if (iconEdited.playerData && cl.playerData) {
           // Aplicar a todos los jugadores de equipo
@@ -12995,7 +13079,7 @@ const handleCancelar = useCallback(async () => {
             shouldApply = true;
           }
         }
-        // Para líneas, flechas, círculos, rectángulos y figuras - mismo type
+        // Para l�neas, flechas, c�rculos, rect�ngulos y figuras - mismo type
         else if (['straight-arrow', 'straight-line', 'curve-arrow', 'curve-line', 'circle', 'rectangle', 'custom-shape'].includes(iconEdited.type)) {
           if (cl.type === iconEdited.type) {
             shouldApply = true;
@@ -13007,7 +13091,7 @@ const handleCancelar = useCallback(async () => {
             shouldApply = true;
           }
         }
-        
+
         if (shouldApply) {
           // Aplicar todos los cambios relevantes - crear nuevo objeto para forzar re-render
           return {
@@ -13020,18 +13104,18 @@ const handleCancelar = useCallback(async () => {
             dotSpacing: iconEdited.dotSpacing !== undefined ? iconEdited.dotSpacing : cl.dotSpacing,
             fillColor: iconEdited.fillColor !== undefined ? iconEdited.fillColor : cl.fillColor,
             numberColor: iconEdited.numberColor !== undefined ? iconEdited.numberColor : cl.numberColor,
-            // Para jugadores de equipo, también actualizar colores de texto
+            // Para jugadores de equipo, tambi�n actualizar colores de texto
             textColor: cl.playerData ? (iconEdited.textColor !== undefined ? iconEdited.textColor : cl.textColor) : cl.textColor,
             textBackgroundColor: cl.playerData ? (iconEdited.textBackgroundColor !== undefined ? iconEdited.textBackgroundColor : cl.textBackgroundColor) : cl.textBackgroundColor,
-            // Forzar actualización añadiendo timestamp
+            // Forzar actualizaci�n a�adiendo timestamp
             _lastUpdate: Date.now(),
           };
         }
-        
+
         // Para el elemento actual, aplicar todos los cambios incluso si no coincide el criterio general
         if (cl.id === iconEdited.id) {
-          return { 
-            ...cl, 
+          return {
+            ...cl,
             ...iconEdited,
             lineType: iconEdited.lineType !== undefined ? iconEdited.lineType : cl.lineType,
             dotSize: iconEdited.dotSize !== undefined ? iconEdited.dotSize : cl.dotSize,
@@ -13046,10 +13130,10 @@ const handleCancelar = useCallback(async () => {
       // Solo aplicar al elemento actual - asegurar que todas las propiedades se copien
       setClones(prev => prev.map(cl => {
         if (cl.id === iconEdited.id) {
-          return { 
-            ...cl, 
+          return {
+            ...cl,
             ...iconEdited,
-            // Asegurar que estas propiedades se copien explícitamente
+            // Asegurar que estas propiedades se copien expl�citamente
             lineType: iconEdited.lineType !== undefined ? iconEdited.lineType : cl.lineType,
             dotSize: iconEdited.dotSize !== undefined ? iconEdited.dotSize : cl.dotSize,
             dotSpacing: iconEdited.dotSpacing !== undefined ? iconEdited.dotSpacing : cl.dotSpacing,
@@ -13059,7 +13143,7 @@ const handleCancelar = useCallback(async () => {
         return cl;
       }));
     }
-    
+
     setLeftPanelVisible(false);
     if (iconEdited.type === 'player' && iconEdited.number) {
       const nextNum = parseInt(iconEdited.number, 10) + 1;
@@ -13075,7 +13159,7 @@ const handleCancelar = useCallback(async () => {
       }
     }
   };
-  
+
   const handlePaletteIconEdit = (iconEdited) => {
     // Si es un jugador de equipo (isPalettePlayer o tiene playerData), no actualizar paletteIcons
     if (iconEdited.isPalettePlayer || iconEdited.playerData) {
@@ -13091,24 +13175,24 @@ const handleCancelar = useCallback(async () => {
       setLeftPanelVisible(false);
       return;
     }
-    
+
     // SOLO actualizar la paleta, NO modificar los elementos ya pintados en el campo
     setPaletteIcons((prev) =>
       prev.map((ic, idx) => {
         if (idx === iconEdited.paletteIndex) {
-          // Para jugadores sin nombre, aplicar color, tamaño y número
+          // Para jugadores sin nombre, aplicar color, tama�o y n�mero
           if (iconEdited.type === 'player') {
-            // Actualizar el número si se ha proporcionado uno nuevo
-            const newNumber = iconEdited.number !== undefined && iconEdited.number !== '' 
-              ? parseInt(iconEdited.number, 10) 
+            // Actualizar el n�mero si se ha proporcionado uno nuevo
+            const newNumber = iconEdited.number !== undefined && iconEdited.number !== ''
+              ? parseInt(iconEdited.number, 10)
               : ic.number;
-            
-            // Actualizar también el contador de iconos para que los siguientes jugadores
-            // continúen desde este número
+
+            // Actualizar tambi�n el contador de iconos para que los siguientes jugadores
+            // contin�en desde este n�mero
             if (!isNaN(newNumber) && newNumber > 0) {
               iconCounters.current[ic.id] = newNumber;
             }
-            
+
             return {
               ...ic,
               color: iconEdited.color,
@@ -13117,9 +13201,9 @@ const handleCancelar = useCallback(async () => {
               number: isNaN(newNumber) ? ic.number : newNumber,
             };
           }
-          // Para otros tipos, aplicar todo (incluyendo lineType, fillColor y parámetros de punto)
-          return { 
-            ...ic, 
+          // Para otros tipos, aplicar todo (incluyendo lineType, fillColor y par�metros de punto)
+          return {
+            ...ic,
             color: iconEdited.color,
             size: iconEdited.size,
             thickness: iconEdited.thickness,
@@ -13134,9 +13218,9 @@ const handleCancelar = useCallback(async () => {
       })
     );
 
-    // Si el icono editado corresponde con el que está seleccionado para dibujar (pendingLineAction),
-    // actualizar también pendingLineAction y los estados relevantes para que el siguiente dibujo use
-    // la Configuración recién aplicada.
+    // Si el icono editado corresponde con el que est� seleccionado para dibujar (pendingLineAction),
+    // actualizar tambi�n pendingLineAction y los estados relevantes para que el siguiente dibujo use
+    // la Configuraci�n reci�n aplicada.
     if (typeof iconEdited.paletteIndex === 'number' && pendingLineAction && pendingLineAction.paletteIndex === iconEdited.paletteIndex) {
       // Actualizar pendingLineAction.icon con los nuevos valores (sin eliminar otras propiedades)
       setPendingLineAction(prev => prev ? ({
@@ -13162,29 +13246,29 @@ const handleCancelar = useCallback(async () => {
         if (iconEdited.thickness !== undefined) setArrowThickness(iconEdited.thickness);
       }
     }
-    
+
     // NO actualizar los clones ya pintados - cada elemento mantiene sus propiedades originales
     // Los cambios en la paleta solo afectan a los nuevos elementos que se dibujen
-    
+
     if (iconEdited.type === 'player' && iconEdited.number) {
       const nextNum = parseInt(iconEdited.number, 10);
       if (!isNaN(nextNum)) {
         iconCounters.current[iconEdited.id] = nextNum;
       }
     }
-    
+
     // Cerrar ambos paneles posibles
     setPaletteEdit({ visible: false, icon: null, paletteIndex: null });
     setLeftPanelVisible(false);
   };
-  
-  // 10. Añadir el componente LineStyleModal - MEJORADO con color, grosor y relleno
-  function LineStyleModal({ 
-    visible, 
-    onClose, 
-    onSelect, 
-    initialLineType = 'solid', 
-    initialDotSize = 2, 
+
+  // 10. A�adir el componente LineStyleModal - MEJORADO con color, grosor y relleno
+  function LineStyleModal({
+    visible,
+    onClose,
+    onSelect,
+    initialLineType = 'solid',
+    initialDotSize = 2,
     initialDotSpacing = 4,
     initialColor = '#000000',
     initialThickness = 2,
@@ -13204,7 +13288,7 @@ const handleCancelar = useCallback(async () => {
     const [selectedFillColor, setSelectedFillColor] = useState(initialFillColor);
     const [colorPickerVisible, setColorPickerVisible] = useState(false);
     const [fillColorPickerVisible, setFillColorPickerVisible] = useState(false);
-    
+
     // Determinar si es una figura que puede tener relleno
     const canHaveFill = shapeType === 'circle' || shapeType === 'rectangle' || shapeType === 'custom-shape';
 
@@ -13228,26 +13312,26 @@ const handleCancelar = useCallback(async () => {
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.proModalOverlay}>
             <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer, isMobile && { 
-                  width: SCREEN_WIDTH * 0.80, 
+<View style={[styles.proModalContainer, isMobile && {
+                  width: SCREEN_WIDTH * 0.80,
                   maxWidth: 340,
-                  maxHeight: SCREEN_HEIGHT * 0.85 
+                  maxHeight: SCREEN_HEIGHT * 0.85
                 }]}>
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>{canHaveFill ? '⬜' : '✏️'}</Text>
+                      <Text style={{ fontSize: 12 }}>{canHaveFill ? '?' : '??'}</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {canHaveFill ? t('tacticalBoard.lineConfig.titleShape') : t('tacticalBoard.lineConfig.titleLine')}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                   <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
-                
+
                 {/* Color del trazado */}
                 <View style={styles.proModalSection}>
                   <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.colorLabel')}</Text>
@@ -13259,7 +13343,7 @@ const handleCancelar = useCallback(async () => {
                     <Text style={styles.proModalHint}>{selectedColor}</Text>
                   </View>
                 </View>
-                
+
                 {/* Grosor */}
                 <View style={styles.proModalSection}>
                   <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.strokeLabel')}</Text>
@@ -13273,9 +13357,9 @@ const handleCancelar = useCallback(async () => {
                         ]}
                         onPress={() => setSelectedThickness(thickness.toString())}
                       >
-                        <View style={{ 
-                          width: 28, 
-                          height: thickness * 2, 
+                        <View style={{
+                          width: 28,
+                          height: thickness * 2,
                           backgroundColor: selectedColor,
                           borderRadius: thickness
                         }} />
@@ -13283,7 +13367,7 @@ const handleCancelar = useCallback(async () => {
                     ))}
                   </View>
                 </View>
-                
+
                 {/* Tipo de trazado */}
                 <View style={styles.proModalSection}>
                   <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.strokeTypeLabel')}</Text>
@@ -13299,7 +13383,7 @@ const handleCancelar = useCallback(async () => {
                       <View style={{ width: 40, height: 3, backgroundColor: selectedColor, borderRadius: 2 }} />
                       <Text style={[styles.proModalChipText, { marginTop: 4 }, selectedType === 'solid' && styles.proModalChipTextSelected]}>{t('tacticalBoard.editPanel.solid')}</Text>
                     </TouchableOpacity>
-                    
+
                     <TouchableOpacity
                       style={[
                         styles.proModalGridItem,
@@ -13320,7 +13404,7 @@ const handleCancelar = useCallback(async () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                
+
                 {selectedType === 'dotted' && (
                   <>
                     <View style={styles.proModalSection}>
@@ -13349,7 +13433,7 @@ const handleCancelar = useCallback(async () => {
                         ))}
                       </View>
                     </View>
-                    
+
                     <View style={styles.proModalSection}>
                       <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.dotSpacing')}</Text>
                       <View style={styles.proModalGrid}>
@@ -13378,7 +13462,7 @@ const handleCancelar = useCallback(async () => {
                     </View>
                   </>
                 )}
-                
+
                 {/* Relleno - solo para figuras */}
                 {canHaveFill && (
                   <View style={styles.proModalSection}>
@@ -13388,7 +13472,7 @@ const handleCancelar = useCallback(async () => {
                         onPress={() => setFillColorPickerVisible(true)}
                         style={[
                           styles.proModalColorBtn,
-                          { 
+                          {
                             backgroundColor: selectedFillColor === 'transparent' ? '#fff' : selectedFillColor,
                             opacity: selectedFillColor === 'transparent' ? 0.4 : 0.7,
                           }
@@ -13418,13 +13502,13 @@ const handleCancelar = useCallback(async () => {
                     </Text>
                   </View>
                 )}
-                
+
                 {/* Vista previa */}
                 <View style={styles.proModalSection}>
                   <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.preview')}</Text>
                   <View style={styles.proModalPreview}>
                   <Svg width="200" height="80" key={`modal-preview-${selectedType}-${selectedDotSize}-${selectedDotSpacing}-${selectedColor}-${selectedThickness}-${selectedFillColor}`}>
-                    {/* Vista previa según el tipo de forma */}
+                    {/* Vista previa seg�n el tipo de forma */}
                     {(shapeType === 'line' || shapeType === 'straight-line') && (
                       selectedType === 'dotted' ? (
                         <Path
@@ -13603,7 +13687,7 @@ const handleCancelar = useCallback(async () => {
                   </View>
                 </View>
                 </ScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -13629,7 +13713,7 @@ const handleCancelar = useCallback(async () => {
                     <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>{t('tacticalBoard.lineConfig.draw')}</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Color Picker Modals */}
                 <MiniColorPickerModal
                   visible={colorPickerVisible}
@@ -13651,12 +13735,12 @@ const handleCancelar = useCallback(async () => {
   }
 
   // Modal de ajustes para jugadores del equipo
-  function TeamPlayerSettingsModal({ 
-    visible, 
-    onClose, 
+  function TeamPlayerSettingsModal({
+    visible,
+    onClose,
     teamPlayerStyle,
     setTeamPlayerStyle,
-    isMobile 
+    isMobile
   }) {
     const { t } = useTranslation();
     const dimensions = useScreenDimensions();
@@ -13671,13 +13755,13 @@ const handleCancelar = useCallback(async () => {
     const [differentiateGoalkeeper, setDifferentiateGoalkeeper] = useState(teamPlayerStyle?.differentiateGoalkeeper !== false);
     const [goalkeeperStripeColor, setGoalkeeperStripeColor] = useState(teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
     const [showPhotos, setShowPhotos] = useState(teamPlayerStyle?.showPhotos || false);
-    
+
     const [colorPickerVisible, setColorPickerVisible] = useState(false);
     const [numberColorPickerVisible, setNumberColorPickerVisible] = useState(false);
     const [textColorPickerVisible, setTextColorPickerVisible] = useState(false);
     const [textBgColorPickerVisible, setTextBgColorPickerVisible] = useState(false);
     const [stripeColorPickerVisible, setStripeColorPickerVisible] = useState(false);
-    
+
     // Sincronizar con props cuando cambia teamPlayerStyle
     useEffect(() => {
       setColor(teamPlayerStyle?.color || '#2176ff');
@@ -13690,9 +13774,9 @@ const handleCancelar = useCallback(async () => {
       setGoalkeeperStripeColor(teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
       setShowPhotos(teamPlayerStyle?.showPhotos || false);
     }, [teamPlayerStyle]);
-    
+
     if (!visible) return null;
-    
+
     const handleApply = () => {
       setTeamPlayerStyle({
         color,
@@ -13707,9 +13791,9 @@ const handleCancelar = useCallback(async () => {
       });
       onClose();
     };
-    
+
     const iconPreviewSize = isMobile ? 40 : 50;
-    
+
     return (
       <Modal
         animationType="fade"
@@ -13725,18 +13809,18 @@ const handleCancelar = useCallback(async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>⚙️</Text>
+                      <Text style={{ fontSize: 12 }}>??�</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                     </TouchableOpacity>
                   </View>
-                  
-                  <ScrollView 
-                    contentContainerStyle={styles.proModalBody} 
+
+                  <ScrollView
+                    contentContainerStyle={styles.proModalBody}
                     showsVerticalScrollIndicator={true}
                     nestedScrollEnabled={true}
                     keyboardShouldPersistTaps="handled"
@@ -13754,7 +13838,7 @@ const handleCancelar = useCallback(async () => {
                         borderColor: showPhotos ? color : '#222',
                         overflow: 'hidden',
                       }}>
-                        {/* Icono de foto si está activo */}
+                        {/* Icono de foto si est� activo */}
                         {showPhotos ? (
                           <View style={{
                             width: iconPreviewSize,
@@ -13768,7 +13852,7 @@ const handleCancelar = useCallback(async () => {
                           </View>
                         ) : (
                           <>
-                            {/* Rayas de portero si está activo */}
+                            {/* Rayas de portero si est� activo */}
                             {differentiateGoalkeeper && (
                               <>
                                 <View style={{ position: 'absolute', top: iconPreviewSize * 0.1, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
@@ -13800,7 +13884,7 @@ const handleCancelar = useCallback(async () => {
                         {t('tacticalBoard.teamSettings.goalkeeperPreview') || '(Vista previa de portero)'}
                       </Text>
                     </View>
-                    
+
                     {/* Color del icono */}
                     <View style={styles.proModalSection}>
                       <View style={styles.proModalRow}>
@@ -13816,19 +13900,19 @@ const handleCancelar = useCallback(async () => {
                         />
                       </View>
                     </View>
-                    
+
                     <MiniColorPickerModal
                       visible={colorPickerVisible}
                       initialColor={color}
                       onClose={() => setColorPickerVisible(false)}
                       onSelect={setColor}
                     />
-                    
-                    {/* Color del número/texto */}
+
+                    {/* Color del n�mero/texto */}
                     <View style={styles.proModalSection}>
                       <View style={styles.proModalRow}>
                         <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          {t('tacticalBoard.teamSettings.numberColor') || 'Color del número:'}
+                          {t('tacticalBoard.teamSettings.numberColor') || 'Color del n�mero:'}
                         </Text>
                         <TouchableOpacity
                           style={[
@@ -13839,14 +13923,14 @@ const handleCancelar = useCallback(async () => {
                         />
                       </View>
                     </View>
-                    
+
                     <MiniColorPickerModal
                       visible={numberColorPickerVisible}
                       initialColor={numberColor}
                       onClose={() => setNumberColorPickerVisible(false)}
                       onSelect={setNumberColor}
                     />
-                    
+
                     {/* Color del texto del nombre */}
                     <View style={styles.proModalSection}>
                       <View style={styles.proModalRow}>
@@ -13862,14 +13946,14 @@ const handleCancelar = useCallback(async () => {
                         />
                       </View>
                     </View>
-                    
+
                     <MiniColorPickerModal
                       visible={textColorPickerVisible}
                       initialColor={textColor}
                       onClose={() => setTextColorPickerVisible(false)}
                       onSelect={setTextColor}
                     />
-                    
+
                     {/* Color de fondo del nombre */}
                     <View style={styles.proModalSection}>
                       <View style={styles.proModalRow}>
@@ -13879,7 +13963,7 @@ const handleCancelar = useCallback(async () => {
                         <TouchableOpacity
                           style={[
                             isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                            { 
+                            {
                               backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
                               opacity: textBackgroundColor === 'transparent' ? 0.4 : 1
                             }
@@ -13903,18 +13987,18 @@ const handleCancelar = useCallback(async () => {
                         </TouchableOpacity>
                       </View>
                     </View>
-                    
+
                     <MiniColorPickerModal
                       visible={textBgColorPickerVisible}
                       initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
                       onClose={() => setTextBgColorPickerVisible(false)}
                       onSelect={setTextBackgroundColor}
                     />
-                    
-                    {/* Tamaño */}
+
+                    {/* Tama�o */}
                     <View style={styles.proModalSection}>
                       <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginBottom: 8 }]}>
-                        {t('tacticalBoard.editPanel.sizeLabel') || 'Tamaño:'}
+                        {t('tacticalBoard.editPanel.sizeLabel') || 'Tama�o:'}
                       </Text>
                       <View style={styles.proModalStepperRow}>
                         <TouchableOpacity
@@ -13940,11 +14024,11 @@ const handleCancelar = useCallback(async () => {
                         </TouchableOpacity>
                       </View>
                     </View>
-                    
-                    {/* Mostrar posición en lugar de número */}
+
+                    {/* Mostrar posici�n en lugar de n�mero */}
                     <View style={[styles.proModalSwitch, { marginTop: 12 }]}>
                       <Text style={styles.proModalSwitchLabel}>
-                        {t('tacticalBoard.teamSettings.showPosition') || 'Mostrar posición'}
+                        {t('tacticalBoard.teamSettings.showPosition') || 'Mostrar posici�n'}
                       </Text>
                       <Switch
                         value={showPosition}
@@ -13954,7 +14038,7 @@ const handleCancelar = useCallback(async () => {
                         disabled={showPhotos}
                       />
                     </View>
-                    
+
                     {/* Mostrar fotos de los jugadores */}
                     <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
                       <Text style={styles.proModalSwitchLabel}>
@@ -13964,7 +14048,7 @@ const handleCancelar = useCallback(async () => {
                         value={showPhotos}
                         onValueChange={(val) => {
                           setShowPhotos(val);
-                          // Si se activan fotos, desactivar mostrar posición
+                          // Si se activan fotos, desactivar mostrar posici�n
                           if (val) {
                             setShowPosition(false);
                           }
@@ -13975,10 +14059,10 @@ const handleCancelar = useCallback(async () => {
                     </View>
                     {showPhotos && (
                       <Text style={{ fontSize: 10, color: '#888', marginTop: 2, marginLeft: 4, fontStyle: 'italic' }}>
-                        {t('tacticalBoard.teamSettings.showPhotosHint') || 'Se mostrará la foto del jugador en lugar del número y color'}
+                        {t('tacticalBoard.teamSettings.showPhotosHint') || 'Se mostrar� la foto del jugador en lugar del n�mero y color'}
                       </Text>
                     )}
-                    
+
                     {/* Diferenciar portero con rayas */}
                     <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
                       <Text style={styles.proModalSwitchLabel}>
@@ -13992,8 +14076,8 @@ const handleCancelar = useCallback(async () => {
                         disabled={showPhotos}
                       />
                     </View>
-                    
-                    {/* Color de las rayas del portero - solo si differentiateGoalkeeper está activo */}
+
+                    {/* Color de las rayas del portero - solo si differentiateGoalkeeper est� activo */}
                     {differentiateGoalkeeper && (
                       <View style={[styles.proModalSection, { marginTop: 8 }]}>
                         <View style={styles.proModalRow}>
@@ -14010,19 +14094,19 @@ const handleCancelar = useCallback(async () => {
                         </View>
                       </View>
                     )}
-                    
+
                     <MiniColorPickerModal
                       visible={stripeColorPickerVisible}
                       initialColor={goalkeeperStripeColor}
                       onClose={() => setStripeColorPickerVisible(false)}
                       onSelect={setGoalkeeperStripeColor}
                     />
-                    
+
                     <Text style={{ fontSize: 11, color: '#888', marginTop: 8, fontStyle: 'italic' }}>
-                      {t('tacticalBoard.teamSettings.goalkeeperHint') || 'Los porteros tendrán rayas horizontales'}
+                      {t('tacticalBoard.teamSettings.goalkeeperHint') || 'Los porteros tendr�n rayas horizontales'}
                     </Text>
                   </ScrollView>
-                  
+
                   {/* Footer */}
                   <View style={styles.proModalFooter}>
                     <TouchableOpacity
@@ -14072,16 +14156,16 @@ const handleCancelar = useCallback(async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>ðŸ‘¥</Text>
+                      <Text style={{ fontSize: 12 }}>👥</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {t('tacticalBoard.teamPlayersModal.title')}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
                     </TouchableOpacity>
                   </View>
-                  
+
                 <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
                   {availablePlayers.length === 0 ? (
                     <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -14092,7 +14176,7 @@ const handleCancelar = useCallback(async () => {
                       {availablePlayers.map((player, index) => (
                         <TouchableOpacity
                           key={player.uniqueId}
-                          style={[styles.playerGridItem, { 
+                          style={[styles.playerGridItem, {
                             backgroundColor: '#f8f9fa',
                             borderRadius: 8,
                             padding: 8,
@@ -14120,13 +14204,13 @@ const handleCancelar = useCallback(async () => {
                             overflow: 'hidden',
                           }}>
                             {showPhotos && player.foto ? (
-                              <Image 
-                                source={{ uri: player.foto }} 
-                                style={{ 
-                                  width: iconSize - 4, 
-                                  height: iconSize - 4, 
+                              <Image
+                                source={{ uri: player.foto }}
+                                style={{
+                                  width: iconSize - 4,
+                                  height: iconSize - 4,
                                   borderRadius: (iconSize - 4) / 2,
-                                }} 
+                                }}
                                 resizeMode="cover"
                               />
                             ) : (
@@ -14147,7 +14231,7 @@ const handleCancelar = useCallback(async () => {
                     </View>
                   )}
                 </ScrollView>
-                
+
                 {/* Footer */}
                 <View style={styles.proModalFooter}>
                   <TouchableOpacity
@@ -14164,16 +14248,16 @@ const handleCancelar = useCallback(async () => {
     );
   }
 
-  // Añadir antes del return principal
+  // A�adir antes del return principal
 
-  function FloatingButtons({ 
+  function FloatingButtons({
     visible = true,
     hideBottomButtons = false, // Nueva prop para ocultar solo botones inferiores
     sandbox = false, // Modo sandbox
-    onSave, 
-    onCancel, 
-    onSettings, 
-    onLocked, 
+    onSave,
+    onCancel,
+    onSettings,
+    onLocked,
     onChangeField,
     onTogglePalette,
     onToggleZoom,
@@ -14194,19 +14278,19 @@ const handleCancelar = useCallback(async () => {
     isMobile = false
   }) {
     if (!visible) return null;
-    
-    // Tamaños más pequeños para móvil
+
+    // Tama�os m�s peque�os para m�vil
     const buttonSize = isMobile ? 36 : 56;
     const buttonRadius = isMobile ? 18 : 28;
     const iconSize = isMobile ? 16 : 24;
-    
+
     return (
       <>
         {/* Botones inferiores izquierda - ocultar si hideBottomButtons es true */}
         {!hideBottomButtons && (
           <TouchableOpacity
-            style={[styles.floatingButton, { 
-              bottom: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
               left: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14220,8 +14304,8 @@ const handleCancelar = useCallback(async () => {
 
         {!hideBottomButtons && (
           <TouchableOpacity
-            style={[styles.floatingButton, { 
-              bottom: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
               left: isMobile ? 52 : 90,
               width: buttonSize,
               height: buttonSize,
@@ -14235,8 +14319,8 @@ const handleCancelar = useCallback(async () => {
 
         {!hideBottomButtons && (
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            bottom: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            bottom: isMobile ? 10 : 20,
             left: isMobile ? 94 : 160,
             backgroundColor: '#9b59b6',
             width: buttonSize,
@@ -14249,11 +14333,11 @@ const handleCancelar = useCallback(async () => {
         </TouchableOpacity>
         )}
 
-        {/* Botón de formaciones */}
+        {/* Bot�n de formaciones */}
         {!hideBottomButtons && (
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            bottom: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            bottom: isMobile ? 10 : 20,
             left: isMobile ? 136 : 230,
             backgroundColor: '#2176ff',
             width: buttonSize,
@@ -14265,11 +14349,11 @@ const handleCancelar = useCallback(async () => {
           <MaterialCommunityIcons name="soccer-field" size={iconSize} color="#fff" />
         </TouchableOpacity>
         )}
-        
+
         {/* Botones UNDO/REDO */}
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            top: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            top: isMobile ? 10 : 20,
             left: isMobile ? 10 : 20,
             backgroundColor: canUndo ? '#3498db' : '#7f8c8d',
             width: buttonSize,
@@ -14282,10 +14366,10 @@ const handleCancelar = useCallback(async () => {
         >
           <Feather name="corner-up-left" size={iconSize} color="#fff" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            top: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            top: isMobile ? 10 : 20,
             left: isMobile ? 52 : 90,
             backgroundColor: canRedo ? '#3498db' : '#7f8c8d',
             width: buttonSize,
@@ -14300,12 +14384,12 @@ const handleCancelar = useCallback(async () => {
         </TouchableOpacity>
 
 
-        {/* Botón central - Cambiar campo */}
+        {/* Bot�n central - Cambiar campo */}
         {!hideBottomButtons && (
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            bottom: isMobile ? 10 : 20, 
-            left: '50%', 
+          style={[styles.floatingButton, {
+            bottom: isMobile ? 10 : 20,
+            left: '50%',
             marginLeft: isMobile ? -18 : -28,
             width: buttonSize,
             height: buttonSize,
@@ -14327,8 +14411,8 @@ const handleCancelar = useCallback(async () => {
         {/* Botones inferiores derecha */}
         {!hideBottomButtons && (
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            bottom: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            bottom: isMobile ? 10 : 20,
             right: isMobile ? 48 : 90,
             width: buttonSize,
             height: buttonSize,
@@ -14342,8 +14426,8 @@ const handleCancelar = useCallback(async () => {
 
         {!hideBottomButtons && (
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            bottom: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            bottom: isMobile ? 10 : 20,
             right: isMobile ? 10 : 20,
             width: buttonSize,
             height: buttonSize,
@@ -14360,10 +14444,10 @@ const handleCancelar = useCallback(async () => {
         </TouchableOpacity>
         )}
 
-        {/* Botón de selección múltiple ahora centrado */}
+        {/* Bot�n de selecci�n m�ltiple ahora centrado */}
         <TouchableOpacity
-          style={[styles.floatingButton, { 
-            top: isMobile ? 10 : 20, 
+          style={[styles.floatingButton, {
+            top: isMobile ? 10 : 20,
             left: '50%',
             marginLeft: isMobile ? -18 : -28,
             backgroundColor: multiSelectMode ? '#3498db' : '#2c3e50',
@@ -14375,12 +14459,12 @@ const handleCancelar = useCallback(async () => {
         >
           <Feather name="check-square" size={iconSize} color="#fff" />
         </TouchableOpacity>
-        
-        {/* Botón para cambiar entre modo seleccionar y modo mover (solo visible cuando hay elementos seleccionados) */}
+
+        {/* Bot�n para cambiar entre modo seleccionar y modo mover (solo visible cuando hay elementos seleccionados) */}
         {multiSelectMode && selectedCloneIds.length > 0 && (
           <TouchableOpacity
-            style={[styles.floatingButton, { 
-              top: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, {
+              top: isMobile ? 10 : 20,
               right: isMobile ? 150 : 230,
               backgroundColor: selectionInteractionMode === 'move' ? '#27ae60' : '#f39c12',
               width: buttonSize,
@@ -14389,18 +14473,18 @@ const handleCancelar = useCallback(async () => {
             }]}
             onPress={toggleSelectionInteractionMode}
           >
-            <Feather 
-              name={selectionInteractionMode === 'move' ? 'move' : 'square'} 
-              size={iconSize} 
-              color="#fff" 
+            <Feather
+              name={selectionInteractionMode === 'move' ? 'move' : 'square'}
+              size={iconSize}
+              color="#fff"
             />
           </TouchableOpacity>
         )}
-        
+
         {!sandbox && !isEditingVideo && (
           <TouchableOpacity
-            style={[styles.floatingButton, styles.floatingButtonPrimary, { 
-              top: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, styles.floatingButtonPrimary, {
+              top: isMobile ? 10 : 20,
               right: isMobile ? 48 : 90,
               width: buttonSize,
               height: buttonSize,
@@ -14411,11 +14495,11 @@ const handleCancelar = useCallback(async () => {
             <Feather name="save" size={iconSize} color="#fff" />
           </TouchableOpacity>
         )}
-        
+
         {!sandbox && !isEditingVideo && (
           <TouchableOpacity
-            style={[styles.floatingButton, styles.floatingButtonDanger, { 
-              top: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, styles.floatingButtonDanger, {
+              top: isMobile ? 10 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14427,11 +14511,11 @@ const handleCancelar = useCallback(async () => {
           </TouchableOpacity>
         )}
 
-        {/* Botón de volver para modo edición de video */}
+        {/* Bot�n de volver para modo edici�n de video */}
         {isEditingVideo && (
           <TouchableOpacity
-            style={[styles.floatingButton, styles.floatingButtonDanger, { 
-              top: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, styles.floatingButtonDanger, {
+              top: isMobile ? 10 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14443,11 +14527,11 @@ const handleCancelar = useCallback(async () => {
           </TouchableOpacity>
         )}
 
-        {/* Botón de volver para modo pizarra táctica (sandbox) */}
+        {/* Bot�n de volver para modo pizarra t�ctica (sandbox) */}
         {sandbox && !isEditingVideo && (
           <TouchableOpacity
-            style={[styles.floatingButton, styles.floatingButtonDanger, { 
-              top: isMobile ? 10 : 20, 
+            style={[styles.floatingButton, styles.floatingButtonDanger, {
+              top: isMobile ? 10 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14459,7 +14543,7 @@ const handleCancelar = useCallback(async () => {
           </TouchableOpacity>
         )}
 
-        {/* Panel de selección múltiple (fuera del campo, a la derecha debajo de guardar/cerrar) */}
+        {/* Panel de selecci�n m�ltiple (fuera del campo, a la derecha debajo de guardar/cerrar) */}
         {multiSelectMode && selectedCloneIds.length > 0 && (
           <View style={{
             position: 'absolute',
@@ -14530,9 +14614,9 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
   const [isVisible, setIsVisible] = useState(visible);
-  const iconSize = isMobile ? 28 : 44; // Más pequeño en móvil
-  const nameFontSize = isMobile ? 8 : 10; // Más pequeño en móvil
-  const dorsalFontSize = isMobile ? 12 : 16; // Más pequeño en móvil
+  const iconSize = isMobile ? 28 : 44; // M�s peque�o en m�vil
+  const nameFontSize = isMobile ? 8 : 10; // M�s peque�o en m�vil
+  const dorsalFontSize = isMobile ? 12 : 16; // M�s peque�o en m�vil
 
   useEffect(() => {
     if (visible) {
@@ -14555,20 +14639,20 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
 
   if (!isVisible) return null;
 
-  // Ordenar jugadores por número de dorsal
+  // Ordenar jugadores por n�mero de dorsal
   const sortedPlayers = [...availablePlayers].sort((a, b) => {
     const dorsalA = parseInt(a.dorsal || a.number || 999);
     const dorsalB = parseInt(b.dorsal || b.number || 999);
     return dorsalA - dorsalB;
   });
 
-  // Función para verificar si es portero
+  // Funci�n para verificar si es portero
   const isGoalkeeper = (player) => {
     const pos = (player.posicion || '').toLowerCase();
     return pos === 'portero' || pos === 'goalkeeper' || pos === 'gk' || pos === 'pt';
   };
 
-  // Función para obtener la etiqueta de posición
+  // Funci�n para obtener la etiqueta de posici�n
   const getPositionLabel = (player) => {
     const pos = (player.posicion || '').toLowerCase();
     const posMap = {
@@ -14615,7 +14699,7 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
           sortedPlayers.map((player) => {
             const isGK = isGoalkeeper(player);
             const showStripes = differentiateGoalkeeper && isGK;
-            
+
             return (
               <LongPressGestureHandler
                 key={player.uniqueId}
@@ -14655,13 +14739,13 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
                       </>
                     )}
                     {showPhotos && player.foto ? (
-                      <Image 
-                        source={{ uri: player.foto }} 
-                        style={{ 
-                          width: iconSize - 4, 
-                          height: iconSize - 4, 
-                          borderRadius: (iconSize - 4) / 2 
-                        }} 
+                      <Image
+                        source={{ uri: player.foto }}
+                        style={{
+                          width: iconSize - 4,
+                          height: iconSize - 4,
+                          borderRadius: (iconSize - 4) / 2
+                        }}
                         resizeMode="cover"
                       />
                     ) : (
@@ -14681,14 +14765,14 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
                     borderRadius: 3,
                     minWidth: iconSize,
                   }}>
-                    <Text 
-                      style={{ 
-                        fontSize: nameFontSize, 
+                    <Text
+                      style={{
+                        fontSize: nameFontSize,
                         color: textColor,
                         textAlign: 'center',
                         fontWeight: '500'
-                      }} 
-                      numberOfLines={1} 
+                      }}
+                      numberOfLines={1}
                       ellipsizeMode="tail"
                     >
                       {(getPlayerFullName(player) || player.name || 'Sin nombre').substring(0, 12)}
@@ -14700,11 +14784,11 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
           })
         )}
       </ScrollView>
-      {/* Botón de ajustes */}
-      <TouchableOpacity 
+      {/* Bot�n de ajustes */}
+      <TouchableOpacity
         style={{
-          position: 'absolute', 
-          top: 10, 
+          position: 'absolute',
+          top: 10,
           right: isMobile ? 35 : 45,
           width: isMobile ? 28 : 32,
           height: isMobile ? 28 : 32,
@@ -14712,7 +14796,7 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
           backgroundColor: 'rgba(255,255,255,0.2)',
           justifyContent: 'center',
           alignItems: 'center',
-        }} 
+        }}
         onPress={onOpenSettings}
       >
         <Feather name="settings" size={isMobile ? 16 : 18} color="#fff" />
@@ -14797,14 +14881,14 @@ const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
         contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 3 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
       >
         {MATERIALS_ICONS.map((material, idx) => {
-          // Obtener Configuración personalizada si existe
+          // Obtener Configuraci�n personalizada si existe
           const customConfig = materialsConfig?.[material.type] || {};
           const displayMaterial = {
             ...material,
             color: customConfig.color || material.color,
             size: customConfig.size || material.size,
           };
-          
+
           return (
             <Pressable
               key={material.id}
@@ -14816,7 +14900,7 @@ const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
               }}
               delayLongPress={400}
               style={[
-                styles.paletteIconButton, 
+                styles.paletteIconButton,
                 { width: iconSize + (isMobile ? 4 : 10), height: iconSize + (isMobile ? 16 : 25), flexDirection: 'column' },
                 isMobile && {
                   borderRadius: 8,
@@ -14832,21 +14916,21 @@ const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
                 alignItems: 'center',
                 marginBottom: isMobile ? 2 : 4,
               }}>
-                <MemoizedIcon 
+                <MemoizedIcon
                   icon={displayMaterial}
                   size={iconSize * 0.8}
                   rotation={0}
                 />
               </View>
-              <Text 
-                style={{ 
-                  fontSize: labelFontSize, 
+              <Text
+                style={{
+                  fontSize: labelFontSize,
                   color: '#fff',
                   textAlign: 'center',
                   width: iconSize + (isMobile ? 4 : 10),
                   fontWeight: '500'
-                }} 
-                numberOfLines={1} 
+                }}
+                numberOfLines={1}
                 ellipsizeMode="tail"
               >
                 {material.label}
@@ -14867,7 +14951,7 @@ const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
   return true;
 });
 
-// Paleta de cuerpo técnico
+// Paleta de cuerpo t�cnico
 const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
   visible,
   onClose,
@@ -14882,8 +14966,8 @@ const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
   const [isVisible, setIsVisible] = useState(visible);
   const iconSize = isMobile ? 36 : 50;
   const labelFontSize = isMobile ? 7 : 9;
-  
-  // Definir los roles del cuerpo técnico
+
+  // Definir los roles del cuerpo t�cnico
   const allStaffRoles = useMemo(() => [
     { id: 'head-coach', code: t('tacticalBoard.staff.E1'), label: t('tacticalBoard.staff.headCoach') },
     { id: 'assistant-coach', code: t('tacticalBoard.staff.E2'), label: t('tacticalBoard.staff.assistantCoach') },
@@ -14893,8 +14977,8 @@ const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
     { id: 'delegate', code: t('tacticalBoard.staff.D'), label: t('tacticalBoard.staff.delegate') },
     { id: 'kit-manager', code: t('tacticalBoard.staff.U'), label: t('tacticalBoard.staff.kitManager') },
   ], [t]);
-  
-  // Filtrar los roles que no están en el campo
+
+  // Filtrar los roles que no est�n en el campo
   const availableStaffRoles = useMemo(() => {
     return allStaffRoles.filter(role => !selectedStaffIds.includes(role.id));
   }, [allStaffRoles, selectedStaffIds]);
@@ -14945,16 +15029,16 @@ const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
       >
         {availableStaffRoles.length === 0 ? (
           <View style={{ padding: 20 }}>
-            <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.staff.allStaffOnField') || 'Todo el cuerpo técnico está en el campo'}</Text>
+            <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.staff.allStaffOnField') || 'Todo el cuerpo t�cnico est� en el campo'}</Text>
           </View>
         ) : (
           availableStaffRoles.map((role) => (
             <Pressable
               key={role.id}
               onPress={() => onSelectStaff(role)}
-              style={[styles.paletteIconButton, { 
-                width: iconSize + 20, 
-                height: iconSize + 50, 
+              style={[styles.paletteIconButton, {
+                width: iconSize + 20,
+                height: iconSize + 50,
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 paddingTop: 6,
@@ -14980,15 +15064,15 @@ const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
                 </Text>
               </View>
               <View style={{ height: 28, justifyContent: 'flex-start' }}>
-                <Text 
-                  style={{ 
-                    fontSize: labelFontSize, 
+                <Text
+                  style={{
+                    fontSize: labelFontSize,
                     color: '#fff',
                     textAlign: 'center',
                     width: iconSize + 20,
                     fontWeight: '500'
-                  }} 
-                  numberOfLines={2} 
+                  }}
+                  numberOfLines={2}
                   ellipsizeMode="tail"
                 >
                   {role.label}
@@ -15011,11 +15095,11 @@ const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
   return true;
 });
 
-const SlidingPalette = React.memo(function SlidingPalette({ 
-    visible, 
-    onClose, 
-    paletteIcons, 
-    onIconPress, 
+const SlidingPalette = React.memo(function SlidingPalette({
+    visible,
+    onClose,
+    paletteIcons,
+    onIconPress,
     onIconLongPress,
     onAddText,
     onToggleEraser,
@@ -15026,7 +15110,7 @@ const SlidingPalette = React.memo(function SlidingPalette({
     const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
     const insets = useSafeAreaInsets();
     const [isVisible, setIsVisible] = useState(visible);
-    const iconSize = isMobile ? 28 : 44; // Más pequeño en móvil
+    const iconSize = isMobile ? 28 : 44; // M�s peque�o en m�vil
 
     useEffect(() => {
       if (visible) {
@@ -15074,7 +15158,7 @@ const SlidingPalette = React.memo(function SlidingPalette({
           contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 4 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
         >
           {paletteIcons.map((icon, idx) => {
-            const isSelected = 
+            const isSelected =
               (icon.type === 'straight-arrow' && drawingStates.drawingStraightArrow) ||
               (icon.type === 'straight-line' && drawingStates.drawingStraightLine) ||
               (icon.type === 'curve-line' && drawingStates.drawingCurveLine) ||
@@ -15082,7 +15166,7 @@ const SlidingPalette = React.memo(function SlidingPalette({
               (icon.type === 'circle' && drawingStates.drawingCircle) ||
               (icon.type === 'rectangle' && drawingStates.drawingRectangle) ||
               (icon.type === 'custom-shape-button' && drawingStates.drawingCustomShape);
-            
+
             return (
               <PaletteIconButton
                 key={icon.id}
@@ -15097,11 +15181,11 @@ const SlidingPalette = React.memo(function SlidingPalette({
               />
             );
           })}
-          
+
           <Pressable
             onPress={onAddText}
             style={[
-              styles.paletteIconButton, 
+              styles.paletteIconButton,
               { width: iconSize, height: iconSize },
               isMobile && {
                 borderRadius: 8,
@@ -15111,7 +15195,7 @@ const SlidingPalette = React.memo(function SlidingPalette({
           >
             <Ionicons name="text" size={isMobile ? 18 : 28} color={isMobile ? '#ffffff' : '#000000ff'} />
           </Pressable>
-          
+
           <Pressable
             onPress={onToggleEraser}
             style={[
@@ -15138,12 +15222,12 @@ const SlidingPalette = React.memo(function SlidingPalette({
       </Animated.View>
     );
   }, (prevProps, nextProps) => {
-    // Comparación más granular
+    // Comparaci�n m�s granular
     if (prevProps.visible !== nextProps.visible) return false;
     if (prevProps.isMobile !== nextProps.isMobile) return false;
     if (prevProps.playersWithNumber !== nextProps.playersWithNumber) return false;
     if (prevProps.paletteIcons.length !== nextProps.paletteIcons.length) return false;
-    
+
     // Comparar drawingStates individualmente
     const prevDS = prevProps.drawingStates;
     const nextDS = nextProps.drawingStates;
@@ -15157,13 +15241,13 @@ const SlidingPalette = React.memo(function SlidingPalette({
         prevDS.eraserMode !== nextDS.eraserMode) {
       return false;
     }
-    
+
     // Comparar cada icono de la paleta
     for (let i = 0; i < prevProps.paletteIcons.length; i++) {
       const prev = prevProps.paletteIcons[i];
       const next = nextProps.paletteIcons[i];
-      if (prev.id !== next.id || 
-          prev.color !== next.color || 
+      if (prev.id !== next.id ||
+          prev.color !== next.color ||
           prev.size !== next.size ||
           prev.type !== next.type ||
           prev.lineType !== next.lineType ||
@@ -15172,18 +15256,18 @@ const SlidingPalette = React.memo(function SlidingPalette({
         return false;
       }
     }
-    
+
     return true;
   });
 
-// Componente memoizado para cada botón de icono en la paleta
-const PaletteIconButton = React.memo(({ 
-  icon, 
-  idx, 
-  iconSize, 
-  isSelected, 
+// Componente memoizado para cada bot�n de icono en la paleta
+const PaletteIconButton = React.memo(({
+  icon,
+  idx,
+  iconSize,
+  isSelected,
   isMobile,
-  onPress, 
+  onPress,
   onLongPress,
   playersWithNumber = true
 }) => {
@@ -15202,7 +15286,7 @@ const PaletteIconButton = React.memo(({
         }
       ]}
     >
-      <MemoizedIcon 
+      <MemoizedIcon
         icon={icon}
         size={isMobile ? 22 : 32}
         rotation={0}
@@ -15271,7 +15355,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
     <Animated.View
       style={[
         styles.slidingZoomControls,
-        { 
+        {
           transform: [{ translateX: slideAnim }],
         },
         isMobile && {
@@ -15296,103 +15380,103 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
         {/* Contenido */}
         <View style={[styles.slidingZoomContent, isMobile && { paddingTop: 5 }]}>
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onZoomIn}
             activeOpacity={0.7}
           >
             <Feather name="zoom-in" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onZoomOut}
             activeOpacity={0.7}
           >
             <Feather name="zoom-out" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
+
           <View style={[styles.zoomSeparator, isMobile && { marginVertical: 3 }]} />
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onPanUp}
             activeOpacity={0.7}
           >
             <Feather name="chevron-up" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onPanDown}
             activeOpacity={0.7}
           >
             <Feather name="chevron-down" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onPanLeft}
             activeOpacity={0.7}
           >
             <Feather name="chevron-left" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onPanRight}
             activeOpacity={0.7}
           >
             <Feather name="chevron-right" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
+
           <View style={[styles.zoomSeparator, isMobile && { marginVertical: 3 }]} />
-          
-          <TouchableOpacity 
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]} 
+
+          <TouchableOpacity
+            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
             onPress={onReset}
             activeOpacity={0.7}
           >
             <Feather name="maximize" size={isMobile ? 16 : 24} color="#fff" />
           </TouchableOpacity>
-          
+
           <Text style={[styles.zoomLevelText, isMobile && { fontSize: 10, marginTop: 3 }]}>{Math.round(zoomLevel * 100)}%</Text>
         </View>
       </Animated.View>
   );
 }, (prevProps, nextProps) => {
   // Solo re-renderizar si cambia visible o zoomLevel (para actualizar el porcentaje)
-  return prevProps.visible === nextProps.visible && 
+  return prevProps.visible === nextProps.visible &&
          prevProps.zoomLevel === nextProps.zoomLevel;
 });
 
   // Solo ocultar TODOS los botones cuando hay modales que realmente lo requieren
-  const shouldHideFloatingButtons = settingsPanelVisible || 
-                                  lockedElementsVisible || 
-                                  leftPanelVisible || 
-                                  textEditPanel.visible || 
-                                  paletteEdit.visible || 
+  const shouldHideFloatingButtons = settingsPanelVisible ||
+                                  lockedElementsVisible ||
+                                  leftPanelVisible ||
+                                  textEditPanel.visible ||
+                                  paletteEdit.visible ||
                                   carouselModalVisible ||
                                   lineStyleModalVisible;
-                                  
-  
-  // Ocultar solo botones inferiores cuando la paleta o zoom está visible
+
+
+  // Ocultar solo botones inferiores cuando la paleta o zoom est� visible
   const shouldHideBottomButtons = paletteVisible || zoomVisible;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#4a8c3f' }}>
       <View ref={containerRef} style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#4a8c3f' }}>
-        <StatusBar 
-          barStyle="light-content" 
-          backgroundColor="#4a8c3f" 
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="#4a8c3f"
           translucent={false}
-          hidden={isMobile} // Ocultar barra de estado en móvil para más espacio
+          hidden={isMobile} // Ocultar barra de estado en m�vil para m�s espacio
         />
-        
-        {/* Llamada como función (no JSX) para evitar que React trate
+
+        {/* Llamada como funci�n (no JSX) para evitar que React trate
             FloatingButtons como un "tipo de componente nuevo" en cada
-            render "” al estar definido dentro de Field, su identidad
-            cambia cada render y montar/desmontar TouchableOpacity hacía
+            render "� al estar definido dentro de Field, su identidad
+            cambia cada render y montar/desmontar TouchableOpacity hac�a
             que el primer click no llegara a disparar onPress. */}
         {FloatingButtons({
           visible: !shouldHideFloatingButtons,
@@ -15413,8 +15497,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             openCarouselModal();
           },
           onTogglePalette: () => {
-            // Permitir abrir/cerrar la paleta también con el VideoRecorder
-            // visible: el usuario quiere añadir/seleccionar iconos sin
+            // Permitir abrir/cerrar la paleta tambi�n con el VideoRecorder
+            // visible: el usuario quiere a�adir/seleccionar iconos sin
             // tener que cerrar la grabadora previamente.
             setPaletteVisible(!paletteVisible);
           },
@@ -15436,13 +15520,13 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           isMobile,
         })}
 
-        {/* Botón de deseleccionar herramienta de dibujo - siempre visible */}
-        {(drawingStates.drawingStraightArrow || 
-          drawingStates.drawingStraightLine || 
-          drawingStates.drawingCurveLine || 
-          drawingStates.drawingCurveArrow || 
-          drawingStates.drawingCircle || 
-          drawingStates.drawingRectangle || 
+        {/* Bot�n de deseleccionar herramienta de dibujo - siempre visible */}
+        {(drawingStates.drawingStraightArrow ||
+          drawingStates.drawingStraightLine ||
+          drawingStates.drawingCurveLine ||
+          drawingStates.drawingCurveArrow ||
+          drawingStates.drawingCircle ||
+          drawingStates.drawingRectangle ||
           drawingStates.drawingCustomShape) && (
           <TouchableOpacity
             onPress={handleDeselectDrawingTool}
@@ -15498,7 +15582,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   alignSelf: 'center',
                   flex: 0,
                   backgroundColor: 'transparent',
-                  marginBottom: isMobile ? 4 : 8, // Menos margen en móvil
+                  marginBottom: isMobile ? 4 : 8, // Menos margen en m�vil
                   overflow: 'visible', // Permitir ver elementos fuera del campo
                 },
               ]}
@@ -15513,7 +15597,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   />
                 </ViewShot>
               </View>
-              
+
               <View
                 style={{
                   width: imageWidth,
@@ -15534,14 +15618,14 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                       overflow: 'visible'
                     }}
                   >
-                    <View 
-                      style={{ 
-                        width: imageWidth, 
-                        height: imageHeight, 
+                    <View
+                      style={{
+                        width: imageWidth,
+                        height: imageHeight,
                         opacity: fieldImageReady ? 1 : 0,
                         userSelect: 'none',
-                        zIndex: multiSelectMode ? 9999 : 
-                               (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle || 
+                        zIndex: multiSelectMode ? 9999 :
+                               (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
                                  drawingCurveLine || drawingCurveArrow || drawingCustomShape || eraserMode) ? 9999 : 0
                       }}
                       onStartShouldSetResponder={() => true}
@@ -15552,7 +15636,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                       onResponderGrant={(e) => {
                         const { locationX, locationY } = e.nativeEvent;
                         fieldTouchStartRef.current = { x: locationX, y: locationY, timestamp: Date.now() };
-                        
+
                         if (eraserMode) {
                           handleEraserStart(e);
                           return;
@@ -15603,17 +15687,17 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           fieldTouchStartRef.current = null;
                           return;
                         }
-                        
+
                         handleElementDragEnd(e);
-                        
-                        // Detectar tap (toque corto sin movimiento) para selección/deselección
+
+                        // Detectar tap (toque corto sin movimiento) para selecci�n/deselecci�n
                         if (fieldTouchStartRef.current) {
                           const touchX = e.nativeEvent.locationX;
                           const touchY = e.nativeEvent.locationY;
                           const dx = touchX - fieldTouchStartRef.current.x;
                           const dy = touchY - fieldTouchStartRef.current.y;
                           const dist = Math.sqrt(dx * dx + dy * dy);
-                          
+
                           if (dist < 15) {
                             const tappedClone = findInteractiveCloneAtPosition(touchX, touchY);
                             if (tappedClone) {
@@ -15640,22 +15724,22 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           height={imageHeight}
                         />
                       </View>
-                      
-                      <Svg 
-                        style={{ 
-                          position: 'absolute', 
-                          top: 0, 
-                          left: 0, 
-                          width: imageWidth, 
+
+                      <Svg
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: imageWidth,
                           height: imageHeight,
                           zIndex: 200
                         }}
                         pointerEvents="none"
                       >
-                        {/* OPTIMIZACIÃ“N: Ya no iteramos sobre positionedClones para SVG */}
-                        {/* Todas las figuras y líneas se renderizan con componentes batch optimizados */}
-                        
-                        {/* OPTIMIZACIÃ“N: Renderizar todas las figuras en batch */}
+                        {/* OPTIMIZACIÓN: Ya no iteramos sobre positionedClones para SVG */}
+                        {/* Todas las figuras y l�neas se renderizan con componentes batch optimizados */}
+
+                        {/* OPTIMIZACIÓN: Renderizar todas las figuras en batch */}
                         <BatchShapesRenderer
                           circles={circleElements}
                           rectangles={rectangleElements}
@@ -15666,8 +15750,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           multiSelectMode={multiSelectMode}
                           viewMode={viewMode}
                         />
-                        
-                        {/* OPTIMIZACIÃ“N: Renderizar todas las líneas en batch */}
+
+                        {/* OPTIMIZACIÓN: Renderizar todas las l�neas en batch */}
                         <BatchLinesRenderer
                           straightLines={straightLines}
                           curveLines={curveLines}
@@ -15678,7 +15762,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           viewMode={viewMode}
                         />
                       </Svg>
-                      
+
                       {/* Renderizar conectores entre elementos */}
                       <ConnectorsRenderer
                         connectors={connectors}
@@ -15687,14 +15771,14 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         imageHeight={imageHeight}
                         viewMode={viewMode}
                       />
-                      
-                        {/* Contenedor para áreas de detección - deshabilitado cuando se está dibujando */}
-                        <View 
+
+                        {/* Contenedor para �reas de detecci�n - deshabilitado cuando se est� dibujando */}
+                        <View
                           style={{ position: 'absolute', width: imageWidth, height: imageHeight, zIndex: 200 }}
-                          pointerEvents={(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle || 
+                          pointerEvents={(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
                                          drawingCurveLine || drawingCurveArrow || drawingCustomShape) ? "none" : "box-none"}
                         >
-                        {/* OPTIMIZACIÃ“N: Detectores de círculos memoizados */}
+                        {/* OPTIMIZACIÓN: Detectores de c�rculos memoizados */}
                         {circleElements.map((icon) => (
                           <MemoizedCircleDetector
                             key={`circle-detector-${icon.id}`}
@@ -15718,8 +15802,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             saveClonesHistory={saveClonesHistory}
                           />
                         ))}
-                        
-                        {/* OPTIMIZACIÃ“N: Detectores de rectángulos memoizados */}
+
+                        {/* OPTIMIZACIÓN: Detectores de rect�ngulos memoizados */}
                         {rectangleElements.map((icon) => (
                           <MemoizedRectangleDetector
                             key={`rect-detector-${icon.id}`}
@@ -15743,8 +15827,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             saveClonesHistory={saveClonesHistory}
                           />
                         ))}
-                        
-                        {/* OPTIMIZACIÃ“N: Detectores de custom-shapes memoizados */}
+
+                        {/* OPTIMIZACIÓN: Detectores de custom-shapes memoizados */}
                         {customShapeElements.map((icon) => (
                           <MemoizedCustomShapeDetector
                             key={`custom-detector-${icon.id}`}
@@ -15768,9 +15852,9 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             saveClonesHistory={saveClonesHistory}
                           />
                         ))}
-                        
+
                         {/* Renderizado de elementos del campo */}
-                        {/* Renderizar materiales (balón, conos, porterías, etc.) */}
+                        {/* Renderizar materiales (bal�n, conos, porter�as, etc.) */}
                         {materialElements.map((icon) => {
                           if (icon.type === 'custom-shape-button') return null;
                           return (
@@ -15810,20 +15894,20 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         {/* Renderizar elementos regulares (no texto libre) usando array memoizado */}
                         {regularElements.map((icon) => {
                           const size = getProportionalIconSize(icon, imageWidth, standardSize);
-                          
+
                           // FILTRO ESTRICTO: Nunca renderizar custom-shape-button en el campo
                           if (icon.type === 'custom-shape-button') {
                             return null;
                           }
-                          
-                          // Para custom-shape, solo renderizar si está completado
+
+                          // Para custom-shape, solo renderizar si est� completado
                           if (icon.type === 'custom-shape') {
-                            // Las figuras personalizadas se renderizan en SVG, no aquí
+                            // Las figuras personalizadas se renderizan en SVG, no aqu�
                             return null;
                           }
-                          
-                          // Excluir las líneas ya que se renderizan por separado
-                          if (icon.type === 'straight-line' || icon.type === 'straight-arrow' || 
+
+                          // Excluir las l�neas ya que se renderizan por separado
+                          if (icon.type === 'straight-line' || icon.type === 'straight-arrow' ||
                               icon.type === 'curve-line' || icon.type === 'curve-arrow' ||
                               icon.type === 'circle' || icon.type === 'rectangle') {
                             return null;
@@ -15863,7 +15947,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             />
                           );
                         })}
-                        
+
                         {/* Renderizar textos libres separadamente usando array memoizado */}
                         {freeTextElements.map((icon) => {
                           return (
@@ -15892,8 +15976,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             />
                           );
                         })}
-                        
-                        {/* Ãreas de detección para líneas - OPTIMIZADO con componentes memoizados */}
+
+                        {/* Áreas de detecci�n para l�neas - OPTIMIZADO con componentes memoizados */}
                         {straightLines.map((icon, idx) => (
                           <MemoizedStraightLineDetector
                             key={`sl-det-${icon.id}`}
@@ -15917,7 +16001,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             zoomLevel={zoomLevel}
                           />
                         ))}
-                        
+
                         {curveLines.map((icon, idx) => (
                           <MemoizedCurveLineDetector
                             key={`cl-det-${icon.id}`}
@@ -15942,28 +16026,28 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           />
                         ))}
                         </View>
-                        {/* Fin del contenedor de áreas de detección */}
-                        
-                        {/* Vista previa de líneas y flechas rectas */}
+                        {/* Fin del contenedor de �reas de detecci�n */}
+
+                        {/* Vista previa de l�neas y flechas rectas */}
                         {(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle) && temporaryLinePoints.length === 2 && (() => {
                           // Obtener el icono ACTUAL de la paleta buscando por type
                           const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
-                          
+
                           // Calcular el grosor EXACTAMENTE como en el renderizado final
                           const scale = 1; // No hay redimensionamiento al dibujar
                           const baseThickness = currentPaletteIcon?.thickness || 1;
                           const previewThickness = baseThickness * scale * 0.7;
                           const previewColor = currentPaletteIcon?.color || "#000000";
-                          
+
                           // Convert ratio coords to display coords
                           const dp0 = ratioToDisplay(temporaryLinePoints[0].x, temporaryLinePoints[0].y, viewMode, imageWidth, imageHeight);
                           const dp1 = ratioToDisplay(temporaryLinePoints[1].x, temporaryLinePoints[1].y, viewMode, imageWidth, imageHeight);
-                          
-                          // Calcular punto final de línea si es flecha
+
+                          // Calcular punto final de l�nea si es flecha
                           let lineEndX = dp1.x;
                           let lineEndY = dp1.y;
                           let arrowPoints = '';
-                          
+
                           if (drawingStraightArrow) {
                             const arrowData = getArrowHeadForStraightLine(
                               dp0,
@@ -15976,41 +16060,41 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             lineEndX = arrowData.lineEnd.x;
                             lineEndY = arrowData.lineEnd.y;
                           }
-                          
+
                           return (
-                            <Svg 
-                              style={{ 
-                                position: 'absolute', 
-                                top: 0, 
-                                left: 0, 
-                                width: imageWidth, 
+                            <Svg
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: imageWidth,
                                 height: imageHeight,
-                                zIndex: 100 
+                                zIndex: 100
                               }}
                             >
-                              {/* Línea normal */}
+                              {/* L�nea normal */}
                               {(drawingStraightArrow || drawingStraightLine) && lineType === 'solid' && (
-                                <Path 
-                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`} 
-                                  stroke={previewColor} 
-                                  strokeWidth={previewThickness} 
-                                  fill="none" 
-                                  strokeLinecap="round" 
+                                <Path
+                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
+                                  stroke={previewColor}
+                                  strokeWidth={previewThickness}
+                                  fill="none"
+                                  strokeLinecap="round"
                                 />
                               )}
-                              
-                              {/* Línea punteada */}
+
+                              {/* L�nea punteada */}
                               {(drawingStraightArrow || drawingStraightLine) && lineType === 'dotted' && (
-                                <Path 
-                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`} 
-                                  stroke={previewColor} 
+                                <Path
+                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
+                                  stroke={previewColor}
                                   strokeWidth={previewThickness}
                                   strokeDasharray={`${dotSize},${dotSpacing}`}
-                                  fill="none" 
-                                  strokeLinecap="round" 
+                                  fill="none"
+                                  strokeLinecap="round"
                                 />
                               )}
-                              
+
                               {drawingStraightArrow && (
                                 <Polygon
                                   points={arrowPoints}
@@ -16018,8 +16102,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                                   strokeLinejoin="round"
                                 />
                               )}
-                              
-                              {/* Círculo */}
+
+                              {/* C�rculo */}
                               {drawingCircle && (
                                 <Circle
                                   cx={(dp0.x + dp1.x) / 2}
@@ -16036,8 +16120,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                                   vectorEffect="non-scaling-stroke"
                                 />
                               )}
-                              
-                              {/* Rectángulo */}
+
+                              {/* Rect�ngulo */}
                               {drawingRectangle && (
                                 <Rect
                                   x={Math.min(dp0.x, dp1.x)}
@@ -16055,83 +16139,83 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             </Svg>
                           );
                         })()}
-                        
-                        {/* Vista previa de líneas y flechas curvas */}
+
+                        {/* Vista previa de l�neas y flechas curvas */}
                         {(drawingCurveArrow || drawingCurveLine) && curvePoints.length >= 1 && (() => {
                           // Obtener el icono ACTUAL de la paleta buscando por type
                           const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
-                          
+
                           // Calcular el grosor EXACTAMENTE como en el renderizado final
                           const scale = 1;
                           const baseThickness = currentPaletteIcon?.thickness || 1;
                           const previewThickness = baseThickness * scale * 0.7;
                           const previewColor = currentPaletteIcon?.color || "#000000";
                           const displayCurvePoints = curvePoints.map(pt => ratioToDisplay(pt.x, pt.y, viewMode, imageWidth, imageHeight));
-                          
+
                           return (
-                            <Svg 
-                              style={{ 
-                                position: 'absolute', 
-                                top: 0, 
-                                left: 0, 
-                                width: imageWidth, 
+                            <Svg
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: imageWidth,
                                 height: imageHeight,
-                                zIndex: 100 
+                                zIndex: 100
                               }}
                             >
-                              {/* Línea sólida */}
+                              {/* L�nea s�lida */}
                               {lineType === 'solid' && (
-                                <Path 
+                                <Path
                                   key="curve-preview-solid"
-                                  d={displayCurvePoints.map((pt, i) => 
-                                    i === 0 
-                                      ? `M${pt.x},${pt.y}` 
+                                  d={displayCurvePoints.map((pt, i) =>
+                                    i === 0
+                                      ? `M${pt.x},${pt.y}`
                                       : `L${pt.x},${pt.y}`
-                                  ).join(' ')} 
-                                  stroke={previewColor} 
-                                  strokeWidth={previewThickness} 
-                                  fill="none" 
+                                  ).join(' ')}
+                                  stroke={previewColor}
+                                  strokeWidth={previewThickness}
+                                  fill="none"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
                               )}
-                              
-                              {/* Línea punteada */}
+
+                              {/* L�nea punteada */}
                               {lineType === 'dotted' && (
-                                <Path 
+                                <Path
                                   key="curve-preview-dotted"
-                                  d={displayCurvePoints.map((pt, i) => 
-                                    i === 0 
-                                      ? `M${pt.x},${pt.y}` 
+                                  d={displayCurvePoints.map((pt, i) =>
+                                    i === 0
+                                      ? `M${pt.x},${pt.y}`
                                       : `L${pt.x},${pt.y}`
-                                  ).join(' ')} 
-                                  stroke={previewColor} 
+                                  ).join(' ')}
+                                  stroke={previewColor}
                                   strokeWidth={previewThickness}
                                   strokeDasharray={`${dotSize},${dotSpacing}`}
-                                  fill="none" 
+                                  fill="none"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
                               )}
-                              
-                              {/* Flecha curva mejorada - usar los últimos 2 puntos para mejor dirección */}
+
+                              {/* Flecha curva mejorada - usar los �ltimos 2 puntos para mejor direcci�n */}
                               {drawingCurveArrow && curvePoints.length >= 2 && (() => {
-                                // Buscar los dos últimos puntos diferentes para calcular la dirección correcta
+                                // Buscar los dos �ltimos puntos diferentes para calcular la direcci�n correcta
                                 let lastIdx = curvePoints.length - 1;
                                 let secondLastIdx = lastIdx - 1;
-                                
-                                // Si los últimos puntos están muy cerca, buscar uno más alejado
+
+                                // Si los �ltimos puntos est�n muy cerca, buscar uno m�s alejado
                                 while (secondLastIdx >= 0) {
                                   const dist = Math.sqrt(
                                     Math.pow(displayCurvePoints[lastIdx].x - displayCurvePoints[secondLastIdx].x, 2) +
                                     Math.pow(displayCurvePoints[lastIdx].y - displayCurvePoints[secondLastIdx].y, 2)
                                   );
-                                  if (dist > 5) break; // Al menos 5 píxeles de diferencia
+                                  if (dist > 5) break; // Al menos 5 p�xeles de diferencia
                                   secondLastIdx--;
                                 }
-                                
+
                                 if (secondLastIdx < 0) secondLastIdx = 0;
-                                
+
                                 const arrowData = getArrowHeadForStraightLine(
                                   displayCurvePoints[secondLastIdx],
                                   displayCurvePoints[lastIdx],
@@ -16139,7 +16223,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                                   0.5,
                                   previewThickness
                                 );
-                                
+
                                 return (
                                   <Polygon
                                     key="curve-arrow-preview"
@@ -16155,114 +16239,114 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                       {drawingCustomShape && (customShapePoints.length > 0 || previewPoint) && (() => {
                         // Obtener el icono ACTUAL de la paleta buscando por type
                         const currentPaletteIcon = paletteIcons.find(icon => icon.type === 'custom-shape-button');
-                        
-                        // Calcular el grosor dinámico basado en el icono pendiente
+
+                        // Calcular el grosor din�mico basado en el icono pendiente
                         const baseThickness = currentPaletteIcon?.thickness || 1;
                         const previewScale = (imageWidth / 500 + imageHeight / 500) / 2;
                         const previewThickness = baseThickness * previewScale * 0.7;
                         const previewColor = currentPaletteIcon?.color || "#000000";
                         const displayShapePoints = customShapePoints.map(pt => ratioToDisplay(pt.x, pt.y, viewMode, imageWidth, imageHeight));
                         const displayPreviewPt = previewPoint ? ratioToDisplay(previewPoint.x, previewPoint.y, viewMode, imageWidth, imageHeight) : null;
-                        
+
                         return (
-                          <Svg 
-                            style={{ 
-                              position: 'absolute', 
-                              top: 0, 
-                              left: 0, 
-                              width: imageWidth, 
+                          <Svg
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: imageWidth,
                               height: imageHeight,
-                              zIndex: 100 
+                              zIndex: 100
                             }}
                           >
-                            {/* Líneas ya confirmadas */}
+                            {/* L�neas ya confirmadas */}
                             {customShapePoints.map((pt, i) => {
                               if (i === 0) return null;
                               return (
                                   <G key={`custom-confirmed-${i}`}>
                                     {(!lineType || lineType === 'solid') && (
-                                      <Path 
-                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`} 
-                                        stroke={previewColor} 
+                                      <Path
+                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
+                                        stroke={previewColor}
                                         strokeWidth={previewThickness}
-                                        fill="none" 
-                                        strokeLinecap="round" 
+                                        fill="none"
+                                        strokeLinecap="round"
                                       />
                                     )}
-                                  
+
                                     {lineType === 'dotted' && (
-                                      <Path 
-                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`} 
-                                        stroke={previewColor} 
+                                      <Path
+                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
+                                        stroke={previewColor}
                                         strokeWidth={previewThickness}
                                         strokeDasharray={`${dotSize},${dotSpacing}`}
-                                        fill="none" 
-                                        strokeLinecap="round" 
+                                        fill="none"
+                                        strokeLinecap="round"
                                       />
                                     )}
                                   </G>
                               );
                             })}
-                            
-                            {/* Línea de previsualización desde el último punto confirmado al punto actual */}
+
+                            {/* L�nea de previsualizaci�n desde el �ltimo punto confirmado al punto actual */}
                             {previewPoint && customShapePoints.length > 0 && (
                               <G key={`preview-line-custom-shape`}>
                                 {(!lineType || lineType === 'solid') && (
-                                  <Path 
-                                    d={`M${displayShapePoints[displayShapePoints.length - 1].x},${displayShapePoints[displayShapePoints.length - 1].y} L${displayPreviewPt.x},${displayPreviewPt.y}`} 
-                                    stroke={previewColor} 
+                                  <Path
+                                    d={`M${displayShapePoints[displayShapePoints.length - 1].x},${displayShapePoints[displayShapePoints.length - 1].y} L${displayPreviewPt.x},${displayPreviewPt.y}`}
+                                    stroke={previewColor}
                                     strokeWidth={previewThickness}
-                                    fill="none" 
+                                    fill="none"
                                     strokeLinecap="round"
                                     opacity={0.6}
                                     strokeDasharray="10,5"
                                   />
                                 )}
-                                
+
                                 {lineType === 'dotted' && (
-                                  <Path 
-                                    d={`M${displayShapePoints[displayShapePoints.length - 1].x},${displayShapePoints[displayShapePoints.length - 1].y} L${displayPreviewPt.x},${displayPreviewPt.y}`} 
-                                    stroke={previewColor} 
+                                  <Path
+                                    d={`M${displayShapePoints[displayShapePoints.length - 1].x},${displayShapePoints[displayShapePoints.length - 1].y} L${displayPreviewPt.x},${displayPreviewPt.y}`}
+                                    stroke={previewColor}
                                     strokeWidth={previewThickness}
                                     strokeDasharray={`${dotSize},${dotSpacing}`}
-                                    fill="none" 
+                                    fill="none"
                                     strokeLinecap="round"
                                     opacity={0.6}
                                   />
                                 )}
                               </G>
                             )}
-                            
-                            {/* Línea de cierre de previsualización si hay suficientes puntos */}
+
+                            {/* L�nea de cierre de previsualizaci�n si hay suficientes puntos */}
                             {previewPoint && customShapePoints.length >= 2 && (
                               <G key={`preview-close-custom-shape`}>
                                 {(!lineType || lineType === 'solid') && (
-                                  <Path 
-                                    d={`M${displayPreviewPt.x},${displayPreviewPt.y} L${displayShapePoints[0].x},${displayShapePoints[0].y}`} 
-                                    stroke={previewColor} 
+                                  <Path
+                                    d={`M${displayPreviewPt.x},${displayPreviewPt.y} L${displayShapePoints[0].x},${displayShapePoints[0].y}`}
+                                    stroke={previewColor}
                                     strokeWidth={previewThickness}
                                     strokeDasharray="5,5"
-                                    fill="none" 
+                                    fill="none"
                                     strokeLinecap="round"
                                     opacity={0.3}
                                   />
                                 )}
-                                
+
                                 {lineType === 'dotted' && (
-                                  <Path 
-                                    d={`M${displayPreviewPt.x},${displayPreviewPt.y} L${displayShapePoints[0].x},${displayShapePoints[0].y}`} 
-                                    stroke={previewColor} 
+                                  <Path
+                                    d={`M${displayPreviewPt.x},${displayPreviewPt.y} L${displayShapePoints[0].x},${displayShapePoints[0].y}`}
+                                    stroke={previewColor}
                                     strokeWidth={previewThickness}
                                     strokeDasharray={`${dotSize},${dotSpacing}`}
-                                    fill="none" 
+                                    fill="none"
                                     strokeLinecap="round"
                                     opacity={0.3}
                                   />
                               )}
                               </G>
                           )}
-                        
-                        {/* Círculo de cierre en el primer punto */}
+
+                        {/* C�rculo de cierre en el primer punto */}
                         {showCloseCircle && customShapePoints.length >= 3 && (
                           <>
                             <Circle
@@ -16281,7 +16365,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             />
                           </>
                         )}
-                        
+
                         {/* Puntos confirmados */}
                         {displayShapePoints.map((pt, i) => (
                           <Circle
@@ -16292,8 +16376,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             fill={pendingLineAction?.icon?.color || "#000000"}
                           />
                         ))}
-                        
-                        {/* Punto de previsualización */}
+
+                        {/* Punto de previsualizaci�n */}
                         {previewPoint && (
                           <Circle
                             cx={displayPreviewPt.x}
@@ -16309,15 +16393,15 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                     );
                   })()}
                     </View>
-                    
-                    {/* Rectángulo de selección: pintado por DOM nativo dentro
+
+                    {/* Rect�ngulo de selecci�n: pintado por DOM nativo dentro
                         del overlay multi-select (ver useEffect multi-select v3).
                         El SVG fallback legacy fue eliminado porque no estaba
-                        wired a ningún handler activo y podía ocultar el rect
-                        nativo si por algún motivo aparecía. */}
-                    
-                    {/* Controles de selección múltiple movidos: ahora se muestran a la derecha (fuera del campo) */}
-                    
+                        wired a ning�n handler activo y pod�a ocultar el rect
+                        nativo si por alg�n motivo aparec�a. */}
+
+                    {/* Controles de selecci�n m�ltiple movidos: ahora se muestran a la derecha (fuera del campo) */}
+
                     {/* Indicador de carga */}
                     {isLoadingField && (
                       <View style={{
@@ -16336,12 +16420,12 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                       </View>
                     )}
                   </View>
-                  
+
                 </ViewShot>
-              
+
               {/* Capa de overlay para multi-select dentro de las mismas transformaciones.
                   En web usamos un <div> nativo en lugar de <View> para tener
-                  control total sobre los eventos de mouse/touch "” el sistema
+                  control total sobre los eventos de mouse/touch "� el sistema
                   de responder de RN no se dispara de forma fiable con mouse
                   sobre overlays transparentes en react-native-web. */}
               {multiSelectMode && selectionInteractionMode === 'select' && (
@@ -16361,10 +16445,10 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                     userSelect: 'none',
                   }}
                 >
-                  {/* Rectángulo de selección: en web se dibuja por DOM nativo
+                  {/* Rect�ngulo de selecci�n: en web se dibuja por DOM nativo
                       desde el useEffect (ver bloque multi-select). El SVG fallback
-                      solo aparece si por algún motivo isSelecting llega a estar true
-                      sin que el div DOM esté pintándolo. */}
+                      solo aparece si por alg�n motivo isSelecting llega a estar true
+                      sin que el div DOM est� pint�ndolo. */}
                 </div>
               )}
             </View>
@@ -16418,7 +16502,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             selectedStaffIds={selectedStaffIds}
           />
         ) : (
-          <SlidingPalette 
+          <SlidingPalette
             visible={paletteVisible}
             onClose={() => setPaletteVisible(false)}
             paletteIcons={paletteIcons}
@@ -16496,7 +16580,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           onSaveBoardSettings={handleSaveBoardSettings}
           onOpenConnectors={() => setConnectorsModalVisible(true)}
         />
-        
+
         {/* Modal de conectores */}
         <ConnectorsModal
           visible={connectorsModalVisible}
@@ -16507,7 +16591,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           imageWidth={imageWidth}
           imageHeight={imageHeight}
         />
-        
+
         {/* Selector de campo SVG */}
         <FieldSelectorModal
           visible={carouselModalVisible}
@@ -16518,9 +16602,9 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           screenWidth={SCREEN_WIDTH}
           screenHeight={SCREEN_HEIGHT}
         />
-        
-        {/* 11. Añadir el modal de estilo de línea aquí */}
-        <LineStyleModal 
+
+        {/* 11. A�adir el modal de estilo de l�nea aqu� */}
+        <LineStyleModal
           visible={lineStyleModalVisible}
           onClose={() => setLineStyleModalVisible(false)}
           onSelect={handleLineStyleSelect}
@@ -16532,7 +16616,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           initialFillColor={pendingLineAction?.icon?.fillColor || 'transparent'}
           shapeType={pendingLineAction?.type === 'custom-shape-button' ? 'custom-shape' : pendingLineAction?.type}
         />
-        
+
         {/* Modal de jugadores del equipo */}
         <TeamPlayersModal
           visible={playersModalVisible}
@@ -16543,7 +16627,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           showPhotos={teamPlayerStyle.showPhotos}
           teamPlayerStyle={teamPlayerStyle}
         />
-        
+
         {/* Modal de ajustes de jugadores del equipo */}
         <TeamPlayerSettingsModal
           visible={teamPlayerSettingsVisible}
@@ -16552,10 +16636,10 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           setTeamPlayerStyle={setTeamPlayerStyle}
           isMobile={isMobile}
         />
-        
-        {/* Floating multi-select buttons removed "” actions are now available in the selection status modal */}
-        
-        {/* Menú de opciones para elementos seleccionados */}
+
+        {/* Floating multi-select buttons removed "� actions are now available in the selection status modal */}
+
+        {/* Men� de opciones para elementos seleccionados */}
         <OptionsMenu
           visible={optionsMenu.visible}
           position={optionsMenu.position}
@@ -16571,11 +16655,11 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           isLocked={clones.find(c => c.id === optionsMenu.iconId)?.locked || false}
           isMobile={isMobile}
           onEdit={() => {
-            // Buscar el elemento por id y establecerlo como elemento de edición
+            // Buscar el elemento por id y establecerlo como elemento de edici�n
             const elementToEdit = clones.find(clone => clone.id === optionsMenu.iconId);
             if (elementToEdit) {
               if (elementToEdit.type === 'free-text') {
-                // Para elementos de texto, usar el panel de edición de texto (no es nuevo)
+                // Para elementos de texto, usar el panel de edici�n de texto (no es nuevo)
                 setTextEditPanel({ visible: true, icon: elementToEdit, isNew: false });
               } else {
                 // Para otros elementos, usar el panel izquierdo
@@ -16583,13 +16667,13 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                 setLeftPanelVisible(true);
               }
             }
-            // Cerrar el menú de opciones
+            // Cerrar el men� de opciones
             setOptionsMenu({...optionsMenu, visible: false});
           }}
           hideEdit={optionsMenu.hideEdit}
           scale={renderScale}
         />
-        
+
         {/* Panel de elementos bloqueados */}
         <LockedElementsPanel
           visible={lockedElementsVisible}
@@ -16598,7 +16682,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           onUnlock={handleUnlockFromPanel}
           scale={renderScale}
         />
-        
+
         {/* Modal de formaciones */}
         <FormationModal
           visible={formationModalVisible}
@@ -16613,7 +16697,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           teamPlayerStyle={teamPlayerStyle}
           setTeamPlayerStyle={setTeamPlayerStyle}
         />
-        
+
         {instructionMessage?.visible && (
           <View style={styles.instructionOverlay}>
             <View style={styles.instructionContainer}>
@@ -16630,7 +16714,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   </Text>
                 )}
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setInstructionMessage(null)}
                 style={styles.instructionCloseButton}
               >
@@ -16642,7 +16726,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
         {/* Indicador de modo goma de borrar */}
         {eraserMode && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setEraserMode(false)}
             style={styles.eraserModeIndicator}
             activeOpacity={0.7}
@@ -16696,7 +16780,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
   );
 }
 
-// Actualiza algunos estilos específicos
+// Actualiza algunos estilos espec�ficos
 const styles = StyleSheet.create({
   iconButton: {
     justifyContent: 'center',
@@ -16710,24 +16794,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 0, // Sin bordes redondeados para permitir ver elementos fuera
-    overflow: 'visible', // Permitir ver elementos arrastrándose fuera
+    overflow: 'visible', // Permitir ver elementos arrastr�ndose fuera
     backgroundColor: '#4a8c3f',
-    marginBottom: 8, // Reducido de 18 para dar más espacio
+    marginBottom: 8, // Reducido de 18 para dar m�s espacio
     elevation: 2,
   },
-  leftPanelTitle: { 
-    fontSize: 18, 
-    fontWeight: '600', 
-    marginBottom: 16, 
+  leftPanelTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
     textAlign: 'center',
-    color: '#1a1a1a' 
+    color: '#1a1a1a'
   },
-  leftPanelTitleMobile: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    marginBottom: 8, 
+  leftPanelTitleMobile: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
     textAlign: 'center',
-    color: '#1a1a1a' 
+    color: '#1a1a1a'
   },
   leftPanelSubtitle: {
     fontSize: 12,
@@ -16743,38 +16827,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center'
   },
-  leftPanelLabel: { 
-    fontSize: 14, 
-    fontWeight: '500', 
-    marginTop: 12, 
+  leftPanelLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 12,
     marginBottom: 6,
-    color: '#333333' 
+    color: '#333333'
   },
-  leftPanelLabelMobile: { 
-    fontSize: 10, 
-    fontWeight: '500', 
-    marginTop: 8, 
+  leftPanelLabelMobile: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 8,
     marginBottom: 4,
-    color: '#333333' 
+    color: '#333333'
   },
-  leftPanelInput: { 
-    borderWidth: 1, 
-    borderColor: '#6b8e4e', 
-    borderRadius: 6, 
-    padding: 8, 
-    marginTop: 4, 
-    marginBottom: 6, 
+  leftPanelInput: {
+    borderWidth: 1,
+    borderColor: '#6b8e4e',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 4,
+    marginBottom: 6,
     backgroundColor: '#fff',
     fontSize: 14,
     color: '#1a3d1a',
   },
-  leftPanelInputMobile: { 
-    borderWidth: 1, 
-    borderColor: '#6b8e4e', 
-    borderRadius: 6, 
-    padding: 4, 
-    marginTop: 2, 
-    marginBottom: 3, 
+  leftPanelInputMobile: {
+    borderWidth: 1,
+    borderColor: '#6b8e4e',
+    borderRadius: 6,
+    padding: 4,
+    marginTop: 2,
+    marginBottom: 3,
     backgroundColor: '#fff',
     fontSize: 10,
     color: '#1a3d1a',
@@ -16966,11 +17050,11 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   textPanelTitleMobile: {
-    fontSize: 14, 
-    fontWeight: '600', 
-    marginBottom: 8, 
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
     textAlign: 'center',
-    color: '#1a1a1a' 
+    color: '#1a1a1a'
   },
   textPanelLabel: {
     fontSize: 14,
@@ -16980,11 +17064,11 @@ const styles = StyleSheet.create({
     color: '#333333',
   },
   textPanelLabelMobile: {
-    fontSize: 10, 
-    fontWeight: '500', 
-    marginTop: 8, 
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 8,
     marginBottom: 4,
-    color: '#333333' 
+    color: '#333333'
   },
   lineStyleModal: {
     position: 'absolute',
@@ -17323,8 +17407,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
   },
-  
-  // Nuevos estilos para controles horizontales en móvil
+
+  // Nuevos estilos para controles horizontales en m�vil
   zoomControlsHorizontal: {
     flexDirection: 'row',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',

@@ -220,8 +220,9 @@ export default function CreateExerciseForm({
 
     if (draftMatches || resultMatches) {
       // No limpiamos FIELD_RESULT aquí: si el componente se remonta, los lazy
-      // initializers de useState lo necesitan. Se limpia en handleSave/handleCancel.
-      clearFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT);
+      // initializers de useState lo necesitan. Tampoco limpiamos el borrador
+      // del formulario: React 18 StrictMode puede remontar una segunda vez.
+      // Ambos se limpian al guardar o cancelar el formulario.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
