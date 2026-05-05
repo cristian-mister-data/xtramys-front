@@ -30,6 +30,13 @@ import PreWellnessDetailModal from './PreWellnessDetailModal';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getStrengthExerciseVideoUrl, getSectionForExercise } from '@/data/strengthExercises';
 import StrengthExerciseViewer from '@/vendor/shared/StrengthExerciseViewer';
+import {
+  buildExerciseMap,
+  getEmbeddedSessionExercises,
+  getEntityId,
+  getSessionExerciseIds,
+  mergeExercises,
+} from '@/utils/sessionExercises';
 
 // Tema consistente con el resto de la aplicación
 // NOTE: Colores ahora vienen del ThemeProvider de styled-components.
@@ -126,9 +133,9 @@ export default function TrainingSessionDetailModal({
   // Cargar disponibilidad de videos para cada ejercicio
   useEffect(() => {
     const loadVideoAvailability = async () => {
-      if (!session?.ejercicios || session.ejercicios.length === 0) return;
-      
-      const ejerciciosIds = session.ejercicios.map(e => typeof e === 'string' ? e : e._id);
+      const ejerciciosIds = getSessionExerciseIds(session);
+      if (ejerciciosIds.length === 0) return;
+
       const availability = {};
       
       await Promise.all(
@@ -144,24 +151,30 @@ export default function TrainingSessionDetailModal({
       setExerciseVideoAvailability(availability);
     };
     
-    if (visible && session?.ejercicios) {
+    if (visible && session) {
       loadVideoAvailability();
     }
-  }, [visible, session?.ejercicios]);
+  }, [visible, session]);
+
+  const availableExercises = useMemo(() => (
+    mergeExercises(exercises, getEmbeddedSessionExercises(session))
+  ), [exercises, session]);
+
+  const exerciseMap = useMemo(() => buildExerciseMap(availableExercises), [availableExercises]);
+
+  const sessionExerciseIds = useMemo(() => getSessionExerciseIds(session), [session]);
 
   // Obtener ejercicios de la sesión
   const sessionExercises = useMemo(() => {
-    if (!session?.ejercicios || !exercises.length) return [];
-    return exercises.filter(e => 
-      session.ejercicios.includes(typeof e === 'string' ? e : e._id)
-    );
-  }, [session?.ejercicios, exercises]);
+    if (sessionExerciseIds.length === 0) return [];
+    return sessionExerciseIds.map(id => exerciseMap.get(id)).filter(Boolean);
+  }, [sessionExerciseIds, exerciseMap]);
 
   // Mapa de observaciones
   const observacionesMap = useMemo(() => {
     if (!session?.observaciones) return {};
     return Object.fromEntries(
-      session.observaciones.map(o => [o.ejercicioId, o.observacion])
+      session.observaciones.map(o => [getEntityId(o.ejercicioId || o.ejercicio), o.observacion])
     );
   }, [session?.observaciones]);
 
@@ -170,7 +183,7 @@ export default function TrainingSessionDetailModal({
     if (!session?.ejerciciosDetalle) return {};
     const map = {};
     session.ejerciciosDetalle.forEach(det => {
-      const ejercicioId = typeof det.ejercicio === 'string' ? det.ejercicio : det.ejercicio?._id;
+      const ejercicioId = getEntityId(det.ejercicio);
       if (ejercicioId) {
         map[ejercicioId] = { 
           orden: det.orden || 0, 
@@ -212,16 +225,18 @@ export default function TrainingSessionDetailModal({
   // Obtener jugadores extras de la sesión
   const sessionExtraPlayers = useMemo(() => {
     if (!session?.jugadoresExtras || !players.length) return [];
+    const extraIds = new Set(session.jugadoresExtras.map(getEntityId).filter(Boolean));
     return players.filter(p => 
-      session.jugadoresExtras.includes(p._id)
+      extraIds.has(getEntityId(p))
     );
   }, [session?.jugadoresExtras, players]);
 
   // Obtener jugadores de la sesión
   const sessionPlayers = useMemo(() => {
     if (!session?.jugadores || !players.length) return [];
+    const playerIds = new Set(session.jugadores.map(getEntityId).filter(Boolean));
     return players.filter(p => 
-      session.jugadores.includes(p._id)
+      playerIds.has(getEntityId(p))
     );
   }, [session?.jugadores, players]);
 

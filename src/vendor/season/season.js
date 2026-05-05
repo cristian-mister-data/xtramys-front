@@ -33,7 +33,7 @@ import { fetchEntrenamientosPorEquipo, createEntrenamiento, updateEntrenamiento,
 import { clearSessions } from '@/store/slices/session/sessionSlice';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { clearPlayers } from '@/store/slices/player/playerSlice';
-import { fetchEjerciciosUsuario, fetchExerciseFolders } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, fetchExerciseFolders, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
 import { clearRivals } from '@/store/slices/rival/rivalSlice';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
@@ -46,6 +46,7 @@ import TrainingSessionDetailModal from './TrainingSessionDetailModal';
 import AddEventModal from './AddEventModal';
 import EditMatchSheetModal from './EditMatchSheetModal';
 import EditSessionModal from './EditSessionModal';
+import { mergeExercises } from '@/utils/sessionExercises';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -98,7 +99,12 @@ export default function GestionEquipos() {
   const matchSheets = useSelector(state => state.matchSheet.matchSheets) || [];
   const trainingSessions = useSelector(state => state.session.session) || [];
   const players = useSelector(state => state.player.players) || [];
-  const exercises = useSelector(state => state.exercise.exercises) || [];
+  const userExercises = useSelector(state => state.exercise.exercises) || [];
+  const globalExercises = useSelector(state => state.exercise.globalExercises) || [];
+  const exercises = useMemo(
+    () => mergeExercises(userExercises, globalExercises),
+    [userExercises, globalExercises]
+  );
   const exerciseTypes = useSelector(state => state.exercise.exerciseTypes) || [];
   const rivals = useSelector(state => state.rival.rivals) || [];
   const injuries = useSelector(state => state.injury.injuries) || [];
@@ -254,6 +260,7 @@ export default function GestionEquipos() {
         dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id })),
         dispatch(fetchJugadoresEquipo({ team: equipoSeleccionado._id })),
         dispatch(fetchEjerciciosUsuario({ user: idUsuario })),
+        dispatch(fetchGlobalExercises({ lang: i18n.language })),
         dispatch(fetchExerciseFolders()),
         dispatch(fetchRivalsByTeam({ teamId: equipoSeleccionado._id })),
         dispatch(fetchInjuriesByTeam({ team: equipoSeleccionado._id })),

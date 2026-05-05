@@ -29,7 +29,7 @@ import {
   deleteEntrenamiento,
   createEntrenamientoBulk
 } from '@/store/slices/session/sessionThunks';
-import { fetchEjerciciosUsuario } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
@@ -60,6 +60,7 @@ import { PlayerSelectionModal, THEME, getPlayerInjuryStatus } from '@/vendor/sha
 import AddEventModal from '@/vendor/season/AddEventModal';
 import TrainingSessionDetailModal from '@/vendor/season/TrainingSessionDetailModal';
 import EditSessionModal from '@/vendor/season/EditSessionModal';
+import { mergeExercises } from '@/utils/sessionExercises';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -809,7 +810,12 @@ export default function Training() {
   const temporada = useSelector(s => s.season.season);
   const sesiones = useSelector(s => s.session.session);
   const loading = useSelector(s => s.session.loading);
-  const ejerciciosDisponibles = useSelector(s => s.exercise.exercises || []);
+  const userExercises = useSelector(s => s.exercise.exercises || []);
+  const globalExercises = useSelector(s => s.exercise.globalExercises || []);
+  const ejerciciosDisponibles = useMemo(
+    () => mergeExercises(userExercises, globalExercises),
+    [userExercises, globalExercises]
+  );
   const jugadoresDisponibles = useSelector(s => s.player.players || []);
   // Separar jugadores de plantilla y extras
   const jugadoresPlantilla = useMemo(() => jugadoresDisponibles.filter(j => !j.extra), [jugadoresDisponibles]);
@@ -1015,6 +1021,12 @@ export default function Training() {
       fetchedRef.current.exercises = true;
     }
   }, [idUsuario, dispatch]);
+
+  useEffect(() => {
+    if (idUsuario) {
+      dispatch(fetchGlobalExercises({ lang: i18n.language }));
+    }
+  }, [idUsuario, i18n.language, dispatch]);
 
   useEffect(() => {
     if (temporada?._id && !fetchedRef.current.teams) {

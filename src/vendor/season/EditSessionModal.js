@@ -32,6 +32,13 @@ import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } f
 
 // Componentes y helpers compartidos
 import { PlayerSelectionModal, getPlayerInjuryStatus } from '@/vendor/shared/training';
+import {
+  buildExerciseMap,
+  getEmbeddedSessionExercises,
+  getEntityId,
+  getSessionExerciseId,
+  mergeExercises,
+} from '@/utils/sessionExercises';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -110,30 +117,38 @@ export default function EditSessionModal({
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [exerciseForVideo, setExerciseForVideo] = useState(null);
   const [exerciseVideoAvailability, setExerciseVideoAvailability] = useState({});
+
+  const availableExercises = useMemo(() => (
+    mergeExercises(exercises, getEmbeddedSessionExercises(session))
+  ), [exercises, session]);
+
+  const exerciseMap = useMemo(() => buildExerciseMap(availableExercises), [availableExercises]);
   
   // Cargar disponibilidad de videos para todos los ejercicios
   useEffect(() => {
     const loadVideoAvailability = async () => {
-      if (!exercises || exercises.length === 0) return;
+      if (!availableExercises || availableExercises.length === 0) return;
       
       const availability = {};
       await Promise.all(
-        exercises.map(async (exercise) => {
+        availableExercises.map(async (exercise) => {
           try {
-            const videos = await getVideosByExercise(exercise._id);
-            availability[exercise._id] = videos && videos.length > 0;
+            const exerciseId = getEntityId(exercise);
+            const videos = await getVideosByExercise(exerciseId);
+            availability[exerciseId] = videos && videos.length > 0;
           } catch (error) {
-            availability[exercise._id] = false;
+            const exerciseId = getEntityId(exercise);
+            if (exerciseId) availability[exerciseId] = false;
           }
         })
       );
       setExerciseVideoAvailability(availability);
     };
     
-    if (visible && exercises?.length > 0) {
+    if (visible && availableExercises?.length > 0) {
       loadVideoAvailability();
     }
-  }, [visible, exercises]);
+  }, [visible, availableExercises]);
   // Video player para el modal
   const videoPlayer = useVideoPlayer(videoUrl, player => {
     if (videoUrl) {
@@ -232,7 +247,7 @@ export default function EditSessionModal({
       // Primero intentar cargar desde ejerciciosDetalle (estructura nueva con orden y descanso)
       if (session.ejerciciosDetalle && session.ejerciciosDetalle.length > 0) {
         session.ejerciciosDetalle.forEach(ej => {
-          const exId = typeof ej.ejercicio === 'object' ? ej.ejercicio._id : ej.ejercicio;
+          const exId = getSessionExerciseId(ej);
           if (exId) {
             exerciseIds.push(exId);
             rest[exId] = ej.tiempoDescanso !== undefined ? ej.tiempoDescanso : 0;
@@ -243,13 +258,7 @@ export default function EditSessionModal({
       // Si no hay ejerciciosDetalle, cargar desde ejercicios (array de IDs o objetos populados)
       else if (session.ejercicios && session.ejercicios.length > 0) {
         session.ejercicios.forEach(ej => {
-          // Puede ser un ID directo, un objeto populado, o un objeto con propiedad ejercicio
-          let exId;
-          if (typeof ej === 'string') {
-            exId = ej;
-          } else if (typeof ej === 'object') {
-            exId = ej._id || ej.ejercicio?._id || ej.ejercicio;
-          }
+          const exId = getSessionExerciseId(ej);
           if (exId) {
             exerciseIds.push(exId);
             rest[exId] = ej.tiempoDescanso !== undefined ? ej.tiempoDescanso : 0;
@@ -260,8 +269,9 @@ export default function EditSessionModal({
       // Cargar observaciones si vienen en el formato array de objetos {ejercicioId, observacion}
       if (Array.isArray(session.observaciones)) {
         session.observaciones.forEach(o => {
-          if (o.ejercicioId) {
-            obs[o.ejercicioId] = o.observacion || '';
+          const exerciseId = getEntityId(o.ejercicioId || o.ejercicio);
+          if (exerciseId) {
+            obs[exerciseId] = o.observacion || '';
           }
         });
       }
@@ -344,7 +354,7 @@ export default function EditSessionModal({
 
   // Helper para obtener nombre de ejercicio
   const getExerciseName = (exId) => {
-    const ex = exercises.find(e => e._id === exId);
+    const ex = exerciseMap.get(getEntityId(exId));
     return ex ? ex.nombre : 'Ejercicio';
   };
 
@@ -362,20 +372,22 @@ export default function EditSessionModal({
 
   // Añadir ejercicio
   const handleAddExercise = (exerciseId) => {
-    if (!selectedExercises.includes(exerciseId)) {
-      setSelectedExercises([...selectedExercises, exerciseId]);
-      setExerciseObservations(prev => ({ ...prev, [exerciseId]: '' }));
-      setExerciseRestTimes(prev => ({ ...prev, [exerciseId]: 0 }));
+    const id = getEntityId(exerciseId);
+    if (id && !selectedExercises.includes(id)) {
+      setSelectedExercises([...selectedExercises, id]);
+      setExerciseObservations(prev => ({ ...prev, [id]: '' }));
+      setExerciseRestTimes(prev => ({ ...prev, [id]: 0 }));
     }
   };
 
   // Eliminar ejercicio
   const handleRemoveExercise = (exerciseId) => {
-    setSelectedExercises(selectedExercises.filter(id => id !== exerciseId));
+    const id = getEntityId(exerciseId);
+    setSelectedExercises(selectedExercises.filter(item => item !== id));
     const newObs = { ...exerciseObservations };
     const newRest = { ...exerciseRestTimes };
-    delete newObs[exerciseId];
-    delete newRest[exerciseId];
+    delete newObs[id];
+    delete newRest[id];
     setExerciseObservations(newObs);
     setExerciseRestTimes(newRest);
   };
@@ -608,7 +620,7 @@ export default function EditSessionModal({
               {selectedExercises.length > 0 ? (
                 <View style={styles.exercisesList}>
                   {selectedExercises.map((exId, index) => {
-                    const exercise = exercises.find(e => e._id === exId);
+                    const exercise = exerciseMap.get(getEntityId(exId));
                     if (!exercise) return null;
                     
                     const handleMoveUp = () => {
@@ -1190,7 +1202,7 @@ export default function EditSessionModal({
           <ExerciseSelectorModal
             visible={showExerciseSelectorModal}
             onClose={() => setShowExerciseSelectorModal(false)}
-            ejercicios={exercises}
+            ejercicios={availableExercises}
             selectedIds={selectedExercises}
             setSelectedIds={(newIds) => {
               // Actualizar los ejercicios seleccionados
