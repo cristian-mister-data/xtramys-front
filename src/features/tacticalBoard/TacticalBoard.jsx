@@ -30,6 +30,7 @@ import FieldSelectorModal from './FieldSelectorModal';
 import VideoRecorderPanel from './VideoRecorderPanel';
 import LeftEditPanel from './LeftEditPanel';
 import { TEAM_COLORS } from './colorPalette';
+import { confirmAction } from '@/ui/confirm';
 import {
   PALETTE_PLAYERS, PALETTE_GROUPS, MATERIALS_ICONS,
   MATERIAL_TYPES_SET, getZIndexBaseForType,
@@ -371,8 +372,8 @@ export default function TacticalBoard({
   };
 
   // --- toolbar actions ---
-  const clearAll = () => {
-    if (window.confirm('¿Vaciar la pizarra?')) {
+  const clearAll = async () => {
+    if (await confirmAction('¿Vaciar la pizarra?', { destructive: true })) {
       applyChange([]);
       setSelectedId(null);
     }

@@ -6,6 +6,7 @@ import { Platform, Alert } from 'react-native';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { Asset } from 'expo-asset';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
 
 /**
@@ -130,11 +131,15 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
 // Obtener nombres de jugadores regulares
       if (ta.players && ta.players.length > 0) {
         ta.players.forEach(pid => {
-          const id = typeof pid === 'string' ? pid : pid._id;
-          const jugador = players.find(j => j._id === id);
+          const id = getEntityId(pid);
+          const jugador = players.find(j => getEntityId(j) === id);
           if (jugador) {
             const nombre = getPlayerFullName(jugador);
             playerNames.push(jugador.dorsal ? `<b>${jugador.dorsal}</b> ${nombre}` : nombre);
+          } else if (typeof pid === 'object' && pid) {
+            const nombre = getPlayerFullName(pid);
+            if (nombre) playerNames.push(nombre);
+            else if (id) playerNames.push(id);
           }
         });
       }
@@ -142,14 +147,17 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
       // Añadir jugadores extras
       if (ta.extraPlayers && ta.extraPlayers.length > 0) {
         ta.extraPlayers.forEach(epId => {
-          const id = typeof epId === 'string' ? epId : epId._id;
-          const jugador = players.find(j => j._id === id);
+          const id = getEntityId(epId);
+          const jugador = players.find(j => getEntityId(j) === id);
           if (jugador) {
             const nombre = getPlayerFullName(jugador);
             playerNames.push(`<span class="extra-player">⭐ ${jugador.dorsal ? `<b>${jugador.dorsal}</b> ` : ''}${nombre}</span>`);
-          } else {
-            // Fallback: si no se encuentra el jugador, mostrar el ID o nombre tal como viene
-            playerNames.push(`<span class="extra-player">⭐ ${epId}</span>`);
+          } else if (typeof epId === 'object' && epId) {
+            const nombre = getPlayerFullName(epId);
+            if (nombre) playerNames.push(`<span class="extra-player">⭐ ${nombre}</span>`);
+            else if (id) playerNames.push(`<span class="extra-player">⭐ ${id}</span>`);
+          } else if (id) {
+            playerNames.push(`<span class="extra-player">⭐ ${id}</span>`);
           }
         });
       }

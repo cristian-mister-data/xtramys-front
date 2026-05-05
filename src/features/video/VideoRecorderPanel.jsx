@@ -11,6 +11,14 @@ import styled from 'styled-components';
 import { Card, Stack, Row, Button, Muted } from '@/ui/primitives';
 import { useStageRecorder, convertWebmToMp4 } from './useStageRecorder';
 
+function showErrorToast(message) {
+  if (typeof window !== 'undefined' && typeof window.__xtramysToast === 'function') {
+    window.__xtramysToast({ title: 'Error', message, tone: 'error' });
+    return;
+  }
+  console.error(message);
+}
+
 const Canvas = styled.canvas`
   width: 100%;
   height: auto;
@@ -76,7 +84,7 @@ export default function VideoRecorderPanel() {
       const mp4 = await convertWebmToMp4(blob);
       setMp4Url(URL.createObjectURL(mp4));
     } catch (e) {
-      alert('Error convirtiendo: ' + e.message);
+      showErrorToast('Error convirtiendo: ' + e.message);
     } finally {
       setBusy(false);
     }

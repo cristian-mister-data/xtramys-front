@@ -1,5 +1,8 @@
-// Wrapper alrededor de window.confirm para mantener una API uniforme y
-// permitir sustituirlo por un modal personalizado en el futuro.
-export function confirmAction(message) {
-  return Promise.resolve(window.confirm(message));
+// Wrapper uniforme para confirmaciones web. El shim global de RNW lo resuelve
+// con un toast profesional y conserva fallback nativo si el shim no cargó.
+export function confirmAction(message, options = {}) {
+  if (typeof window !== 'undefined' && typeof window.__xtramysConfirm === 'function') {
+    return window.__xtramysConfirm(message, options);
+  }
+  return Promise.resolve(false);
 }

@@ -642,12 +642,24 @@ export default function TrainingSessionDetailModal({
                   
                   // Helper para obtener nombre de jugador por ID o por nombre (para extras)
                   const getPlayerName = (playerIdOrName) => {
-                    const allPlayers = [...sessionPlayers, ...sessionExtraPlayers];
-                    const player = allPlayers.find(p => p._id === playerIdOrName);
+                    const id = getEntityId(playerIdOrName);
+                    const allPlayers = [...new Map(
+                      [...sessionPlayers, ...sessionExtraPlayers, ...players]
+                        .map((p) => [getEntityId(p), p])
+                    ).values()];
+                    const player = allPlayers.find(p => getEntityId(p) === id);
+
                     if (player) {
-                      return getPlayerFullName(player);
+                      return getPlayerFullName(player) || id || '';
                     }
-                    // Si no se encontró por ID, podría ser un nombre de jugador extra (string)
+                    if (typeof playerIdOrName === 'object' && playerIdOrName) {
+                      const name = getPlayerFullName(playerIdOrName);
+                      if (name) return name;
+                      if (playerIdOrName.nombre) return playerIdOrName.nombre;
+                      if (playerIdOrName.apellidos) return playerIdOrName.apellidos;
+                      if (playerIdOrName.name) return playerIdOrName.name;
+                      if (playerIdOrName.fullName) return playerIdOrName.fullName;
+                    }
                     if (typeof playerIdOrName === 'string' && playerIdOrName.trim()) {
                       return playerIdOrName;
                     }
