@@ -832,6 +832,14 @@ export default function VideoRecorder({
     }
 
     let savedZoom = null;
+    let encodingProgressTimer = null;
+    const stopEncodingProgress = () => {
+      if (encodingProgressTimer) {
+        clearInterval(encodingProgressTimer);
+        encodingProgressTimer = null;
+      }
+    };
+
     try {
       setIsGenerating(true);
       setGenerationProgress(0);
@@ -914,7 +922,12 @@ export default function VideoRecorder({
 
       // 6. Codificar con ExpoVideoEncoder
       setGenerationProgress(85);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      encodingProgressTimer = setInterval(() => {
+        setGenerationProgress((current) => Math.min(98, current + 1));
+      }, 150);
       const { outputPath, mimeType: encodedMime } = await encodeVideo(framesDir, allFrames.length, videoSpeed);
+      stopEncodingProgress();
       setLocalVideoMime(encodedMime || null);
 
       if (generationCancelledRef.current) {
@@ -924,6 +937,7 @@ export default function VideoRecorder({
       }
 
       setGenerationProgress(100);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       // 7. Reproducir video local
       const fileUri = Platform.OS === 'android' ? `file://${outputPath}` : outputPath;
@@ -948,6 +962,7 @@ export default function VideoRecorder({
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
     } finally {
+      stopEncodingProgress();
       setIsGenerating(false);
     }
   };
