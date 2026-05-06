@@ -4,6 +4,14 @@ import { View, Image, useWindowDimensions, Text } from 'react-native';
 export function normalizeImageSource(imageSource, { cacheBust = true } = {}) {
   const normalizedSource = typeof imageSource === 'string' ? imageSource.trim() : imageSource;
   if (!normalizedSource) return '';
+  if (typeof normalizedSource === 'object') {
+    const uri = normalizedSource?.uri || normalizedSource?.default || normalizedSource?.uri?.toString?.();
+    if (uri) return normalizeImageSource(uri, { cacheBust });
+  }
+  if (typeof normalizedSource === 'number' && typeof Image.resolveAssetSource === 'function') {
+    const resolved = Image.resolveAssetSource(normalizedSource);
+    return normalizeImageSource(resolved?.uri || resolved?.default || '', { cacheBust });
+  }
 
   const isHttpUrl = typeof normalizedSource === 'string' && (normalizedSource.startsWith('http://') || normalizedSource.startsWith('https://'));
   const isUri = typeof normalizedSource === 'string' && (

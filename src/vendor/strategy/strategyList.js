@@ -21,6 +21,8 @@ import * as MediaLibrary from 'expo-media-library';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import { downloadImageSource } from '@/utils/imageDownload';
 import { getFieldById } from '@/utils/fieldTypes';
 import {
   saveFormDraft,
@@ -111,15 +113,17 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete }) {
         // Convertir la imagen a base64
         try {
           const asset = field.image;
-          const assetUri = Image.resolveAssetSource(asset).uri;
-          const response = await fetch(assetUri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          fieldImageData = await new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          const assetUri = normalizeImageSource(asset, { cacheBust: false });
+          if (assetUri) {
+            const response = await fetch(assetUri);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            fieldImageData = await new Promise((resolve, reject) => {
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
         } catch (err) {
           console.warn('Error cargando imagen del campo:', err);
         }
@@ -129,7 +133,9 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete }) {
       const result = await regenerateVideoWithField(video._id, fieldImageData);
       
       if (result.success && result.videoId) {
-        const streamUrl = getVideoStreamUrl(result.videoId);
+        const streamUrl = Platform.OS === 'web'
+          ? await resolvePlayableVideoUrl(result.videoId)
+          : getVideoStreamUrl(result.videoId);
         setVideoUrl(streamUrl);
       }
     } catch (error) {
@@ -171,6 +177,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete }) {
       const result = await regenerateVideoWithField(video._id, fieldImageData);
       
       if (result.success && result.videoId) {
+        if (Platform.OS === 'web') {
+          await downloadResolvedVideo(result.videoId, video.nombre || t('strategy.video'));
+          return;
+        }
+
         const downloadUrl = getVideoDownloadUrl(result.videoId);
         const fileName = `${video.nombre || 'video'}.mp4`;
         const fileUri = FileSystem.documentDirectory + fileName;
@@ -241,6 +252,9 @@ Alert.alert(
   
   // Cerrar modal de video
   const closeVideoModal = () => {
+    if (Platform.OS === 'web' && videoUrl) {
+      revokeVideoObjectUrl(videoUrl);
+    }
     setShowVideoModal(false);
     setSelectedVideo(null);
     setVideoUrl(null);
@@ -447,6 +461,12 @@ Alert.alert(
     try {
       if (!strategy.imagen) {
         Alert.alert(t('message.error'), t('strategy.imageSaveError'));
+        return;
+      }
+
+      // Web: descargar como archivo, evitando lecturas CORS del CDN.
+      if (Platform.OS === 'web') {
+        await downloadImageSource(strategy.imagen, `strategy_${strategy.nombre || 'image'}_${Date.now()}`);
         return;
       }
 

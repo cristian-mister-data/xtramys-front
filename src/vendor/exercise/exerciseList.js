@@ -18,6 +18,8 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromExercise, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import { downloadImageSource } from '@/utils/imageDownload';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
@@ -103,15 +105,17 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
         // Convertir la imagen a base64
         try {
           const asset = field.image;
-          const assetUri = Image.resolveAssetSource(asset).uri;
-          const response = await fetch(assetUri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          fieldImageData = await new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          const assetUri = normalizeImageSource(asset, { cacheBust: false });
+          if (assetUri) {
+            const response = await fetch(assetUri);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            fieldImageData = await new Promise((resolve, reject) => {
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
         } catch (err) {
           console.warn('Error cargando imagen del campo:', err);
         }
@@ -121,7 +125,9 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       const result = await regenerateVideoWithField(video._id, fieldImageData);
       
       if (result.success && result.videoId) {
-        const streamUrl = getVideoStreamUrl(result.videoId);
+        const streamUrl = Platform.OS === 'web'
+          ? await resolvePlayableVideoUrl(result.videoId)
+          : getVideoStreamUrl(result.videoId);
         setVideoUrl(streamUrl);
       }
     } catch (error) {
@@ -163,6 +169,11 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       const result = await regenerateVideoWithField(video._id, fieldImageData);
       
       if (result.success && result.videoId) {
+        if (Platform.OS === 'web') {
+          await downloadResolvedVideo(result.videoId, video.nombre || t('exercise.video'));
+          return;
+        }
+
         const downloadUrl = getVideoDownloadUrl(result.videoId);
         const fileName = `${video.nombre || t('exercise.video')}.mp4`;
         const fileUri = FileSystem.documentDirectory + fileName;
@@ -231,6 +242,9 @@ Alert.alert(
   
   // Cerrar modal de video
   const closeVideoModal = () => {
+    if (Platform.OS === 'web' && videoUrl) {
+      revokeVideoObjectUrl(videoUrl);
+    }
     setShowVideoModal(false);
     setSelectedVideo(null);
     setVideoUrl(null);
@@ -476,6 +490,12 @@ Alert.alert(
     try {
       if (!exercise.imagen) {
         Alert.alert(t('message.error'), t('exercise.imageSaveError'));
+        return;
+      }
+
+      // Web: descargar como archivo, evitando lecturas CORS del CDN.
+      if (Platform.OS === 'web') {
+        await downloadImageSource(exercise.imagen, `exercise_${exercise.nombre || 'image'}_${Date.now()}`);
         return;
       }
 

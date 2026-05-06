@@ -358,7 +358,8 @@ export default function MyVideos() {
       loadContent();
     } catch (error) {
       console.error('Error:', error);
-      showNotification(`No se pudo ${moveAction === 'move' ? 'mover' : 'duplicar'} el video`, 'error');
+      const actionLabel = t(moveAction === 'move' ? 'myVideos.move' : 'myVideos.duplicate').toLowerCase();
+      showNotification(t('myVideos.couldNotMoveOrDuplicate', { action: actionLabel }), 'error');
     }
   };
 
@@ -420,7 +421,7 @@ export default function MyVideos() {
           throw new Error('No se pudo crear el duplicado para edición');
         }
         result = await getVideoForEdit(editableVideoId);
-        showNotification(t('myVideos.cloneToEdit') || t('exercise.cloneToEdit'), 'success');
+        showNotification(t('myVideos.cloneToEdit'), 'success');
       } else {
         result = await getVideoForEdit(editableVideoId);
       }
@@ -466,7 +467,7 @@ export default function MyVideos() {
       setShowPreviewModal(true);
     } catch (error) {
       console.error('Error cargando video:', error);
-      showNotification('No se pudo cargar el video', 'error');
+      showNotification(t('myVideos.couldNotLoadVideo'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -476,15 +477,15 @@ export default function MyVideos() {
     try {
       setLoadingAction('download');
       setIsGenerating(true);
-      showNotification('Descargando video...', 'success');
+      showNotification(t('myVideos.downloadingStarted'), 'success');
       const video = typeof videoOrId === 'object' && videoOrId
         ? videoOrId
         : { id: videoOrId, videoUrl };
       await downloadResolvedVideo(video, video.nombre || 'video');
-      showNotification(t('myVideos.downloadStarted') || 'Descarga iniciada', 'success');
+      showNotification(t('myVideos.downloadStarted'), 'success');
     } catch (error) {
       console.error('Error descargando video:', error);
-      showNotification(t('myVideos.downloadError') || 'No se pudo descargar el vídeo', 'error');
+      showNotification(t('myVideos.downloadError'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -823,7 +824,7 @@ export default function MyVideos() {
                   <Text style={styles.actionTitle}>{t('myVideos.edit')}</Text>
                   <Text style={styles.actionSubtitle}>
                     {menuVideo?.isGlobal && !isAdmin
-                      ? t('myVideos.editCopySubtitle') || t('myVideos.editSubtitle')
+                      ? t('myVideos.editCopySubtitle')
                       : t('myVideos.editSubtitle')}
                   </Text>
                 </View>
@@ -1404,7 +1405,7 @@ export default function MyVideos() {
                 }}
               >
                 <Feather name="download" size={20} color="#fff" />
-                <Text style={styles.previewActionText}>{t('myVideos.download', 'Descargar')}</Text>
+                <Text style={styles.previewActionText}>{t('myVideos.download')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1419,12 +1420,12 @@ export default function MyVideos() {
             <Text style={styles.loadingTitle}>
               {loadingAction === 'download'
                 ? t('myVideos.downloading')
-                : t('myVideos.loadingVideo', 'Cargando vídeo...')}
+                : t('myVideos.loadingVideo')}
             </Text>
             <Text style={styles.loadingSubtitle}>
               {loadingAction === 'download'
                 ? t('myVideos.downloadingSubtitle')
-                : t('myVideos.loadingVideoSubtitle', 'Preparando reproducción...')}
+                : t('myVideos.loadingVideoSubtitle')}
             </Text>
           </View>
         </View>

@@ -128,6 +128,9 @@
         "passwordUpdateError": "No se pudo actualizar la contraseña",
         "account": "Cuenta"
     },
+    "sectionHeaders": {
+        "myVideos": "Clasifica clips, duplica plantillas y enlaza videos con ejercicios o estrategias."
+    },
     "wellnessTemplates": {
         "title": "Plantillas de Wellness",
         "subtitle": "Crea y gestiona cuestionarios personalizados",
@@ -1579,6 +1582,7 @@
         "deleteFolderMessage": "¿Estás seguro de que quieres eliminar la carpeta \"{{name}}\"? Los videos dentro serán movidos a la raíz.",
         "folderDeleted": "Carpeta eliminada",
         "couldNotDeleteFolder": "No se pudo eliminar la carpeta",
+        "video": "Video",
         "videoMoved": "Video movido correctamente",
         "videoDuplicated": "Video duplicado correctamente",
         "couldNotMoveOrDuplicate": "No se pudo {{action}} el video",
@@ -1589,6 +1593,11 @@
         "couldNotDeleteVideo": "No se pudo eliminar el video",
         "downloadComplete": "Descarga completada",
         "videoSavedToGallery": "Descarga iniciada",
+        "downloadingStarted": "Descargando video...",
+        "downloadStarted": "Descarga iniciada",
+        "downloadError": "No se pudo descargar el video",
+        "loadingVideo": "Cargando video...",
+        "loadingVideoSubtitle": "Preparando reproducción...",
         "errorDownloading": "Error al descargar",
         "couldNotDownload": "No se pudo descargar el archivo",
         "today": "Hoy",
@@ -1599,12 +1608,17 @@
         "linkToExerciseTitle": "Asociar video al ejercicio",
         "linkToStrategy": "Asociar a estrategia",
         "linkToStrategySubtitle": "Vincular video con una estrategia",
+        "linkToStrategyTitle": "Asociar video a la estrategia",
         "linkVideo": "Vincular video",
         "selectExercise": "Seleccionar ejercicio",
         "selectStrategy": "Seleccionar estrategia",
+        "noExercises": "Sin ejercicios",
+        "noStrategies": "Sin estrategias",
         "noExercisesAvailable": "No hay ejercicios disponibles",
         "noStrategiesAvailable": "No hay estrategias disponibles",
         "videoLinked": "Video asociado correctamente",
+        "videoLinkedToExercise": "Video asociado al ejercicio",
+        "videoLinkedToStrategy": "Video asociado a la estrategia",
         "couldNotLinkVideo": "No se pudo asociar el video",
         "searchExercise": "Buscar ejercicio...",
         "searchStrategy": "Buscar estrategia..."

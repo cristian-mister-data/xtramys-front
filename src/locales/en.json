@@ -128,6 +128,9 @@
         "passwordUpdateError": "Could not update password",
         "account": "Account"
     },
+    "sectionHeaders": {
+        "myVideos": "Organize clips, duplicate templates, and link videos to exercises or strategies."
+    },
     "wellnessTemplates": {
         "title": "Wellness Templates",
         "subtitle": "Create and manage custom questionnaires",
@@ -1578,6 +1581,7 @@
         "deleteFolderMessage": "Are you sure you want to delete the folder \"{{name}}\"? Videos inside will be moved to the root.",
         "folderDeleted": "Folder deleted",
         "couldNotDeleteFolder": "Could not delete folder",
+        "video": "Video",
         "videoMoved": "Video moved successfully",
         "videoDuplicated": "Video duplicated successfully",
         "couldNotMoveOrDuplicate": "Could not {{action}} video",
@@ -1588,6 +1592,11 @@
         "couldNotDeleteVideo": "Could not delete video",
         "downloadComplete": "Download complete",
         "videoSavedToGallery": "Download started",
+        "downloadingStarted": "Downloading video...",
+        "downloadStarted": "Download started",
+        "downloadError": "Could not download the video",
+        "loadingVideo": "Loading video...",
+        "loadingVideoSubtitle": "Preparing playback...",
         "errorDownloading": "Error downloading",
         "couldNotDownload": "Could not download file",
         "today": "Today",
@@ -1598,12 +1607,17 @@
         "linkToExerciseTitle": "Link video to exercise",
         "linkToStrategy": "Link to strategy",
         "linkToStrategySubtitle": "Link video with a strategy",
+        "linkToStrategyTitle": "Link video to strategy",
         "linkVideo": "Link video",
         "selectExercise": "Select exercise",
         "selectStrategy": "Select strategy",
+        "noExercises": "No exercises",
+        "noStrategies": "No strategies",
         "noExercisesAvailable": "No exercises available",
         "noStrategiesAvailable": "No strategies available",
         "videoLinked": "Video linked successfully",
+        "videoLinkedToExercise": "Video linked to exercise",
+        "videoLinkedToStrategy": "Video linked to strategy",
         "couldNotLinkVideo": "Could not link video",
         "searchExercise": "Search exercise...",
         "searchStrategy": "Search strategy..."

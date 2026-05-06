@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { useSelector } from 'react-redux';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MdMenu, MdLightMode, MdDarkMode, MdSearch, MdArrowForward } from 'react-icons/md';
 import { useThemeMode } from '@/theme/ThemeContext.jsx';
@@ -66,6 +66,12 @@ const Burger = styled(IconBtn)`
   }
 `;
 
+const ThemeToggle = styled(IconBtn)`
+  @media (max-width: 900px) {
+    display: none;
+  }
+`;
+
 const Brand = styled(Link)`
   display: none;
   font-weight: 700;
@@ -78,7 +84,7 @@ const Brand = styled(Link)`
   }
 `;
 
-/* Mobile center: logo + current page name. Shown only on < 701px */
+/* Mobile center: logo only. Shown only on < 701px */
 const MobileCenter = styled.div`
   display: none;
 
@@ -105,21 +111,19 @@ const MobileLogo = styled.img`
   flex-shrink: 0;
 `;
 
-const MobilePageLabel = styled.span`
-  font-size: 15px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
 const Spacer = styled.div`
   flex: 1;
 
   @media (max-width: 700px) {
     display: none;
   }
+`;
+
+const RightActions = styled.div`
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 /* ---------- Search ---------- */
@@ -291,7 +295,7 @@ const Profile = styled.button`
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 700px) {
     span { display: none; }
   }
 `;
@@ -346,7 +350,6 @@ export default function Header({ onMenu }) {
   const { t } = useTranslation();
   const user = useSelector((s) => s.usuario.user);
   const navigate = useNavigate();
-  const location = useLocation();
   const { mode, toggleTheme } = useThemeMode();
 
   const [query, setQuery] = useState('');
@@ -357,17 +360,6 @@ export default function Header({ onMenu }) {
 
   const allItems = useMemo(() => getFlatNavItems(t), [t]);
   const results = useMemo(() => searchNav(allItems, query, 8), [allItems, query]);
-
-  // Active page for mobile header title
-  const activePage = useMemo(() => {
-    const exact = allItems.find((it) => it.to === location.pathname);
-    if (exact) return exact;
-    return (
-      allItems
-        .filter((it) => it.to !== '/' && location.pathname.startsWith(it.to))
-        .sort((a, b) => b.to.length - a.to.length)[0] || null
-    );
-  }, [allItems, location.pathname]);
 
   // Reset índice activo al cambiar resultados
   useEffect(() => { setActiveIdx(0); }, [query]);
@@ -435,10 +427,9 @@ export default function Header({ onMenu }) {
       </Burger>
       <Brand to="/">Xtramys</Brand>
 
-      {/* Mobile center: logo + current page name */}
+      {/* Mobile center: just the logo, centered */}
       <MobileCenter aria-hidden="true">
         <MobileLogo src={xtramysLogo} alt="" />
-        <MobilePageLabel>{activePage?.label ?? 'Xtramys'}</MobilePageLabel>
       </MobileCenter>
 
       <SearchWrap ref={wrapRef}>
@@ -502,20 +493,20 @@ export default function Header({ onMenu }) {
         )}
       </SearchWrap>
 
-      <Spacer />
+      <RightActions>
+        <ThemeToggle
+          onClick={toggleTheme}
+          aria-label={mode === 'dark' ? t('common.lightMode', 'Modo claro') : t('common.darkMode', 'Modo oscuro')}
+          title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
+        >
+          {mode === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
+        </ThemeToggle>
 
-      <IconBtn
-        onClick={toggleTheme}
-        aria-label={mode === 'dark' ? t('common.lightMode', 'Modo claro') : t('common.darkMode', 'Modo oscuro')}
-        title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
-      >
-        {mode === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
-      </IconBtn>
-
-      <Profile onClick={() => navigate('/profile')} aria-label={t('menu.profile', 'Perfil')}>
-        <Avatar src={user?.imagen}>{!user?.imagen && initials(user?.nombre)}</Avatar>
-        <span>{user?.nombre || ''}</span>
-      </Profile>
+        <Profile onClick={() => navigate('/profile')} aria-label={t('menu.profile', 'Perfil')}>
+          <Avatar src={user?.imagen}>{!user?.imagen && initials(user?.nombre)}</Avatar>
+          <span>{user?.nombre || ''}</span>
+        </Profile>
+      </RightActions>
     </Bar>
   );
 }

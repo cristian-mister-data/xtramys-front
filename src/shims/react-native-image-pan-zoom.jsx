@@ -38,19 +38,24 @@ export default function ImageZoom({
     return () => window.removeEventListener('mouseup', onMouseUp);
   }, []);
 
-  const onWheel = (e) => {
-    e.preventDefault();
-    const next = Math.max(0.5, Math.min(4, scale + (e.deltaY < 0 ? 0.1 : -0.1)));
-    setScale(next);
-    onMove && onMove({ scale: next, positionX: translate.x, positionY: translate.y });
-  };
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const next = Math.max(0.5, Math.min(4, scale + (e.deltaY < 0 ? 0.1 : -0.1)));
+      setScale(next);
+      onMove && onMove({ scale: next, positionX: translate.x, positionY: translate.y });
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [scale, translate, onMove]);
 
   return (
     <div
       ref={ref}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
-      onWheel={onWheel}
       onClick={onClick}
       style={{
         width: cropWidth,
