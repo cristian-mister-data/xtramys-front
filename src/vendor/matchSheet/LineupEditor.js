@@ -1254,7 +1254,6 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   playerItemMobile: {
     width: '48%',
-    minWidth: 140,
     alignItems: 'center',
     padding: 12,
     borderRadius: 14,

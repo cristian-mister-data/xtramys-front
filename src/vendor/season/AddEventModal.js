@@ -2348,6 +2348,7 @@ export default function AddEventModal({
               onTitularesChange={setAlineacionTitulares}
               onSuplentesChange={setAlineacionSuplentes}
               jugadoresPorEquipo={jugadoresPorEquipo}
+              containerWidth={width - 112}
             />
           )}
 

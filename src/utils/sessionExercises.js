@@ -59,3 +59,15 @@ export function buildExerciseMap(exercises) {
   });
   return map;
 }
+
+/**
+ * Returns the full exercise objects belonging to a session.
+ * Looks up by ID in the provided exercises list, falling back to
+ * objects embedded in ejerciciosDetalle / ejercicios when not found.
+ */
+export function getSessionExercises(session, exercises = []) {
+  const allExercises = mergeExercises(exercises, getEmbeddedSessionExercises(session));
+  const exerciseMap = buildExerciseMap(allExercises);
+  const exerciseIds = getSessionExerciseIds(session);
+  return exerciseIds.map((id) => exerciseMap.get(id)).filter(Boolean);
+}

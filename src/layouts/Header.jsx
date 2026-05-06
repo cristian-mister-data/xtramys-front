@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MdMenu, MdLightMode, MdDarkMode, MdSearch, MdArrowForward } from 'react-icons/md';
 import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { preloadRoute } from '@/router/preload';
 import { getFlatNavItems, searchNav, normalize } from './navItems';
+import xtramysLogo from '@/images/xtramys.webp';
 
 const Bar = styled.header`
   grid-area: header;
@@ -19,7 +20,23 @@ const Bar = styled.header`
   padding: 0 20px;
   height: 60px;
   z-index: ${({ theme }) => theme.zIndex.sticky};
+  position: sticky;
+  top: 0;
   transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+
+  @media (max-width: 600px) {
+    height: 56px;
+    padding: 0 12px;
+    gap: 8px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background: ${({ theme }) =>
+      theme.mode === 'dark'
+        ? `${theme.colors.headerBg}d8`
+        : `${theme.colors.headerBg}f0`};
+    box-shadow: 0 1px 0 ${({ theme }) => theme.colors.headerBorder},
+                0 2px 12px rgba(0, 0, 0, 0.07);
+  }
 `;
 
 const IconBtn = styled.button`
@@ -56,13 +73,53 @@ const Brand = styled(Link)`
   color: ${({ theme }) => theme.colors.primary};
   letter-spacing: 0.3px;
 
-  @media (max-width: 900px) {
+  @media (max-width: 900px) and (min-width: 701px) {
     display: inline-flex;
   }
 `;
 
+/* Mobile center: logo + current page name. Shown only on < 701px */
+const MobileCenter = styled.div`
+  display: none;
+
+  @media (max-width: 700px) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 160px);
+    pointer-events: none;
+  }
+`;
+
+const MobileLogo = styled.img`
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+`;
+
+const MobilePageLabel = styled.span`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
 const Spacer = styled.div`
   flex: 1;
+
+  @media (max-width: 700px) {
+    display: none;
+  }
 `;
 
 /* ---------- Search ---------- */
@@ -289,6 +346,7 @@ export default function Header({ onMenu }) {
   const { t } = useTranslation();
   const user = useSelector((s) => s.usuario.user);
   const navigate = useNavigate();
+  const location = useLocation();
   const { mode, toggleTheme } = useThemeMode();
 
   const [query, setQuery] = useState('');
@@ -299,6 +357,17 @@ export default function Header({ onMenu }) {
 
   const allItems = useMemo(() => getFlatNavItems(t), [t]);
   const results = useMemo(() => searchNav(allItems, query, 8), [allItems, query]);
+
+  // Active page for mobile header title
+  const activePage = useMemo(() => {
+    const exact = allItems.find((it) => it.to === location.pathname);
+    if (exact) return exact;
+    return (
+      allItems
+        .filter((it) => it.to !== '/' && location.pathname.startsWith(it.to))
+        .sort((a, b) => b.to.length - a.to.length)[0] || null
+    );
+  }, [allItems, location.pathname]);
 
   // Reset índice activo al cambiar resultados
   useEffect(() => { setActiveIdx(0); }, [query]);
@@ -360,11 +429,17 @@ export default function Header({ onMenu }) {
   const showDropdown = open && (query.trim().length > 0);
 
   return (
-    <Bar>
+    <Bar style={{ position: 'relative' }}>
       <Burger onClick={onMenu} aria-label={t('common.menu', 'Menú')}>
         <MdMenu size={22} />
       </Burger>
       <Brand to="/">Xtramys</Brand>
+
+      {/* Mobile center: logo + current page name */}
+      <MobileCenter aria-hidden="true">
+        <MobileLogo src={xtramysLogo} alt="" />
+        <MobilePageLabel>{activePage?.label ?? 'Xtramys'}</MobilePageLabel>
+      </MobileCenter>
 
       <SearchWrap ref={wrapRef}>
         <SearchBox>

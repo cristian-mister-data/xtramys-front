@@ -8,7 +8,8 @@ import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { TutorialProvider } from '@/components/shared/TutorialProvider';
 
 const Shell = styled.div`
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 260px 1fr;
   grid-template-rows: 60px 1fr;
@@ -22,6 +23,7 @@ const Shell = styled.div`
     grid-template-areas:
       'header'
       'content';
+    grid-template-rows: 56px 1fr;
   }
 `;
 
@@ -30,13 +32,15 @@ const Main = styled.main`
   padding: 24px;
   overflow: auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 900px) {
     padding: 16px;
   }
 
   @media (max-width: 600px) {
-    padding: 0;
+    padding: 12px;
   }
 `;
 

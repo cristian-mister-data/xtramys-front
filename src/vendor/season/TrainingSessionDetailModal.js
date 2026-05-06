@@ -31,11 +31,9 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getStrengthExerciseVideoUrl, getSectionForExercise } from '@/data/strengthExercises';
 import StrengthExerciseViewer from '@/vendor/shared/StrengthExerciseViewer';
 import {
-  buildExerciseMap,
-  getEmbeddedSessionExercises,
   getEntityId,
   getSessionExerciseIds,
-  mergeExercises,
+  getSessionExercises,
 } from '@/utils/sessionExercises';
 
 // Tema consistente con el resto de la aplicación
@@ -156,19 +154,7 @@ export default function TrainingSessionDetailModal({
     }
   }, [visible, session]);
 
-  const availableExercises = useMemo(() => (
-    mergeExercises(exercises, getEmbeddedSessionExercises(session))
-  ), [exercises, session]);
-
-  const exerciseMap = useMemo(() => buildExerciseMap(availableExercises), [availableExercises]);
-
-  const sessionExerciseIds = useMemo(() => getSessionExerciseIds(session), [session]);
-
-  // Obtener ejercicios de la sesión
-  const sessionExercises = useMemo(() => {
-    if (sessionExerciseIds.length === 0) return [];
-    return sessionExerciseIds.map(id => exerciseMap.get(id)).filter(Boolean);
-  }, [sessionExerciseIds, exerciseMap]);
+  const sessionExercises = useMemo(() => getSessionExercises(session, exercises), [session, exercises]);
 
   // Mapa de observaciones
   const observacionesMap = useMemo(() => {

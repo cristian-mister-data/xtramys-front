@@ -29,7 +29,8 @@ import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import { fetchEntrenamientosPorEquipo, updateEntrenamiento, deleteEntrenamiento } from '@/store/slices/session/sessionThunks';
-import { fetchEjerciciosUsuario } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
+import { mergeExercises, getSessionExerciseIds, getEntityId } from '@/utils/sessionExercises';
 import { fetchTemporadaUsuarioSeleccionada } from '@/store/slices/season/seasonThunks';
 import { fetchMatchSheetsByTeam, updateMatchSheet, deleteMatchSheet } from '@/store/slices/matchSheet/matchSheetThunks';
 import { fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
@@ -62,6 +63,7 @@ const selectPlayers = state => state.player.players || EMPTY_ARRAY;
 const selectInjuries = state => state.injury.injuries || EMPTY_ARRAY;
 const selectSessions = state => state.session.session || EMPTY_ARRAY;
 const selectExercises = state => state.exercise.exercises || EMPTY_ARRAY;
+const selectGlobalExercises = state => state.exercise.globalExercises || EMPTY_ARRAY;
 const selectMatchSheets = state => state.matchSheet.matchSheets || EMPTY_ARRAY;
 const selectExerciseTypes = state => state.exercise.exerciseTypes || EMPTY_ARRAY;
 
@@ -95,6 +97,8 @@ export default function Home({ navigation: navigationProp }) {
   const lesiones = useSelector(selectInjuries);
   const sesiones = useSelector(selectSessions);
   const ejerciciosDisponibles = useSelector(selectExercises);
+  const globalExercises = useSelector(selectGlobalExercises);
+  const allExercises = useMemo(() => mergeExercises(ejerciciosDisponibles, globalExercises), [ejerciciosDisponibles, globalExercises]);
   const partidos = useSelector(selectMatchSheets);
   const tournaments = useSelector(state => state.tournament?.tournaments) || [];
   const rivals = useSelector(state => state.rival?.rivals) || [];
@@ -184,6 +188,7 @@ export default function Home({ navigation: navigationProp }) {
         dispatch(fetchInjuriesByTeam({ team: equipoSeleccionado._id })),
         dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id })),
         dispatch(fetchEjerciciosUsuario({ user: idUsuario })),
+        dispatch(fetchGlobalExercises({ lang: i18n.language })),
         dispatch(fetchMatchSheetsByTeam(equipoSeleccionado._id)),
         dispatch(fetchTournamentsByTeam(equipoSeleccionado._id)),
         dispatch(fetchRivalsByTeam({ team: equipoSeleccionado._id }))
@@ -311,6 +316,19 @@ export default function Home({ navigation: navigationProp }) {
       ultimaSesion: sesionesPasadas[0] || null
     };
   }, [sesiones]);
+
+  // Exercise previews for session cards
+  const proximaSesionExercises = useMemo(() => {
+    if (!proximaSesion) return EMPTY_ARRAY;
+    const ids = getSessionExerciseIds(proximaSesion);
+    return ids.map(id => allExercises.find(e => getEntityId(e) === id)).filter(Boolean);
+  }, [proximaSesion, allExercises]);
+
+  const ultimaSesionExercises = useMemo(() => {
+    if (!ultimaSesion) return EMPTY_ARRAY;
+    const ids = getSessionExerciseIds(ultimaSesion);
+    return ids.map(id => allExercises.find(e => getEntityId(e) === id)).filter(Boolean);
+  }, [ultimaSesion, allExercises]);
 
   // Get next and last match (memoizado)
   const { proximoPartido, ultimoPartido } = useMemo(() => {
@@ -1064,12 +1082,27 @@ export default function Home({ navigation: navigationProp }) {
                 <View style={styles.sessionCardDivider} />
 
                 <View style={styles.sessionCardFooter}>
-                  {proximaSesion.ejercicios && proximaSesion.ejercicios.length > 0 && (
-                    <View style={styles.sessionInfoChip}>
-                      <Ionicons name="barbell" size={14} color="#fff" />
-                      <Text style={styles.sessionInfoChipText}>
-                        {t('session.exercisesCount', { count: proximaSesion.ejercicios.length })}
-                      </Text>
+                  {proximaSesionExercises.length > 0 && (
+                    <View style={styles.sessionExercisePreview}>
+                      {proximaSesionExercises.slice(0, 4).map((ejercicio, index) => (
+                        <View key={getEntityId(ejercicio) + index} style={[styles.sessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
+                          {ejercicio?.imagen ? (
+                            <Image
+                              source={{ uri: ejercicio.imagen.startsWith('http') ? ejercicio.imagen : `data:image/png;base64,${ejercicio.imagen}` }}
+                              style={styles.sessionExerciseMiniImage}
+                            />
+                          ) : (
+                            <View style={styles.sessionExerciseMiniPlaceholder}>
+                              <MaterialIcons name="fitness-center" size={10} color="rgba(255,255,255,0.8)" />
+                            </View>
+                          )}
+                        </View>
+                      ))}
+                      {proximaSesionExercises.length > 4 && (
+                        <View style={[styles.sessionExerciseMoreBadge, { marginLeft: -8 }]}>
+                          <Text style={styles.sessionExerciseMoreText}>+{proximaSesionExercises.length - 4}</Text>
+                        </View>
+                      )}
                     </View>
                   )}
 
@@ -1141,10 +1174,27 @@ export default function Home({ navigation: navigationProp }) {
                   </Text>
                   
                   <View style={styles.lastSessionStats}>
-                    {ultimaSesion.ejercicios && ultimaSesion.ejercicios.length > 0 && (
-                      <View style={styles.lastSessionStat}>
-                        <Ionicons name="barbell-outline" size={12} color={theme.colors.textSecondary} />
-                        <Text style={styles.lastSessionStatText}>{ultimaSesion.ejercicios.length}</Text>
+                    {ultimaSesionExercises.length > 0 && (
+                      <View style={styles.lastSessionExercisePreview}>
+                        {ultimaSesionExercises.slice(0, 4).map((ejercicio, index) => (
+                          <View key={getEntityId(ejercicio) + index} style={[styles.lastSessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
+                            {ejercicio?.imagen ? (
+                              <Image
+                                source={{ uri: ejercicio.imagen.startsWith('http') ? ejercicio.imagen : `data:image/png;base64,${ejercicio.imagen}` }}
+                                style={styles.lastSessionExerciseMiniImage}
+                              />
+                            ) : (
+                              <View style={styles.lastSessionExerciseMiniPlaceholder}>
+                                <MaterialIcons name="fitness-center" size={10} color="#64748b" />
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                        {ultimaSesionExercises.length > 4 && (
+                          <View style={[styles.lastSessionExerciseMoreBadge, { marginLeft: -8 }]}>
+                            <Text style={styles.lastSessionExerciseMoreText}>+{ultimaSesionExercises.length - 4}</Text>
+                          </View>
+                        )}
                       </View>
                     )}
                     {ultimaSesion.jugadores && ultimaSesion.jugadores.length > 0 && (
@@ -1178,7 +1228,7 @@ export default function Home({ navigation: navigationProp }) {
       session={selectedSessionForDetail}
       team={equipoSeleccionado}
       players={jugadores}
-      exercises={ejerciciosDisponibles}
+      exercises={allExercises}
       exerciseTypes={exerciseTypes}
       onClose={() => {
         setDetailSessionVisible(false);
@@ -1216,7 +1266,7 @@ export default function Home({ navigation: navigationProp }) {
       visible={editSessionModalVisible}
       session={selectedSessionForDetail}
       players={jugadores}
-      exercises={ejerciciosDisponibles}
+      exercises={allExercises}
       exerciseTypes={exerciseTypes}
       injuries={lesiones}
       onClose={() => {
@@ -2122,6 +2172,86 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 11,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+  },
+  // Exercise previews — upcoming session card (dark gradient background)
+  sessionExercisePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sessionExerciseMini: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  sessionExerciseMiniImage: {
+    width: '100%',
+    height: '100%',
+  },
+  sessionExerciseMiniPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  sessionExerciseMoreBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  sessionExerciseMoreText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  // Exercise previews — last session card (light surface background)
+  lastSessionExercisePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  lastSessionExerciseMini: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: theme.colors.background,
+    backgroundColor: theme.colors.backgroundAlt || '#f1f5f9',
+  },
+  lastSessionExerciseMiniImage: {
+    width: '100%',
+    height: '100%',
+  },
+  lastSessionExerciseMiniPlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  lastSessionExerciseMoreBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.background,
+  },
+  lastSessionExerciseMoreText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
   },
   lastSessionRight: {
     flexDirection: 'row',

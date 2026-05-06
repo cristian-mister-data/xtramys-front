@@ -823,13 +823,15 @@ export default function GestionEquipos() {
                     </View>
                     <View style={styles.headerTextContainer}>
                       <Text style={styles.headerTitle}>{t("season.currentSeason")}</Text>
-                      <Text style={styles.headerSubtitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                      <Text style={styles.headerSubtitle}>
                         {formatSeasonYear(temporada.año)}
-                        {(() => {
-                          const selectedTeam = equipos?.find(t => t.seleccionado === true);
-                          return selectedTeam ? ` • ${selectedTeam.nombre}` : '';
-                        })()}
                       </Text>
+                      {(() => {
+                        const selectedTeam = equipos?.find(t => t.seleccionado === true);
+                        return selectedTeam ? (
+                          <Text style={styles.headerTeamName} numberOfLines={1}>{selectedTeam.nombre}</Text>
+                        ) : null;
+                      })()}
                     </View>
                   </View>
                   <TouchableOpacity
@@ -2069,6 +2071,12 @@ const makeStyles = (theme) => StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  headerTeamName: {
+    fontSize: isMobileDevice() ? 13 : 16,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+    marginTop: isMobileDevice() ? 2 : 3,
   },
   changeSeasonButton: {
     flexDirection: 'row',

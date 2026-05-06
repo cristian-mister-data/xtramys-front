@@ -14,6 +14,7 @@ import {
   Platform,
   Image,
   Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
 // Detectar si es móvil
@@ -765,6 +766,7 @@ export default function EditMatchSheetModal({
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { width: windowWidth } = useWindowDimensions();
   const isCreateMode = !matchSheet?._id;
   const [loading, setLoading] = useState(false);
   
@@ -1982,6 +1984,7 @@ export default function EditMatchSheetModal({
                     onTitularesChange={setAlineacionTitulares}
                     onSuplentesChange={setAlineacionSuplentes}
                     jugadoresPorEquipo={jugadoresPorEquipo}
+                    containerWidth={windowWidth - 56}
                   />
                 </View>
               )}

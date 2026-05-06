@@ -44,13 +44,9 @@ const darkInvert = css`
 `;
 
 const Frame = styled.div`
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
-  min-height: ${({ $fullscreen, $hasHeader }) => {
-    if ($fullscreen) return '100dvh';
-    return $hasHeader ? '0' : 'calc(100dvh - 60px - 48px)';
-  }};
-  flex: ${({ $hasHeader }) => ($hasHeader ? '1 1 auto' : 'initial')};
   border-radius: ${({ $fullscreen, theme }) => ($fullscreen ? '0' : theme.radius.lg)};
   overflow: hidden;
   background: ${({ theme }) => theme.colors.background};
@@ -65,25 +61,21 @@ const Frame = styled.div`
   flex-direction: column;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    border-radius: 0;
+    border-radius: ${({ $fullscreen, theme }) => ($fullscreen ? '0' : theme.radius.md)};
     border-color: transparent;
     box-shadow: none;
-    min-height: ${({ $fullscreen, $hasHeader }) => {
-      if ($fullscreen) return '100dvh';
-      return $hasHeader ? '0' : 'calc(100dvh - 56px)';
-    }};
   }
 `;
 
 const PageStack = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   gap: 16px;
-  min-height: calc(100dvh - 60px - 48px);
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    gap: 10px;
-    min-height: calc(100dvh - 56px);
+    gap: 12px;
   }
 `;
 
