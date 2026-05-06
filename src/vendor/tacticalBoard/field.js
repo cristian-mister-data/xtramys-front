@@ -3858,6 +3858,23 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
 
   const currentFormations = FORMATIONS_BY_PLAYER_COUNT[selectedPlayerCount] || FORMATIONS;
   const formationKeys = Object.keys(currentFormations);
+  const mobileModalMargin = Math.max(10, Math.min(16, SCREEN_WIDTH * 0.035));
+  const formationModalPanelStyle = isMobile
+    ? {
+        width: Math.min(520, Math.max(280, SCREEN_WIDTH - mobileModalMargin * 2)),
+        maxWidth: SCREEN_WIDTH - mobileModalMargin * 2,
+        maxHeight: SCREEN_HEIGHT - insets.top - insets.bottom - mobileModalMargin * 2,
+        borderRadius: 16,
+      }
+    : {
+        top: insets.top,
+        bottom: 0,
+        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
+        width: 380,
+        borderRadius: 0,
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
+      };
 
   // Funci�n para asignar jugadores a posiciones seg�n la formaci�n
   const assignPlayersToPositions = (formation, selectedPlayersList) => {
@@ -4031,17 +4048,9 @@ realPlayers: assignedPlayers.map((player, idx) => {
       statusBarTranslucent={true}
     >
       <View style={{ flex: 1 }}>
-        <View style={[styles.proModalOverlay, { alignItems: 'flex-end' }]}>
+        <View style={[styles.proModalOverlay, isMobile ? { padding: mobileModalMargin } : { alignItems: 'flex-end' }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, {
-                top: insets.top,
-                bottom: 0,
-                paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
-                width: isMobile ? SCREEN_WIDTH * 0.60 : 380,
-                borderRadius: isMobile ? 12 : 0,
-                borderTopLeftRadius: 12,
-                borderBottomLeftRadius: 12
-              }]}>
+<View style={[isMobile ? styles.proModalContainer : styles.proModalContainerSide, formationModalPanelStyle]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
@@ -4065,10 +4074,16 @@ realPlayers: assignedPlayers.map((player, idx) => {
                 </View>
 
                 {/* Contenido con scroll */}
-                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true} nestedScrollEnabled>
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingHorizontal: isMobile ? 12 : 0, paddingBottom: isMobile ? 8 : 0 }}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                >
 
                 {/* Selector de cantidad de jugadores (7, 8, 11) */}
-                <View style={{ flexDirection: 'row', marginHorizontal: 12, marginTop: 10, marginBottom: 4, borderRadius: 8, backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
+                <View style={{ flexDirection: 'row', marginHorizontal: isMobile ? 0 : 12, marginTop: 10, marginBottom: 4, borderRadius: 8, backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
                   {[7, 8, 11].map(count => (
                     <TouchableOpacity
                       key={count}
@@ -4087,7 +4102,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         fontWeight: '700',
                         color: selectedPlayerCount === count ? '#fff' : '#666',
                       }}>
-                        {t('formations.playerCountLabel', { count })}
+                        {isMobile ? count : t('formations.playerCountLabel', { count })}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -4095,7 +4110,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
 
                 {/* Panel de Configuraci�n */}
                 {showSettings && (
-                  <View style={[styles.proModalCard, { margin: 12, marginBottom: 8 }]}>
+                  <View style={[styles.proModalCard, { margin: isMobile ? 0 : 12, marginTop: isMobile ? 10 : 12, marginBottom: 8 }]}>
                     <Text style={styles.proModalSectionTitle}>
                       {t('formations.displaySettings')}
                     </Text>
@@ -4333,7 +4348,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                 )}
 
                 {/* Compact Color & Size controls */}
-                <View style={[styles.proModalCard, { flexDirection: 'row', alignItems: 'center', padding: 12, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
+                <View style={[styles.proModalCard, { flexDirection: 'row', alignItems: 'center', padding: isMobile ? 10 : 12, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
                   <TouchableOpacity
                     onPress={() => setColorPickerVisible(true)}
                     style={{
@@ -4387,7 +4402,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                 </View>
 
                 {/* Grid de formaciones */}
-                <View style={{ flex: 1, marginTop: 4, minHeight: 200 }}>
+                <View style={{ flex: 1, marginTop: 4, minHeight: isMobile ? 160 : 200 }}>
                   <Text style={{ fontSize: isMobile ? 11 : 12, color: '#888', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {t('formations.selectFormation')}
                   </Text>
@@ -4397,10 +4412,11 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         <TouchableOpacity
                           key={key}
                           style={{
-                            width: isMobile ? '48%' : '48%',
-                            paddingVertical: isMobile ? 14 : 18,
-                            paddingHorizontal: isMobile ? 10 : 14,
-                            marginBottom: isMobile ? 10 : 12,
+                            width: '48%',
+                            minHeight: isMobile ? 96 : 112,
+                            paddingVertical: isMobile ? 12 : 18,
+                            paddingHorizontal: isMobile ? 8 : 14,
+                            marginBottom: isMobile ? 8 : 12,
                             backgroundColor: '#fff',
                             borderRadius: 12,
                             borderWidth: 2,
@@ -4424,8 +4440,8 @@ realPlayers: assignedPlayers.map((player, idx) => {
                         >
                           {/* Icono de formaci�n mini */}
                           <View style={{
-                            width: isMobile ? 40 : 50,
-                            height: isMobile ? 28 : 32,
+                            width: isMobile ? 44 : 50,
+                            height: isMobile ? 30 : 32,
                             backgroundColor: isOpponent ? 'rgba(255,59,48,0.1)' : 'rgba(33,118,255,0.1)',
                             borderRadius: 6,
                             alignItems: 'center',
@@ -4435,7 +4451,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                             <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>?</Text>
                           </View>
                           <Text style={{
-                            fontSize: isMobile ? 16 : 20,
+                            fontSize: isMobile ? 15 : 20,
                             fontWeight: '700',
                             color: isOpponent ? '#ff3b30' : '#2176ff',
                             letterSpacing: 0.5,
@@ -8557,20 +8573,26 @@ export default function Field(props = {}) {
 
   // Forzar orientaci�n horizontal cuando la pantalla tiene el foco
   // y liberar cuando pierde el foco
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      let subscription = null;
-      let reinforceInterval = null;
+  useEffect(() => {
+    let isMounted = true;
+    let subscription = null;
+    let reinforceInterval = null;
+    const isWebPlatform = Platform.OS === 'web';
 
-      const lockToLandscape = async () => {
-        if (!isMounted) return;
-        try {
+    const lockToLandscape = async () => {
+      if (!isMounted) return;
+      try {
+        if (isWebPlatform && typeof window !== 'undefined' && window.screen?.orientation?.lock) {
+          await window.screen.orientation.lock('landscape');
+        }
+
+        if (ScreenOrientation?.lockAsync) {
           await ScreenOrientation.lockAsync(
             ScreenOrientation.OrientationLock.LANDSCAPE
           );
+        }
       } catch (error) {
-        console.warn('Error al bloquear orientaci�n:', error);
+        console.warn('Error al bloquear orientación:', error);
       }
     };
 
@@ -8594,15 +8616,25 @@ export default function Field(props = {}) {
     // A�adir listener para detectar si cambia la orientaci�n y re-bloquear
     const setupOrientationListener = async () => {
       try {
-        subscription = ScreenOrientation.addOrientationChangeListener((event) => {
-          if (!isMounted) return;
-          const orientation = event.orientationInfo.orientation;
+        if (isWebPlatform && typeof window !== 'undefined' && window.screen?.orientation?.addEventListener) {
+          window.screen.orientation.addEventListener('change', () => {
+            if (!isMounted) return;
+            const type = window.screen.orientation.type || '';
+            if (type.startsWith('portrait')) {
+              lockToLandscape();
+            }
+          });
+        } else {
+          subscription = ScreenOrientation.addOrientationChangeListener((event) => {
+            if (!isMounted) return;
+            const orientation = event.orientationInfo.orientation;
           // Si detectamos orientaci�n vertical, forzar landscape de nuevo
           if (orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
               orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN) {
             lockToLandscape();
           }
         });
+        }
       } catch (error) {
         console.warn('Error configurando listener de orientaci�n:', error);
       }
@@ -8623,7 +8655,15 @@ export default function Field(props = {}) {
 
       // Eliminar listener de orientaci�n
       if (subscription) {
-        ScreenOrientation.removeOrientationChangeListener(subscription);
+        try {
+          if (isWebPlatform && window.screen?.orientation?.removeEventListener) {
+            window.screen.orientation.removeEventListener('change', lockToLandscape);
+          } else {
+            ScreenOrientation.removeOrientationChangeListener(subscription);
+          }
+        } catch (error) {
+          // Ignore cleanup failures
+        }
         subscription = null;
       }
 
@@ -8636,8 +8676,7 @@ export default function Field(props = {}) {
         })
         .catch(() => {});
     };
-  }, [])
-  );
+  }, []);
 
   // Efecto para controlar el estado de carga "� SVG fields render instantly
   // (defined here, but runs after render when fieldLineType/viewMode are available)

@@ -69,18 +69,17 @@ const PatchedPressable = RNWPressable ? makeWebPressableWrapper(RNWPressable, 'P
 // (que sí funciona). Mantiene la API mínima de RN Modal usada en el code-
 // base: visible, transparent, animationType, onRequestClose, onShow,
 // onDismiss, statusBarTranslucent, children, style.
-function PatchedModal({
-  visible,
-  transparent,
-  animationType, // 'none' | 'fade' | 'slide' (slide se trata como fade)
-  onRequestClose,
-  onShow,
-  onDismiss,
-  children,
-  // Props ignoradas en web (válidas solo en nativo): supportedOrientations,
-  // hardwareAccelerated, statusBarTranslucent, presentationStyle, etc.
-  ...rest
-}) {
+function PatchedModal(props) {
+  const {
+    visible,
+    transparent,
+    animationType, // 'none' | 'fade' | 'slide' (slide se trata como fade)
+    onRequestClose,
+    onShow,
+    onDismiss,
+    children,
+    ...rest
+  } = props;
   const wasVisibleRef = React.useRef(false);
 
   // Disparar onShow / onDismiss en transiciones.
@@ -120,6 +119,23 @@ function PatchedModal({
 
   if (!visible || typeof document === 'undefined') return null;
 
+  const nativeOnlyProps = new Set([
+    'hardwareAccelerated',
+    'onOrientationChange',
+    'presentationStyle',
+    'statusBarTranslucent',
+    'supportedOrientations',
+    'transparent',
+    'visible',
+  ]);
+
+  const allowedDomProps = Object.fromEntries(
+    Object.entries(rest).filter(([key]) => {
+      if (nativeOnlyProps.has(key)) return false;
+      return key.startsWith('data-') || key.startsWith('aria-') || key === 'id' || key === 'role' || key === 'tabIndex';
+    })
+  );
+
   const overlayStyle = {
     position: 'fixed',
     top: 0,
@@ -149,7 +165,7 @@ function PatchedModal({
   };
 
   return createPortal(
-    <div style={overlayStyle} data-theme-aware="true" {...rest}>
+    <div style={overlayStyle} data-theme-aware="true" {...allowedDomProps}>
       {children}
     </div>,
     document.body
