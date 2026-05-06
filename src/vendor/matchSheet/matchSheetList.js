@@ -16,6 +16,7 @@ import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentTh
 import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import useMatchSheetPDF from './useMatchSheetPDF';
 import MatchSheetPDFModals, { MatchSheetPDFButtons } from './MatchSheetPDFModals';
 import LineupField from './LineupField';
@@ -343,6 +344,9 @@ export default function MatchSheetList() {
   const [filterUbicacion, setFilterUbicacion] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeDateField, setActiveDateField] = useState('from');
+  const [pickerDate, setPickerDate] = useState(new Date());
   const [sortDateOrder, setSortDateOrder] = useState('default');
   const [sortGoals, setSortGoals] = useState('');
 
@@ -494,6 +498,30 @@ export default function MatchSheetList() {
     setFilterDateTo('');
     setSortDateOrder('default');
     setSortGoals('');
+  };
+
+  const openDatePicker = (field) => {
+    setActiveDateField(field);
+    const initialDate = field === 'from'
+      ? (filterDateFrom ? new Date(filterDateFrom) : new Date())
+      : (filterDateTo ? new Date(filterDateTo) : new Date());
+    setPickerDate(isNaN(initialDate.getTime()) ? new Date() : initialDate);
+    setShowDatePicker(true);
+  };
+
+  const hideDatePicker = () => {
+    setShowDatePicker(false);
+    setActiveDateField('from');
+  };
+
+  const handleDateConfirm = (date) => {
+    const isoDate = date.toISOString().slice(0, 10);
+    if (activeDateField === 'to') {
+      setFilterDateTo(isoDate);
+    } else {
+      setFilterDateFrom(isoDate);
+    }
+    hideDatePicker();
   };
 
   useEffect(() => {
@@ -706,27 +734,31 @@ export default function MatchSheetList() {
                 <View style={[styles.filtersGrid, IS_MOBILE && styles.filtersGridMobile, { marginTop: 10 }]}>
                   <View style={styles.filterInputContainer}>
                     <Text style={styles.filterLabel}>{t('matchSheet.filters.dateFrom') || 'Desde fecha'}</Text>
-                    <TextInput
-                      style={styles.filterInput}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={theme.colors.textMuted}
-                      value={filterDateFrom}
-                      onChangeText={setFilterDateFrom}
-                      autoComplete="off"
-                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
-                    />
+                    <TouchableOpacity
+                      style={[styles.filterInput, styles.dateFilterInput]}
+                      onPress={() => openDatePicker('from')}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
+                      <Text style={[styles.filterInputText, styles.dateFilterInputText, !filterDateFrom && styles.filterInputPlaceholder]}>
+                        {filterDateFrom || t('matchSheet.filters.datePlaceholder') || 'YYYY-MM-DD'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
                   </View>
                   <View style={styles.filterInputContainer}>
                     <Text style={styles.filterLabel}>{t('matchSheet.filters.dateTo') || 'Hasta fecha'}</Text>
-                    <TextInput
-                      style={styles.filterInput}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={theme.colors.textMuted}
-                      value={filterDateTo}
-                      onChangeText={setFilterDateTo}
-                      autoComplete="off"
-                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
-                    />
+                    <TouchableOpacity
+                      style={[styles.filterInput, styles.dateFilterInput]}
+                      onPress={() => openDatePicker('to')}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
+                      <Text style={[styles.filterInputText, styles.dateFilterInputText, !filterDateTo && styles.filterInputPlaceholder]}>
+                        {filterDateTo || t('matchSheet.filters.datePlaceholder') || 'YYYY-MM-DD'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -1155,28 +1187,31 @@ export default function MatchSheetList() {
 
                   <View style={[styles.filterInputContainer, { minWidth: '100%' }]}>
                     <Text style={styles.filterLabel}>{t('matchSheet.filters.dateFrom') || 'Desde fecha'}</Text>
-                    <TextInput
-                      style={styles.filterInput}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={theme.colors.textMuted}
-                      value={filterDateFrom}
-                      onChangeText={setFilterDateFrom}
-                      autoComplete="off"
-                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
-                    />
+                    <TouchableOpacity
+                      style={[styles.filterInput, styles.dateFilterInput]}
+                      onPress={() => openDatePicker('from')}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
+                      <Text style={[styles.filterInputText, styles.dateFilterInputText, !filterDateFrom && styles.filterInputPlaceholder]}>
+                        {filterDateFrom || t('matchSheet.filters.datePlaceholder') || 'YYYY-MM-DD'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
                   </View>
-
-                  <View style={[styles.filterInputContainer, { minWidth: '100%' }]}>
+                  <View style={[styles.filterInputContainer, { minWidth: '100%' }]}> 
                     <Text style={styles.filterLabel}>{t('matchSheet.filters.dateTo') || 'Hasta fecha'}</Text>
-                    <TextInput
-                      style={styles.filterInput}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={theme.colors.textMuted}
-                      value={filterDateTo}
-                      onChangeText={setFilterDateTo}
-                      autoComplete="off"
-                      {...(Platform.OS === 'web' ? { type: 'date' } : {})}
-                    />
+                    <TouchableOpacity
+                      style={[styles.filterInput, styles.dateFilterInput]}
+                      onPress={() => openDatePicker('to')}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
+                      <Text style={[styles.filterInputText, styles.dateFilterInputText, !filterDateTo && styles.filterInputPlaceholder]}>
+                        {filterDateTo || t('matchSheet.filters.datePlaceholder') || 'YYYY-MM-DD'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={theme.colors.textMuted} />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -1381,7 +1416,6 @@ export default function MatchSheetList() {
                       </ScrollView>
                     </View>
                   )}
-
                 <View style={[styles.filterActions, { marginTop: 16 }]}>
                   <TouchableOpacity
                     style={styles.clearFiltersButton}
@@ -1402,6 +1436,19 @@ export default function MatchSheetList() {
             </View>
           </Modal>
         )}
+
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={pickerDate}
+          minimumDate={activeDateField === 'to' && filterDateFrom ? new Date(filterDateFrom) : undefined}
+          onConfirm={handleDateConfirm}
+          onCancel={hideDatePicker}
+          locale={i18n.language === 'es' ? 'es-ES' : 'en-US'}
+          confirmTextIOS={t('common.confirm')}
+          cancelTextIOS={t('common.cancel')}
+          headerTextIOS={activeDateField === 'from' ? t('matchSheet.filters.dateFrom') : t('matchSheet.filters.dateTo')}
+        />
       </View>
 
       <MatchSheetDetailModal
@@ -3299,8 +3346,23 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    backgroundColor: theme.colors.background,
     color: theme.colors.text,
+    backgroundColor: theme.colors.background,
+  },
+  filterInputText: {
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  dateFilterInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateFilterInputText: {
+    flex: 1,
+  },
+  filterInputPlaceholder: {
+    color: theme.colors.textMuted,
   },
   filterActions: {
     flexDirection: 'row',

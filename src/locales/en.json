@@ -906,6 +906,7 @@
         "selectEndDateHeader": "Select end date",
         "dateFrom": "Date from",
         "dateTo": "Date to",
+        "datePlaceholder": "YYYY-MM-DD",
         "zones": {
             "cadera": "Hip",
             "rodilla": "Knee",
@@ -2427,7 +2428,10 @@
             "goalsForDesc": "Most goals for",
             "goalsForAsc": "Least goals for",
             "goalsAgainstDesc": "Most goals against",
-            "goalsAgainstAsc": "Least goals against"
+            "goalsAgainstAsc": "Least goals against",
+            "dateFrom": "Date from",
+            "dateTo": "Date to",
+            "datePlaceholder": "YYYY-MM-DD"
         },
         "limits": {
             "reached": "Limit reached",

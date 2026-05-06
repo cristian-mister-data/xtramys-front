@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PieChart } from 'react-native-chart-kit';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
@@ -41,10 +41,12 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 // Helper para obtener locale basado en i18n
 const getLocale = () => i18n.language === 'en' ? 'en-US' : 'es-ES';
 
-export default function Statistics({ navigation }) {
+export default function Statistics({ navigation: navigationProp }) {
     const { t } = useTranslation();
     const dispatch = useDispatch();
     const route = useRoute();
+    const navigationHook = useNavigation();
+    const navigation = navigationProp || navigationHook;
     const insets = useSafeAreaInsets();
     const theme = useTheme();
     const { width: viewportWidth } = useWindowDimensions();
@@ -984,9 +986,9 @@ playerStatsMap[p._id] = {
     // Función para manejar navegación al perfil de jugador
     const handlePlayerProfilePress = (player) => {
         const fullPlayer = players.find(p => p._id === player.id);
-        if (fullPlayer) {
-            setSelectedPlayerForProfile(fullPlayer);
-            setShowPlayerProfile(true);
+        const playerId = fullPlayer?._id || player.id;
+        if (playerId) {
+            navigation.navigate('/players/' + playerId);
         }
     };
 
@@ -3530,21 +3532,21 @@ const makeStyles = (theme, isMobile) => StyleSheet.create({
         elevation: 2,
     },
     compactPlayerRow: {
-        flexDirection: isMobile ? 'column' : 'row',
-        alignItems: isMobile ? 'stretch' : 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: isMobile ? 12 : 13,
+        paddingVertical: isMobile ? 10 : 13,
         paddingHorizontal: isMobile ? 12 : 16,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.border,
-        gap: isMobile ? 10 : 12,
+        gap: isMobile ? 8 : 12,
     },
     compactPlayerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        flex: isMobile ? 1.2 : 1,
         minWidth: 0,
-        maxWidth: isMobile ? '100%' : '42%',
+        maxWidth: isMobile ? '45%' : '42%',
     },
     compactPlayerRank: {
         fontSize: isMobile ? 10 : 11,
@@ -3567,21 +3569,18 @@ const makeStyles = (theme, isMobile) => StyleSheet.create({
     compactPlayerStats: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: isMobile ? 'space-between' : 'flex-end',
-        gap: isMobile ? 6 : 10,
-        flexWrap: isMobile ? 'wrap' : 'nowrap',
-        flex: isMobile ? 0 : 1,
-        width: isMobile ? '100%' : 'auto',
+        justifyContent: 'flex-end',
+        gap: isMobile ? 4 : 10,
+        flexWrap: 'nowrap',
+        flex: isMobile ? 2 : 1,
     },
     compactStatBox: {
         alignItems: 'center',
-        minWidth: isMobile ? 0 : 42,
-        flexBasis: isMobile ? '30%' : 'auto',
-        flexGrow: isMobile ? 1 : 0,
+        minWidth: isMobile ? 28 : 42,
         backgroundColor: theme.colors.surfaceAlt,
-        borderRadius: 10,
-        paddingVertical: isMobile ? 6 : 7,
-        paddingHorizontal: isMobile ? 4 : 8,
+        borderRadius: 8,
+        paddingVertical: isMobile ? 4 : 7,
+        paddingHorizontal: isMobile ? 3 : 8,
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
@@ -3599,14 +3598,7 @@ const makeStyles = (theme, isMobile) => StyleSheet.create({
     compactCardsContainer: {
         flexDirection: 'row',
         gap: 3,
-        minWidth: isMobile ? 0 : 40,
-        flexBasis: isMobile ? '30%' : 'auto',
-        flexGrow: isMobile ? 1 : 0,
-        minHeight: isMobile ? 45 : 'auto',
-        backgroundColor: isMobile ? theme.colors.surfaceAlt : 'transparent',
-        borderRadius: isMobile ? 10 : 0,
-        borderWidth: isMobile ? 1 : 0,
-        borderColor: theme.colors.border,
+        minWidth: isMobile ? 24 : 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -3642,17 +3634,10 @@ const makeStyles = (theme, isMobile) => StyleSheet.create({
         fontWeight: '600',
     },
     compactAttendance: {
-        fontSize: isMobile ? 12 : 12,
+        fontSize: isMobile ? 10 : 12,
         fontWeight: '700',
-        minWidth: isMobile ? 0 : 38,
-        flexBasis: isMobile ? '30%' : 'auto',
-        flexGrow: isMobile ? 1 : 0,
+        minWidth: isMobile ? 28 : 38,
         textAlign: 'center',
-        backgroundColor: isMobile ? theme.colors.surfaceAlt : 'transparent',
-        borderRadius: isMobile ? 10 : 0,
-        borderWidth: isMobile ? 1 : 0,
-        borderColor: theme.colors.border,
-        paddingVertical: isMobile ? 12 : 0,
     },
 });
 

@@ -907,6 +907,7 @@
         "selectEndDateHeader": "Selecciona fecha de fin",
         "dateFrom": "Fecha desde",
         "dateTo": "Fecha hasta",
+        "datePlaceholder": "AAAA-MM-DD",
         "zones": {
             "cadera": "Cadera",
             "rodilla": "Rodilla",
@@ -2437,7 +2438,10 @@
             "goalsForDesc": "Más goles a favor",
             "goalsForAsc": "Menos goles a favor",
             "goalsAgainstDesc": "Más goles en contra",
-            "goalsAgainstAsc": "Menos goles en contra"
+            "goalsAgainstAsc": "Menos goles en contra",
+            "dateFrom": "Fecha desde",
+            "dateTo": "Fecha hasta",
+            "datePlaceholder": "AAAA-MM-DD"
         },
         "limits": {
             "reached": "Límite alcanzado",
