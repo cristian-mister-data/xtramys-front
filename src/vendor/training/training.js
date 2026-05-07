@@ -1223,7 +1223,11 @@ export default function Training() {
     const observaciones = sessionData.ejercicios.map(e => ({
       ejercicioId: e.ejercicio,
       observacion: e.observacion || ''
-    }));
+    })).filter((item) => typeof item.observacion === 'string' && item.observacion.trim());
+    const observacionGeneral = (sessionData.observaciones || sessionData.observacionesGenerales || '').trim();
+    if (observacionGeneral) {
+      observaciones.push({ observacion: observacionGeneral, tipo: 'general' });
+    }
 
     await dispatch(createEntrenamiento({
       equipo: selectedTeam._id,
@@ -1297,7 +1301,11 @@ export default function Training() {
       const observaciones = updatedData.ejercicios?.map(e => ({
         ejercicioId: e.ejercicio,
         observacion: e.observacion || ''
-      })) || [];
+      })).filter((item) => typeof item.observacion === 'string' && item.observacion.trim()) || [];
+      const observacionGeneral = (updatedData.observaciones || updatedData.observacionesGenerales || '').trim();
+      if (observacionGeneral) {
+        observaciones.push({ observacion: observacionGeneral, tipo: 'general' });
+      }
 
       await dispatch(updateEntrenamiento({
         id: updatedData._id,

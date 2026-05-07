@@ -1485,7 +1485,7 @@ export default function EditMatchSheetModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent
       onRequestClose={onClose}
    >
@@ -3160,14 +3160,22 @@ const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: isMobileDevice() ? 10 : 16,
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: isMobileDevice() ? '95%' : '92%',
-    flex: 1,
+    borderRadius: 20,
+    width: isMobileDevice() ? '100%' : '96%',
+    maxWidth: 980,
+    maxHeight: isMobileDevice() ? '96%' : '92%',
+    minHeight: isMobileDevice() ? '82%' : '62%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
   },
   modalHeader: {
     flexDirection: 'row',

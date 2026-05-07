@@ -945,7 +945,6 @@ export default function AddEventModal({
   const [eventType, setEventType] = useState(null); // 'match' or 'session'
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
-  
   // Detectar dispositivo móvil
   const { width } = useWindowDimensions();
   const isMobile = width < 500;
@@ -4196,12 +4195,12 @@ export default function AddEventModal({
     <>
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent
       onRequestClose={onClose}
    >
       <View style={styles.modalBg}>
-        <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.modalContent, isMobile && styles.modalContentMobile, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -4448,15 +4447,28 @@ const makeStyles = (theme) => StyleSheet.create({
   modalBg: {
     flex: 1,
     backgroundColor: theme.colors.overlay,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 14,
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '92%',
-    minHeight: '50%',
-    flex: 1,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 980,
+    maxHeight: '94%',
+    minHeight: '56%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  modalContentMobile: {
+    width: '100%',
+    maxHeight: '96%',
+    minHeight: '72%',
+    borderRadius: 16,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -4475,8 +4487,6 @@ const makeStyles = (theme) => StyleSheet.create({
   modalCloseBtn: {
     padding: 4,
   },
-  
-  // Type Selector
   typeSelector: {
     padding: 20,
   },

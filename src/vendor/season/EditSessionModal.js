@@ -225,7 +225,29 @@ export default function EditSessionModal({
       setFecha(session.fecha ? new Date(session.fecha) : new Date());
       setHoraInicio(session.horaInicio || '17:00');
       setHoraFin(session.horaFin || '18:30');
-      setObservaciones(session.observacionesGenerales || (typeof session.observaciones === 'string' ? session.observaciones : '') || '');
+      const generalObservationFromArray = Array.isArray(session.observaciones)
+        ? (session.observaciones.find((item) => {
+            if (!item || typeof item !== 'object') return false;
+            const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
+            if (exerciseId) return false;
+            const text = item.observacion || item.text || item.note || '';
+            return typeof text === 'string' && text.trim();
+          })?.observacion
+            || session.observaciones.find((item) => {
+              if (!item || typeof item !== 'object') return false;
+              const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
+              if (exerciseId) return false;
+              return typeof item.text === 'string' && item.text.trim();
+            })?.text
+            || session.observaciones.find((item) => {
+              if (!item || typeof item !== 'object') return false;
+              const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
+              if (exerciseId) return false;
+              return typeof item.note === 'string' && item.note.trim();
+            })?.note
+            || '')
+        : '';
+      setObservaciones(session.observacionesGenerales || (typeof session.observaciones === 'string' ? session.observaciones : '') || generalObservationFromArray || '');
       
       // Cargar jugadores (extraer IDs)
       const playerIds = (session.jugadores || []).map(j => typeof j === 'object' ? j._id : j);

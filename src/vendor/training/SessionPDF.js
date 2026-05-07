@@ -48,47 +48,105 @@ export const generateSessionPDFHTML = ({
     year: 'numeric'
   });
 
-  // Obtener información de jugadores disponibles
-  let jugadoresDisponiblesHTML = '';
   const jugadoresIds = session.jugadores || [];
-  if (jugadoresIds.length > 0 && players.length > 0) {
-const jugadoresNombres = jugadoresIds.map(jid => {
-      const id = typeof jid === 'string' ? jid : jid._id;
-      const jugador = players.find(j => j._id === id);
-      return jugador ? getPlayerFullName(jugador) : null;
-    }).filter(Boolean);
-    
-    if (jugadoresNombres.length > 0) {
-      jugadoresDisponiblesHTML = `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 16px;">${t('session.availablePlayers', 'Jugadores Disponibles')} (${jugadoresNombres.length})</h3>
-          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
-            ${jugadoresNombres.join(', ')}
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  // Jugadores extras
-  let jugadoresExtrasHTML = '';
   const jugadoresExtrasIds = session.jugadoresExtras || [];
-  if (jugadoresExtrasIds.length > 0 && players.length > 0) {
-const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
-      const id = typeof jid === 'string' ? jid : jid._id;
-      const jugador = players.find(j => j._id === id);
-      return jugador ? getPlayerFullName(jugador) : null;
-    }).filter(Boolean);
-    
-    if (jugadoresExtrasNombres.length > 0) {
-      jugadoresExtrasHTML = `
-        <div style="margin-bottom: 20px;">
-          <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 16px;">${t('session.extraPlayers', 'Jugadores Extras')} (${jugadoresExtrasNombres.length})</h3>
-          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
-            ${jugadoresExtrasNombres.join(', ')}
-          </div>
-        </div>
-      `;
+
+  const resolvePlayerName = (playerLike) => {
+    const id = getEntityId(playerLike);
+    const playerFromStore = players.find((p) => getEntityId(p) === id);
+    if (playerFromStore) return getPlayerFullName(playerFromStore);
+    if (playerLike && typeof playerLike === 'object') {
+      return getPlayerFullName(playerLike) || playerLike.nombre || playerLike.name || id;
+    }
+    return id;
+  };
+
+  const jugadoresNombres = (jugadoresIds || []).map((jid) => {
+    const name = resolvePlayerName(jid);
+    return typeof name === 'string' && name.trim() ? name : null;
+  }).filter(Boolean);
+
+  const jugadoresExtrasNombres = (jugadoresExtrasIds || []).map((jid) => {
+    const name = resolvePlayerName(jid);
+    return typeof name === 'string' && name.trim() ? name : null;
+  }).filter(Boolean);
+
+  const buildPlayerChips = (names = [], extraClass = '') => names
+    .map((name) => `<span class="player-chip ${extraClass}">${name}</span>`)
+    .join('');
+
+  const exerciseObservationsMap = {};
+  let generalObservationsText = '';
+
+  const addGeneralObservation = (value) => {
+    if (typeof value !== 'string') return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    generalObservationsText = generalObservationsText
+      ? `${generalObservationsText}\n${trimmed}`
+      : trimmed;
+  };
+
+  const setExerciseObservation = (exerciseId, value) => {
+    const id = getEntityId(exerciseId);
+    if (!id || typeof value !== 'string') return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    exerciseObservationsMap[id] = trimmed;
+  };
+
+  const ingestObservationItem = (item) => {
+    if (!item) return;
+    if (typeof item === 'string') {
+      addGeneralObservation(item);
+      return;
+    }
+    if (typeof item !== 'object') return;
+
+    const observationValue = item.observacion
+      || item.observaciones
+      || item.text
+      || item.note
+      || item.value
+      || '';
+
+    const exerciseId = item.ejercicioId || item.ejercicio || item.exerciseId || item.exercise;
+    if (exerciseId) {
+      setExerciseObservation(exerciseId, observationValue);
+      return;
+    }
+
+    addGeneralObservation(observationValue);
+  };
+
+  addGeneralObservation(session.observacionesGenerales);
+  addGeneralObservation(session.notasGenerales);
+  addGeneralObservation(session.notas);
+
+  const rawObservations = session.observaciones;
+  if (typeof rawObservations === 'string') {
+    addGeneralObservation(rawObservations);
+  } else if (Array.isArray(rawObservations)) {
+    rawObservations.forEach(ingestObservationItem);
+  } else if (rawObservations && typeof rawObservations === 'object') {
+    addGeneralObservation(
+      rawObservations.general
+      || rawObservations.generales
+      || rawObservations.observacionesGenerales
+      || rawObservations.notes
+      || rawObservations.notas
+      || rawObservations.text
+    );
+
+    const grouped = rawObservations.porEjercicio
+      || rawObservations.ejercicios
+      || rawObservations.byExercise
+      || rawObservations.items;
+
+    if (Array.isArray(grouped)) {
+      grouped.forEach(ingestObservationItem);
+    } else {
+      ingestObservationItem(rawObservations);
     }
   }
 
@@ -101,7 +159,7 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
         detalleMap[ejercicioId] = { 
           orden: det.orden || 0, 
           tiempoDescanso: det.tiempoDescanso || 0,
-          observacion: det.observacion || '',
+          observacion: det.observacion || exerciseObservationsMap[ejercicioId] || '',
           teamAssignments: det.teamAssignments || []
         };
       }
@@ -180,7 +238,7 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
     return `
       <div class="teams-section">
         <div class="section-header">
-          👥 ${t('session.teamAssignments', 'Asignación de Equipos')}
+          ${t('session.teamAssignments', 'Asignación de Equipos')}
         </div>
         ${teamsHTML}
       </div>
@@ -194,14 +252,26 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
     return ordenA - ordenB;
   });
 
+  const exerciseObservationItems = ejerciciosOrdenados.map((ejercicio) => {
+    const detalle = detalleMap[ejercicio._id] || {};
+    const text = typeof detalle.observacion === 'string' ? detalle.observacion.trim() : '';
+    if (!text) return null;
+    return {
+      title: ejercicio?.nombre || t('exercise.unnamed', 'Ejercicio sin nombre'),
+      text,
+    };
+  }).filter(Boolean);
+
+  const hasGeneralObservations = !!generalObservationsText;
+  const hasExerciseObservations = exerciseObservationItems.length > 0;
+
   // Helper para truncar texto largo
   const truncateText = (text, maxLength = 300) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
 
-  // Generar HTML de ejercicios optimizado para una página
-  const ejerciciosHTML = ejerciciosOrdenados.map((ejercicio, index) => {
+  const buildExerciseCardHTML = (ejercicio, index) => {
     const detalle = detalleMap[ejercicio._id] || {};
     const ordenNumero = detalle.orden || (index + 1);
     const tiempoDescanso = detalle.tiempoDescanso || 0;
@@ -247,17 +317,16 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
           { count: ejercicio.equipos }
         )
       : '';
-    if (ejercicio.numeroJugadores) mainData.push({ icon: '👥', label: t('exercises.numberOfPlayers', 'Nº Jugadores'), value: numeroJugadoresText });
-    if (ejercicio.equipos) mainData.push({ icon: '🎯', label: t('exercises.teams', 'Equipos'), value: equiposText });
-    if (ejercicio.dimensiones) mainData.push({ icon: '📐', label: t('exercise.fieldDimensions', 'Dimensiones'), value: ejercicio.dimensiones });
-    if (ejercicio.tiempo) mainData.push({ icon: '⏱️', label: t('exercise.duration', 'Duración'), value: `${ejercicio.tiempo} ${t('common.minutesShort', 'min')}` });
-    if (!isLastExercise && tiempoDescanso > 0) mainData.push({ icon: '☕', label: t('session.restTime', 'Descanso'), value: `${tiempoDescanso} ${t('common.minutesShort', 'min')}` });
+    if (ejercicio.numeroJugadores) mainData.push({ label: t('exercises.numberOfPlayers', 'Nº Jugadores'), value: numeroJugadoresText });
+    if (ejercicio.equipos) mainData.push({ label: t('exercises.teams', 'Equipos'), value: equiposText });
+    if (ejercicio.dimensiones) mainData.push({ label: t('exercise.fieldDimensions', 'Dimensiones'), value: ejercicio.dimensiones });
+    if (ejercicio.tiempo) mainData.push({ label: t('exercise.duration', 'Duración'), value: `${ejercicio.tiempo} ${t('common.minutesShort', 'min')}` });
+    if (!isLastExercise && tiempoDescanso > 0) mainData.push({ label: t('session.restTime', 'Descanso'), value: `${tiempoDescanso} ${t('common.minutesShort', 'min')}` });
 
     const mainDataHTML = mainData.length > 0 ? `
       <div class="exercise-data-grid">
         ${mainData.map(d => `
           <div class="data-item">
-            <span class="data-icon">${d.icon}</span>
             <span class="data-label">${d.label}:</span>
             <span class="data-value">${d.value}</span>
           </div>
@@ -283,28 +352,49 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
     ` : '';
 
     return `
-      <div class="exercise-page">
-        <div class="exercise-card">
-          <div class="exercise-header">
-            <span class="exercise-number">${ordenNumero}</span>
-            <h3 class="exercise-title">${ejercicio.nombre || t('exercise.unnamed', 'Ejercicio sin nombre')}</h3>
+      <div class="exercise-card">
+        <div class="exercise-header">
+          <span class="exercise-number">${ordenNumero}</span>
+          <h3 class="exercise-title">${ejercicio.nombre || t('exercise.unnamed', 'Ejercicio sin nombre')}</h3>
+        </div>
+        
+        <div class="exercise-content ${hasTeams ? 'with-teams' : ''}">
+          <div class="exercise-left">
+            ${imagenHTML}
+            ${mainDataHTML}
           </div>
           
-          <div class="exercise-content ${hasTeams ? 'with-teams' : ''}">
-            <div class="exercise-left">
-              ${imagenHTML}
-              ${mainDataHTML}
-            </div>
-            
-            <div class="exercise-right">
-              ${descObjetivoHTML}
-              ${teamAssignmentsHTML}
-            </div>
+          <div class="exercise-right">
+            ${descObjetivoHTML}
+            ${teamAssignmentsHTML}
           </div>
         </div>
       </div>
     `;
-  }).join('');
+  };
+
+  const EXERCISES_PER_SHEET = 2;
+  const ejerciciosHTML = ejerciciosOrdenados.reduce((acc, _item, index) => {
+    if (index % EXERCISES_PER_SHEET !== 0) return acc;
+    const sheetExercises = ejerciciosOrdenados.slice(index, index + EXERCISES_PER_SHEET);
+    const fromNumber = index + 1;
+    const toNumber = index + sheetExercises.length;
+    const cardsHTML = sheetExercises
+      .map((ejercicio, localIdx) => buildExerciseCardHTML(ejercicio, index + localIdx))
+      .join('');
+    acc.push(`
+      <section class="exercise-sheet">
+        <div class="exercise-sheet-head">
+          <span>${t('session.exercises', 'Ejercicios')}</span>
+          <span>${fromNumber}-${toNumber} / ${ejerciciosOrdenados.length}</span>
+        </div>
+        <div class="exercise-grid ${sheetExercises.length === 1 ? 'single' : ''}">
+          ${cardsHTML}
+        </div>
+      </section>
+    `);
+    return acc;
+  }, []).join('');
 
   // Generar HTML de ejercicios de fuerza en grid compacto (12 por página, 4 columnas x 3 filas)
   const STRENGTH_PER_PAGE = 12;
@@ -314,7 +404,7 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
     for (let i = 0; i < strengthExercises.length; i += STRENGTH_PER_PAGE) {
       pages.push(strengthExercises.slice(i, i + STRENGTH_PER_PAGE));
     }
-    ejerciciosFuerzaHTML = pages.map((pageExercises, pageIdx) => {
+    const strengthPagesHTML = pages.map((pageExercises, pageIdx) => {
       const cardsHTML = pageExercises.map((exercise, idx) => {
         const globalIdx = pageIdx * STRENGTH_PER_PAGE + idx;
         const imagenSrc = imageDataUris[exercise.image] || '';
@@ -341,23 +431,106 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
       const isLastPage = pageIdx === pages.length - 1;
       return `
         <div class="strength-grid-page" ${!isLastPage ? 'style="page-break-after: always;"' : ''}>
-          <div class="strength-grid-header">
-            <span>💪 ${t('session.strengthExercise', 'Ejercicios de Fuerza')}</span>
-            <span class="strength-grid-page-num">${t('common.page', 'Pág')} ${pageIdx + 1}/${pages.length}</span>
-          </div>
           <div class="strength-grid">
             ${cardsHTML}
           </div>
         </div>
       `;
     }).join('');
+    ejerciciosFuerzaHTML = `
+      <section class="strength-section">
+        <div class="strength-section-header">
+          <span>💪 ${t('session.strengthExercise', 'Ejercicios de Fuerza')}</span>
+          <span>${t('common.page', 'Pág')}</span>
+        </div>
+        ${strengthPagesHTML}
+      </section>
+    `;
   }
 
   // Determinar información de horario
   const horaInicio = session.horaInicio || '--:--';
   const horaFin = session.horaFin || '--:--';
   const lugar = session.lugar || '';
-  const duracion = session.duracion || '';
+  const parseClock = (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const [h, m] = value.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return (h * 60) + m;
+  };
+  const startMinutes = parseClock(session.horaInicio);
+  const endMinutes = parseClock(session.horaFin);
+  const computedDurationMinutes = (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes)
+    ? (endMinutes - startMinutes)
+    : null;
+  const rawDuration = Number(session.duracion);
+  const durationMinutes = Number.isFinite(rawDuration) && rawDuration > 0
+    ? rawDuration
+    : computedDurationMinutes;
+  const duracionLabel = durationMinutes
+    ? `${durationMinutes} ${t('common.minutesShort', 'min')}`
+    : '—';
+  const totalJugadores = jugadoresNombres.length + jugadoresExtrasNombres.length;
+  const generalObservationsPreview = hasGeneralObservations
+    ? truncateText(generalObservationsText, 520)
+    : '';
+  const exerciseObservationsPreview = exerciseObservationItems.slice(0, 5).map((item) => ({
+    title: item.title,
+    text: truncateText(item.text, 140),
+  }));
+  const remainingExerciseObservations = exerciseObservationItems.length - exerciseObservationsPreview.length;
+
+  const jugadoresDisponiblesPanelHTML = `
+    <section class="cover-card player-card">
+      <div class="cover-card-head">
+        <span class="cover-card-title">${t('session.availablePlayers', 'Jugadores disponibles')}</span>
+        <span class="cover-card-count">${jugadoresNombres.length}</span>
+      </div>
+      ${jugadoresNombres.length > 0 ? `
+        <div class="player-chip-list">
+          ${buildPlayerChips(jugadoresNombres)}
+        </div>
+      ` : `<p class="cover-empty">${t('session.noAvailablePlayers', 'No hay jugadores disponibles cargados')}</p>`}
+    </section>
+  `;
+
+  const jugadoresExtrasPanelHTML = `
+    <section class="cover-card player-card extras-card">
+      <div class="cover-card-head">
+        <span class="cover-card-title">${t('session.extraPlayers', 'Jugadores extras')}</span>
+        <span class="cover-card-count">${jugadoresExtrasNombres.length}</span>
+      </div>
+      ${jugadoresExtrasNombres.length > 0 ? `
+        <div class="player-chip-list">
+          ${buildPlayerChips(jugadoresExtrasNombres, 'extra')}
+        </div>
+      ` : `<p class="cover-empty">${t('session.noExtraPlayers', 'Sin jugadores extras asignados')}</p>`}
+    </section>
+  `;
+
+  const observationsPanelHTML = `
+    <section class="cover-card observations-card">
+      <div class="cover-card-head">
+        <span class="cover-card-title">${t('session.observations', 'Observaciones')}</span>
+      </div>
+      ${generalObservationsPreview ? `
+        <p class="observations-body">${generalObservationsPreview}</p>
+      ` : `<p class="cover-empty">${t('session.noObservations', 'Sin observaciones generales')}</p>`}
+      ${exerciseObservationsPreview.length > 0 ? `
+        <div class="exercise-observations-list">
+          ${exerciseObservationsPreview.map((item) => `
+            <div class="exercise-observation-item">
+              <span class="exercise-observation-title">${item.title}:</span>
+              <span class="exercise-observation-text">${item.text}</span>
+            </div>
+          `).join('')}
+          ${remainingExerciseObservations > 0 ? `
+            <div class="exercise-observation-more">+${remainingExerciseObservations} ${t('session.moreObservations', 'observaciones adicionales')}</div>
+          ` : ''}
+        </div>
+      ` : ''}
+    </section>
+  `;
 
   return `
     <!DOCTYPE html>
@@ -366,544 +539,691 @@ const jugadoresExtrasNombres = jugadoresExtrasIds.map(jid => {
         <meta charset="utf-8">
         <title>${t('session.pdfTitle', 'Sesión de Entrenamiento')} - ${fechaFormateada}</title>
         <style>
+          :root {
+            --bg-soft: #f8fafc;
+            --bg-panel: #eef4ff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-soft: #64748b;
+            --primary: #1d4ed8;
+            --primary-2: #1e40af;
+            --border: #d7dfeb;
+          }
+
           * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
           }
-          
+
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 7mm;
           }
-          
+
           body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #1e293b;
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-size: 10.5px;
+            line-height: 1.35;
+            color: var(--text-main);
             background: #fff;
           }
-          
-          /* Primera página - Información General */
+
+          .cover-page {
+            min-height: 100vh;
+            padding: 8px;
+          }
+
           .cover-page {
             page-break-after: always;
-            min-height: 100vh;
-            padding: 15px;
           }
-          
+
           .team-header {
-            text-align: center;
-            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #eef2ff, #f8fafc);
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
           }
-          
+
           .team-badge {
-            width: 80px;
-            height: 80px;
+            width: 52px;
+            height: 52px;
             border-radius: 10px;
             object-fit: contain;
-            background: #f8fafc;
-            padding: 5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: #fff;
+            padding: 4px;
+            border: 1px solid var(--border);
           }
-          
+
           .team-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-top: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
           }
-          
+
           .session-header {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            padding: 12px 14px;
             border-radius: 12px;
-            text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
           }
-          
+
           .session-header h1 {
-            font-size: 22px;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 2px;
+          }
+
+          .session-header .subtitle {
+            font-size: 12px;
+            opacity: 0.95;
+          }
+
+          .info-section {
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+          }
+
+          .info-section h2 {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 800;
             margin-bottom: 8px;
           }
-          
-          .session-header .subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-          }
-          
-          .info-section {
-            background: #f8fafc;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-          }
-          
-          .info-section h2 {
-            font-size: 14px;
-            color: #3b82f6;
-            margin-bottom: 12px;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 6px;
-          }
-          
+
           .info-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 7px;
           }
-          
+
           .info-item {
-            flex: 1 1 45%;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 3px solid #3b82f6;
+            flex: 1 1 31%;
+            min-width: 120px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 8px;
           }
-          
+
           .info-label {
-            font-size: 10px;
-            color: #64748b;
-            margin-bottom: 2px;
+            font-size: 9px;
+            color: var(--text-soft);
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.25px;
+            font-weight: 700;
           }
-          
+
           .info-value {
             font-size: 13px;
-            font-weight: 600;
-            color: #1e293b;
+            font-weight: 800;
+            color: var(--text-main);
           }
-          
-          .players-section {
-            background: #f8fafc;
+
+          .cover-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+          }
+
+          .cover-card {
+            background: #fff;
+            border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 8px;
+            min-height: 64px;
           }
-          
-          .players-section h3 {
-            font-size: 13px;
-            color: #059669;
-            margin-bottom: 8px;
+
+          .cover-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
           }
-          
-          .players-list {
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 3px solid #10b981;
-            font-size: 11px;
-            line-height: 1.6;
+
+          .cover-card-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
           }
-          
-          .players-section.extras h3 {
-            color: #d97706;
+
+          .cover-card-count {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--primary);
+            background: var(--bg-panel);
+            border-radius: 999px;
+            padding: 2px 7px;
           }
-          
-          .players-section.extras .players-list {
-            border-left-color: #f59e0b;
+
+          .cover-empty {
+            color: var(--text-soft);
+            font-size: 9.5px;
+            line-height: 1.4;
           }
-          
-          /* Páginas de Ejercicios */
-          .exercise-page {
-            page-break-after: always;
-            page-break-inside: avoid;
-            height: 100vh;
-            max-height: 100vh;
-            padding: 10px;
+
+          .player-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+          }
+
+          .player-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #1f2937;
+            border: 1px solid #e2e8f0;
+          }
+
+          .extras-card .cover-card-count {
+            color: #a16207;
+            background: #fff7ed;
+          }
+
+          .player-chip.extra {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #9a3412;
+          }
+
+          .observations-card {
+            background: #fffbeb;
+            border-color: #fde68a;
+            min-height: 156px;
+          }
+
+          .observations-body {
+            color: #4b5563;
+            font-size: 10px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+          }
+
+          .exercise-observations-list {
             display: flex;
             flex-direction: column;
+            gap: 4px;
+            margin-top: 6px;
           }
-          
-          .exercise-page:last-child {
+
+          .exercise-observation-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            font-size: 9.5px;
+            line-height: 1.35;
+          }
+
+          .exercise-observation-title {
+            font-weight: 800;
+            color: #92400e;
+          }
+
+          .exercise-observation-text {
+            color: #4b5563;
+            white-space: pre-wrap;
+          }
+
+          .exercise-observation-more {
+            margin-top: 2px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #92400e;
+          }
+
+          .exercise-sheet {
+            page-break-after: always;
+            min-height: 278mm;
+            padding: 4px 4px 0;
+          }
+
+          .exercise-sheet:last-of-type {
             page-break-after: auto;
           }
-          
+
+          .exercise-sheet-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            border-radius: 10px;
+            padding: 7px 11px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+          }
+
+          .strength-section {
+            page-break-before: always;
+            padding: 4px 4px 0;
+          }
+
+          .strength-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.35px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+          }
+
+          .exercise-grid {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 6px;
+            height: 262mm;
+          }
+
+          .exercise-grid.single {
+            grid-template-rows: 1fr;
+          }
+
           .exercise-card {
             flex: 1;
-            background: white;
-            border: 1px solid #e2e8f0;
+            background: #fff;
+            border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
           }
-          
+
           .exercise-header {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            padding: 12px 15px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            padding: 9px 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
           }
-          
+
           .exercise-number {
-            background: rgba(255,255,255,0.25);
-            width: 32px;
-            height: 32px;
+            background: rgba(255, 255, 255, 0.22);
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 800;
+            flex-shrink: 0;
           }
-          
+
           .exercise-title {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 800;
             flex: 1;
           }
-          
+
           .exercise-content {
             flex: 1;
             display: flex;
-            flex-direction: column;
-            padding: 12px;
-            gap: 10px;
-            overflow: hidden;
-          }
-          
-          .exercise-content.with-teams {
             flex-direction: row;
+            padding: 10px;
+            gap: 10px;
+            overflow: hidden;
           }
-          
+
           .exercise-left {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-          }
-          
-          .exercise-content.with-teams .exercise-left {
-            flex: 0 0 55%;
-          }
-          
-          .exercise-right {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow: hidden;
-          }
-          
-          .exercise-content.with-teams .exercise-right {
-            flex: 0 0 43%;
-            border-left: 1px solid #e2e8f0;
-            padding-left: 12px;
-          }
-          
-          .exercise-image-container {
-            flex: 1;
-            min-height: 200px;
-            max-height: 450px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8fafc;
-            border-radius: 8px;
-            overflow: hidden;
-            padding: 8px;
-          }
-          
-          .exercise-img {
-            width: 100%;
-            height: auto;
-            max-height: 430px;
-            object-fit: contain;
-            border-radius: 6px;
-          }
-          
-          .exercise-data-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-          }
-          
-          .data-item {
-            background: #f1f5f9;
-            padding: 6px 10px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-          }
-          
-          .data-icon {
-            font-size: 11px;
-          }
-          
-          .data-label {
-            color: #64748b;
-          }
-          
-          .data-value {
-            font-weight: 600;
-            color: #1e293b;
-          }
-          
-          .exercise-details {
+            flex: 0 0 58%;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            overflow-y: auto;
+            min-width: 0;
           }
-          
-          .detail-block {
-            background: #f8fafc;
-            padding: 8px 10px;
+
+          .exercise-right {
+            flex: 0 0 42%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+          }
+
+          .exercise-content.with-teams .exercise-right {
+            border-left: 1px solid var(--border);
+            padding-left: 9px;
+          }
+
+          .exercise-image-container {
+            flex: 1;
+            min-height: 92mm;
+            max-height: 104mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            padding: 6px;
+          }
+
+          .exercise-img {
+            width: 100%;
+            height: auto;
+            max-height: 100mm;
+            object-fit: contain;
             border-radius: 6px;
-            font-size: 10px;
           }
-          
+
+          .exercise-data-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+          }
+
+          .data-item {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 5px 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            flex: 1 1 calc(50% - 5px);
+          }
+
+          .data-label {
+            color: var(--text-soft);
+          }
+
+          .data-value {
+            color: var(--text-main);
+          }
+
+          .exercise-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-height: 0;
+          }
+
+          .detail-block {
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 9.5px;
+          }
+
           .detail-title {
-            font-weight: 600;
-            color: #3b82f6;
+            font-weight: 800;
+            color: var(--primary);
             display: block;
+            margin-bottom: 2px;
+          }
+
+          .detail-text {
+            color: var(--text-muted);
+            line-height: 1.4;
+            white-space: pre-wrap;
+          }
+
+          .teams-section {
+            background: #fff8e1;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 8px;
+            flex: 1;
+            min-height: 0;
+          }
+
+          .teams-section .section-header {
+            font-weight: 800;
+            color: #92400e;
+            font-size: 10px;
+            margin-bottom: 6px;
+          }
+
+          .team-block {
+            margin-bottom: 6px;
+          }
+
+          .team-badge-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-bottom: 3px;
           }
-          
-          .detail-text {
-            color: #475569;
+
+          .team-color-badge {
+            padding: 2px 7px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+          }
+
+          .team-count {
+            color: var(--text-soft);
+            font-size: 9px;
+            font-weight: 700;
+          }
+
+          .team-players {
+            font-size: 9px;
+            color: var(--text-muted);
+            padding-left: 7px;
+            border-left: 2px solid;
+            margin-left: 3px;
             line-height: 1.5;
           }
-          
-          /* Grid compacto de ejercicios de fuerza */
-          .strength-grid-page {
-            padding: 10px;
-            min-height: 100vh;
+
+          .extra-player {
+            color: #b45309;
           }
-          
+
+          .strength-grid-page {
+            padding: 6px;
+            min-height: 96vh;
+          }
+
           .strength-grid-header {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-            padding: 10px 16px;
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            padding: 9px 12px;
             border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
-          
+
           .strength-grid-page-num {
-            font-size: 11px;
-            font-weight: 500;
-            opacity: 0.85;
+            font-size: 10px;
+            font-weight: 700;
+            opacity: 0.9;
           }
-          
+
           .strength-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
           }
-          
+
           .strength-card {
-            width: calc(25% - 6px);
-            border: 1px solid #e2e8f0;
+            width: calc(25% - 5px);
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
-            background: white;
+            background: #fff;
             break-inside: avoid;
           }
-          
+
           .strength-card-img {
             width: 100%;
             aspect-ratio: 4 / 3;
-            background: #f8fafc;
+            background: var(--bg-soft);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
           }
-          
+
           .strength-card-img img {
             width: 100%;
             height: 100%;
             object-fit: cover;
           }
-          
+
           .strength-card-placeholder {
-            font-size: 28px;
-            opacity: 0.3;
+            font-size: 26px;
+            opacity: 0.28;
           }
-          
+
           .strength-card-info {
-            padding: 4px 6px 2px;
+            padding: 4px 5px 2px;
             display: flex;
             align-items: flex-start;
             gap: 4px;
           }
-          
+
           .strength-card-num {
             flex-shrink: 0;
-            min-width: 18px;
-            height: 18px;
+            min-width: 16px;
+            height: 16px;
             border-radius: 50%;
-            color: white;
-            font-size: 9px;
-            font-weight: 700;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 800;
             display: flex;
             align-items: center;
             justify-content: center;
           }
-          
+
           .strength-card-name {
-            font-size: 8px;
-            font-weight: 600;
-            color: #1e293b;
+            font-size: 7.8px;
+            font-weight: 700;
+            color: var(--text-main);
             line-height: 1.2;
             overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
           }
-          
+
           .strength-card-meta {
-            padding: 2px 6px 5px;
+            padding: 2px 5px 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
-          
+
           .strength-card-section {
             font-size: 7px;
-            color: #8b5cf6;
-            font-weight: 600;
+            color: #7c3aed;
+            font-weight: 700;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             max-width: 70%;
           }
-          
+
           .strength-card-level {
             font-size: 7px;
-            color: #64748b;
-            font-weight: 600;
+            color: var(--text-soft);
+            font-weight: 700;
             flex-shrink: 0;
           }
 
-          .teams-section {
-            background: #fef3c7;
-            border-radius: 8px;
-            padding: 10px;
-            overflow-y: auto;
-            flex: 1;
-            min-height: 0;
-          }
-          
-          .teams-section .section-header {
-            font-weight: 600;
-            color: #92400e;
-            font-size: 11px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-          }
-          
-          .team-block {
-            margin-bottom: 8px;
-          }
-          
-          .team-badge-inline {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-          }
-          
-          .team-color-badge {
-            padding: 2px 8px;
-            border-radius: 10px;
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-          }
-          
-          .team-count {
-            color: #64748b;
-            font-size: 9px;
-          }
-          
-          .team-players {
-            font-size: 10px;
-            color: #475569;
-            padding-left: 8px;
-            border-left: 2px solid;
-            margin-left: 4px;
-            line-height: 1.6;
-          }
-          
-          .extra-player {
-            color: #d97706;
-          }
-          
           @media print {
-            body { 
+            body {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
-            }
-            .exercise-page {
-              height: auto;
-              min-height: 97vh;
             }
           }
         </style>
       </head>
       <body>
-        <!-- Página de portada con información general -->
-        <div class="cover-page">
+        <section class="cover-page">
           <div class="team-header">
             ${team?.escudo ? `<img src="${team.escudo}" class="team-badge" />` : ''}
             <div class="team-name">${team?.nombre || t('common.team', 'Equipo')}</div>
           </div>
-          
+
           <div class="session-header">
-            <h1>🏆 ${t('session.pdfTitle', 'Sesión de Entrenamiento')}</h1>
+            <h1>${t('session.pdfTitle', 'Sesión de Entrenamiento')}</h1>
             <div class="subtitle">${fechaFormateada}</div>
           </div>
 
           <div class="info-section">
-            <h2>📋 ${t('session.generalInfo', 'Información General')}</h2>
+            <h2>${t('session.generalInfo', 'Información General')}</h2>
             <div class="info-grid">
               <div class="info-item">
-                <div class="info-label">📅 ${t('session.dateLabel', 'Fecha')}</div>
+                <div class="info-label">${t('session.dateLabel', 'Fecha')}</div>
                 <div class="info-value">${fechaFormateada}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">⏰ ${t('session.schedule', 'Horario')}</div>
+                <div class="info-label">${t('session.schedule', 'Horario')}</div>
                 <div class="info-value">${horaInicio} - ${horaFin}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">${t('session.duration', 'Duración')}</div>
+                <div class="info-value">${duracionLabel}</div>
               </div>
               ${lugar ? `
                 <div class="info-item">
-                  <div class="info-label">📍 ${t('session.location', 'Lugar')}</div>
+                  <div class="info-label">${t('session.location', 'Lugar')}</div>
                   <div class="info-value">${lugar}</div>
                 </div>
               ` : ''}
               <div class="info-item">
-                <div class="info-label">⚽ ${t('session.exercises', 'Ejercicios')}</div>
+                <div class="info-label">${t('session.exercises', 'Ejercicios')}</div>
                 <div class="info-value">${ejerciciosOrdenados.length}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">${t('session.players', 'Jugadores')}</div>
+                <div class="info-value">${totalJugadores}</div>
               </div>
             </div>
           </div>
 
-          ${jugadoresDisponiblesHTML}
-
-          ${jugadoresExtrasHTML}
-          
-          ${session.observaciones ? `
-            <div class="info-section">
-              <h2>📝 ${t('session.observations', 'Observaciones')}</h2>
-              <p style="font-size: 11px; color: #475569; line-height: 1.6;">${session.observaciones}</p>
+          <div class="cover-panels">
+            <div>
+              ${jugadoresDisponiblesPanelHTML}
+              <div style="height: 8px;"></div>
+              ${jugadoresExtrasPanelHTML}
             </div>
-          ` : ''}
-        </div>
+            <div>
+              ${observationsPanelHTML}
+            </div>
+          </div>
+        </section>
 
-        <!-- Páginas de ejercicios -->
         ${ejerciciosHTML}
         
         <!-- Páginas de ejercicios de fuerza -->
