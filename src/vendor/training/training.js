@@ -1333,31 +1333,19 @@ export default function Training() {
   }
 
   async function handleDeleteSession(session) {
+    if (!session?._id) return;
     const selectedTeam = equipos.find(e => e.seleccionado === true);
     if (!selectedTeam?._id) return;
 
-    Alert.alert(
-      t('session.deleteSession'),
-      t('session.deleteConfirmMessage'),
-      [
-        { text: t('message.cancel'), style: 'cancel' },
-        {
-          text: t('message.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(deleteEntrenamiento({ id: session._id }));
-              dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
-              Alert.alert(t('message.success'), t('session.deleteSuccess'));
-              setDetailModalVisible(false);
-              setSelectedSession(null);
-            } catch (error) {
-              Alert.alert(t('message.error'), t('session.deleteError'));
-            }
-          }
-        }
-      ]
-    );
+    try {
+      await dispatch(deleteEntrenamiento(session._id)).unwrap();
+      dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
+      Alert.alert(t('message.success'), t('session.deleteSuccess'));
+      setDetailModalVisible(false);
+      setSelectedSession(null);
+    } catch (error) {
+      Alert.alert(t('message.error'), t('session.deleteError'));
+    }
   }
 
   async function handleWellnessUpdate() {
