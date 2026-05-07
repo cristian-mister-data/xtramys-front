@@ -6,6 +6,7 @@
 import { Alert, BackHandler } from 'react-native';
 
 const TOAST_ROOT_ID = 'xtramys-toast-root';
+const TOAST_CENTER_ROOT_ID = 'xtramys-toast-center-root';
 const TOAST_STYLE_ID = 'xtramys-toast-styles';
 
 function normalizeAlertText(value) {
@@ -53,6 +54,25 @@ function ensureToastStyles() {
       pointer-events: none;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
+    #${TOAST_CENTER_ROOT_ID} {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0);
+      transition: background 140ms ease;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #${TOAST_CENTER_ROOT_ID}.xtramys-toast-root--active {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.3);
+    }
     .xtramys-toast {
       display: grid;
       grid-template-columns: 4px 32px 1fr auto;
@@ -70,6 +90,17 @@ function ensureToastStyles() {
       transform: translate3d(18px, -6px, 0) scale(0.98);
       transition: opacity 160ms ease, transform 160ms ease;
       overflow: hidden;
+    }
+    #${TOAST_CENTER_ROOT_ID} .xtramys-toast {
+      width: min(560px, calc(100vw - 32px));
+      max-width: min(560px, calc(100vw - 32px));
+      transform: translate3d(0, 12px, 0) scale(0.98);
+    }
+    #${TOAST_CENTER_ROOT_ID} .xtramys-toast[data-state="visible"] {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    #${TOAST_CENTER_ROOT_ID} .xtramys-toast[data-state="closing"] {
+      transform: translate3d(0, 12px, 0) scale(0.98);
     }
     .xtramys-toast[data-state="visible"] {
       opacity: 1;
@@ -219,13 +250,14 @@ function ensureToastStyles() {
   document.head.appendChild(style);
 }
 
-function ensureToastRoot() {
+function ensureToastRoot(placement = 'top-right') {
   if (typeof document === 'undefined') return null;
   ensureToastStyles();
-  let root = document.getElementById(TOAST_ROOT_ID);
+  const rootId = placement === 'center' ? TOAST_CENTER_ROOT_ID : TOAST_ROOT_ID;
+  let root = document.getElementById(rootId);
   if (!root) {
     root = document.createElement('div');
-    root.id = TOAST_ROOT_ID;
+    root.id = rootId;
     root.setAttribute('aria-live', 'polite');
     root.setAttribute('aria-relevant', 'additions');
     document.body.appendChild(root);
@@ -235,8 +267,14 @@ function ensureToastRoot() {
 
 function dismissToast(toast) {
   if (!toast || toast.dataset.state === 'closing') return;
+  const parent = toast.parentElement;
   toast.dataset.state = 'closing';
-  window.setTimeout(() => toast.remove(), 180);
+  window.setTimeout(() => {
+    toast.remove();
+    if (parent && parent.id === TOAST_CENTER_ROOT_ID && parent.childElementCount === 0) {
+      parent.classList.remove('xtramys-toast-root--active');
+    }
+  }, 180);
 }
 
 function callButton(button, value) {
@@ -248,8 +286,15 @@ function callButton(button, value) {
   }
 }
 
-function showToast({ title, message, tone = 'info', buttons = [], duration, onClose }) {
-  const root = ensureToastRoot();
+function resolveToastPlacement({ tone, buttons, placement }) {
+  if (placement === 'center' || placement === 'top-right') return placement;
+  if (Array.isArray(buttons) && buttons.length > 0) return 'center';
+  return tone === 'success' || tone === 'error' ? 'top-right' : 'center';
+}
+
+function showToast({ title, message, tone = 'info', buttons = [], duration, onClose, placement }) {
+  const resolvedPlacement = resolveToastPlacement({ tone, buttons, placement });
+  const root = ensureToastRoot(resolvedPlacement);
 
   if (!root) {
     return null;
@@ -319,6 +364,9 @@ function showToast({ title, message, tone = 'info', buttons = [], duration, onCl
   }
 
   root.appendChild(toast);
+  if (resolvedPlacement === 'center') {
+    root.classList.add('xtramys-toast-root--active');
+  }
   window.requestAnimationFrame(() => { toast.dataset.state = 'visible'; });
 
   if (!buttons.length && duration !== null) {
