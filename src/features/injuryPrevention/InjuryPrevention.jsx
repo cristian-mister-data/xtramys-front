@@ -303,8 +303,8 @@ const PdfDownloadButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: #fff;
-  color: #1f2937;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
   border: none;
   border-radius: 999px;
   padding: 12px 26px;
@@ -312,7 +312,7 @@ const PdfDownloadButton = styled.button`
   font-weight: 700;
   letter-spacing: 0.2px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  box-shadow: ${({ theme }) => theme.shadows.md};
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 
   @media (max-width: 720px) {
@@ -324,17 +324,17 @@ const PdfDownloadButton = styled.button`
 
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
-    background: #f8fafc;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+    background: ${({ theme }) => theme.colors.surfaceAlt};
   }
   &:active {
     transform: translateY(0);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
 `;
 
 const Panel = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 16px;
   padding: 18px;
@@ -425,7 +425,7 @@ const FactorItem = styled.li`
 `;
 
 const SectionCard = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 16px;
   overflow: hidden;
@@ -438,7 +438,7 @@ const SectionCardHeader = styled.button`
   gap: 12px;
   padding: 14px 16px;
   width: 100%;
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   cursor: pointer;
   text-align: left;
   border: none;
