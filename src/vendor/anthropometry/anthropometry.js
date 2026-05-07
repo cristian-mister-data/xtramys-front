@@ -257,6 +257,8 @@ const Anthropometry = ({ navigation }) => {
   };
 
   const activeFiltersCount = (dateFilter ? 1 : 0) + (filterPlayer !== 'all' ? 1 : 0);
+  const dateFilterLabel = t('anthropometry.filters.filterByDatesShort', 'Fecha');
+  const playerFilterLabel = t('anthropometry.filters.filterByPlayerShort', 'Jugadores');
 
   const handleDelete = (anthropometry) => {
     Alert.alert(
@@ -412,7 +414,7 @@ const Anthropometry = ({ navigation }) => {
       <View style={{ flex: 1 }}>
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
-            <View style={styles.headerActions}>
+            <View style={[styles.headerActions, IS_MOBILE && styles.headerActionsMobile]}>
               {/* Filtro por fechas */}
               <TouchableOpacity
                 onPress={() => {
@@ -420,15 +422,13 @@ const Anthropometry = ({ navigation }) => {
                   setTempEndDate(dateFilter?.endDate || null);
                   setDateRangeModalVisible(true);
                 }}
-                style={[styles.headerIconBtn, dateFilter && styles.headerIconBtnActive]}
+                style={[styles.headerIconBtn, IS_MOBILE && styles.headerIconBtnMobile, dateFilter && styles.headerIconBtnActive]}
                 accessibilityLabel={t('anthropometry.filters.filterByDates')}
               >
                 <MaterialIcons name="event" size={20} color={dateFilter ? '#fff' : '#2474E5'} />
-                {!IS_MOBILE && (
-                  <Text style={[styles.headerIconBtnText, dateFilter && styles.headerIconBtnTextActive]}>
-                    {t('anthropometry.filters.filterByDates')}
+                  <Text numberOfLines={1} style={[styles.headerIconBtnText, IS_MOBILE && styles.headerIconBtnTextMobile, dateFilter && styles.headerIconBtnTextActive]}>
+                    {dateFilterLabel}
                   </Text>
-                )}
                 {dateFilter && (
                   <TouchableOpacity
                     style={styles.headerIconBtnClear}
@@ -443,20 +443,13 @@ const Anthropometry = ({ navigation }) => {
               {/* Filtro por jugador */}
               <TouchableOpacity
                 onPress={() => setPlayerFilterModalVisible(true)}
-                style={[styles.headerIconBtn, filterPlayer !== 'all' && styles.headerIconBtnActive]}
+                style={[styles.headerIconBtn, IS_MOBILE && styles.headerIconBtnMobile, filterPlayer !== 'all' && styles.headerIconBtnActive]}
                 accessibilityLabel={t('anthropometry.filterByPlayer')}
               >
                 <MaterialIcons name="person" size={20} color={filterPlayer !== 'all' ? '#fff' : '#2474E5'} />
-                {!IS_MOBILE && (
-                  <Text style={[styles.headerIconBtnText, filterPlayer !== 'all' && styles.headerIconBtnTextActive]}>
-                    {filterPlayer === 'all'
-                      ? t('anthropometry.filterByPlayer')
-                      : (() => {
-                          const p = players.find(p => p._id === filterPlayer);
-                          return p ? getPlayerFullName(p) : t('player.player');
-                        })()}
+                  <Text numberOfLines={1} style={[styles.headerIconBtnText, IS_MOBILE && styles.headerIconBtnTextMobile, filterPlayer !== 'all' && styles.headerIconBtnTextActive]}>
+                    {playerFilterLabel}
                   </Text>
-                )}
                 {filterPlayer !== 'all' && (
                   <TouchableOpacity
                     style={styles.headerIconBtnClear}
@@ -471,13 +464,13 @@ const Anthropometry = ({ navigation }) => {
               {/* Botón primario: Nueva medición */}
               <TouchableOpacity
                 onPress={openCreateModal}
-                style={styles.headerPrimaryBtn}
+                style={[styles.headerPrimaryBtn, IS_MOBILE && styles.headerPrimaryBtnMobile]}
                 accessibilityLabel={t('anthropometry.newMeasurement')}
               >
                 <MaterialIcons name="add" size={20} color="#fff" />
-                {!IS_MOBILE && (
-                  <Text style={styles.headerPrimaryBtnText}>{t('anthropometry.newMeasurement')}</Text>
-                )}
+                  <Text numberOfLines={1} style={[styles.headerPrimaryBtnText, IS_MOBILE && styles.headerPrimaryBtnTextMobile]}>
+                    {IS_MOBILE ? t('anthropometry.newMeasurementShort', 'Nueva') : t('anthropometry.newMeasurement')}
+                  </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1392,22 +1385,36 @@ const makeStyles = (theme) => StyleSheet.create({
   // Acciones inline del header (estilo unificado, sin menú de 3 puntos)
   headerActions: {
     flexDirection: 'row',
+    flexWrap: 'nowrap',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
     flexShrink: 0,
+    width: '100%',
+  },
+  headerActionsMobile: {
+    justifyContent: 'space-between',
   },
   headerIconBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     height: 38,
-    paddingHorizontal: IS_MOBILE_DEVICE ? 0 : 12,
+    paddingHorizontal: 10,
     minWidth: 38,
     borderRadius: 19,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: IS_MOBILE_DEVICE ? theme.colors.surfaceAlt : theme.colors.surface,
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  headerIconBtnMobile: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 8,
+    height: 36,
+    borderRadius: 18,
   },
   headerIconBtnActive: {
     backgroundColor: theme.colors.primary,
@@ -1417,7 +1424,11 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 13,
-    maxWidth: 140,
+    flexShrink: 1,
+  },
+  headerIconBtnTextMobile: {
+    fontSize: 11,
+    flexShrink: 1,
   },
   headerIconBtnTextActive: {
     color: theme.colors.onPrimary,
@@ -1436,7 +1447,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     height: 38,
-    paddingHorizontal: IS_MOBILE_DEVICE ? 0 : 14,
+    paddingHorizontal: 14,
     minWidth: 38,
     borderRadius: 19,
     backgroundColor: theme.colors.primary,
@@ -1447,11 +1458,22 @@ const makeStyles = (theme) => StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
+  headerPrimaryBtnMobile: {
+    flex: 0.9,
+    minWidth: 0,
+    paddingHorizontal: 10,
+    height: 36,
+    borderRadius: 18,
+  },
   headerPrimaryBtnText: {
     color: theme.colors.onPrimary,
     fontWeight: '700',
     fontSize: 14,
     letterSpacing: 0.2,
+  },
+  headerPrimaryBtnTextMobile: {
+    fontSize: 12,
+    letterSpacing: 0,
   },
   mobileMenuBadge: {
     position: 'absolute',

@@ -1039,7 +1039,9 @@
             "selectedRange": "Selected range",
             "day": "day",
             "days": "days",
-            "filterByDates": "Filter by dates"
+            "filterByDates": "Filter by dates",
+            "filterByDatesShort": "Date",
+            "filterByPlayerShort": "Players"
         },
         "noTeam": "Select a team from the team section",
         "noFilteredResults": "No measurements match the filters",

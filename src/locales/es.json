@@ -1040,7 +1040,9 @@
             "selectedRange": "Rango seleccionado",
             "day": "día",
             "days": "días",
-            "filterByDates": "Filtrar por fechas"
+            "filterByDates": "Filtrar por fechas",
+            "filterByDatesShort": "Fecha",
+            "filterByPlayerShort": "Jugadores"
         },
         "noTeam": "Selecciona un equipo desde la sección de equipos",
         "noFilteredResults": "No hay mediciones que coincidan con los filtros",
