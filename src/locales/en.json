@@ -877,6 +877,8 @@
         "injuryStartDate": "Injury Start Date",
         "from": "From",
         "to": "To",
+        "dateStart": "Start",
+        "dateEnd": "End",
         "selectDate": "Select date",
         "clearFilters": "Clear filters",
         "noInjuries": "No injuries registered",
@@ -957,7 +959,12 @@
         "sortByDuration": "Sort by duration",
         "durationShortest": "Shortest",
         "durationLongest": "Longest",
-        "durationDefault": "No sorting"
+        "durationDefault": "No sorting",
+        "filterByPos": "Position",
+        "filterByStatus": "Status",
+        "filterByDate": "Start date",
+        "sortByDurationShort": "Duration",
+        "filterCount": "{{count}} injury"
     },
     "anthropometry": {
         "anthropometry": "Skinfolds & Weights",

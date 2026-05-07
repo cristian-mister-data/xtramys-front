@@ -477,216 +477,169 @@ export default function InjuriesManagement({ navigation }) {
             <View style={styles.headerContent}>
               <View style={styles.headerLeft}>
                 <View style={styles.headerTextContainer}>
+                  <Text style={styles.headerTitle}>
+                    {t('menu.injuries')}
+                  </Text>
                   <Text style={styles.headerSubtitle}>
-                    {getFilteredInjuries().length || 0} {getFilteredInjuries().length === 1 ? t('injury.injury_one') : t('injury.injury_other')}
-                    {getFilteredInjuries().length !== injuries?.length && ` ${t('common.of')} ${injuries?.length || 0} ${t('common.total')}`}
                     {(() => {
                       const selectedTeam = equipos?.find(t => t.seleccionado === true);
-                      return selectedTeam ? ` • ${selectedTeam.nombre}` : '';
+                      return selectedTeam ? `${selectedTeam.nombre}` : '';
                     })()}
                   </Text>
                 </View>
               </View>
               <View style={styles.headerButtons}>
                 <TouchableOpacity style={styles.addButton} onPress={openCreateModal} activeOpacity={0.7}>
-                  <Ionicons name="add" size={24} color="#ffffff" />
+                  <Ionicons name="add" size={24} color={theme.colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Injuries List */}
-        <View style={styles.sectionContainer}>
-          {/* Filters Section - Estilo como jugadores.js */}
-          <View style={styles.filtersSection}>
-            <View style={styles.filterBarRow}>
-              <View style={styles.searchBarContainer}>
-                <Ionicons name="search" size={18} color={theme.colors.textMuted} />
-                <TextInput
-                  style={styles.searchBarInput}
-                  placeholder={t('injury.playerNamePlaceholder')}
-                  placeholderTextColor={theme.colors.inputPlaceholder}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery ? (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={18} color={theme.colors.textMuted} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
+        <View style={styles.filtersWrapper}>
+          <View style={styles.professionalFilterBar}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScrollContent}>
               <TouchableOpacity
-                style={styles.filterToggleBtn}
-                onPress={() => setShowFilters(!showFilters)}
+                style={[styles.headerIconBtn, selectedPositions.length > 0 && styles.headerIconBtnActive]}
+                onPress={() => setShowPositionFilter(!showPositionFilter)}
               >
-                <Ionicons name="filter" size={isMobileDevice() ? 18 : 20} color={theme.colors.primary} />
-                <Text style={styles.filterToggleBtnText}>{t('injury.filters')}</Text>
-                {(selectedPositions.length > 0 || selectedStatuses.length > 0 || startDateFilter || endDateFilter || sortByDuration) && (
-                  <View style={styles.filterBadge}>
-                    <Text style={styles.filterBadgeText}>
-                      {(selectedPositions.length > 0 ? 1 : 0) + (selectedStatuses.length > 0 ? 1 : 0) + (startDateFilter || endDateFilter ? 1 : 0) + (sortByDuration ? 1 : 0)}
-                    </Text>
-                  </View>
-                )}
+                <MaterialIcons name="person-outline" size={18} color={selectedPositions.length > 0 ? '#fff' : theme.colors.textSecondary} />
+                <Text style={[styles.headerIconBtnText, selectedPositions.length > 0 && styles.headerIconBtnTextActive]} numberOfLines={1}>
+                  {selectedPositions.length > 0 ? t('injury.selectedPositions', { count: selectedPositions.length }) : t('injury.filterByPos')}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={selectedPositions.length > 0 ? '#fff' : theme.colors.textMuted} />
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.headerIconBtn, selectedStatuses.length > 0 && styles.headerIconBtnActive]}
+                onPress={() => setShowStatusFilter(!showStatusFilter)}
+              >
+                <MaterialIcons name="healing" size={18} color={selectedStatuses.length > 0 ? '#fff' : theme.colors.textSecondary} />
+                <Text style={[styles.headerIconBtnText, selectedStatuses.length > 0 && styles.headerIconBtnTextActive]} numberOfLines={1}>
+                  {selectedStatuses.length > 0 ? t('injury.status') : t('injury.filterByStatus')}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={selectedStatuses.length > 0 ? '#fff' : theme.colors.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.headerIconBtn, startDateFilter && styles.headerIconBtnActive]}
+                onPress={() => { setDateFilterType('start'); setDateFilterVisible(true); }}
+              >
+                <MaterialIcons name="calendar-today" size={18} color={startDateFilter ? '#fff' : theme.colors.textSecondary} />
+                <Text style={[styles.headerIconBtnText, startDateFilter && styles.headerIconBtnTextActive]} numberOfLines={1}>
+                  {startDateFilter ? formatDate(startDateFilter).split('/')[0] + '/' + formatDate(startDateFilter).split('/')[1] : t('injury.dateStart')}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={startDateFilter ? '#fff' : theme.colors.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.headerIconBtn, endDateFilter && styles.headerIconBtnActive]}
+                onPress={() => { setDateFilterType('end'); setDateFilterVisible(true); }}
+              >
+                <MaterialIcons name="date-range" size={18} color={endDateFilter ? '#fff' : theme.colors.textSecondary} />
+                <Text style={[styles.headerIconBtnText, endDateFilter && styles.headerIconBtnTextActive]} numberOfLines={1}>
+                  {endDateFilter ? formatDate(endDateFilter).split('/')[0] + '/' + formatDate(endDateFilter).split('/')[1] : t('injury.dateEnd')}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={endDateFilter ? '#fff' : theme.colors.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.headerIconBtn, sortByDuration && styles.headerIconBtnActive]}
+                onPress={() => setSortByDuration(prev => prev === 'desc' ? 'asc' : prev === 'asc' ? '' : 'desc')}
+              >
+                <MaterialIcons name="sort" size={18} color={sortByDuration ? '#fff' : theme.colors.textSecondary} />
+                <Text style={[styles.headerIconBtnText, sortByDuration && styles.headerIconBtnTextActive]} numberOfLines={1}>
+                  {t('injury.sortByDurationShort')}
+                </Text>
+                {sortByDuration && <Ionicons name={sortByDuration === 'desc' ? "arrow-down" : "arrow-up"} size={12} color="#fff" />}
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.resultCountBadge}>
+              <Text style={styles.resultCountText}>
+                {getFilteredInjuries().length} {getFilteredInjuries().length === 1 ? t('injury.injury_one') : t('injury.injury_other')}
+              </Text>
             </View>
+          </View>
 
-            {showFilters && (
-              <View style={styles.chipFiltersPanel}>
-                {/* Filtro por posición - chips horizontales */}
-                <View style={styles.chipFilterSection}>
-                  <Text style={styles.chipFilterLabel}>{t('injury.position')}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-                    <TouchableOpacity
-                      style={[styles.chipFilterItem, selectedPositions.length === 0 && styles.chipFilterItemActive]}
-                      onPress={() => setSelectedPositions([])}
-                    >
-                      <Text style={[styles.chipFilterItemText, selectedPositions.length === 0 && styles.chipFilterItemTextActive]}>
-                        {t('injury.allPositions')}
-                      </Text>
-                    </TouchableOpacity>
-                    {positionOptions.map((option) => {
-                      const isActive = selectedPositions.includes(option.value);
-                      return (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[styles.chipFilterItem, isActive && styles.chipFilterItemActive]}
-                          onPress={() => togglePositionFilter(option.value)}
-                        >
-                          <Text style={[styles.chipFilterItemText, isActive && styles.chipFilterItemTextActive]}>
-                            {option.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-
-                {/* Filtro por estado - chips horizontales */}
-                <View style={styles.chipFilterSection}>
-                  <Text style={styles.chipFilterLabel}>{t('injury.status')}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-                    <TouchableOpacity
-                      style={[styles.chipFilterItem, selectedStatuses.length === 0 && styles.chipFilterItemActive]}
-                      onPress={() => setSelectedStatuses([])}
-                    >
-                      <Text style={[styles.chipFilterItemText, selectedStatuses.length === 0 && styles.chipFilterItemTextActive]}>
-                        {t('injury.allStatuses')}
-                      </Text>
-                    </TouchableOpacity>
-                    {statusOptions.map((option) => {
-                      const isActive = selectedStatuses.includes(option.value);
-                      return (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[
-                            styles.chipFilterItem,
-                            isActive && styles.chipFilterItemActive,
-                            isActive && option.color && { backgroundColor: option.color, borderColor: option.color }
-                          ]}
-                          onPress={() => toggleStatusFilter(option.value)}
-                        >
-                          <View style={[styles.statusDot, { backgroundColor: option.color || theme.colors.textSecondary }]} />
-                          <Text style={[styles.chipFilterItemText, isActive && styles.chipFilterItemTextActive]}>
-                            {option.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-
-                {/* Filtro por fecha */}
-                <View style={styles.chipFilterSection}>
-                  <Text style={styles.chipFilterLabel}>{t('injury.injuryStartDate')}</Text>
-                  <View style={styles.dateChipRow}>
-                    <TouchableOpacity
-                      style={styles.dateChipBtn}
-                      onPress={() => { setDateFilterType('start'); setDateFilterVisible(true); }}
-                    >
-                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
-                      <Text style={startDateFilter ? styles.dateChipText : styles.dateChipPlaceholder}>
-                        {startDateFilter
-                          ? new Date(startDateFilter).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })
-                          : t('injury.from')
-                        }
-                      </Text>
-                      {startDateFilter && (
-                        <TouchableOpacity onPress={() => setStartDateFilter(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
-                        </TouchableOpacity>
-                      )}
-                    </TouchableOpacity>
-                    <Ionicons name="arrow-forward" size={14} color={theme.colors.border} />
-                    <TouchableOpacity
-                      style={styles.dateChipBtn}
-                      onPress={() => { setDateFilterType('end'); setDateFilterVisible(true); }}
-                    >
-                      <MaterialIcons name="calendar-today" size={16} color={theme.colors.primary} />
-                      <Text style={endDateFilter ? styles.dateChipText : styles.dateChipPlaceholder}>
-                        {endDateFilter
-                          ? new Date(endDateFilter).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })
-                          : t('injury.to')
-                        }
-                      </Text>
-                      {endDateFilter && (
-                        <TouchableOpacity onPress={() => setEndDateFilter(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
-                        </TouchableOpacity>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Ordenar por duración - chips horizontales */}
-                <View style={styles.chipFilterSection}>
-                  <Text style={styles.chipFilterLabel}>{t('injury.sortByDuration')}</Text>
-                  <View style={styles.chipFilterRow}>
-                    <TouchableOpacity
-                      style={[styles.chipFilterItem, !sortByDuration && styles.chipFilterItemActive]}
-                      onPress={() => setSortByDuration('')}
-                    >
-                      <Text style={[styles.chipFilterItemText, !sortByDuration && styles.chipFilterItemTextActive]}>
-                        {t('injury.durationDefault')}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.chipFilterItem, sortByDuration === 'asc' && styles.chipFilterItemActive]}
-                      onPress={() => setSortByDuration(sortByDuration === 'asc' ? '' : 'asc')}
-                    >
-                      <Ionicons name="arrow-up" size={14} color={sortByDuration === 'asc' ? '#fff' : theme.colors.primary} />
-                      <Text style={[styles.chipFilterItemText, sortByDuration === 'asc' && styles.chipFilterItemTextActive]}>
-                        {t('injury.durationShortest')}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.chipFilterItem, sortByDuration === 'desc' && styles.chipFilterItemActive]}
-                      onPress={() => setSortByDuration(sortByDuration === 'desc' ? '' : 'desc')}
-                    >
-                      <Ionicons name="arrow-down" size={14} color={sortByDuration === 'desc' ? '#fff' : theme.colors.primary} />
-                      <Text style={[styles.chipFilterItemText, sortByDuration === 'desc' && styles.chipFilterItemTextActive]}>
-                        {t('injury.durationLongest')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Limpiar filtros + contador resultados */}
-                <View style={styles.chipFilterFooter}>
-                  <Text style={styles.chipFilterResultsText}>
-                    {getFilteredInjuries().length} {getFilteredInjuries().length === 1 ? t('injury.injury_one') : t('injury.injury_other')}
-                  </Text>
-                  {(searchQuery || selectedPositions.length > 0 || selectedStatuses.length > 0 || startDateFilter || endDateFilter || sortByDuration) && (
-                    <TouchableOpacity style={styles.chipClearFiltersBtn} onPress={clearFilters}>
-                      <MaterialIcons name="clear" size={18} color={theme.colors.textSecondary} />
-                      <Text style={styles.chipClearFiltersBtnText}>{t('injury.clearFilters')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+          {showPositionFilter && (
+            <View style={styles.expandedFilterPanel}>
+              <View style={styles.filterPanelHeader}>
+                <Text style={styles.filterPanelTitle}>{t('injury.position')}</Text>
+                <TouchableOpacity onPress={() => setSelectedPositions([])}>
+                  <Text style={styles.filterPanelClear}>{t('injury.clearFilters')}</Text>
+                </TouchableOpacity>
               </View>
+              <View style={styles.filterChipGrid}>
+                {positionOptions.map((option) => {
+                  const isActive = selectedPositions.includes(option.value);
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[styles.filterChip, isActive && styles.filterChipActive]}
+                      onPress={() => togglePositionFilter(option.value)}
+                    >
+                      <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {showStatusFilter && (
+            <View style={styles.expandedFilterPanel}>
+              <View style={styles.filterPanelHeader}>
+                <Text style={styles.filterPanelTitle}>{t('injury.status')}</Text>
+                <TouchableOpacity onPress={() => setSelectedStatuses([])}>
+                  <Text style={styles.filterPanelClear}>{t('injury.clearFilters')}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.filterChipGrid}>
+                {statusOptions.map((option) => {
+                  const isActive = selectedStatuses.includes(option.value);
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[styles.filterChip, isActive && styles.filterChipActive]}
+                      onPress={() => toggleStatusFilter(option.value)}
+                    >
+                      <View style={[styles.statusDot, { backgroundColor: option.color }]} />
+                      <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.searchBarWrapper}>
+            <View style={styles.searchBarContainer}>
+              <Ionicons name="search" size={18} color={theme.colors.textMuted} />
+              <TextInput
+                style={styles.searchBarInput}
+                placeholder={t('injury.playerNamePlaceholder')}
+                placeholderTextColor={theme.colors.inputPlaceholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {(selectedPositions.length > 0 || selectedStatuses.length > 0 || startDateFilter || endDateFilter || sortByDuration || searchQuery) && (
+              <TouchableOpacity style={styles.clearAllBtn} onPress={clearFilters}>
+                <Ionicons name="refresh" size={18} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
             )}
           </View>
+        </View>
+
+        {/* Injuries List */}
+        <View style={styles.sectionContainer}>
           {getFilteredInjuries() && getFilteredInjuries().length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateCard}>
@@ -1798,6 +1751,127 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text,
     fontWeight: '500',
+  },
+  // New Professional Filter Styles
+  filtersWrapper: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  professionalFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  filterScrollContent: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  headerIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 6,
+    minWidth: 100,
+  },
+  headerIconBtnActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  headerIconBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    maxWidth: 80,
+  },
+  headerIconBtnTextActive: {
+    color: '#fff',
+  },
+  resultCountBadge: {
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  resultCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  expandedFilterPanel: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  filterPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterPanelTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  filterPanelClear: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  filterChipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  filterChipActive: {
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  filterChipTextActive: {
+    color: theme.colors.primary,
+  },
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  clearAllBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   multiSelectPlaceholder: {
     fontSize: 14,

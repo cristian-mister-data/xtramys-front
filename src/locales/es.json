@@ -878,6 +878,8 @@
         "injuryStartDate": "Fecha de inicio de la lesión",
         "from": "Desde",
         "to": "Hasta",
+        "dateStart": "Inicio",
+        "dateEnd": "Fin",
         "selectDate": "Seleccionar fecha",
         "clearFilters": "Limpiar filtros",
         "noInjuries": "No hay lesiones registradas",
@@ -958,7 +960,12 @@
         "sortByDuration": "Ordenar por duración",
         "durationShortest": "Menor duración",
         "durationLongest": "Mayor duración",
-        "durationDefault": "Sin ordenar"
+        "durationDefault": "Sin ordenar",
+        "filterByPos": "Posición",
+        "filterByStatus": "Estado",
+        "filterByDate": "Fecha inicio",
+        "sortByDurationShort": "Duración",
+        "filterCount": "{{count}} lesión"
     },
     "anthropometry": {
         "anthropometry": "Pliegues y Pesos",
