@@ -1223,7 +1223,7 @@ export default function EditMatchSheetModal({
 
   // Handler para fecha
   const handleDateChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowDatePicker(false);
     }
     if (date) {
@@ -1235,7 +1235,7 @@ export default function EditMatchSheetModal({
 
   // Handler para hora
   const handleTimeChange = (event, date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowTimePicker(false);
     }
     if (date) {
