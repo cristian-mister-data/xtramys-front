@@ -1026,7 +1026,7 @@ function FolderManagement({
           {/* Ocultar botón crear subcarpeta si estamos en depth >= 2 (max 2 niveles) */}
           {currentDepth < 2 && (
             <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
-              <Ionicons name="add" size={20} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
+              <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
               <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
                 {currentFolderId ? t('folders.createSubfolder') : t('common.create')}
               </Text>
@@ -1856,9 +1856,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
   if (loading) {
     return (
       <AppLayout>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor:'#f2f6fc' }}>
-          <ActivityIndicator color="#1d4ed8" size="large" />
-          <Text style={{ marginTop: 16, color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('exercise.loading')}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+          <ActivityIndicator color={theme.colors.primary} size="large" />
+          <Text style={{ marginTop: 16, color: theme.colors.text, fontWeight: 'bold', fontSize: 16 }}>{t('exercise.loading')}</Text>
         </View>
       </AppLayout>
     );
@@ -1935,7 +1935,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="folder-plus" size={20} color="#000" />
+                  <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -1943,7 +1943,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 style={styles.mvCreateButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="add" size={20} color="#000" />
+                <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                 {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('exercise.exercise')}</Text>}
               </TouchableOpacity>
             </View>
@@ -2750,8 +2750,8 @@ const makeStyles = (theme) => StyleSheet.create({
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
     paddingVertical: 12,
@@ -2760,9 +2760,9 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 8,
     shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
     transitionDuration: '150ms',
   },
   exerciseCardMobile: {
@@ -4100,22 +4100,31 @@ const makeStyles = (theme) => StyleSheet.create({
   // ===== Estilos myVideos para ExerciseList =====
   mvContainer: {
     flex: 1,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.background,
   },
   
   // Header
   mvHeader: {
-    backgroundColor: theme.colors.surfaceAlt,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
     borderBottomColor: theme.colors.border,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   mvHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     marginBottom: 12,
   },
   mvHeaderTitleContainer: {
@@ -4183,7 +4192,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvBreadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     flexWrap: 'wrap',
   },
   mvBreadcrumbItem: {
@@ -4210,13 +4219,23 @@ const makeStyles = (theme) => StyleSheet.create({
 
   // Search
   mvSearchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   mvSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -4232,13 +4251,18 @@ const makeStyles = (theme) => StyleSheet.create({
 
   mvFilterScroll: {
     flexGrow: 0,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   mvFilterBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
   },
   mvFilterTab: {
@@ -4307,7 +4331,8 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
   },
   mvContentListInner: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   
@@ -4347,15 +4372,17 @@ const makeStyles = (theme) => StyleSheet.create({
   mvFolderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 14,
     gap: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   mvFolderIconContainer: {
     width: 52,

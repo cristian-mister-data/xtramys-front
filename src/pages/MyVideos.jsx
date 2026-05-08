@@ -7,7 +7,7 @@ export default function MyVideos() {
   const { t } = useTranslation();
 
   return (
-    <RNWebPage
+    <RNWebPage themed
       title={t('menu.myVideos', 'Mis Videos')}
       subtitle={t('sectionHeaders.myVideos', 'Clasifica clips, carpetas y material audiovisual del cuerpo técnico.')}
       icon={MdVideoLibrary}

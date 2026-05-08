@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import i18n from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
@@ -49,6 +50,8 @@ import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
 
 export default function MyVideos() {
   const navigation = useNavigation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [videos, setVideos] = useState([]);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -555,15 +558,15 @@ export default function MyVideos() {
       <View style={styles.folderContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text style={styles.folderName} numberOfLines={1}>{folder.nombre}</Text>
-          {folder.isGlobal && <Ionicons name="globe-outline" size={13} color="#1d4ed8" />}
+          {folder.isGlobal && <Ionicons name="globe-outline" size={13} color={theme.colors.primary} />}
         </View>
         <View style={styles.folderStats}>
-          <Feather name="film" size={12} color="#94A3B8" />
+          <Feather name="film" size={12} color={theme.colors.textMuted} />
           <Text style={styles.folderStatsText}> {folder.videoCount || 0}</Text>
           {folder.subfolderCount > 0 && (
             <>
               <Text style={styles.folderStatsText}>  •  </Text>
-              <Feather name="folder" size={12} color="#94A3B8" />
+              <Feather name="folder" size={12} color={theme.colors.textMuted} />
               <Text style={styles.folderStatsText}> {folder.subfolderCount}</Text>
             </>
           )}
@@ -574,7 +577,7 @@ export default function MyVideos() {
         onPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather name="more-vertical" size={18} color="#94A3B8" />
+        <Feather name="more-vertical" size={18} color={theme.colors.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -598,7 +601,7 @@ export default function MyVideos() {
       <View style={styles.videoContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text style={styles.videoTitle} numberOfLines={1}>{video.nombre}</Text>
-          {video.isGlobal && <Ionicons name="globe-outline" size={13} color="#1d4ed8" />}
+          {video.isGlobal && <Ionicons name="globe-outline" size={13} color={theme.colors.primary} />}
         </View>
         {video.descripcion && (
           <Text style={styles.videoDescription} numberOfLines={2}>
@@ -606,7 +609,7 @@ export default function MyVideos() {
           </Text>
         )}
         <View style={styles.videoMeta}>
-          <Feather name="calendar" size={12} color="#94A3B8" />
+          <Feather name="calendar" size={12} color={theme.colors.textMuted} />
           <Text style={styles.videoDate}>{formatDate(video.createdAt)}</Text>
         </View>
       </View>
@@ -615,7 +618,7 @@ export default function MyVideos() {
         onPress={() => { setMenuVideo(video); setMenuVisible(true); }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Feather name="more-vertical" size={18} color="#94A3B8" />
+        <Feather name="more-vertical" size={18} color={theme.colors.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -630,7 +633,7 @@ export default function MyVideos() {
               onPress={() => setShowCreateFolderModal(true)}
               activeOpacity={0.7}
             >
-              <Feather name="folder-plus" size={20} color="#fff" />
+              <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
             </TouchableOpacity>
           </View>
         )}
@@ -641,7 +644,7 @@ export default function MyVideos() {
             onPress={goToRoot} 
             style={[styles.breadcrumbItem, folderPath.length === 0 && styles.breadcrumbItemActive]}
           >
-            <Feather name="home" size={16} color={folderPath.length === 0 ? "#1d4ed8" : "#64748B"} />
+            <Feather name="home" size={16} color={folderPath.length === 0 ? theme.colors.primary : theme.colors.textMuted} />
             <Text style={[styles.breadcrumbText, folderPath.length === 0 && styles.breadcrumbTextActive]}>{t('myVideos.home')}</Text>
           </TouchableOpacity>
           {folderPath.map((folder, index) => (
@@ -670,17 +673,17 @@ export default function MyVideos() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Feather name="search" size={18} color="#94A3B8" />
+          <Feather name="search" size={18} color={theme.colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder={t('myVideos.searchPlaceholder')}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={theme.colors.inputPlaceholder}
             value={filter}
             onChangeText={setFilter}
           />
           {filter.length > 0 && (
             <TouchableOpacity onPress={() => setFilter('')}>
-              <Feather name="x" size={18} color="#94A3B8" />
+              <Feather name="x" size={18} color={theme.colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -717,7 +720,7 @@ export default function MyVideos() {
       {/* Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>{t('myVideos.loading')}</Text>
         </View>
       ) : (filteredFolders.length === 0 && filteredVideos.length === 0) ? (
@@ -745,7 +748,7 @@ export default function MyVideos() {
           {filteredFolders.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Feather name="folder" size={16} color="#64748B" />
+                <Feather name="folder" size={16} color={theme.colors.textMuted} />
                 <Text style={styles.sectionTitle}>{t('myVideos.folders')}</Text>
                 <View style={styles.sectionBadge}>
                   <Text style={styles.sectionBadgeText}>{filteredFolders.length}</Text>
@@ -761,7 +764,7 @@ export default function MyVideos() {
           {filteredVideos.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Feather name="film" size={16} color="#64748B" />
+                <Feather name="film" size={16} color={theme.colors.textMuted} />
                 <Text style={styles.sectionTitle}>{t('myVideos.videos')}</Text>
                 <View style={styles.sectionBadge}>
                   <Text style={styles.sectionBadgeText}>{filteredVideos.length}</Text>
@@ -1451,10 +1454,10 @@ export default function MyVideos() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.colors.background,
   },
   
   // Notification
@@ -1502,17 +1505,25 @@ const styles = StyleSheet.create({
   
   // Header
   header: {
-    backgroundColor: '#eaf2ff',
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     marginBottom: 12,
   },
   headerTitleContainer: {
@@ -1526,13 +1537,13 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   addFolderButton: {
-    backgroundColor: '#1d4ed8',
+    backgroundColor: theme.colors.primary,
     width: 40,
     height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1d4ed8',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1543,7 +1554,7 @@ const styles = StyleSheet.create({
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     flexWrap: 'wrap',
   },
   breadcrumbItem: {
@@ -1555,16 +1566,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   breadcrumbItemActive: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft,
   },
   breadcrumbText: {
     fontSize: 14,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     fontWeight: '500',
     maxWidth: 120,
   },
   breadcrumbTextActive: {
-    color: '#1d4ed8',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   breadcrumbSeparator: {
@@ -1573,24 +1584,34 @@ const styles = StyleSheet.create({
   
   // Search
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.inputBorder,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   
   // Loading & Empty States
@@ -1603,7 +1624,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 15,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   emptyContainer: {
@@ -1616,7 +1637,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -1624,12 +1645,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1639,7 +1660,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentListInner: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   
@@ -1656,12 +1678,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -1669,7 +1691,7 @@ const styles = StyleSheet.create({
   sectionBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   itemsContainer: {
     gap: 10,
@@ -1679,15 +1701,17 @@ const styles = StyleSheet.create({
   folderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf2ff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 14,
     gap: 14,
-    shadowColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   folderIconContainer: {
     width: 52,
@@ -1702,7 +1726,7 @@ const styles = StyleSheet.create({
   folderName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   folderStats: {
@@ -1711,13 +1735,13 @@ const styles = StyleSheet.create({
   },
   folderStatsText: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   cardMenuButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1726,15 +1750,17 @@ const styles = StyleSheet.create({
   videoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eaf2ff',
-    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
     padding: 12,
     gap: 14,
-    shadowColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   videoThumbnail: {
     width: 80,
@@ -1753,12 +1779,12 @@ const styles = StyleSheet.create({
   videoTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   videoDescription: {
     fontSize: 13,
-    color: '#64748B',
+    color: theme.colors.textSecondary,
     marginBottom: 6,
     lineHeight: 18,
   },
@@ -1769,7 +1795,7 @@ const styles = StyleSheet.create({
   },
   videoDate: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   
   // Modal Backdrop
@@ -2398,32 +2424,37 @@ const styles = StyleSheet.create({
   // Source filter tabs
   sourceFilterScroll: {
     flexGrow: 0,
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   sourceFilterBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
   },
   sourceTab: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     flexShrink: 0,
   },
   sourceTabActive: {
-    backgroundColor: '#1d4ed8',
+    backgroundColor: theme.colors.primary,
   },
   sourceTabTxt: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   sourceTabTxtActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
 });
 

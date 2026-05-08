@@ -950,7 +950,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
           <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.text, flex: 1 }}>{t('folders.manageFolders')}</Text>
           {currentDepth < 2 && (
             <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
-              <Ionicons name="add" size={20} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
+              <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
               <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
                 {currentFolderId ? t('folders.createSubfolder') : t('common.create')}
               </Text>
@@ -1226,7 +1226,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderNameEn, setNewFolderNameEn] = useState('');
-  const [newFolderColor, setNewFolderColor] = useState('#8B5CF6');
+  const [newFolderColor, setNewFolderColor] = useState('#3B82F6');
   const [newFolderIsGlobal, setNewFolderIsGlobal] = useState(false);
 
   // Menú de carpeta (estilo myVideos)
@@ -1237,7 +1237,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderNameEn, setEditFolderNameEn] = useState('');
-  const [editFolderColor, setEditFolderColor] = useState('#8B5CF6');
+  const [editFolderColor, setEditFolderColor] = useState('#3B82F6');
 
   // Notificaciones
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
@@ -1510,7 +1510,7 @@ const handleDelete = (strategy) => {
       setShowCreateFolderModal(false);
       setNewFolderName('');
       setNewFolderNameEn('');
-      setNewFolderColor('#8B5CF6');
+      setNewFolderColor('#3B82F6');
       setNewFolderIsGlobal(false);
       dispatch(fetchStrategyFolders({ lang }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
@@ -1560,7 +1560,7 @@ const handleDelete = (strategy) => {
     }
     setMenuFolder(folder);
     setEditFolderName(folder.nombreEs || folder.translations?.es?.nombre || folder.nombre);
-    setEditFolderColor(folder.color || '#8B5CF6');
+    setEditFolderColor(folder.color || '#3B82F6');
     setEditFolderNameEn(folder.translations?.en?.nombre || '');
     setEditFolderModalVisible(true);
   };
@@ -1596,7 +1596,7 @@ const handleDelete = (strategy) => {
       onLongPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
       activeOpacity={0.7}
     >
-      <View style={[styles.mvFolderIconContainer, { backgroundColor: folder.color || '#8B5CF6' }]}>
+      <View style={[styles.mvFolderIconContainer, { backgroundColor: folder.color || '#3B82F6' }]}>
         <Feather name="folder" size={28} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
       </View>
       <View style={styles.mvFolderContent}>
@@ -1631,9 +1631,9 @@ const handleDelete = (strategy) => {
   if (loading) {
     return (
       <AppLayout>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor:'#f2f6fc' }}>
-          <ActivityIndicator color="#1d4ed8" size="large" />
-          <Text style={{ marginTop: 16, color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('strategy.loadingStrategies')}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+          <ActivityIndicator color={theme.colors.primary} size="large" />
+          <Text style={{ marginTop: 16, color: theme.colors.text, fontWeight: 'bold', fontSize: 16 }}>{t('strategy.loadingStrategies')}</Text>
         </View>
       </AppLayout>
     );
@@ -1697,7 +1697,7 @@ const handleDelete = (strategy) => {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="folder-plus" size={20} color="#000" />
+                  <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -1705,7 +1705,7 @@ const handleDelete = (strategy) => {
                 style={styles.mvCreateButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="add" size={20} color="#000" />
+                <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                 {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('strategy.createStrategy')}</Text>}
               </TouchableOpacity>
             </View>
@@ -1717,7 +1717,7 @@ const handleDelete = (strategy) => {
               onPress={navigateToRoot} 
               style={[styles.mvBreadcrumbItem, folderPath.length === 0 && styles.mvBreadcrumbItemActive]}
             >
-              <Feather name="home" size={16} color={folderPath.length === 0 ? "#8B5CF6" : "#64748B"} />
+              <Feather name="home" size={16} color={folderPath.length === 0 ? "#3578e5" : "#64748B"} />
               <Text style={[styles.mvBreadcrumbText, folderPath.length === 0 && styles.mvBreadcrumbTextActive]}>{t('folders.root')}</Text>
             </TouchableOpacity>
             {folderPath.map((crumb, index) => (
@@ -1796,7 +1796,7 @@ const handleDelete = (strategy) => {
         {/* Content */}
         {(loading || foldersLoading) ? (
           <View style={styles.mvLoadingContainer}>
-            <ActivityIndicator size="large" color="#8B5CF6" />
+            <ActivityIndicator size="large" color="#3578e5" />
             <Text style={styles.mvLoadingText}>{t('common.loading')}</Text>
           </View>
         ) : (displayedSubfolders.length === 0 && filteredStrategies.length === 0) ? (
@@ -1893,8 +1893,8 @@ const handleDelete = (strategy) => {
                     handleStrategyPress(selectedStrategyForOptions);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.purpleSoft }]}>
-                    <Feather name="eye" size={20} color="#8B5CF6" />
+                  <View style={[styles.mvActionIcon, { backgroundColor: '#EEF2FF' }]}>
+                    <Feather name="eye" size={20} color="#3578e5" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
                     <Text style={styles.mvActionTitle}>{t('strategy.lookDetails')}</Text>
@@ -2043,8 +2043,8 @@ const handleDelete = (strategy) => {
                     if (menuFolder) navigateToFolder(menuFolder);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.purpleSoft }]}>
-                    <Feather name="folder" size={20} color="#8B5CF6" />
+                  <View style={[styles.mvActionIcon, { backgroundColor: '#EEF2FF' }]}>
+                    <Feather name="folder" size={20} color="#3578e5" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
                     <Text style={styles.mvActionTitle}>{t('folders.openFolder')}</Text>
@@ -2869,8 +2869,8 @@ const makeStyles = (theme) => StyleSheet.create({
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
     paddingVertical: 12,
@@ -2879,9 +2879,9 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 8,
     shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
     transitionDuration: '150ms',
   },
   exerciseCardMobile: {
@@ -3395,42 +3395,50 @@ const makeStyles = (theme) => StyleSheet.create({
   // ===== Estilos myVideos para StrategyList =====
   mvContainer: {
     flex: 1,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.background,
   },
   
   // Header
   mvHeader: {
-    backgroundColor: theme.colors.surfaceAlt,
-    paddingTop: Platform.OS === 'web' ? 16 : 10,
-    paddingBottom: Platform.OS === 'web' ? 12 : 8,
-    borderBottomWidth: 1,
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
     borderBottomColor: theme.colors.border,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   mvHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingHorizontal: Platform.OS === 'web' ? 20 : 12,
-    marginBottom: Platform.OS === 'web' ? 12 : 8,
+    paddingHorizontal: 0,
+    marginBottom: 12,
   },
   mvHeaderTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   mvHeaderTitle: {
-    fontSize: Platform.OS === 'web' ? 24 : 18,
+    fontSize: 24,
     fontWeight: '700',
     color: theme.colors.text,
   },
   mvAddFolderButton: {
-    backgroundColor: theme.colors.purple,
+    backgroundColor: theme.colors.primary,
     width: 40,
     height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: theme.colors.purple,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3443,7 +3451,6 @@ const makeStyles = (theme) => StyleSheet.create({
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 12,
-    gap: 6,
     borderWidth: theme.mode === 'dark' ? 1 : 0,
     borderColor: theme.mode === 'dark' ? theme.colors.primarySoft : 'transparent',
     shadowColor: theme.colors.primary,
@@ -3472,7 +3479,7 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   mvViewModeBtnActive: {
-    backgroundColor: theme.colors.purple,
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
   },
   
@@ -3480,7 +3487,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvBreadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     flexWrap: 'wrap',
   },
   mvBreadcrumbItem: {
@@ -3489,31 +3496,41 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
-    gap: 6,
   },
   mvBreadcrumbItemActive: {
-    backgroundColor: theme.colors.purpleSoft,
+    backgroundColor: theme.colors.primarySoft,
   },
   mvBreadcrumbText: {
     fontSize: 14,
     color: theme.colors.textMuted,
     fontWeight: '500',
     maxWidth: 120,
+    minWidth: 0,
   },
   mvBreadcrumbTextActive: {
-    color: theme.colors.purple,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   
   // Search
   mvSearchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   mvSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -3529,13 +3546,18 @@ const makeStyles = (theme) => StyleSheet.create({
 
   mvFilterScroll: {
     flexGrow: 0,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: 20,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   mvFilterBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
   },
   mvFilterTab: {
@@ -3604,7 +3626,8 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
   },
   mvContentListInner: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   
@@ -3644,15 +3667,17 @@ const makeStyles = (theme) => StyleSheet.create({
   mvFolderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 14,
     gap: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   mvFolderIconContainer: {
     width: 52,
