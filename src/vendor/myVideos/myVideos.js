@@ -120,7 +120,7 @@ export default function MyVideos() {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderNameEn, setNewFolderNameEn] = useState('');
-  const [newFolderColor, setNewFolderColor] = useState('#6366F1');
+  const [newFolderColor, setNewFolderColor] = useState('#1d4ed8');
   
   // Modal para mover/duplicar video
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -136,7 +136,7 @@ export default function MyVideos() {
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderNameEn, setEditFolderNameEn] = useState('');
-  const [editFolderColor, setEditFolderColor] = useState('#6366F1');
+  const [editFolderColor, setEditFolderColor] = useState('#1d4ed8');
 
   // Modal para asociar video a ejercicio/estrategia
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -160,7 +160,7 @@ export default function MyVideos() {
   const IS_TABLET = screenWidth >= 700;
 
   const folderColors = [
-    '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', 
+    '#1d4ed8', '#8B5CF6', '#EC4899', '#F43F5E', 
     '#F97316', '#EAB308', '#22C55E', '#14B8A6',
     '#06B6D4', '#3B82F6', '#64748B', '#78716C'
   ];
@@ -261,7 +261,7 @@ export default function MyVideos() {
         setShowCreateFolderModal(false);
         setNewFolderName('');
         setNewFolderNameEn('');
-        setNewFolderColor('#6366F1');
+        setNewFolderColor('#1d4ed8');
         loadContent();
       }
     } catch (error) {
@@ -299,7 +299,7 @@ export default function MyVideos() {
     setMenuFolder(folder);
     setEditFolderName(folder.nombreEs || folder.nombre);
     setEditFolderNameEn(folder.translations?.en?.nombre || '');
-    setEditFolderColor(folder.color || '#6366F1');
+    setEditFolderColor(folder.color || '#1d4ed8');
     setEditFolderModalVisible(true);
   };
 
@@ -549,13 +549,13 @@ export default function MyVideos() {
       onLongPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
       activeOpacity={0.7}
     >
-      <View style={[styles.folderIconContainer, { backgroundColor: folder.color || '#6366F1' }]}>
+      <View style={[styles.folderIconContainer, { backgroundColor: folder.color || '#1d4ed8' }]}>
         <Feather name="folder" size={28} color="#fff" />
       </View>
       <View style={styles.folderContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text style={styles.folderName} numberOfLines={1}>{folder.nombre}</Text>
-          {folder.isGlobal && <Ionicons name="globe-outline" size={13} color="#6366F1" />}
+          {folder.isGlobal && <Ionicons name="globe-outline" size={13} color="#1d4ed8" />}
         </View>
         <View style={styles.folderStats}>
           <Feather name="film" size={12} color="#94A3B8" />
@@ -598,7 +598,7 @@ export default function MyVideos() {
       <View style={styles.videoContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Text style={styles.videoTitle} numberOfLines={1}>{video.nombre}</Text>
-          {video.isGlobal && <Ionicons name="globe-outline" size={13} color="#6366F1" />}
+          {video.isGlobal && <Ionicons name="globe-outline" size={13} color="#1d4ed8" />}
         </View>
         {video.descripcion && (
           <Text style={styles.videoDescription} numberOfLines={2}>
@@ -641,7 +641,7 @@ export default function MyVideos() {
             onPress={goToRoot} 
             style={[styles.breadcrumbItem, folderPath.length === 0 && styles.breadcrumbItemActive]}
           >
-            <Feather name="home" size={16} color={folderPath.length === 0 ? "#6366F1" : "#64748B"} />
+            <Feather name="home" size={16} color={folderPath.length === 0 ? "#1d4ed8" : "#64748B"} />
             <Text style={[styles.breadcrumbText, folderPath.length === 0 && styles.breadcrumbTextActive]}>{t('myVideos.home')}</Text>
           </TouchableOpacity>
           {folderPath.map((folder, index) => (
@@ -717,7 +717,7 @@ export default function MyVideos() {
       {/* Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
+          <ActivityIndicator size="large" color="#1d4ed8" />
           <Text style={styles.loadingText}>{t('myVideos.loading')}</Text>
         </View>
       ) : (filteredFolders.length === 0 && filteredVideos.length === 0) ? (
@@ -801,8 +801,8 @@ export default function MyVideos() {
                   if (menuVideo) viewVideo(menuVideo);
                 }}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
-                  <Feather name="play" size={20} color="#6366F1" />
+                <View style={[styles.actionIcon, { backgroundColor: '#dbeafe' }]}>
+                  <Feather name="play" size={20} color="#1d4ed8" />
                 </View>
                 <View style={styles.actionTextContainer}>
                   <Text style={styles.actionTitle}>{t('myVideos.play')}</Text>
@@ -959,8 +959,8 @@ export default function MyVideos() {
                   if (menuFolder) openFolder(menuFolder);
                 }}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
-                  <Feather name="folder" size={20} color="#6366F1" />
+                <View style={[styles.actionIcon, { backgroundColor: '#dbeafe' }]}>
+                  <Feather name="folder" size={20} color="#1d4ed8" />
                 </View>
                 <View style={styles.actionTextContainer}>
                   <Text style={styles.actionTitle}>{t('myVideos.openFolder')}</Text>
@@ -1143,7 +1143,7 @@ export default function MyVideos() {
             <View style={styles.createModalHeader}>
               <View style={IS_MOBILE ? styles.createModalHeaderLeftMobile : styles.createModalHeaderLeft}>
                 <View style={styles.createModalIconContainer}>
-                  <Feather name="folder-plus" size={28} color="#6366F1" />
+                  <Feather name="folder-plus" size={28} color="#1d4ed8" />
                 </View>
                 <View>
                   <Text style={IS_MOBILE ? styles.createModalTitleMobile : styles.createModalTitle}>
@@ -1175,7 +1175,7 @@ export default function MyVideos() {
               {/* Card de Datos de la Carpeta */}
               <View style={IS_MOBILE ? styles.createCardMobile : styles.createCard}>
                 <View style={styles.createCardHeader}>
-                  <Feather name="folder" size={24} color="#6366F1" />
+                  <Feather name="folder" size={24} color="#1d4ed8" />
                   <Text style={styles.createCardTitle}>{t('myVideos.folderData')}</Text>
                 </View>
 
@@ -1294,7 +1294,7 @@ export default function MyVideos() {
                 </View>
                 <Text style={styles.folderSelectText}>{t('myVideos.rootNoFolder')}</Text>
                 {selectedDestFolder === null && (
-                  <Feather name="check-circle" size={20} color="#6366F1" />
+                  <Feather name="check-circle" size={20} color="#1d4ed8" />
                 )}
               </TouchableOpacity>
               
@@ -1308,12 +1308,12 @@ export default function MyVideos() {
                   ]}
                   onPress={() => setSelectedDestFolder(folder.id)}
                 >
-                  <View style={[styles.folderSelectIcon, { backgroundColor: folder.color || '#6366F1' }]}>
+                  <View style={[styles.folderSelectIcon, { backgroundColor: folder.color || '#1d4ed8' }]}>
                     <Feather name="folder" size={16} color="#fff" />
                   </View>
                   <Text style={styles.folderSelectText}>{folder.nombre}</Text>
                   {selectedDestFolder === folder.id && (
-                    <Feather name="check-circle" size={20} color="#6366F1" />
+                    <Feather name="check-circle" size={20} color="#1d4ed8" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -1416,7 +1416,7 @@ export default function MyVideos() {
       <Modal visible={isGenerating} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#6366F1" />
+            <ActivityIndicator size="large" color="#1d4ed8" />
             <Text style={styles.loadingTitle}>
               {loadingAction === 'download'
                 ? t('myVideos.downloading')
@@ -1454,7 +1454,7 @@ export default function MyVideos() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#eaf2ff',
   },
   
   // Notification
@@ -1502,7 +1502,7 @@ const styles = StyleSheet.create({
   
   // Header
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
@@ -1526,13 +1526,13 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   addFolderButton: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1d4ed8',
     width: 40,
     height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: '#1d4ed8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   breadcrumbItemActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#dbeafe',
   },
   breadcrumbText: {
     fontSize: 14,
@@ -1564,7 +1564,7 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   breadcrumbTextActive: {
-    color: '#6366F1',
+    color: '#1d4ed8',
     fontWeight: '600',
   },
   breadcrumbSeparator: {
@@ -1579,7 +1579,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -1679,7 +1679,7 @@ const styles = StyleSheet.create({
   folderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 16,
     padding: 16,
     gap: 14,
@@ -1717,7 +1717,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#eaf2ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1726,7 +1726,7 @@ const styles = StyleSheet.create({
   videoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 16,
     padding: 12,
     gap: 14,
@@ -1781,7 +1781,7 @@ const styles = StyleSheet.create({
   
   // Action Sheet
   actionSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 34,
@@ -1856,7 +1856,7 @@ const styles = StyleSheet.create({
   
   // Form Modal
   formModal: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
@@ -1871,7 +1871,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -1899,7 +1899,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1951,11 +1951,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1d4ed8',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#6366F1',
+    shadowColor: '#1d4ed8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1985,10 +1985,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#eaf2ff',
   },
   folderSelectItemActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#dbeafe',
     borderWidth: 1,
     borderColor: '#C7D2FE',
   },
@@ -2086,7 +2086,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
@@ -2119,7 +2119,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 20,
     width: '96%',
     maxWidth: 500,
@@ -2133,7 +2133,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   createModalContainerMobile: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 20,
     width: '92%',
     maxWidth: 400,
@@ -2147,7 +2147,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   createModalContainerTablet: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 20,
     width: '94%',
     maxWidth: 900,
@@ -2183,7 +2183,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#dbeafe',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2211,7 +2211,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eaf2ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2228,7 +2228,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   createCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eaf2ff',
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
@@ -2236,7 +2236,7 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   createCardMobile: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eaf2ff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -2265,7 +2265,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   createInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -2305,7 +2305,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eaf2ff',
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
@@ -2322,11 +2322,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1d4ed8',
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
-    shadowColor: '#6366F1',
+    shadowColor: '#1d4ed8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -2347,7 +2347,7 @@ const styles = StyleSheet.create({
   linkSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -2398,7 +2398,7 @@ const styles = StyleSheet.create({
   // Source filter tabs
   sourceFilterScroll: {
     flexGrow: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#eaf2ff',
   },
   sourceFilterBar: {
     flexDirection: 'row',
@@ -2415,7 +2415,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   sourceTabActive: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1d4ed8',
   },
   sourceTabTxt: {
     fontSize: 12,

@@ -26,8 +26,9 @@ export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', asyn
 
 export const fetchGlobalStrategies = createAsyncThunk(
   'strategy/fetchGlobalStrategies',
-  async () => {
-    const res = await api.get('/strategy/global');
+  async ({ lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy/global${params}`);
     return res.data;
   }
 );
@@ -68,41 +69,57 @@ export const deleteEstrategia = createAsyncThunk('strategy/deleteEstrategia', as
 
 export const fetchStrategyFolders = createAsyncThunk(
   'strategy/fetchStrategyFolders',
-  async ({ parentFolder } = {}) => {
-    const params = parentFolder ? `?parentFolder=${parentFolder}` : '';
+  async ({ parentFolder, lang } = {}) => {
+    const queryParams = [];
+    if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
+    if (lang) queryParams.push(`lang=${lang}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/strategy-folder${params}`);
+    return res.data.folders;
+  }
+);
+
+export const fetchGlobalFolders = createAsyncThunk(
+  'strategy/fetchGlobalFolders',
+  async ({ lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy-folder/global${params}`);
     return res.data.folders;
   }
 );
 
 export const fetchStrategyFolderById = createAsyncThunk(
   'strategy/fetchStrategyFolderById',
-  async ({ id }) => {
-    const res = await api.get(`/strategy-folder/${id}`);
+  async ({ id, lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy-folder/${id}${params}`);
     return res.data;
   }
 );
 
 export const fetchStrategyFoldersFlat = createAsyncThunk(
   'strategy/fetchStrategyFoldersFlat',
-  async () => {
-    const res = await api.get('/strategy-folder/flat');
+  async ({ lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy-folder/flat${params}`);
     return res.data.folders;
   }
 );
 
 export const createStrategyFolder = createAsyncThunk(
   'strategy/createStrategyFolder',
-  async ({ nombre, parentFolder, color }) => {
-    const res = await api.post('/strategy-folder', { nombre, parentFolder, color });
+  async ({ nombre, parentFolder, color, isGlobal, translations }) => {
+    const res = await api.post('/strategy-folder', {
+      nombre, parentFolder, color, isGlobal, translations,
+    });
     return res.data.folder;
   }
 );
 
 export const updateStrategyFolder = createAsyncThunk(
   'strategy/updateStrategyFolder',
-  async ({ id, nombre, color }) => {
-    const res = await api.put(`/strategy-folder/${id}`, { nombre, color });
+  async ({ id, nombre, color, translations }) => {
+    const res = await api.put(`/strategy-folder/${id}`, { nombre, color, translations });
     return res.data.folder;
   }
 );
@@ -125,16 +142,20 @@ export const moveStrategyToFolder = createAsyncThunk(
 
 export const duplicateStrategyToFolder = createAsyncThunk(
   'strategy/duplicateStrategyToFolder',
-  async ({ strategyId, folderId }) => {
-    const res = await api.post('/strategy-folder/duplicate-strategy', { strategyId, folderId });
+  async ({ strategyId, folderId, duplicateName, lang }) => {
+    const res = await api.post('/strategy-folder/duplicate-strategy', {
+      strategyId, folderId, duplicateName, lang,
+    });
     return res.data.strategy;
   }
 );
 
 export const duplicateGlobalStrategy = createAsyncThunk(
   'strategy/duplicateGlobalStrategy',
-  async ({ strategyId, folderId }) => {
-    const res = await api.post('/strategy-folder/duplicate-global', { strategyId, folderId });
+  async ({ strategyId, folderId, duplicateName, lang }) => {
+    const res = await api.post('/strategy-folder/duplicate-global', {
+      strategyId, folderId, duplicateName, lang,
+    });
     return res.data.strategy;
   }
 );

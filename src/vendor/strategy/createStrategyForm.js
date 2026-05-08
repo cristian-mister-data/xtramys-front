@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
@@ -16,11 +16,12 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchStrategyFoldersFlat, createStrategyFolder } from '@/store/slices/strategy/strategyThunks';
+import { fetchStrategyFoldersFlat, createStrategyFolder, fetchGlobalFolders } from '@/store/slices/strategy/strategyThunks';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { linkVideoToStrategy } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
+import { useTheme } from 'styled-components';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -34,11 +35,18 @@ export default function CreateStrategyForm({
   onCancel, 
   editingStrategy, 
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const strategyFolders = useSelector(state => state.strategy.foldersFlat) || [];
   const strategyLoading = useSelector(state => state.strategy.loading);
+  const placeholderColor = theme?.colors?.inputPlaceholder || '#94a3b8';
+  const iconColor = theme?.colors?.textMuted || '#9e9e9e';
+  const chevronColor = theme?.colors?.textSecondary || '#666';
+  const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
+  const onWarningColor = theme?.colors?.onWarning || '#fff';
   
   const [name, setName] = useState(editingStrategy ? editingStrategy.nombre : '');
   const [folderId, setFolderId] = useState(editingStrategy?.folder?._id || editingStrategy?.folder || '');
@@ -76,6 +84,10 @@ export default function CreateStrategyForm({
   // Estados para videos pendientes de asociar (para nuevas estrategias)
   const pendingVideoIds = useRef([]);
 
+  // Estado para admin: estrategia global
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(editingStrategy?.isGlobal || false);
+
   // Estados para carpetas de estrategia
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [loadingField, setLoadingField] = useState(false);
@@ -91,16 +103,51 @@ export default function CreateStrategyForm({
     }
   }, [folderId, strategyFolders]);
 
-  // Cargar carpetas de estrategia - solo una vez
+  // Cargar carpetas de estrategia y detectar admin
   useEffect(() => {
-    const loadFolders = async () => {
+    const loadFoldersAndRole = async () => {
       if (!foldersLoadedRef.current && strategyFolders.length === 0) {
         foldersLoadedRef.current = true;
-        dispatch(fetchStrategyFoldersFlat());
+        dispatch(fetchStrategyFoldersFlat({ lang: i18n.language }));
       }
+
+      try {
+        const str = await AsyncStorage.getItem('usuario');
+        if (str) {
+          const parsed = JSON.parse(str);
+          if (parsed?.role === 'admin') {
+            setIsAdmin(true);
+            if (!editingStrategy) setIsGlobal(true);
+            return;
+          }
+        }
+
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+              + '='.repeat((4 - parts[1].length % 4) % 4);
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            let decoded = ''; let i = 0;
+            while (i < b64.length) {
+              const e1 = chars.indexOf(b64[i++]), e2 = chars.indexOf(b64[i++]);
+              const e3 = chars.indexOf(b64[i++]), e4 = chars.indexOf(b64[i++]);
+              decoded += String.fromCharCode((e1 << 2) | (e2 >> 4));
+              if (e3 !== 64) decoded += String.fromCharCode(((e2 & 15) << 4) | (e3 >> 2));
+              if (e4 !== 64) decoded += String.fromCharCode(((e3 & 3) << 6) | e4);
+            }
+            const payload = JSON.parse(decoded);
+            if (payload?.role === 'admin') {
+              setIsAdmin(true);
+              if (!editingStrategy) setIsGlobal(true);
+            }
+          }
+        }
+      } catch {}
     };
-    loadFolders();
-  }, []);
+    loadFoldersAndRole();
+  }, [dispatch, editingStrategy, i18n.language, strategyFolders.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -139,6 +186,7 @@ export default function CreateStrategyForm({
       if (typeof draft.name === 'string') setName(draft.name);
       if (typeof draft.description === 'string') setDescription(draft.description);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
+      if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
@@ -175,6 +223,7 @@ export default function CreateStrategyForm({
       name,
       description,
       folderId,
+      isGlobal,
       fieldElements,
       fieldType,
       imagen,
@@ -219,6 +268,7 @@ export default function CreateStrategyForm({
             name,
             description,
             folderId,
+            isGlobal,
             fieldElements,
             fieldType,
             imagen,
@@ -239,6 +289,7 @@ export default function CreateStrategyForm({
       sandbox: false,
       // Pasar el ID de la estrategia si estamos editando, para poder asociar videos
       estrategiaId: editingStrategy?._id || editingStrategy?.id || null,
+      isGlobalStrategy: isGlobal && isAdmin,
     });
   };
 
@@ -269,6 +320,7 @@ export default function CreateStrategyForm({
         imagen: imagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
+        isGlobal: isAdmin ? isGlobal : false,
         // Incluir IDs de videos pendientes para asociar después de crear la estrategia
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
@@ -295,11 +347,11 @@ export default function CreateStrategyForm({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#2856a2', '#1a3d73']}
+        colors={[theme?.colors?.surface || '#111827', theme?.colors?.surfaceAlt || '#0f172a']}
         style={[styles.headerGradient, { paddingTop: Math.max(insets.top, 16) }]}
       >
         <TouchableOpacity onPress={handleCancelPress} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={26} color="#fff" />
+          <Ionicons name="arrow-back" size={26} color={theme?.colors?.text || '#fff'} />
         </TouchableOpacity>
         <Text style={styles.title}>{editingStrategy ? t('strategy.editStrategy') : t('strategy.createStrategy')}</Text>
       </LinearGradient>
@@ -314,7 +366,7 @@ export default function CreateStrategyForm({
           <TextInput
             style={styles.input}
             placeholder={t('strategy.examplePlaceholder')}
-            placeholderTextColor="#bbb"
+            placeholderTextColor={placeholderColor}
             value={name}
             onChangeText={setName}
           />
@@ -325,13 +377,35 @@ export default function CreateStrategyForm({
             onPress={() => setShowFolderModal(true)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Ionicons name="folder-outline" size={18} color="#9e9e9e" style={{ marginRight: 8 }} />
+              <Ionicons name="folder-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
               <Text style={[styles.typeSelectorText, folderName && styles.typeSelectorTextSelected]}>
                 {folderName || t('folders.selectFolder')}
               </Text>
             </View>
-            <Ionicons name="chevron-down" size={20} color="#666" />
+            <Ionicons name="chevron-down" size={20} color={chevronColor} />
           </TouchableOpacity>
+
+          {isAdmin && (
+            <View style={{ marginTop: 2, marginBottom: 4 }}>
+              <Text style={[styles.inputLabel, { marginBottom: 6 }]}>Visibilidad</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
+                  onPress={() => setIsGlobal(false)}
+                >
+                  <Ionicons name="person-outline" size={16} color={!isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: !isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.myStrategies')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: isGlobal ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: isGlobal ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
+                  onPress={() => setIsGlobal(true)}
+                >
+                  <Ionicons name="globe-outline" size={16} color={isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.appStrategies')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.formCard}>
@@ -340,7 +414,7 @@ export default function CreateStrategyForm({
           <TextInput
             style={[styles.input, styles.textarea]}
             placeholder={t('strategy.descriptionPlaceholder')}
-            placeholderTextColor="#bbb"
+            placeholderTextColor={placeholderColor}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -358,15 +432,15 @@ export default function CreateStrategyForm({
                 <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
                 <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} />
                 <TouchableOpacity style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} onPress={handleOpenField}>
-                    <Ionicons name="pencil-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={styles.saveButtonText}>{t('strategy.editGraphic')}</Text>
+                    <Ionicons name="pencil-outline" size={18} color={onWarningColor} style={{ marginRight: 8 }} />
+                    <Text style={[styles.saveButtonText, { color: onWarningColor }]}>{t('strategy.editGraphic')}</Text>
                   </TouchableOpacity>
               </>
             ) : (
               <TouchableOpacity style={styles.addButton} onPress={handleOpenField}>
-                <Ionicons name="document-outline" size={40} color="#2196F3" />
+                <Ionicons name="document-outline" size={40} color={theme?.colors?.primary || '#2196F3'} />
                 <Text style={styles.addButtonText}>{t('strategy.addGraphic')}</Text>
-                <Text style={[styles.addButtonText, { fontSize: 13, color: '#9e9e9e', marginTop: 4 }]}>
+                <Text style={[styles.addButtonText, { fontSize: 13, color: theme?.colors?.textMuted || '#9e9e9e', marginTop: 4 }]}>
                   {t('strategy.touchToOpenEditor')}
                 </Text>
               </TouchableOpacity>
@@ -387,7 +461,7 @@ export default function CreateStrategyForm({
           onPress={handleSave}
           disabled={strategyLoading}
         >
-          <Ionicons name="save-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Ionicons name="save-outline" size={18} color={onPrimaryColor} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
             {strategyLoading ? t('strategy.saving') : (editingStrategy ? t('edition.saveChanges') : t('strategy.saveStrategy'))}
           </Text>
@@ -402,20 +476,23 @@ export default function CreateStrategyForm({
           setFolderId(id || '');
           setFolderName(name || '');
         }}
-        folders={strategyFolders}
+        folders={isAdmin ? strategyFolders : strategyFolders.filter(f => !f.isGlobal)}
         selectedFolderId={folderId || null}
         title={t('folders.selectFolder')}
-        accentColor="#8B5CF6"
-        onCreateFolder={async ({ nombre, parentFolder, color }) => {
-          await dispatch(createStrategyFolder({ nombre, parentFolder, color })).unwrap();
-          dispatch(fetchStrategyFoldersFlat());
+        accentColor={theme?.colors?.primary || '#8B5CF6'}
+        isAdmin={isAdmin}
+        defaultIsGlobal={isGlobal}
+        onCreateFolder={async ({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations }) => {
+          await dispatch(createStrategyFolder({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations })).unwrap();
+          dispatch(fetchStrategyFoldersFlat({ lang: i18n.language }));
+          if (folderIsGlobal) dispatch(fetchGlobalFolders({ lang: i18n.language }));
         }}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -426,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     paddingHorizontal: 0,
-    backgroundColor: "#f5f5f5"
+    backgroundColor: theme?.colors?.backgroundAlt || '#111a30'
   },
   backButton: {
     padding: 4,
@@ -441,13 +518,13 @@ const styles = StyleSheet.create({
   subTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: "#757575",
+    color: theme?.colors?.textMuted || '#757575',
     textTransform: 'uppercase',
     marginBottom: 16,
     letterSpacing: 0.5,
   },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
     padding: 20,
     borderRadius: 12,
     shadowColor: "#000",
@@ -458,22 +535,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginHorizontal: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme?.colors?.border || '#334155',
   },
   input: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
     borderRadius: 8,
     fontSize: 15,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e8e8e8",
-    color: "#000",
+    borderColor: theme?.colors?.inputBorder || '#334155',
+    color: theme?.colors?.text || '#e2e8f0',
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: "#424242",
+    color: theme?.colors?.textSecondary || '#94a3b8',
     marginBottom: 8,
   },
   textarea: {
@@ -485,20 +564,20 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   addButton: {
-    backgroundColor: "#fff",
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
     borderRadius: 12,
     paddingVertical: 48,
     paddingHorizontal: 24,
     marginTop: 8,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: "#2196F3",
+    borderColor: theme?.colors?.primary || '#3b82f6',
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
-    color: "#2196F3",
+    color: theme?.colors?.primary || '#3b82f6',
     fontWeight: "600",
     fontSize: 15,
     textAlign: "center",
@@ -506,33 +585,34 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   editButton: {
-    flex: 1,
-    backgroundColor: "#d39625ff",
+    backgroundColor: theme?.colors?.warning || '#d97706',
     borderRadius: 8,
     paddingVertical: 14,
+    paddingHorizontal: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
-    maxWidth: 200,
+    minWidth: 200,
+    maxWidth: 260,
   },
   saveButton: {
     flex: 1,
-    backgroundColor: "#2196F3",
+    backgroundColor: theme?.colors?.primary || '#2196F3',
     borderRadius: 8,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
-    shadowColor: "#2196F3",
+    shadowColor: theme?.colors?.primary || '#2196F3',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     maxWidth: 200,
   },
   saveButtonText: {
-    color: "#fff",
+    color: theme?.colors?.onPrimary || '#fff',
     fontWeight: "600",
     fontSize: 16,
     textAlign: "center",
@@ -551,9 +631,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: theme?.colors?.border || '#334155',
     gap: 12,
     elevation: 8,
     shadowColor: '#000',
@@ -563,17 +643,17 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 0.4,
-    backgroundColor: "#fff",
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: theme?.colors?.border || '#334155',
     maxWidth: 200,
   },
   cancelButtonText: {
-    color: "#424242",
+    color: theme?.colors?.textSecondary || '#94a3b8',
     fontWeight: "500",
     fontSize: 16,
     letterSpacing: 0.2,
@@ -586,7 +666,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: 320,
-    backgroundColor: '#fff',
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
     borderRadius: 16,
     padding: 26,
     alignItems: 'center',
@@ -596,55 +676,55 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 20,
     marginBottom: 12,
-    color: "#e65100"
+    color: theme?.colors?.text || '#e2e8f0'
   },
   closeModalBtn: {
-    backgroundColor: "#1976d2",
+    backgroundColor: theme?.colors?.primary || '#2563eb',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 24,
     marginTop: 4,
   },
   closeModalBtnText: {
-    color: "#fff",
+    color: theme?.colors?.onPrimary || '#fff',
     fontWeight: "bold",
     fontSize: 15,
     letterSpacing: 0.2
   },
   typeSelector: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e8e8e8",
+    borderColor: theme?.colors?.inputBorder || '#334155',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   typeSelectorText: {
     fontSize: 15,
-    color: "#9e9e9e",
+    color: theme?.colors?.textMuted || '#94a3b8',
   },
   typeSelectorTextSelected: {
-    color: "#000",
+    color: theme?.colors?.text || '#e2e8f0',
   },
   typeOption: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme?.colors?.border || '#334155',
   },
   typeOptionText: {
     fontSize: 16,
-    color: '#222',
+    color: theme?.colors?.text || '#e2e8f0',
   },
   createTypeButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme?.colors?.success || '#16a34a',
     borderRadius: 8,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -652,21 +732,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createTypeButtonText: {
-    color: '#fff',
+    color: theme?.colors?.onSuccess || '#fff',
     fontWeight: '600',
     fontSize: 15,
   },
   modalInput: {
     width: '100%',
-    backgroundColor: "#f8f8f8",
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
     borderRadius: 8,
     fontSize: 15,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e8e8e8",
-    color: "#000",
+    borderColor: theme?.colors?.inputBorder || '#334155',
+    color: theme?.colors?.text || '#e2e8f0',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -675,25 +755,25 @@ const styles = StyleSheet.create({
   },
   modalCancelBtn: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme?.colors?.surfaceAlt || '#1f2937',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
   modalCancelBtnText: {
-    color: '#666',
+    color: theme?.colors?.textSecondary || '#94a3b8',
     fontWeight: '600',
     fontSize: 15,
   },
   modalCreateBtn: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme?.colors?.primary || '#2563eb',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
   modalCreateBtnText: {
-    color: '#fff',
+    color: theme?.colors?.onPrimary || '#fff',
     fontWeight: '600',
     fontSize: 15,
   },
@@ -707,7 +787,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#1976d2',
+    color: theme?.colors?.primary || '#1976d2',
     fontWeight: '600',
   },
 });

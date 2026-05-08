@@ -6,7 +6,7 @@ import {
   fetchStrategyFolders, fetchStrategyFolderById, fetchStrategyFoldersFlat,
   createStrategyFolder, updateStrategyFolder, deleteStrategyFolder,
   moveStrategyToFolder, duplicateStrategyToFolder, duplicateGlobalStrategy,
-  fetchGlobalStrategies,
+  fetchGlobalStrategies, fetchGlobalFolders,
 } from './strategyThunks';
 
 const strategySlice = createSlice({
@@ -15,6 +15,7 @@ const strategySlice = createSlice({
     strategies: [],
     strategy: null,
     globalStrategies: [],
+    globalFolders: [],
     folders: [],
     foldersFlat: [],
     currentFolder: null,
@@ -46,6 +47,7 @@ const strategySlice = createSlice({
       .addCase(fetchEstrategia.rejected, (s, a) => { s.loading = false; s.error = a.error.message; })
 
       .addCase(fetchGlobalStrategies.fulfilled, (s, a) => { s.globalStrategies = a.payload; })
+      .addCase(fetchGlobalFolders.fulfilled, (s, a) => { s.globalFolders = a.payload; })
 
       .addCase(createEstrategia.pending, (s) => { s.loading = true; })
       .addCase(createEstrategia.fulfilled, (s, a) => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Dimensions } from 'react-native';
+import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '@/vendor/shared/appLayout';
@@ -841,7 +842,7 @@ Alert.alert(
               top: 40,
               right: 32,
               zIndex: 20,
-              backgroundColor: '#fff',
+              backgroundColor: theme.colors.surfaceAlt,
               borderRadius: 24,
               width: 36,
               height: 36,
@@ -852,7 +853,7 @@ Alert.alert(
             onPress={() => setModalVisible(false)}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 26, color: '#333', fontWeight: 'bold' }}>×</Text>
+            <Text style={{ fontSize: 26, color: theme.colors.text, fontWeight: 'bold' }}>×</Text>
           </TouchableOpacity>
           {selectedImage &&
             <ImageZoom
@@ -879,7 +880,7 @@ Alert.alert(
             </ImageZoom>
           }
           <Text style={{
-            position: 'absolute', bottom: 24, color: '#fff', textAlign: 'center', width: '100%', fontWeight: 'bold'
+            position: 'absolute', bottom: 24, color: theme.colors.onPrimary, textAlign: 'center', width: '100%', fontWeight: 'bold'
           }}>
             {t('exercise.zoomHint')}
           </Text>
@@ -1016,17 +1017,17 @@ function FolderManagement({
       <View style={{ flex: 1, backgroundColor: '#f8f9fa', padding: 16 }}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' }}>
-          <TouchableOpacity onPress={handleBack} style={{ marginRight: 16, padding: 8, borderRadius: 8, backgroundColor: '#fff', elevation: 2 }}>
+          <TouchableOpacity onPress={handleBack} style={{ marginRight: 16, padding: 8, borderRadius: 8, backgroundColor: theme.colors.surfaceAlt, elevation: 2 }}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', flex: 1 }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.text, flex: 1 }}>
             {t('folders.manageFolders')}
           </Text>
           {/* Ocultar botón crear subcarpeta si estamos en depth >= 2 (max 2 niveles) */}
           {currentDepth < 2 && (
-            <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: '#4CAF50', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
+            <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
+              <Ionicons name="add" size={20} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
+              <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
                 {currentFolderId ? t('folders.createSubfolder') : t('common.create')}
               </Text>
             </TouchableOpacity>
@@ -1035,7 +1036,7 @@ function FolderManagement({
 
         {/* Breadcrumbs */}
         {folderPath.length > 0 && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: '#fff', borderRadius: 10, marginBottom: 12, gap: 4, elevation: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: theme.colors.surfaceAlt, borderRadius: 10, marginBottom: 12, gap: 4, elevation: 1 }}>
             <TouchableOpacity onPress={navigateToRoot} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 6 }}>
               <Ionicons name="home" size={14} color="#3578e5" />
               <Text style={{ fontSize: 12, color: '#3578e5', fontWeight: '600' }}>{t('folders.root')}</Text>
@@ -1067,12 +1068,12 @@ function FolderManagement({
 
         <KeyboardAwareScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           {creatingFolder && (
-            <View style={{ marginBottom: 20, backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#4CAF50' }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 }}>
+            <View style={{ marginBottom: 20, backgroundColor: theme.colors.surfaceAlt, borderRadius: 12, padding: 16, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#4CAF50' }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text, marginBottom: 12 }}>
                 {currentFolderId ? t('folders.createSubfolder') : t('folders.createFolder')}
               </Text>
               <TextInput
-                style={{ borderWidth: 2, borderColor: '#4CAF50', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, backgroundColor: '#fff', marginBottom: 12 }}
+                style={{ borderWidth: 2, borderColor: '#4CAF50', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, backgroundColor: theme.colors.surfaceAlt, marginBottom: 12 }}
                 value={newFolderName}
                 onChangeText={setNewFolderName}
                 placeholder={t('folders.folderNamePlaceholder')}
@@ -1084,10 +1085,10 @@ function FolderManagement({
                 ))}
               </View>
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-                <TouchableOpacity onPress={() => { setCreatingFolder(false); setNewFolderName(''); }} style={{ backgroundColor: '#f5f5f5', borderRadius: 8, padding: 12 }}>
+                <TouchableOpacity onPress={() => { setCreatingFolder(false); setNewFolderName(''); }} style={{ backgroundColor: theme.colors.surface, borderRadius: 8, padding: 12 }}>
                   <Ionicons name="close" size={20} color="#666" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCreate} style={{ backgroundColor: '#4CAF50', borderRadius: 8, padding: 12 }}>
+                <TouchableOpacity onPress={handleCreate} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, padding: 12 }}>
                   <Ionicons name="checkmark" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -1100,12 +1101,12 @@ function FolderManagement({
               <Text style={{ color: '#666', fontSize: 18, fontStyle: 'italic', marginTop: 16, textAlign: 'center' }}>
                 {currentFolderId ? t('folders.emptyFolder') : t('folders.noFolders')}
               </Text>
-              {!currentFolderId && <Text style={{ color: '#999', fontSize: 14, marginTop: 8, textAlign: 'center' }}>{t('folders.useCreateButton')}</Text>}
+              {!currentFolderId && <Text style={{ color: theme.colors.textSecondary, fontSize: 14, marginTop: 8, textAlign: 'center' }}>{t('folders.useCreateButton')}</Text>}
             </View>
           )}
 
           {displayedFolders.map((folder) => (
-            <View key={folder._id} style={{ marginBottom: 16, backgroundColor: '#fff', borderRadius: 12, padding: 16, elevation: 3, borderLeftWidth: 4, borderLeftColor: folder.color || '#2196F3' }}>
+            <View key={folder._id} style={{ marginBottom: 16, backgroundColor: theme.colors.surfaceAlt, borderRadius: 12, padding: 16, elevation: 3, borderLeftWidth: 4, borderLeftColor: folder.color || '#2196F3' }}>
               {editingFolder?._id === folder._id ? (
                 <View>
                   <TextInput
@@ -1121,10 +1122,10 @@ function FolderManagement({
                     ))}
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-                    <TouchableOpacity onPress={() => setEditingFolder(null)} style={{ backgroundColor: '#f5f5f5', borderRadius: 8, padding: 12 }}>
+                    <TouchableOpacity onPress={() => setEditingFolder(null)} style={{ backgroundColor: theme.colors.surface, borderRadius: 8, padding: 12 }}>
                       <Ionicons name="close" size={20} color="#666" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleUpdate} style={{ backgroundColor: '#4CAF50', borderRadius: 8, padding: 12 }}>
+                    <TouchableOpacity onPress={handleUpdate} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, padding: 12 }}>
                       <Ionicons name="checkmark" size={20} color="#fff" />
                     </TouchableOpacity>
                   </View>
@@ -1137,11 +1138,11 @@ function FolderManagement({
                 >
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: (folder.color || '#2196F3') + '18', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="folder" size={26} color={folder.color || '#2196F3'} />
+                      <Ionicons name="folder" size={26} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#333' }}>{folder.nombre}</Text>
-                      <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: theme.mode === 'dark' ? theme.colors.text : '#000' }}>{folder.nombre}</Text>
+                      <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
                         {folder.exerciseCount || 0} {t('folders.items')} {folder.subfolderCount > 0 ? `· ${folder.subfolderCount} ${t('folders.subfolders')}` : ''}
                       </Text>
                     </View>
@@ -1166,7 +1167,7 @@ function FolderManagement({
 }
 
 // Mejorada: solo muestra el campo si hay elementosCampo y tipoCampo
-function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions }) {
+function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions, styles }) {
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || exercise.imagen;
@@ -1315,6 +1316,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const loading = useSelector(state => state.exercise.loading);
   const foldersLoading = useSelector(state => state.exercise.foldersLoading);
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [creating, setCreating] = useState(() => {
     // En web esta lista se desmonta al navegar al editor del campo y se
     // remonta al volver. Restauramos modo edición/creación para que el
@@ -1819,7 +1822,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
       activeOpacity={0.7}
     >
       <View style={[styles.mvFolderIconContainer, { backgroundColor: folder.color || '#3B82F6' }]}>
-        <Feather name="folder" size={28} color="#fff" />
+        <Feather name="folder" size={28} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
       </View>
       <View style={styles.mvFolderContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1854,8 +1857,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
     return (
       <AppLayout>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor:'#f2f6fc' }}>
-          <ActivityIndicator color="#2474E5" size="large" />
-          <Text style={{ marginTop: 16, color: '#2474E5', fontWeight: 'bold', fontSize: 16 }}>{t('exercise.loading')}</Text>
+          <ActivityIndicator color="#1d4ed8" size="large" />
+          <Text style={{ marginTop: 16, color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('exercise.loading')}</Text>
         </View>
       </AppLayout>
     );
@@ -1932,7 +1935,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="folder-plus" size={20} color="#fff" />
+                  <Feather name="folder-plus" size={20} color="#000" />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -1940,45 +1943,12 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 style={styles.mvCreateButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="add" size={20} color="#fff" />
+                <Ionicons name="add" size={20} color="#000" />
                 {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('exercise.exercise')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Filter tabs */}
-          <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, paddingHorizontal: 2 }}>
-            {[
-              { key: 'all', label: t('exercise.allExercises'), icon: 'list', activeColor: '#3578e5' },
-              { key: 'mine', label: t('exercise.myExercises'), icon: 'person-outline', activeColor: '#6366f1' },
-              { key: 'global', label: t('exercise.appExercises'), icon: 'globe-outline', activeColor: '#16a34a' },
-            ].map(tab => {
-              const isActive = listFilter === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  onPress={() => {
-                    setListFilter(tab.key);
-                    navigateToRoot();
-                  }}
-                  style={{
-                    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                    gap: 5, paddingVertical: 8, borderRadius: 12, marginBottom: 16,
-                    backgroundColor: isActive ? tab.activeColor : 'rgba(255,255,255,0.22)',
-                    borderWidth: isActive ? 0 : 1,
-                    borderColor: 'rgba(255,255,255,0.3)'
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name={tab.icon} size={14} color={isActive ? '#fff' : 'rgba(0, 2, 134, 0.9)'} />
-                  <Text style={{ fontSize: IS_MOBILE ? 11 : 12, fontWeight: '700', color: isActive ? '#fff' : 'rgba(0, 0, 0, 0.9)' }}>
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          
           {/* Breadcrumb estilo myVideos */}
           <View style={styles.mvBreadcrumb}>
             <TouchableOpacity 
@@ -2029,6 +1999,37 @@ export default function ExerciseList({ navigation: navigationProp }) {
             )}
           </View>
         </View>
+
+        {/* Filter tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.mvFilterBar}
+          style={styles.mvFilterScroll}
+        >
+          {[
+            { key: 'all', label: t('exercise.allExercises') },
+            { key: 'mine', label: t('exercise.myExercises') },
+            { key: 'global', label: t('exercise.appExercises') },
+          ].map(tab => {
+            const isActive = listFilter === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => {
+                  setListFilter(tab.key);
+                  navigateToRoot();
+                }}
+                style={[styles.mvFilterTab, isActive && styles.mvFilterTabActive]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.mvFilterTabText, isActive && styles.mvFilterTabTextActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* Content */}
         {(loading || foldersLoading) ? (
@@ -2092,6 +2093,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                         onLongPress={() => {}}
                         isGrid={false}
                         onOpenOptions={openOptionsModal}
+                        styles={styles}
                       />
                     </View>
                   ))}
@@ -2159,7 +2161,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     setCreating(true);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: '#FEF3C7' }]}>
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.warningSoft }]}>
                     <Feather name="edit-3" size={20} color="#D97706" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
@@ -2199,7 +2201,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     }
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: '#F0F9FF' }]}>
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.infoSoft }]}>
                     <Feather name="copy" size={20} color="#0EA5E9" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
@@ -2215,7 +2217,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     setShowMoveToFolder(true);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: '#FFF7ED' }]}>
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.warningSoft }]}>
                     <Feather name="folder" size={20} color="#F97316" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
@@ -2232,7 +2234,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     handleDelete(selectedExerciseForOptions);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: '#FEF2F2' }]}>
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.errorSoft }]}>
                     <Feather name="trash-2" size={20} color="#EF4444" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
@@ -2296,7 +2298,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                         if (menuFolder) handleEditFolder(menuFolder);
                       }}
                     >
-                      <View style={[styles.mvActionIcon, { backgroundColor: '#FFF7ED' }]}>
+                      <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.warningSoft }]}>
                         <Feather name="edit-2" size={20} color="#F97316" />
                       </View>
                       <View style={styles.mvActionTextContainer}>
@@ -2315,7 +2317,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     if (menuFolder) handleDeleteFolder(menuFolder);
                   }}
                 >
-                  <View style={[styles.mvActionIcon, { backgroundColor: '#FEF2F2' }]}>
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.errorSoft }]}>
                     <Feather name="trash-2" size={20} color="#EF4444" />
                   </View>
                   <View style={styles.mvActionTextContainer}>
@@ -2346,7 +2348,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
               {/* Header */}
               <View style={styles.mvCreateModalHeader}>
                 <View style={styles.mvCreateModalHeaderLeft}>
-                  <View style={[styles.mvCreateModalIconContainer, { backgroundColor: '#FFF7ED' }]}>
+                  <View style={[styles.mvCreateModalIconContainer, { backgroundColor: theme.colors.warningSoft }]}>
                     <Feather name="edit-2" size={IS_MOBILE ? 18 : 24} color="#F97316" />
                   </View>
                   <View>
@@ -2388,7 +2390,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                       <View style={{ marginTop: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                           <Ionicons name="language-outline" size={14} color="#1e40af" />
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#1e40af', textTransform: 'uppercase', letterSpacing: 0.5 }}>English</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.primaryHover, textTransform: 'uppercase', letterSpacing: 0.5 }}>English</Text>
                         </View>
                         <TextInput
                           style={styles.mvCreateInput}
@@ -2534,7 +2536,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                       <View style={{ marginTop: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                           <Ionicons name="language-outline" size={14} color="#1e40af" />
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#1e40af', textTransform: 'uppercase', letterSpacing: 0.5 }}>English</Text>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: theme.colors.primaryHover, textTransform: 'uppercase', letterSpacing: 0.5 }}>English</Text>
                         </View>
                         <TextInput
                           style={styles.mvCreateInput}
@@ -2606,7 +2608,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
           <View style={styles.mvModalBackdrop}>
             <View style={styles.mvFormModal}>
               <View style={styles.mvFormModalHeader}>
-                <View style={[styles.mvFormModalIcon, { backgroundColor: '#FFF7ED' }]}>
+                <View style={[styles.mvFormModalIcon, { backgroundColor: theme.colors.warningSoft }]}>
                   <Feather name="folder" size={24} color="#F97316" />
                 </View>
                 <Text style={styles.mvFormModalTitle}>{t('folders.moveToFolder')}</Text>
@@ -2618,7 +2620,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   style={styles.mvFolderSelectItem}
                   onPress={() => handleMoveToFolder(null)}
                 >
-                  <View style={[styles.mvFolderSelectIcon, { backgroundColor: '#F1F5F9' }]}>
+                  <View style={[styles.mvFolderSelectIcon, { backgroundColor: theme.colors.backgroundAlt }]}>
                     <Feather name="home" size={18} color="#64748B" />
                   </View>
                   <Text style={styles.mvFolderSelectText}>{t('folders.root')}</Text>
@@ -2675,7 +2677,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 }
 
 const isWeb = Platform.OS === 'web';
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2693,13 +2695,13 @@ const styles = StyleSheet.create({
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
     flex: 1,
     maxWidth: 200,
   },
@@ -2715,18 +2717,18 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     marginLeft: 7,
-    color: "#2474E5",
+    color: theme.colors.primary,
     fontWeight: "bold",
     width: 120,
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     paddingVertical: Platform.OS === 'ios' ? 8 : 7,
     paddingHorizontal: 16,
     borderRadius: 22,
-    shadowColor: '#2856a2',
+    shadowColor: theme.colors.primaryHover,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.16,
     shadowRadius: 8,
@@ -2737,7 +2739,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   createButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: 'bold',
     fontSize: 16,
     letterSpacing: 0.25,
@@ -2748,15 +2750,15 @@ const styles = StyleSheet.create({
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     paddingHorizontal: 12,
     minHeight: 74,
     marginBottom: 8,
-    shadowColor: '#222',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
@@ -2781,8 +2783,8 @@ const styles = StyleSheet.create({
     borderRadius: 10, // Bordes más pequeños para móvil
   },
   exerciseCardPressed: {
-    backgroundColor: '#eaf2fb',
-    borderColor: '#b5d6fa',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primarySoft,
     shadowOpacity: 0.18,
     elevation: 4,
   },
@@ -2805,12 +2807,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2856a2',
+    color: theme.colors.primaryHover,
     marginBottom: 2,
     letterSpacing: 0.25,
     ...(Platform.OS === 'web'
       ? { textShadow: '0 1px 1px #e6eefc' }
-      : { textShadowColor: '#e6eefc', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }),
+      : { textShadowColor: theme.colors.primarySoft, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }),
   },
   cardTitleMobile: {
     fontSize: 13,
@@ -2823,7 +2825,7 @@ const styles = StyleSheet.create({
   },
   cardDuration: {
     fontSize: 13,
-    color: '#4f6882',
+    color: theme.colors.textSecondary,
     marginTop: 0,
     fontWeight: '500',
   },
@@ -2837,8 +2839,8 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
-    backgroundColor: '#eee',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignSelf: 'flex-start'
   },
   cardImageMobile: {
@@ -2849,7 +2851,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#8fa0b8',
+    color: theme.colors.textMuted,
     marginBottom: 20,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -2860,21 +2862,21 @@ const styles = StyleSheet.create({
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f6fc',
+    backgroundColor: theme.colors.surfaceAlt,
     padding: 24,
   },
   
   // Nuevos estilos profesionales para el detalle
   detailBackground: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     padding: 16,
   },
   detailCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -2898,7 +2900,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerGradient: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primaryHover,
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
@@ -2908,7 +2910,7 @@ const styles = StyleSheet.create({
   detailTitle: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#ffffff',
+    color: theme.colors.onPrimary,
     flex: 1,
     marginRight: 16,
   },
@@ -2916,7 +2918,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   durationBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -2924,13 +2926,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   durationText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     marginLeft: 6,
     fontSize: 14,
   },
   fieldContainer: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     marginHorizontal: 24,
     borderRadius: 16,
     padding: 16,
@@ -2966,25 +2968,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   playersStat: {
     borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+    borderLeftColor: theme.colors.success,
   },
   teamsStat: {
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: theme.colors.warning,
   },
   dimensionsStat: {
     borderLeftWidth: 4,
-    borderLeftColor: '#673AB7',
+    borderLeftColor: theme.colors.purple,
   },
   statContent: {
     marginLeft: 12,
@@ -2992,22 +2994,22 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   detailsSection: {
     gap: 16,
   },
   detailCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   detailCardHeader: {
     flexDirection: 'row',
@@ -3017,19 +3019,19 @@ const styles = StyleSheet.create({
   detailCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.text,
     marginLeft: 8,
   },
   detailCardContent: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   actionSection: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -3037,14 +3039,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primaryHover,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
-    shadowColor: '#2563eb',
+    shadowColor: theme.colors.primaryHover,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3056,13 +3058,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
   },
   secondaryButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surfaceAlt,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -3070,7 +3072,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: theme.colors.primaryHover,
     flex: 1,
   },
   secondaryButtonMobile: {
@@ -3078,20 +3080,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   secondaryButtonText: {
-    color: '#2563eb',
+    color: theme.colors.primaryHover,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
   },
   backButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primaryHover,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
-    shadowColor: '#2563eb',
+    shadowColor: theme.colors.primaryHover,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3102,7 +3104,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   backButtonText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
@@ -3112,10 +3114,10 @@ const styles = StyleSheet.create({
   detailContainer: {
     marginTop: 12,
     width: '100%',
-    backgroundColor: '#f9fbfe',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 18,
     padding: 26,
-    shadowColor: '#2856a2',
+    shadowColor: theme.colors.primaryHover,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.09,
     shadowRadius: 6,
@@ -3133,7 +3135,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontWeight: '600',
-    color: '#355179',
+    color: theme.colors.primary,
     minWidth: 100,
     fontSize: 16,
   },
@@ -3142,7 +3144,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   detailValue: {
-    color: '#333',
+    color: theme.colors.text,
     fontSize: 16,
     flex: 1,
     flexWrap: 'wrap'
@@ -3156,9 +3158,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginTop: 16,
     marginBottom: 10,
-    backgroundColor: '#eee',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
     alignSelf: 'center'
   },
   detailImageMobile: {
@@ -3216,8 +3218,8 @@ const styles = StyleSheet.create({
   manageTypesButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderColor: '#ddd',
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -3230,7 +3232,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   manageTypesButtonText: {
-    color: '#666',
+    color: theme.colors.textMuted,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3241,7 +3243,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -3260,12 +3262,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   modalTitleMobile: {
     fontSize: 18,
@@ -3282,7 +3284,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyTypesText: {
-    color: '#666',
+    color: theme.colors.textMuted,
     fontSize: 16,
     fontStyle: 'italic',
   },
@@ -3292,7 +3294,7 @@ const styles = StyleSheet.create({
   editingTypeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     padding: 12,
     gap: 12,
@@ -3300,12 +3302,12 @@ const styles = StyleSheet.create({
   typeNameInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   typeNameInputMobile: {
     fontSize: 14,
@@ -3316,12 +3318,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cancelEditButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surface,
     borderRadius: 6,
     padding: 8,
   },
   saveEditButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
     borderRadius: 6,
     padding: 8,
   },
@@ -3329,7 +3331,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     padding: 12,
   },
@@ -3337,14 +3339,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   typeTag: {
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     alignSelf: 'flex-start',
   },
   typeTagText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -3353,12 +3355,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   editTypeButton: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: theme.colors.infoSoft,
     borderRadius: 6,
     padding: 8,
   },
   deleteTypeButton: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: theme.colors.errorSoft,
     borderRadius: 6,
     padding: 8,
   },
@@ -3367,12 +3369,12 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
     marginRight: 8,
   },
   filterButtonMobile: {
@@ -3382,12 +3384,12 @@ const styles = StyleSheet.create({
   },
   filterButtonText: {
     marginLeft: 7,
-    color: "#2474E5",
+    color: theme.colors.primary,
     fontWeight: "bold",
     fontSize: 14,
   },
   filterBadge: {
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -3396,24 +3398,24 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   filterBadgeText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 11,
     fontWeight: 'bold',
   },
   filtersSection: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 12,
     marginTop: 8,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#e3e8f0',
+    borderColor: theme.colors.border,
   },
   filtersSectionMobile: {
     marginHorizontal: 8,
@@ -3428,11 +3430,11 @@ const styles = StyleSheet.create({
   filtersTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   resultsCount: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   filtersGrid: {
@@ -3450,18 +3452,18 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
+    color: theme.colors.textMuted,
     marginBottom: 6,
   },
   filterInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    backgroundColor: '#f9f9f9',
-    color: '#333',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
   filterActions: {
     flexDirection: 'row',
@@ -3470,30 +3472,30 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
   },
   clearFiltersButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   clearFiltersText: {
-    color: '#666',
+    color: theme.colors.textMuted,
     fontSize: 14,
     fontWeight: '500',
   },
   closeFiltersButton: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   closeFiltersText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3501,22 +3503,22 @@ const styles = StyleSheet.create({
   // Estilos para selector de tipos
   typeSelectorButton: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   typeSelectorText: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
     flex: 1,
   },
   typeSelectorModal: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -3535,7 +3537,7 @@ const styles = StyleSheet.create({
   typeItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -3545,47 +3547,47 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderRadius: 4,
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   checkboxSelected: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   typeItemText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: theme.colors.border,
   },
   clearTypesButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   clearTypesText: {
-    color: '#666',
+    color: theme.colors.textMuted,
     fontSize: 14,
     fontWeight: '500',
   },
   confirmTypesButton: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   confirmTypesText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3595,11 +3597,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#eaf2fb",
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: "#b5d6fa",
+    borderColor: theme.colors.primarySoft,
   },
   mobileMenuOverlay: {
     flex: 1,
@@ -3607,7 +3609,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   mobileMenuContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34, // Para el notch en iOS
@@ -3624,13 +3626,13 @@ const styles = StyleSheet.create({
   mobileMenuItemText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     marginLeft: 16,
     fontWeight: '500',
   },
   mobileMenuDivider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.border,
     marginVertical: 8,
   },
 
@@ -3639,7 +3641,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -3647,14 +3649,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mobileMenuBadgeText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 10,
     fontWeight: 'bold',
   },
 
   // Badge para items del menú móvil
   mobileMenuItemBadge: {
-    backgroundColor: '#FF5722',
+    backgroundColor: theme.colors.error,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -3663,7 +3665,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   mobileMenuItemBadgeText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -3671,7 +3673,7 @@ const styles = StyleSheet.create({
   // --- Vista de cuadrícula/lista ---
   viewModeSwitch: {
     flexDirection: 'row',
-    backgroundColor: '#e6edf5',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 20,
     overflow: 'hidden',
     marginRight: 8,
@@ -3683,7 +3685,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   viewModeBtnActive: {
-    backgroundColor: '#2856a2',
+    backgroundColor: theme.colors.primaryHover,
   },
 
   // --- Estilos de Modal (copiados de training.js) ---
@@ -3694,24 +3696,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
     maxHeight: '90%',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
   },
   modalContentTablet: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '90%',
     maxWidth: 800,
     maxHeight: '95%',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
@@ -3725,12 +3727,12 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.backgroundAlt,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   modalBody: {
     paddingHorizontal: 24,
@@ -3739,22 +3741,22 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   modalEditButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   modalPdfButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#ffebee',
+    backgroundColor: theme.colors.errorSoft,
   },
   modalImageButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: theme.colors.successSoft,
   },
 
   // --- Estilos del detalle de ejercicio ---
@@ -3765,28 +3767,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     padding: 16,
     borderRadius: 12,
   },
   exerciseDetailTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 12,
     flex: 1,
   },
   exerciseDurationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e0f2fe',
+    backgroundColor: theme.colors.infoSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 6,
   },
   exerciseDurationText: {
-    color: '#3578e5',
+    color: theme.colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -3796,7 +3798,7 @@ const styles = StyleSheet.create({
   detailSectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 12,
   },
 
@@ -3815,11 +3817,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -3828,13 +3830,13 @@ const styles = StyleSheet.create({
 
   // --- Modal de opciones ---
   optionsModalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '80%',
     maxWidth: 320,
     elevation: 10,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -3845,24 +3847,24 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.backgroundAlt,
   },
   optionsModalOptionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1f2937',
+    color: theme.colors.text,
   },
   optionsModalOptionDanger: {
     borderBottomWidth: 0,
   },
   optionsModalOptionTextDanger: {
-    color: '#dc2626',
+    color: theme.colors.error,
   },
   optionsModalOptionCancel: {
     borderBottomWidth: 0,
   },
   optionsModalOptionTextCancel: {
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   
   // --- Estilos para Videos del Ejercicio ---
@@ -3874,10 +3876,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   videoCard: {
-    backgroundColor: '#fdf6f8',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#f6d6e1',
+    borderColor: theme.colors.errorSoft,
     padding: 18,
     flexBasis: '48%',
     maxWidth: '48%',
@@ -3895,13 +3897,13 @@ const styles = StyleSheet.create({
   videoCardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginTop: 8,
     textAlign: 'center',
   },
   videoCardDescription: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textMuted,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -3923,22 +3925,22 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   videoPlayBtn: {
-    backgroundColor: '#d81b60',
+    backgroundColor: theme.colors.error,
   },
   videoEditBtn: {
-    backgroundColor: '#fb8c00',
+    backgroundColor: theme.colors.warning,
   },
   videoDownloadBtn: {
-    backgroundColor: '#388e3c',
+    backgroundColor: theme.colors.success,
   },
   videoActionText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 12,
     fontWeight: '600',
   },
   noVideosText: {
     fontSize: 14,
-    color: '#999',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -3949,7 +3951,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: theme.colors.errorSoft,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
@@ -3965,7 +3967,7 @@ const styles = StyleSheet.create({
   videoModalContent: {
     width: '95%',
     maxWidth: 800,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -3975,10 +3977,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#2d2d2d',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   videoModalTitle: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
@@ -3997,14 +3999,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   videoLoadingText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     marginTop: 12,
     fontSize: 14,
   },
   videoPlayerContainer: {
     width: '100%',
     aspectRatio: 1.7778,
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.background,
   },
   videoPlayer: {
     width: '100%',
@@ -4023,10 +4025,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   videoModalDownloadBtn: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
   },
   videoModalBtnText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '600',
@@ -4047,11 +4049,11 @@ const styles = StyleSheet.create({
   },
   breadcrumbText: {
     fontSize: 14,
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '500',
   },
   breadcrumbTextActive: {
-    color: '#333',
+    color: theme.colors.text,
     fontWeight: '700',
   },
   foldersGrid: {
@@ -4062,16 +4064,16 @@ const styles = StyleSheet.create({
   folderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 12,
     elevation: 1,
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: theme.colors.border,
   },
   folderIconContainer: {
     width: 40,
@@ -4087,27 +4089,27 @@ const styles = StyleSheet.create({
   folderCardName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
   },
   folderCardCount: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
 
   // ===== Estilos myVideos para ExerciseList =====
   mvContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   
   // Header
   mvHeader: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: theme.colors.border,
   },
   mvHeaderTop: {
     flexDirection: 'row',
@@ -4123,16 +4125,16 @@ const styles = StyleSheet.create({
   mvHeaderTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   mvAddFolderButton: {
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     width: 40,
     height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3578e5',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -4141,18 +4143,20 @@ const styles = StyleSheet.create({
   mvCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22C55E',
+    backgroundColor: theme.colors.primary,
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 12,
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: theme.mode === 'dark' ? 1 : 0,
+    borderColor: theme.mode === 'dark' ? theme.colors.primarySoft : 'transparent',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: theme.mode === 'dark' ? 0.16 : 0.28,
+    shadowRadius: theme.mode === 'dark' ? 6 : 8,
+    elevation: theme.mode === 'dark' ? 3 : 4,
   },
   mvCreateButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -4160,7 +4164,7 @@ const styles = StyleSheet.create({
   // View mode switch
   mvViewModeSwitch: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -4171,7 +4175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mvViewModeBtnActive: {
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
   },
   
@@ -4190,17 +4194,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   mvBreadcrumbItemActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: theme.colors.primarySoft,
   },
   mvBreadcrumbText: {
     fontSize: 14,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     fontWeight: '500',
     maxWidth: 120,
     minWidth: 0,
   },
   mvBreadcrumbTextActive: {
-    color: '#3578e5',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 
@@ -4212,18 +4216,48 @@ const styles = StyleSheet.create({
   mvSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
   },
   mvSearchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1E293B',
+    color: theme.colors.text,
+  },
+
+  mvFilterScroll: {
+    flexGrow: 0,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  mvFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  mvFilterTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: theme.colors.backgroundAlt,
+    flexShrink: 0,
+  },
+  mvFilterTabActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  mvFilterTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+  },
+  mvFilterTabTextActive: {
+    color: theme.colors.onPrimary,
   },
   
   // Loading & Empty
@@ -4236,7 +4270,7 @@ const styles = StyleSheet.create({
   mvLoadingText: {
     marginTop: 16,
     fontSize: 15,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   mvEmptyContainer: {
@@ -4249,7 +4283,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -4257,13 +4291,13 @@ const styles = StyleSheet.create({
   mvEmptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   mvEmptySubtitle: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -4290,12 +4324,12 @@ const styles = StyleSheet.create({
   mvSectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   mvSectionBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -4303,7 +4337,7 @@ const styles = StyleSheet.create({
   mvSectionBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   mvItemsContainer: {
     gap: 10,
@@ -4313,11 +4347,11 @@ const styles = StyleSheet.create({
   mvFolderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 16,
     gap: 14,
-    shadowColor: '#1E293B',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -4336,7 +4370,7 @@ const styles = StyleSheet.create({
   mvFolderName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   mvFolderStats: {
@@ -4345,13 +4379,13 @@ const styles = StyleSheet.create({
   },
   mvFolderStatsText: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   mvCardMenuButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4365,7 +4399,7 @@ const styles = StyleSheet.create({
   
   // Action Sheet
   mvActionSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 34,
@@ -4375,18 +4409,18 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: theme.colors.backgroundAlt,
   },
   mvActionSheetTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
     maxWidth: '80%',
   },
   mvActionSheetSubtitle: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   mvActionSheetBody: {
     paddingVertical: 8,
@@ -4411,12 +4445,12 @@ const styles = StyleSheet.create({
   mvActionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 2,
   },
   mvActionDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     marginVertical: 8,
     marginHorizontal: 20,
   },
@@ -4425,18 +4459,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
   },
   mvActionSheetCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   
   // Form Modal
   mvFormModal: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
@@ -4451,7 +4485,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: theme.colors.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -4459,12 +4493,12 @@ const styles = StyleSheet.create({
   mvFormModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   mvFormModalSubtitle: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   mvFormModalFooter: {
     flexDirection: 'row',
@@ -4472,20 +4506,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: theme.colors.backgroundAlt,
   },
   mvSecondaryButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mvSecondaryButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   
   // Folder Select List
@@ -4501,7 +4535,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   mvFolderSelectIcon: {
     width: 36,
@@ -4514,7 +4548,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   
   // Create Folder Modal
@@ -4525,13 +4559,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mvCreateModalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '96%',
     maxWidth: 500,
     minHeight: 400,
     maxHeight: '85%',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
     shadowRadius: 25,
@@ -4539,13 +4573,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   mvCreateModalContainerMobile: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '92%',
     maxWidth: 400,
     minHeight: 450,
     maxHeight: '80%',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
     shadowRadius: 25,
@@ -4553,13 +4587,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   mvCreateModalContainerTablet: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 20,
     width: '94%',
     maxWidth: 900,
     minHeight: 700,
     maxHeight: '92%',
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
     shadowRadius: 25,
@@ -4573,7 +4607,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.backgroundAlt,
   },
   mvCreateModalHeaderLeft: {
     flexDirection: 'row',
@@ -4590,28 +4624,28 @@ const styles = StyleSheet.create({
   mvCreateModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   mvCreateModalTitleMobile: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   mvCreateModalSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   mvCreateModalSubtitleMobile: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   mvCreateModalCloseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4628,20 +4662,20 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   mvCreateCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   mvCreateCardMobile: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   mvCreateCardHeader: {
     flexDirection: 'row',
@@ -4652,7 +4686,7 @@ const styles = StyleSheet.create({
   mvCreateCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   mvCreateCardContent: {
@@ -4661,18 +4695,18 @@ const styles = StyleSheet.create({
   mvCreateInputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 8,
   },
   mvCreateInput: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1E293B',
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   mvColorGrid: {
     flexDirection: 'row',
@@ -4689,7 +4723,7 @@ const styles = StyleSheet.create({
   },
   mvColorCircleSelected: {
     borderWidth: 3,
-    borderColor: '#1E293B',
+    borderColor: theme.colors.text,
   },
   mvCreateModalFooter: {
     flexDirection: 'row',
@@ -4697,7 +4731,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.backgroundAlt,
     gap: 12,
   },
   mvCreateCancelButton: {
@@ -4705,42 +4739,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   mvCreateCancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   mvCreateSaveButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
-    shadowColor: '#3578e5',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   mvCreateSaveButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: theme.colors.borderStrong,
     shadowOpacity: 0,
     elevation: 0,
   },
   mvCreateSaveButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   
   // Notification
@@ -4758,7 +4792,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: theme.colors.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -4767,14 +4801,14 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   mvNotificationSuccess: {
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.success,
   },
   mvNotificationError: {
-    backgroundColor: '#EF4444',
+    backgroundColor: theme.colors.error,
   },
   mvNotificationText: {
     flex: 1,
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

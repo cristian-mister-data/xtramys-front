@@ -7,7 +7,7 @@ export default function Exercises() {
   const { t } = useTranslation();
 
   return (
-    <RNWebPage
+    <RNWebPage themed
       title={t('menu.exercises', 'Ejercicios')}
       subtitle={t('sectionHeaders.exercises', 'Organiza ejercicios, carpetas y recursos para el trabajo diario.')}
       icon={MdFitnessCenter}

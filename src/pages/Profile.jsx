@@ -129,12 +129,17 @@ const LangBtn = styled.button`
   gap: 12px;
   padding: 14px;
   border-radius: ${({ theme }) => theme.radius.md};
-  border: 2px solid ${({ $active, theme }) => ($active ? '#10b981' : theme.colors.border)};
-  background: ${({ $active }) => ($active ? '#ecfdf5' : 'transparent')};
+  border: 2px solid ${({ $active, theme }) => ($active ? theme.colors.success : theme.colors.border)};
+  background: ${({ $active, theme }) => ($active ? theme.colors.successSoft : theme.colors.surfaceAlt)};
+  color: ${({ theme }) => theme.colors.text};
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
   opacity: ${({ $disabled, $active }) => ($disabled && !$active ? 0.6 : 1)};
   text-align: left;
   font-size: 14px;
+  transition: background 150ms ease, border-color 150ms ease;
+  &:hover {
+    background: ${({ $disabled, $active, theme }) => ($disabled ? ( $active ? theme.colors.successSoft : theme.colors.surfaceAlt ) : ($active ? theme.colors.successSoft : theme.colors.surfaceElevated))};
+  }
 `;
 
 const Flag = styled.span`
