@@ -4458,5 +4458,28 @@
                 "description": "You now know every tool in MisterData. Start by creating a season and registering your players. Your team is in great hands!"
             }
         }
+    },
+    "errors": {
+        "UNAUTHORIZED": "Unauthorized access",
+        "INVALID_TOKEN": "Invalid or expired token",
+        "FORBIDDEN_ADMIN": "Access denied: admin role required",
+        "USER_NOT_FOUND": "User not found",
+        "EMAIL_NOT_VERIFIED": "You must verify your email before continuing",
+        "SESSION_VALIDATION_ERROR": "Error validating session",
+        "EMAIL_IN_USE": "This email is already registered",
+        "INVALID_CREDENTIALS": "Invalid email or password",
+        "SERVER_ERROR": "Server error. Please try again later",
+        "INVALID_CODE": "Incorrect or expired code",
+        "ALREADY_VERIFIED": "Email is already verified",
+        "TOO_MANY_ATTEMPTS": "Too many failed attempts. Request a new code",
+        "CODE_EXPIRED": "The code has expired. Request a new one",
+        "VERIFICATION_REQUIRED": "User registered. Check your email to verify your account",
+        "TOKEN_EXPIRED": "The link has expired",
+        "INVALID_DATA": "Invalid data provided",
+        "EMAIL_REQUIRED": "Email is required to create the account",
+        "NOT_FOUND": "Resource not found",
+        "FORBIDDEN": "Access denied",
+        "VALIDATION_ERROR": "Validation error",
+        "DUPLICATE_ENTRY": "This record already exists"
     }
 }

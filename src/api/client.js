@@ -2,6 +2,7 @@
 // - cookie: cookies httpOnly emitidas por el backend (recomendado para web)
 // - bearer: Authorization: Bearer <token> en localStorage (legacy / móvil)
 import axios from 'axios';
+import i18n from '../i18n';
 import { API_URL, BACKEND_URL, USE_COOKIE_AUTH } from '../config';
 import { TOKEN_STORAGE_KEY } from '../auth/storage';
 
@@ -69,19 +70,39 @@ function attachInterceptors(instance) {
       if (errorType && _networkErrorHandler) _networkErrorHandler(errorType, `${method} ${url}`);
       if (errorType === 'SESSION_EXPIRED' && _onUnauthorized) _onUnauthorized();
 
+      const errorCode = error.response?.data?.code;
+      let translatedMessage;
+
+      if (errorCode) {
+        const key = `errors.${errorCode}`;
+        translatedMessage = i18n.exists(key) ? i18n.t(key) : null;
+      }
+
+      if (!translatedMessage) {
+        switch (errorType) {
+          case 'TIMEOUT':
+            translatedMessage = i18n.t('connection.timeoutMessage');
+            break;
+          case 'OFFLINE':
+            translatedMessage = i18n.t('connection.offlineMessage');
+            break;
+          case 'SERVER_ERROR':
+            translatedMessage = i18n.t('connection.serverErrorMessage');
+            break;
+          case 'SESSION_EXPIRED':
+            translatedMessage = i18n.t('connection.sessionExpiredMessage');
+            break;
+        }
+      }
+
       const cleanError = new Error(
-        error.response?.data?.mensaje ||
+        translatedMessage ||
+          error.response?.data?.mensaje ||
           error.response?.data?.message ||
-          (errorType === 'TIMEOUT'
-            ? 'La petición ha tardado demasiado'
-            : errorType === 'OFFLINE'
-              ? 'Sin conexión a internet'
-              : errorType === 'SERVER_ERROR'
-                ? 'Error del servidor'
-                : error.message),
+          error.message,
       );
       cleanError.status = error.response?.status;
-      cleanError.code = error.response?.data?.code;
+      cleanError.code = errorCode;
       cleanError.type = errorType;
       cleanError.data = error.response?.data;
       cleanError.originalError = error;

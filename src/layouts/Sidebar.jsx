@@ -6,7 +6,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { MdLogout } from 'react-icons/md';
 import { logoutThunk } from '@/store/slices/user/userThunks';
 import { preloadRoute } from '@/router/preload';
+import { useThemeMode } from '@/theme/ThemeContext';
 import xtramysLogo from '@/images/xtramys.webp';
+import xtramysWhiteLogo from '@/images/xtramys_white.webp';
 import { getNavSections } from './navItems';
 
 const Aside = styled.aside`
@@ -247,6 +249,7 @@ export default function Sidebar({ open, onClose }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((s) => s.usuario.user);
+  const { mode } = useThemeMode();
 
   const sections = useMemo(
     () => getNavSections(t).filter((s) => !s.hiddenInSidebar),
@@ -259,13 +262,15 @@ export default function Sidebar({ open, onClose }) {
     navigate('/auth/welcome', { replace: true });
   };
 
+  const logoImage = mode === 'dark' ? xtramysWhiteLogo : xtramysLogo;
+
   return (
     <>
       <Backdrop $open={open} onClick={onClose} />
       <Aside $open={open}>
         <Brand>
           <LogoBox>
-            <img src={xtramysLogo} alt="Xtramys" />
+            <img src={logoImage} alt="Xtramys" />
           </LogoBox>
           <BrandText>
           </BrandText>

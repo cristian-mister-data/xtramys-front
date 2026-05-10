@@ -4468,5 +4468,28 @@
                 "description": "Ya conoces todas las herramientas de xtramys. Empieza por crear una temporada y registrar tus jugadores. ¡Tu equipo está en buenas manos!"
             }
         }
+    },
+    "errors": {
+        "UNAUTHORIZED": "Acceso no autorizado",
+        "INVALID_TOKEN": "Token inválido o expirado",
+        "FORBIDDEN_ADMIN": "Acceso denegado: se requiere rol de administrador",
+        "USER_NOT_FOUND": "Usuario no encontrado",
+        "EMAIL_NOT_VERIFIED": "Debes verificar tu correo electrónico antes de continuar",
+        "SESSION_VALIDATION_ERROR": "Error validando la sesión",
+        "EMAIL_IN_USE": "Este correo ya está registrado",
+        "INVALID_CREDENTIALS": "Correo o contraseña incorrectos",
+        "SERVER_ERROR": "Error del servidor. Inténtalo de nuevo más tarde",
+        "INVALID_CODE": "Código incorrecto o expirado",
+        "ALREADY_VERIFIED": "El correo ya está verificado",
+        "TOO_MANY_ATTEMPTS": "Demasiados intentos fallidos. Solicita un nuevo código",
+        "CODE_EXPIRED": "El código ha expirado. Solicita uno nuevo",
+        "VERIFICATION_REQUIRED": "Usuario registrado. Revisa tu correo para verificar tu cuenta",
+        "TOKEN_EXPIRED": "El enlace ha expirado",
+        "INVALID_DATA": "Datos inválidos",
+        "EMAIL_REQUIRED": "Se necesita el correo para crear la cuenta",
+        "NOT_FOUND": "Recurso no encontrado",
+        "FORBIDDEN": "Acceso denegado",
+        "VALIDATION_ERROR": "Error de validación",
+        "DUPLICATE_ENTRY": "Este registro ya existe"
     }
 }

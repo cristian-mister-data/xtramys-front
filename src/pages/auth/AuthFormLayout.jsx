@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { useThemeMode } from '@/theme/ThemeContext';
 import xtramysLogo from '@/images/xtramys.webp';
+import xtramysWhiteLogo from '@/images/xtramys_white.webp';
 import flagEs from '@/images/spain.png';
 import flagEn from '@/images/united-kingdom.png';
+import { FiSun, FiMoon } from 'react-icons/fi';
 
 export const BRAND_PRIMARY = '#1a2a3a';
 export const BRAND_ACCENT = '#00b4d8';
@@ -25,7 +28,9 @@ const Shell = styled.div`
   align-items: center;
   justify-content: center;
   padding: ${({ $compact }) => ($compact ? '24px 16px' : '40px 20px')};
-  color: ${BRAND_TEXT};
+  color: ${({ theme }) => theme.colors.text};
+  background: ${({ theme }) => theme.colors.background};
+  transition: background-color 200ms ease, color 200ms ease;
 
   @media (max-width: 767px) {
     min-height: 100svh;
@@ -40,8 +45,8 @@ const Shell = styled.div`
 
 const LogoHeader = styled.div`
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 12px;
   margin-bottom: ${({ $compact }) => ($compact ? '16px' : '28px')};
 `;
 
@@ -50,9 +55,10 @@ const LogoWrapper = styled.div`
   align-items: center;
   justify-content: center;
   padding: ${({ $compact }) => ($compact ? '8px' : '14px')};
-  background: #ffffff;
+  background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ $compact }) => ($compact ? '18px' : '20px')};
-  box-shadow: 0 10px 30px rgba(26, 42, 58, 0.12);
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const LogoImage = styled.img`
@@ -73,7 +79,7 @@ const LogoImage = styled.img`
 
 const BrandName = styled.div`
   margin-top: 12px;
-  color: ${BRAND_PRIMARY};
+  color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ $compact }) => ($compact ? '24px' : '28px')};
   font-weight: 800;
   letter-spacing: 1.5px;
@@ -88,23 +94,54 @@ export const AuthCard = styled.section`
   width: 100%;
   max-width: ${({ $maxWidth = '480px' }) => $maxWidth};
   padding: ${({ $compact }) => ($compact ? '28px' : '36px')};
-  background: ${BRAND_CARD_BG};
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 24px;
-  box-shadow: 0 14px 42px rgba(26, 42, 58, 0.1);
+  box-shadow: ${({ theme }) => theme.shadows.lg};
 
   @media (max-width: 767px) {
     padding: ${({ $compact }) => ($compact ? '20px' : '24px')};
   }
 `;
 
+const ThemeToggle = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.backgroundAlt || theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.surface}; }
+  &:focus-visible { box-shadow: ${({ theme }) => theme.shadows.focus}; outline: none; }
+`;
+
 export function AuthFormShell({ children, maxWidth = '480px', compact = false, showBrandName = true }) {
+  const { mode, toggleTheme } = useThemeMode();
+  const logoImage = mode === 'dark' ? xtramysWhiteLogo : xtramysLogo;
+
   return (
     <Shell $compact={compact}>
       <LogoHeader $compact={compact}>
         <LogoWrapper $compact={compact}>
-          <LogoImage src={xtramysLogo} alt="Xtramys" $compact={compact} />
+          <LogoImage src={logoImage} alt="Xtramys" $compact={compact} />
         </LogoWrapper>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {showBrandName && <BrandName $compact={compact}>Xtramys</BrandName>}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+            <ThemeToggle
+              type="button"
+              onClick={toggleTheme}
+              aria-label={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
+            >
+              {mode === 'dark' ? <FiSun size={16} /> : <FiMoon size={16} />}
+            </ThemeToggle>
+          </div>
+        </div>
       </LogoHeader>
       <AuthCard $maxWidth={maxWidth} $compact={compact}>{children}</AuthCard>
     </Shell>
@@ -113,7 +150,7 @@ export function AuthFormShell({ children, maxWidth = '480px', compact = false, s
 
 export const FormTitle = styled.h1`
   margin: 0 0 6px;
-  color: ${BRAND_TEXT};
+  color: ${({ theme }) => theme.colors.text};
   font-size: ${({ $compact }) => ($compact ? '24px' : '26px')};
   font-weight: 700;
   line-height: 1.15;
@@ -126,7 +163,7 @@ export const FormTitle = styled.h1`
 
 export const FormSubtitle = styled.p`
   margin: 0 0 ${({ $tight }) => ($tight ? '8px' : '24px')};
-  color: ${BRAND_TEXT_LIGHT};
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 15px;
   line-height: 1.55;
   ${({ $center }) => $center && 'text-align: center;'}
@@ -160,7 +197,7 @@ export const Field = styled.div`
 
 export const InputLabel = styled.label`
   margin: 12px 0 8px;
-  color: ${BRAND_TEXT_LIGHT};
+  color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -175,27 +212,27 @@ const inputStyles = css`
   width: 100%;
   min-height: 50px;
   padding: 14px 16px;
-  border: 1.5px solid ${BRAND_BORDER};
+  border: 1.5px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: 12px;
-  background: ${BRAND_INPUT_BG};
-  color: ${BRAND_TEXT};
+  background: ${({ theme }) => theme.colors.inputBg};
+  color: ${({ theme }) => theme.colors.text};
   font: inherit;
   font-size: 16px;
   outline: none;
   transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 
   &::placeholder {
-    color: ${BRAND_TEXT_LIGHT};
+    color: ${({ theme }) => theme.colors.inputPlaceholder};
   }
 
   &:focus {
-    border-color: ${BRAND_ACCENT};
-    box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.12);
+    border-color: ${({ theme }) => theme.colors.borderFocus || theme.colors.primary};
+    box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
   &[aria-invalid='true'] {
-    border-color: ${BRAND_ERROR};
-    background: #fef2f2;
+    border-color: ${({ theme }) => theme.colors.error};
+    background: ${({ theme }) => theme.colors.errorSoft || '#fff2f2'};
   }
 
   @media (max-width: 767px) {
@@ -218,18 +255,18 @@ export const PrimaryButton = styled.button`
   padding: 16px 18px;
   border: 0;
   border-radius: 14px;
-  background: ${BRAND_ACCENT};
-  color: #ffffff;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.onPrimary || theme.colors.textOnPrimary || '#ffffff'};
   font: inherit;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(0, 180, 216, 0.3);
+  box-shadow: ${({ theme }) => theme.shadows.md};
   transition: background-color 140ms ease, transform 60ms ease, opacity 140ms ease;
 
   &:hover:not(:disabled) {
-    background: #009fc0;
+    background: ${({ theme }) => theme.colors.primaryHover || theme.colors.primary};
   }
 
   &:active:not(:disabled) {
@@ -237,7 +274,7 @@ export const PrimaryButton = styled.button`
   }
 
   &:disabled {
-    background: #8dd4e4;
+    background: ${({ theme }) => theme.colors.primarySoft || '#8dd4e4'};
     cursor: not-allowed;
     opacity: 0.85;
   }
@@ -253,14 +290,14 @@ export const SecondaryLink = styled(Link)`
   display: block;
   margin-top: 16px;
   padding-block: 8px;
-  color: ${BRAND_TEXT_LIGHT};
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 15px;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
 
   &:hover {
-    color: ${BRAND_PRIMARY};
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -268,14 +305,14 @@ export const AccentLink = styled(Link)`
   display: block;
   margin-top: 14px;
   padding-block: 4px;
-  color: ${BRAND_ACCENT};
+  color: ${({ theme }) => theme.colors.brandAccent || theme.colors.accent};
   font-size: 14px;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
 
   &:hover {
-    color: #008fad;
+    color: ${({ theme }) => theme.colors.primaryHover || '#008fad'};
   }
 `;
 
@@ -286,7 +323,7 @@ export const MutedAction = styled.button`
   padding: 8px 0;
   border: 0;
   background: transparent;
-  color: ${BRAND_TEXT_LIGHT};
+  color: ${({ theme }) => theme.colors.textSecondary};
   font: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -294,7 +331,7 @@ export const MutedAction = styled.button`
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    color: ${BRAND_PRIMARY};
+    color: ${({ theme }) => theme.colors.primary};
   }
 
   &:disabled {
@@ -305,7 +342,7 @@ export const MutedAction = styled.button`
 
 export const ErrorMessage = styled.div`
   margin-top: 12px;
-  color: ${BRAND_ERROR};
+  color: ${({ theme }) => theme.colors.error};
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
@@ -314,7 +351,7 @@ export const ErrorMessage = styled.div`
 
 export const InfoMessage = styled.div`
   margin-top: 12px;
-  color: ${({ $success }) => ($success ? BRAND_SUCCESS : BRAND_TEXT_LIGHT)};
+  color: ${({ $success, theme }) => ($success ? theme.colors.success : theme.colors.textSecondary)};
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
@@ -330,7 +367,7 @@ export const LanguageSection = styled.div`
 
 export const LanguageLabel = styled.div`
   margin-bottom: 10px;
-  color: ${BRAND_TEXT_LIGHT};
+  color: ${({ theme }) => theme.colors.textMuted};
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.4px;
@@ -349,9 +386,9 @@ export const FlagButton = styled.button`
   align-items: center;
   justify-content: center;
   padding: 6px;
-  border: 2px solid ${({ $selected }) => ($selected ? BRAND_ACCENT : 'transparent')};
+  border: 2px solid ${({ $selected, theme }) => ($selected ? theme.colors.primary : 'transparent')};
   border-radius: 10px;
-  background: ${({ $selected }) => ($selected ? '#e0f7fa' : BRAND_INPUT_BG)};
+  background: ${({ $selected, theme }) => ($selected ? theme.colors.primarySoft || '#e0f7fa' : theme.colors.inputBg)};
   cursor: pointer;
 `;
 
@@ -386,10 +423,10 @@ export const CodeRow = styled.div`
 export const CodeInput = styled.input`
   width: 52px;
   height: 62px;
-  border: 2px solid ${({ $filled }) => ($filled ? BRAND_ACCENT : BRAND_BORDER)};
+  border: 2px solid ${({ $filled, theme }) => ($filled ? (theme.colors.primary || theme.colors.accent) : theme.colors.inputBorder)};
   border-radius: 12px;
-  background: ${({ $filled }) => ($filled ? '#e0f7fa' : BRAND_INPUT_BG)};
-  color: ${BRAND_TEXT};
+  background: ${({ $filled, theme }) => ($filled ? theme.colors.primarySoft || '#e0f7fa' : theme.colors.inputBg)};
+  color: ${({ theme }) => theme.colors.text};
   font: inherit;
   font-size: 26px;
   font-weight: 700;
@@ -397,8 +434,8 @@ export const CodeInput = styled.input`
   outline: none;
 
   &:focus {
-    border-color: ${BRAND_ACCENT};
-    box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.12);
+    border-color: ${({ theme }) => theme.colors.borderFocus || theme.colors.primary};
+    box-shadow: ${({ theme }) => theme.shadows.focus};
   }
 
   @media (max-width: 430px) {

@@ -8,6 +8,7 @@ import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { preloadRoute } from '@/router/preload';
 import { getFlatNavItems, searchNav, normalize } from './navItems';
 import xtramysLogo from '@/images/xtramys.webp';
+import xtramysWhiteLogo from '@/images/xtramys_white.webp';
 
 const Bar = styled.header`
   grid-area: header;
@@ -429,7 +430,7 @@ export default function Header({ onMenu }) {
 
       {/* Mobile center: just the logo, centered */}
       <MobileCenter aria-hidden="true">
-        <MobileLogo src={xtramysLogo} alt="" />
+        <MobileLogo src={mode === 'dark' ? xtramysWhiteLogo : xtramysLogo} alt="" />
       </MobileCenter>
 
       <SearchWrap ref={wrapRef}>
