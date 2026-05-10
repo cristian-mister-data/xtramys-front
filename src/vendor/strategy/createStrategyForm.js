@@ -49,9 +49,24 @@ export default function CreateStrategyForm({
   const onWarningColor = theme?.colors?.onWarning || '#fff';
   
   const [name, setName] = useState(editingStrategy ? editingStrategy.nombre : '');
+  const [duration, setDuration] = useState(editingStrategy ? String(editingStrategy.tiempo || '') : '');
+  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion : '');
+  const [objective, setObjective] = useState(editingStrategy ? editingStrategy.objetivo || '' : '');
+  const [dimensions, setDimensions] = useState(editingStrategy ? editingStrategy.dimensiones || '' : '');
   const [folderId, setFolderId] = useState(editingStrategy?.folder?._id || editingStrategy?.folder || '');
   const [folderName, setFolderName] = useState('');
-  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion : '');
+  const [playerNumbers, setPlayerNumbers] = useState(() => {
+    if (editingStrategy && editingStrategy.numeroJugadores != null) {
+      return String(editingStrategy.numeroJugadores);
+    }
+    return '';
+  });
+  const [teams, setTeams] = useState(() => {
+    if (editingStrategy && editingStrategy.equipos != null) {
+      return String(editingStrategy.equipos);
+    }
+    return '';
+  });
   // En web el componente puede remontarse después de volver del editor de campo.
   // Inicializamos imagen/fieldElements/fieldType desde FIELD_RESULT si existe,
   // para sobrevivir a remounts (ver bug fix análogo en createExerciseForm.js).
@@ -87,6 +102,10 @@ export default function CreateStrategyForm({
   // Estado para admin: estrategia global
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGlobal, setIsGlobal] = useState(editingStrategy?.isGlobal || false);
+
+  const [nameEn, setNameEn] = useState(editingStrategy?.translations?.en?.nombre || '');
+  const [descriptionEn, setDescriptionEn] = useState(editingStrategy?.translations?.en?.descripcion || '');
+  const [objectiveEn, setObjectiveEn] = useState(editingStrategy?.translations?.en?.objetivo || '');
 
   // Estados para carpetas de estrategia
   const [showFolderModal, setShowFolderModal] = useState(false);
@@ -184,8 +203,16 @@ export default function CreateStrategyForm({
 
     if (draftMatches) {
       if (typeof draft.name === 'string') setName(draft.name);
+      if (typeof draft.duration === 'string') setDuration(draft.duration);
       if (typeof draft.description === 'string') setDescription(draft.description);
+      if (typeof draft.objective === 'string') setObjective(draft.objective);
+      if (typeof draft.dimensions === 'string') setDimensions(draft.dimensions);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
+      if (typeof draft.playerNumbers === 'string') setPlayerNumbers(draft.playerNumbers);
+      if (typeof draft.teams === 'string') setTeams(draft.teams);
+      if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
+      if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
+      if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
@@ -220,13 +247,9 @@ export default function CreateStrategyForm({
     saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
       kind: 'strategy',
       editingId,
-      name,
-      description,
-      folderId,
-      isGlobal,
-      fieldElements,
-      fieldType,
-      imagen,
+      name, duration, description, objective, dimensions, folderId,
+      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+      fieldElements, fieldType, imagen,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
 
@@ -265,13 +288,9 @@ export default function CreateStrategyForm({
           saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
             kind: 'strategy',
             editingId,
-            name,
-            description,
-            folderId,
-            isGlobal,
-            fieldElements,
-            fieldType,
-            imagen,
+            name, duration, description, objective, dimensions, folderId,
+            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+            fieldElements, fieldType, imagen,
             pendingVideoIds: [...pendingVideoIds.current],
           });
         }
@@ -297,7 +316,8 @@ export default function CreateStrategyForm({
 
   const handleSave = async () => {
     const missing = [];
-    if (!name.trim()) missing.push('Nombre');
+    if (!name.trim()) missing.push(t('strategy.name'));
+    if (!duration.trim()) missing.push(t('strategy.duration'));
     
     if (missing.length > 0) {
       Alert.alert(t('message.warning'), t('strategy.missingFields', { fields: missing.join(', ') }));
@@ -308,19 +328,28 @@ export default function CreateStrategyForm({
       const usuario = await AsyncStorage.getItem('usuario');
       const idUsuario = JSON.parse(usuario)?._id;
       if (!idUsuario) {
-        Alert.alert(t('message.error'), t('message.noUserIdentified'));
+        Alert.alert(t('message.error'), t('strategy.cannotFindUser'));
         return;
       }
+
       const newStrategy = {
         nombre: name,
-        folder: folderId || undefined,
+        tiempo: duration,
         descripcion: description,
+        objetivo: objective,
+        dimensiones: dimensions || undefined,
+        folder: folderId || undefined,
+        numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
+        equipos: teams ? Number(teams) : undefined,
         usuario: idUsuario,
         _id: editingStrategy ? editingStrategy._id : undefined,
         imagen: imagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
         isGlobal: isAdmin ? isGlobal : false,
+        translations: (isAdmin && isGlobal && (nameEn || descriptionEn || objectiveEn))
+          ? { en: { nombre: nameEn, descripcion: descriptionEn, objetivo: objectiveEn } }
+          : undefined,
         // Incluir IDs de videos pendientes para asociar después de crear la estrategia
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
@@ -362,7 +391,7 @@ export default function CreateStrategyForm({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
-          <Text style={styles.subTitle}>{t('strategy.generalsDatas')}</Text>
+          <Text style={styles.subTitle}>{t('strategy.generalData')}</Text>
           <TextInput
             style={styles.input}
             placeholder={t('strategy.examplePlaceholder')}
@@ -371,7 +400,7 @@ export default function CreateStrategyForm({
             onChangeText={setName}
           />
           
-          {/* Campo de carpeta */}
+          {/* Selector de carpeta */}
           <TouchableOpacity 
             style={styles.typeSelector} 
             onPress={() => setShowFolderModal(true)}
@@ -384,28 +413,70 @@ export default function CreateStrategyForm({
             </View>
             <Ionicons name="chevron-down" size={20} color={chevronColor} />
           </TouchableOpacity>
+        </View>
 
-          {isAdmin && (
-            <View style={{ marginTop: 2, marginBottom: 4 }}>
-              <Text style={[styles.inputLabel, { marginBottom: 6 }]}>Visibilidad</Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
-                  onPress={() => setIsGlobal(false)}
-                >
-                  <Ionicons name="person-outline" size={16} color={!isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: !isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.myStrategies')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: isGlobal ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: isGlobal ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
-                  onPress={() => setIsGlobal(true)}
-                >
-                  <Ionicons name="globe-outline" size={16} color={isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.appStrategies')}</Text>
-                </TouchableOpacity>
+        <View style={styles.formCard}>
+          <Text style={styles.subTitle}>{t('strategy.parameters')}</Text>
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.inputLabel}>{t('strategy.duration')}</Text>
+              <View style={styles.inputWithIcon}>
+                <Ionicons name="time-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="0"
+                  placeholderTextColor={placeholderColor}
+                  keyboardType="number-pad"
+                  autoComplete="off"
+                  value={duration}
+                  onChangeText={setDuration}
+                  maxLength={3}
+                />
               </View>
             </View>
-          )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>{t('strategy.players')}</Text>
+              <View style={styles.inputWithIcon}>
+                <Ionicons name="people-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.inputField}
+                  value={playerNumbers}
+                  onChangeText={setPlayerNumbers}
+                  keyboardType="number-pad"
+                  autoComplete="off"
+                  placeholder="0"
+                  placeholderTextColor={placeholderColor}
+                  maxLength={3}
+                />
+              </View>
+            </View>
+          </View>
+          <Text style={styles.inputLabel}>{t('strategy.teams')}</Text>
+          <View style={styles.row}>
+            <TextInput
+              style={[styles.input, styles.inputHalf]}
+              value={teams}
+              onChangeText={setTeams}
+              keyboardType="number-pad"
+              autoComplete="off"
+              placeholder="Equipos"
+              placeholderTextColor={placeholderColor}
+              maxLength={2}
+            />
+            <View style={{ flex: 1 }} />
+          </View>
+          <Text style={styles.inputLabel}>{t('strategy.fieldDimensions')}</Text>
+          <View style={styles.inputWithIcon}>
+            <Ionicons name="resize-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.inputField}
+              value={dimensions}
+              onChangeText={setDimensions}
+              placeholder={t('strategy.fieldDimensionsPlaceholder')}
+              placeholderTextColor={placeholderColor}
+              maxLength={20}
+            />
+          </View>
         </View>
 
         <View style={styles.formCard}>
@@ -417,6 +488,15 @@ export default function CreateStrategyForm({
             placeholderTextColor={placeholderColor}
             value={description}
             onChangeText={setDescription}
+            multiline
+          />
+          <Text style={styles.inputLabel}>{t('strategy.objective')}</Text>
+          <TextInput
+            style={[styles.input, styles.textarea]}
+            placeholder={t('strategy.objectivePlaceholder')}
+            placeholderTextColor={placeholderColor}
+            value={objective}
+            onChangeText={setObjective}
             multiline
           />
         </View>
@@ -448,6 +528,62 @@ export default function CreateStrategyForm({
           </View>
 
         </View>
+
+        {/* Toggle para estrategia global (solo admin) */}
+        {isAdmin && (
+          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.textMuted || '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Visibilidad de la estrategia</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
+                onPress={() => setIsGlobal(false)}
+              >
+                <Ionicons name="person-outline" size={16} color={!isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: !isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.myStrategies')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: isGlobal ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: isGlobal ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
+                onPress={() => setIsGlobal(true)}
+              >
+                <Ionicons name="globe-outline" size={16} color={isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.appStrategies')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Traducciones al inglés (solo admin + estrategia global) */}
+        {isAdmin && isGlobal && (
+          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <Ionicons name="language-outline" size={16} color={theme?.colors?.primary || '#3b82f6'} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.primary || '#3b82f6', textTransform: 'uppercase', letterSpacing: 0.5 }}>English Translation</Text>
+            </View>
+            <TextInput
+              style={{ backgroundColor: theme?.colors?.inputBg || '#1f2937', borderWidth: 1, borderColor: theme?.colors?.inputBorder || '#334155', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8, fontSize: 14, color: theme?.colors?.text || '#e2e8f0' }}
+              placeholder="Name (English)"
+              placeholderTextColor={placeholderColor}
+              value={nameEn}
+              onChangeText={setNameEn}
+            />
+            <TextInput
+              style={{ backgroundColor: theme?.colors?.inputBg || '#1f2937', borderWidth: 1, borderColor: theme?.colors?.inputBorder || '#334155', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8, fontSize: 14, color: theme?.colors?.text || '#e2e8f0' }}
+              placeholder="Objective (English)"
+              placeholderTextColor={placeholderColor}
+              value={objectiveEn}
+              onChangeText={setObjectiveEn}
+            />
+            <TextInput
+              style={{ backgroundColor: theme?.colors?.inputBg || '#1f2937', borderWidth: 1, borderColor: theme?.colors?.inputBorder || '#334155', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: theme?.colors?.text || '#e2e8f0', minHeight: 60 }}
+              placeholder="Description (English)"
+              placeholderTextColor={placeholderColor}
+              value={descriptionEn}
+              onChangeText={setDescriptionEn}
+              multiline
+            />
+          </View>
+        )}
+
       </KeyboardAwareScrollView>
       <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
         <TouchableOpacity 
@@ -549,10 +685,37 @@ const makeStyles = (theme) => StyleSheet.create({
     borderColor: theme?.colors?.inputBorder || '#334155',
     color: theme?.colors?.text || '#e2e8f0',
   },
+  inputHalf: {
+    flex: 1,
+    marginRight: 10,
+    minWidth: 90,
+  },
   inputLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: theme?.colors?.textSecondary || '#94a3b8',
+    color: theme?.colors?.textSecondary || '#424242',
+    marginBottom: 8,
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme?.colors?.inputBorder || '#334155',
+    marginBottom: 16,
+  },
+  inputField: {
+    flex: 1,
+    fontSize: 15,
+    color: theme?.colors?.text || '#000',
+    padding: 0,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   textarea: {

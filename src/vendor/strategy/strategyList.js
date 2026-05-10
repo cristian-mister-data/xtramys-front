@@ -38,7 +38,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
-import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy } from '@/utils/api';
+import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { downloadImageSource } from '@/utils/imageDownload';
 import { getFieldById } from '@/utils/fieldTypes';
@@ -59,7 +59,7 @@ const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 
-function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete }) {
+function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -593,6 +593,12 @@ Alert.alert(
               <View style={styles.exerciseDetailHeader}>
                 <MaterialIcons name="flag" size={24} color="#3578e5" />
                 <Text style={styles.exerciseDetailTitle}>{strategy.nombre}</Text>
+                {strategy.tiempo != null && strategy.tiempo !== '' && (
+                  <View style={styles.exerciseDurationBadge}>
+                    <Ionicons name="time-outline" size={16} color="#3578e5" />
+                    <Text style={styles.exerciseDurationText}>{strategy.tiempo} min</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -620,6 +626,40 @@ Alert.alert(
 
             <View style={styles.detailSection}>
               <View style={styles.detailsSection}>
+
+                {/* Stats superiores con iconos */}
+                {(strategy.numeroJugadores || strategy.equipos || strategy.dimensiones) && (
+                  <View style={styles.statsRow}>
+                    {strategy.numeroJugadores && (
+                      <View style={[styles.statCard, styles.playersStat]}>
+                        <Ionicons name="people" size={20} color="#4CAF50" />
+                        <View style={styles.statContent}>
+                          <Text style={styles.statValue}>{strategy.numeroJugadores}</Text>
+                          <Text style={styles.statLabel}>{t('strategy.players')}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {strategy.equipos && (
+                      <View style={[styles.statCard, styles.teamsStat]}>
+                        <Ionicons name="flag" size={20} color="#FF9800" />
+                        <View style={styles.statContent}>
+                          <Text style={styles.statValue}>{strategy.equipos}</Text>
+                          <Text style={styles.statLabel}>{t('strategy.teams')}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {strategy.dimensiones && (
+                      <View style={[styles.statCard, styles.dimensionsStat]}>
+                        <Ionicons name="resize-outline" size={20} color="#673AB7" />
+                        <View style={styles.statContent}>
+                          <Text style={styles.statValue}>{strategy.dimensiones}</Text>
+                          <Text style={styles.statLabel}>{t('strategy.fieldDimensions')}</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {getFolderName() && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
@@ -636,9 +676,19 @@ Alert.alert(
                   <View style={{...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30}}>
                     <View style={styles.detailCardHeader}>
                       <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
-                      <Text style={styles.detailCardTitle}>Descripción</Text>
+                      <Text style={styles.detailCardTitle}>{t('strategy.description')}</Text>
                     </View>
                     <Text style={styles.detailCardContent}>{strategy.descripcion}</Text>
+                  </View>
+                )}
+
+                {strategy.objetivo && (
+                  <View style={{...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30}}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="flag-outline" size={18} color="#E91E63" />
+                      <Text style={styles.detailCardTitle}>{t('strategy.objective')}</Text>
+                    </View>
+                    <Text style={styles.detailCardContent}>{strategy.objetivo}</Text>
                   </View>
                 )}
                 
@@ -679,6 +729,13 @@ Alert.alert(
                               >
                                 <Feather name="play" size={16} color="#fff" />
                                 <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
+                                onPress={() => onEditVideo && onEditVideo(video, strategy)}
+                              >
+                                <Feather name="edit-3" size={14} color="#fff" />
+                                <Text style={styles.videoActionText}>{t('edition.edit') || 'Editar'}</Text>
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={[styles.videoActionBtn, styles.videoDownloadBtn]}
@@ -1146,6 +1203,31 @@ function StrategyCard({ strategy, onPress, IS_MOBILE, isGrid = false, forceWidth
             )}
           </View>
           
+          {(strategy.tiempo || strategy.numeroJugadores || strategy.equipos) && (
+            <View style={[styles.infoTagsContainer, isGrid && styles.infoTagsContainerGrid]}>
+              {strategy.tiempo != null && strategy.tiempo !== '' && (
+                <View style={[styles.infoTag, isGrid && styles.infoTagGrid, { backgroundColor: theme.colors.infoSoft }]}>
+                  <Ionicons name="time-outline" size={isGrid ? 10 : 12} color="#3578e5" />
+                  <Text style={[styles.infoTagText, isGrid && styles.infoTagTextGrid, { color: '#3578e5' }]}>
+                    {strategy.tiempo}'
+                  </Text>
+                </View>
+              )}
+              {strategy.numeroJugadores && (
+                <View style={[styles.infoTag, isGrid && styles.infoTagGrid, { backgroundColor: theme.colors.successSoft }]}>
+                  <Ionicons name="people-outline" size={isGrid ? 10 : 12} color="#1976d2" />
+                  <Text style={[styles.infoTagText, isGrid && styles.infoTagTextGrid, { color: '#1976d2' }]}>{strategy.numeroJugadores}</Text>
+                </View>
+              )}
+              {strategy.equipos && (
+                <View style={[styles.infoTag, isGrid && styles.infoTagGrid, { backgroundColor: theme.colors.warningSoft }]}>
+                  <Ionicons name="flag-outline" size={isGrid ? 10 : 12} color="#F57C00" />
+                  <Text style={[styles.infoTagText, isGrid && styles.infoTagTextGrid, { color: '#F57C00' }]}>{strategy.equipos}</Text>
+                </View>
+              )}
+            </View>
+          )}
+          
           {getFolderName() && (
             <View style={[styles.infoTagsContainer, isGrid && styles.infoTagsContainerGrid]}>
               <View style={[styles.infoTag, isGrid && styles.infoTagGrid, { backgroundColor: theme.colors.successSoft }]}>
@@ -1213,7 +1295,9 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedStrategyForOptions, setSelectedStrategyForOptions] = useState(null);
   const [filters, setFilters] = useState({
-    titulo: ''
+    titulo: '',
+    numeroJugadores: '',
+    equipos: ''
   });
 
   // Estados para navegación de carpetas
@@ -1309,6 +1393,16 @@ export default function StrategyList({ navigation: navigationProp }) {
     }
   }, [idUsuario, dispatch, lang]);
 
+  useEffect(() => {
+    if (global.pendingVideoEditSuccess) {
+      global.pendingVideoEditSuccess = false;
+      setTimeout(() => {
+        setNotification({ visible: true, message: t('videoRecorder.videoUpdatedSuccess'), type: 'success' });
+        setTimeout(() => setNotification({ visible: false, message: '', type: 'success' }), 3000);
+      }, 300);
+    }
+  }, [t]);
+
   // Efecto para navegación de carpetas
   useEffect(() => {
     if (currentFolderId && idUsuario) {
@@ -1375,7 +1469,11 @@ export default function StrategyList({ navigation: navigationProp }) {
     : displayedStrategies.filter((strategy) => {
       const tituloMatch = !filters.titulo
         || strategy.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
-      return tituloMatch;
+      const jugadoresMatch = !filters.numeroJugadores || 
+        (strategy.numeroJugadores && strategy.numeroJugadores.toString().includes(filters.numeroJugadores));
+      const equiposMatch = !filters.equipos || 
+        (strategy.equipos && strategy.equipos.toString().includes(filters.equipos));
+      return tituloMatch && jugadoresMatch && equiposMatch;
     });
 
   const displayedSubfolders = (() => {
@@ -1480,6 +1578,105 @@ const handleDelete = (strategy) => {
     ).unwrap();
     return duplicated;
   }, [dispatch, buildDuplicateName, i18n.language, t]);
+
+  const handleEditAssociatedVideo = useCallback(async (video, parentStrategy) => {
+    try {
+      let editableVideoId = video?._id || video?.id;
+
+      if (!editableVideoId) {
+        Alert.alert(t('message.error'), t('myVideos.couldNotLoadVideo'));
+        return;
+      }
+
+      const mustDuplicate = parentStrategy?.isGlobal && userRole !== 'admin';
+      let result = null;
+
+      if (mustDuplicate) {
+        const duplicateName = buildDuplicateName(video?.nombre || t('myVideos.video'));
+        const duplicated = await duplicateVideoForEdit(editableVideoId, {
+          lang: i18n.language,
+          nombre: duplicateName,
+        });
+        editableVideoId = duplicated?.video?.id;
+
+        if (!editableVideoId) {
+          throw new Error('No se pudo crear el duplicado para edición');
+        }
+        result = await getVideoForEdit(editableVideoId);
+        setNotification({ visible: true, message: t('strategy.cloneToEdit'), type: 'success' });
+        setTimeout(() => setNotification({ visible: false, message: '', type: 'success' }), 3000);
+      } else {
+        result = await getVideoForEdit(editableVideoId);
+        if (!result?.success || !result?.video) {
+          const duplicateName = buildDuplicateName(video?.nombre || t('myVideos.video'));
+          const duplicated = await duplicateVideoForEdit(editableVideoId, {
+            lang: i18n.language,
+            nombre: duplicateName,
+          });
+          editableVideoId = duplicated?.video?.id;
+
+          if (!editableVideoId) {
+            throw new Error('No se pudo crear el duplicado para edición');
+          }
+          result = await getVideoForEdit(editableVideoId);
+        }
+      }
+
+      if (!result?.success || !result?.video) {
+        throw new Error(result?.message || t('myVideos.couldNotLoadVideo'));
+      }
+
+      const videoData = result.video;
+
+      saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
+        kind: 'strategy',
+        editingId: null,
+        name: '',
+        duration: '',
+        description: '',
+        objective: '',
+        dimensions: '',
+        folderId: '',
+        playerNumbers: '',
+        teams: '',
+        nameEn: '',
+        descriptionEn: '',
+        objectiveEn: '',
+        isGlobal: false,
+        fieldElements: [],
+        fieldType: '',
+        imagen: '',
+        pendingVideoIds: [],
+      });
+
+      const fieldResult = {
+        kind: 'strategy',
+        editingId: null,
+        fieldElements: videoData.elementosCampo || [],
+        fieldType: videoData.tipoCampo || 'full',
+        imagen: videoData.imagen || '',
+        pendingVideoIds: [],
+        videoEditId: videoData._id || editableVideoId,
+      };
+      saveFormDraft(STORAGE_KEYS.FIELD_RESULT, fieldResult);
+
+      navigation.navigate('Field', {
+        initialElements: videoData.elementosCampo || [],
+        initialFieldType: videoData.tipoCampo || 'full',
+        isEditing: true,
+        fieldImages: [],
+        isStrategyMode: true,
+        sandbox: false,
+        estrategiaId: null,
+        isGlobalStrategy: false,
+        videoId: videoData._id || editableVideoId,
+        isVideoEdit: true,
+      });
+    } catch (error) {
+      console.error('Error editando video:', error);
+      Alert.alert(t('message.error'), error.message || t('myVideos.couldNotLoadVideo'));
+    }
+  }, [userRole, buildDuplicateName, i18n.language, t, navigation]);
 
   // Notificaciones estilo myVideos
   const showNotification = (message, type = 'success') => {
@@ -1666,6 +1863,8 @@ const handleDelete = (strategy) => {
           setViewingStrategy(null);
         }}
         onDelete={handleDelete}
+        onEditVideo={handleEditAssociatedVideo}
+        userRole={userRole}
       />
     );
   }
@@ -1759,6 +1958,42 @@ const handleDelete = (strategy) => {
                 <Feather name="x" size={18} color="#94A3B8" />
               </TouchableOpacity>
             )}
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <View style={[styles.mvSearchBar, { flex: 1 }]}>
+              <Ionicons name="people-outline" size={16} color="#94A3B8" />
+              <TextInput
+                style={styles.mvSearchInput}
+                placeholder={t('strategy.numberOfPlayersPlaceholder') || t('strategy.numberOfPlayers')}
+                placeholderTextColor="#94A3B8"
+                value={filters.numeroJugadores}
+                onChangeText={(text) => setFilters(prev => ({ ...prev, numeroJugadores: text }))}
+                keyboardType="number-pad"
+                autoComplete="off"
+              />
+              {filters.numeroJugadores.length > 0 && (
+                <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, numeroJugadores: '' }))}>
+                  <Feather name="x" size={16} color="#94A3B8" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={[styles.mvSearchBar, { flex: 1 }]}>
+              <Ionicons name="flag-outline" size={16} color="#94A3B8" />
+              <TextInput
+                style={styles.mvSearchInput}
+                placeholder={t('strategy.numberOfTeamsPlaceholder') || t('strategy.numberOfTeams')}
+                placeholderTextColor="#94A3B8"
+                value={filters.equipos}
+                onChangeText={(text) => setFilters(prev => ({ ...prev, equipos: text }))}
+                keyboardType="number-pad"
+                autoComplete="off"
+              />
+              {filters.equipos.length > 0 && (
+                <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, equipos: '' }))}>
+                  <Feather name="x" size={16} color="#94A3B8" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
@@ -3126,6 +3361,20 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     flex: 1,
   },
+  exerciseDurationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primarySoft,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  exerciseDurationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
   detailSection: {
     marginBottom: 16,
   },
@@ -3167,6 +3416,51 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text,
     lineHeight: 22,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: 80,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  playersStat: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  teamsStat: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9800',
+  },
+  dimensionsStat: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#673AB7',
+  },
+  statContent: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   
   // --- Estilos para Videos de la Estrategia ---
