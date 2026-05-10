@@ -49,24 +49,10 @@ export default function CreateStrategyForm({
   const onWarningColor = theme?.colors?.onWarning || '#fff';
   
   const [name, setName] = useState(editingStrategy ? editingStrategy.nombre : '');
-  const [duration, setDuration] = useState(editingStrategy ? String(editingStrategy.tiempo || '') : '');
-  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion : '');
-  const [objective, setObjective] = useState(editingStrategy ? editingStrategy.objetivo || '' : '');
-  const [dimensions, setDimensions] = useState(editingStrategy ? editingStrategy.dimensiones || '' : '');
   const [folderId, setFolderId] = useState(editingStrategy?.folder?._id || editingStrategy?.folder || '');
   const [folderName, setFolderName] = useState('');
-  const [playerNumbers, setPlayerNumbers] = useState(() => {
-    if (editingStrategy && editingStrategy.numeroJugadores != null) {
-      return String(editingStrategy.numeroJugadores);
-    }
-    return '';
-  });
-  const [teams, setTeams] = useState(() => {
-    if (editingStrategy && editingStrategy.equipos != null) {
-      return String(editingStrategy.equipos);
-    }
-    return '';
-  });
+  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion : '');
+  const [objective, setObjective] = useState(editingStrategy ? editingStrategy.objetivo || '' : '');
   // En web el componente puede remontarse después de volver del editor de campo.
   // Inicializamos imagen/fieldElements/fieldType desde FIELD_RESULT si existe,
   // para sobrevivir a remounts (ver bug fix análogo en createExerciseForm.js).
@@ -203,13 +189,9 @@ export default function CreateStrategyForm({
 
     if (draftMatches) {
       if (typeof draft.name === 'string') setName(draft.name);
-      if (typeof draft.duration === 'string') setDuration(draft.duration);
       if (typeof draft.description === 'string') setDescription(draft.description);
       if (typeof draft.objective === 'string') setObjective(draft.objective);
-      if (typeof draft.dimensions === 'string') setDimensions(draft.dimensions);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
-      if (typeof draft.playerNumbers === 'string') setPlayerNumbers(draft.playerNumbers);
-      if (typeof draft.teams === 'string') setTeams(draft.teams);
       if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
@@ -247,8 +229,8 @@ export default function CreateStrategyForm({
     saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
       kind: 'strategy',
       editingId,
-      name, duration, description, objective, dimensions, folderId,
-      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+      name, description, objective, folderId,
+      nameEn, descriptionEn, objectiveEn, isGlobal,
       fieldElements, fieldType, imagen,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
@@ -288,8 +270,8 @@ export default function CreateStrategyForm({
           saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
             kind: 'strategy',
             editingId,
-            name, duration, description, objective, dimensions, folderId,
-            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+            name, description, objective, folderId,
+            nameEn, descriptionEn, objectiveEn, isGlobal,
             fieldElements, fieldType, imagen,
             pendingVideoIds: [...pendingVideoIds.current],
           });
@@ -317,7 +299,6 @@ export default function CreateStrategyForm({
   const handleSave = async () => {
     const missing = [];
     if (!name.trim()) missing.push(t('strategy.name'));
-    if (!duration.trim()) missing.push(t('strategy.duration'));
     
     if (missing.length > 0) {
       Alert.alert(t('message.warning'), t('strategy.missingFields', { fields: missing.join(', ') }));
@@ -334,13 +315,9 @@ export default function CreateStrategyForm({
 
       const newStrategy = {
         nombre: name,
-        tiempo: duration,
         descripcion: description,
         objetivo: objective,
-        dimensiones: dimensions || undefined,
         folder: folderId || undefined,
-        numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
-        equipos: teams ? Number(teams) : undefined,
         usuario: idUsuario,
         _id: editingStrategy ? editingStrategy._id : undefined,
         imagen: imagen,
@@ -350,7 +327,6 @@ export default function CreateStrategyForm({
         translations: (isAdmin && isGlobal && (nameEn || descriptionEn || objectiveEn))
           ? { en: { nombre: nameEn, descripcion: descriptionEn, objetivo: objectiveEn } }
           : undefined,
-        // Incluir IDs de videos pendientes para asociar después de crear la estrategia
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
       
@@ -413,70 +389,6 @@ export default function CreateStrategyForm({
             </View>
             <Ionicons name="chevron-down" size={20} color={chevronColor} />
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.formCard}>
-          <Text style={styles.subTitle}>{t('strategy.parameters')}</Text>
-          <View style={styles.row}>
-            <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={styles.inputLabel}>{t('strategy.duration')}</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="time-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="0"
-                  placeholderTextColor={placeholderColor}
-                  keyboardType="number-pad"
-                  autoComplete="off"
-                  value={duration}
-                  onChangeText={setDuration}
-                  maxLength={3}
-                />
-              </View>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>{t('strategy.players')}</Text>
-              <View style={styles.inputWithIcon}>
-                <Ionicons name="people-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.inputField}
-                  value={playerNumbers}
-                  onChangeText={setPlayerNumbers}
-                  keyboardType="number-pad"
-                  autoComplete="off"
-                  placeholder="0"
-                  placeholderTextColor={placeholderColor}
-                  maxLength={3}
-                />
-              </View>
-            </View>
-          </View>
-          <Text style={styles.inputLabel}>{t('strategy.teams')}</Text>
-          <View style={styles.row}>
-            <TextInput
-              style={[styles.input, styles.inputHalf]}
-              value={teams}
-              onChangeText={setTeams}
-              keyboardType="number-pad"
-              autoComplete="off"
-              placeholder="Equipos"
-              placeholderTextColor={placeholderColor}
-              maxLength={2}
-            />
-            <View style={{ flex: 1 }} />
-          </View>
-          <Text style={styles.inputLabel}>{t('strategy.fieldDimensions')}</Text>
-          <View style={styles.inputWithIcon}>
-            <Ionicons name="resize-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
-            <TextInput
-              style={styles.inputField}
-              value={dimensions}
-              onChangeText={setDimensions}
-              placeholder={t('strategy.fieldDimensionsPlaceholder')}
-              placeholderTextColor={placeholderColor}
-              maxLength={20}
-            />
-          </View>
         </View>
 
         <View style={styles.formCard}>
@@ -685,37 +597,10 @@ const makeStyles = (theme) => StyleSheet.create({
     borderColor: theme?.colors?.inputBorder || '#334155',
     color: theme?.colors?.text || '#e2e8f0',
   },
-  inputHalf: {
-    flex: 1,
-    marginRight: 10,
-    minWidth: 90,
-  },
   inputLabel: {
     fontSize: 13,
     fontWeight: '500',
     color: theme?.colors?.textSecondary || '#424242',
-    marginBottom: 8,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme?.colors?.inputBg || '#1f2937',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: theme?.colors?.inputBorder || '#334155',
-    marginBottom: 16,
-  },
-  inputField: {
-    flex: 1,
-    fontSize: 15,
-    color: theme?.colors?.text || '#000',
-    padding: 0,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginBottom: 8,
   },
   textarea: {
