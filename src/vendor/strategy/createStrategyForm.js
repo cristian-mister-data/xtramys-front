@@ -93,7 +93,7 @@ export default function CreateStrategyForm({
   const [nameEn, setNameEn] = useState(editingStrategy?.translations?.en?.nombre || '');
   const [descriptionEn, setDescriptionEn] = useState(editingStrategy?.translations?.en?.descripcion || '');
   const [objectiveEn, setObjectiveEn] = useState(editingStrategy?.translations?.en?.objetivo || '');
-
+  
   const stableImagen = useMemo(() => imagen, [imagen]);
   const stableFieldElements = useMemo(() => fieldElements, [fieldElements]);
   const stableFieldType = useMemo(() => fieldType, [fieldType]);

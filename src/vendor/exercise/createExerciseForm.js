@@ -344,8 +344,8 @@ export default function CreateExerciseForm({
         tipoCampo: fieldType || '',
         isGlobal: isAdmin ? isGlobal : false,
         // Traducciones para ejercicios globales
-        translations: (isAdmin && isGlobal && (nameEn || descriptionEn || objectiveEn))
-          ? { en: { nombre: nameEn, descripcion: descriptionEn, objetivo: objectiveEn } }
+        translations: (isAdmin && isGlobal)
+          ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
           : undefined,
         // Incluir IDs de videos pendientes para asociar después de crear el ejercicio
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined

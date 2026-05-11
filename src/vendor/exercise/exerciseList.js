@@ -42,12 +42,35 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 
 function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
   const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || exercise.imagen;
   const dispatch = useDispatch();
+
+  const getLocalizedName = () => {
+    if (i18n.language === 'en' && exercise.translations?.en?.nombre) {
+      return exercise.translations.en.nombre;
+    }
+    return exercise.nombre;
+  };
+
+  const getLocalizedDescription = () => {
+    if (i18n.language === 'en' && exercise.translations?.en?.descripcion) {
+      return exercise.translations.en.descripcion;
+    }
+    return exercise.descripcion;
+  };
+
+  const getLocalizedObjective = () => {
+    if (i18n.language === 'en' && exercise.translations?.en?.objetivo) {
+      return exercise.translations.en.objetivo;
+    }
+    return exercise.objetivo;
+  };
 
   // Zoom modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -604,7 +627,7 @@ Alert.alert(
             <View style={styles.exerciseDetailCard}>
               <View style={styles.exerciseDetailHeader}>
                 <MaterialIcons name="fitness-center" size={24} color="#3578e5" />
-                <Text style={styles.exerciseDetailTitle}>{exercise.nombre}</Text>
+                <Text style={styles.exerciseDetailTitle}>{getLocalizedName()}</Text>
                 <View style={styles.exerciseDurationBadge}>
                   <Ionicons name="time-outline" size={16} color="#3578e5" />
                   <Text style={styles.exerciseDurationText}>{exercise.tiempo} min</Text>
@@ -675,7 +698,7 @@ Alert.alert(
                     <Ionicons name="radio-button-on" size={18} color="#2196F3" />
                     <Text style={styles.detailCardTitle}>Objetivo</Text>
                   </View>
-                  <Text style={styles.detailCardContent}>{exercise.objetivo}</Text>
+                  <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
                 </View>
               )}
 
@@ -685,7 +708,7 @@ Alert.alert(
                     <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
                     <Text style={styles.detailCardTitle}>{t('exercise.description')}</Text>
                   </View>
-                  <Text style={styles.detailCardContent}>{exercise.descripcion}</Text>
+                  <Text style={styles.detailCardContent}>{getLocalizedDescription()}</Text>
                 </View>
               )}
               
@@ -1169,8 +1192,17 @@ function FolderManagement({
 // Mejorada: solo muestra el campo si hay elementosCampo y tipoCampo
 function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions, styles }) {
   const { width: screenWidth } = useWindowDimensions();
+  const { i18n } = useTranslation();
+  const lang = i18n.language;
   const IS_MOBILE = screenWidth < 430;
   const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || exercise.imagen;
+
+  const getLocalizedName = () => {
+    if (lang === 'en' && exercise.translations?.en?.nombre) {
+      return exercise.translations.en.nombre;
+    }
+    return exercise.nombre;
+  };
   
   return (
     <View style={[
@@ -1248,7 +1280,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
       <View style={[styles.cardInfo, isGrid && styles.cardInfoGrid]}>
         {/* Titulo SIEMPRE visible */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
-          <Text style={[styles.cardTitle, IS_MOBILE && styles.cardTitleMobile, isGrid && styles.cardTitleGrid, { flex: 1 }]} numberOfLines={isGrid ? 2 : 1} ellipsizeMode="tail">{exercise.nombre}</Text>
+          <Text style={[styles.cardTitle, IS_MOBILE && styles.cardTitleMobile, isGrid && styles.cardTitleGrid, { flex: 1 }]} numberOfLines={isGrid ? 2 : 1} ellipsizeMode="tail">{getLocalizedName()}</Text>
           {exercise.isGlobal && (
             <Ionicons name="globe-outline" size={14} color="#16a34a" />
           )}
@@ -1447,7 +1479,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   useEffect(() => {
     if (idUsuario) {
-      dispatch(fetchEjerciciosUsuario({ user: idUsuario }));
+      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       dispatch(fetchExerciseFolders({ lang }));
       dispatch(fetchExerciseFoldersFlat({ lang }));
       dispatch(fetchGlobalExercises({ lang }));
@@ -1493,7 +1525,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT);
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
-    dispatch(fetchEjerciciosUsuario({ user: idUsuario }));
+    dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
     if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
   };
 
@@ -1540,7 +1572,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
       setShowMoveToFolder(false);
       setExerciseToMove(null);
       // Recargar datos
-      dispatch(fetchEjerciciosUsuario({ user: idUsuario }));
+      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       dispatch(fetchExerciseFolders({ lang }));
       if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
     } catch (error) {
@@ -1603,7 +1635,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
             await dispatch(deleteEjercicio(exercise._id));
             showNotification(t('exercise.exerciseDeleted', 'Ejercicio eliminado'), 'success');
             // Recargar datos para reflejar cambios
-            dispatch(fetchEjerciciosUsuario({ user: idUsuario }));
+            dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
             if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
           }
         }
@@ -2193,7 +2225,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                         })).unwrap();
                       }
                       showNotification(t('exercise.cloneCreated'), 'success');
-                      dispatch(fetchEjerciciosUsuario({ user: idUsuario }));
+                      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
                       dispatch(fetchGlobalExercises({ lang }));
                       if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
                     } catch (err) {

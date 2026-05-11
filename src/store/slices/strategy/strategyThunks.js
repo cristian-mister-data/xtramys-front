@@ -5,22 +5,25 @@ import { linkVideoToStrategy } from '@/api/video';
 
 export const fetchEstrategiasUsuario = createAsyncThunk(
   'strategy/fetchEstrategiasUsuario',
-  async ({ user }) => {
-    const res = await api.get(`/strategy/user/${user}`);
+  async ({ user, lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy/user/${user}${params}`);
     return res.data;
   }
 );
 
 export const fetchEstrategiasTemporada = createAsyncThunk(
   'strategy/fetchEstrategiasTemporada',
-  async ({ season }) => {
-    const res = await api.get(`/strategy/season/${season}`);
+  async ({ season, lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy/season/${season}${params}`);
     return res.data;
   }
 );
 
-export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', async ({ id }) => {
-  const res = await api.get(`/strategy/${id}`);
+export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', async ({ id, lang } = {}) => {
+  const params = lang ? `?lang=${lang}` : '';
+  const res = await api.get(`/strategy/${id}${params}`);
   return res.data;
 });
 

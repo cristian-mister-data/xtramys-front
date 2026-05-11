@@ -60,7 +60,7 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth } = useWindowDimensions();
@@ -69,6 +69,27 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   // Mostrar imagen si existe
   const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || strategy.imagen;
   const dispatch = useDispatch();
+
+  const getLocalizedName = () => {
+    if (i18n.language === 'en' && strategy.translations?.en?.nombre) {
+      return strategy.translations.en.nombre;
+    }
+    return strategy.nombre;
+  };
+
+  const getLocalizedDescription = () => {
+    if (i18n.language === 'en' && strategy.translations?.en?.descripcion) {
+      return strategy.translations.en.descripcion;
+    }
+    return strategy.descripcion;
+  };
+
+  const getLocalizedObjective = () => {
+    if (i18n.language === 'en' && strategy.translations?.en?.objetivo) {
+      return strategy.translations.en.objetivo;
+    }
+    return strategy.objetivo;
+  };
 
   // Zoom modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -594,7 +615,7 @@ Alert.alert(
             <View style={styles.exerciseDetailCard}>
               <View style={styles.exerciseDetailHeader}>
                 <MaterialIcons name="flag" size={24} color="#3578e5" />
-                <Text style={styles.exerciseDetailTitle}>{strategy.nombre}</Text>
+                <Text style={styles.exerciseDetailTitle}>{getLocalizedName()}</Text>
               </View>
             </View>
 
@@ -641,7 +662,7 @@ Alert.alert(
                       <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
                       <Text style={styles.detailCardTitle}>{t('strategy.description')}</Text>
                     </View>
-                    <Text style={styles.detailCardContent}>{strategy.descripcion}</Text>
+                    <Text style={styles.detailCardContent}>{getLocalizedDescription()}</Text>
                   </View>
                 )}
 
@@ -651,7 +672,7 @@ Alert.alert(
                       <Ionicons name="flag-outline" size={18} color="#E91E63" />
                       <Text style={styles.detailCardTitle}>{t('strategy.objective')}</Text>
                     </View>
-                    <Text style={styles.detailCardContent}>{strategy.objetivo}</Text>
+                    <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
                   </View>
                 )}
                 
@@ -1104,6 +1125,15 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
 }
 
 function StrategyCard({ strategy, onPress, IS_MOBILE, isGrid = false, forceWidth = null, forceHeight = null, onOpenOptions, styles }) {
+  const { i18n } = useTranslation();
+  const lang = i18n.language;
+
+  const getLocalizedName = () => {
+    if (lang === 'en' && strategy.translations?.en?.nombre) {
+      return strategy.translations.en.nombre;
+    }
+    return strategy.nombre;
+  };
   
   // Función para obtener el nombre de la carpeta
   const getFolderName = () => {
@@ -1159,7 +1189,7 @@ function StrategyCard({ strategy, onPress, IS_MOBILE, isGrid = false, forceWidth
               numberOfLines={isGrid ? 2 : 1} 
               ellipsizeMode="tail"
             >
-              {strategy.nombre}
+              {getLocalizedName()}
             </Text>
             {strategy.isGlobal && (
               <Ionicons name="globe-outline" size={14} color="#16a34a" />
@@ -1212,6 +1242,13 @@ export default function StrategyList({ navigation: navigationProp }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
+
+  const getStrategyLocalizedName = (strategy) => {
+    if (i18n.language === 'en' && strategy?.translations?.en?.nombre) {
+      return strategy.translations.en.nombre;
+    }
+    return strategy?.nombre || '';
+  };
   const [creating, setCreating] = useState(() => {
     // En web esta lista se desmonta al navegar al editor del campo y se
     // remonta al volver. Restauramos el modo edición/creación para que el
@@ -1223,6 +1260,8 @@ export default function StrategyList({ navigation: navigationProp }) {
     const s = loadFormDraft(STORAGE_KEYS.STRATEGY_LIST, { remove: false });
     return s?.editingStrategy || null;
   });
+  console.log(editingStrategy);
+  
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
@@ -1321,7 +1360,7 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   useEffect(() => {
     if (idUsuario) {
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       dispatch(fetchStrategyFolders({ lang }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
       dispatch(fetchGlobalStrategies({ lang }));
@@ -1373,7 +1412,7 @@ export default function StrategyList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT);
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
-    dispatch(fetchEstrategiasUsuario({ user: idUsuario }));
+    dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
     if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
   };
 
@@ -1462,7 +1501,7 @@ export default function StrategyList({ navigation: navigationProp }) {
       })).unwrap();
       
       // Refresh data
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       dispatch(fetchStrategyFolders({ lang }));
       if (currentFolderId) {
         dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
@@ -1482,7 +1521,7 @@ const handleDelete = (strategy) => {
     }
     Alert.alert(
       t('strategy.deleteStrategy'),
-      t('strategy.deleteStrategyConfirmationName', { name: strategy.nombre }),
+      t('strategy.deleteStrategyConfirmationName', { name: getStrategyLocalizedName(strategy) }),
       [
         { text: t('common.cancel'), style: "cancel" },
         {
@@ -1492,7 +1531,7 @@ const handleDelete = (strategy) => {
             await dispatch(deleteEstrategia(strategy._id));
             showNotification(t('strategy.strategyDeleted', 'Estrategia eliminada'), 'success');
             // Recargar datos para reflejar cambios
-            dispatch(fetchEstrategiasUsuario({ user: idUsuario }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
             if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
           }
         }
@@ -1777,6 +1816,7 @@ const handleDelete = (strategy) => {
         onBack={() => setViewingStrategy(null)}
         navigation={navigation}
         onEdit={async (strategy) => {
+          
           if (strategy.isGlobal && userRole !== 'admin') {
             try {
               const result = await duplicateGlobalStrategyForEdit(strategy);
@@ -1791,6 +1831,7 @@ const handleDelete = (strategy) => {
               return;
             }
           } else {
+            
             setEditingStrategy(strategy);
           }
           setCreating(true);
@@ -1802,7 +1843,7 @@ const handleDelete = (strategy) => {
       />
     );
   }
-
+  
   if (creating || editingStrategy) {
     return (
       <CreateStrategyForm
@@ -2090,7 +2131,7 @@ const handleDelete = (strategy) => {
                         })).unwrap();
                       }
                       showNotification(t('strategy.cloneCreated'), 'success');
-                      dispatch(fetchEstrategiasUsuario({ user: idUsuario }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
                       dispatch(fetchGlobalStrategies({ lang }));
                       if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
                     } catch (err) {

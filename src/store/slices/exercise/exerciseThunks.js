@@ -5,14 +5,16 @@ import { linkVideoToExercise } from '@/api/video';
 
 export const fetchEjerciciosUsuario = createAsyncThunk(
   'ejercicio/fetchEjerciciosUsuario',
-  async ({ user }) => {
-    const res = await api.get(`/exercise/user/${user}`);
+  async ({ user, lang } = {}) => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/exercise/user/${user}${params}`);
     return res.data;
   }
 );
 
-export const fetchEjercicio = createAsyncThunk('ejercicio/fetchEjercicio', async ({ id }) => {
-  const res = await api.get(`/exercise/${id}`);
+export const fetchEjercicio = createAsyncThunk('ejercicio/fetchEjercicio', async ({ id, lang } = {}) => {
+  const params = lang ? `?lang=${lang}` : '';
+  const res = await api.get(`/exercise/${id}${params}`);
   return res.data;
 });
 
