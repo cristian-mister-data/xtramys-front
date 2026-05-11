@@ -1691,7 +1691,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                     {t('tacticalBoard.textPanel.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={handleClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -1993,7 +1993,7 @@ function ConnectorsModal({
                     {t('tacticalBoard.connectors.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -2409,7 +2409,7 @@ function SettingsPanel({
                     {t('tacticalBoard.settings.title')}
                   </Text>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -2840,7 +2840,7 @@ function LeftEditPanel({
                     }
                   </Text>
                   <TouchableOpacity style={[styles.proModalCloseBtn, { width: 28, height: 28 }]} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -3583,7 +3583,7 @@ function LockedElementsPanel({
                     </Text>
                   </View>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -4050,11 +4050,11 @@ realPlayers: assignedPlayers.map((player, idx) => {
       <View style={{ flex: 1 }}>
         <View style={[styles.proModalOverlay, isMobile ? { padding: mobileModalMargin } : { alignItems: 'flex-end' }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[isMobile ? styles.proModalContainer : styles.proModalContainerSide, formationModalPanelStyle]}>
+            <View style={[isMobile ? styles.proModalContainer : styles.proModalContainerSide, formationModalPanelStyle]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>?</Text>
+                    <Text style={{ fontSize: 14 }}>⚽</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('formations.title')}
@@ -4069,7 +4069,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                     <Feather name="settings" size={14} color={showSettings ? '#fff' : '#666'} />
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 16, color: '#666' }}>?</Text>
+                    <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -4448,7 +4448,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                             justifyContent: 'center',
                             marginBottom: 6
                           }}>
-                            <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>?</Text>
+                            <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>⚽</Text>
                           </View>
                           <Text style={{
                             fontSize: isMobile ? 15 : 20,
@@ -4803,7 +4803,7 @@ function FieldCarouselModal({
                 {t('field.selectField')}
               </Text>
               <TouchableOpacity style={styles.proModalCloseBtn} onPress={closeCarouselModal}>
-                <Text style={{ fontSize: 16, color: '#666' }}>?</Text>
+                <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -13400,7 +13400,7 @@ const handleCancelar = useCallback(async () => {
                       {canHaveFill ? t('tacticalBoard.lineConfig.titleShape') : t('tacticalBoard.lineConfig.titleLine')}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -13889,7 +13889,7 @@ const handleCancelar = useCallback(async () => {
                       {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -14236,7 +14236,7 @@ const handleCancelar = useCallback(async () => {
                       {t('tacticalBoard.teamPlayersModal.title')}
                     </Text>
                     <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>?</Text>
+                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
