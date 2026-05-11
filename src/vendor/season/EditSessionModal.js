@@ -24,6 +24,7 @@ import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { getVideosByExercise, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
+import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import ExerciseSelectorModal from '@/vendor/shared/ExerciseSelectorModal';
@@ -149,14 +150,6 @@ export default function EditSessionModal({
       loadVideoAvailability();
     }
   }, [visible, availableExercises]);
-  // Video player para el modal
-  const videoPlayer = useVideoPlayer(videoUrl, player => {
-    if (videoUrl) {
-      player.loop = false;
-      player.play();
-    }
-  });
-  
   // Función para ver videos del ejercicio
   const handlePlayExerciseVideo = async (exercise) => {
     setExerciseForVideo(exercise);
@@ -164,41 +157,14 @@ export default function EditSessionModal({
     setIsGeneratingVideo(true);
     
     try {
-      // Cargar los videos del ejercicio desde la API
       const videos = await getVideosByExercise(exercise._id);
       
       if (videos && videos.length > 0) {
-        const video = videos[0]; // Tomar el primer video
+        const video = videos[0];
         setSelectedVideo(video);
-        
-        // Obtener la imagen del campo basada en fieldType
-        const field = getFieldById(video.fieldType);
-        let fieldImageData = null;
-        
-        if (field && field.image) {
-          try {
-            const asset = field.image;
-            const assetUri = Image.resolveAssetSource(asset).uri;
-            const response = await fetch(assetUri);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            fieldImageData = await new Promise((resolve, reject) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          } catch (err) {
-            console.warn('Error cargando imagen del campo:', err);
-          }
-        }
-        
-        // Regenerar el video con la imagen del campo
-        const result = await regenerateVideoWithField(video._id, fieldImageData);
-        
-        if (result.success && result.videoId) {
-          const streamUrl = getVideoStreamUrl(result.videoId);
-          setVideoUrl(streamUrl);
-        }
+        const url = await resolvePlayableVideoUrl(video);
+        if (url) setVideoUrl(url);
+        else { Alert.alert(t('message.info'), t('exercise.noVideos')); setShowVideoModal(false); }
       } else {
         Alert.alert(t('message.info'), t('exercise.noVideos'));
         setShowVideoModal(false);

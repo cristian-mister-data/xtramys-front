@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getReadyDownloadUrl } from '@/utils/api';
+import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import { fetchExerciseFolders, fetchExerciseFoldersFlat, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
@@ -264,8 +265,6 @@ export default function ExerciseSelectorModal({
     [selectedIds, allExercises]
   );
 
-  const videoPlayer = useVideoPlayer(videoUrl, p => { if (videoUrl) { p.loop = false; p.play(); } });
-
   // ── Navegación ──
   const navigateToFolder = useCallback((folder) => {
     setFolderPath(prev => [...prev, { _id: folder._id, nombre: getFolderName(folder), color: folder.color }]);
@@ -301,18 +300,9 @@ export default function ExerciseSelectorModal({
       const videos = await getVideosByExercise(exercise._id);
       if (videos?.length > 0) {
         const video = videos[0]; setSelectedVideo(video);
-        const field = getFieldById(video.fieldType);
-        let fieldImgData = null;
-        if (field?.image) {
-          try {
-            const uri = Image.resolveAssetSource(field.image).uri;
-            const resp = await fetch(uri); const blob = await resp.blob();
-            const reader = new FileReader();
-            fieldImgData = await new Promise((res, rej) => { reader.onloadend = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob); });
-          } catch (e) { console.warn('Error campo:', e); }
-        }
-        const r = await regenerateVideoWithField(video._id, fieldImgData);
-        if (r.success && r.videoId) setVideoUrl(getVideoStreamUrl(r.videoId));
+        const url = await resolvePlayableVideoUrl(video);
+        if (url) setVideoUrl(url);
+        else { Alert.alert(t('message.info'), t('exercise.noVideos')); setShowVideoModal(false); }
       } else { Alert.alert(t('message.info'), t('exercise.noVideos')); setShowVideoModal(false); }
     } catch (err) { console.error(err); Alert.alert(t('message.error'), t('exercise.videoPlayError')); setShowVideoModal(false); }
     finally { setIsGeneratingVideo(false); }
@@ -328,15 +318,28 @@ export default function ExerciseSelectorModal({
     if (!selectedVideo?._id) return;
     try {
       setIsDownloading(true);
-      const url = await getReadyDownloadUrl(selectedVideo._id);
-      const fileUri = FileSystem.documentDirectory + `${selectedVideo.nombre || 'video'}.mp4`;
-      const dl = FileSystem.createDownloadResumable(url, fileUri, {}, () => {});
-      const result = await dl.downloadAsync();
-      if (!result?.uri) throw new Error('Download failed');
-      if (Platform.OS === 'android') {
-        try { const a = await MediaLibrary.createAssetAsync(result.uri); await MediaLibrary.createAlbumAsync('xtramys', a, false); Alert.alert(t('message.success'), t('video.savedToGallery')); }
-        catch { const ok = await Sharing.isAvailableAsync(); if (ok) await Sharing.shareAsync(result.uri, { mimeType: 'video/mp4' }); }
-      } else { await MediaLibrary.requestPermissionsAsync(); const a = await MediaLibrary.createAssetAsync(result.uri); await MediaLibrary.createAlbumAsync('xtramys', a, false); Alert.alert(t('message.success'), t('video.savedToGallery')); }
+      const url = await resolvePlayableVideoUrl(selectedVideo);
+      if (!url) throw new Error('No se pudo obtener el vídeo');
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Error ${resp.status}`);
+      const blob = await resp.blob();
+      if (Platform.OS === 'web') {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${selectedVideo.nombre || 'video'}.mp4`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } else {
+        const fileUri = FileSystem.documentDirectory + `${selectedVideo.nombre || 'video'}.mp4`;
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result.split(',')[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+          try { const asset = await MediaLibrary.createAssetAsync(fileUri); await MediaLibrary.createAlbumAsync('xtramys', asset, false); Alert.alert(t('message.success'), t('video.savedToGallery')); }
+          catch { const ok = await Sharing.isAvailableAsync(); if (ok) await Sharing.shareAsync(fileUri, { mimeType: 'video/mp4' }); }
+        };
+        reader.readAsDataURL(blob);
+      }
     } catch { Alert.alert(t('message.error'), t('video.saveFailed')); }
     finally { setIsDownloading(false); }
   };
@@ -731,7 +734,7 @@ export default function ExerciseSelectorModal({
                   <View style={s.vidLoading}><ActivityIndicator size="large" color="#E91E63" /><Text style={s.vidLoadTxt}>{t('exercise.generatingVideo')}</Text></View>
                 ) : videoUrl ? (
                   <>
-                    <View style={{ aspectRatio: 16 / 9, width: '100%' }}><VideoView player={videoPlayer} style={{ flex: 1 }} contentFit="contain" nativeControls /></View>
+                    <View style={{ aspectRatio: 16 / 9, width: '100%' }}><VideoPlayerView url={videoUrl} /></View>
                     <TouchableOpacity style={s.vidDlBtn} onPress={downloadVideo} disabled={isDownloading}>
                       {isDownloading ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="download" size={18} color="#fff" />}
                       <Text style={s.vidDlTxt}>{isDownloading ? t('video.downloading') : t('video.download')}</Text>
@@ -922,3 +925,11 @@ const makeS = (THEME) => StyleSheet.create({
   vidDlBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2196F3', paddingVertical: 12, paddingHorizontal: 20, marginHorizontal: 16, marginVertical: 12, borderRadius: 10, gap: 8 },
   vidDlTxt: { color: THEME.surface, fontSize: 14, fontWeight: '600' },
 });
+
+// Componente aislado para el player de video — se recrea cuando cambia la URL
+function VideoPlayerView({ url }) {
+  const player = useVideoPlayer(url || '', p => {
+    if (url) { p.loop = false; p.play(); }
+  });
+  return <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls />;
+}

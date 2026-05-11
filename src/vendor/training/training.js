@@ -49,6 +49,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { generateSessionPDF } from './SessionPDF';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField } from '@/utils/api';
+import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import ExerciseSelectorModal from '@/vendor/shared/ExerciseSelectorModal';
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } from '@/data/strengthExercises';
@@ -858,21 +859,10 @@ export default function Training() {
   
   // NOTE: Wellness states and functions moved to TrainingSessionDetailModal
   
-  // Video player para el modal principal
-  const mainVideoPlayer = useVideoPlayer(videoUrlMain, player => {
-    if (videoUrlMain) {
-      player.loop = false;
-      player.play();
-    }
-  });
-  
   // Función para reproducir video de ejercicio en el main component
   const handlePlayExerciseVideoMain = async (exercise) => {
-    // Los modales compartidos (EditSessionModal, TrainingSessionDetailModal) manejan sus propios videos
-    // Esta función es para reproducciones directas desde el main component
     videoOpenedFromModalRef.current = null;
     
-    // Pequeño delay para asegurar transiciones suaves
     setTimeout(async () => {
       setExerciseForVideoMain(exercise);
       setShowExerciseVideoModal(true);
@@ -884,33 +874,9 @@ export default function Training() {
         if (videos && videos.length > 0) {
           const video = videos[0];
           setSelectedVideoMain(video);
-          
-          const field = getFieldById(video.fieldType);
-          let fieldImageData = null;
-          
-          if (field && field.image) {
-            try {
-              const asset = field.image;
-              const assetUri = Image.resolveAssetSource(asset).uri;
-              const response = await fetch(assetUri);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              fieldImageData = await new Promise((resolve, reject) => {
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-              });
-            } catch (err) {
-              console.warn('Error cargando imagen del campo:', err);
-            }
-          }
-          
-          const result = await regenerateVideoWithField(video._id, fieldImageData);
-          
-          if (result.success && result.videoId) {
-            const streamUrl = getVideoStreamUrl(result.videoId);
-            setVideoUrlMain(streamUrl);
-          }
+          const url = await resolvePlayableVideoUrl(video);
+          if (url) setVideoUrlMain(url);
+          else { Alert.alert(t('message.info'), t('exercise.noVideos')); setShowExerciseVideoModal(false); }
         } else {
           Alert.alert(t('message.info'), t('exercise.noVideos'));
           setShowExerciseVideoModal(false);
@@ -1816,12 +1782,7 @@ export default function Training() {
               </View>
             ) : videoUrlMain ? (
               <View style={styles.videoPlayerContainer}>
-                <VideoView
-                  player={mainVideoPlayer}
-                  style={styles.videoPlayer}
-                  contentFit="contain"
-                  nativeControls
-                />
+                <VideoPlayerView url={videoUrlMain} />
               </View>
             ) : null}
           </View>
@@ -5771,3 +5732,10 @@ const styles = StyleSheet.create({
   
   // NOTE: Team assignment view styles removed - now in TrainingSessionDetailModal
 });
+
+function VideoPlayerView({ url }) {
+  const player = useVideoPlayer(url || '', p => {
+    if (url) { p.loop = false; p.play(); }
+  });
+  return <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls />;
+}
