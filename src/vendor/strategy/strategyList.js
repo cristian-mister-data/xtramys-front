@@ -61,6 +61,8 @@ const DETAIL_FIELD_HEIGHT = 132;
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
@@ -1383,10 +1385,16 @@ export default function StrategyList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
   };
 
+  const hasFolder = (strategy) => {
+    if (!strategy.folder) return false;
+    if (typeof strategy.folder === 'object') return !!strategy.folder._id;
+    return true; // string ID
+  };
+
   const displayedStrategies = (() => {
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderStrategies;
-      const rootGlobal = globalStrategies.filter((s) => !s.folder);
+      const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
       const q = filters.titulo
         ? rootGlobal.filter((s) => s.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
         : rootGlobal;
@@ -1395,7 +1403,7 @@ export default function StrategyList({ navigation: navigationProp }) {
     const base = listFilter === 'mine'
       ? strategies.filter((st) => !st.isGlobal)
       : strategies;
-    return currentFolderId ? currentFolderStrategies : base.filter((st) => !st.folder);
+    return currentFolderId ? currentFolderStrategies : base.filter((st) => !hasFolder(st));
   })();
 
   const filteredStrategies = listFilter === 'global'

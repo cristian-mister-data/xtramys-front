@@ -1001,7 +1001,7 @@ export default function Home({ navigation: navigationProp }) {
         ) : (
           <View style={styles.healthyCardModern}>
             <LinearGradient
-              colors={['#ecfdf5', '#d1fae5']}
+              colors={theme.mode === 'dark' ? ['#064e3b', '#065f46', '#047857'] : ['#ecfdf5', '#d1fae5']}
               style={styles.healthyCardGradient}
             >
               <View style={styles.healthyCardContent}>
@@ -1011,13 +1011,13 @@ export default function Home({ navigation: navigationProp }) {
                   </LinearGradient>
                 </View>
                 <View style={styles.healthyInfoContainer}>
-                  <Text style={styles.healthyTitle}>{t('home.noActiveInjuries')}</Text>
-                  <Text style={styles.healthySubtext}>{t('home.allAvailable')}</Text>
+                  <Text style={[styles.healthyTitle, theme.mode === 'dark' && { color: '#fff' }]}>{t('home.noActiveInjuries')}</Text>
+                  <Text style={[styles.healthySubtext, theme.mode === 'dark' && { color: '#a7f3d0' }]}>{t('home.allAvailable')}</Text>
                 </View>
               </View>
-              <View style={styles.healthyBadge}>
-                <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
-                <Text style={styles.healthyBadgeText}>100% disponible</Text>
+              <View style={[styles.healthyBadge, theme.mode === 'dark' && { backgroundColor: 'rgba(16,185,129,0.25)' }]}>
+                <Ionicons name="shield-checkmark" size={14} color={theme.mode === 'dark' ? '#6ee7b7' : theme.colors.success} />
+                <Text style={[styles.healthyBadgeText, theme.mode === 'dark' && { color: '#6ee7b7' }]}>100% disponible</Text>
               </View>
             </LinearGradient>
           </View>

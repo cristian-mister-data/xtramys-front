@@ -4,12 +4,15 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
 import { Button, Field, Label, Row } from '@/ui/primitives';
 import { FORMATION_NAMES } from './formations';
+import { MdOutlineSportsSoccer } from 'react-icons/md';
 
 const Select = styled.select`
   padding: 8px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   font-size: 14px;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const FormationList = styled.div`
@@ -21,19 +24,27 @@ const FormationList = styled.div`
 
 const FormationBtn = styled.button`
   padding: 10px;
-  border: 2px solid ${({ $sel }) => ($sel ? '#1a237e' : '#e2e8f0')};
-  background: ${({ $sel }) => ($sel ? '#eff6ff' : '#fff')};
+  border: 2px solid ${({ $sel, theme }) => ($sel ? theme.colors.primary : theme.colors.border)};
+  background: ${({ $sel, theme }) => ($sel ? (theme.mode === 'dark' ? 'rgba(96,165,250,0.15)' : '#eff6ff') : theme.colors.surface)};
+  color: ${({ theme }) => theme.colors.text};
   border-radius: 8px;
   cursor: pointer;
   font-weight: 700;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  &:hover {
+    background: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(96,165,250,0.1)' : '#f1f5f9')};
+  }
 `;
 
 export default function FormationModal({ open, onClose, onApply, defaultCount = 11 }) {
   const { t } = useTranslation();
   const [count, setCount] = useState(defaultCount);
   const [formation, setFormation] = useState(null);
-  const [target, setTarget] = useState('home'); // home | away
+  const [target, setTarget] = useState('home');
 
   const names = FORMATION_NAMES[count] || [];
 
@@ -89,6 +100,7 @@ export default function FormationModal({ open, onClose, onApply, defaultCount = 
             $sel={n === formation}
             onClick={() => setFormation(n)}
           >
+            <MdOutlineSportsSoccer size={20} />
             {n}
           </FormationBtn>
         ))}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
@@ -89,9 +89,14 @@ export default function CreateStrategyForm({
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGlobal, setIsGlobal] = useState(editingStrategy?.isGlobal || false);
 
+  const [saving, setSaving] = useState(false);
   const [nameEn, setNameEn] = useState(editingStrategy?.translations?.en?.nombre || '');
   const [descriptionEn, setDescriptionEn] = useState(editingStrategy?.translations?.en?.descripcion || '');
   const [objectiveEn, setObjectiveEn] = useState(editingStrategy?.translations?.en?.objetivo || '');
+
+  const stableImagen = useMemo(() => imagen, [imagen]);
+  const stableFieldElements = useMemo(() => fieldElements, [fieldElements]);
+  const stableFieldType = useMemo(() => fieldType, [fieldType]);
 
   // Estados para carpetas de estrategia
   const [showFolderModal, setShowFolderModal] = useState(false);
@@ -324,8 +329,8 @@ export default function CreateStrategyForm({
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
         isGlobal: isAdmin ? isGlobal : false,
-        translations: (isAdmin && isGlobal && (nameEn || descriptionEn || objectiveEn))
-          ? { en: { nombre: nameEn, descripcion: descriptionEn, objetivo: objectiveEn } }
+        translations: (isAdmin && isGlobal)
+          ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
           : undefined,
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
@@ -419,10 +424,10 @@ export default function CreateStrategyForm({
               <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>{t('strategy.loadingField')}</Text>
               </View>
-            ) : fieldElements && fieldElements.length > 0 ? (
+            ) : stableFieldElements && stableFieldElements.length > 0 ? (
               <>
                 <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
-                <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} />
+                <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} />
                 <TouchableOpacity style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} onPress={handleOpenField}>
                     <Ionicons name="pencil-outline" size={18} color={onWarningColor} style={{ marginRight: 8 }} />
                     <Text style={[styles.saveButtonText, { color: onWarningColor }]}>{t('strategy.editGraphic')}</Text>
