@@ -597,28 +597,32 @@ Alert.alert(
                   <TouchableOpacity
                     style={styles.modalPdfButton}
                     onPress={generatePDF}
+                    activeOpacity={0.7}
                   >
-                    <MaterialIcons name="picture-as-pdf" size={20} color="#d32f2f" />
+                    <MaterialIcons name="picture-as-pdf" size={20} color={theme.colors.errorSoftText} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.modalImageButton}
                     onPress={saveImageToGallery}
+                    activeOpacity={0.7}
                   >
-                    <MaterialIcons name="image" size={20} color="#4CAF50" />
+                    <MaterialIcons name="image" size={20} color={theme.colors.successSoftText} />
                   </TouchableOpacity>
                 </>
               )}
               <TouchableOpacity
                 style={styles.modalEditButton}
                 onPress={() => onEdit(exercise)}
+                activeOpacity={0.7}
               >
-                <MaterialIcons name="edit" size={20} color="#374151" />
+                <MaterialIcons name="edit" size={20} color={theme.colors.warningSoftText} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onBack}
+                activeOpacity={0.7}
               >
-                <MaterialIcons name="close" size={24} color="#64748b" />
+                <MaterialIcons name="close" size={22} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -3771,24 +3775,36 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 20,
   },
   modalCloseBtn: {
-    padding: 8,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: theme.colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalEditButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surfaceAlt,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: theme.colors.warningSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalPdfButton: {
-    padding: 8,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: theme.colors.errorSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalImageButton: {
-    padding: 8,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: theme.colors.successSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // --- Estilos del detalle de ejercicio ---
