@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
@@ -7,8 +7,8 @@ import {
   getPositionOptions,
   getPositionColor,
   getPositionIcon,
-  fileToBase64,
 } from './playerHelpers';
+import ImageCropper from '@/components/season/ImageCropper';
 
 const Grid = styled.div`
   display: grid;
@@ -112,6 +112,8 @@ export default function PlayerFormModal({
   const { t } = useTranslation();
   const [data, setData] = useState(emptyForm);
   const [error, setError] = useState('');
+  const [cropperSrc, setCropperSrc] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -131,19 +133,32 @@ export default function PlayerFormModal({
       setData(emptyForm);
     }
     setError('');
+    setCropperSrc(null);
   }, [open, mode, player]);
 
   const set = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
 
-  const onPickPhoto = async (e) => {
+  const handleFilePick = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError(t('player.invalidImage', 'El archivo seleccionado no es una imagen válida'));
       return;
     }
-    const b64 = await fileToBase64(file);
-    setData((d) => ({ ...d, foto: b64 }));
+    const url = URL.createObjectURL(file);
+    setCropperSrc(url);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleCropConfirm = (croppedB64) => {
+    setData((d) => ({ ...d, foto: croppedB64 }));
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
+  };
+
+  const handleCropCancel = () => {
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
   };
 
   const removePhoto = () => setData((d) => ({ ...d, foto: null }));
@@ -228,7 +243,7 @@ export default function PlayerFormModal({
                 <Button as="span" type="button" $variant="ghost">
                   {t('player.choosePhoto', 'Elegir foto')}
                 </Button>
-                <input type="file" accept="image/*" onChange={onPickPhoto} style={{ display: 'none' }} />
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleFilePick} style={{ display: 'none' }} />
               </Label>
               {data.foto ? (
                 <Button type="button" $variant="ghost" onClick={removePhoto}>
@@ -305,6 +320,14 @@ export default function PlayerFormModal({
           {error ? <ErrorText>{error}</ErrorText> : null}
         </Stack>
       </form>
+      {cropperSrc && (
+        <ImageCropper
+          src={cropperSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+          title={t('player.adjustPhoto', 'Ajustar foto')}
+        />
+      )}
     </Modal>
   );
 }

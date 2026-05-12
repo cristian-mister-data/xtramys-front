@@ -500,6 +500,9 @@
             "senior": "Senior",
             "otro": "Otro"
         },
+        "adjustImage": "Ajustar imagen",
+        "adjustBadge": "Ajustar escudo",
+        "resetView": "Restablecer",
         "updateTeamSuccess": "Equipo actualizado correctamente",
         "updateTeamError": "Error al actualizar el equipo",
         "importPlayers": "Importar jugadores",

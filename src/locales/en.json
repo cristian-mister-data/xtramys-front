@@ -499,6 +499,9 @@
             "senior": "Senior",
             "otro": "Other"
         },
+        "adjustImage": "Adjust image",
+        "adjustBadge": "Adjust badge",
+        "resetView": "Reset",
         "updateTeamSuccess": "Team updated successfully",
         "updateTeamError": "Error updating team",
         "importPlayers": "Import players",

@@ -8,8 +8,8 @@ import {
   categoryOptions,
   timePerHalfOptions,
   playersPerTeamOptions,
-  fileToBase64,
 } from './seasonHelpers';
+import ImageCropper from './ImageCropper';
 
 const BadgeBox = styled.button`
   width: 96px;
@@ -89,6 +89,7 @@ export default function TeamFormModal({
   });
   const [importPlayers, setImportPlayers] = useState(false);
   const [error, setError] = useState(null);
+  const [cropperSrc, setCropperSrc] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -107,17 +108,24 @@ export default function TeamFormModal({
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }));
 
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      const b64 = await fileToBase64(file);
-      update({ escudo: b64 });
-    } catch {
-      setError(t('season.imageSelectError', 'Error al cargar la imagen'));
-    } finally {
-      if (fileRef.current) fileRef.current.value = '';
-    }
+    const url = URL.createObjectURL(file);
+    setCropperSrc(url);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleCropConfirm = async (croppedB64) => {
+    console.log('[TeamFormModal] handleCropConfirm received:', typeof croppedB64, 'length:', croppedB64?.length, 'startsWith data:', croppedB64?.startsWith?.('data:'));
+    update({ escudo: croppedB64 });
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
+  };
+
+  const handleCropCancel = () => {
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
   };
 
   const handleSubmit = () => {
@@ -270,6 +278,13 @@ export default function TeamFormModal({
           </Button>
         </Row>
       </Stack>
+      {cropperSrc && (
+        <ImageCropper
+          src={cropperSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </Modal>
   );
 }

@@ -555,7 +555,7 @@ export default function GestionEquipos() {
   const pickBadgeImage = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (!permissionResult.granted) {
         Alert.alert(t('message.error'), t('season.galleryPermissionRequired'));
         return;
@@ -569,8 +569,11 @@ export default function GestionEquipos() {
         base64: true,
       });
 
+      console.log('[pickBadgeImage] result:', JSON.stringify({ canceled: result.canceled, hasAssets: !!result.assets, assetKeys: result.assets?.[0] ? Object.keys(result.assets[0]) : null }));
+
       if (!result.canceled && result.assets[0]) {
         const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        console.log('[pickBadgeImage] base64Image length:', base64Image.length, 'startsWith data:', base64Image.startsWith('data:'));
         if (teamToEdit) {
           setTeamToEdit(prev => ({ ...prev, escudo: base64Image }));
         }
@@ -613,9 +616,12 @@ export default function GestionEquipos() {
         return;
       }
 
-      const categoriaLegacy = teamToEdit.categoriaKey === 'otro' 
-        ? teamToEdit.categoriaCustom 
+      const categoriaLegacy = teamToEdit.categoriaKey === 'otro'
+        ? teamToEdit.categoriaCustom
         : teamToEdit.categoriaKey;
+
+      const escudoVal = teamToEdit?.escudo;
+      console.log('[handleUpdateTeam] sending escudo - isNull:', escudoVal === null, 'isUndefined:', escudoVal === undefined, 'isString:', typeof escudoVal === 'string', 'length:', typeof escudoVal === 'string' ? escudoVal.length : 'N/A', 'startsWith data:', typeof escudoVal === 'string' ? escudoVal.startsWith('data:') : false, 'startsWith http:', typeof escudoVal === 'string' ? escudoVal.startsWith('http') : false);
 
       await dispatch(updateEquipo({
         id: teamToEdit._id,
