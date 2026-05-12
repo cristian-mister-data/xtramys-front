@@ -385,7 +385,7 @@ export default function ExerciseSelectorModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-              <Ionicons name="close" size={22} color={THEME.textPrimary} />
+              <Ionicons name="close" size={22} color={THEME.text} />
             </TouchableOpacity>
           </View>
 
