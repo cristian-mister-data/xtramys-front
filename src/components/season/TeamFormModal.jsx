@@ -117,7 +117,6 @@ export default function TeamFormModal({
   };
 
   const handleCropConfirm = async (croppedB64) => {
-    console.log('[TeamFormModal] handleCropConfirm received:', typeof croppedB64, 'length:', croppedB64?.length, 'startsWith data:', croppedB64?.startsWith?.('data:'));
     update({ escudo: croppedB64 });
     if (cropperSrc) URL.revokeObjectURL(cropperSrc);
     setCropperSrc(null);
@@ -283,6 +282,7 @@ export default function TeamFormModal({
           src={cropperSrc}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+          title={t('team.adjustBadge', 'Ajustar escudo')}
         />
       )}
     </Modal>

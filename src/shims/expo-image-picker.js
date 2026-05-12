@@ -361,62 +361,69 @@ function startCrop(img, dataUrl, file, aspect, resolve) {
 // ─── File picker interno ───
 function pickFile({ accept = 'image/*', capture = null, base64 = false, allowsEditing = false, aspect = null } = {}) {
   return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = accept;
-    if (capture) input.capture = capture;
-    input.style.display = 'none';
-    document.body.appendChild(input);
-
     let resolved = false;
-    const cleanup = () => {
-      try { document.body.removeChild(input); } catch (_) { /* noop */ }
-    };
 
-    input.onchange = async () => {
-      const file = input.files && input.files[0];
-      cleanup();
-      if (!file) {
+    const createInput = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = accept;
+      if (capture) input.capture = capture;
+      input.style.display = 'none';
+      input.value = null;
+      document.body.appendChild(input);
+
+      input.onchange = async () => {
+        const file = input.files && input.files[0];
+        try { document.body.removeChild(input); } catch (_) { /* noop */ }
+        if (!file) {
+          resolved = true;
+          return resolve({ canceled: true, assets: null });
+        }
+
+        if (allowsEditing) {
+          const cropResult = await showCropEditor(file, aspect);
+          resolved = true;
+          return resolve(cropResult);
+        }
+
+        const uri = URL.createObjectURL(file);
+        const asset = {
+          uri,
+          width: 0,
+          height: 0,
+          type: file.type.startsWith('video') ? 'video' : 'image',
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          file,
+        };
+        if (base64) {
+          const b64 = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(String(r.result || '').split(',')[1] || '');
+            r.onerror = rej;
+            r.readAsDataURL(file);
+          });
+          asset.base64 = b64;
+        }
         resolved = true;
-        return resolve({ canceled: true, assets: null });
-      }
-
-      if (allowsEditing) {
-        const cropResult = await showCropEditor(file, aspect);
-        resolved = true;
-        return resolve(cropResult);
-      }
-
-      const uri = URL.createObjectURL(file);
-      const asset = {
-        uri,
-        width: 0,
-        height: 0,
-        type: file.type.startsWith('video') ? 'video' : 'image',
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type,
-        file,
+        resolve({ canceled: false, assets: [asset] });
       };
-      if (base64) {
-        const b64 = await new Promise((res, rej) => {
-          const r = new FileReader();
-          r.onload = () => res(String(r.result || '').split(',')[1] || '');
-          r.onerror = rej;
-          r.readAsDataURL(file);
-        });
-        asset.base64 = b64;
-      }
-      resolved = true;
-      resolve({ canceled: false, assets: [asset] });
+
+      return input;
     };
+
+    const input = createInput();
+    input.value = '';
+    input.click();
+    setTimeout(() => { try { input.value = ''; } catch (_) { /* noop */ } }, 0);
 
     if (!allowsEditing) {
       const onFocus = () => {
         window.removeEventListener('focus', onFocus);
         setTimeout(() => {
           if (!resolved) {
-            cleanup();
+            try { document.body.removeChild(input); } catch (_) { /* noop */ }
             resolved = true;
             resolve({ canceled: true, assets: null });
           }
@@ -424,8 +431,6 @@ function pickFile({ accept = 'image/*', capture = null, base64 = false, allowsEd
       };
       window.addEventListener('focus', onFocus);
     }
-
-    input.click();
   });
 }
 

@@ -5809,7 +5809,7 @@ function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
 
 const BOARD_OBJECT_HIT_TOLERANCE = 24;
 const SHAPE_BORDER_HIT_TOLERANCE = 10;
-const ALLOW_MULTI_ELEMENT_DRAG = false;
+const ALLOW_MULTI_ELEMENT_DRAG = true;
 
 function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
   const segmentX = endX - startX;
