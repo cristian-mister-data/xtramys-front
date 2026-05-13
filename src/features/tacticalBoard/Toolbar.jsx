@@ -2,8 +2,8 @@
  * Toolbar de la pizarra táctica — barra superior de SISTEMA.
  *
  * Tras la migración a Palette inferior (estilo SlidingPalette de misterdata),
- * esta toolbar sólo aloja los botones de sistema: select/eraser, color, dashed,
- * undo/redo, delete, formación, campo, vídeo y guardar.
+ * esta toolbar aloja los botones de sistema: vídeo (primero, siempre a mano),
+ * select/eraser, color, dashed, undo/redo, delete, formación, campo y guardar.
  *
  * Las herramientas de colocación de iconos (jugadores, materiales, líneas,
  * formas, texto) viven ahora en `Palette.jsx` debajo del campo.
@@ -22,10 +22,15 @@ const Bar = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  row-gap: 8px;
   padding: 8px 10px;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
+
+  @media (max-width: 900px) {
+    padding: 8px 8px;
+  }
 `;
 
 const Group = styled.div`
@@ -142,6 +147,18 @@ export default function TacticalToolbar({
   return (
     <Bar>
       <Group>
+        {isRecording ? (
+          <DangerBtn type="button" onClick={onOpenRecorder}>
+            <MdStop /> Grabando…
+          </DangerBtn>
+        ) : (
+          <TextBtn type="button" onClick={onOpenRecorder} title="Grabar animación (vídeo)">
+            <MdVideocam /> Vídeo
+          </TextBtn>
+        )}
+      </Group>
+
+      <Group>
         <IconBtn type="button" title="Seleccionar"
           $active={activeTool === 'select'}
           onClick={() => onToolChange('select')}>
@@ -212,15 +229,6 @@ export default function TacticalToolbar({
       <Spacer />
 
       <Group>
-        {isRecording ? (
-          <DangerBtn type="button" onClick={onOpenRecorder}>
-            <MdStop /> Grabando…
-          </DangerBtn>
-        ) : (
-          <TextBtn type="button" onClick={onOpenRecorder}>
-            <MdVideocam /> Vídeo
-          </TextBtn>
-        )}
         {onSave && (
           <PrimaryBtn type="button" onClick={onSave}>
             <MdSave /> {saveLabel}

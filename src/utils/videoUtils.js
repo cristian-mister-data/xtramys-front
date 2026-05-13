@@ -47,7 +47,8 @@ async function webmToMp4(webmBlob) {
     '-i', inputName,
     '-c:v', 'libx264',
     '-preset', 'fast',
-    '-crf', '23',
+    '-crf', '20',
+    '-tune', 'stillimage',
     '-movflags', '+faststart',
     '-an',
     outputName,
@@ -100,6 +101,19 @@ export const captureFrame = async (_ref, currentElements, frameIndex) => {
 };
 
 const isBlob = (value) => typeof Blob !== 'undefined' && value instanceof Blob;
+
+/** Mejor downsampling / composición 2D sin coste por frame relevante. */
+function applyHighQualityCanvas2D(context) {
+  if (!context) return;
+  context.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in context) {
+    try {
+      context.imageSmoothingQuality = 'high';
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 // Carga una URL/dataURL/objectURL en una HTMLImageElement
 const loadImage = (sourceUrl, crossOrigin = false) => new Promise((resolve, reject) => {
@@ -245,9 +259,11 @@ async function frameSourceToBytes(source) {
 }
 
 function getVideoBitrate(width, height) {
+  const area = Math.max(1, width * height);
+  const ref = 1920 * 1080;
   return Math.max(
-    8_000_000,
-    Math.min(40_000_000, Math.round((width * height) / (1920 * 1080) * 16_000_000)),
+    12_000_000,
+    Math.min(48_000_000, Math.round((area / ref) * 22_000_000)),
   );
 }
 
@@ -274,7 +290,7 @@ async function getWebCodecsConfig(width, height, fps) {
     bitrate: getVideoBitrate(width, height),
     framerate: fps,
     hardwareAcceleration: 'prefer-hardware',
-    latencyMode: 'realtime',
+    latencyMode: 'quality',
     avc: { format: 'avc' },
   };
   const codecCandidates = ['avc1.640028', 'avc1.64001f', 'avc1.4d401f', 'avc1.42001f'];
@@ -308,6 +324,7 @@ async function generateVideoWithWebCodecs(framesDir, frameCount, speed = 1, onPr
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d', { alpha: false });
+  applyHighQualityCanvas2D(ctx);
   const frameDurationUs = Math.round(1_000_000 / fps);
   let encoderError = null;
   // Contar frames realmente codificados (no sólo encolados) para progreso preciso
@@ -397,6 +414,7 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
     outputHeight = sourceHeight % 2 === 0 ? sourceHeight : sourceHeight + 1;
     canvas.width = outputWidth;
     canvas.height = outputHeight;
+    applyHighQualityCanvas2D(ctx);
 
     const config = await getWebCodecsConfig(outputWidth, outputHeight, fps);
     muxer = new Muxer({
@@ -502,7 +520,8 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
         '-i', `${inputPrefix}%04d.${frameExtension}`,
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '18',
+        '-crf', '16',
+        '-tune', 'stillimage',
         '-pix_fmt', 'yuv420p',
         '-movflags', '+faststart',
         '-an',
@@ -566,7 +585,8 @@ async function generateVideoWithMediaRecorder(framesDir, frameCount, speed = 1, 
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  applyHighQualityCanvas2D(ctx);
   ctx.drawImage(firstFrame.image, 0, 0, width, height);
   firstFrame.close();
 

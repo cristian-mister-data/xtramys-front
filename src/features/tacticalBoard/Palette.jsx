@@ -21,11 +21,20 @@ const Bar = styled.div`
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(35,55,75,0.95) 0%, rgba(20,35,50,0.95) 100%);
   border-radius: 14px;
   overflow-x: auto;
   overflow-y: visible;
   position: relative;
+  min-height: 52px;
+  box-sizing: border-box;
+
+  @media (max-width: 900px) {
+    padding-left: 8px;
+    padding-right: 8px;
+    min-height: 48px;
+  }
 
   &::-webkit-scrollbar { height: 6px; }
   &::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }

@@ -14392,28 +14392,12 @@ const handleCancelar = useCallback(async () => {
         </TouchableOpacity>
         )}
 
-        {!hideBottomButtons && (
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            bottom: isMobile ? 10 : 20,
-            left: isMobile ? 94 : 160,
-            backgroundColor: '#9b59b6',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onVideoRecorder}
-        >
-          <Ionicons name="videocam" size={iconSize} color="#fff" />
-        </TouchableOpacity>
-        )}
-
         {/* Bot�n de formaciones */}
         {!hideBottomButtons && (
         <TouchableOpacity
           style={[styles.floatingButton, {
             bottom: isMobile ? 10 : 20,
-            left: isMobile ? 136 : 230,
+            left: isMobile ? 94 : 160,
             backgroundColor: '#2176ff',
             width: buttonSize,
             height: buttonSize,
@@ -14456,6 +14440,21 @@ const handleCancelar = useCallback(async () => {
           disabled={!canRedo}
         >
           <Feather name="corner-up-right" size={iconSize} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.floatingButton, {
+            top: isMobile ? 10 : 20,
+            left: isMobile ? 94 : 160,
+            backgroundColor: '#9b59b6',
+            width: buttonSize,
+            height: buttonSize,
+            borderRadius: buttonRadius,
+            zIndex: 110,
+          }]}
+          onPress={onVideoRecorder}
+        >
+          <Ionicons name="videocam" size={iconSize} color="#fff" />
         </TouchableOpacity>
 
 

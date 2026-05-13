@@ -23,6 +23,25 @@ export const SPEED_TO_DURATIONS = {
   2: { move: 0.4, hold: 0.1 },
 };
 
+function applyHighQualityCanvas2D(context) {
+  if (!context) return;
+  context.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in context) {
+    try {
+      context.imageSmoothingQuality = 'high';
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Bitrate adaptado al tamaño del canvas (misma duración de clip, menos bloques visibles). */
+function webmBitrateForSize(w, h) {
+  const area = Math.max(1, w * h);
+  const ref = 1920 * 1080;
+  return Math.min(22_000_000, Math.max(9_000_000, Math.round((area / ref) * 15_000_000)));
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -110,7 +129,8 @@ export async function recordStageAnimation({
   const streamCanvas = document.createElement('canvas');
   streamCanvas.width = stage.width();
   streamCanvas.height = stage.height();
-  const ctx = streamCanvas.getContext('2d');
+  const ctx = streamCanvas.getContext('2d', { alpha: false });
+  applyHighQualityCanvas2D(ctx);
 
   const renderStageToStreamCanvas = () => {
     ctx.fillStyle = '#000';
@@ -134,7 +154,10 @@ export async function recordStageAnimation({
       : 'video/webm';
 
   const stream = streamCanvas.captureStream(fps);
-  const recorder = new MediaRecorder(stream, { mimeType: mt, videoBitsPerSecond: 4_000_000 });
+  const recorder = new MediaRecorder(stream, {
+    mimeType: mt,
+    videoBitsPerSecond: webmBitrateForSize(streamCanvas.width, streamCanvas.height),
+  });
   const chunks = [];
   recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
