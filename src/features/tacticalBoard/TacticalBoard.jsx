@@ -12,13 +12,14 @@
  *     line, curve, rect, circle, text.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
 import styled from 'styled-components';
 import FieldSVGRenderer from './FieldSVGRenderer';
 import {
   getAspectForView,
   ratioToDisplay,
   displayToRatio,
+  isOutsideVisibleField,
 } from './fieldConfigs';
 import { buildFormation } from './formations';
 import Toolbar from './Toolbar';
@@ -335,12 +336,40 @@ export default function TacticalBoard({
     }
   };
 
-  // --- drag end: convertir px de stage → ratio del campo completo ---
+  // --- drag handlers con zona de eliminacion ---
+  const onElementDragStart = (e) => {
+    const node = e.target;
+    node.opacity(1); node.scaleX(1); node.scaleY(1);
+    const ring = node.findOne('.delIndicator');
+    if (ring) ring.visible(false);
+  };
+
+  const onElementDragMove = (e) => {
+    const node = e.target;
+    const r = p2r(node.x(), node.y());
+    const outside = isOutsideVisibleField(r.x, r.y, viewMode, size.w, size.h);
+    const ring = node.findOne('.delIndicator');
+    if (outside) {
+      node.opacity(0.4); node.scaleX(0.75); node.scaleY(0.75);
+      if (ring) ring.visible(true);
+    } else {
+      node.opacity(1); node.scaleX(1); node.scaleY(1);
+      if (ring) ring.visible(false);
+    }
+    node.getLayer()?.batchDraw();
+  };
+
   const onElementDragEnd = (id) => (e) => {
-    const r = p2r(e.target.x(), e.target.y());
-    const x = Math.max(0, Math.min(1, r.x));
-    const y = Math.max(0, Math.min(1, r.y));
-    applyChange((prev) => prev.map((el) => (el.id === id ? { ...el, x, y } : el)));
+    const node = e.target;
+    const r = p2r(node.x(), node.y());
+    node.opacity(1); node.scaleX(1); node.scaleY(1);
+    const ring = node.findOne('.delIndicator');
+    if (ring) ring.visible(false);
+    node.getLayer()?.batchDraw();
+
+    const outside = isOutsideVisibleField(r.x, r.y, viewMode, size.w, size.h);
+    if (outside) { applyChange((prev) => prev.filter((el) => el.id !== id)); setSelectedId(null); }
+    else { const x = Math.max(0, Math.min(1, r.x)); const y = Math.max(0, Math.min(1, r.y)); applyChange((prev) => prev.map((el) => (el.id === id ? { ...el, x, y } : el))); }
   };
 
   const onSelect = (id) => (e) => {
@@ -465,8 +494,9 @@ export default function TacticalBoard({
           x={pt.x}
           y={pt.y}
           selected={selected}
-          draggable
+          onDragStart={onElementDragStart}
           onDragEnd={onElementDragEnd(el.id)}
+          onDragMove={onElementDragMove}
           onClick={onSelect(el.id)}
           onTap={onSelect(el.id)}
         />
@@ -484,6 +514,8 @@ export default function TacticalBoard({
           r2p={r2p}
           applyChange={applyChange}
           refScale={refScale}
+          viewMode={viewMode}
+          size={size}
         />
       );
     }
@@ -499,6 +531,8 @@ export default function TacticalBoard({
           r2p={r2p}
           applyChange={applyChange}
           refScale={refScale}
+          viewMode={viewMode}
+          size={size}
         />
       );
     }
@@ -514,19 +548,21 @@ export default function TacticalBoard({
           r2p={r2p}
           applyChange={applyChange}
           refScale={refScale}
+          viewMode={viewMode}
+          size={size}
         />
       );
     }
 
     if (el.type === 'text' && pt) {
-      if (el.id === editingTextId) return null; // hidden while editing (HTML overlay)
+      if (el.id === editingTextId) return null;
+      const fs = (el.fontSize || 0.03) * refScale;
+      const textW = Math.max(80, (el.text || '').length * fs * 0.6 + 20);
       return (
-        <Text {...common} x={pt.x} y={pt.y} text={el.text || ''} fill={el.color || '#000'}
-          fontSize={(el.fontSize || 0.03) * refScale} fontStyle="bold" draggable
-          onDragEnd={onElementDragEnd(el.id)} onClick={onSelect(el.id)}
-          onDblClick={() => setEditingTextId(el.id)}
-          onDblTap={() => setEditingTextId(el.id)}
-          stroke={selected ? '#fbbf24' : undefined} strokeWidth={selected ? 1 : 0} />
+        <Group key={el.id} x={pt.x} y={pt.y} draggable onDragStart={onElementDragStart} onDragEnd={onElementDragEnd(el.id)} onDragMove={onElementDragMove} onClick={onSelect(el.id)}>
+          <Rect name="delIndicator" x={-10} y={-10} width={textW} height={fs + 20} stroke="#ff0000" strokeWidth={3} dash={[6, 4]} fill="rgba(255,0,0,0.2)" cornerRadius={4} listening={false} visible={false} />
+          <Text x={0} y={0} text={el.text || ''} fill={el.color || '#000'} fontSize={fs} fontStyle="bold" onDblClick={() => setEditingTextId(el.id)} onDblTap={() => setEditingTextId(el.id)} stroke={selected ? '#fbbf24' : undefined} strokeWidth={selected ? 1 : 0} />
+        </Group>
       );
     }
 

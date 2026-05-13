@@ -5,6 +5,7 @@ import { MdClear, MdAutoFixHigh } from 'react-icons/md';
 import LineupField from './LineupField';
 import { getFormationSlots, POSITION_COLORS } from './formations';
 import { Button, Row, Muted } from '@/ui/primitives';
+import { cdnUrl } from '@/config';
 
 // LineupEditor — visual tap-to-place lineup builder.
 // Props:
@@ -220,7 +221,7 @@ export default function LineupEditor({
                 onClick={() => setSelectedPlayerId(selectedPlayerId === p._id ? null : p._id)}
               >
                 <Avatar>
-                  {p.foto ? <img src={p.foto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (p.dorsal ?? '?')}
+                  {p.foto ? <img src={cdnUrl(p.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (p.dorsal ?? '?')}
                 </Avatar>
                 <Name>{(p.nombre || '').split(' ')[0]}</Name>
               </PlayerChip>

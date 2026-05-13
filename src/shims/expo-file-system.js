@@ -1,4 +1,6 @@
 /** Shim de expo-file-system (legacy API) para web. Usa localStorage como backend ligero. */
+import { cdnUrl } from '@/config';
+
 export const documentDirectory = 'webfs://documents/';
 export const cacheDirectory = 'webfs://cache/';
 export const bundleDirectory = 'webfs://bundle/';
@@ -29,7 +31,7 @@ export async function readAsStringAsync(uri, options = {}) {
   }
   // Soportar blob:/http(s): URIs leyendo el contenido remoto.
   if (typeof uri === 'string' && /^(blob:|https?:)/i.test(uri)) {
-    const r = await fetch(uri);
+    const r = await fetch(cdnUrl(uri));
     const wantBase64 = options.encoding === EncodingType.Base64 || options.encoding === 'base64';
     if (wantBase64) {
       const blob = await r.blob();
@@ -68,7 +70,7 @@ export async function copyAsync({ from, to } = {}) {
   let payload;
   if (typeof from === 'string' && (from.startsWith('data:') || /^(blob:|https?:)/i.test(from))) {
     // Re-leer como data URL para preservar binario.
-    const r = await fetch(from);
+    const r = await fetch(cdnUrl(from));
     const blob = await r.blob();
     payload = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -91,7 +93,7 @@ export async function moveAsync({ from, to } = {}) {
 }
 
 export async function downloadAsync(remoteUri, localUri) {
-  const r = await fetch(remoteUri);
+  const r = await fetch(cdnUrl(remoteUri));
   const blob = await r.blob();
   const reader = new FileReader();
   return new Promise((resolve) => {
@@ -121,7 +123,7 @@ export function createDownloadResumable(remoteUri, _localUri, _options, onProgre
   let cancelled = false;
   return {
     async downloadAsync() {
-      const r = await fetch(remoteUri);
+      const r = await fetch(cdnUrl(remoteUri));
       if (!r.ok) throw new Error(`Download failed: ${r.status}`);
       const total = Number(r.headers.get('content-length')) || 0;
       let received = 0;

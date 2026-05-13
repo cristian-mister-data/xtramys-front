@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MdSearch, MdCheck } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
+import { cdnUrl } from '@/config';
 
 const SearchBox = styled.div`
   position: relative;
@@ -164,7 +165,7 @@ export default function PlayerSelectionModal({
               <PlayerRow key={p._id} type="button" $selected={sel} onClick={() => toggle(p._id)}>
                 <Avatar>
                   {p.foto ? (
-                    <img src={p.foto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={cdnUrl(p.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     p.dorsal ?? '?'
                   )}

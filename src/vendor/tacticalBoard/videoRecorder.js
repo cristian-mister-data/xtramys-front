@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cdnUrl } from '@/config';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
 const LINE_TYPE_ELEMENTS = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
@@ -602,7 +603,7 @@ export default function VideoRecorder({
               snapshot.textColor = elem.textColor || '#000000';
               snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
               if (elem.playerData.foto) {
-                snapshot.photoUrl = elem.playerData.foto;
+                snapshot.photoUrl = cdnUrl(elem.playerData.foto);
               }
             }
             // Añadir configuración de mostrar fotos y números

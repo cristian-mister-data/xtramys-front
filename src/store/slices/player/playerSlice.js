@@ -8,6 +8,19 @@ import {
   updateJugador,
   deleteJugador,
 } from './playerThunks';
+import { cdnUrl } from '@/config';
+
+function proxyPlayerFoto(player) {
+  if (!player || !player.foto) return player;
+  const proxied = cdnUrl(player.foto);
+  if (proxied === player.foto) return player;
+  return { ...player, foto: proxied };
+}
+
+function proxyPlayersFotos(players) {
+  if (!Array.isArray(players)) return players;
+  return players.map(proxyPlayerFoto);
+}
 
 const playerSlice = createSlice({
   name: 'jugador',
@@ -32,7 +45,7 @@ const playerSlice = createSlice({
       .addCase(fetchJugadoresEquipo.pending, (state) => { state.loading = true; })
       .addCase(fetchJugadoresEquipo.fulfilled, (state, action) => {
         state.loading = false;
-        state.players = action.payload;
+        state.players = proxyPlayersFotos(action.payload);
       })
       .addCase(fetchJugadoresEquipo.rejected, (state, action) => {
         state.loading = false;
@@ -42,7 +55,7 @@ const playerSlice = createSlice({
       .addCase(fetchJugadorEquipo.pending, (state) => { state.loading = true; })
       .addCase(fetchJugadorEquipo.fulfilled, (state, action) => {
         state.loading = false;
-        state.player = action.payload;
+        state.player = proxyPlayerFoto(action.payload);
       })
       .addCase(fetchJugadorEquipo.rejected, (state, action) => {
         state.loading = false;
@@ -50,15 +63,16 @@ const playerSlice = createSlice({
       })
 
       .addCase(createJugador.fulfilled, (state, action) => {
-        state.players.push(action.payload);
+        state.players.push(proxyPlayerFoto(action.payload));
       })
 
       .addCase(updateJugador.fulfilled, (state, action) => {
-        if (action.payload.players) {
-          state.players = action.payload.players;
+        const proxied = proxyPlayerFoto(action.payload);
+        if (proxied.players) {
+          state.players = proxyPlayersFotos(proxied.players);
         } else {
-          const index = state.players.findIndex((p) => p._id === action.payload._id);
-          if (index !== -1) state.players[index] = action.payload;
+          const index = state.players.findIndex((p) => p._id === proxied._id);
+          if (index !== -1) state.players[index] = proxied;
         }
       })
 

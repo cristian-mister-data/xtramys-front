@@ -9,6 +9,7 @@ import {
   getPositionIcon,
 } from './playerHelpers';
 import ImageCropper from '@/components/season/ImageCropper';
+import { cdnUrl } from '@/config';
 
 const Grid = styled.div`
   display: grid;
@@ -236,7 +237,7 @@ export default function PlayerFormModal({
         <Stack style={{ gap: 14 }}>
           <PhotoWrap>
             <PhotoPreview $colors={colors}>
-              {data.foto ? <img src={data.foto} alt="" /> : initials}
+              {data.foto ? <img src={cdnUrl(data.foto)} alt="" /> : initials}
             </PhotoPreview>
             <Stack style={{ gap: 6 }}>
               <Label as="label" style={{ cursor: 'pointer' }}>

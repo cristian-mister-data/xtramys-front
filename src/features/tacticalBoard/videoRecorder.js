@@ -101,19 +101,29 @@ export async function recordStageAnimation({
 }) {
   if (!stage) throw new Error('Missing konva stage');
   if (!keyframes || keyframes.length < 2) throw new Error('Se necesitan al menos 2 keyframes');
+  if (typeof MediaRecorder === 'undefined') throw new Error('Tu navegador no soporta grabación de vídeo');
 
-  const canvas = stage.toCanvas();
-  // stage.toCanvas() returns a one-shot snapshot. We need the live stage canvas.
-  // Konva exposes `stage.content` (a div) containing the real canvases per-layer.
-  // For a continuously-updated stream, we combine layers into a helper canvas.
+  const { move: moveDuration, hold: holdDuration } = SPEED_TO_DURATIONS[speed] || SPEED_TO_DURATIONS[1];
+  const duration = totalDuration({ keyframes, moveDuration, holdDuration });
+  const totalFrames = Math.max(1, Math.ceil(duration * fps));
+
   const streamCanvas = document.createElement('canvas');
   streamCanvas.width = stage.width();
   streamCanvas.height = stage.height();
   const ctx = streamCanvas.getContext('2d');
 
-  const { move: moveDuration, hold: holdDuration } = SPEED_TO_DURATIONS[speed] || SPEED_TO_DURATIONS[1];
-  const duration = totalDuration({ keyframes, moveDuration, holdDuration });
-  const totalFrames = Math.max(1, Math.ceil(duration * fps));
+  const renderStageToStreamCanvas = () => {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, streamCanvas.width, streamCanvas.height);
+    const layers = stage.getLayers();
+    layers.forEach((layer) => {
+      const c = layer.getCanvas()._canvas;
+      ctx.drawImage(c, 0, 0, streamCanvas.width, streamCanvas.height);
+    });
+  };
+
+  // Draw initial frame to initialise the canvas before captureStream
+  renderStageToStreamCanvas();
 
   // Pick supported mimeType
   const preferred = mimeType || 'video/webm;codecs=vp9';
@@ -129,8 +139,13 @@ export async function recordStageAnimation({
   recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
   const frameInterval = 1000 / fps;
-  let doneResolve;
-  const donePromise = new Promise((r) => { doneResolve = r; });
+  let doneResolve, doneReject;
+  const donePromise = new Promise((resolve, reject) => { doneResolve = resolve; doneReject = reject; });
+
+  recorder.onerror = (evt) => {
+    const msg = evt?.error?.message || (evt instanceof ErrorEvent ? evt.message : null) || 'Error de grabación';
+    doneReject(new Error(msg));
+  };
 
   recorder.onstop = () => {
     const blob = new Blob(chunks, { type: mt });
@@ -143,21 +158,6 @@ export async function recordStageAnimation({
   const startTime = performance.now();
   let lastFrame = -1;
 
-  const renderStageToStreamCanvas = () => {
-    // draw every layer's canvas onto streamCanvas
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, streamCanvas.width, streamCanvas.height);
-    const layers = stage.getLayers();
-    layers.forEach((layer) => {
-      const c = layer.getCanvas()._canvas;
-      ctx.drawImage(c, 0, 0, streamCanvas.width, streamCanvas.height);
-    });
-  };
-
-  // Draw the initial stage frame (canvas kept only for initial snapshot reference)
-  void canvas;
-  renderStageToStreamCanvas();
-
   // Render loop
   await new Promise((resolve) => {
     const loop = () => {
@@ -169,11 +169,9 @@ export async function recordStageAnimation({
         const tSec = Math.min(duration, frameIdx / fps);
         const frameElements = frameAt({ keyframes, time: tSec, moveDuration, holdDuration });
         setFrame(frameElements);
-        // Konva batchDraw happens synchronously on state update — but React batches.
-        // We force layer draws in microtask after paint.
       }
 
-      // draw after paint
+      // draw after paint — wait for React to flush state update
       requestAnimationFrame(() => {
         try {
           stage.batchDraw();

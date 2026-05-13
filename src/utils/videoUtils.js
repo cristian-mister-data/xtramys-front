@@ -11,6 +11,7 @@ import RNFS from 'react-native-fs';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
+import { cdnUrl } from '@/config';
 
 let _ffmpegInstance = null;
 let _ffmpegLoading = null;
@@ -101,11 +102,12 @@ export const captureFrame = async (_ref, currentElements, frameIndex) => {
 const isBlob = (value) => typeof Blob !== 'undefined' && value instanceof Blob;
 
 // Carga una URL/dataURL/objectURL en una HTMLImageElement
-const loadImage = (sourceUrl) => new Promise((resolve, reject) => {
+const loadImage = (sourceUrl, crossOrigin = false) => new Promise((resolve, reject) => {
   const img = new Image();
+  if (crossOrigin) img.crossOrigin = 'anonymous';
   img.onload = () => resolve(img);
   img.onerror = (e) => reject(e);
-  img.src = sourceUrl;
+  img.src = typeof sourceUrl === 'string' ? cdnUrl(sourceUrl) : sourceUrl;
 });
 
 async function loadFrameImage(source) {
@@ -114,18 +116,14 @@ async function loadFrameImage(source) {
       try {
         const image = await createImageBitmap(source);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) {
-        // Algunos navegadores fallan con createImageBitmap para blobs PNG grandes.
-      }
+      } catch (_) {}
     }
     if (typeof source === 'string' && source.startsWith('data:')) {
       try {
         const blob = await (await fetch(source)).blob();
         const image = await createImageBitmap(blob);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) {
-        // Fallback a HTMLImageElement debajo.
-      }
+      } catch (_) {}
     }
   }
 
@@ -145,7 +143,8 @@ async function loadFrameImage(source) {
     }
   }
 
-  const image = await loadImage(source);
+  const isExternalUrl = typeof source === 'string' && source.startsWith('http');
+  const image = await loadImage(source, isExternalUrl);
   return {
     image,
     width: image.naturalWidth || image.width,

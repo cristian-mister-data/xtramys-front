@@ -1,14 +1,3 @@
-/**
- * IconRenderer — dispatcher Konva por `type`.
- *
- * Port literal de los SVG de misterdata-source/components/tacticalBoard/field.js
- * (BallImage L47, GoalLargeImage L67, GoalSmallImage L101, BarrierImage L128,
- *  DummyImage L150, PoleImage L182, ConeProImage L208, ConeFlatImage L231,
- *  RingImage L258, WeightsImage L290, renderIconCanvas L4785).
- *
- * Estrategia: usar Konva Group con scale para emular el viewBox de los SVG
- * originales. Konva.Path acepta strings "d" exactos del source.
- */
 import { Group, Circle, Rect, Path, Text } from 'react-konva';
 
 const SIZE_FACTOR = 1.4;
@@ -18,28 +7,36 @@ function pixelSize(el, scale) {
   return base * Math.max(0.7, Math.min(1.6, scale / 900));
 }
 
-/** Renderiza un mini-SVG con viewBox propio dentro de Konva. */
 function ViewBoxGroup({ vbW, vbH, renderW, renderH, children }) {
   return (
-    <Group
-      scaleX={renderW / vbW}
-      scaleY={renderH / vbH}
-      offsetX={vbW / 2}
-      offsetY={vbH / 2}
-    >
+    <Group scaleX={renderW / vbW} scaleY={renderH / vbH} offsetX={vbW / 2} offsetY={vbH / 2}>
       {children}
     </Group>
   );
 }
 
-export default function IconRenderer({ el, scale, x, y, selected, draggable, onDragEnd, onClick, onTap }) {
+function DelRing({ half }) {
+  const r = half + 14;
+  return (
+    <Group name="delIndicator" listening={false} visible={false}>
+      <Circle radius={r + 2} stroke="#ff0000" strokeWidth={4} dash={[6, 4]} fill="rgba(255,0,0,0.2)" />
+      <Circle radius={r + 7} stroke="#ff0000" strokeWidth={2} dash={[2, 6]} fillEnabled={false} />
+      <Rect x={-18} y={r + 4} width={36} height={16} fill="#ff0000" cornerRadius={3} />
+      <Text text="✕" fontSize={11} fontStyle="bold" fill="#fff" align="center" verticalAlign="middle" width={36} height={16} x={-18} y={r + 4} />
+    </Group>
+  );
+}
+
+export default function IconRenderer({ el, scale, x, y, selected, onDragStart, onDragEnd, onDragMove, onClick, onTap }) {
   const size = pixelSize(el, scale);
   const half = size / 2;
   const color = el.color || '#2176ff';
   const groupProps = {
     x, y,
-    draggable,
+    draggable: true,
+    onDragStart,
     onDragEnd,
+    onDragMove,
     onClick,
     onTap,
     rotation: el.rotation || 0,
@@ -54,42 +51,36 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     const fontSize = String(number).length > 2 ? size * 0.4 : size * 0.6;
     return (
       <Group {...groupProps}>
-        <Circle
-          radius={half}
-          fill={color}
-          stroke={selected ? '#fbbf24' : '#222'}
-          strokeWidth={selected ? 2 : 1}
-          shadowBlur={selected ? 6 : 2}
-        />
+        <DelRing half={half} />
+        <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
         {el.isGoalkeeper && [0.1, 0.35, 0.6, 0.85].map((f, i) => (
-          <Rect key={i} x={-half} y={-half + size * f} width={size} height={2}
-            fill={el.goalkeeperStripeColor || '#fff'} opacity={0.85} listening={false} />
+          <Rect key={i} x={-half} y={-half + size * f} width={size} height={2} fill={el.goalkeeperStripeColor || '#fff'} opacity={0.85} listening={false} />
         ))}
         {String(number) !== '' && (
-          <Text text={String(number)} fontSize={fontSize} fontStyle="bold"
-            fill={el.numberColor || '#fff'} align="center" verticalAlign="middle"
-            width={size} height={size} offsetX={half} offsetY={half} listening={false} />
+          <Text text={String(number)} fontSize={fontSize} fontStyle="bold" fill={el.numberColor || '#fff'} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
         )}
       </Group>
     );
   }
 
-  // ---------------------- TEAM-PLAYERS / COACHING-STAFF ----------------------
+  // ---------------------- TEAM-PLAYERS ----------------------
   if (el.type === 'team-players') {
     return (
       <Group {...groupProps}>
+        <DelRing half={half} />
         <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} />
-        <Text text="👥" fontSize={size * 0.7} align="center" verticalAlign="middle"
-          width={size} height={size} offsetX={half} offsetY={half} listening={false} />
+        <Text text="👥" fontSize={size * 0.7} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
       </Group>
     );
   }
+
+  // ---------------------- COACHING-STAFF ----------------------
   if (el.type === 'coaching-staff') {
     return (
       <Group {...groupProps}>
+        <DelRing half={half} />
         <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} />
-        <Text text="📋" fontSize={size * 0.65} align="center" verticalAlign="middle"
-          width={size} height={size} offsetX={half} offsetY={half} listening={false} />
+        <Text text="📋" fontSize={size * 0.65} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
       </Group>
     );
   }
@@ -98,18 +89,19 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
   if (el.type === 'ball') {
     return (
       <Group {...groupProps}>
-        <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle"
-          width={size} height={size} offsetX={half} offsetY={half} />
+        <DelRing half={half} />
+        <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} />
         {selected && <Circle radius={half * 1.15} stroke="#fbbf24" strokeWidth={1.5} dash={[3, 3]} listening={false} />}
       </Group>
     );
   }
 
-  // ---------------------- CONE-PRO (port literal viewBox 0 0 50 50) ----------------------
+  // ---------------------- CONE-PRO ----------------------
   if (el.type === 'cone-pro') {
     const c = color || '#FF6B00';
     return (
       <Group {...groupProps}>
+        <DelRing half={half} />
         <ViewBoxGroup vbW={50} vbH={50} renderW={size} renderH={size}>
           <Path data="M 10 45 L 25 8 L 40 45 Z" fill={c} stroke="#000" strokeWidth={1} />
           <Path data="M 15 38 L 25 15 L 35 38" stroke="#FFFFFF" strokeWidth={2} fill="" opacity={0.7} />
@@ -121,13 +113,13 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
-  // ---------------------- CONE-FLAT (viewBox 0 0 40 20) ----------------------
+  // ---------------------- CONE-FLAT ----------------------
   if (el.type === 'cone-flat') {
     const c = color || '#FF6B00';
-    const w = size, h = size * 0.5;
     return (
       <Group {...groupProps}>
-        <ViewBoxGroup vbW={40} vbH={20} renderW={w} renderH={h}>
+        <DelRing half={half} />
+        <ViewBoxGroup vbW={40} vbH={20} renderW={size} renderH={size * 0.5}>
           <Path data="M 2 14 Q 20 22 38 14 Q 20 6 2 14 Z" fill={c} stroke="#000" strokeWidth={1} />
           <Path data="M 8 12 Q 20 8 32 12" stroke="rgba(255,255,255,0.5)" strokeWidth={2} fill="" />
         </ViewBoxGroup>
@@ -136,12 +128,13 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
-  // ---------------------- RING (viewBox 0 0 40 40) ----------------------
+  // ---------------------- RING ----------------------
   if (el.type === 'ring') {
     const c = color || '#FFD700';
     const sw = Math.max(2, size * 0.12);
     return (
       <Group {...groupProps}>
+        <DelRing half={half} />
         <ViewBoxGroup vbW={40} vbH={40} renderW={size} renderH={size}>
           <Circle x={20} y={20} radius={16} fill="" stroke={c} strokeWidth={(sw / size) * 40} />
           <Circle x={20} y={20} radius={13} fill="" stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
@@ -151,12 +144,12 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
-  // ---------------------- GOAL-LARGE (viewBox 0 0 120 70, height = size*0.6) ----------------------
+  // ---------------------- GOAL-LARGE ----------------------
   if (el.type === 'goal-large') {
-    const w = size * 1.6, h = size * 0.96;
-    const c = color || '#FFFFFF';
+    const w = size * 1.6, h = size * 0.96, c = color || '#FFFFFF';
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <ViewBoxGroup vbW={120} vbH={70} renderW={w} renderH={h}>
           <Path data="M 5 65 L 5 10 L 115 10 L 115 65" stroke={c} strokeWidth={4} fill="" />
           {[15, 30, 45, 60, 75, 90, 105].map((xv) => (
@@ -166,18 +159,17 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
             <Path key={yv} data={`M 5 ${yv} L 115 ${yv}`} stroke="#CCCCCC" strokeWidth={1} opacity={0.6} />
           ))}
         </ViewBoxGroup>
-        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8}
-          stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
+        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8} stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
       </Group>
     );
   }
 
-  // ---------------------- GOAL-SMALL (viewBox 0 0 80 50, w=size*0.7 h=size*0.5) ----------------------
+  // ---------------------- GOAL-SMALL ----------------------
   if (el.type === 'goal-small') {
-    const w = size * 1.1, h = size * 0.78;
-    const c = color || '#FF6B00';
+    const w = size * 1.1, h = size * 0.78, c = color || '#FF6B00';
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <ViewBoxGroup vbW={80} vbH={50} renderW={w} renderH={h}>
           <Path data="M 5 45 L 5 8 L 75 8 L 75 45" stroke={c} strokeWidth={3} fill="" />
           <Path data="M 20 8 L 20 45" stroke="#CCCCCC" strokeWidth={1} opacity={0.5} />
@@ -185,34 +177,31 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
           <Path data="M 60 8 L 60 45" stroke="#CCCCCC" strokeWidth={1} opacity={0.5} />
           <Path data="M 5 25 L 75 25" stroke="#CCCCCC" strokeWidth={1} opacity={0.5} />
         </ViewBoxGroup>
-        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8}
-          stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
+        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8} stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
       </Group>
     );
   }
 
-  // ---------------------- BARRIER (viewBox 0 0 100 40, h=size*0.4) ----------------------
+  // ---------------------- BARRIER ----------------------
   if (el.type === 'barrier') {
-    const w = size * 1.5, h = size * 0.6;
-    const c = color || '#FFFFFF';
+    const w = size * 1.5, h = size * 0.6, c = color || '#FFFFFF';
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <ViewBoxGroup vbW={100} vbH={40} renderW={w} renderH={h}>
           <Path data="M 5 35 L 5 8 L 95 8 L 95 35" stroke={c} strokeWidth={3} fill="" />
         </ViewBoxGroup>
-        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8}
-          stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
+        {selected && <Rect x={-w / 2 - 4} y={-h / 2 - 4} width={w + 8} height={h + 8} stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
       </Group>
     );
   }
 
-  // ---------------------- DUMMY (viewBox 0 0 40 80, w=size*0.5 h=size) ----------------------
+  // ---------------------- DUMMY ----------------------
   if (el.type === 'dummy') {
-    const w = size * 0.7, h = size * 1.4;
-    const c = color || '#2196F3';
-    const dark = c === '#2196F3' ? '#1565C0' : c;
+    const w = size * 0.7, h = size * 1.4, c = color || '#2196F3', dark = c === '#2196F3' ? '#1565C0' : c;
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <ViewBoxGroup vbW={40} vbH={80} renderW={w} renderH={h}>
           <Circle x={20} y={75} radius={8} fill="#333333" />
           <Rect x={18} y={25} width={4} height={50} fill="#444444" />
@@ -225,12 +214,12 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
-  // ---------------------- POLE (viewBox 0 0 24 80, w=size*0.3 h=size) ----------------------
+  // ---------------------- POLE ----------------------
   if (el.type === 'pole') {
-    const w = size * 0.45, h = size * 1.4;
-    const c = color || '#FFD700';
+    const w = size * 0.45, h = size * 1.4, c = color || '#FFD700';
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <ViewBoxGroup vbW={24} vbH={80} renderW={w} renderH={h}>
           <Rect x={10} y={5} width={4} height={60} fill={c} />
           <Path data="M 4 75 L 12 55 L 20 75 Z" fill="#FF6B00" stroke="#E65100" strokeWidth={1} />
@@ -241,12 +230,9 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
-  // ---------------------- LADDER (escalera) ----------------------
+  // ---------------------- LADDER ----------------------
   if (el.type === 'ladder') {
-    const w = size * 1.8, h = size * 0.55;
-    const x0 = -w / 2, y0 = -h / 2;
-    const c = color || '#000000';
-    const rungs = 5;
+    const w = size * 1.8, h = size * 0.55, x0 = -w / 2, y0 = -h / 2, c = color || '#000000', rungs = 5;
     const rungEls = [];
     for (let i = 1; i < rungs; i++) {
       const xv = x0 + (w * i) / rungs;
@@ -254,20 +240,21 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     }
     return (
       <Group {...groupProps}>
+        <DelRing half={Math.max(w, h) / 2} />
         <Path data={`M ${x0} ${y0} L ${x0 + w} ${y0}`} stroke={c} strokeWidth={2} />
         <Path data={`M ${x0} ${y0 + h} L ${x0 + w} ${y0 + h}`} stroke={c} strokeWidth={2} />
         {rungEls}
-        {selected && <Rect x={x0 - 4} y={y0 - 4} width={w + 8} height={h + 8}
-          stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
+        {selected && <Rect x={x0 - 4} y={y0 - 4} width={w + 8} height={h + 8} stroke="#fbbf24" strokeWidth={1.5} dash={[4, 3]} fillEnabled={false} listening={false} />}
       </Group>
     );
   }
 
-  // ---------------------- WEIGHTS (viewBox 0 0 50 50) ----------------------
+  // ---------------------- WEIGHTS ----------------------
   if (el.type === 'weights') {
     const c = color || '#333333';
     return (
       <Group {...groupProps}>
+        <DelRing half={half} />
         <ViewBoxGroup vbW={50} vbH={50} renderW={size} renderH={size}>
           <Rect x={10} y={22} width={30} height={6} fill="#666666" cornerRadius={1} />
           <Rect x={2} y={12} width={6} height={26} fill={c} cornerRadius={2} />
@@ -282,8 +269,10 @@ export default function IconRenderer({ el, scale, x, y, selected, draggable, onD
     );
   }
 
+  // ---------------------- FALLBACK ----------------------
   return (
     <Group {...groupProps}>
+      <DelRing half={half} />
       <Circle radius={6} fill="#f00" />
     </Group>
   );

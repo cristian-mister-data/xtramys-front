@@ -147,7 +147,8 @@ export default function VideoRecorderPanel({
       });
       setResult(res);
     } catch (e) {
-      setError(e?.message || 'Error grabando vídeo');
+      const msg = (e instanceof Error) ? e.message : (typeof e === 'string' ? e : 'Error grabando vídeo');
+      setError(msg);
     } finally {
       setRendering(false);
     }

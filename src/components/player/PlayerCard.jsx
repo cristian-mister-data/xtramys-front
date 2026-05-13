@@ -7,6 +7,7 @@ import {
   getPlayerInitials,
   translatePosition,
 } from './playerHelpers';
+import { cdnUrl } from '@/config';
 
 // ====== LIST CARD ======
 const ListWrap = styled.button`
@@ -203,7 +204,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
       <GridWrap onClick={onClick} type="button">
         <GridHeader $colors={colors}>
           <GridAvatar $colors={colors}>
-            {player.foto ? <img src={player.foto} alt="" /> : getPlayerInitials(player)}
+            {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
           </GridAvatar>
         </GridHeader>
         <GridBody>
@@ -223,7 +224,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
     <ListWrap onClick={onClick} type="button">
       <Stripe $colors={colors} />
       <Avatar $colors={colors}>
-        {player.foto ? <img src={player.foto} alt="" /> : getPlayerInitials(player)}
+        {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
       </Avatar>
       <Body>
         <Name>{getPlayerFullName(player)}</Name>

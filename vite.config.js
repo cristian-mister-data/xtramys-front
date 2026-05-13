@@ -109,6 +109,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 5173,
     host: true,
+    proxy: {
+      '/cdn': {
+        target: 'https://cdn.xtramys.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/cdn/, ''),
+      },
+    },
   },
   preview: {
     port: 4173,

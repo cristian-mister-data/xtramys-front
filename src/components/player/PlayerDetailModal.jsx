@@ -9,6 +9,7 @@ import {
   getPlayerInitials,
   translatePosition,
 } from './playerHelpers';
+import { cdnUrl } from '@/config';
 
 const Header = styled.div`
   display: flex;
@@ -111,7 +112,7 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
     >
       <Header $colors={colors}>
         <Avatar $colors={colors}>
-          {player.foto ? <img src={player.foto} alt="" /> : getPlayerInitials(player)}
+          {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
         </Avatar>
         <div>
           <HeaderName>{getPlayerFullName(player)}</HeaderName>

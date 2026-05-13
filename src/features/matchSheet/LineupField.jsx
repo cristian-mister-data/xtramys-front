@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { POSITION_COLORS } from './formations';
+import { cdnUrl } from '@/config';
 
 // Read-only field renderer + slot helpers
 // Used both inside LineupEditor (interactive) and in detail/PDF (static).
@@ -140,7 +141,7 @@ export function PlayerSlot({
     >
       <Circle $color={color} $empty={empty} $selected={selected}>
         {player?.foto ? (
-          <Photo src={player.foto} alt={firstName} />
+          <Photo src={cdnUrl(player.foto)} alt={firstName} />
         ) : (
           <span>{empty ? slot.label : (player?.dorsal ?? '?')}</span>
         )}

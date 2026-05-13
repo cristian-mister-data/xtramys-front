@@ -3,7 +3,28 @@
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 export const API_URL = `${BACKEND_URL}/api`;
-export const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || 'https://cdn.xtramys.com';
+
+const CDN_ORIGIN = 'https://cdn.xtramys.com';
+
+// En desarrollo usamos el proxy de Vite (/cdn) para evitar CORS.
+// En producción se usa la URL directa del CDN.
+const isDev = import.meta.env.DEV;
+export const R2_PUBLIC_URL = isDev
+  ? '/cdn'
+  : (import.meta.env.VITE_R2_PUBLIC_URL || CDN_ORIGIN);
+
+/**
+ * Reescribe una URL del CDN para pasar por el proxy en desarrollo.
+ * En producción devuelve la URL sin cambios.
+ * Útil para <img>, canvas, fetch, etc.
+ */
+export function cdnUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  if (isDev && url.startsWith(CDN_ORIGIN)) {
+    return url.replace(CDN_ORIGIN, '/cdn');
+  }
+  return url;
+}
 
 // 'cookie' = JWT en cookie httpOnly + credentials: 'include'
 // 'bearer' = JWT en Authorization: Bearer (legacy)

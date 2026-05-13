@@ -1,5 +1,5 @@
 // v2
-import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, Pressable, Image, TextInput,
@@ -28,6 +28,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getPlayerFullName } from '@/components/player/playerHelpers';
 import { FieldSVGRenderer, decomposeFieldId, composeFieldId, getAspectForView, ratioToDisplay, displayToRatio, deltaToRatio, isVisibleInView, isOutsideVisibleField, areAllPointsOutside } from './fields';
 import FieldSelectorModal from './FieldSelectorModal';
+import { cdnUrl } from '@/config';
 
 const FIELD_CAPTURE_BACKGROUND = '#4a8c3f';
 const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND };
@@ -4668,7 +4669,7 @@ realPlayers: assignedPlayers.map((player, idx) => {
                                 }}>
                                   {teamPlayerStyle?.showPhotos && player.foto ? (
                                     <Image
-                                      source={{ uri: player.foto }}
+                                      source={{ uri: cdnUrl(player.foto) }}
                                       style={{
                                         width: 32,
                                         height: 32,
@@ -5685,7 +5686,7 @@ return (
             differentiateGoalkeeper={differentiateGoalkeeper}
             goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
             showPhotos={showPhotos && icon.playerData}
-            photoUrl={icon.playerData?.foto}
+            photoUrl={cdnUrl(icon.playerData?.foto || '')}
           />
 
           {icon.playerData && (
@@ -14279,7 +14280,7 @@ const handleCancelar = useCallback(async () => {
                           }}>
                             {showPhotos && player.foto ? (
                               <Image
-                                source={{ uri: player.foto }}
+                                source={{ uri: cdnUrl(player.foto) }}
                                 style={{
                                   width: iconSize - 4,
                                   height: iconSize - 4,
@@ -14814,7 +14815,7 @@ const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
                     )}
                     {showPhotos && player.foto ? (
                       <Image
-                        source={{ uri: player.foto }}
+                        source={{ uri: cdnUrl(player.foto) }}
                         style={{
                           width: iconSize - 4,
                           height: iconSize - 4,
