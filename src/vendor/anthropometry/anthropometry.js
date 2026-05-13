@@ -40,6 +40,7 @@ const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
 function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, isGrid = false, t, styles, theme }) {
   const getPlayerName = (playerId) => {
+    if (!playerId) return '-';
     if (typeof playerId === 'object' && playerId.nombre) {
       return getPlayerFullName(playerId);
     }

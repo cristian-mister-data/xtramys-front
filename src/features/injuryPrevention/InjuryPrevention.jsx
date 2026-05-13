@@ -37,9 +37,7 @@ const Container = styled.div`
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 20px 20px 24px;
+  padding: 20px 24px 24px;
   box-sizing: border-box;
 
   @media (max-width: 720px) {
