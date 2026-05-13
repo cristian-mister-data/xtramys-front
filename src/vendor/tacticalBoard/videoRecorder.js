@@ -42,8 +42,8 @@ import { cdnUrl } from '@/config';
 const LINE_TYPE_ELEMENTS = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
 const VIDEO_CAPTURE_FORMAT = 'jpg';
 const VIDEO_CAPTURE_EXTENSION = 'jpg';
-const VIDEO_CAPTURE_QUALITY = 0.94;
-const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 1.55;
+const VIDEO_CAPTURE_QUALITY = 0.97;
+const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
 const STREAMING_ENCODE_BACKLOG = 6;
 
 function getVideoCapturePixelRatio() {

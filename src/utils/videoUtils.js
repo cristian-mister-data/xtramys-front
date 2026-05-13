@@ -47,8 +47,9 @@ async function webmToMp4(webmBlob) {
     '-i', inputName,
     '-c:v', 'libx264',
     '-preset', 'fast',
-    '-crf', '20',
-    '-tune', 'stillimage',
+    '-crf', '18',
+    '-tune', 'animation',
+    '-pix_fmt', 'yuv420p',
     '-movflags', '+faststart',
     '-an',
     outputName,
@@ -262,8 +263,8 @@ function getVideoBitrate(width, height) {
   const area = Math.max(1, width * height);
   const ref = 1920 * 1080;
   return Math.max(
-    12_000_000,
-    Math.min(48_000_000, Math.round((area / ref) * 22_000_000)),
+    14_000_000,
+    Math.min(52_000_000, Math.round((area / ref) * 24_000_000)),
   );
 }
 
@@ -519,9 +520,9 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
         '-start_number', '0',
         '-i', `${inputPrefix}%04d.${frameExtension}`,
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '16',
-        '-tune', 'stillimage',
+        '-preset', 'veryfast',
+        '-crf', '18',
+        '-tune', 'animation',
         '-pix_fmt', 'yuv420p',
         '-movflags', '+faststart',
         '-an',

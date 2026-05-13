@@ -1,4 +1,6 @@
-import { Group, Circle, Rect, Path, Text } from 'react-konva';
+import { useState, useEffect, useRef } from 'react';
+import { Group, Circle, Rect, Path, Text, Image as KonvaImage } from 'react-konva';
+import { cdnUrl } from '@/config';
 
 const SIZE_FACTOR = 1.4;
 
@@ -27,6 +29,24 @@ function DelRing({ half }) {
   );
 }
 
+function PlayerPhoto({ fotoUrl, size }) {
+  const [image, setImage] = useState(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    if (!fotoUrl) { setImage(null); return; }
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { if (mountedRef.current) setImage(img); };
+    img.onerror = () => { if (mountedRef.current) setImage(null); };
+    img.src = cdnUrl(fotoUrl);
+    return () => { mountedRef.current = false; };
+  }, [fotoUrl]);
+
+  if (!image) return null;
+  return <KonvaImage image={image} x={-size / 2} y={-size / 2} width={size} height={size} listening={false} />;
+}
+
 export default function IconRenderer({ el, scale, x, y, selected, onDragStart, onDragEnd, onDragMove, onClick, onTap }) {
   const size = pixelSize(el, scale);
   const half = size / 2;
@@ -45,20 +65,31 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     ? <Circle radius={r} stroke="#fbbf24" strokeWidth={1.5} dash={[3, 3]} listening={false} />
     : null;
 
+  const showPhoto = el.showPhotos && el.playerData?.foto;
+  const photoSize = size - 4;
+  const stripeColor = el.goalkeeperStripeColor || '#ffffff';
+
   // ---------------------- PLAYER ----------------------
   if (el.type === 'player') {
     const number = el.number ?? el.label ?? '';
     const fontSize = String(number).length > 2 ? size * 0.4 : size * 0.6;
+    const showGoalkeeperStripes = el.isGoalkeeper && el.differentiateGoalkeeper !== false && !showPhoto;
     return (
       <Group {...groupProps}>
         <DelRing half={half} />
-        <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
-        {el.isGoalkeeper && [0.1, 0.35, 0.6, 0.85].map((f, i) => (
-          <Rect key={i} x={-half} y={-half + size * f} width={size} height={2} fill={el.goalkeeperStripeColor || '#fff'} opacity={0.85} listening={false} />
+        <Circle radius={half} fill={showPhoto ? 'transparent' : color} stroke={showPhoto ? color : selected ? '#fbbf24' : '#222'} strokeWidth={showPhoto ? 2 : selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
+        {showPhoto && (
+          <Group clipFunc={(ctx) => { ctx.arc(0, 0, half - 2, 0, Math.PI * 2); ctx.closePath(); }}>
+            <PlayerPhoto fotoUrl={el.playerData.foto} size={photoSize} />
+          </Group>
+        )}
+        {showGoalkeeperStripes && [0.1, 0.35, 0.6, 0.85].map((f, i) => (
+          <Rect key={i} x={-half} y={-half + size * f} width={size} height={2} fill={stripeColor} opacity={0.85} listening={false} />
         ))}
-        {String(number) !== '' && (
+        {!showPhoto && String(number) !== '' && (
           <Text text={String(number)} fontSize={fontSize} fontStyle="bold" fill={el.numberColor || '#fff'} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
         )}
+        {selected && <Circle radius={half} stroke="#fbbf24" strokeWidth={2} listening={false} />}
       </Group>
     );
   }

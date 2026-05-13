@@ -1,16 +1,15 @@
 /**
- * Generación de vídeo de animación de pizarra táctica, 100% cliente
- * usando canvas.captureStream() + MediaRecorder. No necesita backend.
+ * Generación de vídeo de animación de pizarra táctica, 100% cliente.
  *
- * Flujo:
- *  1. El usuario captura keyframes (estados de la pizarra).
- *  2. `generateVideo` interpola entre keyframes sobre el tiempo,
- *     llama a `setFrame(elements)` para actualizar el Stage de Konva,
- *     y registra el stream del <canvas> subyacente en un Blob WebM.
- *
- * Interpolación: easeInOutCubic sobre propiedades compatibles
- * (x, y, rotation, size, thickness, points[]).
+ * Calidad máxima para fotos de jugadores:
+ *  - Usa stage.toCanvas({ pixelRatio: 4 }) que crea un canvas nuevo a 4×
+ *    resolución, renderizando TODOS los nodos (imágenes, clips, formas)
+ *    a resolución nativa alta.
+ *  - Las fotos CDN (500×500) se renderizan a ~160×160 px reales en el vídeo.
+ *  - Bitrate 32 Mbps VP9, 30 fps, timeslice 100 ms.
  */
+
+import { flushSync } from 'react-dom';
 
 export const EASE = {
   linear: (t) => t,
@@ -23,54 +22,46 @@ export const SPEED_TO_DURATIONS = {
   2: { move: 0.4, hold: 0.1 },
 };
 
+/** Resolución de captura: 4× = las fotos de jugadores se ven nítidas. */
+const VIDEO_PIXEL_RATIO = 4;
+
 function applyHighQualityCanvas2D(context) {
   if (!context) return;
   context.imageSmoothingEnabled = true;
   if ('imageSmoothingQuality' in context) {
-    try {
-      context.imageSmoothingQuality = 'high';
-    } catch {
-      /* ignore */
-    }
+    try { context.imageSmoothingQuality = 'high'; } catch { /* ignore */ }
   }
 }
 
-/** Bitrate adaptado al tamaño del canvas (misma duración de clip, menos bloques visibles). */
-function webmBitrateForSize(w, h) {
-  const area = Math.max(1, w * h);
-  const ref = 1920 * 1080;
-  return Math.min(22_000_000, Math.max(9_000_000, Math.round((area / ref) * 15_000_000)));
-}
+/** Bitrate máximo para VP9/WebM — calidad cinematográfica. */
+const VIDEO_BITRATE = 32_000_000;
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function lerpPointArray(aPts, bPts, t) {
+  if (!Array.isArray(aPts) || !Array.isArray(bPts)) return undefined;
+  const n = Math.min(aPts.length, bPts.length);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const pa = aPts[i], pb = bPts[i];
+    if (pa && pb && typeof pa.x === 'number' && typeof pb.x === 'number')
+      out.push({ x: lerp(pa.x, pb.x, t), y: lerp(pa.y, pb.y, t) });
+  }
+  const longer = aPts.length >= bPts.length ? aPts : bPts;
+  for (let i = n; i < longer.length; i++) out.push({ ...longer[i] });
+  return out;
 }
 
 function interpElement(a, b, t) {
   if (!a || !b) return a || b;
   const out = { ...b };
-  if (typeof a.x === 'number' && typeof b.x === 'number') out.x = lerp(a.x, b.x, t);
-  if (typeof a.y === 'number' && typeof b.y === 'number') out.y = lerp(a.y, b.y, t);
-  if (typeof a.rotation === 'number' && typeof b.rotation === 'number') {
-    out.rotation = lerp(a.rotation, b.rotation, t);
-  }
-  if (typeof a.size === 'number' && typeof b.size === 'number') out.size = lerp(a.size, b.size, t);
-  if (typeof a.thickness === 'number' && typeof b.thickness === 'number') {
-    out.thickness = lerp(a.thickness, b.thickness, t);
-  }
-  if (Array.isArray(a.points) && Array.isArray(b.points) && a.points.length === b.points.length) {
-    out.points = a.points.map((pa, i) => ({
-      x: lerp(pa.x, b.points[i].x, t),
-      y: lerp(pa.y, b.points[i].y, t),
-    }));
-  }
+  const pair = (key) => { if (typeof a[key] === 'number' && typeof b[key] === 'number') out[key] = lerp(a[key], b[key], t); };
+  ['x', 'y', 'w', 'h', 'radius', 'rotation', 'size', 'thickness', 'fontSize'].forEach(pair);
+  const points = lerpPointArray(a.points, b.points, t);
+  if (points) out.points = points;
   return out;
 }
 
-/**
- * Dado un instante `time` (en segundos) y los keyframes, devuelve el array
- * de elementos interpolado correspondiente.
- */
 export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
   if (!keyframes || keyframes.length === 0) return [];
   const segDuration = moveDuration + holdDuration;
@@ -78,16 +69,12 @@ export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
   const localT = time - segmentIdx * segDuration;
   const a = keyframes[segmentIdx]?.elements || [];
   const b = keyframes[segmentIdx + 1]?.elements || a;
-
-  // After moveDuration, we hold (snap to b)
   let t;
   if (localT >= moveDuration) {
     t = 1;
   } else {
     t = EASE.easeInOutCubic(Math.max(0, Math.min(1, localT / moveDuration)));
   }
-
-  // Build by id from current (b) to preserve presence/absence
   const aMap = new Map(a.map((e) => [e.id, e]));
   return b.map((be) => {
     const ae = aMap.get(be.id);
@@ -100,15 +87,40 @@ export function totalDuration({ keyframes, moveDuration, holdDuration, tailSecon
   return (keyframes.length - 1) * (moveDuration + holdDuration) + tailSeconds;
 }
 
+function pickMimeType(preferred) {
+  const codecs = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm;codecs=h264',
+    'video/webm',
+  ];
+  if (preferred && MediaRecorder.isTypeSupported(preferred)) return preferred;
+  for (const c of codecs) { if (MediaRecorder.isTypeSupported(c)) return c; }
+  return 'video/webm';
+}
+
 /**
- * Ejecuta la grabación. Recibe:
- *  - stageRef: ref con .getStage() o .current (el Stage de konva)
- *  - keyframes: array
- *  - setFrame: (elements) => void (actualiza el estado de la pizarra)
- *  - options: { speed: 0.5|1|2, fps, onProgress, mimeType }
- *
- * Devuelve Promise<{ blob, url, durationSec }>.
+ * Renderiza el stage a resolución 4× usando stage.toCanvas().
+ * Esto crea un canvas nuevo donde TODOS los nodos (incluidas las
+ * imágenes de fotos de jugadores) se renderizan a 4× su tamaño visual,
+ * aprovechando la resolución completa de la imagen CDN original.
  */
+function renderHiResFrame(stage, ctx, outW, outH) {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, outW, outH);
+  try {
+    const hiRes = stage.toCanvas({ pixelRatio: VIDEO_PIXEL_RATIO });
+    ctx.drawImage(hiRes, 0, 0);
+  } catch {
+    // Fallback: captura directa de los canvas de las capas
+    const layers = stage.getLayers();
+    layers.forEach((layer) => {
+      const c = layer.getCanvas()._canvas;
+      ctx.drawImage(c, 0, 0, outW, outH);
+    });
+  }
+}
+
 export async function recordStageAnimation({
   stage,
   keyframes,
@@ -126,37 +138,25 @@ export async function recordStageAnimation({
   const duration = totalDuration({ keyframes, moveDuration, holdDuration });
   const totalFrames = Math.max(1, Math.ceil(duration * fps));
 
+  const sw = Math.max(1, stage.width());
+  const sh = Math.max(1, stage.height());
+  const outW = sw * VIDEO_PIXEL_RATIO;
+  const outH = sh * VIDEO_PIXEL_RATIO;
+
   const streamCanvas = document.createElement('canvas');
-  streamCanvas.width = stage.width();
-  streamCanvas.height = stage.height();
+  streamCanvas.width = outW;
+  streamCanvas.height = outH;
   const ctx = streamCanvas.getContext('2d', { alpha: false });
   applyHighQualityCanvas2D(ctx);
 
-  const renderStageToStreamCanvas = () => {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, streamCanvas.width, streamCanvas.height);
-    const layers = stage.getLayers();
-    layers.forEach((layer) => {
-      const c = layer.getCanvas()._canvas;
-      ctx.drawImage(c, 0, 0, streamCanvas.width, streamCanvas.height);
-    });
-  };
+  // Render initial frame
+  renderHiResFrame(stage, ctx, outW, outH);
 
-  // Draw initial frame to initialise the canvas before captureStream
-  renderStageToStreamCanvas();
-
-  // Pick supported mimeType
-  const preferred = mimeType || 'video/webm;codecs=vp9';
-  const mt = (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(preferred))
-    ? preferred
-    : (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('video/webm;codecs=vp8'))
-      ? 'video/webm;codecs=vp8'
-      : 'video/webm';
-
+  const mt = pickMimeType(mimeType);
   const stream = streamCanvas.captureStream(fps);
   const recorder = new MediaRecorder(stream, {
     mimeType: mt,
-    videoBitsPerSecond: webmBitrateForSize(streamCanvas.width, streamCanvas.height),
+    videoBitsPerSecond: VIDEO_BITRATE,
   });
   const chunks = [];
   recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
@@ -176,12 +176,11 @@ export async function recordStageAnimation({
     doneResolve({ blob, url, durationSec: duration, mimeType: mt });
   };
 
-  recorder.start();
+  recorder.start(100);
 
   const startTime = performance.now();
   let lastFrame = -1;
 
-  // Render loop
   await new Promise((resolve) => {
     const loop = () => {
       const elapsed = performance.now() - startTime;
@@ -191,14 +190,12 @@ export async function recordStageAnimation({
         lastFrame = frameIdx;
         const tSec = Math.min(duration, frameIdx / fps);
         const frameElements = frameAt({ keyframes, time: tSec, moveDuration, holdDuration });
-        setFrame(frameElements);
+        flushSync(() => { setFrame(frameElements); });
       }
 
-      // draw after paint — wait for React to flush state update
       requestAnimationFrame(() => {
         try {
-          stage.batchDraw();
-          renderStageToStreamCanvas();
+          renderHiResFrame(stage, ctx, outW, outH);
         } catch { /* ignore */ }
 
         if (onProgress) onProgress(Math.min(1, elapsed / (duration * 1000)));
@@ -213,8 +210,7 @@ export async function recordStageAnimation({
     requestAnimationFrame(loop);
   });
 
-  // Small tail so the last frame is flushed
-  await new Promise((r) => setTimeout(r, 120));
+  await new Promise((r) => setTimeout(r, Math.max(120, Math.round(1000 / fps) * 2)));
   recorder.stop();
   return donePromise;
 }
