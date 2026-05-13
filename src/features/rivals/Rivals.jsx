@@ -40,6 +40,7 @@ import SectionHeader from '../../ui/SectionHeader';
 import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
+import ImageCropper from '../../components/season/ImageCropper';
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -265,6 +266,7 @@ export default function Rivals() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [viewing, setViewing] = useState(null);
+  const [cropperSrc, setCropperSrc] = useState(null);
 
   useEffect(() => {
     if (selectedTeam?._id) {
@@ -314,9 +316,19 @@ export default function Rivals() {
       toast.error(t('rivals.invalidImage', 'Selecciona una imagen válida'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setEscudo(reader.result);
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setCropperSrc(url);
+  };
+
+  const handleCropConfirm = (croppedB64) => {
+    setEscudo(croppedB64);
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
+  };
+
+  const handleCropCancel = () => {
+    if (cropperSrc) URL.revokeObjectURL(cropperSrc);
+    setCropperSrc(null);
   };
 
   const handleSave = async () => {
@@ -564,6 +576,14 @@ export default function Rivals() {
             />
           </Field>
         </Stack>
+        {cropperSrc && (
+          <ImageCropper
+            src={cropperSrc}
+            onConfirm={handleCropConfirm}
+            onCancel={handleCropCancel}
+            title={t('team.adjustImage', 'Ajustar imagen')}
+          />
+        )}
       </Modal>
 
       {/* Modal detalle */}
