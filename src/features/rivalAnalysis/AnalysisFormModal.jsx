@@ -292,6 +292,31 @@ const ImagePicker = styled.label`
   }
 `;
 
+const CrestCropPreview = styled.div`
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  margin: 0 auto;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(${({ $zoom }) => $zoom});
+    transition: transform 0.12s ease;
+  }
+`;
+
+const RangeInput = styled.input`
+  width: 100%;
+`;
+
 // ---------- helpers ----------
 function PlayersEditor({ value, onChange, t }) {
   const players = Array.isArray(value) ? value : [];
@@ -368,6 +393,9 @@ export default function AnalysisFormModal({
   const [showCreateRival, setShowCreateRival] = useState(false);
   const [newRivalName, setNewRivalName] = useState('');
   const [newRivalEscudo, setNewRivalEscudo] = useState('');
+  const [pendingRivalImage, setPendingRivalImage] = useState('');
+  const [showRivalImageCrop, setShowRivalImageCrop] = useState(false);
+  const [rivalImageZoom, setRivalImageZoom] = useState(1);
   const [creatingRival, setCreatingRival] = useState(false);
 
   const [dynamicAnswers, setDynamicAnswers] = useState({});
@@ -409,6 +437,9 @@ export default function AnalysisFormModal({
     setRivalSearch('');
     setNewRivalName('');
     setNewRivalEscudo('');
+    setPendingRivalImage('');
+    setShowRivalImageCrop(false);
+    setRivalImageZoom(1);
   }, [open, editing, activeTemplate, userTemplates]);
 
   const selectedTemplate = useMemo(() => {
@@ -467,8 +498,36 @@ export default function AnalysisFormModal({
     e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setNewRivalEscudo(reader.result);
+    reader.onload = () => {
+      setPendingRivalImage(reader.result);
+      setRivalImageZoom(1);
+      setShowRivalImageCrop(true);
+    };
     reader.readAsDataURL(file);
+  };
+
+  const confirmRivalImageCrop = () => {
+    if (!pendingRivalImage) return;
+    const img = new Image();
+    img.onload = () => {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const minSide = Math.min(img.width, img.height);
+      const cropSize = minSide / rivalImageZoom;
+      const sx = (img.width - cropSize) / 2;
+      const sy = (img.height - cropSize) / 2;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, size, size);
+      setNewRivalEscudo(canvas.toDataURL('image/jpeg', 0.92));
+      setPendingRivalImage('');
+      setShowRivalImageCrop(false);
+      setRivalImageZoom(1);
+    };
+    img.src = pendingRivalImage;
   };
 
   const openCreateRival = () => {
@@ -1036,6 +1095,43 @@ export default function AnalysisFormModal({
               <Muted>{t('rivalAnalysis.form.createRivalHelp', 'El rival se creará en tu lista y quedará seleccionado para este análisis.')}</Muted>
             </Field>
           </Row>
+        </Stack>
+      </Modal>
+
+      <Modal
+        open={showRivalImageCrop}
+        onClose={() => setShowRivalImageCrop(false)}
+        title={t('rivals.adjustShield', 'Ajustar escudo')}
+        width={420}
+        footer={
+          <Row $gap={8}>
+            <Button type="button" $variant="ghost" onClick={() => setShowRivalImageCrop(false)}>
+              <MdClose /> {t('common.cancel', 'Cancelar')}
+            </Button>
+            <Button type="button" onClick={confirmRivalImageCrop}>
+              {t('common.apply', 'Aplicar')}
+            </Button>
+          </Row>
+        }
+      >
+        <Stack $gap={14}>
+          <CrestCropPreview $zoom={rivalImageZoom}>
+            {pendingRivalImage ? <img src={pendingRivalImage} alt="" /> : null}
+          </CrestCropPreview>
+          <Field>
+            <Label>{t('rivals.imageZoom', 'Escala')}</Label>
+            <RangeInput
+              type="range"
+              min="1"
+              max="3"
+              step="0.05"
+              value={rivalImageZoom}
+              onChange={(e) => setRivalImageZoom(Number(e.target.value))}
+            />
+          </Field>
+          <Muted>
+            {t('rivals.adjustShieldHelp', 'Ajusta el tamaño para que el escudo quede bien centrado antes de guardarlo.')}
+          </Muted>
         </Stack>
       </Modal>
 

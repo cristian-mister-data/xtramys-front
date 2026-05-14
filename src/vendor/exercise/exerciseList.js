@@ -1355,15 +1355,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [creating, setCreating] = useState(() => {
-    // En web esta lista se desmonta al navegar al editor del campo y se
-    // remonta al volver. Restauramos modo edición/creación para que el
-    // formulario reaparezca con su borrador.
     const s = loadFormDraft(STORAGE_KEYS.EXERCISE_LIST, { remove: false });
-    return !!(s?.creating || s?.editingExercise);
+    const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
+    return fieldResult?.kind === 'exercise' && !!(s?.creating || s?.editingExercise);
   });
   const [editingExercise, setEditingExercise] = useState(() => {
     const s = loadFormDraft(STORAGE_KEYS.EXERCISE_LIST, { remove: false });
-    return s?.editingExercise || null;
+    const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
+    return fieldResult?.kind === 'exercise' ? (s?.editingExercise || null) : null;
   });
   const [viewingExercise, setViewingExercise] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");

@@ -1254,17 +1254,15 @@ export default function StrategyList({ navigation: navigationProp }) {
     return strategy?.nombre || '';
   };
   const [creating, setCreating] = useState(() => {
-    // En web esta lista se desmonta al navegar al editor del campo y se
-    // remonta al volver. Restauramos el modo edición/creación para que el
-    // formulario reaparezca con su borrador.
     const s = loadFormDraft(STORAGE_KEYS.STRATEGY_LIST, { remove: false });
-    return !!s?.creating;
+    const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
+    return fieldResult?.kind === 'strategy' && !!s?.creating;
   });
   const [editingStrategy, setEditingStrategy] = useState(() => {
     const s = loadFormDraft(STORAGE_KEYS.STRATEGY_LIST, { remove: false });
-    return s?.editingStrategy || null;
+    const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
+    return fieldResult?.kind === 'strategy' ? (s?.editingStrategy || null) : null;
   });
-  console.log(editingStrategy);
   
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
