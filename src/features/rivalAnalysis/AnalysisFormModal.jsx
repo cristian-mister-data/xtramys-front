@@ -20,12 +20,14 @@ import {
   MdCheckCircle,
   MdPlayCircle,
   MdMovieFilter,
+  MdImage,
 } from 'react-icons/md';
 
 import {
   createRivalAnalysis,
   updateRivalAnalysis,
 } from '@/store/slices/rivalAnalysis/rivalAnalysisThunks';
+import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
 import Modal from '@/ui/Modal';
 import {
   Button,
@@ -203,6 +205,51 @@ const RivalOption = styled.button`
   min-width: 0;
 `;
 
+const RivalTrigger = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
+  background: ${({ theme }) => theme.colors.inputBg};
+  border-radius: ${({ theme }) => theme.radius.md};
+  cursor: pointer;
+  text-align: left;
+  color: ${({ theme, $empty }) => ($empty ? theme.colors.textMuted : theme.colors.text)};
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    background: ${({ theme }) => theme.colors.surface};
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+`;
+
+const NativeSelect = styled.select`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.inputBg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
+
+  &:focus-visible {
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+`;
+
 const RivalEscudoSm = styled.div`
   width: 32px;
   height: 32px;
@@ -218,6 +265,30 @@ const RivalEscudoSm = styled.div`
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+  }
+`;
+
+const ImagePicker = styled.label`
+  width: 84px;
+  height: 84px;
+  border: 2px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.textMuted};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  input {
+    display: none;
   }
 `;
 
@@ -277,6 +348,7 @@ export default function AnalysisFormModal({
   userId,
   rivals = [],
   activeTemplate, // plantilla a usar
+  userTemplates = [],
   onSaved,
 }) {
   const { t } = useTranslation();
@@ -293,8 +365,13 @@ export default function AnalysisFormModal({
   const [rivalEscudo, setRivalEscudo] = useState('');
   const [showRivalPicker, setShowRivalPicker] = useState(false);
   const [rivalSearch, setRivalSearch] = useState('');
+  const [showCreateRival, setShowCreateRival] = useState(false);
+  const [newRivalName, setNewRivalName] = useState('');
+  const [newRivalEscudo, setNewRivalEscudo] = useState('');
+  const [creatingRival, setCreatingRival] = useState(false);
 
   const [dynamicAnswers, setDynamicAnswers] = useState({});
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [formationQuestionId, setFormationQuestionId] = useState(null);
   const [showSnapshot, setShowSnapshot] = useState(false);
@@ -315,24 +392,39 @@ export default function AnalysisFormModal({
       setRival(editing.rival || '');
       setRivalId(editing.rivalId || '');
       setRivalEscudo(editing.rivalEscudo || '');
+      setSelectedTemplateId(editing.templateId || activeTemplate?._id || userTemplates[0]?._id || '');
       setDynamicAnswers(buildDynamicAnswers(editing));
       persistedCustomAnswersRef.current = editing.customAnswers || {};
     } else {
       setRival('');
       setRivalId('');
       setRivalEscudo('');
+      setSelectedTemplateId(activeTemplate?._id || userTemplates[0]?._id || '');
       setDynamicAnswers({});
       persistedCustomAnswersRef.current = {};
     }
     setError('');
     setShowRivalPicker(false);
+    setShowCreateRival(false);
     setRivalSearch('');
-  }, [open, editing]);
+    setNewRivalName('');
+    setNewRivalEscudo('');
+  }, [open, editing, activeTemplate, userTemplates]);
+
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId) return activeTemplate || userTemplates[0] || null;
+    return (
+      userTemplates.find((tpl) => tpl._id === selectedTemplateId) ||
+      (activeTemplate?._id === selectedTemplateId ? activeTemplate : null) ||
+      activeTemplate ||
+      null
+    );
+  }, [selectedTemplateId, userTemplates, activeTemplate]);
 
   const questions = useMemo(() => {
-    const list = activeTemplate?.questions || [];
+    const list = selectedTemplate?.questions || [];
     return [...list].sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [activeTemplate]);
+  }, [selectedTemplate]);
 
   const filteredRivals = useMemo(() => {
     const q = rivalSearch.trim().toLowerCase();
@@ -348,7 +440,7 @@ export default function AnalysisFormModal({
       rivalEscudo: rivalEscudo || '',
       equipo: selectedTeam._id,
       usuario: userId,
-      templateId: activeTemplate?._id,
+      templateId: selectedTemplate?._id,
       ...topLevel,
       customAnswers,
     };
@@ -368,6 +460,53 @@ export default function AnalysisFormModal({
     setRivalId(r._id || '');
     setRivalEscudo(r.escudo || '');
     setShowRivalPicker(false);
+  };
+
+  const handleCreateRivalImage = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setNewRivalEscudo(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const openCreateRival = () => {
+    setNewRivalName(rivalSearch.trim());
+    setNewRivalEscudo('');
+    setShowCreateRival(true);
+  };
+
+  const handleCreateRival = async () => {
+    if (!newRivalName.trim()) {
+      toast.error(t('rivals.nameRequired', 'El nombre es obligatorio'));
+      return;
+    }
+    if (!selectedTeam?._id) {
+      toast.error(t('rivals.noTeamSelected', 'No hay equipo seleccionado'));
+      return;
+    }
+
+    setCreatingRival(true);
+    try {
+      const created = await dispatch(createRival({
+        nombre: newRivalName.trim(),
+        escudo: newRivalEscudo || '',
+        equipo: selectedTeam._id,
+        usuario: userId,
+      })).unwrap();
+      await dispatch(fetchRivalsByTeam({ teamId: selectedTeam._id }));
+      handlePickRival(created);
+      setShowCreateRival(false);
+      setNewRivalName('');
+      setNewRivalEscudo('');
+      setRivalSearch('');
+      toast.success(t('rivals.createSuccess', 'Rival creado correctamente'));
+    } catch (err) {
+      toast.error(err?.message || t('rivals.saveError', 'No se pudo guardar el rival'));
+    } finally {
+      setCreatingRival(false);
+    }
   };
 
   const openFormationPicker = (qid) => {
@@ -495,18 +634,22 @@ export default function AnalysisFormModal({
   };
 
   const handleSave = async () => {
-    if (!rival.trim()) {
-      setError(t('rivalAnalysis.form.rivalRequired', 'Selecciona o escribe un rival'));
+    if (!rivalId) {
+      setError(t('rivalAnalysis.form.rivalRequired', 'Selecciona un rival de la lista'));
       return;
     }
     if (!selectedTeam?._id) {
       toast.error(t('rivalAnalysis.form.noTeam', 'No hay equipo seleccionado'));
       return;
     }
+    if (!selectedTemplate?._id) {
+      setError(t('rivalAnalysis.form.templateRequired', 'Selecciona una plantilla'));
+      return;
+    }
     // validar duplicado
     const dup = existingAnalyses.find(
       (a) =>
-        (a.rival || '').trim().toLowerCase() === rival.trim().toLowerCase() &&
+        (a.rivalId || '') === rivalId &&
         (!editing || a._id !== editing._id)
     );
     if (dup) {
@@ -711,7 +854,11 @@ export default function AnalysisFormModal({
           {/* Selector de rival */}
           <Field>
             <Label>{t('rivalAnalysis.form.rival', 'Rival')}</Label>
-            <Row $gap={8}>
+            <RivalTrigger
+              type="button"
+              $empty={!rival}
+              onClick={() => setShowRivalPicker(true)}
+            >
               <RivalEscudoSm>
                 {rivalEscudo ? (
                   <img src={rivalEscudo} alt="escudo" />
@@ -719,28 +866,39 @@ export default function AnalysisFormModal({
                   <MdShield size={18} color={theme.colors.textMuted} />
                 )}
               </RivalEscudoSm>
-              <Input
-                value={rival}
-                onChange={(e) => {
-                  setRival(e.target.value);
-                  setRivalId('');
-                  setRivalEscudo('');
-                }}
-                placeholder={t('rivalAnalysis.form.rivalPlaceholder', 'Nombre del rival')}
-                style={{ flex: 1 }}
-              />
-              <Button $variant="secondary" type="button" onClick={() => setShowRivalPicker(true)}>
-                {t('rivalAnalysis.form.pickRival', 'De la lista')}
-              </Button>
-            </Row>
+              <span style={{ flex: 1 }}>
+                {rival || t('rivalAnalysis.form.rivalPlaceholder', 'Selecciona un rival')}
+              </span>
+              <MdShield size={18} color={theme.colors.textMuted} />
+            </RivalTrigger>
             {error && <ErrorText>{error}</ErrorText>}
           </Field>
 
-          {!activeTemplate && (
+          <Field>
+            <Label>{t('rivalAnalysis.form.template', 'Plantilla')}</Label>
+            <NativeSelect
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+            >
+              {userTemplates.length === 0 && !activeTemplate && (
+                <option value="">{t('rivalAnalysis.form.noTemplateOption', 'Sin plantillas')}</option>
+              )}
+              {activeTemplate && !userTemplates.some((tpl) => tpl._id === activeTemplate._id) && (
+                <option value={activeTemplate._id}>{activeTemplate.name || activeTemplate.nombre || t('rivalAnalysis.form.activeTemplate', 'Plantilla activa')}</option>
+              )}
+              {userTemplates.map((tpl) => (
+                <option key={tpl._id} value={tpl._id}>
+                  {tpl.name || tpl.nombre || t('rivalAnalysis.form.unnamedTemplate', 'Plantilla sin nombre')}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+
+          {!selectedTemplate && (
             <Muted>
               {t(
                 'rivalAnalysis.form.noTemplate',
-                'No hay plantilla activa. Crea o activa una plantilla para añadir preguntas.'
+                'No hay plantilla disponible. Crea una plantilla para añadir preguntas.'
               )}
             </Muted>
           )}
@@ -798,6 +956,14 @@ export default function AnalysisFormModal({
         onClose={() => setShowRivalPicker(false)}
         title={t('rivalAnalysis.form.pickRivalTitle', 'Elegir rival')}
         width={460}
+        footer={
+          <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+            <Muted>{filteredRivals.length} / {rivals.length}</Muted>
+            <Button type="button" onClick={openCreateRival}>
+              <MdAdd /> {t('matchSheet.newRival', 'Nuevo rival')}
+            </Button>
+          </Row>
+        }
       >
         <Stack $gap={10}>
           <Input
@@ -830,6 +996,46 @@ export default function AnalysisFormModal({
               ))}
             </Stack>
           )}
+        </Stack>
+      </Modal>
+
+      <Modal
+        open={showCreateRival}
+        onClose={() => setShowCreateRival(false)}
+        title={t('matchSheet.newRival', 'Nuevo rival')}
+        width={420}
+        footer={
+          <Row $gap={8}>
+            <Button type="button" $variant="ghost" onClick={() => setShowCreateRival(false)}>
+              <MdClose /> {t('common.cancel', 'Cancelar')}
+            </Button>
+            <Button type="button" onClick={handleCreateRival} disabled={creatingRival}>
+              {creatingRival ? t('common.saving', 'Guardando…') : t('common.create', 'Crear')}
+            </Button>
+          </Row>
+        }
+      >
+        <Stack $gap={12}>
+          <Row $gap={12}>
+            <ImagePicker>
+              {newRivalEscudo ? (
+                <img src={newRivalEscudo} alt="" />
+              ) : (
+                <MdImage size={28} color={theme.colors.textMuted} />
+              )}
+              <input type="file" accept="image/*" onChange={handleCreateRivalImage} />
+            </ImagePicker>
+            <Field style={{ flex: 1, marginBottom: 0 }}>
+              <Label>{t('matchSheet.rivalName', 'Nombre')}</Label>
+              <Input
+                value={newRivalName}
+                onChange={(e) => setNewRivalName(e.target.value)}
+                placeholder={t('rivals.namePlaceholder', 'Nombre del rival')}
+                autoFocus
+              />
+              <Muted>{t('rivalAnalysis.form.createRivalHelp', 'El rival se creará en tu lista y quedará seleccionado para este análisis.')}</Muted>
+            </Field>
+          </Row>
         </Stack>
       </Modal>
 

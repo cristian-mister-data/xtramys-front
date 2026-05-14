@@ -225,6 +225,15 @@ const Anthropometry = ({ navigation }) => {
   const [notas, setNotas] = useState('');
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [playerPickerSearch, setPlayerPickerSearch] = useState('');
+
+  const playerPickerPlayers = useMemo(() => {
+    const q = playerPickerSearch.trim().toLowerCase();
+    if (!q) return players || [];
+    return (players || []).filter((player) =>
+      getPlayerFullName(player).toLowerCase().includes(q)
+    );
+  }, [players, playerPickerSearch]);
 
   useEffect(() => {
     if (selectedTeam?._id) {
@@ -1093,39 +1102,89 @@ const Anthropometry = ({ navigation }) => {
                 visible={showPlayerModal}
                 transparent
                 animationType="fade"
-                onRequestClose={() => setShowPlayerModal(false)}
+                onRequestClose={() => {
+                  setShowPlayerModal(false);
+                  setPlayerPickerSearch('');
+                }}
               >
-                <TouchableOpacity 
-                  style={styles.modalOverlay}
-                  activeOpacity={1}
-                  onPress={() => setShowPlayerModal(false)}
-                >
+                <View style={styles.modalOverlay}>
                   <View style={styles.pickerModal}>
                     <View style={styles.pickerModalHeader}>
-                      <Text style={styles.pickerModalTitle}>{t('anthropometry.modal.selectPlayerTitle')}</Text>
-                      <TouchableOpacity onPress={() => setShowPlayerModal(false)}>
-                        <Ionicons name="close" size={24} color="#666" />
+                      <View style={styles.pickerModalTitleRow}>
+                        <View style={styles.pickerModalIcon}>
+                          <Ionicons name="person-outline" size={22} color="#2474E5" />
+                        </View>
+                        <View>
+                          <Text style={styles.pickerModalTitle}>{t('anthropometry.modal.selectPlayerTitle')}</Text>
+                          <Text style={styles.pickerModalSubtitle}>
+                            {t('anthropometry.modal.selectPlayerSubtitle', 'Elige el jugador para registrar sus mediciones')}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.pickerModalClose}
+                        onPress={() => {
+                          setShowPlayerModal(false);
+                          setPlayerPickerSearch('');
+                        }}
+                      >
+                        <Ionicons name="close" size={22} color="#64748b" />
                       </TouchableOpacity>
                     </View>
+                    <View style={styles.pickerSearchBox}>
+                      <Ionicons name="search-outline" size={18} color="#94a3b8" />
+                      <TextInput
+                        style={styles.pickerSearchInput}
+                        value={playerPickerSearch}
+                        onChangeText={setPlayerPickerSearch}
+                        placeholder={t('common.search', 'Buscar...')}
+                        placeholderTextColor="#94a3b8"
+                      />
+                      {playerPickerSearch.length > 0 && (
+                        <TouchableOpacity onPress={() => setPlayerPickerSearch('')}>
+                          <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <ScrollView style={styles.pickerModalContent}>
-                      {players.map(player => (
+                      {playerPickerPlayers.map(player => (
                         <TouchableOpacity
                           key={player._id}
-                          style={styles.pickerModalItem}
+                          style={[
+                            styles.pickerModalItem,
+                            selectedPlayer === player._id && styles.pickerModalItemSelected,
+                          ]}
                           onPress={() => {
                             setSelectedPlayer(player._id);
                             setShowPlayerModal(false);
+                            setPlayerPickerSearch('');
                           }}
                         >
-                          <Text style={styles.pickerModalItemText}>{getPlayerFullName(player)}</Text>
+                          <View style={styles.pickerPlayerAvatar}>
+                            <Text style={styles.pickerPlayerAvatarText}>
+                              {getPlayerFullName(player).charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <View style={styles.pickerPlayerInfo}>
+                            <Text style={styles.pickerModalItemText}>{getPlayerFullName(player)}</Text>
+                            {!!player.posicion && (
+                              <Text style={styles.pickerModalItemMeta}>{player.posicion}</Text>
+                            )}
+                          </View>
                           {selectedPlayer === player._id && (
                             <Ionicons name="checkmark" size={24} color="#2474E5" />
                           )}
                         </TouchableOpacity>
                       ))}
+                      {playerPickerPlayers.length === 0 && (
+                        <View style={styles.pickerEmptyState}>
+                          <Ionicons name="search-outline" size={28} color="#94a3b8" />
+                          <Text style={styles.pickerEmptyText}>{t('common.noResults', 'Sin resultados')}</Text>
+                        </View>
+                      )}
                     </ScrollView>
                   </View>
-                </TouchableOpacity>
+                </View>
               </Modal>
 
               {/* DateTimePicker - DENTRO del modal de creación */}
@@ -2427,41 +2486,137 @@ const makeStyles = (theme) => StyleSheet.create({
   // Estilos del modal de jugador
   pickerModal: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '70%',
-    margin: 20,
+    borderRadius: 22,
+    width: '92%',
+    maxWidth: 460,
+    maxHeight: '78%',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 14,
+    overflow: 'hidden',
   },
   pickerModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+  },
+  pickerModalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  pickerModalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerModalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pickerModalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: theme.colors.text,
+  },
+  pickerModalSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  pickerSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 18,
+    marginTop: 14,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  pickerSearchInput: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 14,
+    padding: 0,
   },
   pickerModalContent: {
     maxHeight: 400,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
   },
   pickerModalItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 8,
+    borderWidth: 1,
     borderBottomColor: theme.colors.border,
+    borderColor: theme.colors.border,
+    borderRadius: 14,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  pickerModalItemSelected: {
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
+  },
+  pickerPlayerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerPlayerAvatarText: {
+    color: theme.colors.onPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pickerPlayerInfo: {
+    flex: 1,
   },
   pickerModalItemText: {
     fontSize: 16,
+    fontWeight: '600',
     color: theme.colors.text,
+  },
+  pickerModalItemMeta: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  pickerEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  pickerEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Estilos para panel de filtros
   filtersPanel: {

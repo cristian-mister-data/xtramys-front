@@ -19,7 +19,6 @@ import {
   getAspectForView,
   ratioToDisplay,
   displayToRatio,
-  isOutsideVisibleField,
 } from './fieldConfigs';
 import { buildFormation } from './formations';
 import Toolbar from './Toolbar';
@@ -103,6 +102,26 @@ function defaultScene() {
 }
 
 const HISTORY_LIMIT = 60;
+
+function getDraggableGroup(node) {
+  while (node && !node.attrs?.draggable) {
+    node = node.getParent();
+  }
+  return node;
+}
+
+function getDeleteIndicator(node) {
+  return node?.findOne((child) => child.name?.() === 'delIndicator');
+}
+
+function isDraggedNodeOutside(node, width, height) {
+  const box = node.getClientRect({ skipTransform: true, skipShadow: true });
+  const left = node.x() + box.x;
+  const top = node.y() + box.y;
+  const right = left + box.width;
+  const bottom = top + box.height;
+  return left < 0 || right > width || top < 0 || bottom > height;
+}
 
 export default function TacticalBoard({
   initialElements,
@@ -338,20 +357,21 @@ export default function TacticalBoard({
 
   // --- drag handlers con zona de eliminacion ---
   const onElementDragStart = (e) => {
-    const node = e.target;
+    const node = getDraggableGroup(e.target);
+    if (!node) return;
     node.opacity(1); node.scaleX(1); node.scaleY(1);
-    const ring = node.findOne('.delIndicator');
+    const ring = getDeleteIndicator(node);
     if (ring) ring.visible(false);
   };
 
   const onElementDragMove = (e) => {
-    const node = e.target;
-    const r = p2r(node.x(), node.y());
-    const outside = isOutsideVisibleField(r.x, r.y, viewMode, size.w, size.h);
-    const ring = node.findOne('.delIndicator');
+    const node = getDraggableGroup(e.target);
+    if (!node) return;
+    const outside = isDraggedNodeOutside(node, size.w, size.h);
+    const ring = getDeleteIndicator(node);
     if (outside) {
       node.opacity(0.4); node.scaleX(0.75); node.scaleY(0.75);
-      if (ring) ring.visible(true);
+      if (ring) { ring.visible(true); ring.moveToTop(); }
     } else {
       node.opacity(1); node.scaleX(1); node.scaleY(1);
       if (ring) ring.visible(false);
@@ -360,14 +380,15 @@ export default function TacticalBoard({
   };
 
   const onElementDragEnd = (id) => (e) => {
-    const node = e.target;
+    const node = getDraggableGroup(e.target);
+    if (!node) return;
+    const outside = isDraggedNodeOutside(node, size.w, size.h);
     const r = p2r(node.x(), node.y());
     node.opacity(1); node.scaleX(1); node.scaleY(1);
-    const ring = node.findOne('.delIndicator');
+    const ring = getDeleteIndicator(node);
     if (ring) ring.visible(false);
     node.getLayer()?.batchDraw();
 
-    const outside = isOutsideVisibleField(r.x, r.y, viewMode, size.w, size.h);
     if (outside) { applyChange((prev) => prev.filter((el) => el.id !== id)); setSelectedId(null); }
     else { const x = Math.max(0, Math.min(1, r.x)); const y = Math.max(0, Math.min(1, r.y)); applyChange((prev) => prev.map((el) => (el.id === id ? { ...el, x, y } : el))); }
   };

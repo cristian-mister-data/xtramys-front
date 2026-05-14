@@ -274,28 +274,48 @@ export default function MyVideos() {
     }
   };
 
+  const [folderToDelete, setFolderToDelete] = useState(null);
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+
   const handleDeleteFolder = async (folder) => {
-    Alert.alert(
-      t('myVideos.deleteFolderConfirm'),
-      t('myVideos.deleteFolderMessage', { name: folder.nombre }),
-      [
-        { text: t('myVideos.cancel'), style: 'cancel' },
-        {
-          text: t('myVideos.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteVideoFolder(folder.id);
-              showNotification(t('myVideos.folderDeleted'), 'success');
-              loadContent();
-            } catch (error) {
-              console.error('Error eliminando carpeta:', error);
-              showNotification(t('myVideos.couldNotDeleteFolder'), 'error');
-            }
-          }
-        }
-      ]
-    );
+    setFolderToDelete(folder);
+    setShowDeleteFolderModal(true);
+  };
+
+  const handleDeleteModeSelect = (mode) => {
+    if (mode === 'delete') {
+      setShowDeleteFolderModal(false);
+      setTimeout(() => setShowDeleteConfirmModal(true), 100);
+    } else {
+      performDeleteFolder(mode);
+    }
+  };
+
+  const performDeleteFolder = async (mode) => {
+    if (!folderToDelete) return;
+    
+    try {
+      const options = mode === 'delete' 
+        ? { deleteContents: true } 
+        : { moveVideosTo: null, deleteContents: false };
+      
+      await deleteVideoFolder(folderToDelete.id, options);
+      showNotification(t('myVideos.folderDeleted'), 'success');
+      loadContent();
+      setShowDeleteFolderModal(false);
+      setShowDeleteConfirmModal(false);
+      setFolderToDelete(null);
+    } catch (error) {
+      console.error('Error eliminando carpeta:', error);
+      showNotification(t('myVideos.couldNotDeleteFolder'), 'error');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteFolderModal(false);
+    setShowDeleteConfirmModal(false);
+    setFolderToDelete(null);
   };
 
   const handleEditFolder = (folder) => {
@@ -332,7 +352,7 @@ export default function MyVideos() {
     try {
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        setAllFolders(result.folders || []);
+        setAllFolders((result.folders || []).filter(folder => !folder.isGlobal));
       }
     } catch (error) {
       console.error('Error cargando carpetas:', error);
@@ -1450,6 +1470,129 @@ export default function MyVideos() {
           </View>
         </View>
       )}
+
+      {/* Delete Folder Choice Modal */}
+      <Modal
+        visible={showDeleteFolderModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            <View style={styles.deleteModalHeader}>
+              <View style={styles.deleteModalIconContainer}>
+                <Feather name="trash-2" size={28} color="#EF4444" />
+              </View>
+              <Text style={styles.deleteModalTitle}>
+                {t('myVideos.deleteFolderConfirm')}
+              </Text>
+              <Text style={styles.deleteModalSubtitle}>
+                {t('myVideos.deleteFolderMessage', { name: folderToDelete?.nombre })}
+              </Text>
+            </View>
+
+            <View style={styles.deleteModalBody}>
+              <TouchableOpacity
+                style={[styles.deleteOption, styles.deleteOptionHover]}
+                onPress={() => handleDeleteModeSelect('move')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.deleteOptionIcon, { backgroundColor: '#DBEAFE' }]}>
+                  <Feather name="folder" size={24} color="#2563EB" />
+                </View>
+                <View style={styles.deleteOptionText}>
+                  <Text style={styles.deleteOptionTitle}>
+                    {t('myVideos.deleteFolderMoveToRoot', 'Mover videos a raíz')}
+                  </Text>
+                  <Text style={styles.deleteOptionSubtitle}>
+                    {t('myVideos.deleteFolderMoveToRootDesc', 'La carpeta se eliminará pero los videos se moverán a la raíz')}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="#94A3B8" />
+              </TouchableOpacity>
+
+              <View style={styles.deleteOptionDivider} />
+
+              <TouchableOpacity
+                style={[styles.deleteOption, styles.deleteOptionHover]}
+                onPress={() => handleDeleteModeSelect('delete')}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.deleteOptionIcon, { backgroundColor: '#FEE2E2' }]}>
+                  <Feather name="alert-triangle" size={24} color="#EF4444" />
+                </View>
+                <View style={styles.deleteOptionText}>
+                  <Text style={[styles.deleteOptionTitle, { color: '#EF4444' }]}>
+                    {t('myVideos.deleteFolderAndContents', 'Eliminar todo')}
+                  </Text>
+                  <Text style={styles.deleteOptionSubtitle}>
+                    {t('myVideos.deleteFolderAndContentsDesc', 'Se eliminará la carpeta, subcarpetas y todos los videos permanentemente')}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteModalFooter}>
+              <TouchableOpacity
+                style={styles.deleteCancelButton}
+                onPress={handleCancelDelete}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteCancelButtonText}>
+                  {t('myVideos.cancel')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={[styles.deleteModalContainer, { maxWidth: 420 }]}>
+            <View style={styles.deleteModalHeader}>
+              <View style={[styles.deleteModalIconContainer, { backgroundColor: '#FEE2E2' }]}>
+                <Feather name="alert-triangle" size={28} color="#EF4444" />
+              </View>
+              <Text style={[styles.deleteModalTitle, { color: '#EF4444' }]}>
+                {t('myVideos.deleteFolderAndContentsConfirm', 'Confirmar eliminación')}
+              </Text>
+              <Text style={styles.deleteModalSubtitle}>
+                {t('myVideos.deleteFolderAndContentsMessage', 'Esta acción no se puede deshacer. Se eliminarán permanentemente la carpeta, subcarpetas y todos los videos.')}
+              </Text>
+            </View>
+
+            <View style={styles.deleteModalFooter}>
+              <TouchableOpacity
+                style={styles.deleteSecondaryButton}
+                onPress={handleCancelDelete}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteSecondaryButtonText}>
+                  {t('myVideos.cancel')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteDangerButton}
+                onPress={() => performDeleteFolder('delete')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteDangerButtonText}>
+                  {t('myVideos.delete', 'Eliminar')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2455,6 +2598,142 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sourceTabTxtActive: {
     color: theme.colors.onPrimary,
+  },
+
+  // Delete Modal Styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  deleteModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  deleteModalHeader: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+  },
+  deleteModalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  deleteModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  deleteModalSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  deleteModalBody: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  deleteOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  deleteOptionHover: {
+    // Web hover will be handled via CSS, but React Native uses activeOpacity
+  },
+  deleteOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  deleteOptionText: {
+    flex: 1,
+  },
+  deleteOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  deleteOptionSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  deleteOptionDivider: {
+    height: 12,
+  },
+  deleteModalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  deleteCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteCancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  deleteSecondaryButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteSecondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  deleteDangerButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteDangerButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

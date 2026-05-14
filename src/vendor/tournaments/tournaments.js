@@ -189,6 +189,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
   const [tieneGrupos, setTieneGrupos] = useState(false);
   const [numGrupos, setNumGrupos] = useState('2');
   const [equiposPorGrupo, setEquiposPorGrupo] = useState('4');
+  const [formatoGrupos, setFormatoGrupos] = useState('unico');
   const [rondasEliminatorias, setRondasEliminatorias] = useState('cuartos');
   const [formatoPartido, setFormatoPartido] = useState('unico');
   const [idaYvueltaDesde, setIdaYvueltaDesde] = useState('todas');
@@ -208,6 +209,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       setTieneGrupos(tournament.tieneGrupos || false);
       setNumGrupos(String(tournament.numGrupos || 2));
       setEquiposPorGrupo(String(tournament.equiposPorGrupo || 4));
+      setFormatoGrupos(tournament.formatoGrupos || 'unico');
       setRondasEliminatorias(tournament.rondasEliminatorias || 'cuartos');
       setFormatoPartido(tournament.formatoPartido || 'unico');
       setIdaYvueltaDesde(tournament.idaYvueltaDesde || 'todas');
@@ -227,6 +229,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       setTieneGrupos(false);
       setNumGrupos('2');
       setEquiposPorGrupo('4');
+      setFormatoGrupos('unico');
       setRondasEliminatorias('cuartos');
       setFormatoPartido('unico');
       setIdaYvueltaDesde('todas');
@@ -262,6 +265,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       data.idaYvueltaDesde = undefined;
       data.formatoFinal = undefined;
       data.tieneGrupos = false;
+      data.formatoGrupos = undefined;
     } else if (tipo === 'copa' || tipo === 'torneo') {
       data.formato = formato;
       data.cicloAmarillas = parseInt(cicloAmarillas) || 5;
@@ -269,8 +273,10 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
         data.tieneGrupos = true;
         data.numGrupos = parseInt(numGrupos) || 2;
         data.equiposPorGrupo = parseInt(equiposPorGrupo) || 4;
+        data.formatoGrupos = formatoGrupos;
       } else {
         data.tieneGrupos = false;
+        data.formatoGrupos = undefined;
       }
       if (formato !== 'liga') {
         data.rondasEliminatorias = rondasEliminatorias;
@@ -507,8 +513,30 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                               <MaterialIcons name="remove" size={18} color={theme.colors.primary} />
                             </TouchableOpacity>
                             <Text style={styles.numberValue}>{equiposPorGrupo}</Text>
-                            <TouchableOpacity style={styles.numberBtn} onPress={() => setEquiposPorGrupo(String(Math.min(20, parseInt(equiposPorGrupo || 0) + 1)))}>
+                            <TouchableOpacity style={styles.numberBtn} onPress={() => setEquiposPorGrupo(String(Math.min(99, parseInt(equiposPorGrupo || 0) + 1)))}>
                               <MaterialIcons name="add" size={18} color={theme.colors.primary} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <View style={styles.configRow}>
+                          <Text style={styles.configLabel}>{t('tournaments.groupStageMatchFormat') || 'Fase de grupos'}</Text>
+                          <View style={styles.configChips}>
+                            <TouchableOpacity
+                              style={[styles.configChip, formatoGrupos === 'unico' && styles.configChipActive]}
+                              onPress={() => setFormatoGrupos('unico')}
+                            >
+                              <Text style={[styles.configChipText, formatoGrupos === 'unico' && styles.configChipTextActive]}>
+                                {t('tournaments.singleMatch')}
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.configChip, formatoGrupos === 'idayvuelta' && styles.configChipActive]}
+                              onPress={() => setFormatoGrupos('idayvuelta')}
+                            >
+                              <Text style={[styles.configChipText, formatoGrupos === 'idayvuelta' && styles.configChipTextActive]}>
+                                {t('tournaments.twoLegged')}
+                              </Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -813,7 +841,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                           {match.fase === 'eliminatoria' && match.ronda
                             ? `${t(`tournaments.round${({final:'Final',semifinal:'Semifinal',cuartos:'Quarters',octavos:'Round16',dieciseisavos:'Round32',treintaydosavos:'Round64'})[match.ronda] || 'Final'}`)}${match.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : match.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : match.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                             : match.fase === 'grupos' && match.grupo
-                              ? `${t('matchSheet.fields.groupN', { n: match.grupo })}${match.jornada ? ` · ${t('matchSheet.fields.matchday')} ${match.jornada}` : ''}`
+                              ? `${t('matchSheet.fields.groupN', { n: match.grupo })}${match.jornada ? ` · ${t('matchSheet.fields.matchday')} ${match.jornada}` : ''}${match.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : match.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : ''}`
                               : `${t('matchSheet.fields.matchday')} ${match.jornada}`}
                         </Text>
                       </View>

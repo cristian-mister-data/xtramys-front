@@ -714,7 +714,7 @@ const MatchSheetFormContent = ({
                 const originalIndex = tarjetasAmarillas.indexOf(tarjeta);
                 return (
                   <View key={`a-${originalIndex}`} style={styles.eventChip}>
-                    <View style={[styles.cardIndicator, { backgroundColor: '#FFC107' }]} />
+                    <View style={[styles.cardIndicator, { backgroundColor: '#fbbf24' }]} />
                     <Text style={styles.eventChipText}>
                       {tarjeta.minuto}' - {jugador ? (getPlayerFullName ? getPlayerFullName(jugador) : jugador.nombre) : 'Jugador'}
                     </Text>

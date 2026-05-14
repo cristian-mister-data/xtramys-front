@@ -83,6 +83,11 @@ export function isVisibleInView(xR, yR, viewModeId, margin = 0) {
   return xR >= vpX - margin && xR <= vpX + vpW + margin && yR >= vpY - margin && yR <= vpY + vpH + margin;
 }
 
+export function isOutsideVisibleField(xR, yR, viewModeId, W, H) {
+  const { x, y } = ratioToDisplay(xR, yR, viewModeId, W, H);
+  return x < 0 || x > W || y < 0 || y > H;
+}
+
 export function composeFieldId(lineType, viewMode) { return `${lineType}:${viewMode}`; }
 export function decomposeFieldId(fieldId) {
   if (!fieldId) return { lineType: 'full', viewMode: 'entire' };

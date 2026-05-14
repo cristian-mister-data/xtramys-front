@@ -160,10 +160,15 @@ export const updateVideoFolder = async (folderId, folderData) => {
   }
 };
 
-export const deleteVideoFolder = async (folderId, moveVideosTo = null) => {
+export const deleteVideoFolder = async (folderId, options = {}) => {
   try {
+    const {
+      moveVideosTo = null,
+      deleteContents = false,
+    } = options || {};
     const response = await api.delete(`/video-folder/${folderId}`, {
-      data: { moveVideosTo },
+      data: { moveVideosTo, deleteContents },
+      params: { moveVideosTo, deleteContents },
     });
     return response.data;
   } catch (error) {

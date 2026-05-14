@@ -363,7 +363,7 @@ export default function MatchSheetDetailModal({
                         {matchSheet.fase === 'eliminatoria'
                           ? `${t(ROUND_I18N_KEYS[matchSheet.ronda] || 'matchSheet.fields.round')}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                           : matchSheet.fase === 'grupos'
-                            ? [matchSheet.grupo ? t('matchSheet.fields.groupN', { n: matchSheet.grupo }) : '', matchSheet.jornada ? `${t('matchSheet.fields.matchday')} ${matchSheet.jornada}` : ''].filter(Boolean).join(' - ')
+                            ? [matchSheet.grupo ? t('matchSheet.fields.groupN', { n: matchSheet.grupo }) : '', matchSheet.jornada ? `${t('matchSheet.fields.matchday')} ${matchSheet.jornada}` : '', matchSheet.pierna === 'ida' ? t('matchSheet.fields.legFirst') : matchSheet.pierna === 'vuelta' ? t('matchSheet.fields.legSecond') : ''].filter(Boolean).join(' - ')
                             : matchSheet.jornada != null ? `${t('matchSheet.fields.matchday')} ${matchSheet.jornada}` : ''}
                       </Text>
                     </View>
@@ -503,7 +503,7 @@ export default function MatchSheetDetailModal({
                 {matchSheet.tarjetasAmarillas && matchSheet.tarjetasAmarillas.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>
-                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.warning }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: '#fbbf24' }]} />
                       <Text style={styles.detailCardTitle}>{t('matchSheet.fields.yellowCards')} ({matchSheet.tarjetasAmarillas.length})</Text>
                     </View>
                       {[...matchSheet.tarjetasAmarillas].sort((a, b) => {

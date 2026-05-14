@@ -71,6 +71,7 @@ const empty = {
   formato: 'eliminatoria',
   numGrupos: '2',
   equiposPorGrupo: '4',
+  formatoGrupos: 'unico',
   rondasEliminatorias: 'cuartos',
   formatoPartido: 'unico',
   idaYvueltaDesde: 'todas',
@@ -101,6 +102,7 @@ export default function TournamentFormModal({
         fechaFin: dateToInputValue(tournament.fechaFin),
         numGrupos: String(tournament.numGrupos || 2),
         equiposPorGrupo: String(tournament.equiposPorGrupo || 4),
+        formatoGrupos: tournament.formatoGrupos || 'unico',
         cicloAmarillas: String(tournament.cicloAmarillas || 5),
       });
       setShowAdvanced(!!tournament.formato);
@@ -133,6 +135,7 @@ export default function TournamentFormModal({
       data.formato = 'liga';
       data.cicloAmarillas = parseInt(form.cicloAmarillas, 10) || 5;
       data.tieneGrupos = false;
+      data.formatoGrupos = undefined;
     } else if (form.tipo === 'copa' || form.tipo === 'torneo') {
       data.formato = form.formato;
       data.cicloAmarillas = parseInt(form.cicloAmarillas, 10) || 5;
@@ -140,8 +143,10 @@ export default function TournamentFormModal({
         data.tieneGrupos = true;
         data.numGrupos = parseInt(form.numGrupos, 10) || 2;
         data.equiposPorGrupo = parseInt(form.equiposPorGrupo, 10) || 4;
+        data.formatoGrupos = form.formatoGrupos || 'unico';
       } else {
         data.tieneGrupos = false;
+        data.formatoGrupos = undefined;
       }
       if (form.formato !== 'liga') {
         data.rondasEliminatorias = form.rondasEliminatorias;
@@ -285,8 +290,20 @@ export default function TournamentFormModal({
                   <Input
                     type="number"
                     min="2"
+                    max="99"
                     value={form.equiposPorGrupo}
                     onChange={(e) => update({ equiposPorGrupo: e.target.value })}
+                  />
+                </Field>
+                <Field style={{ flex: 1, minWidth: 180 }}>
+                  <Label>{t('tournaments.groupStageMatchFormat', 'Fase de grupos')}</Label>
+                  <Select
+                    value={form.formatoGrupos}
+                    onChange={(v) => update({ formatoGrupos: v })}
+                    options={[
+                      { value: 'unico', label: t('matchSheet.fields.legSingle', 'Único') },
+                      { value: 'idayvuelta', label: t('tournaments.legHomeAway', 'Ida y vuelta') },
+                    ]}
                   />
                 </Field>
               </Row>

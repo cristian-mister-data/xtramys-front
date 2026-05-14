@@ -468,7 +468,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                     ]}
                     onPress={() => setTipoTarjeta('amarilla')}
                   >
-                    <View style={[modalStyles.cardIcon, { backgroundColor: '#f59e0b' }]} />
+                    <View style={[modalStyles.cardIcon, { backgroundColor: '#fffc3f' }]} />
                     <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.yellow')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -1059,6 +1059,12 @@ export default function AddEventModal({
     return roundIdx >= desdeIdx;
   }, [selectedTournament, matchData.ronda]);
 
+  const groupUsesLegs = useMemo(() => {
+    return torneoFormato === 'grupos+eliminatoria'
+      && matchData.fase === 'grupos'
+      && (selectedTournament?.formatoGrupos || 'unico') === 'idayvuelta';
+  }, [torneoFormato, matchData.fase, selectedTournament]);
+
   const grupoOptions = useMemo(() => {
     if (!selectedTournament?.numGrupos) return [];
     return Array.from({ length: selectedTournament.numGrupos }, (_, i) => String(i + 1));
@@ -1066,11 +1072,11 @@ export default function AddEventModal({
 
   const jornadaOptions = useMemo(() => {
     if (torneoFormato === 'grupos+eliminatoria' && matchData.fase === 'grupos' && selectedTournament?.equiposPorGrupo) {
-      const maxJornada = (selectedTournament.equiposPorGrupo - 1) * 2;
+      const maxJornada = Math.max(1, selectedTournament.equiposPorGrupo - 1) * (groupUsesLegs ? 2 : 1);
       return Array.from({ length: maxJornada }, (_, i) => String(i + 1));
     }
     return Array.from({ length: 100 }, (_, i) => String(i + 1));
-  }, [torneoFormato, matchData.fase, selectedTournament]);
+  }, [torneoFormato, matchData.fase, selectedTournament, groupUsesLegs]);
 
   // Auto-set fase cuando cambia el torneo
   useEffect(() => {
@@ -1085,18 +1091,26 @@ export default function AddEventModal({
     }
   }, [torneoFormato]);
 
-  // Auto-set pierna cuando cambia ronda
+  // Auto-set pierna cuando cambia fase, ronda o formato
   useEffect(() => {
     if (matchData.fase === 'eliminatoria' && matchData.ronda) {
       if (roundUsesLegs) {
         if (!matchData.pierna || matchData.pierna === 'unico') {
           setMatchData(prev => ({ ...prev, pierna: 'ida' }));
         }
-      } else {
+      } else if (matchData.pierna !== 'unico') {
+        setMatchData(prev => ({ ...prev, pierna: 'unico' }));
+      }
+    } else if (matchData.fase === 'grupos') {
+      if (groupUsesLegs) {
+        if (!matchData.pierna || matchData.pierna === 'unico') {
+          setMatchData(prev => ({ ...prev, pierna: 'ida' }));
+        }
+      } else if (matchData.pierna !== 'unico') {
         setMatchData(prev => ({ ...prev, pierna: 'unico' }));
       }
     }
-  }, [matchData.ronda, roundUsesLegs, matchData.fase]);
+  }, [matchData.ronda, roundUsesLegs, groupUsesLegs, matchData.fase, matchData.pierna]);
   const [showConvocadosModal, setShowConvocadosModal] = useState(false);
   const [showNoConvocadosModal, setShowNoConvocadosModal] = useState(false);
   const [showAlineacionModal, setShowAlineacionModal] = useState(false);
@@ -1519,7 +1533,7 @@ export default function AddEventModal({
         fase: matchData.competicion === 'amistoso' ? null : matchData.fase,
         ronda: matchData.fase === 'eliminatoria' ? matchData.ronda : null,
         grupo: matchData.fase === 'grupos' ? (matchData.grupo ? Number(matchData.grupo) : null) : null,
-        pierna: matchData.fase === 'eliminatoria' ? matchData.pierna : null,
+        pierna: matchData.fase === 'eliminatoria' || matchData.fase === 'grupos' ? matchData.pierna : null,
         golesFavor: isMatchPast ? Number(matchData.golesFavor || 0) : (matchData.golesFavor !== '' && matchData.golesFavor !== null && matchData.golesFavor !== undefined ? Number(matchData.golesFavor) : null),
         golesContra: isMatchPast ? Number(matchData.golesContra || 0) : (matchData.golesContra !== '' && matchData.golesContra !== null && matchData.golesContra !== undefined ? Number(matchData.golesContra) : null),
         resultado: resultado || undefined,
@@ -2036,6 +2050,37 @@ export default function AddEventModal({
                 </TouchableOpacity>
               )}
 
+              {matchData.fase === 'grupos' && torneoFormato === 'grupos+eliminatoria' && (
+                <>
+                  {groupUsesLegs ? (
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                      <TouchableOpacity
+                        style={[styles.selector, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                          matchData.pierna === 'ida' && { backgroundColor: '#8B5CF620', borderColor: '#8B5CF6' }]}
+                        onPress={() => setMatchData(prev => ({ ...prev, pierna: 'ida' }))}
+                      >
+                        <Text style={[styles.selectorTextSelected, matchData.pierna === 'ida' && { color: '#8B5CF6', fontWeight: 'bold' }]}>
+                          {t('matchSheet.fields.legFirst')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.selector, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                          matchData.pierna === 'vuelta' && { backgroundColor: '#8B5CF620', borderColor: '#8B5CF6' }]}
+                        onPress={() => setMatchData(prev => ({ ...prev, pierna: 'vuelta' }))}
+                      >
+                        <Text style={[styles.selectorTextSelected, matchData.pierna === 'vuelta' && { color: '#8B5CF6', fontWeight: 'bold' }]}>
+                          {t('matchSheet.fields.legSecond')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={[styles.selector, { backgroundColor: theme.colors.backgroundAlt }]}>
+                      <Text style={styles.selectorTextSelected}>{t('matchSheet.fields.legSingle')}</Text>
+                    </View>
+                  )}
+                </>
+              )}
+
               {/* Ronda: para eliminatoria */}
               {matchData.fase === 'eliminatoria' && (torneoFormato === 'eliminatoria' || torneoFormato === 'grupos+eliminatoria') && (
                 <TouchableOpacity
@@ -2470,7 +2515,7 @@ export default function AddEventModal({
                 const originalIdx = tarjetasAmarillas.indexOf(tarjeta);
                 return (
                 <View key={`a-${originalIdx}`} style={styles.eventChip}>
-                  <View style={[styles.cardIndicator, { backgroundColor: '#FFC107' }]} />
+                  <View style={[styles.cardIndicator, { backgroundColor: '#fbbf24' }]} />
                   <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                     setEditingCardIndex(originalIdx);
                     setEditingCardType('amarilla');

@@ -360,7 +360,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                     ]}
                     onPress={() => setTipoTarjeta('amarilla')}
                   >
-                    <View style={[modalStyles.cardIcon, { backgroundColor: theme.colors.warning }]} />
+                    <View style={[modalStyles.cardIcon, { backgroundColor: "#fffd8a" }]} />
                     <Text style={modalStyles.cardTypeText}>{t('matchSheet.cardTypes.yellow')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -996,6 +996,12 @@ export default function EditMatchSheetModal({
     return roundIdx >= desdeIdx;
   }, [selectedTournament, ronda]);
 
+  const groupUsesLegs = useMemo(() => {
+    return torneoFormato === 'grupos+eliminatoria'
+      && fase === 'grupos'
+      && (selectedTournament?.formatoGrupos || 'unico') === 'idayvuelta';
+  }, [torneoFormato, fase, selectedTournament]);
+
   // Opciones de grupo basadas en el torneo
   const grupoOptions = useMemo(() => {
     if (!selectedTournament?.numGrupos) return [];
@@ -1005,12 +1011,11 @@ export default function EditMatchSheetModal({
   // Opciones de jornada: dinámicas para fase de grupos, 1-100 para liga
   const jornadaOptions = useMemo(() => {
     if (torneoFormato === 'grupos+eliminatoria' && fase === 'grupos' && selectedTournament?.equiposPorGrupo) {
-      // En fase de grupos, máximo partidos = equiposPorGrupo - 1 (ida), o *2 si hay ida y vuelta en grupos
-      const maxJornada = (selectedTournament.equiposPorGrupo - 1) * 2; // generoso
+      const maxJornada = Math.max(1, selectedTournament.equiposPorGrupo - 1) * (groupUsesLegs ? 2 : 1);
       return Array.from({ length: maxJornada }, (_, i) => String(i + 1));
     }
     return Array.from({ length: 100 }, (_, i) => String(i + 1));
-  }, [torneoFormato, fase, selectedTournament]);
+  }, [torneoFormato, fase, selectedTournament, groupUsesLegs]);
 
   // Auto-set fase cuando cambia el torneo
   useEffect(() => {
@@ -1037,16 +1042,22 @@ export default function EditMatchSheetModal({
     }
   }, [torneoFormato]);
 
-  // Auto-set pierna cuando cambia ronda o formaato
+  // Auto-set pierna cuando cambia fase, ronda o formato
   useEffect(() => {
     if (fase === 'eliminatoria') {
       if (roundUsesLegs) {
         if (!pierna || pierna === 'unico') setPierna('ida');
       } else {
-        setPierna('unico');
+        if (pierna !== 'unico') setPierna('unico');
+      }
+    } else if (fase === 'grupos') {
+      if (groupUsesLegs) {
+        if (!pierna || pierna === 'unico') setPierna('ida');
+      } else {
+        if (pierna !== 'unico') setPierna('unico');
       }
     }
-  }, [ronda, roundUsesLegs, fase]);
+  }, [ronda, roundUsesLegs, groupUsesLegs, fase, pierna]);
 
   // Alineaciones disponibles según cantidad de jugadores del equipo
   const jugadoresPorEquipo = team?.jugadoresPorEquipo || 11;
@@ -1480,7 +1491,20 @@ export default function EditMatchSheetModal({
       const partidoConMismaJornada = matchSheets.find(ms => {
         if (matchSheet && ms._id === matchSheet._id) return false;
         const msTorneoId = ms.torneoId && typeof ms.torneoId === 'object' ? ms.torneoId._id : ms.torneoId;
-        return msTorneoId === torneoId && ms.jornada && Number(ms.jornada) === jornadaNum;
+        if (msTorneoId !== torneoId) return false;
+        if (fase === 'grupos') {
+          const selectedPierna = pierna || 'unico';
+          return ms.fase === 'grupos'
+            && Number(ms.grupo) === Number(grupo)
+            && Number(ms.jornada) === jornadaNum
+            && ((ms.pierna || 'unico') === selectedPierna);
+        }
+        if (fase === 'eliminatoria') {
+          return ms.fase === 'eliminatoria'
+            && ms.ronda === ronda
+            && ((ms.pierna || 'unico') === (pierna || 'unico'));
+        }
+        return (ms.fase === 'liga' || !ms.fase) && ms.jornada && Number(ms.jornada) === jornadaNum;
       });
       if (partidoConMismaJornada) {
         Alert.alert(
@@ -1538,7 +1562,7 @@ export default function EditMatchSheetModal({
         fase: competicion === 'amistoso' ? null : fase,
         ronda: fase === 'eliminatoria' ? ronda : null,
         grupo: fase === 'grupos' ? (grupo ? Number(grupo) : null) : null,
-        pierna: fase === 'eliminatoria' ? pierna : null,
+        pierna: fase === 'eliminatoria' || fase === 'grupos' ? pierna : null,
         golesFavor: isMatchPast ? Number(golesFavor || 0) : (golesFavor !== '' && golesFavor !== null && golesFavor !== undefined ? Number(golesFavor) : null),
         golesContra: isMatchPast ? Number(golesContra || 0) : (golesContra !== '' && golesContra !== null && golesContra !== undefined ? Number(golesContra) : null),
         resultado,
@@ -1780,6 +1804,38 @@ export default function EditMatchSheetModal({
                       </Text>
                       <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
+                  </View>
+                )}
+
+                {fase === 'grupos' && torneoFormato === 'grupos+eliminatoria' && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>{t('matchSheet.fields.leg')}</Text>
+                    {groupUsesLegs ? (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                            pierna === 'ida' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
+                          onPress={() => setPierna('ida')}
+                        >
+                          <Text style={[styles.selectText, pierna === 'ida' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                            {t('matchSheet.fields.legFirst')}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.selectInput, { flex: 1, justifyContent: 'center', alignItems: 'center' },
+                            pierna === 'vuelta' && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }]}
+                          onPress={() => setPierna('vuelta')}
+                        >
+                          <Text style={[styles.selectText, pierna === 'vuelta' && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                            {t('matchSheet.fields.legSecond')}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={[styles.selectInput, { backgroundColor: theme.colors.background }]}>
+                        <Text style={styles.selectText}>{t('matchSheet.fields.legSingle')}</Text>
+                      </View>
+                    )}
                   </View>
                 )}
 
@@ -2225,7 +2281,7 @@ export default function EditMatchSheetModal({
                     const originalIdx = tarjetasAmarillas.indexOf(tarjeta);
                     return (
                     <View key={`a-${originalIdx}`} style={styles.eventChip}>
-                      <View style={[styles.cardIndicator, { backgroundColor: theme.colors.warning }]} />
+                      <View style={[styles.cardIndicator, { backgroundColor: '#fbbf24' }]} />
                       <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                         setEditingCardIndex(originalIdx);
                         setEditingCardType('amarilla');

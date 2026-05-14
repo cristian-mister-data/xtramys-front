@@ -1407,11 +1407,11 @@ export default function VideoRecorder({
       const lang = i18n.language;
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        let folders = result.folders || [];
-        if (shouldBeGlobal) {
-          folders = folders.filter(f => f.isGlobal);
-        }
+        const folders = (result.folders || []).filter(f => !f.isGlobal);
         setAllFolders(folders);
+        if (selectedFolderId && !folders.some(f => f.id === selectedFolderId || f._id === selectedFolderId)) {
+          setSelectedFolderId(null);
+        }
       }
     } catch (error) {
       console.error('Error cargando carpetas:', error);
@@ -1430,16 +1430,11 @@ export default function VideoRecorder({
         nombre: newFolderName.trim(),
         parentFolder: parentFolderForNew,
         color: newFolderColor,
-        ...(shouldBeGlobal && { isGlobal: true }),
       };
-      if (shouldBeGlobal && newFolderNameEn.trim()) {
-        folderData.translations = { en: { nombre: newFolderNameEn.trim() } };
-      }
       const result = await createVideoFolder(folderData);
 
       if (result.success) {
         showNotification(t('videoRecorder.folderCreated') || 'Carpeta creada', 'success');
-        setShowCreateFolderModal(false);
         setNewFolderName('');
         setNewFolderNameEn('');
         setNewFolderColor('#6366F1');
@@ -1449,10 +1444,9 @@ export default function VideoRecorder({
         if (result.folder?._id) {
           setSelectedFolderId(result.folder._id);
         }
-        // Volver a mostrar el modal de guardar
-        setTimeout(() => {
-          setShowSaveModal(true);
-        }, 100);
+        // Cerrar modal de crear carpeta y volver al modal de guardar sin flicker
+        setShowCreateFolderModal(false);
+        setShowSaveModal(true);
       }
     } catch (error) {
       console.error('Error creando carpeta:', error);
@@ -1463,15 +1457,11 @@ export default function VideoRecorder({
 
   // Abrir modal de crear carpeta
   const openCreateFolderModal = (parentId = null) => {
-    // Cerrar temporalmente el modal de guardar para que el de crear carpeta se vea
-    setShowSaveModal(false);
+    setShowSaveModal(false); // Hide save modal
     setParentFolderForNew(parentId);
     setNewFolderName('');
     setNewFolderColor('#6366F1');
-    // Pequeño delay para asegurar que el modal de guardar se cierre antes
-    setTimeout(() => {
-      setShowCreateFolderModal(true);
-    }, 100);
+    setShowCreateFolderModal(true);
   };
 
   // Cerrar modal de crear carpeta y volver al de guardar
@@ -1480,10 +1470,7 @@ export default function VideoRecorder({
     setNewFolderName('');
     setNewFolderColor('#6366F1');
     setParentFolderForNew(null);
-    // Volver a mostrar el modal de guardar
-    setTimeout(() => {
-      setShowSaveModal(true);
-    }, 100);
+    setShowSaveModal(true); // Show save modal again
   };
 
   // Colores disponibles para carpetas
@@ -1511,16 +1498,16 @@ export default function VideoRecorder({
       const lang = i18n.language;
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        let folders = result.folders || [];
-        if (shouldBeGlobal) {
-          folders = folders.filter(f => f.isGlobal);
-        }
+        const folders = (result.folders || []).filter(f => !f.isGlobal);
         setAllFolders(folders);
+        if (selectedFolderId && !folders.some(f => f.id === selectedFolderId || f._id === selectedFolderId)) {
+          setSelectedFolderId(null);
+        }
       }
     } catch (error) {
       console.error('Error cargando carpetas:', error);
     }
-  }, [isEditingVideo, editingVideoId, shouldBeGlobal, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre, saveVideoToDB]);
+  }, [isEditingVideo, editingVideoId, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre, selectedFolderId, saveVideoToDB]);
 
   const handlePreviewDownload = useCallback(() => {
     downloadVideo();

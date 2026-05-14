@@ -437,6 +437,7 @@ export default function RivalAnalysis() {
         userId={userId}
         rivals={rivals}
         activeTemplate={activeTemplate}
+        userTemplates={userTemplates}
         onSaved={handleSaved}
       />
 

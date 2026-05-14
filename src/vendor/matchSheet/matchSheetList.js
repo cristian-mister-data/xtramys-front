@@ -196,7 +196,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
               <View style={styles.gridCardStat}>
                 <Ionicons name="calendar-outline" size={8} color={theme.colors.textMuted} />
                 <Text style={styles.gridCardStatText}>
-                  {formatDate(matchSheet.fechaHora)}{matchSheet.fase === 'eliminatoria' && matchSheet.ronda ? ` � ${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}` : matchSheet.jornada ? ` � J${matchSheet.jornada}` : ''}
+                  {formatDate(matchSheet.fechaHora)}{matchSheet.fase === 'eliminatoria' && matchSheet.ronda ? ` � ${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}` : matchSheet.fase === 'grupos' && matchSheet.jornada ? ` � J${matchSheet.jornada}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : ''}` : matchSheet.jornada ? ` � J${matchSheet.jornada}` : ''}
                 </Text>
               </View>
             )}
@@ -263,7 +263,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
                 {matchSheet.fase === 'eliminatoria' && matchSheet.ronda
                   ? `${t(ROUND_I18N_KEYS[matchSheet.ronda] || matchSheet.ronda)}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                   : matchSheet.fase === 'grupos' && matchSheet.grupo
-                    ? `G${matchSheet.grupo}${matchSheet.jornada ? ` J${matchSheet.jornada}` : ''}`
+                    ? `G${matchSheet.grupo}${matchSheet.jornada ? ` J${matchSheet.jornada}` : ''}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : ''}`
                     : `J${matchSheet.jornada}`}
               </Text>
             </View>
