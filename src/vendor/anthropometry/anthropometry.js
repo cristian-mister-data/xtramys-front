@@ -201,6 +201,7 @@ const Anthropometry = ({ navigation }) => {
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
   const [playerFilterModalVisible, setPlayerFilterModalVisible] = useState(false);
+  const [playerFilterSearch, setPlayerFilterSearch] = useState('');
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editingAnthropometry, setEditingAnthropometry] = useState(null);
   const [viewingAnthropometry, setViewingAnthropometry] = useState(null);
@@ -234,6 +235,13 @@ const Anthropometry = ({ navigation }) => {
       getPlayerFullName(player).toLowerCase().includes(q)
     );
   }, [players, playerPickerSearch]);
+  const filteredPlayersForFilter = useMemo(() => {
+    const q = playerFilterSearch.trim().toLowerCase();
+    if (!q) return players || [];
+    return (players || []).filter((player) =>
+      getPlayerFullName(player).toLowerCase().includes(q)
+    );
+  }, [players, playerFilterSearch]);
 
   useEffect(() => {
     if (selectedTeam?._id) {
@@ -723,20 +731,52 @@ const Anthropometry = ({ navigation }) => {
         {/* Modal de selección de jugador */}
         <Modal
           visible={playerFilterModalVisible}
-          animationType="slide"
+          animationType="fade"
           transparent
-          onRequestClose={() => setPlayerFilterModalVisible(false)}
+          onRequestClose={() => {
+            setPlayerFilterModalVisible(false);
+            setPlayerFilterSearch('');
+          }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.dateRangeModalContainer}>
-              <View style={styles.dateRangeModalHeader}>
-                <Text style={styles.dateRangeModalTitle}>{t('anthropometry.modal.selectPlayerTitle')}</Text>
+            <View style={styles.playerFilterModalContainer}>
+              <View style={styles.playerFilterModalHeader}>
+                <View style={styles.playerFilterHeaderLeft}>
+                  <View style={styles.playerFilterHeaderIcon}>
+                    <Ionicons name="people-outline" size={20} color="#2474E5" />
+                  </View>
+                  <View>
+                    <Text style={styles.playerFilterModalTitle}>{t('anthropometry.modal.selectPlayerTitle')}</Text>
+                    <Text style={styles.playerFilterModalSubtitle}>
+                      {t('anthropometry.filters.filterByPlayer', 'Filtrar por jugador')}
+                    </Text>
+                  </View>
+                </View>
                 <TouchableOpacity
-                  onPress={() => setPlayerFilterModalVisible(false)}
-                  style={styles.dateRangeCloseBtn}
+                  onPress={() => {
+                    setPlayerFilterModalVisible(false);
+                    setPlayerFilterSearch('');
+                  }}
+                  style={styles.playerFilterCloseBtn}
                 >
                   <MaterialIcons name="close" size={24} color="#64748b" />
                 </TouchableOpacity>
+              </View>
+
+              <View style={styles.playerFilterSearchBox}>
+                <Ionicons name="search-outline" size={18} color="#94a3b8" />
+                <TextInput
+                  style={styles.playerFilterSearchInput}
+                  value={playerFilterSearch}
+                  onChangeText={setPlayerFilterSearch}
+                  placeholder={t('common.search', 'Buscar...')}
+                  placeholderTextColor="#94a3b8"
+                />
+                {playerFilterSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setPlayerFilterSearch('')}>
+                    <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               <ScrollView style={styles.playerListContainer}>
@@ -745,32 +785,55 @@ const Anthropometry = ({ navigation }) => {
                   onPress={() => {
                     setFilterPlayer('all');
                     setPlayerFilterModalVisible(false);
+                    setPlayerFilterSearch('');
                   }}
                 >
-                  <Text style={[styles.playerItemText, filterPlayer === 'all' && styles.playerItemTextSelected]}>
-                    {t('anthropometry.allPlayers')}
-                  </Text>
+                  <View style={styles.playerItemAvatar}>
+                    <Ionicons name="people-outline" size={16} color="#2474E5" />
+                  </View>
+                  <View style={styles.playerItemInfo}>
+                    <Text style={[styles.playerItemText, filterPlayer === 'all' && styles.playerItemTextSelected]}>
+                      {t('anthropometry.allPlayers')}
+                    </Text>
+                  </View>
                   {filterPlayer === 'all' && (
                     <MaterialIcons name="check" size={20} color="#2474E5" />
                   )}
                 </TouchableOpacity>
-                {players.map((player) => (
+                {filteredPlayersForFilter.map((player) => (
                   <TouchableOpacity
                     key={player._id}
                     style={[styles.playerItem, filterPlayer === player._id && styles.playerItemSelected]}
                     onPress={() => {
                       setFilterPlayer(player._id);
                       setPlayerFilterModalVisible(false);
+                      setPlayerFilterSearch('');
                     }}
                   >
-<Text style={[styles.playerItemText, filterPlayer === player._id && styles.playerItemTextSelected]}>
-                      {getPlayerFullName(player)}
-                    </Text>
+                    <View style={styles.playerItemAvatar}>
+                      <Text style={styles.playerItemAvatarText}>
+                        {getPlayerFullName(player).charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.playerItemInfo}>
+                      <Text style={[styles.playerItemText, filterPlayer === player._id && styles.playerItemTextSelected]}>
+                        {getPlayerFullName(player)}
+                      </Text>
+                      {!!player.posicion && (
+                        <Text style={styles.playerItemMeta}>{player.posicion}</Text>
+                      )}
+                    </View>
                     {filterPlayer === player._id && (
                       <MaterialIcons name="check" size={20} color="#2474E5" />
                     )}
                   </TouchableOpacity>
                 ))}
+                {filteredPlayersForFilter.length === 0 && (
+                  <View style={styles.playerFilterEmptyState}>
+                    <Ionicons name="search-outline" size={28} color="#94a3b8" />
+                    <Text style={styles.playerFilterEmptyText}>{t('common.noResults', 'Sin resultados')}</Text>
+                  </View>
+                )}
               </ScrollView>
             </View>
           </View>
@@ -2046,26 +2109,142 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  playerListContainer: {
-    maxHeight: 400,
+  playerFilterModalContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    width: '92%',
+    maxWidth: 460,
+    maxHeight: '78%',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
+    overflow: 'hidden',
   },
-  playerItem: {
+  playerFilterModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  playerFilterHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  playerFilterHeaderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playerFilterModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  playerFilterModalSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  playerFilterCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  playerFilterSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  playerFilterSearchInput: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 14,
+    padding: 0,
+  },
+  playerListContainer: {
+    maxHeight: 420,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  playerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderBottomColor: theme.colors.border,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    marginTop: 8,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
   playerItemSelected: {
-    backgroundColor: theme.colors.primary + '15',
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
+  },
+  playerItemAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: theme.colors.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  playerItemAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  playerItemInfo: {
+    flex: 1,
   },
   playerItemText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '600',
     color: theme.colors.text,
   },
   playerItemTextSelected: {
     color: theme.colors.primary,
+    fontWeight: '600',
+  },
+  playerItemMeta: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  playerFilterEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    gap: 6,
+  },
+  playerFilterEmptyText: {
+    color: theme.colors.textMuted,
+    fontSize: 14,
     fontWeight: '600',
   },
   // Estilos del modal de creación
