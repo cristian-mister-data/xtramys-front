@@ -10,6 +10,8 @@ import {
   Dimensions,
   ScrollView,
   Platform,
+  TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,9 +20,6 @@ import { useTheme } from 'styled-components';
 import Svg, { Rect, Line, Circle, Path, G, Defs, ClipPath, Ellipse } from 'react-native-svg';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 
-// Detectar si es móvil
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IS_MOBILE = SCREEN_WIDTH < 768;
 
 // Posiciones tácticas predefinidas para diferentes formaciones
 const FORMATION_POSITIONS = {
@@ -311,6 +310,16 @@ const getPositionColor = (pos) => {
   return ['#6366f1', '#4f46e5'];
 };
 
+// Icono por posición
+const getPositionIcon = (pos) => {
+  const position = pos?.toUpperCase() || '';
+  if (position === 'POR' || position === 'PORTERO') return 'shield';
+  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some(p => position.includes(p))) return 'shield-checkmark';
+  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some(p => position.includes(p))) return 'ellipse';
+  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some(p => position.includes(p))) return 'flag';
+  return 'football';
+};
+
 // Componente del campo de fútbol profesional en SVG
 function ProfessionalFootballField({ width, height }) {
   const strokeWidth = 2;
@@ -529,13 +538,13 @@ function ProfessionalFootballField({ width, height }) {
 }
 
 // Componente de posición en el campo
-function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlayer, player, onRemove, isSelecting, readOnly = false, showPhotos = true, showNames = true, translatePosition }) {
+function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlayer, player, onRemove, isSelecting, readOnly = false, showPhotos = true, showNames = true, translatePosition, isMobile = false }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(position.pos);
   const pixelX = (x / 100) * fieldWidth;
   const pixelY = (y / 100) * fieldHeight;
-  const size = Math.max(32, Math.min(IS_MOBILE ? 46 : 54, Math.round(fieldWidth * 0.13)));
+  const size = Math.max(28, Math.min(isMobile ? 40 : 54, Math.round(fieldWidth * 0.12)));
   
   return (
     <View
@@ -579,7 +588,7 @@ function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlay
         )}
       </TouchableOpacity>
 {showNames && (
-        <View style={styles.slotLabelContainer}>
+        <View style={[styles.slotLabelContainer, { maxWidth: size * 1.8 }]}>
           <Text style={styles.slotLabel} numberOfLines={1}>
             {hasPlayer && player ? getPlayerFirstName(player) : (translatePosition ? translatePosition(position.pos) : position.pos)}
           </Text>
@@ -651,9 +660,13 @@ export default function LineupEditor({
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isMobile = screenWidth < 768;
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [lineupAssignments, setLineupAssignments] = useState({});
-  const screenWidth = Dimensions.get('window').width;
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterPosition, setFilterPosition] = useState('');
   
   // Función para traducir posiciones tácticas
   const translatePosition = (posCode) => {
@@ -661,17 +674,15 @@ export default function LineupEditor({
   };
   
   // Calcular dimensiones del campo
-  // En tablet: limitar la altura del campo al 58% de pantalla para verlo completo sin scroll
-  const SCREEN_H = Dimensions.get('window').height;
-  const maxFieldHeightTablet = IS_MOBILE ? Infinity : SCREEN_H * 0.58;
+  const maxFieldHeightTablet = isMobile ? Infinity : screenHeight * 0.58;
   const rawMaxWidth = containerWidth != null
     ? containerWidth
-    : IS_MOBILE
-      ? screenWidth - 64
+    : isMobile
+      ? screenWidth - 32
       : Math.min(screenWidth - 220, 480);
   const widthFromHeightLimit = maxFieldHeightTablet / 1.42;
   const fieldWidth = Math.max(
-    IS_MOBILE ? rawMaxWidth : Math.min(rawMaxWidth, widthFromHeightLimit),
+    isMobile ? rawMaxWidth : Math.min(rawMaxWidth, widthFromHeightLimit),
     200
   );
   const fieldHeight = fieldWidth * 1.42;
@@ -701,6 +712,29 @@ export default function LineupEditor({
         return (a.nombre || '').localeCompare(b.nombre || '');
       });
   }, [convocados, players]);
+  
+  // Posiciones disponibles (dinámicas según los convocados)
+  const availablePositions = useMemo(() => {
+    const posSet = new Set();
+    convocadosPlayers.forEach(p => { if (p.posicion) posSet.add(p.posicion); });
+    return Array.from(posSet).sort();
+  }, [convocadosPlayers]);
+  
+  // Jugadores filtrados por búsqueda y posición
+  const filteredPlayers = useMemo(() => {
+    let result = convocadosPlayers;
+    if (filterPosition) {
+      result = result.filter(p => p.posicion === filterPosition);
+    }
+    if (filterSearch.trim()) {
+      const lower = filterSearch.trim().toLowerCase();
+      result = result.filter(p =>
+        getPlayerFullName(p).toLowerCase().includes(lower) ||
+        String(p.dorsal || '').includes(lower)
+      );
+    }
+    return result;
+  }, [convocadosPlayers, filterPosition, filterSearch]);
   
   // IDs de jugadores ya asignados a titulares
   const assignedPlayerIds = useMemo(() => {
@@ -820,6 +854,7 @@ export default function LineupEditor({
                   showPhotos={showPhotos}
                   showNames={showNames}
                   translatePosition={translatePosition}
+                  isMobile={isMobile}
                 />
               );
             })}
@@ -897,8 +932,8 @@ export default function LineupEditor({
       </View>
       
       {/* Contenedor principal */}
-      <View style={[styles.editorContainer, IS_MOBILE && styles.editorContainerMobile]}>
-        {IS_MOBILE ? (
+      <View style={[styles.editorContainer, isMobile && styles.editorContainerMobile]}>
+        {isMobile ? (
           <>
             {/* En móvil: Campo arriba */}
             <View style={styles.fieldContainerMobile}>
@@ -924,6 +959,7 @@ export default function LineupEditor({
                       player={player}
                       isSelecting={selectedPlayer !== null}
                       translatePosition={translatePosition}
+                      isMobile={isMobile}
                     />
                   );
                 })}
@@ -937,27 +973,100 @@ export default function LineupEditor({
                   <Ionicons name="people" size={16} color={theme.colors.primary} />
                   <View>
                     <Text style={styles.panelTitleMobile}>{t('matchSheet.lineup.called')}</Text>
-                    <Text style={styles.panelSubtitleMobile}>{`${convocadosPlayers.length} ${t('matchSheet.lineup.called')}`}</Text>
+                    <Text style={styles.panelSubtitleMobile}>{`${filteredPlayers.length}/${convocadosPlayers.length} ${t('matchSheet.lineup.called')}`}</Text>
                   </View>
                 </View>
-                {remainingPlayers > 0 && (
-                  <TouchableOpacity
-                    style={styles.suplentesButtonMobile}
-                    onPress={handleSetSuplentes}
-                  >
-                    <Ionicons name="arrow-forward-circle" size={14} color="#fff" />
-                    <Text style={styles.suplentesButtonTextMobile}>
-                      {t('matchSheet.lineup.substitutes')} ({remainingPlayers})
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                <View style={styles.panelHeaderActions}>
+                  {convocadosPlayers.length > 4 && (
+                    <TouchableOpacity
+                      style={[styles.filterToggleButton, showFilters && styles.filterToggleButtonActive]}
+                      onPress={() => setShowFilters(!showFilters)}
+                    >
+                      <Ionicons name={showFilters ? "chevron-up" : "options"} size={16} color={showFilters ? "#fff" : theme.colors.primary} />
+                      <Text style={[styles.filterToggleText, showFilters && styles.filterToggleTextActive]}>
+                        {t('matchSheet.lineup.filters', 'Filtros')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {remainingPlayers > 0 && (
+                    <TouchableOpacity
+                      style={styles.suplentesButtonMobile}
+                      onPress={handleSetSuplentes}
+                    >
+                      <Ionicons name="arrow-forward-circle" size={14} color="#fff" />
+                      <Text style={styles.suplentesButtonTextMobile}>
+                        {t('matchSheet.lineup.substitutes')} ({remainingPlayers})
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
+              
+              {/* Panel de filtros colapsable */}
+              {showFilters && convocadosPlayers.length > 4 && (
+                <View style={styles.filterPanel}>
+                  <View style={styles.searchRow}>
+                    <Ionicons name="search" size={16} color={theme.colors.inputPlaceholder} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={t('matchSheet.lineup.searchPlayer', 'Buscar jugador...')}
+                      placeholderTextColor={theme.colors.inputPlaceholder}
+                      value={filterSearch}
+                      onChangeText={setFilterSearch}
+                    />
+                    {filterSearch ? (
+                      <TouchableOpacity onPress={() => setFilterSearch('')}>
+                        <Ionicons name="close-circle" size={18} color={theme.colors.inputPlaceholder} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {availablePositions.length > 1 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                      <TouchableOpacity
+                        style={[styles.filterChip, !filterPosition && styles.filterChipActive]}
+                        onPress={() => setFilterPosition('')}
+                      >
+                        <Text style={[styles.filterChipText, !filterPosition && styles.filterChipTextActive]}>
+                          {t('matchSheet.lineup.allPositions', 'Todas')}
+                        </Text>
+                      </TouchableOpacity>
+                      {availablePositions.map(pos => {
+                        const colors = getPositionColor(pos);
+                        return (
+                          <TouchableOpacity
+                            key={pos}
+                            style={[
+                              styles.filterChip,
+                              filterPosition === pos && [styles.filterChipActive, { backgroundColor: colors[0] }]
+                            ]}
+                            onPress={() => setFilterPosition(filterPosition === pos ? '' : pos)}
+                          >
+                            <Ionicons name={getPositionIcon(pos)} size={12} color={filterPosition === pos ? '#fff' : colors[1]} />
+                            <Text style={[
+                              styles.filterChipText,
+                              filterPosition === pos && styles.filterChipTextActive
+                            ]}>
+                              {translatePosition(pos)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                  {(filterSearch || filterPosition) && (
+                    <TouchableOpacity style={styles.clearFiltersButton} onPress={() => { setFilterSearch(''); setFilterPosition(''); }}>
+                      <Ionicons name="close-circle-outline" size={14} color={theme.colors.primary} />
+                      <Text style={styles.clearFiltersText}>{t('matchSheet.lineup.clearFilters', 'Limpiar')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
               
               <ScrollView 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.playersListMobileGrid}
               >
-                {convocadosPlayers.map(player => (
+                {filteredPlayers.map(player => (
                   <TouchableOpacity
                     key={player._id}
                     style={[
@@ -1007,6 +1116,12 @@ export default function LineupEditor({
                   <View style={styles.emptyContainerMobile}>
                     <Ionicons name="alert-circle-outline" size={24} color={theme.colors.textDisabled} />
                     <Text style={styles.emptyTextMobile}>{t('matchSheet.lineup.selectCalledFirst')}</Text>
+                  </View>
+                )}
+                {filteredPlayers.length === 0 && convocadosPlayers.length > 0 && (
+                  <View style={styles.emptyContainerMobile}>
+                    <Ionicons name="search-outline" size={24} color={theme.colors.textDisabled} />
+                    <Text style={styles.emptyTextMobile}>{t('matchSheet.lineup.noResults', 'Sin resultados')}</Text>
                   </View>
                 )}
               </ScrollView>
@@ -1086,6 +1201,7 @@ export default function LineupEditor({
                       player={player}
                       isSelecting={selectedPlayer !== null}
                       translatePosition={translatePosition}
+                      isMobile={isMobile}
                     />
                   );
                 })}
@@ -1230,6 +1346,93 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 2,
+  },
+  panelHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterToggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primarySoft,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryLight,
+  },
+  filterToggleButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  filterToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  filterToggleTextActive: {
+    color: '#fff',
+  },
+  filterPanel: {
+    marginBottom: 12,
+    gap: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.colors.text,
+    padding: 0,
+  },
+  filterScroll: {
+    flexGrow: 0,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    gap: 4,
+  },
+  filterChipActive: {
+    borderWidth: 0,
+  },
+  filterChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    gap: 4,
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.primary,
   },
   suplentesButtonMobile: {
     flexDirection: 'row',

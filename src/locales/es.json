@@ -2605,7 +2605,12 @@
             "selectCalledFirst": "Selecciona convocados primero",
             "tapPositionToPlace": "Toca una posición para colocar a {{name}}",
             "selectPlayerThenPosition": "Selecciona un jugador y luego una posición",
-            "noCalledSelected": "No hay convocados seleccionados"
+            "noCalledSelected": "No hay convocados seleccionados",
+            "filters": "Filtros",
+            "searchPlayer": "Buscar jugador...",
+            "allPositions": "Todas",
+            "clearFilters": "Limpiar",
+            "noResults": "Sin resultados"
         },
         "positions": {
             "goalkeeper": "Portero",

@@ -2595,7 +2595,12 @@
             "selectCalledFirst": "Select called up players first",
             "tapPositionToPlace": "Tap a position to place {{name}}",
             "selectPlayerThenPosition": "Select a player then a position",
-            "noCalledSelected": "No called up players selected"
+            "noCalledSelected": "No called up players selected",
+            "filters": "Filters",
+            "searchPlayer": "Search player...",
+            "allPositions": "All",
+            "clearFilters": "Clear",
+            "noResults": "No results"
         },
         "positions": {
             "goalkeeper": "Goalkeeper",
