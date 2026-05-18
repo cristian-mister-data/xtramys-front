@@ -3853,7 +3853,7 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       // Usar el color de teamPlayerStyle para equipo local
       setSelectedColor(teamPlayerStyle?.color || initialColor);
     }
-  }, [isOpponent, initialColor, teamPlayerStyle?.color]);
+  }, [isOpponent]);
 
   if (!visible) return null;
 
@@ -4506,7 +4506,9 @@ realPlayers: assignedPlayers.map((player, idx) => {
                   onClose={() => setColorPickerVisible(false)}
                   onSelect={(c) => {
                     setSelectedColor(c);
-                    setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, color: c }));
+                    if (!isOpponent) {
+                      setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, color: c }));
+                    }
                   }}
                 />
 
