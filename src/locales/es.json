@@ -1119,7 +1119,9 @@
             "create": "Crear Medición",
             "selectPlayerTitle": "Seleccionar Jugador",
             "detailTitle": "Medición Antropométrica",
-            "player": "Jugador"
+            "player": "Jugador",
+            "noPlayersHint": "No hay jugadores cargados",
+            "enterPlayerName": "Escribe el nombre del jugador:"
         }
     },
     "common": {
@@ -1976,7 +1978,7 @@
         "subsPerMatch": "Cambios por Partido",
         "matchesPlayed": "Partidos Jugados",
         "goals": "Goles",
-        "assists": "Asistencias",
+        "assists": "Asistencias de gol",
         "playersCount": "Jugadores",
         "searchPlayer": "Buscar jugador...",
         "sortLabels": {

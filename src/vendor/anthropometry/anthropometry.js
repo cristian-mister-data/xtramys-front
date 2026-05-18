@@ -30,6 +30,7 @@ import {
   fetchAnthropometryById,
 } from '@/store/slices/anthropometry/anthropometryThunks';
 import { clearAnthropometries } from '@/store/slices/anthropometry/anthropometrySlice';
+import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -213,10 +214,8 @@ const Anthropometry = ({ navigation }) => {
   const [datePickerVisibleEnd, setDatePickerVisibleEnd] = useState(false);
   
   // Estados del formulario
-  const [selectedPlayer, setSelectedPlayer] = useState('');
   const [fecha, setFecha] = useState(new Date());
   const [peso, setPeso] = useState('');
-  // Sistema de 6 pliegues (Yuhasz)
   const [tricipital, setTricipital] = useState('');
   const [subescapular, setSubescapular] = useState('');
   const [suprailiaco, setSuprailiaco] = useState('');
@@ -224,9 +223,11 @@ const Anthropometry = ({ navigation }) => {
   const [muslo_frontal, setMuslo_frontal] = useState('');
   const [pierna_medial, setPierna_medial] = useState('');
   const [notas, setNotas] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState('');
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [playerPickerSearch, setPlayerPickerSearch] = useState('');
+  const [manualPlayerName, setManualPlayerName] = useState('');
 
   const playerPickerPlayers = useMemo(() => {
     const q = playerPickerSearch.trim().toLowerCase();
@@ -246,6 +247,9 @@ const Anthropometry = ({ navigation }) => {
   useEffect(() => {
     if (selectedTeam?._id) {
       dispatch(fetchAnthropometriesByTeam({ team: selectedTeam._id }));
+      if (!players || players.length === 0) {
+        dispatch(fetchJugadoresEquipo({ team: selectedTeam._id }));
+      }
     }
     
     return () => {
@@ -1239,12 +1243,48 @@ const Anthropometry = ({ navigation }) => {
                           )}
                         </TouchableOpacity>
                       ))}
-                      {playerPickerPlayers.length === 0 && (
+                      {(players || []).length === 0 ? (
+                        <View style={styles.pickerManualSection}>
+                          <View style={styles.pickerEmptyState}>
+                            <Ionicons name="people-outline" size={28} color="#94a3b8" />
+                            <Text style={styles.pickerEmptyText}>
+                              {t('anthropometry.noPlayersHint', 'No hay jugadores cargados')}
+                            </Text>
+                          </View>
+                          <Text style={styles.pickerManualLabel}>
+                            {t('anthropometry.enterPlayerName', 'Escribe el nombre del jugador:')}
+                          </Text>
+                          <TextInput
+                            style={styles.pickerManualInput}
+                            value={manualPlayerName}
+                            onChangeText={setManualPlayerName}
+                            placeholder={t('anthropometry.modal.selectPlayer', 'Nombre del jugador')}
+                            placeholderTextColor="#94a3b8"
+                          />
+                          <TouchableOpacity
+                            style={[styles.pickerManualConfirm, !manualPlayerName.trim() && { opacity: 0.5 }]}
+                            onPress={() => {
+                              if (manualPlayerName.trim()) {
+                                setSelectedPlayer(manualPlayerName.trim());
+                                setShowPlayerModal(false);
+                                setPlayerPickerSearch('');
+                                setManualPlayerName('');
+                              }
+                            }}
+                            disabled={!manualPlayerName.trim()}
+                          >
+                            <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                            <Text style={styles.pickerManualConfirmText}>
+                              {t('common.confirm', 'Confirmar')}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : playerPickerPlayers.length === 0 ? (
                         <View style={styles.pickerEmptyState}>
                           <Ionicons name="search-outline" size={28} color="#94a3b8" />
                           <Text style={styles.pickerEmptyText}>{t('common.noResults', 'Sin resultados')}</Text>
                         </View>
-                      )}
+                      ) : null}
                     </ScrollView>
                   </View>
                 </View>
@@ -2795,6 +2835,40 @@ const makeStyles = (theme) => StyleSheet.create({
   pickerEmptyText: {
     color: theme.colors.textMuted,
     fontSize: 14,
+    fontWeight: '600',
+  },
+  pickerManualSection: {
+    padding: 16,
+    gap: 12,
+  },
+  pickerManualLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  pickerManualInput: {
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.inputBorder,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  pickerManualConfirm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  pickerManualConfirmText: {
+    color: '#fff',
+    fontSize: 15,
     fontWeight: '600',
   },
   // Estilos para panel de filtros

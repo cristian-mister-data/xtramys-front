@@ -1118,7 +1118,9 @@
             "create": "Create Measurement",
             "selectPlayerTitle": "Select Player",
             "detailTitle": "Anthropometric Measurement",
-            "player": "Player"
+            "player": "Player",
+            "noPlayersHint": "No players loaded",
+            "enterPlayerName": "Enter the player's name:"
         }
     },
     "common": {
@@ -1975,7 +1977,7 @@
         "subsPerMatch": "Subs per Match",
         "matchesPlayed": "Matches Played",
         "goals": "Goals",
-        "assists": "Assists",
+        "assists": "Goal Assists",
         "playersCount": "Players",
         "searchPlayer": "Search player...",
         "sortLabels": {
