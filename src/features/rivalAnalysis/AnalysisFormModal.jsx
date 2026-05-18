@@ -5,7 +5,7 @@
 // - video:   simple file input (FileReader → dataUrl). Versión web simplificada.
 // - players: lista editable de {nombre, observacion}.
 // - formation: modal con chips de ALINEACIONES.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
@@ -42,6 +42,7 @@ import {
 } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { getVideoById } from '@/utils/api';
 import VideoPoster from '@/components/shared/VideoPoster';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
 import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
@@ -55,6 +56,63 @@ import {
   normalizeFormation,
   getFormationShort,
 } from './rivalAnalysisData';
+
+// ---------- VideoPreviewThumb component ----------
+function VideoPreviewThumb({ value, fallback, playSize, alt, onOpen }) {
+  const [posterUrl, setPosterUrl] = useState(value?.thumbnailUrl || value?.thumbnail || '');
+
+  const captureFrame = async (videoUrl) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.src = videoUrl;
+    video.muted = true;
+    video.preload = 'auto';
+    return new Promise((resolve) => {
+      video.addEventListener('loadeddata', () => {
+        video.currentTime = 0.1;
+      });
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+        video.remove();
+      });
+      video.addEventListener('error', () => resolve(''));
+    });
+  };
+
+  useEffect(() => {
+    if (posterUrl || !value?.videoId) return;
+    getVideoById(value.videoId).then(async (data) => {
+      const thumb = data?.video?.thumbnailUrl || data?.video?.thumbnail || data?.video?.poster;
+      if (thumb) {
+        setPosterUrl(thumb);
+        return;
+      }
+      const url = await resolvePlayableVideoUrl(value.videoId);
+      if (url) {
+        const frame = await captureFrame(url);
+        if (frame) setPosterUrl(frame);
+      }
+    }).catch(() => {});
+  }, [value?.videoId, posterUrl]);
+
+  return (
+    <VideoThumb type="button" onClick={onOpen}>
+      <VideoPoster
+        video={value?.videoId ? { ...value, thumbnailUrl: posterUrl } : null}
+        src={value?.url || ''}
+        poster={posterUrl}
+        fallback={fallback}
+        playSize={playSize}
+        style={{ minHeight: 160 }}
+        alt={alt}
+      />
+    </VideoThumb>
+  );
+}
 
 // ---------- styles ----------
 const QBlock = styled.div`
@@ -829,17 +887,13 @@ export default function AnalysisFormModal({
       body = (
         <Stack $gap={6}>
           {hasAny ? (
-            <VideoThumb type="button" onClick={() => hasVideoId ? openVideoViewer(value.videoId) : setVideoViewerUrl(playUrl)}>
-              <VideoPoster
-                video={hasVideoId ? value : null}
-                src={hasInlineUrl ? playUrl : ''}
-                poster={value?.thumbnailUrl || value?.thumbnail}
-                fallback={<MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />}
-                playSize={56}
-                style={{ minHeight: 160 }}
-                alt={getQuestionText(q, t)}
-              />
-            </VideoThumb>
+            <VideoPreviewThumb
+              value={value}
+              fallback={<MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />}
+              playSize={56}
+              alt={getQuestionText(q, t)}
+              onOpen={() => hasVideoId ? openVideoViewer(value.videoId) : setVideoViewerUrl(playUrl)}
+            />
           ) : (
             <SnapshotPreview>
               <Muted>{t('rivalAnalysis.form.noVideo', 'Sin vídeo')}</Muted>

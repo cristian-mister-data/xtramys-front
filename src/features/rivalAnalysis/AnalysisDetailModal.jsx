@@ -77,14 +77,44 @@ import { generateRivalAnalysisPdf } from './pdf';
 function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }) {
   const [meta, setMeta] = useState({ posterUrl: poster || '', videoName: '' });
 
+  const captureFrame = async (videoUrl) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.src = videoUrl;
+    video.muted = true;
+    video.preload = 'auto';
+    return new Promise((resolve) => {
+      video.addEventListener('loadeddata', () => { video.currentTime = 0.1; });
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+        video.remove();
+      });
+      video.addEventListener('error', () => resolve(''));
+    });
+  };
+
   useEffect(() => {
-    if (meta.posterUrl || meta.videoName || !videoId) return;
-    getVideoById(videoId).then((data) => {
-      const thumb = data?.video?.thumbnailUrl || data?.video?.thumbnail || data?.video?.poster || '';
+    if (meta.posterUrl || !videoId) return;
+    getVideoById(videoId).then(async (data) => {
+      const thumb = data?.video?.thumbnailUrl || data?.video?.thumbnail || data?.video?.poster;
       const name = data?.video?.name || '';
-      if (thumb || name) setMeta({ posterUrl: thumb, videoName: name });
+      if (thumb) {
+        setMeta({ posterUrl: thumb, videoName: name });
+        return;
+      }
+      const url = await resolvePlayableVideoUrl(videoId);
+      if (url) {
+        const frame = await captureFrame(url);
+        setMeta({ posterUrl: frame || '', videoName: name });
+      } else if (name) {
+        setMeta({ posterUrl: '', videoName: name });
+      }
     }).catch(() => {});
-  }, [videoId, meta.posterUrl, meta.videoName]);
+  }, [videoId, meta.posterUrl]);
 
   const displayPoster = meta.posterUrl || poster || '';
   const displayName = meta.videoName || label;
