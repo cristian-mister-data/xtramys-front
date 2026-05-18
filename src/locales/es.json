@@ -1790,7 +1790,8 @@
             "saving": "Guardando...",
             "save": "Guardar",
             "apply": "Aplicar",
-            "close": "Cerrar"
+            "close": "Cerrar",
+            "settingsSaved": "Configuración guardada"
         },
         "editPanel": {
             "editStraightArrow": "Editar flecha recta",

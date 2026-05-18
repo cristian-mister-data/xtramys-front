@@ -1789,7 +1789,8 @@
             "saving": "Saving...",
             "save": "Save",
             "apply": "Apply",
-            "close": "Close"
+            "close": "Close",
+            "settingsSaved": "Settings saved"
         },
         "editPanel": {
             "editStraightArrow": "Edit straight arrow",

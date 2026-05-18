@@ -2404,7 +2404,7 @@ function SettingsPanel({
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>??�</Text>
+                    <Text style={{ fontSize: 14 }}>⚙️</Text>
                   </View>
                   <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                     {t('tacticalBoard.settings.title')}
@@ -13395,7 +13395,7 @@ const handleCancelar = useCallback(async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>{canHaveFill ? '?' : '??'}</Text>
+                      <Text style={{ fontSize: 12 }}>{canHaveFill ? '◼' : '━'}</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {canHaveFill ? t('tacticalBoard.lineConfig.titleShape') : t('tacticalBoard.lineConfig.titleLine')}
@@ -13884,7 +13884,7 @@ const handleCancelar = useCallback(async () => {
                   {/* Header */}
                   <View style={styles.proModalHeader}>
                     <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>??�</Text>
+                      <Text style={{ fontSize: 12 }}>👥</Text>
                     </View>
                     <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                       {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
