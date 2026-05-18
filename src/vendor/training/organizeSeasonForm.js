@@ -114,7 +114,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
   }
 
   function onChange(event, selectedValue) {
-    if (Platform.OS === 'android' && event.type === "dismissed") {
+    if ((Platform.OS === 'android' || Platform.OS === 'web') && event.type === "dismissed") {
       setPicker({ ...picker, open: false });
       return;
     }
@@ -266,7 +266,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
       </ScrollView>
 
       {/* ANDROID Picker */}
-      {Platform.OS === 'android' && picker.open && (
+      {(Platform.OS === 'android' || Platform.OS === 'web') && picker.open && (
         <DateTimePicker
           value={getPickerValue(picker.field)}
           mode={picker.mode}
