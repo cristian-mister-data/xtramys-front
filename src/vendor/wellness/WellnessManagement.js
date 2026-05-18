@@ -36,6 +36,7 @@ import {
   duplicateWellnessTemplate,
   getSessionWellnessStats,
   getSessionPreWellnessStats,
+  updateSessionPreWellness,
   generateWellnessLink,
   generatePreWellnessLink,
   toggleWellnessLink,
@@ -47,6 +48,7 @@ import {
   getWellnessFormUrl,
   getPreWellnessFormUrl,
 } from '@/utils/api';
+import api from '@/api/client';
 import { BACKEND_URL } from '@/config';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
@@ -119,6 +121,14 @@ export default function WellnessManagement({ navigation }) {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [togglingLink, setTogglingLink] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [expectedValue, setExpectedValue] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [sessionTemplates, setSessionTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   // Estado para PDF por rango de fechas
   const [showRangePDFModal, setShowRangePDFModal] = useState(false);
@@ -153,6 +163,19 @@ export default function WellnessManagement({ navigation }) {
       loadTemplates();
     }
   }, [activeTab, selectedTemplateType]);
+
+  // Sincronizar expected/questions cuando se cargan datos de sesión
+  useEffect(() => {
+    if (sessionWellnessData && showSessionModal) {
+      const isPre = wellnessType === 'pre';
+      setExpectedValue(isPre ? sessionWellnessData.expectedPreWellness : sessionWellnessData.expectedWellness);
+      setQuestions(isPre ? (sessionWellnessData.preWellnessQuestions || []) : (sessionWellnessData.wellnessQuestions || []));
+      setSelectedTemplate(isPre
+        ? (sessionWellnessData.preWellnessTemplate?._id || sessionWellnessData.preWellnessTemplate || null)
+        : (sessionWellnessData.wellnessTemplate?._id || sessionWellnessData.wellnessTemplate || null)
+      );
+    }
+  }, [sessionWellnessData, showSessionModal]);
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -285,7 +308,14 @@ export default function WellnessManagement({ navigation }) {
     setSelectedSession(session);
     setWellnessType(type);
     setShowSessionModal(true);
-    await loadSessionWellnessData(session._id, type);
+    setExpectedValue(null);
+    setQuestions([]);
+    setSelectedTemplate(null);
+    setShowAddQuestion(false);
+    await Promise.all([
+      loadSessionWellnessData(session._id, type),
+      loadSessionTemplates(type),
+    ]);
   };
 
   const loadSessionWellnessData = async (sessionId, type) => {
@@ -413,6 +443,64 @@ export default function WellnessManagement({ navigation }) {
     );
   };
 
+  const loadSessionTemplates = async (type) => {
+    try {
+      const data = await getWellnessTemplates(type || 'post');
+      setSessionTemplates(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      setSessionTemplates([]);
+    }
+  };
+
+  const handleSelectTemplate = (template) => {
+    setSelectedTemplate(template?._id || null);
+    if (template?.questions) {
+      setQuestions(template.questions.map((q, i) => ({
+        question: typeof q === 'string' ? q : q.question,
+        order: i,
+      })));
+    }
+    setShowTemplateSelector(false);
+  };
+
+  const handleSaveConfig = async () => {
+    if (!selectedSession) return;
+    setSavingConfig(true);
+    try {
+      if (wellnessType === 'pre') {
+        await updateSessionPreWellness(selectedSession._id, {
+          preWellnessQuestions: questions,
+          preWellnessTemplateId: selectedTemplate,
+        });
+      } else {
+        await api.put(`/wellness/session/${selectedSession._id}`, {
+          expectedWellness: expectedValue,
+          wellnessQuestions: questions,
+          wellnessTemplateId: selectedTemplate,
+        });
+      }
+      await loadSessionWellnessData(selectedSession._id, wellnessType);
+      Alert.alert(t('message.success'), t('session.responseSaved'));
+    } catch (error) {
+      console.error('Error saving config:', error);
+      Alert.alert(t('message.error'), t('session.responseError'));
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleAddQuestion = () => {
+    if (!newQuestion.trim()) return;
+    setQuestions([...questions, { question: newQuestion.trim(), order: questions.length }]);
+    setNewQuestion('');
+    setShowAddQuestion(false);
+  };
+
+  const handleRemoveQuestion = (index) => {
+    setQuestions(questions.filter((_, i) => i !== index));
+  };
+
   // Generar PDF
   const handleGeneratePDF = async () => {
     const isPreWellness = wellnessType === 'pre';
@@ -439,6 +527,17 @@ export default function WellnessManagement({ navigation }) {
       const accentColor = isPreWellness ? '#f59e0b' : '#276e15';
       const reportTitle = isPreWellness ? t('session.preWellnessReport') : t('session.wellnessReport');
 
+      const diff = expectedValue && average
+        ? average - expectedValue
+        : null;
+      const diffLabel = diff !== null
+        ? (Math.abs(diff) <= 0.5
+          ? t('session.objectiveMet')
+          : diff > 0
+            ? t('session.above')
+            : t('session.below'))
+        : '';
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -450,11 +549,14 @@ export default function WellnessManagement({ navigation }) {
             .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid ${accentColor}; }
             .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; color: ${accentColor}; }
             .header .date { font-size: 12px; color: #444; }
-            .summary { display: flex; justify-content: space-around; margin-bottom: 25px; padding: 15px; border: 1px solid ${accentColor}; border-radius: 8px; }
-            .summary-item { text-align: center; padding: 0 20px; }
+            .summary { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px; border: 1px solid ${accentColor}; border-radius: 8px; }
+            .summary-item { text-align: center; padding: 0 16px; min-width: 100px; }
             .summary-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-bottom: 5px; }
             .summary-item .value { font-size: 22px; font-weight: 700; color: ${accentColor}; }
             .summary-item .sublabel { font-size: 9px; color: #666; }
+            .summary-item .diff-positive { color: #10b981; }
+            .summary-item .diff-negative { color: #ef4444; }
+            .summary-item .diff-neutral { color: #3b82f6; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
             th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; }
             th { background-color: #f0f0ff; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -472,29 +574,41 @@ export default function WellnessManagement({ navigation }) {
             <h1>${reportTitle}</h1>
             <div class="date">${t('session.trainingOf')} ${dateStr}${teamName ? ` • ${teamName}` : ''}</div>
           </div>
-          
+
           <div class="summary">
+            <div class="summary-item">
+              <div class="label">${t('session.expectedWellness')}</div>
+              <div class="value">${expectedValue || '-'}</div>
+              <div class="sublabel">${t('session.coachObjective')}</div>
+            </div>
+            <div class="summary-item">
+              <div class="label">${t('session.averageObtained')}</div>
+              <div class="value">${average?.toFixed(1) || '-'}</div>
+              <div class="sublabel">${t('session.averageResponses')}</div>
+            </div>
             <div class="summary-item">
               <div class="label">${t('session.totalResponses')}</div>
               <div class="value">${responses.length}</div>
               <div class="sublabel">${t('session.players')}</div>
             </div>
-            ${!isPreWellness ? `
+            ${diff !== null ? `
             <div class="summary-item">
-              <div class="label">${t('session.averageWellness')}</div>
-              <div class="value">${average?.toFixed(1) || '-'}</div>
-              <div class="sublabel">${t('session.averageResponses')}</div>
+              <div class="label">${t('session.difference')}</div>
+              <div class="value ${diff > 0.5 ? 'diff-positive' : (diff < -0.5 ? 'diff-negative' : 'diff-neutral')}">
+                ${diff > 0 ? '+' : ''}${diff.toFixed(1)}
+              </div>
+              <div class="sublabel">${diffLabel}</div>
             </div>
             ` : ''}
           </div>
-          
+
           <table>
             <thead>
               <tr>
-                <th style="width: ${isPreWellness ? '25' : '20'}%">${t('session.player')}</th>
-                ${!isPreWellness ? `<th style="width: 15%">Wellness</th>` : ''}
-                <th style="width: ${isPreWellness ? '50' : '40'}%">${t('session.responses')}</th>
-                <th style="width: ${isPreWellness ? '25' : '25'}%">${t('session.date')}</th>
+                <th style="width: 20%">${t('session.player')}</th>
+                <th style="width: 15%">${isPreWellness ? t('preWellness.title') : 'Wellness'}</th>
+                <th style="width: 40%">${t('session.responses')}</th>
+                <th style="width: 25%">${t('session.date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -503,9 +617,9 @@ export default function WellnessManagement({ navigation }) {
                 return `
                 <tr>
                   <td>${response.playerName}</td>
-                  ${!isPreWellness ? `<td class="score-cell">${score}</td>` : ''}
+                  <td class="score-cell">${score ?? '-'}</td>
                   <td>
-                    ${response.questionResponses && response.questionResponses.length > 0 
+                    ${response.questionResponses && response.questionResponses.length > 0
                       ? `<div class="question-responses">
                           ${response.questionResponses.filter(qr => qr.answer).map(qr => `
                             <div class="question-response">
@@ -522,11 +636,11 @@ export default function WellnessManagement({ navigation }) {
               `}).join('')}
             </tbody>
           </table>
-          
+
           <div class="footer">
-            ${t('player.profile.generatedAt')}: ${new Date().toLocaleDateString(locale, { 
-              day: '2-digit', 
-              month: '2-digit', 
+            ${t('player.profile.generatedAt')}: ${new Date().toLocaleDateString(locale, {
+              day: '2-digit',
+              month: '2-digit',
               year: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
@@ -1089,12 +1203,35 @@ export default function WellnessManagement({ navigation }) {
                   </View>
                   {!isPreWellness && (
                     <View style={styles.statCard}>
+                      <Text style={styles.statLabel}>{t('session.expectedWellness')}</Text>
+                      <Text style={[styles.statValue, { color: THEME.text }]}>
+                        {expectedValue ?? '-'}
+                      </Text>
+                    </View>
+                  )}
+                  {!isPreWellness && (
+                    <View style={styles.statCard}>
                       <Text style={styles.statLabel}>{t('session.averageWellness')}</Text>
                       <Text style={[styles.statValue, { color: '#3b82f6' }]}>
                         {average?.toFixed(1) || '-'}
                       </Text>
                     </View>
                   )}
+                  {!isPreWellness && expectedValue && average && (() => {
+                    const diff = average - expectedValue;
+                    const isOnTarget = Math.abs(diff) <= 0.5;
+                    const isAbove = diff > 0.5;
+                    return (
+                      <View style={styles.statCard}>
+                        <Text style={[styles.statValue, { color: isOnTarget ? THEME.success : (isAbove ? THEME.primary : THEME.danger) }]}>
+                          {isOnTarget ? '✓' : (isAbove ? '↑' : '↓')}
+                        </Text>
+                        <Text style={styles.statLabel}>
+                          {isOnTarget ? t('common.goalAchieved') : (isAbove ? t('common.aboveTarget') : t('common.belowTarget'))}
+                        </Text>
+                      </View>
+                    );
+                  })()}
                   <View style={styles.statCard}>
                     <Text style={styles.statLabel}>{t('preWellness.pending')}</Text>
                     <Text style={[styles.statValue, { color: THEME.warning }]}>
@@ -1102,6 +1239,178 @@ export default function WellnessManagement({ navigation }) {
                     </Text>
                   </View>
                 </View>
+
+                {/* Configuración: plantilla, preguntas */}
+                <View style={styles.configSection}>
+                  <View style={styles.configSectionHeader}>
+                    <View style={styles.configSectionHeaderLeft}>
+                      <Ionicons name="settings" size={18} color={accentColor} />
+                      <Text style={styles.configSectionTitle}>
+                        {isPreWellness
+                          ? (t('preWellness.configTitle') || 'Configuración de Pre-Wellness')
+                          : t('session.wellnessConfig')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Expected value - 1-10 selector (solo post-wellness) */}
+                  {!isPreWellness && (
+                    <>
+                      <Text style={styles.configLabel}>{t('session.expectedWellness')}</Text>
+                      <View style={styles.wellnessSelector}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                          <TouchableOpacity
+                            key={n}
+                            style={[
+                              styles.wellnessOption,
+                              expectedValue === n && {
+                                backgroundColor: getWellnessColor(n),
+                                borderColor: getWellnessColor(n),
+                              },
+                              expectedValue !== n && {
+                                backgroundColor: THEME.background,
+                                borderColor: THEME.border,
+                              },
+                            ]}
+                            onPress={() => setExpectedValue(expectedValue === n ? null : n)}
+                          >
+                            <Text style={[
+                              styles.wellnessOptionText,
+                              { color: expectedValue === n ? '#fff' : THEME.textSecondary },
+                            ]}>{n}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <Text style={styles.configHint}>{t('session.valueBetween1And10')}</Text>
+                    </>
+                  )}
+
+                  {/* Template selector */}
+                  <Text style={styles.configLabel}>{t('preWellness.template')}</Text>
+                  <TouchableOpacity
+                    style={styles.templateSelector}
+                    onPress={() => setShowTemplateSelector(true)}
+                  >
+                    <Ionicons name="document-text-outline" size={20} color={THEME.primary} />
+                    <Text style={[styles.templateSelectorText, !selectedTemplate && { color: THEME.textMuted }]}>
+                      {selectedTemplate
+                        ? (sessionTemplates.find(tp => tp._id === selectedTemplate)?.name || t('preWellness.selectTemplate'))
+                        : (t('preWellness.selectTemplate'))}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color={THEME.textSecondary} />
+                  </TouchableOpacity>
+
+                  {/* Questions */}
+                  <View style={styles.questionsSection}>
+                    <View style={styles.questionsHeader}>
+                      <Text style={styles.configLabel}>{t('session.customQuestions')}</Text>
+                      <TouchableOpacity
+                        style={styles.sessionAddBtn}
+                        onPress={() => {
+                          setShowAddQuestion(!showAddQuestion);
+                          setNewQuestion('');
+                        }}
+                      >
+                        <Ionicons name={showAddQuestion ? 'close' : 'add'} size={20} color={THEME.primary} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {showAddQuestion && (
+                      <View style={styles.sessionAddRow}>
+                        <TextInput
+                          style={styles.sessionQuestionInput}
+                          value={newQuestion}
+                          onChangeText={setNewQuestion}
+                          placeholder={t('session.questionPlaceholder') || 'Escribe una pregunta...'}
+                          placeholderTextColor={THEME.textMuted}
+                        />
+                        <TouchableOpacity style={styles.addQuestionConfirm} onPress={handleAddQuestion}>
+                          <Ionicons name="checkmark" size={20} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {questions.length === 0 && !showAddQuestion ? (
+                      <Text style={styles.noQuestionsHint}>
+                        {t('session.noQuestionsHint') || 'No hay preguntas adicionales'}
+                      </Text>
+                    ) : (
+                      questions.map((q, index) => (
+                        <View key={index} style={styles.sessionQuestionItem}>
+                          <View style={styles.sessionQuestionContent}>
+                            <Text style={styles.sessionQuestionNumber}>{index + 1}.</Text>
+                            <Text style={styles.sessionQuestionText}>{q.question}</Text>
+                          </View>
+                          <TouchableOpacity onPress={() => handleRemoveQuestion(index)} style={styles.removeQuestionBtn}>
+                            <Ionicons name="trash-outline" size={16} color={THEME.danger} />
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    )}
+                  </View>
+
+                  {/* Save button */}
+                  <TouchableOpacity
+                    style={[styles.saveConfigBtn, savingConfig && { opacity: 0.6 }]}
+                    onPress={handleSaveConfig}
+                    disabled={savingConfig}
+                  >
+                    {savingConfig ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="save" size={18} color="#fff" />
+                        <Text style={styles.saveConfigBtnText}>{t('common.saveChanges') || 'Guardar cambios'}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Modal selector de plantillas */}
+                <Modal
+                  visible={showTemplateSelector}
+                  animationType="fade"
+                  transparent
+                  onRequestClose={() => setShowTemplateSelector(false)}
+                >
+                  <View style={styles.templateModalOverlay}>
+                    <View style={styles.templateModalContent}>
+                      <View style={styles.templateModalHeader}>
+                        <Text style={styles.templateModalTitle}>{t('preWellness.selectTemplate')}</Text>
+                        <TouchableOpacity onPress={() => setShowTemplateSelector(false)}>
+                          <Ionicons name="close" size={24} color={THEME.text} />
+                        </TouchableOpacity>
+                      </View>
+                      <ScrollView style={styles.templateModalList}>
+                        <TouchableOpacity
+                          style={[styles.templateModalItem, !selectedTemplate && styles.templateModalItemSelected]}
+                          onPress={() => handleSelectTemplate(null)}
+                        >
+                          <Text style={styles.templateModalItemText}>{t('preWellness.noTemplate') || t('common.none')}</Text>
+                        </TouchableOpacity>
+                        {sessionTemplates.map(tp => (
+                          <TouchableOpacity
+                            key={tp._id}
+                            style={[styles.templateModalItem, selectedTemplate === tp._id && styles.templateModalItemSelected]}
+                            onPress={() => handleSelectTemplate(tp)}
+                          >
+                            <View style={styles.templateModalItemContent}>
+                              <Text style={styles.templateModalItemText}>{tp.name}</Text>
+                              {tp.isDefault && (
+                                <View style={styles.templateDefaultBadge}>
+                                  <Ionicons name="star" size={10} color="#fff" />
+                                </View>
+                              )}
+                            </View>
+                            <Text style={styles.templateModalItemQuestions}>
+                              {tp.questions?.length || 0} {t('preWellness.questions')}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </View>
+                </Modal>
 
                 {/* Gestión de enlace */}
                 <View style={styles.linkSection}>
@@ -1906,8 +2215,8 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: 10,
+    marginBottom: 12,
   },
   sessionInfoText: {
     fontSize: 14,
@@ -1915,15 +2224,24 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    minWidth: 90,
+    backgroundColor: theme.colors.surface,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   statLabel: {
     fontSize: 11,
@@ -2036,10 +2354,17 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 8,
   },
   responseCard: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   responseHeader: {
     flexDirection: 'row',
@@ -2058,9 +2383,11 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
   },
   responseScoreBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 48,
+    alignItems: 'center',
   },
   responseScoreText: {
     color: '#fff',
@@ -2125,5 +2452,255 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: theme.colors.warningSoftText,
+  },
+
+  // Config section
+  configSection: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  configSectionHeader: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  configSectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  configSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  configLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  wellnessSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  wellnessOption: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wellnessOptionText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  configHint: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  templateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+  },
+  templateSelectorText: {
+    flex: 1,
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  questionsSection: {
+    marginBottom: 4,
+  },
+  questionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  sessionAddBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: theme.colors.primarySoft || `${theme.colors.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sessionAddRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sessionQuestionInput: {
+    flex: 1,
+    backgroundColor: theme.colors.inputBg,
+    borderWidth: 1,
+    borderColor: theme.colors.inputBorder,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  addQuestionConfirm: {
+    backgroundColor: theme.colors.primary,
+    padding: 12,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noQuestionsHint: {
+    fontSize: 13,
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    marginBottom: 12,
+    paddingLeft: 4,
+  },
+  sessionQuestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.background,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  sessionQuestionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  sessionQuestionNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    width: 20,
+  },
+  sessionQuestionText: {
+    flex: 1,
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  removeQuestionBtn: {
+    padding: 4,
+  },
+  saveConfigBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 12,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  saveConfigBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Template modal
+  templateModalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay || 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  templateModalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  templateModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  templateModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  templateModalList: {
+    padding: 12,
+  },
+  templateModalItem: {
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 8,
+    backgroundColor: theme.colors.background,
+  },
+  templateModalItemSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+  },
+  templateModalItemText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  templateModalItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  templateDefaultBadge: {
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  templateModalItemQuestions: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
 });

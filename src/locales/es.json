@@ -199,6 +199,7 @@
         "template": "Plantilla",
         "selectTemplate": "Seleccionar plantilla",
         "noTemplate": "Sin plantilla",
+        "configTitle": "Configuración de Pre-Wellness",
         "configuration": "Configuración",
         "expectedScore": "Puntuación esperada (opcional)",
         "clearExpected": "Limpiar",
@@ -1174,7 +1175,8 @@
         "understood": "Entendido",
         "unlink": "Desasociar",
         "year": "Año",
-        "ok": "OK"
+        "ok": "OK",
+        "none": "Ninguno"
     },
     "rivals": {
         "title": "Rivales",
@@ -1437,7 +1439,8 @@
         "daysCount_one": "{{count}} día",
         "daysCount_other": "{{count}} días",
         "loadingTeam": "Cargando equipo...",
-        "average": "Media"
+        "average": "Media",
+        "valueBetween1And10": "Valor entre 1 y 10"
     },
     "formations": {
         "title": "Seleccionar Formación",

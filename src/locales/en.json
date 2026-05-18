@@ -199,6 +199,7 @@
         "template": "Template",
         "selectTemplate": "Select template",
         "noTemplate": "No template",
+        "configTitle": "Pre-Wellness Configuration",
         "configuration": "Configuration",
         "expectedScore": "Expected score (optional)",
         "clearExpected": "Clear",
@@ -1173,7 +1174,8 @@
         "understood": "Understood",
         "unlink": "Unlink",
         "year": "Year",
-        "ok": "OK"
+        "ok": "OK",
+        "none": "None"
     },
     "rivals": {
         "title": "Rivals",
@@ -1436,7 +1438,8 @@
         "daysCount_one": "{{count}} day",
         "daysCount_other": "{{count}} days",
         "loadingTeam": "Loading team...",
-        "average": "Average"
+        "average": "Average",
+        "valueBetween1And10": "Value between 1 and 10"
     },
     "formations": {
         "title": "Select Formation",
