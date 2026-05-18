@@ -21,7 +21,7 @@
 // - Los videos resuelven primero la URL real guardada en R2 o un job
 //   regenerado antes de reproducir/descargar.
 
-import { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
@@ -61,8 +61,8 @@ import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { getVideoById } from '@/utils/api';
 import VideoPoster from '@/components/shared/VideoPoster';
-
 import {
   KNOWN_FIELDS,
   getIconComponent,
@@ -72,6 +72,62 @@ import {
   translateEnum,
 } from './rivalAnalysisData';
 import { generateRivalAnalysisPdf } from './pdf';
+
+// ---------- VideoBlock component ----------
+function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }) {
+  const [meta, setMeta] = useState({ posterUrl: poster || '', videoName: '' });
+
+  useEffect(() => {
+    if (meta.posterUrl || meta.videoName || !videoId) return;
+    getVideoById(videoId).then((data) => {
+      const thumb = data?.video?.thumbnailUrl || data?.video?.thumbnail || data?.video?.poster || '';
+      const name = data?.video?.name || '';
+      if (thumb || name) setMeta({ posterUrl: thumb, videoName: name });
+    }).catch(() => {});
+  }, [videoId, meta.posterUrl, meta.videoName]);
+
+  const displayPoster = meta.posterUrl || poster || '';
+  const displayName = meta.videoName || label;
+
+  return (
+    <QBlock>
+      <AnswerSlot $stack>
+        <VideoPreviewButton
+          type="button"
+          onClick={() => onPlay(videoId, inlineUrl)}
+        >
+          <VideoPoster
+            video={videoId ? { videoId, thumbnailUrl: displayPoster } : null}
+            src={inlineUrl || ''}
+            poster={displayPoster}
+            playSize={54}
+            alt={label}
+          />
+        </VideoPreviewButton>
+        <VideoStatusRow>
+          <MdCheckCircle size={18} />
+          {t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}
+        </VideoStatusRow>
+        {videoId ? (
+          <VideoActions>
+            <VideoBtn type="button" onClick={() => onPlay(videoId)}>
+              <MdPlayCircle size={16} />
+              {t('rivalAnalysis.actions.playVideo', 'Reproducir')}
+            </VideoBtn>
+            <VideoBtn type="button" $variant="download" onClick={() => onDownload(videoId, displayName)}>
+              <MdDownload size={16} />
+              {t('rivalAnalysis.actions.saveToGallery', 'Descargar')}
+            </VideoBtn>
+          </VideoActions>
+        ) : inlineUrl ? (
+          <VideoPlayer src={inlineUrl} controls preload="metadata" />
+        ) : null}
+      </AnswerSlot>
+    </QBlock>
+  );
+}
+
+
 
 // ---------- styles ----------
 const HeaderCard = styled.div`
@@ -451,10 +507,13 @@ export default function AnalysisDetailModal({
     }
   };
 
-  const handleDownloadVideo = async (videoId) => {
+  const handleDownloadVideo = async (videoId, videoName) => {
     if (!videoId) return;
     try {
-      await downloadResolvedVideo(videoId, `rival-${analysis.rival || 'video'}-${videoId}`);
+      const name = videoName
+        ? `rival-${analysis.rival || 'video'}-${videoName}`
+        : `rival-${analysis.rival || 'video'}`;
+      await downloadResolvedVideo(videoId, name);
       toast.success(t('rivalAnalysis.actions.downloadStarted', 'Descarga iniciada'));
     } catch (err) {
       toast.error(err?.message || t('rivalAnalysis.actions.downloadError', 'No se pudo descargar el vídeo'));
@@ -505,46 +564,23 @@ export default function AnalysisDetailModal({
     const videoId = value?.videoId;
     const inlineUrl = value?.url;
     return (
-      <QBlock key={key}>
+      <React.Fragment key={key}>
         <QHead>
           <QIcon $color={color || '#3578e5'}>
             <IconCmp size={16} />
           </QIcon>
           <QTitle>{label}</QTitle>
         </QHead>
-        <AnswerSlot $stack>
-          <VideoPreviewButton
-            type="button"
-            onClick={() => (videoId ? handlePlayVideo(videoId) : inlineUrl ? setVideoModalUrl(inlineUrl) : null)}
-          >
-            <VideoPoster
-              video={videoId ? value : null}
-              src={inlineUrl || ''}
-              poster={value?.thumbnailUrl || value?.thumbnail}
-              playSize={54}
-              alt={label}
-            />
-          </VideoPreviewButton>
-          <VideoStatusRow>
-            <MdCheckCircle size={18} />
-            {t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}
-          </VideoStatusRow>
-          {videoId ? (
-            <VideoActions>
-              <VideoBtn type="button" onClick={() => handlePlayVideo(videoId)}>
-                <MdPlayCircle size={16} />
-                {t('rivalAnalysis.actions.playVideo', 'Reproducir')}
-              </VideoBtn>
-              <VideoBtn type="button" $variant="download" onClick={() => handleDownloadVideo(videoId)}>
-                <MdDownload size={16} />
-                {t('rivalAnalysis.actions.saveToGallery', 'Descargar')}
-              </VideoBtn>
-            </VideoActions>
-          ) : inlineUrl ? (
-            <VideoPlayer src={inlineUrl} controls preload="metadata" />
-          ) : null}
-        </AnswerSlot>
-      </QBlock>
+        <VideoBlock
+          videoId={videoId}
+          inlineUrl={inlineUrl}
+          label={label}
+          poster={value?.thumbnailUrl || value?.thumbnail}
+          onPlay={(id, url) => (id ? handlePlayVideo(id) : url ? setVideoModalUrl(url) : null)}
+          onDownload={handleDownloadVideo}
+          t={t}
+        />
+      </React.Fragment>
     );
   };
 
