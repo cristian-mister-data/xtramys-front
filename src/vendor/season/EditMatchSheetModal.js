@@ -33,7 +33,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
-import { getPlayerFullName } from '@/utils/playerHelpers';
+import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { getPositionColor } from '@/components/player/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 
@@ -55,6 +56,16 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
   const [showMinuteModal, setShowMinuteModal] = useState(false);
 
   const isEditing = !!editingEvent;
+
+  const getPosColor = (pos) => {
+    const colors = getPositionColor(pos);
+    return colors[0];
+  };
+
+  const getPosColors = (pos) => {
+    const colors = getPositionColor(pos);
+    return colors;
+  };
 
   // Generar opciones de minutos basadas en tiempo por parte y descuentos
   const generateMinuteOptions = () => {
@@ -226,39 +237,62 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
             {eventType === 'gol' && (
               <>
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerRequired')}</Text>
+                {players.length === 0 ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Ionicons name="people-outline" size={32} color={theme.colors.textMuted} />
+                    <Text style={{ fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', marginTop: 8 }}>
+                      {t('matchSheet.noCallupPlayers', 'Selecciona convocados antes de añadir goles')}
+                    </Text>
+                  </View>
+                ) : (
                 <ScrollView style={modalStyles.playerGridScroll} showsVerticalScrollIndicator>
                   <View style={modalStyles.playerGrid}>
-                    {players.map(p => (
+                    {players.map(p => {
+                      const pos = p.posicion || '';
+                      const posColors = getPosColors(pos);
+                      const sel = selectedPlayer === p._id;
+                      return (
                       <TouchableOpacity
                         key={p._id}
                         style={[
                           modalStyles.playerGridItem,
-                          selectedPlayer === p._id && modalStyles.playerGridItemSelected
+                          sel && { ...modalStyles.playerGridItemSelected, borderColor: posColors[0] },
                         ]}
                         onPress={() => setSelectedPlayer(p._id)}
                       >
                         {p.foto ? (
                           <Image source={{ uri: p.foto }} style={modalStyles.playerGridAvatar} />
                         ) : (
-                          <View style={modalStyles.playerGridAvatar}>
+                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: posColors[0] }]}>
                             <Text style={modalStyles.playerGridAvatarText}>
-                              {p.dorsal ?? '?'}
+                              {getPlayerInitials(p)}
                             </Text>
                           </View>
                         )}
-                        <Text style={[
-                          modalStyles.playerGridName,
-                          selectedPlayer === p._id && modalStyles.playerGridNameSelected
-                        ]} numberOfLines={1}>
-                          {getPlayerFullName(p)}
-                        </Text>
-                        {selectedPlayer === p._id && (
-                          <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} style={{ position: 'absolute', top: 4, right: 4 }} />
+                        <View style={modalStyles.playerGridInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {p.dorsal != null && (
+                              <Text style={modalStyles.playerGridDorsal}>#{p.dorsal}</Text>
+                            )}
+                            <Text style={[
+                              modalStyles.playerGridName,
+                              sel && modalStyles.playerGridNameSelected
+                            ]} numberOfLines={1}>
+                              {getPlayerFullName(p)}
+                            </Text>
+                          </View>
+                        </View>
+                        {sel && (
+                          <View style={modalStyles.checkOverlay}>
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                          </View>
                         )}
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
                   </View>
                 </ScrollView>
+                )}
 
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.assistOptional')}</Text>
                 <ScrollView style={modalStyles.playerGridScroll} showsVerticalScrollIndicator>
@@ -266,49 +300,65 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                     <TouchableOpacity
                       style={[
                         modalStyles.playerGridItem,
-                        !asistente && modalStyles.playerGridItemSelected
+                        !asistente && { ...modalStyles.playerGridItemSelected, borderColor: theme.colors.purple }
                       ]}
                       onPress={() => setAsistente(null)}
                     >
                       <View style={[modalStyles.playerGridAvatar, { backgroundColor: theme.colors.border }]}>
-                        <Ionicons name="remove-circle" size={20} color={theme.colors.textMuted} />
+                        <Ionicons name="remove-circle" size={22} color={theme.colors.textMuted} />
                       </View>
-                      <Text style={[
-                        modalStyles.playerGridName,
-                        !asistente && modalStyles.playerGridNameSelected
-                      ]} numberOfLines={1}>
-                        {t('matchSheet.modals.noAssist')}
-                      </Text>
+                      <View style={modalStyles.playerGridInfo}>
+                        <Text style={[
+                          modalStyles.playerGridName,
+                          !asistente && { color: theme.colors.purple, fontWeight: '700' }
+                        ]} numberOfLines={1}>
+                          {t('matchSheet.modals.noAssist')}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
-                    {players.filter(p => p._id !== selectedPlayer).map(p => (
+                    {players.filter(p => p._id !== selectedPlayer).map(p => {
+                      const pos = p.posicion || '';
+                      const posColors = getPosColors(pos);
+                      const sel = asistente === p._id;
+                      return (
                       <TouchableOpacity
                         key={p._id}
                         style={[
                           modalStyles.playerGridItem,
-                          asistente === p._id && { borderColor: theme.colors.purple, backgroundColor: theme.colors.purple + '15' }
+                          sel && { borderColor: theme.colors.purple, backgroundColor: theme.colors.purple + '15' }
                         ]}
                         onPress={() => setAsistente(p._id)}
                       >
                         {p.foto ? (
                           <Image source={{ uri: p.foto }} style={modalStyles.playerGridAvatar} />
                         ) : (
-                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: theme.colors.purple }]}>
+                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: posColors[0] }]}>
                             <Text style={modalStyles.playerGridAvatarText}>
-                              {p.dorsal ?? '?'}
+                              {getPlayerInitials(p)}
                             </Text>
                           </View>
                         )}
-                        <Text style={[
-                          modalStyles.playerGridName,
-                          asistente === p._id && { color: theme.colors.purple, fontWeight: '700' }
-                        ]} numberOfLines={1}>
-                          {getPlayerFullName(p)}
-                        </Text>
-                        {asistente === p._id && (
-                          <Ionicons name="checkmark-circle" size={18} color={theme.colors.purple} style={{ position: 'absolute', top: 4, right: 4 }} />
+                        <View style={modalStyles.playerGridInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {p.dorsal != null && (
+                              <Text style={modalStyles.playerGridDorsal}>#{p.dorsal}</Text>
+                            )}
+                            <Text style={[
+                              modalStyles.playerGridName,
+                              sel && { color: theme.colors.purple, fontWeight: '700' }
+                            ]} numberOfLines={1}>
+                              {getPlayerFullName(p)}
+                            </Text>
+                          </View>
+                        </View>
+                        {sel && (
+                          <View style={[modalStyles.checkOverlay, { backgroundColor: theme.colors.purple }]}>
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                          </View>
                         )}
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
                   </View>
                 </ScrollView>
               </>
@@ -317,39 +367,62 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
             {eventType === 'tarjeta' && (
               <>
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerRequired')}</Text>
+                {players.length === 0 ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Ionicons name="people-outline" size={32} color={theme.colors.textMuted} />
+                    <Text style={{ fontSize: 13, color: theme.colors.textMuted, textAlign: 'center', marginTop: 8 }}>
+                      {t('matchSheet.noCallupPlayers', 'Selecciona convocados antes de añadir tarjetas')}
+                    </Text>
+                  </View>
+                ) : (
                 <ScrollView style={modalStyles.playerGridScroll} showsVerticalScrollIndicator>
                   <View style={modalStyles.playerGrid}>
-                    {players.map(p => (
+                    {players.map(p => {
+                      const pos = p.posicion || '';
+                      const posColors = getPosColors(pos);
+                      const sel = selectedPlayer === p._id;
+                      return (
                       <TouchableOpacity
                         key={p._id}
                         style={[
                           modalStyles.playerGridItem,
-                          selectedPlayer === p._id && modalStyles.playerGridItemSelected
+                          sel && { ...modalStyles.playerGridItemSelected, borderColor: posColors[0] },
                         ]}
                         onPress={() => setSelectedPlayer(p._id)}
                       >
                         {p.foto ? (
                           <Image source={{ uri: p.foto }} style={modalStyles.playerGridAvatar} />
                         ) : (
-                          <View style={modalStyles.playerGridAvatar}>
+                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: posColors[0] }]}>
                             <Text style={modalStyles.playerGridAvatarText}>
-                              {p.dorsal ?? '?'}
+                              {getPlayerInitials(p)}
                             </Text>
                           </View>
                         )}
-                        <Text style={[
-                          modalStyles.playerGridName,
-                          selectedPlayer === p._id && modalStyles.playerGridNameSelected
-                        ]} numberOfLines={1}>
-                          {getPlayerFullName(p)}
-                        </Text>
-                        {selectedPlayer === p._id && (
-                          <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} style={{ position: 'absolute', top: 4, right: 4 }} />
+                        <View style={modalStyles.playerGridInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {p.dorsal != null && (
+                              <Text style={modalStyles.playerGridDorsal}>#{p.dorsal}</Text>
+                            )}
+                            <Text style={[
+                              modalStyles.playerGridName,
+                              sel && modalStyles.playerGridNameSelected
+                            ]} numberOfLines={1}>
+                              {getPlayerFullName(p)}
+                            </Text>
+                          </View>
+                        </View>
+                        {sel && (
+                          <View style={modalStyles.checkOverlay}>
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                          </View>
                         )}
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
                   </View>
                 </ScrollView>
+                )}
 
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.cardTypeLabel')}</Text>
                 <View style={modalStyles.cardTypeRow}>
@@ -413,58 +486,94 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerLeaving')} * ({getJugadoresQuePuedenSalir().length} {t('matchSheet.modals.available')})</Text>
                 <ScrollView style={modalStyles.playerGridScroll} showsVerticalScrollIndicator>
                   <View style={modalStyles.playerGrid}>
-                    {getJugadoresQuePuedenSalir().map(p => (
+                    {getJugadoresQuePuedenSalir().map(p => {
+                      const pos = p.posicion || '';
+                      const posColors = getPosColors(pos);
+                      const sel = jugadorSale === p._id;
+                      return (
                       <TouchableOpacity
                         key={p._id}
                         style={[
                           modalStyles.playerGridItem,
-                          jugadorSale === p._id && { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.error }
+                          sel && { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.error }
                         ]}
                         onPress={() => setJugadorSale(p._id)}
                       >
-                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: jugadorSale === p._id ? theme.colors.error : theme.colors.border }]}>
-                          <Ionicons name="arrow-down" size={16} color={jugadorSale === p._id ? '#fff' : theme.colors.error} />
+                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.error : posColors[0] }]}>
+                          {sel ? (
+                            <Ionicons name="arrow-down" size={18} color="#fff" />
+                          ) : (
+                            <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
+                          )}
                         </View>
-                        <Text style={[
-                          modalStyles.playerGridName,
-                          jugadorSale === p._id && { color: theme.colors.error, fontWeight: '700' }
-                        ]} numberOfLines={1}>
-                          {getPlayerFullName(p)}
-                        </Text>
-                        {jugadorSale === p._id && (
-                          <Ionicons name="checkmark-circle" size={18} color={theme.colors.error} style={{ position: 'absolute', top: 4, right: 4 }} />
+                        <View style={modalStyles.playerGridInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {p.dorsal != null && (
+                              <Text style={modalStyles.playerGridDorsal}>#{p.dorsal}</Text>
+                            )}
+                            <Text style={[
+                              modalStyles.playerGridName,
+                              sel && { color: theme.colors.error, fontWeight: '700' }
+                            ]} numberOfLines={1}>
+                              {getPlayerFullName(p)}
+                            </Text>
+                          </View>
+                        </View>
+                        {sel && (
+                          <View style={[modalStyles.checkOverlay, { backgroundColor: theme.colors.error }]}>
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                          </View>
                         )}
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
                   </View>
                 </ScrollView>
 
                 <Text style={modalStyles.inputLabel}>{t('matchSheet.modals.playerEntering')} * ({getJugadoresQuePuedenEntrar().length} {t('matchSheet.modals.available')})</Text>
                 <ScrollView style={modalStyles.playerGridScroll} showsVerticalScrollIndicator>
                   <View style={modalStyles.playerGrid}>
-                    {getJugadoresQuePuedenEntrar().map(p => (
+                    {getJugadoresQuePuedenEntrar().map(p => {
+                      const pos = p.posicion || '';
+                      const posColors = getPosColors(pos);
+                      const sel = jugadorEntra === p._id;
+                      return (
                       <TouchableOpacity
                         key={p._id}
                         style={[
                           modalStyles.playerGridItem,
-                          jugadorEntra === p._id && { backgroundColor: theme.colors.successSoft, borderColor: theme.colors.success }
+                          sel && { backgroundColor: theme.colors.successSoft, borderColor: theme.colors.success }
                         ]}
                         onPress={() => setJugadorEntra(p._id)}
                       >
-                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: jugadorEntra === p._id ? theme.colors.success : theme.colors.border }]}>
-                          <Ionicons name="arrow-up" size={16} color={jugadorEntra === p._id ? '#fff' : theme.colors.success} />
+                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.success : posColors[0] }]}>
+                          {sel ? (
+                            <Ionicons name="arrow-up" size={18} color="#fff" />
+                          ) : (
+                            <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
+                          )}
                         </View>
-                        <Text style={[
-                          modalStyles.playerGridName,
-                          jugadorEntra === p._id && { color: theme.colors.success, fontWeight: '700' }
-                        ]} numberOfLines={1}>
-                          {getPlayerFullName(p)}
-                        </Text>
-                        {jugadorEntra === p._id && (
-                          <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} style={{ position: 'absolute', top: 4, right: 4 }} />
+                        <View style={modalStyles.playerGridInfo}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {p.dorsal != null && (
+                              <Text style={modalStyles.playerGridDorsal}>#{p.dorsal}</Text>
+                            )}
+                            <Text style={[
+                              modalStyles.playerGridName,
+                              sel && { color: theme.colors.success, fontWeight: '700' }
+                            ]} numberOfLines={1}>
+                              {getPlayerFullName(p)}
+                            </Text>
+                          </View>
+                        </View>
+                        {sel && (
+                          <View style={[modalStyles.checkOverlay, { backgroundColor: theme.colors.success }]}>
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                          </View>
                         )}
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
                   </View>
                 </ScrollView>
               </>
@@ -557,14 +666,14 @@ const makeModalStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: isMobileDevice() ? 8 : 12,
+    padding: isMobileDevice() ? 6 : 12,
   },
   container: {
     backgroundColor: theme.colors.surface,
-    borderRadius: isMobileDevice() ? 12 : 14,
-    width: '100%',
-    maxWidth: isMobileDevice() ? '100%' : 450,
-    maxHeight: isMobileDevice() ? '90%' : '85%',
+    borderRadius: isMobileDevice() ? 14 : 16,
+    width: isMobileDevice() ? '98%' : '95%',
+    maxWidth: isMobileDevice() ? '100%' : 500,
+    maxHeight: isMobileDevice() ? '88%' : '85%',
   },
   header: {
     flexDirection: 'row',
@@ -679,54 +788,100 @@ const makeModalStyles = (theme) => StyleSheet.create({
     marginBottom: 8,
   },
   playerGridScroll: {
-    maxHeight: 200,
+    maxHeight: 220,
     marginBottom: 12,
+    overflow: 'hidden',
   },
   playerGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   playerGridItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 8,
-    backgroundColor: theme.colors.inputBg,
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
-    width: '48%',
-    minWidth: 130,
+    flexBasis: isMobileDevice() ? '100%' : '48%',
+    flexGrow: 0,
+    flexShrink: 0,
+    minWidth: isMobileDevice() ? 0 : 140,
+    marginBottom: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   playerGridItemSelected: {
     backgroundColor: theme.colors.primarySoft,
     borderColor: theme.colors.primary,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   playerGridAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 20,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     flexShrink: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   playerGridAvatarText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#fff',
   },
   playerGridName: {
     fontSize: 12,
+    fontWeight: '500',
     color: theme.colors.text,
     flex: 1,
+    flexShrink: 1,
   },
   playerGridNameSelected: {
     color: theme.colors.primary,
     fontWeight: '700',
+  },
+  playerGridInfo: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  playerGridDorsal: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.textMuted,
+    flexShrink: 0,
+  },
+  checkOverlay: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   playerChip: {
     paddingHorizontal: 12,
@@ -1230,6 +1385,18 @@ export default function EditMatchSheetModal({
     // fallback text should also be localizable
     return player ? getPlayerFullName(player) : t('common.player');
   };
+
+  // Jugadores de la convocatoria para eventos (goles, tarjetas)
+  const callupPlayerIds = useMemo(() => {
+    const titularesIds = Array.isArray(alineacionTitulares) ? alineacionTitulares : Object.values(alineacionTitulares || {}).filter(Boolean);
+    const suplentesIds = Array.isArray(alineacionSuplentes) ? alineacionSuplentes : Object.values(alineacionSuplentes || {}).filter(Boolean);
+    return [...new Set([...convocados, ...titularesIds, ...suplentesIds])];
+  }, [convocados, alineacionTitulares, alineacionSuplentes]);
+
+  const callupPlayers = useMemo(
+    () => players.filter(p => callupPlayerIds.includes(p._id)),
+    [players, callupPlayerIds]
+  );
 
   // Formatear fecha
   const formatDate = (date) => {
@@ -2241,13 +2408,14 @@ export default function EditMatchSheetModal({
                     const originalIndex = goles.indexOf(gol);
                     return (
                     <View key={originalIndex} style={styles.eventChip}>
-                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                      <Text style={styles.eventMinute}>{gol.minuto}'</Text>
+                      <TouchableOpacity style={{ flex: 1, flexShrink: 1, minWidth: 0 }} onPress={() => {
                         setEditingGoalIndex(originalIndex);
                         setShowGolesModal(true);
                       }}>
-                        <Text style={styles.eventChipText}>
-                          {gol.minuto}' - {getPlayerName(gol.jugador)}
-                          {gol.asistente ? ` (${t('matchSheet.events.assist')}: ${getPlayerName(gol.asistente)})` : ''}
+                        <Text style={styles.eventChipText} numberOfLines={1}>
+                          {getPlayerName(gol.jugador)}
+                          {gol.asistente ? ` \u2022 ${t('matchSheet.events.assist')}: ${getPlayerName(gol.asistente)}` : ''}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setGoles(goles.filter((_, i) => i !== originalIndex))}>
@@ -2282,13 +2450,14 @@ export default function EditMatchSheetModal({
                     return (
                     <View key={`a-${originalIdx}`} style={styles.eventChip}>
                       <View style={[styles.cardIndicator, { backgroundColor: '#fbbf24' }]} />
-                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                      <Text style={styles.eventMinute}>{tarjeta.minuto}'</Text>
+                      <TouchableOpacity style={{ flex: 1, flexShrink: 1, minWidth: 0 }} onPress={() => {
                         setEditingCardIndex(originalIdx);
                         setEditingCardType('amarilla');
                         setShowTarjetasModal(true);
                       }}>
-                        <Text style={styles.eventChipText}>
-                          {tarjeta.minuto}' - {getPlayerName(tarjeta.jugador)}{tarjeta.motivo ? ` (${tarjeta.motivo})` : ''}
+                        <Text style={styles.eventChipText} numberOfLines={1}>
+                          {getPlayerName(tarjeta.jugador)}{tarjeta.motivo ? ` \u2022 ${tarjeta.motivo}` : ''}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => {
@@ -2323,15 +2492,16 @@ export default function EditMatchSheetModal({
                     return (
                     <View key={`r-${originalIdx}`} style={styles.eventChip}>
                       <View style={[styles.cardIndicator, { backgroundColor: theme.colors.error }]} />
-                      <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                      <Text style={[styles.eventMinute, { color: theme.colors.error }]}>{tarjeta.minuto}'</Text>
+                      <TouchableOpacity style={{ flex: 1, flexShrink: 1, minWidth: 0 }} onPress={() => {
                         if (!isAutoDobleAmarilla) {
                           setEditingCardIndex(originalIdx);
                           setEditingCardType('roja');
                           setShowTarjetasModal(true);
                         }
                       }}>
-                        <Text style={styles.eventChipText}>
-                          {tarjeta.minuto}' - {getPlayerName(tarjeta.jugador)}{isAutoDobleAmarilla ? ` (${t('matchSheet.cardTypes.doubleYellow') || 'Doble amarilla'})` : ''}{tarjeta.partidosSancion > 0 ? ` [${tarjeta.partidosSancion}${t('matchSheet.modals.banMatchesShort')}]` : ''}
+                        <Text style={styles.eventChipText} numberOfLines={1}>
+                          {getPlayerName(tarjeta.jugador)}{isAutoDobleAmarilla ? ` \u2022 ${t('matchSheet.cardTypes.doubleYellow') || 'Doble amarilla'}` : ''}{tarjeta.partidosSancion > 0 ? ` [${tarjeta.partidosSancion} ${t('matchSheet.modals.banMatchesShort')}]` : ''}
                         </Text>
                       </TouchableOpacity>
                       {!isAutoDobleAmarilla && (
@@ -2367,8 +2537,9 @@ export default function EditMatchSheetModal({
                     const originalIndex = cambios.indexOf(cambio);
                     return (
                       <View key={originalIndex} style={styles.eventChip}>
-                        <Text style={styles.eventChipText}>
-                          {cambio.minuto}' - {getPlayerName(typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale)} → {getPlayerName(typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra)}
+                        <Text style={styles.eventMinute}>{cambio.minuto}'</Text>
+                        <Text style={[styles.eventChipText, { flex: 1, flexShrink: 1 }]} numberOfLines={1}>
+                          {getPlayerName(typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale)} → {getPlayerName(typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra)}
                         </Text>
                         <TouchableOpacity onPress={() => setCambios(cambios.filter((_, i) => i !== originalIndex))}>
                           <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
@@ -2405,8 +2576,9 @@ export default function EditMatchSheetModal({
                     const originalIndex = golesRival.indexOf(gol);
                     return (
                       <View key={originalIndex} style={[styles.eventChip, { backgroundColor: theme.colors.errorSoft, borderColor: theme.colors.error }]}>
-                        <Text style={[styles.eventChipText, { color: theme.colors.errorSoftText }]}>
-                          {gol.minuto}' - {rival || t('matchSheet.rivalGoals.title')}
+                        <Text style={[styles.eventMinute, { color: theme.colors.errorSoftText }]}>{gol.minuto}'</Text>
+                        <Text style={[styles.eventChipText, { color: theme.colors.errorSoftText }]} numberOfLines={1}>
+                          {rival || t('matchSheet.rivalGoals.title')}
                         </Text>
                         <TouchableOpacity onPress={() => setGolesRival(golesRival.filter((_, i) => i !== originalIndex))}>
                           <Ionicons name="close-circle" size={16} color={theme.colors.error} />
@@ -3027,7 +3199,7 @@ export default function EditMatchSheetModal({
             onClose={() => { setShowGolesModal(false); setEditingGoalIndex(null); }}
             title={editingGoalIndex !== null ? t('matchSheet.modals.editGoal') : t('matchSheet.modals.addGoal')}
             eventType="gol"
-            players={players}
+            players={callupPlayers}
             titulares={alineacionTitulares}
             suplentes={alineacionSuplentes}
             tiempoPorParte={team?.tiempoPorParte || 45}
@@ -3056,7 +3228,7 @@ export default function EditMatchSheetModal({
             onClose={() => { setShowTarjetasModal(false); setEditingCardIndex(null); setEditingCardType(null); }}
             title={editingCardIndex !== null ? t('matchSheet.modals.editCard') : t('matchSheet.modals.addCard')}
             eventType="tarjeta"
-            players={players}
+            players={callupPlayers}
             titulares={alineacionTitulares}
             suplentes={alineacionSuplentes}
             tiempoPorParte={team?.tiempoPorParte || 45}
@@ -3331,10 +3503,10 @@ const makeStyles = (theme) => StyleSheet.create({
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: 20,
-    width: isMobileDevice() ? '100%' : '96%',
+    width: isMobileDevice() ? '98%' : '96%',
     maxWidth: 980,
-    maxHeight: isMobileDevice() ? '96%' : '92%',
-    minHeight: isMobileDevice() ? '82%' : '62%',
+    maxHeight: isMobileDevice() ? '94%' : '92%',
+    minHeight: isMobileDevice() ? '60%' : '62%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
@@ -3345,7 +3517,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: isMobileDevice() ? 14 : 16,
+    paddingHorizontal: isMobileDevice() ? 14 : 20,
     paddingVertical: isMobileDevice() ? 12 : 14,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -3354,13 +3526,16 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
     color: theme.colors.text,
+    flex: 1,
+    flexShrink: 1,
+    paddingRight: 8,
   },
   closeBtn: {
     padding: 4,
   },
   modalBody: {
     flex: 1,
-    padding: isMobileDevice() ? 12 : 16,
+    padding: isMobileDevice() ? 10 : 16,
   },
   
   // Form
@@ -3497,8 +3672,9 @@ const makeStyles = (theme) => StyleSheet.create({
   resultSection: {
     backgroundColor: theme.colors.background,
     borderRadius: 16,
-    padding: 16,
+    padding: isMobileDevice() ? 10 : 16,
     marginBottom: 20,
+    overflow: 'hidden',
   },
   sectionTitle: {
     fontSize: 15,
@@ -3941,21 +4117,32 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   eventsList: {
     marginBottom: 12,
-    gap: 8,
+    gap: 6,
   },
   eventChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.backgroundAlt,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     borderRadius: 8,
-    gap: 8,
+    gap: 6,
+    overflow: 'hidden',
   },
   eventChipText: {
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '500',
     color: theme.colors.text,
     flex: 1,
+    flexShrink: 1,
+  },
+  eventMinute: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    minWidth: 30,
+    textAlign: 'right',
+    flexShrink: 0,
   },
   cardIndicator: {
     width: 12,

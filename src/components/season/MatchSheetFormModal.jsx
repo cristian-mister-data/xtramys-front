@@ -46,7 +46,7 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  @media (max-width: 560px) { grid-template-columns: 1fr; }
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
 `;
 
 const ChipRow = styled.div`
@@ -76,16 +76,24 @@ const Chip = styled.button`
 
 const Select = styled.select`
   width: 100%;
+  max-width: 140px;
   padding: 8px 10px;
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   background: ${({ theme }) => theme.colors.inputBg};
   color: ${({ theme }) => theme.colors.text};
+  flex-shrink: 0;
   &:focus-visible {
     outline: none;
     border-color: ${({ theme }) => theme.colors.borderFocus};
     box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+
+  @media (max-width: 560px) {
+    max-width: 90px;
+    font-size: 12px;
+    padding: 6px 6px;
   }
 `;
 
@@ -125,14 +133,27 @@ const ScoreRow = styled.div`
 `;
 
 const EventRow = styled.div`
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 6px;
   padding: 6px;
   background: ${({ theme }) => theme.colors.backgroundAlt};
   border-radius: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  overflow: hidden;
+
+  @media (max-width: 560px) {
+    gap: 4px;
+  }
 `;
 
 const SmallInput = styled(Input)`
-  max-width: 70px;
+  max-width: 60px;
+  min-width: 48px;
+  flex-shrink: 0;
+
+  @media (max-width: 560px) {
+    max-width: 50px;
+  }
 `;
 
 const ListEmpty = styled(Muted)`
@@ -502,7 +523,7 @@ export default function MatchSheetFormModal({
                   <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'goal', index: i })}>
                     {playerLabel(g.jugador)}
                   </Button>
-                  <Select style={{ maxWidth: 110 }} value={g.tipo || 'normal'} onChange={(e) => updateGoal(i, { tipo: e.target.value })}>
+                  <Select value={g.tipo || 'normal'} onChange={(e) => updateGoal(i, { tipo: e.target.value })}>
                     <option value="normal">{t('matchSheet.goalNormal', 'Normal')}</option>
                     <option value="penalti">{t('matchSheet.goalPenalty', 'Penalti')}</option>
                     <option value="falta">{t('matchSheet.goalFK', 'Falta')}</option>
@@ -546,7 +567,7 @@ export default function MatchSheetFormModal({
                   <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'yellow', index: i })}>
                     {playerLabel(c.jugador)}
                   </Button>
-                  <Input style={{ maxWidth: 140 }} placeholder={t('matchSheet.fields.reason', 'Motivo')} value={c.motivo || ''} onChange={(e) => updateYellow(i, { motivo: e.target.value })} />
+                  <Input style={{ maxWidth: 120, minWidth: 60, flexShrink: 1 }} placeholder={t('matchSheet.fields.reason', 'Motivo')} value={c.motivo || ''} onChange={(e) => updateYellow(i, { motivo: e.target.value })} />
                   <Button type="button" $variant="danger" onClick={() => removeYellow(i)}><MdDelete /></Button>
                 </EventRow>
               ))}
