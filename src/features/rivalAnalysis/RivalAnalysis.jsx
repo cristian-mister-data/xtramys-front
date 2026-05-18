@@ -4,6 +4,7 @@
 // - Botones: crear nuevo, gestionar plantillas.
 // - Click en card → modal de detalle.
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
@@ -234,6 +235,24 @@ export default function RivalAnalysis() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [autoOpened, setAutoOpened] = useState(false);
+
+  useEffect(() => {
+    if (!autoOpened && analyses.length > 0) {
+      const openId = searchParams.get('open');
+      if (openId) {
+        const found = analyses.find((a) => a._id === openId);
+        if (found) {
+          setViewing(found);
+          searchParams.delete('open');
+          setSearchParams(searchParams, { replace: true });
+        }
+        setAutoOpened(true);
+      }
+    }
+  }, [analyses, autoOpened, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (selectedTeam?._id) {

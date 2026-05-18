@@ -1,5 +1,6 @@
 // components/pages/matchSheet/matchSheetList.js
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, ActivityIndicator, Modal, ScrollView, TextInput, Platform, Switch, Image } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -331,6 +332,23 @@ export default function MatchSheetList() {
   const [editingMatchSheet, setEditingMatchSheet] = useState(null);
   const [viewingMatchSheet, setViewingMatchSheet] = useState(null);
   
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [autoOpened, setAutoOpened] = useState(false);
+
+  useEffect(() => {
+    if (!autoOpened && matchSheets.length > 0) {
+      const openId = searchParams.get('open');
+      if (openId) {
+        const found = matchSheets.find((ms) => ms._id === openId);
+        if (found) {
+          setViewingMatchSheet(found);
+          searchParams.delete('open');
+          setSearchParams(searchParams, { replace: true });
+        }
+        setAutoOpened(true);
+      }
+    }
+  }, [matchSheets, autoOpened, searchParams, setSearchParams]);
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedMatchSheetForOptions, setSelectedMatchSheetForOptions] = useState(null);
   

@@ -18,6 +18,10 @@ import {
   MdClose,
   MdImage,
   MdGroups,
+  MdDescription,
+  MdAnalytics,
+  MdOpenInNew,
+  MdCalendarToday,
 } from 'react-icons/md';
 
 import {
@@ -26,6 +30,9 @@ import {
   updateRival,
   deleteRival,
 } from '../../store/slices/rival/rivalThunks';
+import { fetchMatchSheetsByTeam } from '../../store/slices/matchSheet/matchSheetThunks';
+import { fetchRivalAnalysesByTeam } from '../../store/slices/rivalAnalysis/rivalAnalysisThunks';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Input,
@@ -241,22 +248,80 @@ const DetailEscudo = styled.div`
   }
 `;
 
+const LinkedSection = styled.div`
+  margin-top: 8px;
+`;
+
+const LinkedSectionTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  margin-bottom: 8px;
+`;
+
+const LinkedItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.primarySoft};
+  }
+
+  span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const LinkedBadge = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: ${({ $color }) => $color || '#6366f1'}20;
+  color: ${({ $color }) => $color || '#6366f1'};
+  flex-shrink: 0;
+`;
+
+const EmptyLinked = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  padding: 6px 0;
+`;
+
 // ---------- component ----------
 export default function Rivals() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
   const theme = useTheme();
+  const navigate = useNavigate();
 
   const rivals = useSelector((s) => s.rival.rivals || []);
   const loading = useSelector((s) => s.rival.loading);
   const equipos = useSelector((s) => s.team.teams || []);
   const userId = useSelector((s) => s.usuario.user?._id);
-
-  const selectedTeam = useMemo(
-    () => equipos.find((e) => e.seleccionado === true),
-    [equipos]
-  );
+  const matchSheets = useSelector((s) => s.matchSheet?.matchSheets || []);
+  const rivalAnalyses = useSelector((s) => s.rivalAnalysis?.rivalAnalyses || []);
 
   const [filterName, setFilterName] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -268,9 +333,16 @@ export default function Rivals() {
   const [viewing, setViewing] = useState(null);
   const [cropperSrc, setCropperSrc] = useState(null);
 
+  const selectedTeam = useMemo(
+    () => equipos.find((e) => e.seleccionado === true),
+    [equipos]
+  );
+
   useEffect(() => {
     if (selectedTeam?._id) {
       dispatch(fetchRivalsByTeam({ teamId: selectedTeam._id }));
+      dispatch(fetchMatchSheetsByTeam(selectedTeam._id));
+      dispatch(fetchRivalAnalysesByTeam(selectedTeam._id));
     }
   }, [selectedTeam, dispatch]);
 
@@ -279,6 +351,22 @@ export default function Rivals() {
     if (!q) return rivals;
     return rivals.filter((r) => (r.nombre || '').toLowerCase().includes(q));
   }, [rivals, filterName]);
+
+  const rivalMatchSheets = useMemo(() => {
+    if (!viewing?._id) return [];
+    return matchSheets.filter((ms) => {
+      const rid = ms.rivalId?._id || ms.rivalId;
+      return rid === viewing._id;
+    });
+  }, [matchSheets, viewing]);
+
+  const rivalAnalysesMemos = useMemo(() => {
+    if (!viewing?._id) return [];
+    return rivalAnalyses.filter((ra) => {
+      const rid = ra.rivalId?._id || ra.rivalId;
+      return rid === viewing._id;
+    });
+  }, [rivalAnalyses, viewing]);
 
   const openCreate = () => {
     setEditing(null);
@@ -632,6 +720,65 @@ export default function Rivals() {
                 <MdShield size={120} color={theme.colors.textMuted} />
               )}
             </DetailEscudo>
+
+            <LinkedSection>
+              <LinkedSectionTitle>
+                <MdDescription size={16} />
+                {t('rivals.matchSheets', 'Fichas de partido')} ({rivalMatchSheets.length})
+              </LinkedSectionTitle>
+              {rivalMatchSheets.length === 0 ? (
+                <EmptyLinked>{t('rivals.noMatchSheets', 'Sin fichas de partido')}</EmptyLinked>
+              ) : (
+                <Stack $gap={6}>
+                  {rivalMatchSheets.slice(0, 8).map((ms) => {
+                    const date = ms.fechaHora ? new Date(ms.fechaHora).toLocaleDateString() : '';
+                    const score = ms.golesFavor != null && ms.golesContra != null
+                      ? `${ms.golesFavor} - ${ms.golesContra}`
+                      : '';
+                    return (
+                      <LinkedItem key={ms._id} type="button" onClick={() => navigate(`/match-sheets?open=${ms._id}`)}>
+                        <MdCalendarToday size={14} color={theme.colors.textMuted} />
+                        <span>{date}{score ? ` — ${score}` : ''}</span>
+                        <MdOpenInNew size={14} color={theme.colors.textMuted} />
+                      </LinkedItem>
+                    );
+                  })}
+                  {rivalMatchSheets.length > 8 && (
+                    <EmptyLinked>+ {rivalMatchSheets.length - 8} más</EmptyLinked>
+                  )}
+                </Stack>
+              )}
+            </LinkedSection>
+
+            <LinkedSection>
+              <LinkedSectionTitle>
+                <MdAnalytics size={16} />
+                {t('rivals.analyses', 'Análisis')} ({rivalAnalysesMemos.length})
+              </LinkedSectionTitle>
+              {rivalAnalysesMemos.length === 0 ? (
+                <EmptyLinked>{t('rivals.noAnalyses', 'Sin análisis de rival')}</EmptyLinked>
+              ) : (
+                <Stack $gap={6}>
+                  {rivalAnalysesMemos.slice(0, 8).map((ra) => {
+                    const date = ra.fecha ? new Date(ra.fecha).toLocaleDateString() : '';
+                    const label = ra.rival || date || t('rivals.analysisNoName', 'Análisis');
+                    return (
+                      <LinkedItem key={ra._id} type="button" onClick={() => navigate(`/rival-analysis?open=${ra._id}`)}>
+                        <MdAnalytics size={14} color={theme.colors.primary} />
+                        <span>{label}</span>
+                        <LinkedBadge $color={theme.colors.warning}>
+                          {ra.alineacion || '—'}
+                        </LinkedBadge>
+                        <MdOpenInNew size={14} color={theme.colors.textMuted} />
+                      </LinkedItem>
+                    );
+                  })}
+                  {rivalAnalysesMemos.length > 8 && (
+                    <EmptyLinked>+ {rivalAnalysesMemos.length - 8} más</EmptyLinked>
+                  )}
+                </Stack>
+              )}
+            </LinkedSection>
           </Stack>
         )}
       </Modal>
