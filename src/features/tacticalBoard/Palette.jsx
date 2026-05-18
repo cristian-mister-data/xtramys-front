@@ -4,10 +4,14 @@
  *
  * Click en un botón → setActiveTool(type). Materials-button despliega/repliega
  * la sub-paleta de materiales a la derecha.
+ * Mantener pulsado (long-press) en ícono → abre panel de edición para cambiar
+ * los valores por defecto de ese ícono de paleta (color, número, tamaño).
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import PaletteIcon from './PaletteIcon';
+import { PRESET_COLORS } from './colorPalette';
 import {
   PALETTE_PLAYERS,
   PALETTE_GROUPS,
@@ -15,6 +19,8 @@ import {
   PALETTE_LINES,
   MATERIALS_ICONS,
 } from './icons';
+
+const LONG_PRESS_MS = 500;
 
 const Bar = styled.div`
   display: flex;
@@ -61,7 +67,11 @@ const Btn = styled.button`
   padding: 4px;
   flex-shrink: 0;
   transition: background 0.12s, border 0.12s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
   &:hover { background: rgba(255,255,255,0.14); }
+  &:active { background: rgba(255,255,255,0.2); }
 `;
 
 const SubPalette = styled.div`
@@ -75,8 +85,85 @@ const SubPalette = styled.div`
   flex-shrink: 0;
 `;
 
-export default function Palette({ activeTool, onSelectTool }) {
+const ColorPopover = styled.div`
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+  z-index: 999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  min-width: 190px;
+`;
+
+const ColorSwatch = styled.button`
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: 2px solid ${({ $sel }) => ($sel ? '#fbbf24' : 'rgba(255,255,255,0.15)')};
+  background: ${({ $color }) => $color};
+  cursor: pointer;
+  padding: 0;
+  &:hover { border-color: rgba(255,255,255,0.5); }
+`;
+
+const PopoverTitle = styled.div`
+  font-size: 11px;
+  color: #cbd5e1;
+  text-align: center;
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+`;
+
+export default function Palette({ activeTool, onSelectTool, paletteColors = {}, onPaletteColorChange, onLongPressPaletteItem }) {
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [colorPickerFor, setColorPickerFor] = useState(null);
+  const popoverRef = useRef(null);
+  const longPressTimer = useRef(null);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const closeOnClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setColorPickerFor(null);
+      }
+    };
+    if (colorPickerFor) {
+      document.addEventListener('mousedown', closeOnClickOutside);
+      return () => document.removeEventListener('mousedown', closeOnClickOutside);
+    }
+  }, [colorPickerFor]);
+
+  const getEffectiveColor = (icon) => paletteColors[icon.id] || icon.color;
+
+  const handlePointerDown = useCallback((icon) => {
+    longPressTimer.current = setTimeout(() => {
+      if (onLongPressPaletteItem) {
+        onLongPressPaletteItem(icon);
+      }
+      longPressTimer.current = null;
+    }, LONG_PRESS_MS);
+  }, [onLongPressPaletteItem]);
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const renderBtn = (icon) => (
     <Btn
@@ -89,8 +176,33 @@ export default function Palette({ activeTool, onSelectTool }) {
         onSelectTool(icon.type, icon);
         setMaterialsOpen(false);
       }}
+      onPointerDown={() => handlePointerDown(icon)}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setColorPickerFor(icon.id);
+      }}
+      style={{ position: 'relative' }}
     >
-      <PaletteIcon icon={icon} size={icon.type === 'goal-large' || icon.type === 'goal-small' ? 32 : 30} />
+      <PaletteIcon icon={{ ...icon, color: getEffectiveColor(icon) }} size={icon.type === 'goal-large' || icon.type === 'goal-small' ? 32 : 30} />
+      {colorPickerFor === icon.id && (
+        <ColorPopover ref={popoverRef} onClick={(e) => e.stopPropagation()}>
+          <PopoverTitle>{t('tacticalBoard.paletteColor', 'Color de paleta')}</PopoverTitle>
+          {PRESET_COLORS.map((c) => (
+            <ColorSwatch
+              key={c}
+              type="button"
+              $color={c}
+              $sel={getEffectiveColor(icon) === c}
+              onClick={() => {
+                onPaletteColorChange(icon.id, c);
+                setColorPickerFor(null);
+              }}
+            />
+          ))}
+        </ColorPopover>
+      )}
     </Btn>
   );
 
@@ -105,8 +217,25 @@ export default function Palette({ activeTool, onSelectTool }) {
         title={PALETTE_MATERIALS_BUTTON.label}
         $active={materialsOpen}
         onClick={() => setMaterialsOpen((v) => !v)}
+        onPointerDown={() => handlePointerDown(PALETTE_MATERIALS_BUTTON)}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setColorPickerFor(PALETTE_MATERIALS_BUTTON.id);
+        }}
+        style={{ position: 'relative' }}
       >
-        <PaletteIcon icon={PALETTE_MATERIALS_BUTTON} size={30} />
+        <PaletteIcon icon={{ ...PALETTE_MATERIALS_BUTTON, color: getEffectiveColor(PALETTE_MATERIALS_BUTTON) }} size={30} />
+        {colorPickerFor === PALETTE_MATERIALS_BUTTON.id && (
+          <ColorPopover ref={popoverRef} onClick={(e) => e.stopPropagation()}>
+            <PopoverTitle>{t('tacticalBoard.paletteColor', 'Color de paleta')}</PopoverTitle>
+            {PRESET_COLORS.map((c) => (
+              <ColorSwatch key={c} type="button" $color={c} $sel={getEffectiveColor(PALETTE_MATERIALS_BUTTON) === c}
+                onClick={() => { onPaletteColorChange(PALETTE_MATERIALS_BUTTON.id, c); setColorPickerFor(null); }} />
+            ))}
+          </ColorPopover>
+        )}
       </Btn>
       {materialsOpen && (
         <SubPalette>
@@ -116,9 +245,9 @@ export default function Palette({ activeTool, onSelectTool }) {
       <Sep />
       {PALETTE_LINES.map(renderBtn)}
       <Sep />
-      {renderBtn({ id: 'text', type: 'text', label: 'Texto' })}
-      {renderBtn({ id: 'connector', type: 'connector', label: 'Conectar iconos' })}
-      {renderBtn({ id: 'eraser', type: 'eraser', label: 'Borrador' })}
+      {renderBtn({ id: 'text', type: 'text', label: 'Texto', color: '#ffffff' })}
+      {renderBtn({ id: 'connector', type: 'connector', label: 'Conectar iconos', color: '#ffffff' })}
+      {renderBtn({ id: 'eraser', type: 'eraser', label: 'Borrador', color: '#ffffff' })}
     </Bar>
   );
 }

@@ -147,6 +147,31 @@ export default function TacticalBoard({
   const [activeTool, setActiveTool] = useState('select');
   const [color, setColor] = useState('#000000');
   const [lineDashed, setLineDashed] = useState(false);
+  const [paletteColor, setPaletteColor] = useState({});
+  const [editingPaletteItem, setEditingPaletteItem] = useState(null);
+
+  const handlePaletteColorChange = (iconId, newColor) => {
+    setPaletteColor((prev) => ({ ...prev, [iconId]: newColor }));
+  };
+
+  const handleLongPressPaletteItem = (icon) => {
+    setEditingPaletteItem(icon);
+  };
+
+  const handlePaletteItemChange = (patch) => {
+    if (!editingPaletteItem) return;
+    setEditingPaletteItem((prev) => ({ ...prev, ...patch }));
+    // Also apply the color change to the palette defaults
+    if (patch.color !== undefined) {
+      setPaletteColor((prev) => ({ ...prev, [editingPaletteItem.id]: patch.color }));
+    }
+  };
+
+  const getPaletteProto = (type) => {
+    const proto = PALETTE_BY_TYPE[type] ? { ...PALETTE_BY_TYPE[type] } : { type };
+    if (paletteColor[proto.id]) proto.color = paletteColor[proto.id];
+    return proto;
+  };
 
   const [drawing, setDrawing] = useState(null);
   const [connectorFrom, setConnectorFrom] = useState(null);
@@ -279,7 +304,7 @@ export default function TacticalBoard({
 
     // ÁTICOS / MATERIAL / GROUP — colocar elemento por click
     if (ICON_TYPES_SET.has(activeTool)) {
-      const proto = PALETTE_BY_TYPE[activeTool] || { type: activeTool };
+      const proto = getPaletteProto(activeTool);
       const next = {
         id: newId(activeTool),
         type: activeTool,
@@ -673,6 +698,15 @@ export default function TacticalBoard({
               onClose={() => setSelectedId(null)}
             />
           )}
+          {editingPaletteItem && (
+            <LeftEditPanel
+              element={editingPaletteItem}
+              isPaletteItem
+              onChange={handlePaletteItemChange}
+              onDelete={null}
+              onClose={() => setEditingPaletteItem(null)}
+            />
+          )}
           {editingTextId && (() => {
             const el = elements.find((e) => e.id === editingTextId);
             if (!el) return null;
@@ -723,6 +757,9 @@ export default function TacticalBoard({
       <Palette
         activeTool={activeTool}
         onSelectTool={(type) => { setActiveTool(type); setDrawing(null); }}
+        paletteColors={paletteColor}
+        onPaletteColorChange={handlePaletteColorChange}
+        onLongPressPaletteItem={handleLongPressPaletteItem}
       />
 
       <FormationModal

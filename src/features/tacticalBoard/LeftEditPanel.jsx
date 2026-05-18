@@ -6,6 +6,7 @@
  * rotación) según el tipo del elemento.
  */
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { MdClose, MdRotateRight, MdRotateLeft } from 'react-icons/md';
 import { PRESET_COLORS } from './colorPalette';
 import { MATERIAL_TYPES_SET } from './icons';
@@ -143,7 +144,8 @@ const DangerBtn = styled.button`
 const SHAPE_TYPES = new Set(['line', 'curve', 'rect', 'circle']);
 const ROTATABLE = new Set(['goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder']);
 
-export default function LeftEditPanel({ element, onChange, onDelete, onClose }) {
+export default function LeftEditPanel({ element, onChange, onDelete, onClose, isPaletteItem = false }) {
+  const { t } = useTranslation();
   if (!element) return null;
   const el = element;
   const isPlayer = el.type === 'player';
@@ -155,17 +157,44 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
 
   const rotate = (delta) => update({ rotation: ((el.rotation || 0) + delta + 360) % 360 });
 
+  const typeLabelMap = {
+    player: t('tacticalBoard.editPanel.editPlayer', 'Jugador'),
+    'goal-large': t('tacticalBoard.editPanel.editBigGoal', 'Portería grande'),
+    'goal-small': t('tacticalBoard.editPanel.editSmallGoal', 'Portería pequeña'),
+    barrier: t('tacticalBoard.editPanel.editBarrier', 'Barrera'),
+    dummy: t('tacticalBoard.editPanel.editDummy', 'Maniquí'),
+    pole: t('tacticalBoard.editPanel.editPole', 'Palo'),
+    ladder: t('tacticalBoard.editPanel.editLadder', 'Escalera'),
+    ball: t('tacticalBoard.editPanel.editBall', 'Balón'),
+    cone: t('tacticalBoard.editPanel.editCone', 'Cono'),
+    'cone-flat': t('tacticalBoard.editPanel.editConeFlat', 'Cono bajo'),
+    ring: t('tacticalBoard.editPanel.editRing', 'Aro'),
+    line: t('tacticalBoard.editPanel.editLine', 'Línea'),
+    curve: t('tacticalBoard.editPanel.editCurve', 'Curva'),
+    rect: t('tacticalBoard.editPanel.editRect', 'Rectángulo'),
+    circle: t('tacticalBoard.editPanel.editCircle', 'Círculo'),
+    text: t('tacticalBoard.editPanel.editText', 'Texto'),
+    connector: t('tacticalBoard.editPanel.editConnector', 'Conector'),
+    'team-players': t('tacticalBoard.icons.teamPlayers', 'Jugadores de plantilla'),
+    'coaching-staff': t('tacticalBoard.icons.coachingStaff', 'Cuerpo técnico'),
+    'materials-button': t('tacticalBoard.icons.materials', 'Materiales'),
+  };
+  const baseLabel = typeLabelMap[el.type] || el.type;
+  const editLabel = isPaletteItem
+    ? `${t('tacticalBoard.editPanel.editingPalette', 'Paleta')} — ${baseLabel}`
+    : (typeLabelMap[el.type] || `${t('common.edit', 'Editar')} ${el.type}`);
+
   return (
     <Panel onClick={(e) => e.stopPropagation()}>
       <Header>
-        <span>Editar {el.type}</span>
+        <span>{editLabel}</span>
         <CloseBtn type="button" onClick={onClose}><MdClose /></CloseBtn>
       </Header>
 
       {/* Color (jugadores, materiales, formas) */}
       {(isPlayer || isMaterial || isShape) && (
         <Field>
-          <Label>Color</Label>
+          <Label>{t('tacticalBoard.editPanel.color', 'Color')}</Label>
           <Swatches>
             {PRESET_COLORS.map((c) => (
               <Swatch key={c} type="button" $color={c} $active={el.color === c}
@@ -178,7 +207,7 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {/* Número (jugadores) */}
       {isPlayer && (
         <Field>
-          <Label>Número</Label>
+          <Label>{t('tacticalBoard.editPanel.number', 'Número')}</Label>
           <NumberInput
             type="text"
             value={el.number ?? ''}
@@ -191,13 +220,13 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {/* Portero toggle (jugadores) */}
       {isPlayer && (
         <Field>
-          <Label>Tipo</Label>
+          <Label>{t('tacticalBoard.editPanel.type', 'Tipo')}</Label>
           <Row>
             <ToggleBtn type="button" $active={!el.isGoalkeeper} onClick={() => update({ isGoalkeeper: false })}>
-              Jugador
+              {t('tacticalBoard.editPanel.fieldPlayer', 'Jugador')}
             </ToggleBtn>
             <ToggleBtn type="button" $active={!!el.isGoalkeeper} onClick={() => update({ isGoalkeeper: true })}>
-              Portero
+              {t('tacticalBoard.editPanel.goalkeeper', 'Portero')}
             </ToggleBtn>
           </Row>
         </Field>
@@ -206,7 +235,7 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {/* Tamaño (iconos) */}
       {(isPlayer || isMaterial) && (
         <Field>
-          <Label>Tamaño: {el.size || 24}</Label>
+          <Label>{t('tacticalBoard.editPanel.size', 'Tamaño')}: {el.size || 24}</Label>
           <Slider min={12} max={64} step={1} value={el.size || 24}
             onChange={(e) => update({ size: Number(e.target.value) })} />
         </Field>
@@ -215,7 +244,7 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {/* Rotación (rotables) */}
       {isRotatable && (
         <Field>
-          <Label>Rotación: {el.rotation || 0}°</Label>
+          <Label>{t('tacticalBoard.editPanel.rotation', 'Rotación')}: {el.rotation || 0}°</Label>
           <Row>
             <IconBtn type="button" onClick={() => rotate(-15)}><MdRotateLeft /></IconBtn>
             <Slider min={0} max={359} step={1} value={el.rotation || 0}
@@ -229,23 +258,23 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {isShape && (
         <>
           <Field>
-            <Label>Grosor: {Math.round((el.thickness || 0.004) * 1000) / 10}</Label>
+            <Label>{t('tacticalBoard.editPanel.thickness', 'Grosor')}: {Math.round((el.thickness || 0.004) * 1000) / 10}</Label>
             <Slider min={0.001} max={0.012} step={0.0005} value={el.thickness || 0.004}
               onChange={(e) => update({ thickness: Number(e.target.value) })} />
           </Field>
           <Field>
-            <Label>Estilo</Label>
+            <Label>{t('tacticalBoard.editPanel.style', 'Estilo')}</Label>
             <Row>
-              <ToggleBtn type="button" $active={!el.dashed} onClick={() => update({ dashed: false })}>Sólida</ToggleBtn>
-              <ToggleBtn type="button" $active={!!el.dashed} onClick={() => update({ dashed: true })}>Discontinua</ToggleBtn>
+              <ToggleBtn type="button" $active={!el.dashed} onClick={() => update({ dashed: false })}>{t('tacticalBoard.editPanel.solid', 'Sólida')}</ToggleBtn>
+              <ToggleBtn type="button" $active={!!el.dashed} onClick={() => update({ dashed: true })}>{t('tacticalBoard.editPanel.dashed', 'Discontinua')}</ToggleBtn>
             </Row>
           </Field>
           {(el.type === 'line' || el.type === 'curve') && (
             <Field>
-              <Label>Punta</Label>
+              <Label>{t('tacticalBoard.editPanel.tip', 'Punta')}</Label>
               <Row>
-                <ToggleBtn type="button" $active={!el.arrow} onClick={() => update({ arrow: false })}>Sin flecha</ToggleBtn>
-                <ToggleBtn type="button" $active={!!el.arrow} onClick={() => update({ arrow: true })}>Flecha</ToggleBtn>
+                <ToggleBtn type="button" $active={!el.arrow} onClick={() => update({ arrow: false })}>{t('tacticalBoard.editPanel.noArrow', 'Sin flecha')}</ToggleBtn>
+                <ToggleBtn type="button" $active={!!el.arrow} onClick={() => update({ arrow: true })}>{t('tacticalBoard.editPanel.arrow', 'Flecha')}</ToggleBtn>
               </Row>
             </Field>
           )}
@@ -256,16 +285,16 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
       {el.type === 'text' && (
         <>
           <Field>
-            <Label>Texto</Label>
+            <Label>{t('tacticalBoard.editPanel.text', 'Texto')}</Label>
             <NumberInput value={el.text || ''} onChange={(e) => update({ text: e.target.value })} />
           </Field>
           <Field>
-            <Label>Tamaño: {Math.round((el.fontSize || 0.03) * 1000) / 10}</Label>
+            <Label>{t('tacticalBoard.editPanel.size', 'Tamaño')}: {Math.round((el.fontSize || 0.03) * 1000) / 10}</Label>
             <Slider min={0.015} max={0.08} step={0.002} value={el.fontSize || 0.03}
               onChange={(e) => update({ fontSize: Number(e.target.value) })} />
           </Field>
           <Field>
-            <Label>Color</Label>
+            <Label>{t('tacticalBoard.editPanel.color', 'Color')}</Label>
             <Swatches>
               {PRESET_COLORS.map((c) => (
                 <Swatch key={c} type="button" $color={c} $active={el.color === c}
@@ -276,7 +305,9 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose }) 
         </>
       )}
 
-      <DangerBtn type="button" onClick={onDelete}>Eliminar elemento</DangerBtn>
+      {!isPaletteItem && onDelete && (
+        <DangerBtn type="button" onClick={onDelete}>{t('tacticalBoard.editPanel.delete', 'Eliminar elemento')}</DangerBtn>
+      )}
     </Panel>
   );
 }
