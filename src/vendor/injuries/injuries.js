@@ -478,9 +478,6 @@ export default function InjuriesManagement({ navigation }) {
               <View style={styles.headerLeft}>
                 <View style={styles.headerTextContainer}>
                   <Text style={styles.headerTitle}>
-                    {t('menu.injuries')}
-                  </Text>
-                  <Text style={styles.headerSubtitle}>
                     {(() => {
                       const selectedTeam = equipos?.find(t => t.seleccionado === true);
                       return selectedTeam ? `${selectedTeam.nombre}` : '';
@@ -1241,7 +1238,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: isMobileDevice() ? 20 : 22,
-    color: '#ffffff',
+    color: theme.colors.textSecondary,
     fontWeight: '700',
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 1 },
