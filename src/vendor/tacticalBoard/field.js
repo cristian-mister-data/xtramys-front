@@ -10848,7 +10848,6 @@ const handleGuardarGrafico = async () => {
     if (canvasRef.current) {
       try {
         const imageBase64 = await captureViewShotBase64(canvasRef);
-        console.log('[saveGraph] base64 len=', imageBase64?.length, 'saveCallback?', !!saveCallback);
 
         if (saveCallback) {
           saveCallback(clones, selectedField, imageBase64);
@@ -11578,7 +11577,6 @@ const handleCancelar = useCallback(async () => {
       sCy = cCy = ev.clientY;
       dragging = false;
       rectEl.style.display = 'none';
-      console.log('[ms] DOWN @client', sCx.toFixed(0), sCy.toFixed(0));
     };
 
     const onMove = (ev) => {
@@ -11608,7 +11606,6 @@ const handleCancelar = useCallback(async () => {
       rectEl.style.display = 'none';
 
       if (!wasDragging) {
-        console.log('[ms] UP click (no drag)');
         return;
       }
 
@@ -11619,12 +11616,10 @@ const handleCancelar = useCallback(async () => {
       const top = Math.min(start.y, current.y);
       const w = Math.abs(current.x - start.x);
       const h = Math.abs(current.y - start.y);
-      console.log('[ms] UP drag size=' + w.toFixed(0) + 'x' + h.toFixed(0) + ' rect=', { left, top, w, h });
 
       if (w < 8 || h < 8) return;
 
       const ids = findContainedIds({ x: left, y: top, width: w, height: h });
-      console.log('[ms] selected ids:', ids);
       setSelectedCloneIds(ids);
       if (ids.length > 0) setSelectionInteractionMode('move');
     };
@@ -11642,8 +11637,6 @@ const handleCancelar = useCallback(async () => {
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onUp, true);
     window.addEventListener('pointercancel', onCancel, true);
-
-    console.log('[ms] window listeners attached. overlay rect:', overlayRect());
 
     return () => {
       window.removeEventListener('pointerdown', onDown, true);

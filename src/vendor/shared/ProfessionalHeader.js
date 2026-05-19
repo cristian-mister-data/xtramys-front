@@ -86,7 +86,6 @@ export default function ProfessionalHeader({
           setIsImageLoading(false);
         }
       } catch (error) {
-        console.log('Error loading user image:', error);
         setIsImageLoading(false);
       }
     };

@@ -1203,7 +1203,6 @@ export default function VideoRecorder({
               
               if (uploadOk && key) {
                 await apiUpdateVideo(savedVideoId, { r2Key: key });
-                console.log('R2 upload completado:', key);
               } else {
                 throw new Error('R2 upload falló tras 2 intentos');
               }

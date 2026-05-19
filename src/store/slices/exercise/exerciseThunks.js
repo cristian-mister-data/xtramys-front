@@ -48,9 +48,7 @@ export const createEjercicio = createAsyncThunk(
 
 export const updateEjercicio = createAsyncThunk('ejercicio/updateEjercicio', async (exercise, { rejectWithValue }) => {
   try {
-    console.log('[updateEjercicio] POST /exercise/' + exercise?._id, 'imgLen=', typeof exercise?.imagen === 'string' ? exercise.imagen.length : 0, 'elementsLen=', (exercise?.elementosCampo||[]).length);
     const res = await api.post(`/exercise/${exercise?._id}`, exercise);
-    console.log('[updateEjercicio] OK status=', res?.status);
     return res.data;
   } catch (err) {
     console.error('[updateEjercicio] FAIL', err?.response?.status, err?.response?.data || err?.message);

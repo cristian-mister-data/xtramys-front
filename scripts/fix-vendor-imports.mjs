@@ -70,4 +70,3 @@ for (const f of files) {
   for (const [rx, rep] of RX) s = s.replace(rx, rep);
   if (s !== orig) { writeFileSync(f, s); changed++; }
 }
-console.log('Modified', changed, '/', files.length);

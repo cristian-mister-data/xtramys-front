@@ -89,7 +89,6 @@ export default function CustomDrawerContent({ navigation, state, onLogout }) {
           setIsUserLoading(false);
         }
       } catch (error) {
-        console.log('Error loading user:', error);
         setIsUserLoading(false);
       }
     };

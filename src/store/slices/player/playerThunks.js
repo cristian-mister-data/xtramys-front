@@ -14,9 +14,7 @@ export const fetchJugadorEquipo = createAsyncThunk(
   'jugador/fetchJugadorEquipo',
   async ({ id }, { rejectWithValue }) => {
     try {
-      console.log('[fetchJugadorEquipo] GET /player/' + id);
       const res = await api.get(`/player/${id}`);
-      console.log('[fetchJugadorEquipo] OK status=', res?.status, 'data=', res?.data, 'keys=', res?.data && typeof res.data === 'object' ? Object.keys(res.data) : null);
       // Algunos endpoints devuelven { player: {...} } o { jugador: {...} } en lugar del objeto raíz.
       const payload = res?.data?.player || res?.data?.jugador || res?.data;
       return payload;

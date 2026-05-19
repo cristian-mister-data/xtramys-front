@@ -345,7 +345,6 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
       event = { jugador: selectedPlayer, minuto, tipo: tipoTarjeta, motivo: motivo || undefined };
       if (tipoTarjeta === 'roja') {
         event.partidosSancion = parseInt(partidosSancionRoja) || 1;
-        console.log('[EventModal CONFIRM] partidosSancionRoja state:', partidosSancionRoja, '→ event.partidosSancion:', event.partidosSancion);
       }
     } else if (eventType === 'cambio') {
       event = { sale: jugadorSale, entra: jugadorEntra, minuto };
@@ -1845,9 +1844,6 @@ export default function AddEventModal({
         cambios: cambios.length > 0 ? cambios : undefined,
         golesRival: golesRival.length > 0 ? golesRival : undefined,
       });
-      if (tarjetasRojas.length > 0) {
-        console.log('[AddEventModal SAVE] tarjetasRojas:', JSON.stringify(tarjetasRojas.map(t => ({ jugador: t.jugador?._id || t.jugador, partidosSancion: t.partidosSancion }))));
-      }
       onClose();
     } catch (error) {
       if (error?.code === 'DUPLICATE_TOURNAMENT_MATCHDAY') {

@@ -219,7 +219,6 @@ export default function CreateExerciseForm({
     }
 
     if (resultMatches) {
-      console.log('[exForm.mount] FIELD_RESULT match: imgLen=', fieldResult.imagen?.length, 'elements=', fieldResult.fieldElements?.length);
       if (Array.isArray(fieldResult.fieldElements)) setFieldElements(fieldResult.fieldElements);
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
@@ -252,7 +251,6 @@ export default function CreateExerciseForm({
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
     global.fieldCallbacks = {
       onSave: (updatedElements, updatedFieldType, imageBase64) => {
-        console.log('[exForm.onSave] elements=', updatedElements?.length, 'imgLen=', imageBase64?.length);
         // En web esta pantalla está desmontada cuando esto se ejecuta;
         // persistimos el resultado y el efecto de montaje lo aplica.
         saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
@@ -352,7 +350,6 @@ export default function CreateExerciseForm({
       };
       
       if (onSave) {
-        console.log('[exForm.handleSave] dispatching onSave: editing=', !!editingExercise, 'id=', newExercise._id, 'imgLen=', typeof imagen === 'string' ? imagen.length : 0, 'elements=', (fieldElements||[]).length);
         onSave(newExercise);
         // Limpiar videos pendientes después de guardar
         pendingVideoIds.current = [];

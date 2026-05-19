@@ -187,7 +187,6 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
       event = { jugador: selectedPlayer, minuto, tipo: tipoTarjeta, motivo: motivo || undefined };
       if (tipoTarjeta === 'roja') {
         event.partidosSancion = parseInt(partidosSancionRoja) || 1;
-        console.log('[EventModal CONFIRM] partidosSancionRoja state:', partidosSancionRoja, '→ event.partidosSancion:', event.partidosSancion);
       }
     } else if (eventType === 'cambio') {
       event = { sale: jugadorSale, entra: jugadorEntra, minuto };
@@ -1714,7 +1713,6 @@ export default function EditMatchSheetModal({
         motivo: t.motivo,
         partidosSancion: (t.motivo === 'Doble amarilla') ? (t.partidosSancion || 1) : Math.max(1, t.partidosSancion || 1),
       }));
-      console.log('[EditMatchSheet SAVE] tarjetasRojasNorm:', JSON.stringify(tarjetasRojasNorm.map(t => ({ jugador: t.jugador, partidosSancion: t.partidosSancion, motivo: t.motivo }))));
 
       const matchData = {
         rival: rival.trim(),
