@@ -17,30 +17,6 @@ function ViewBoxGroup({ vbW, vbH, renderW, renderH, children }) {
   );
 }
 
-const DELETE_INDICATOR_STYLE = {
-  stroke: '#ff0000',
-  strokeWidth: 3,
-  dash: [6, 4],
-  fill: 'rgba(255,0,0,0.2)',
-  cornerRadius: 6,
-};
-
-function DelIndicator({ width, height, padding = 10 }) {
-  const indicatorW = Math.max(20, width + padding * 2);
-  const indicatorH = Math.max(20, height + padding * 2);
-  return (
-    <Group name="delIndicator" listening={false} visible={false}>
-      <Rect
-        x={-indicatorW / 2}
-        y={-indicatorH / 2}
-        width={indicatorW}
-        height={indicatorH}
-        {...DELETE_INDICATOR_STYLE}
-      />
-    </Group>
-  );
-}
-
 function PlayerPhoto({ fotoUrl, size }) {
   const [image, setImage] = useState(null);
   const mountedRef = useRef(true);
@@ -76,6 +52,22 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
   const selRing = (r) => selected
     ? <Circle radius={r} stroke="#fbbf24" strokeWidth={1.5} dash={[3, 3]} listening={false} />
     : null;
+  const deleteIndicator = ({ x = -half - 8, y = -half - 8, width = size + 16, height = size + 16, cornerRadius = 6 } = {}) => (
+    <Rect
+      name="delIndicator"
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      stroke="#ff0000"
+      strokeWidth={3}
+      dash={[6, 4]}
+      fill="rgba(255,0,0,0.2)"
+      cornerRadius={cornerRadius}
+      listening={false}
+      visible={false}
+    />
+  );
 
   const showPhoto = el.showPhotos && el.playerData?.foto;
   const photoSize = size - 4;
@@ -88,7 +80,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const showGoalkeeperStripes = el.isGoalkeeper && el.differentiateGoalkeeper !== false && !showPhoto;
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <Circle radius={half} fill={showPhoto ? 'transparent' : color} stroke={showPhoto ? color : selected ? '#fbbf24' : '#222'} strokeWidth={showPhoto ? 2 : selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
         {showPhoto && (
           <Group clipFunc={(ctx) => { ctx.arc(0, 0, half - 2, 0, Math.PI * 2); ctx.closePath(); }}>
@@ -110,7 +102,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
   if (el.type === 'team-players') {
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} />
         <Text text="👥" fontSize={size * 0.7} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
       </Group>
@@ -121,7 +113,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
   if (el.type === 'coaching-staff') {
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <Circle radius={half} fill={color} stroke={selected ? '#fbbf24' : '#222'} strokeWidth={selected ? 2 : 1} />
         <Text text="📋" fontSize={size * 0.65} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
       </Group>
@@ -133,7 +125,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const isAir = el.trajectory === 'air';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} />
         {isAir && !selected && (
           <Group x={half * 0.6} y={-half * 0.6} listening={false}>
@@ -151,7 +143,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const c = color || '#FF6B00';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <ViewBoxGroup vbW={50} vbH={50} renderW={size} renderH={size}>
           <Path data="M 10 45 L 25 8 L 40 45 Z" fill={c} stroke="#000" strokeWidth={1} />
           <Path data="M 15 38 L 25 15 L 35 38" stroke="#FFFFFF" strokeWidth={2} fill="" opacity={0.7} />
@@ -168,7 +160,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const c = color || '#FF6B00';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size * 0.5} />
+        {deleteIndicator()}
         <ViewBoxGroup vbW={40} vbH={20} renderW={size} renderH={size * 0.5}>
           <Path data="M 2 14 Q 20 22 38 14 Q 20 6 2 14 Z" fill={c} stroke="#000" strokeWidth={1} />
           <Path data="M 8 12 Q 20 8 32 12" stroke="rgba(255,255,255,0.5)" strokeWidth={2} fill="" />
@@ -184,7 +176,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const sw = Math.max(2, size * 0.12);
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <ViewBoxGroup vbW={40} vbH={40} renderW={size} renderH={size}>
           <Circle x={20} y={20} radius={16} fill="" stroke={c} strokeWidth={(sw / size) * 40} />
           <Circle x={20} y={20} radius={13} fill="" stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
@@ -199,7 +191,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const w = size * 1.6, h = size * 0.96, c = color || '#FFFFFF';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: -w / 2 - 8, y: -h / 2 - 8, width: w + 16, height: h + 16 })}
         <ViewBoxGroup vbW={120} vbH={70} renderW={w} renderH={h}>
           <Path data="M 5 65 L 5 10 L 115 10 L 115 65" stroke={c} strokeWidth={4} fill="" />
           {[15, 30, 45, 60, 75, 90, 105].map((xv) => (
@@ -219,7 +211,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const w = size * 1.1, h = size * 0.78, c = color || '#FF6B00';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: -w / 2 - 8, y: -h / 2 - 8, width: w + 16, height: h + 16 })}
         <ViewBoxGroup vbW={80} vbH={50} renderW={w} renderH={h}>
           <Path data="M 5 45 L 5 8 L 75 8 L 75 45" stroke={c} strokeWidth={3} fill="" />
           <Path data="M 20 8 L 20 45" stroke="#CCCCCC" strokeWidth={1} opacity={0.5} />
@@ -237,7 +229,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const w = size * 1.5, h = size * 0.6, c = color || '#FFFFFF';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: -w / 2 - 8, y: -h / 2 - 8, width: w + 16, height: h + 16 })}
         <ViewBoxGroup vbW={100} vbH={40} renderW={w} renderH={h}>
           <Path data="M 5 35 L 5 8 L 95 8 L 95 35" stroke={c} strokeWidth={3} fill="" />
         </ViewBoxGroup>
@@ -251,7 +243,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const w = size * 0.7, h = size * 1.4, c = color || '#2196F3', dark = c === '#2196F3' ? '#1565C0' : c;
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: -w / 2 - 8, y: -h / 2 - 8, width: w + 16, height: h + 16 })}
         <ViewBoxGroup vbW={40} vbH={80} renderW={w} renderH={h}>
           <Circle x={20} y={75} radius={8} fill="#333333" />
           <Rect x={18} y={25} width={4} height={50} fill="#444444" />
@@ -269,7 +261,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const w = size * 0.45, h = size * 1.4, c = color || '#FFD700';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: -w / 2 - 8, y: -h / 2 - 8, width: w + 16, height: h + 16 })}
         <ViewBoxGroup vbW={24} vbH={80} renderW={w} renderH={h}>
           <Rect x={10} y={5} width={4} height={60} fill={c} />
           <Path data="M 4 75 L 12 55 L 20 75 Z" fill="#FF6B00" stroke="#E65100" strokeWidth={1} />
@@ -290,7 +282,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     }
     return (
       <Group {...groupProps}>
-        <DelIndicator width={w} height={h} />
+        {deleteIndicator({ x: x0 - 8, y: y0 - 8, width: w + 16, height: h + 16 })}
         <Path data={`M ${x0} ${y0} L ${x0 + w} ${y0}`} stroke={c} strokeWidth={2} />
         <Path data={`M ${x0} ${y0 + h} L ${x0 + w} ${y0 + h}`} stroke={c} strokeWidth={2} />
         {rungEls}
@@ -304,7 +296,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     const c = color || '#333333';
     return (
       <Group {...groupProps}>
-        <DelIndicator width={size} height={size} />
+        {deleteIndicator()}
         <ViewBoxGroup vbW={50} vbH={50} renderW={size} renderH={size}>
           <Rect x={10} y={22} width={30} height={6} fill="#666666" cornerRadius={1} />
           <Rect x={2} y={12} width={6} height={26} fill={c} cornerRadius={2} />
@@ -322,7 +314,7 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
   // ---------------------- FALLBACK ----------------------
   return (
     <Group {...groupProps}>
-      <DelIndicator width={12} height={12} />
+      {deleteIndicator()}
       <Circle radius={6} fill="#f00" />
     </Group>
   );

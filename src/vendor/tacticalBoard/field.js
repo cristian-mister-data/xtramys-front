@@ -1222,7 +1222,8 @@ const FreeTextTool = React.memo(({
   eraserMode,
   onEraseElement,
   viewMode,
-  zoomLevel = 1
+  zoomLevel = 1,
+  setDraggingOutside = null
 }) => {
   // Detectar si es m�vil
   const { width, height } = Dimensions.get('window');
@@ -1278,6 +1279,7 @@ const FreeTextTool = React.memo(({
       onHandlerStateChange={e => {
         // Iniciar drag en BEGAN para respuesta inmediata
         if (e.nativeEvent.state === State.BEGAN && !textObj.locked) {
+          setDraggingOutside?.(false);
           if (!acquireBoardDrag(dragStart, dragKey)) return;
           // Multi-drag support
           if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected) {
@@ -1305,6 +1307,7 @@ const FreeTextTool = React.memo(({
           }
         }
         if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
+          setDraggingOutside?.(false);
           setIsNearDeleteZone(false);
           if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
@@ -1365,6 +1368,15 @@ const FreeTextTool = React.memo(({
 
           // Multi-drag update
           if (base.multiSelect && base.selectedIds && base.initialPositions) {
+            const anyOutside = base.selectedIds.some(id => {
+              const init = base.initialPositions[id];
+              if (!init) return false;
+              const candidate = Array.isArray(init)
+                ? { points: init.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) }
+                : { xRatio: (init.xRatio || 0) + dx, yRatio: (init.yRatio || 0) + dy };
+              return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
+            });
+            setDraggingOutside?.(anyOutside);
             scheduleTextDragUpdate(prev => prev.map(c => {
               if (!base.selectedIds.includes(c.id)) return c;
               const init = base.initialPositions[c.id];
@@ -1387,6 +1399,7 @@ const FreeTextTool = React.memo(({
 
           // Actualizar indicador visual de zona de eliminaci�n
           const inDeleteZone = isOutsideVisibleField(newX, newY, viewMode, imageWidth, imageHeight);
+          setDraggingOutside?.(inDeleteZone);
           if (inDeleteZone !== isNearDeleteZone) {
             setIsNearDeleteZone(inDeleteZone);
           }
@@ -5298,7 +5311,8 @@ const DraggableIcon = React.memo(({
   showPhotos,
   onDeleteClone,
   viewMode,
-  zoomLevel = 1
+  zoomLevel = 1,
+  setDraggingOutside = null
 }) => {
   const size = icon.size * scale;
   const dragKey = `icon-${icon.id}`;
@@ -5446,6 +5460,7 @@ return (
         // ACTIVE: El gesto de pan fue reconocido (el dedo se movi� lo suficiente)
         // Inicializar el arrastre aqu�
         if (e.nativeEvent.state === State.ACTIVE && !icon.locked && !isDragging.current) {
+          setDraggingOutside?.(false);
           if (!acquireBoardDrag(dragStart, dragKey)) return;
           isDragging.current = true;
 
@@ -5497,6 +5512,7 @@ return (
 
         if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
           isDragging.current = false;
+          setDraggingOutside?.(false);
           setIsNearDeleteZone(false); // Resetear indicador visual
           if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
@@ -5562,6 +5578,15 @@ return (
 
           // Si es arrastre de m�ltiples elementos
           if (start.multiSelect && start.selectedIds && start.initialPositions) {
+            const anyOutside = start.selectedIds.some(selectedId => {
+              const initialPos = start.initialPositions[selectedId];
+              if (!initialPos) return false;
+              const candidate = initialPos.points && Array.isArray(initialPos.points)
+                ? { points: initialPos.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) }
+                : { xRatio: initialPos.xRatio + dx, yRatio: initialPos.yRatio + dy };
+              return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
+            });
+            setDraggingOutside?.(anyOutside);
             // Actualizar inmediatamente para mejor respuesta
             scheduleDragUpdate((prev) => {
               const next = [...prev];
@@ -5601,6 +5626,7 @@ return (
 
             // Actualizar indicador visual de zona de eliminaci�n
             const inDeleteZone = checkDeleteZone(newXRatio, newYRatio);
+            setDraggingOutside?.(inDeleteZone);
             if (inDeleteZone !== isNearDeleteZone) {
               setIsNearDeleteZone(inDeleteZone);
             }
@@ -6090,6 +6116,20 @@ function buildBoardDragSnapshots(clones, selectedIds) {
     if (snapshot) snapshots[selectedId] = snapshot;
     return snapshots;
   }, {});
+}
+
+function isBoardCloneOutsideForDelete(clone, viewMode, imageWidth, imageHeight) {
+  if (!clone) return false;
+  if (clone.points && Array.isArray(clone.points) && clone.points.length >= 2) {
+    return areAllPointsOutside(clone.points, viewMode, imageWidth, imageHeight);
+  }
+  if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
+    return isOutsideVisibleField(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
+  }
+  if (clone.x !== undefined && clone.y !== undefined) {
+    return clone.x < 0 || clone.x > imageWidth || clone.y < 0 || clone.y > imageHeight;
+  }
+  return false;
 }
 
 function getArrowHeadForStraightLine(start, end, size = 24, ratio = 0.5, thickness = 2) {
@@ -8832,6 +8872,7 @@ export default function Field(props = {}) {
   const [isPreviewingPoint, setIsPreviewingPoint] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [draggingOutside, setDraggingOutside] = useState(false);
   const [instructionMessage, setInstructionMessage] = useState(null);
   const [playersModalVisible, setPlayersModalVisible] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState([]);
@@ -12022,12 +12063,14 @@ const handleCancelar = useCallback(async () => {
     const hitClone = findInteractiveCloneAtPosition(locationX, locationY);
     if (!hitClone) {
       elementDragState.current = null;
+      setDraggingOutside(false);
       return false;
     }
 
     const isMultiSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(hitClone.id) : selectedCloneIds.includes(hitClone.id);
     if (multiSelectMode && selectionInteractionMode === 'move' && !isMultiSelected) {
       elementDragState.current = null;
+      setDraggingOutside(false);
       return false;
     }
 
@@ -12037,12 +12080,14 @@ const handleCancelar = useCallback(async () => {
     const initialPositions = buildBoardDragSnapshots(actualClonesRef.current, selectedIds);
     if (Object.keys(initialPositions).length === 0) {
       elementDragState.current = null;
+      setDraggingOutside(false);
       return false;
     }
 
     const dragKey = `fallback-${hitClone.id}`;
     if (!acquireBoardDrag(dragStart, dragKey)) {
       elementDragState.current = null;
+      setDraggingOutside(false);
       return false;
     }
 
@@ -12054,6 +12099,7 @@ const handleCancelar = useCallback(async () => {
       startPageX: pageX,
       startPageY: pageY,
     };
+    setDraggingOutside(false);
 
     if (!multiSelectMode) {
       setSelectedCloneId(hitClone.id);
@@ -12074,6 +12120,14 @@ const handleCancelar = useCallback(async () => {
     const dyDisplay = (pageY - startPageY) / zoomLevel;
     const { dxRatio, dyRatio } = deltaToRatio(dxDisplay, dyDisplay, viewMode, imageWidth, imageHeight);
 
+    const anyOutside = selectedIds.some(selectedId => {
+      const clone = actualClonesRef.current.find(item => item.id === selectedId);
+      if (!clone || clone.locked) return false;
+      const candidate = applyBoardDragSnapshot(clone, initialPositions[selectedId], dxRatio, dyRatio, dxDisplay, dyDisplay);
+      return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
+    });
+    setDraggingOutside(anyOutside);
+
     setClones(prev => prev.map(c => {
       if (!selectedIds.includes(c.id) || c.locked) return c;
       return applyBoardDragSnapshot(c, initialPositions[c.id], dxRatio, dyRatio, dxDisplay, dyDisplay);
@@ -12084,6 +12138,7 @@ const handleCancelar = useCallback(async () => {
   const handleElementDragEnd = useCallback(() => {
     const dragState = elementDragState.current;
     elementDragState.current = null;
+    setDraggingOutside(false);
     if (!dragState) return;
     if (!isBoardDragOwner(dragStart, dragState.dragKey)) return;
 
@@ -15880,6 +15935,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         if (eraserMode) handleEraserEnd();
                         releaseElementDragLock();
                         elementDragState.current = null;
+                        setDraggingOutside(false);
                         fieldTouchStartRef.current = null;
                       }}
                     >
@@ -16054,6 +16110,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                               onDeleteClone={handleElementDeleted}
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
+                              setDraggingOutside={setDraggingOutside}
                             />
                           );
                         })}
@@ -16111,6 +16168,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                               onDeleteClone={handleElementDeleted}
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
+                              setDraggingOutside={setDraggingOutside}
                             />
                           );
                         })}
@@ -16140,6 +16198,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                               onEraseElement={eraseElementById}
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
+                              setDraggingOutside={setDraggingOutside}
                             />
                           );
                         })}
@@ -16589,6 +16648,51 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   </View>
 
                 </ViewShot>
+
+              {draggingOutside && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: imageWidth,
+                    height: imageHeight,
+                    borderWidth: 4,
+                    borderColor: '#ef4444',
+                    borderStyle: 'dashed',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 20000,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: 'rgba(239,68,68,0.92)',
+                      paddingHorizontal: 18,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      shadowColor: '#ef4444',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 12,
+                      elevation: 8,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: '#ffffff',
+                        fontSize: 14,
+                        fontWeight: '800',
+                      }}
+                    >
+                      Suelta para eliminar
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               {/* Capa de overlay para multi-select dentro de las mismas transformaciones.
                   En web usamos un <div> nativo en lugar de <View> para tener

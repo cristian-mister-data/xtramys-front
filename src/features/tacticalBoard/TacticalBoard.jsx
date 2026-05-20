@@ -73,6 +73,7 @@ const StageWrap = styled.div`
 const StageInner = styled.div`
   position: relative;
   width: 100%;
+  overflow: hidden;
 `;
 
 const FieldLayer = styled.div`
@@ -110,10 +111,6 @@ function getDraggableGroup(node) {
   return node;
 }
 
-function getDeleteIndicator(node) {
-  return node?.findOne((child) => child.name?.() === 'delIndicator');
-}
-
 function isDraggedNodeOutside(node, width, height) {
   const box = node.getClientRect({ skipTransform: true, skipShadow: true });
   const left = node.x() + box.x;
@@ -121,6 +118,13 @@ function isDraggedNodeOutside(node, width, height) {
   const right = left + box.width;
   const bottom = top + box.height;
   return left < 0 || right > width || top < 0 || bottom > height;
+}
+
+function setDeleteIndicatorVisible(node, visible) {
+  const indicator = node?.findOne?.('.delIndicator');
+  if (!indicator) return;
+  indicator.visible(visible);
+  if (visible) indicator.moveToTop();
 }
 
 export default function TacticalBoard({
@@ -183,8 +187,8 @@ export default function TacticalBoard({
 
   const [formationOpen, setFormationOpen] = useState(false);
   const [fieldSelOpen, setFieldSelOpen] = useState(false);
-  const [recorderOpen, setRecorderOpen] = useState(false);
   const [keyframes, setKeyframes] = useState([]);
+  const [draggingOutside, setDraggingOutside] = useState(false);
 
   // --- stage sizing — depende del viewMode (aspect varía) ---
   useEffect(() => {
@@ -385,21 +389,21 @@ export default function TacticalBoard({
     const node = getDraggableGroup(e.target);
     if (!node) return;
     node.opacity(1); node.scaleX(1); node.scaleY(1);
-    const ring = getDeleteIndicator(node);
-    if (ring) ring.visible(false);
+    setDeleteIndicatorVisible(node, false);
+    setDraggingOutside(false);
   };
 
   const onElementDragMove = (e) => {
     const node = getDraggableGroup(e.target);
     if (!node) return;
     const outside = isDraggedNodeOutside(node, size.w, size.h);
-    const ring = getDeleteIndicator(node);
+    setDraggingOutside(outside);
     if (outside) {
       node.opacity(0.4); node.scaleX(0.75); node.scaleY(0.75);
-      if (ring) { ring.visible(true); ring.moveToTop(); }
+      setDeleteIndicatorVisible(node, true);
     } else {
       node.opacity(1); node.scaleX(1); node.scaleY(1);
-      if (ring) ring.visible(false);
+      setDeleteIndicatorVisible(node, false);
     }
     node.getLayer()?.batchDraw();
   };
@@ -410,9 +414,9 @@ export default function TacticalBoard({
     const outside = isDraggedNodeOutside(node, size.w, size.h);
     const r = p2r(node.x(), node.y());
     node.opacity(1); node.scaleX(1); node.scaleY(1);
-    const ring = getDeleteIndicator(node);
-    if (ring) ring.visible(false);
+    setDeleteIndicatorVisible(node, false);
     node.getLayer()?.batchDraw();
+    setDraggingOutside(false);
 
     if (outside) { applyChange((prev) => prev.filter((el) => el.id !== id)); setSelectedId(null); }
     else { const x = Math.max(0, Math.min(1, r.x)); const y = Math.max(0, Math.min(1, r.y)); applyChange((prev) => prev.map((el) => (el.id === id ? { ...el, x, y } : el))); }
@@ -682,7 +686,6 @@ export default function TacticalBoard({
         onOpenFieldSelector={() => setFieldSelOpen(true)}
         onSave={onSave ? handleSave : null}
         saveLabel={saveLabel}
-        onOpenRecorder={() => setRecorderOpen(true)}
         isRecording={false}
       />
 
@@ -721,6 +724,43 @@ export default function TacticalBoard({
               </Layer>
             </Stage>
           </KonvaLayer>
+          {draggingOutside && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                border: '4px dashed #ef4444',
+                borderRadius: 8,
+                pointerEvents: 'none',
+                zIndex: 15,
+                background: 'rgba(239,68,68,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(239,68,68,0.9)',
+                  color: '#fff',
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
+                }}
+              >
+                Suelta para eliminar
+              </div>
+            </div>
+          )}
+          <VideoRecorderPanel
+            stageRef={stageRef}
+            elements={elements}
+            setFrame={setFrameElements}
+            keyframes={keyframes}
+            setKeyframes={setKeyframes}
+          />
           {selectedId && (
             <LeftEditPanel
               element={elements.find((e) => e.id === selectedId)}

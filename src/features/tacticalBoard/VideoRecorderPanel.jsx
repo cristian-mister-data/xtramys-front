@@ -1,155 +1,292 @@
 /**
- * Panel de grabación de vídeo de la pizarra táctica.
- *
- * Flujo:
- *  1. El usuario añade keyframes (snapshots del estado actual de la pizarra).
- *  2. Elige velocidad y genera. Internamente se invoca `recordStageAnimation`
- *     que interpola entre keyframes y graba el stream del canvas de Konva.
- *  3. Se muestra preview y enlace de descarga .webm. No hay backend implicado.
+ * Barra horizontal de grabación de vídeo — estilo timeline profesional.
+ * Se posiciona dentro del StageInner para no salirse del campo.
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { MdDelete, MdAdd, MdPlayArrow, MdDownload, MdClose } from 'react-icons/md';
-import Modal from '@/ui/Modal';
-import { Button, Muted, Row, Stack } from '@/ui/primitives';
+import { MdDelete, MdAdd, MdPlayArrow, MdClose, MdSpeed, MdExpandMore } from 'react-icons/md';
+import { Muted } from '@/ui/primitives';
 import { recordStageAnimation } from './videoRecorder';
 
-const KeyframeList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-  max-height: 280px;
-  overflow-y: auto;
+const BarWrap = styled.div`
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  pointer-events: none;
+  width: calc(100% - 16px);
+  max-width: 580px;
+  @media (max-width: 480px) {
+    max-width: calc(100% - 12px);
+    bottom: 6px;
+  }
 `;
 
-const KeyframeCard = styled.div`
-  width: 176px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+const Bar = styled.div`
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-`;
-
-const Thumb = styled.div`
-  width: 100%;
-  aspect-ratio: 105 / 68;
-  border-radius: 4px;
-  background: #000 center/cover no-repeat ${({ $src }) => ($src ? `url(${$src})` : 'transparent')};
-`;
-
-const KFHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
-`;
-
-const BallTrajectoryList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const BallTrajectoryRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
-  align-items: center;
-`;
-
-const BallName = styled.span`
-  min-width: 0;
-  color: #334155;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 3px 5px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  height: 36px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @media (max-width: 480px) {
+    height: 32px;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 8px;
+  }
 `;
 
-const TrajectoryToggle = styled.div`
-  display: inline-flex;
-  padding: 2px;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #f8fafc;
+const KfGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  max-width: 180px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 `;
 
-const TrajectoryBtn = styled.button`
+const KfBadge = styled.button`
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 5px;
   border: 0;
-  border-radius: 999px;
-  padding: 3px 7px;
-  background: ${({ $active, $tone }) => {
-    if (!$active) return 'transparent';
-    return $tone === 'air' ? '#f59e0b' : '#16a34a';
-  }};
-  color: ${({ $active }) => ($active ? '#fff' : '#64748b')};
-  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  background: ${({ $active }) => ($active ? '#2563eb' : 'rgba(255,255,255,0.07)')};
+  color: ${({ $active }) => ($active ? '#fff' : 'rgba(255,255,255,0.45)')};
   font-size: 10px;
   font-weight: 800;
-  line-height: 1;
-  opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
-`;
-
-const DelBtn = styled.button`
-  background: transparent;
-  border: none;
-  color: #ef4444;
   cursor: pointer;
-  padding: 2px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  &:hover { background: ${({ $active }) => ($active ? '#2563eb' : 'rgba(255,255,255,0.12)')}; }
+  @media (max-width: 480px) {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 9px;
+  }
 `;
 
-const SpeedRow = styled.div`
+const KfAdd = styled.button`
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 5px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  font-size: 14px;
+  cursor: pointer;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  &:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.7); }
+  @media (max-width: 480px) {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 13px;
+  }
+`;
+
+const Divider = styled.div`
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+`;
+
+const ActionBtn = styled.button`
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 7px;
+  border: 0;
+  background: ${({ $danger }) => ($danger ? 'rgba(239,68,68,0.12)' : 'transparent')};
+  color: ${({ $danger }) => ($danger ? '#ef4444' : 'rgba(255,255,255,0.5)')};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  &:hover { background: ${({ $danger }) => ($danger ? 'rgba(239,68,68,0.22)' : 'rgba(255,255,255,0.08)')}; }
+`;
+
+const PlayBtn = styled.button`
+  width: 30px;
+  height: 28px;
+  min-width: 30px;
+  border-radius: 7px;
+  border: 0;
+  background: ${({ $disabled }) => ($disabled ? 'rgba(255,255,255,0.06)' : '#2563eb')};
+  color: ${({ $disabled }) => ($disabled ? 'rgba(255,255,255,0.2)' : '#fff')};
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  &:hover { background: ${({ $disabled }) => ($disabled ? 'rgba(255,255,255,0.06)' : '#1d4ed8')}; }
 `;
 
 const SpeedBtn = styled.button`
-  flex: 1;
-  padding: 6px 10px;
+  height: 26px;
+  min-width: 36px;
+  padding: 0 6px;
   border-radius: 6px;
-  border: 2px solid ${({ $sel }) => ($sel ? '#1a237e' : '#e2e8f0')};
-  background: ${({ $sel }) => ($sel ? '#eff6ff' : '#fff')};
-  color: #0f172a;
-  font-weight: 700;
-  font-size: 13px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.6);
+  font-size: 10px;
+  font-weight: 800;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  &:hover { background: rgba(255,255,255,0.1); }
 `;
 
-const ProgressWrap = styled.div`
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: #e2e8f0;
+const SpeedMenu = styled.div`
+  position: absolute;
+  bottom: 40px;
+  right: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 40;
+`;
+
+const SpeedOption = styled.button`
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: 0;
+  background: ${({ $sel }) => ($sel ? '#2563eb' : 'transparent')};
+  color: ${({ $sel }) => ($sel ? '#fff' : 'rgba(255,255,255,0.6)')};
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  &:hover { background: ${({ $sel }) => ($sel ? '#2563eb' : 'rgba(255,255,255,0.08)')}; }
+`;
+
+const ProgressThin = styled.div`
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
   overflow: hidden;
+  min-width: 20px;
 `;
 
-const ProgressBar = styled.div`
+const ProgressFill = styled.div`
   height: 100%;
-  background: #1a237e;
+  background: #2563eb;
   width: ${({ $v }) => `${Math.round(($v || 0) * 100)}%`};
   transition: width 0.15s;
+  border-radius: 2px;
 `;
 
-const Video = styled.video`
-  width: 100%;
-  max-height: 360px;
+const VideoPreview = styled.video`
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 560px;
+  max-height: 180px;
+  border-radius: 10px;
   background: #000;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 35;
+  border: 1px solid rgba(255,255,255,0.08);
+`;
+
+const PreviewActions = styled.div`
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 36;
+  align-items: center;
+  background: rgba(15,23,42,0.88);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 4px 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+  height: 36px;
+`;
+
+const PreviewBtn = styled.button`
+  height: 28px;
+  padding: 0 10px;
   border-radius: 6px;
+  border: 0;
+  background: ${({ $primary }) => ($primary ? '#2563eb' : 'rgba(255,255,255,0.08)')};
+  color: ${({ $primary }) => ($primary ? '#fff' : 'rgba(255,255,255,0.6)')};
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  &:hover { background: ${({ $primary }) => ($primary ? '#1d4ed8' : 'rgba(255,255,255,0.14)')}; }
+`;
+
+const BallBadges = styled.div`
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+`;
+
+const BallBadge = styled.span`
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: ${({ $air }) => ($air ? '#f59e0b' : '#16a34a')};
+  color: #fff;
+  font-weight: 800;
+  line-height: 14px;
+`;
+
+const ErrorToast = styled.div`
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(239,68,68,0.92);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  z-index: 40;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
 `;
 
 export default function VideoRecorderPanel({
-  open,
-  onClose,
   stageRef,
   elements,
   setFrame,
@@ -159,9 +296,18 @@ export default function VideoRecorderPanel({
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
   const [rendering, setRendering] = useState(false);
-  const [result, setResult] = useState(null); // { url, blob, mimeType, durationSec }
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [showSpeed, setShowSpeed] = useState(false);
   const elementsBeforeRecordRef = useRef(null);
+
+  useEffect(() => {
+    if (showSpeed) {
+      const handler = () => setShowSpeed(false);
+      window.addEventListener('click', handler);
+      return () => window.removeEventListener('click', handler);
+    }
+  }, [showSpeed]);
 
   const addKeyframe = () => {
     const stage = stageRef.current;
@@ -171,30 +317,14 @@ export default function VideoRecorderPanel({
     setKeyframes((prev) => [...prev, { id: Date.now() + Math.random(), elements: JSON.parse(JSON.stringify(snapshot)), thumb }]);
   };
 
-  const removeKeyframe = (id) => {
-    setKeyframes((prev) => prev.filter((k) => k.id !== id));
-  };
-
-  const setKeyframeBallTrajectory = (keyframeId, ballId, trajectory) => {
-    setKeyframes((prev) => prev.map((keyframe) => {
-      if (keyframe.id !== keyframeId) return keyframe;
-      return {
-        ...keyframe,
-        elements: (keyframe.elements || []).map((el) => (
-          el.id === ballId ? { ...el, trajectory } : el
-        )),
-      };
-    }));
-  };
-
   const clearResult = () => {
     if (result?.url) URL.revokeObjectURL(result.url);
     setResult(null);
+    setError(null);
   };
 
   const generate = async () => {
     clearResult();
-    setError(null);
     setProgress(0);
     setRendering(true);
     elementsBeforeRecordRef.current = elements;
@@ -209,164 +339,100 @@ export default function VideoRecorderPanel({
       });
       setResult(res);
     } catch (e) {
-      const msg = (e instanceof Error) ? e.message : (typeof e === 'string' ? e : 'Error grabando vídeo');
-      setError(msg);
+      setError((e instanceof Error) ? e.message : 'Error grabando vídeo');
     } finally {
       setRendering(false);
     }
   };
 
-  const close = () => {
+  const cleanup = () => {
     clearResult();
     if (elementsBeforeRecordRef.current) {
       setFrame(elementsBeforeRecordRef.current.filter((el) => el.type !== 'ball-shadow'));
       elementsBeforeRecordRef.current = null;
     }
-    onClose?.();
   };
 
+  if (keyframes.length === 0 && !result && !rendering) return null;
+
+  const lastKfBalls = (keyframes[keyframes.length - 1]?.elements || []).filter(el => el.type === 'ball');
+
   return (
-    <Modal
-      open={open}
-      onClose={close}
-      title="Grabar animación"
-      width={720}
-      footer={
-        <Row style={{ justifyContent: 'flex-end', width: '100%', gap: 8 }}>
-          <Button type="button" $variant="ghost" onClick={close}>Cerrar</Button>
-        </Row>
-      }
-    >
-      <Stack $gap={14}>
-        <Muted>
-          Captura estados de la pizarra como keyframes. Al generar, se interpolan
-          en orden y se graba un vídeo .webm del canvas (sin backend).
-        </Muted>
+    <BarWrap>
+      {result && (
+        <>
+          <VideoPreview src={result.url} controls loop autoPlay muted />
+          <PreviewActions>
+            <a href={result.url} download={`pizarra-${Date.now()}.webm`} style={{ textDecoration: 'none' }}>
+              <PreviewBtn $primary>
+                <MdPlayArrow /> Descargar
+              </PreviewBtn>
+            </a>
+            <PreviewBtn onClick={cleanup}>
+              <MdClose /> Descartar
+            </PreviewBtn>
+            <Muted style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{result.durationSec?.toFixed(1)}s</Muted>
+          </PreviewActions>
+        </>
+      )}
 
-        <Row $gap={10} $wrap>
-          <Button type="button" $variant="secondary" onClick={addKeyframe} disabled={rendering}>
-            <MdAdd style={{ verticalAlign: -3 }} /> Añadir keyframe ({keyframes.length})
-          </Button>
-          {keyframes.length > 0 && (
-            <Button
-              type="button"
-              $variant="ghost"
-              onClick={() => setKeyframes([])}
-              disabled={rendering}
-            >
-              Limpiar keyframes
-            </Button>
-          )}
-        </Row>
+      {error && <ErrorToast>{error}</ErrorToast>}
 
+      <Bar>
         {keyframes.length > 0 && (
-          <KeyframeList>
-            {keyframes.map((k, i) => (
-              <KeyframeCard key={k.id}>
-                <KFHeader>
-                  <span>#{i + 1}</span>
-                  <DelBtn type="button" title="Eliminar" onClick={() => removeKeyframe(k.id)} disabled={rendering}>
-                    <MdDelete />
-                  </DelBtn>
-                </KFHeader>
-                <Thumb $src={k.thumb} />
-                {(k.elements || []).some((el) => el.type === 'ball') && (
-                  <BallTrajectoryList>
-                    {(k.elements || []).filter((el) => el.type === 'ball').map((ball, bi) => {
-                      const isAir = ball.trajectory === 'air';
-                      const label = ball.label || ball.name || `Balón ${bi + 1}`;
-                      return (
-                        <BallTrajectoryRow key={ball.id || bi}>
-                          <BallName title={label}>{label}</BallName>
-                          <TrajectoryToggle aria-label={`Trayectoria de ${label}`}>
-                            <TrajectoryBtn
-                              type="button"
-                              $active={!isAir}
-                              $tone="ground"
-                              onClick={() => setKeyframeBallTrajectory(k.id, ball.id, 'ground')}
-                              disabled={rendering}
-                            >
-                              Suelo
-                            </TrajectoryBtn>
-                            <TrajectoryBtn
-                              type="button"
-                              $active={isAir}
-                              $tone="air"
-                              onClick={() => setKeyframeBallTrajectory(k.id, ball.id, 'air')}
-                              disabled={rendering}
-                            >
-                              Aire
-                            </TrajectoryBtn>
-                          </TrajectoryToggle>
-                        </BallTrajectoryRow>
-                      );
-                    })}
-                  </BallTrajectoryList>
-                )}
-              </KeyframeCard>
-            ))}
-          </KeyframeList>
+          <>
+            <KfGroup>
+              {keyframes.map((k, i) => (
+                <KfBadge key={k.id} $active={false} title={`Posición ${i + 1}`}>
+                  {i + 1}
+                </KfBadge>
+              ))}
+              <KfAdd onClick={addKeyframe} disabled={rendering} title="Capturar posición">+</KfAdd>
+            </KfGroup>
+            {lastKfBalls.length > 0 && <Divider />}
+            <BallBadges>
+              {lastKfBalls.map((ball, bi) => {
+                const isAir = ball.trajectory === 'air';
+                return <BallBadge key={bi} $air={isAir}>{isAir ? '↗' : '➡'}</BallBadge>;
+              })}
+            </BallBadges>
+          </>
         )}
 
-        <div>
-          <Muted>Velocidad</Muted>
-          <SpeedRow style={{ marginTop: 6 }}>
+        <div style={{ flex: 1 }} />
+
+        {rendering && (
+          <ProgressThin><ProgressFill $v={progress} /></ProgressThin>
+        )}
+
+        {keyframes.length > 1 && (
+          <ActionBtn $danger onClick={() => setKeyframes([])} disabled={rendering} title="Limpiar todo">
+            <MdDelete />
+          </ActionBtn>
+        )}
+
+        <PlayBtn onClick={generate} disabled={rendering || keyframes.length < 2} $disabled={rendering || keyframes.length < 2} title="Generar vídeo">
+          {rendering ? <MdSpeed /> : <MdPlayArrow />}
+        </PlayBtn>
+
+        <SpeedBtn onClick={(e) => { e.stopPropagation(); setShowSpeed((v) => !v); }}>
+          {speed}× <MdExpandMore style={{ fontSize: 10 }} />
+        </SpeedBtn>
+
+        <ActionBtn onClick={cleanup} title="Cerrar">
+          <MdClose />
+        </ActionBtn>
+
+        {showSpeed && (
+          <SpeedMenu>
             {[0.5, 1, 2].map((s) => (
-              <SpeedBtn
-                key={s}
-                type="button"
-                $sel={speed === s}
-                onClick={() => setSpeed(s)}
-                disabled={rendering}
-              >
+              <SpeedOption key={s} $sel={speed === s} onClick={() => { setSpeed(s); setShowSpeed(false); }}>
                 {s}×
-              </SpeedBtn>
+              </SpeedOption>
             ))}
-          </SpeedRow>
-        </div>
-
-        <Row $gap={10}>
-          <Button
-            type="button"
-            onClick={generate}
-            disabled={rendering || keyframes.length < 2}
-          >
-            <MdPlayArrow style={{ verticalAlign: -3 }} />
-            {rendering ? 'Generando…' : 'Generar vídeo'}
-          </Button>
-          {rendering && (
-            <div style={{ flex: 1 }}>
-              <ProgressWrap><ProgressBar $v={progress} /></ProgressWrap>
-              <Muted>{Math.round(progress * 100)}%</Muted>
-            </div>
-          )}
-        </Row>
-
-        {error && (
-          <div style={{ color: '#ef4444', fontSize: 13 }}>{error}</div>
+          </SpeedMenu>
         )}
-
-        {result && (
-          <Stack $gap={8}>
-            <Video src={result.url} controls loop autoPlay muted />
-            <Row $gap={8}>
-              <a
-                href={result.url}
-                download={`pizarra-${Date.now()}.webm`}
-                style={{ textDecoration: 'none' }}
-              >
-                <Button type="button" $variant="primary">
-                  <MdDownload style={{ verticalAlign: -3 }} /> Descargar .webm
-                </Button>
-              </a>
-              <Button type="button" $variant="ghost" onClick={clearResult}>
-                <MdClose style={{ verticalAlign: -3 }} /> Descartar
-              </Button>
-              <Muted>Duración: {result.durationSec?.toFixed(2)}s</Muted>
-            </Row>
-          </Stack>
-        )}
-      </Stack>
-    </Modal>
+      </Bar>
+    </BarWrap>
   );
 }
