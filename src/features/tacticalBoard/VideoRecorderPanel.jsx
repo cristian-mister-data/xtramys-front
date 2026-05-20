@@ -19,19 +19,20 @@ const KeyframeList = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
 `;
 
 const KeyframeCard = styled.div`
-  width: 120px;
+  width: 176px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
-  padding: 6px;
+  border-radius: 10px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 `;
 
 const Thumb = styled.div`
@@ -48,6 +49,53 @@ const KFHeader = styled.div`
   font-size: 11px;
   font-weight: 700;
   color: #64748b;
+`;
+
+const BallTrajectoryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const BallTrajectoryRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+`;
+
+const BallName = styled.span`
+  min-width: 0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const TrajectoryToggle = styled.div`
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+`;
+
+const TrajectoryBtn = styled.button`
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: ${({ $active, $tone }) => {
+    if (!$active) return 'transparent';
+    return $tone === 'air' ? '#f59e0b' : '#16a34a';
+  }};
+  color: ${({ $active }) => ($active ? '#fff' : '#64748b')};
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
 `;
 
 const DelBtn = styled.button`
@@ -125,6 +173,18 @@ export default function VideoRecorderPanel({
 
   const removeKeyframe = (id) => {
     setKeyframes((prev) => prev.filter((k) => k.id !== id));
+  };
+
+  const setKeyframeBallTrajectory = (keyframeId, ballId, trajectory) => {
+    setKeyframes((prev) => prev.map((keyframe) => {
+      if (keyframe.id !== keyframeId) return keyframe;
+      return {
+        ...keyframe,
+        elements: (keyframe.elements || []).map((el) => (
+          el.id === ballId ? { ...el, trajectory } : el
+        )),
+      };
+    }));
   };
 
   const clearResult = () => {
@@ -205,33 +265,44 @@ export default function VideoRecorderPanel({
               <KeyframeCard key={k.id}>
                 <KFHeader>
                   <span>#{i + 1}</span>
-                  <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                    {(k.elements || []).filter(el => el.type === 'ball').map((ball, bi) => {
-                      const isAir = ball.trajectory === 'air';
-                      return (
-                        <span
-                          key={bi}
-                          title={isAir ? 'Aire' : 'Suelo'}
-                          style={{
-                            fontSize: 10,
-                            padding: '1px 5px',
-                            borderRadius: 3,
-                            background: isAir ? '#f59e0b' : '#4CAF50',
-                            color: '#fff',
-                            fontWeight: 700,
-                            lineHeight: '16px',
-                          }}
-                        >
-                          {isAir ? '↗' : '➡'}
-                        </span>
-                      );
-                    })}
-                    <DelBtn type="button" title="Eliminar" onClick={() => removeKeyframe(k.id)} disabled={rendering}>
-                      <MdDelete />
-                    </DelBtn>
-                  </div>
+                  <DelBtn type="button" title="Eliminar" onClick={() => removeKeyframe(k.id)} disabled={rendering}>
+                    <MdDelete />
+                  </DelBtn>
                 </KFHeader>
                 <Thumb $src={k.thumb} />
+                {(k.elements || []).some((el) => el.type === 'ball') && (
+                  <BallTrajectoryList>
+                    {(k.elements || []).filter((el) => el.type === 'ball').map((ball, bi) => {
+                      const isAir = ball.trajectory === 'air';
+                      const label = ball.label || ball.name || `Balón ${bi + 1}`;
+                      return (
+                        <BallTrajectoryRow key={ball.id || bi}>
+                          <BallName title={label}>{label}</BallName>
+                          <TrajectoryToggle aria-label={`Trayectoria de ${label}`}>
+                            <TrajectoryBtn
+                              type="button"
+                              $active={!isAir}
+                              $tone="ground"
+                              onClick={() => setKeyframeBallTrajectory(k.id, ball.id, 'ground')}
+                              disabled={rendering}
+                            >
+                              Suelo
+                            </TrajectoryBtn>
+                            <TrajectoryBtn
+                              type="button"
+                              $active={isAir}
+                              $tone="air"
+                              onClick={() => setKeyframeBallTrajectory(k.id, ball.id, 'air')}
+                              disabled={rendering}
+                            >
+                              Aire
+                            </TrajectoryBtn>
+                          </TrajectoryToggle>
+                        </BallTrajectoryRow>
+                      );
+                    })}
+                  </BallTrajectoryList>
+                )}
               </KeyframeCard>
             ))}
           </KeyframeList>

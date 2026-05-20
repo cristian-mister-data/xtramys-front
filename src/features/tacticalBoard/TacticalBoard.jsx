@@ -505,32 +505,33 @@ export default function TacticalBoard({
 
   const renderElement = (el) => {
     const selected = el.id === selectedId;
-    const common = { key: el.id };
     const pt = (typeof el.x === 'number' && typeof el.y === 'number') ? r2p(el.x, el.y) : null;
 
-    // Synthetic ball shadow (generated during air trajectory animation)
     if (el.type === 'ball-shadow' && pt) {
       const shadowScale = typeof el.shadowScale === 'number' ? el.shadowScale : 0.8;
       const shadowOpacity = typeof el.opacity === 'number' ? el.opacity : 0.35;
-      const basePx = (el.size || 24) * 1.4 * Math.max(0.7, Math.min(1.6, size.w / 900));
-      const shadowW = basePx * 1.0 * shadowScale;
-      const shadowH = basePx * 0.5 * shadowScale;
-      const maxR = Math.max(shadowW, shadowH) / 2;
+      const basePx = (el.size || 24) * 1.15 * Math.max(0.7, Math.min(1.6, size.w / 900));
+      const shadowW = basePx * 0.95 * shadowScale;
+      const shadowH = basePx * 0.36 * shadowScale;
+      const maxR = shadowW / 2;
+      const cx = pt.x + shadowW * 0.12;
+      const cy = pt.y + shadowH * 0.08;
       return (
         <Ellipse
           key={el.id}
-          x={pt.x}
-          y={pt.y}
+          x={cx}
+          y={cy}
           radiusX={shadowW / 2}
           radiusY={shadowH / 2}
+          rotation={-8}
           fillRadialGradientStartPoint={{ x: 0, y: 0 }}
           fillRadialGradientStartRadius={0}
           fillRadialGradientEndPoint={{ x: 0, y: 0 }}
           fillRadialGradientEndRadius={maxR}
           fillRadialGradientColorStops={[
-            0, `rgba(0,0,0,${Math.min(1, shadowOpacity * 2)})`,
-            0.4, `rgba(0,0,0,${shadowOpacity * 0.9})`,
-            0.7, `rgba(0,0,0,${shadowOpacity * 0.4})`,
+            0, `rgba(0,0,0,${Math.min(0.75, shadowOpacity * 1.3)})`,
+            0.3, `rgba(0,0,0,${shadowOpacity * 0.75})`,
+            0.65, `rgba(0,0,0,${shadowOpacity * 0.3})`,
             1, `rgba(0,0,0,0)`,
           ]}
           listening={false}

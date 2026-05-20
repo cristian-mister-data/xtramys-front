@@ -178,9 +178,8 @@ function interpolateElement(from, to, t) {
 }
 
 // Aplica un efecto parabólico al balón durante el segmento aire.
-// `progress` es el progreso lineal (0..1) en el segmento — usamos sin(pi*progress)
-// para que el balón despegue suavemente, alcance la cima en la mitad y aterrice
-// al final, independientemente del easing aplicado al movimiento horizontal.
+// `progress` es el progreso lineal (0..1) en el segmento. El desplazamiento
+// del balón usa ese progreso lineal y la altura usa una parábola simple.
 // Devuelve {ballArc, shadow} con la altura/escala del balón y el snapshot de
 // la sombra para renderizarla detrás. Si no es trayectoria aérea, devuelve null.
 function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
@@ -188,21 +187,25 @@ function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
   const dx = (toBall.x || 0) - (fromBall.x || 0);
   const dy = (toBall.y || 0) - (fromBall.y || 0);
   const distance = Math.sqrt(dx * dx + dy * dy);
-  // Altura del arco proporcional al recorrido, con tope para evitar excesos
-  // en distancias muy grandes. Mínimo razonable para que el efecto se note
-  // aunque el balón apenas se desplace.
   const ballSize = ballElement.size || 24;
-  const arcHeight = Math.max(ballSize * 1.2, Math.min(distance * 0.45, ballSize * 6));
-  const arc = Math.sin(Math.PI * linearProgress); // 0 -> 1 -> 0
-  // Escala del balón ligeramente mayor en la cima (efecto perspectiva).
-  const scaleBoost = 1 + arc * 0.18;
-  // La sombra es elíptica, va por el suelo (sin offset Y) y se reduce un poco
-  // y baja la opacidad cuando el balón está más alto.
-  const shadowOpacity = Math.max(0.18, 0.5 - arc * 0.32);
-  const shadowScale = 1 - arc * 0.35;
+  const arcHeight = Math.max(ballSize * 0.9, Math.min(distance * 0.32, ballSize * 3.2));
+  const heightProgress = 4 * linearProgress * (1 - linearProgress);
+  const airborne = heightProgress > 0.025 && linearProgress > 0.015 && linearProgress < 0.985;
+  const scaleBoost = 1 + heightProgress * 0.08;
+
+  if (!airborne) {
+    return {
+      ballYOffset: 0,
+      ballScale: scaleBoost,
+      shadow: null,
+    };
+  }
+
+  const shadowOpacity = Math.min(0.48, 0.08 + heightProgress * 0.38);
+  const shadowScale = Math.max(0.48, 1.06 - heightProgress * 0.52);
 
   return {
-    ballYOffset: -arcHeight * arc,
+    ballYOffset: -arcHeight * heightProgress,
     ballScale: scaleBoost,
     shadow: {
       id: `${ballElement.id}__shadow`,
@@ -215,6 +218,10 @@ function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
       zIndex: (ballElement.zIndex || 200) - 1,
     },
   };
+}
+
+function getBallTrajectoryForSegment(keyframe, ballId) {
+  return keyframe?.ballTrajectoryById?.[ballId] || keyframe?.ballTrajectoryType || 'ground';
 }
 
 // Genera todos los frames interpolados entre todos los keyframes
@@ -240,38 +247,31 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
       const fromEls = kf.elements || [];
       const toEls = keyframes[ki + 1].elements || [];
       const toConnectors = keyframes[ki + 1].connectors || kf.connectors || [];
-      const isAirSegment = kf.ballTrajectoryType === 'air';
 
       // Build id→element maps
       const fromMap = new Map(fromEls.map(e => [e.id, e]));
       const toMap = new Map(toEls.map(e => [e.id, e]));
       const allIds = new Set([...fromMap.keys(), ...toMap.keys()]);
 
-      // Localizamos el balón origen/destino para poder aplicar el efecto aéreo.
-      const fromBall = isAirSegment ? fromEls.find(e => e.type === 'ball') : null;
-      const toBall = isAirSegment && fromBall ? toEls.find(e => e.type === 'ball') : null;
-
       for (let f = 1; f <= framesPerTransition; f++) {
         const linearProgress = f / framesPerTransition;
         const t = easeInOutCubic(linearProgress);
         const interpolated = [];
-        let airEffect = null;
+        const airShadows = [];
 
         for (const id of allIds) {
           const fe = fromMap.get(id);
           const te = toMap.get(id);
+          const isAirBall = fe?.type === 'ball' && te?.type === 'ball' && getBallTrajectoryForSegment(kf, id) === 'air';
           let interpEl;
           if (fe && te) {
-            interpEl = interpolateElement(fe, te, t);
+            interpEl = interpolateElement(fe, te, isAirBall ? linearProgress : t);
           } else {
             interpEl = { ...(te || fe) };
           }
-          // Si es trayectoria aérea, aplicamos arco parabólico al balón.
-          if (isAirSegment && interpEl.type === 'ball' && fromBall && toBall) {
-            airEffect = applyBallAirEffect(interpEl, fromBall, toBall, linearProgress);
+          if (isAirBall) {
+            const airEffect = applyBallAirEffect(interpEl, fe, te, linearProgress);
             if (airEffect) {
-              // Tomamos como referencia el "suelo" (posición sin offset) para
-              // poder reutilizarla en la sombra antes de mutar el balón.
               const groundX = interpEl.x;
               const groundY = interpEl.y;
               const groundXRatio = interpEl.xRatio;
@@ -291,25 +291,22 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
                 zIndex: (interpEl.zIndex || 200) + 50,
                 isAirborne: true,
               };
-              // Re-apuntamos la sombra al "suelo" interpolado real.
-              airEffect.shadow.x = groundX;
-              airEffect.shadow.y = groundY;
-              airEffect.shadow.xRatio = groundXRatio;
-              airEffect.shadow.yRatio = groundYRatio;
-              airEffect.shadow.baseSize = airEffect.shadow.size;
+              if (airEffect.shadow) {
+                airEffect.shadow.x = groundX;
+                airEffect.shadow.y = groundY;
+                airEffect.shadow.xRatio = groundXRatio;
+                airEffect.shadow.yRatio = groundYRatio;
+                airEffect.shadow.baseSize = airEffect.shadow.size;
+                airShadows.push(airEffect.shadow);
+              }
             }
           }
           interpolated.push(interpEl);
         }
 
-        // Añadimos la sombra sintética DETRÁS del balón cuando aplica.
-        if (airEffect?.shadow) {
-          interpolated.push(airEffect.shadow);
-        }
-
         // Interpolar conectores: usar los del destino para la segunda mitad
         const connectors = t < 0.5 ? (kf.connectors || []) : toConnectors;
-        frames.push({ elements: interpolated, connectors });
+        frames.push({ elements: [...airShadows, ...interpolated], connectors });
       }
 
       // Hold: pausa breve en el punto de destino
@@ -910,15 +907,22 @@ export default function VideoRecorder({
         thickness: connector.thickness || 2,
       }));
       
+      const ballTrajectoryById = {};
+      elementsSnapshot
+        .filter(elem => elem.type === 'ball')
+        .forEach((ball) => {
+          ballTrajectoryById[ball.id] = keyframes[keyframes.length - 1]?.ballTrajectoryById?.[ball.id]
+            || keyframes[keyframes.length - 1]?.ballTrajectoryType
+            || 'ground';
+        });
+
       const newKeyframe = {
         timestamp: Date.now(),
         fieldImageData: fieldImageData, // Imagen para preview (no se guarda en BD)
         elements: elementsSnapshot, // Datos de elementos para interpolar
         connectors: connectorsSnapshot, // Conectores entre elementos
-        // Tipo de trayectoria del balón DESDE este keyframe hasta el siguiente.
-        // Si es 'air', el balón se renderiza con un arco parabólico y proyecta
-        // una sombra en el suelo durante la transición. Por defecto 'ground'.
         ballTrajectoryType: 'ground',
+        ballTrajectoryById,
       };
       
       onKeyframesChange([...keyframes, newKeyframe]);
@@ -1201,6 +1205,7 @@ export default function VideoRecorder({
           elements: kf.elements,
           connectors: kf.connectors || [],
           ballTrajectoryType: kf.ballTrajectoryType || 'ground',
+          ballTrajectoryById: kf.ballTrajectoryById || {},
         })),
         fieldType: fieldType,
         config: {
@@ -1722,12 +1727,22 @@ export default function VideoRecorder({
               <View style={styles.keyframeList}>
                 {keyframes.map((keyframe, index) => {
                   const isLast = index === keyframes.length - 1;
-                  const trajectory = keyframe.ballTrajectoryType || 'ground';
-                  const setTrajectory = (newType) => {
+                  const balls = (keyframe.elements || []).filter(element => element.type === 'ball');
+                  const getTrajectory = (ballId) => getBallTrajectoryForSegment(keyframe, ballId);
+                  const setTrajectory = (ballId, newType) => {
                     onKeyframesChange(
-                      keyframes.map((kf, i) =>
-                        i === index ? { ...kf, ballTrajectoryType: newType } : kf
-                      )
+                      keyframes.map((kf, i) => {
+                        if (i !== index) return kf;
+                        const ballTrajectoryById = {
+                          ...(kf.ballTrajectoryById || {}),
+                          [ballId]: newType,
+                        };
+                        return {
+                          ...kf,
+                          ballTrajectoryById,
+                          ballTrajectoryType: balls.length <= 1 ? newType : (kf.ballTrajectoryType || 'ground'),
+                        };
+                      })
                     );
                   };
                   return (
@@ -1750,53 +1765,63 @@ export default function VideoRecorder({
                         </TouchableOpacity>
                       </View>
 
-                      {!isLast && (
-                        <View style={styles.trajectoryRow}>
-                          <Text style={styles.trajectoryLabel}>
-                            {t('videoRecorder.ballTrajectory', 'Balón')}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => setTrajectory('ground')}
-                            style={[
-                              styles.trajectoryButton,
-                              trajectory === 'ground' && styles.trajectoryButtonActive,
-                            ]}
-                          >
-                            <Feather
-                              name="minus"
-                              size={11}
-                              color={trajectory === 'ground' ? '#fff' : '#475569'}
-                            />
-                            <Text
-                              style={[
-                                styles.trajectoryButtonText,
-                                trajectory === 'ground' && styles.trajectoryButtonTextActive,
-                              ]}
-                            >
-                              {t('videoRecorder.ballGround', 'Suelo')}
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => setTrajectory('air')}
-                            style={[
-                              styles.trajectoryButton,
-                              trajectory === 'air' && styles.trajectoryButtonActiveAir,
-                            ]}
-                          >
-                            <Feather
-                              name="trending-up"
-                              size={11}
-                              color={trajectory === 'air' ? '#fff' : '#475569'}
-                            />
-                            <Text
-                              style={[
-                                styles.trajectoryButtonText,
-                                trajectory === 'air' && styles.trajectoryButtonTextActive,
-                              ]}
-                            >
-                              {t('videoRecorder.ballAir', 'Aire')}
-                            </Text>
-                          </TouchableOpacity>
+                      {!isLast && balls.length > 0 && (
+                        <View style={styles.trajectoryList}>
+                          {balls.map((ball, ballIndex) => {
+                            const trajectory = getTrajectory(ball.id);
+                            const label = ball.name || ball.label || `${t('videoRecorder.ballTrajectory', 'Balón')} ${ballIndex + 1}`;
+                            return (
+                              <View key={ball.id || ballIndex} style={styles.trajectoryRow}>
+                                <Text style={styles.trajectoryLabel} numberOfLines={1}>
+                                  {label}
+                                </Text>
+                                <View style={styles.trajectoryToggle}>
+                                  <TouchableOpacity
+                                    onPress={() => setTrajectory(ball.id, 'ground')}
+                                    style={[
+                                      styles.trajectoryButton,
+                                      trajectory === 'ground' && styles.trajectoryButtonActive,
+                                    ]}
+                                  >
+                                    <Feather
+                                      name="minus"
+                                      size={11}
+                                      color={trajectory === 'ground' ? '#fff' : '#475569'}
+                                    />
+                                    <Text
+                                      style={[
+                                        styles.trajectoryButtonText,
+                                        trajectory === 'ground' && styles.trajectoryButtonTextActive,
+                                      ]}
+                                    >
+                                      {t('videoRecorder.ballGround', 'Suelo')}
+                                    </Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() => setTrajectory(ball.id, 'air')}
+                                    style={[
+                                      styles.trajectoryButton,
+                                      trajectory === 'air' && styles.trajectoryButtonActiveAir,
+                                    ]}
+                                  >
+                                    <Feather
+                                      name="trending-up"
+                                      size={11}
+                                      color={trajectory === 'air' ? '#fff' : '#475569'}
+                                    />
+                                    <Text
+                                      style={[
+                                        styles.trajectoryButtonText,
+                                        trajectory === 'air' && styles.trajectoryButtonTextActive,
+                                      ]}
+                                    >
+                                      {t('videoRecorder.ballAir', 'Aire')}
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            );
+                          })}
                         </View>
                       )}
                     </View>
@@ -2328,32 +2353,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  trajectoryList: {
+    marginTop: 7,
+    gap: 5,
+  },
   trajectoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
+    gap: 6,
   },
   trajectoryLabel: {
-    fontSize: 9,
+    flex: 1,
+    fontSize: 10,
     color: '#64748b',
-    fontWeight: '600',
-    marginRight: 2,
+    fontWeight: '700',
+  },
+  trajectoryToggle: {
+    flexDirection: 'row',
+    padding: 2,
+    borderRadius: 999,
+    backgroundColor: '#e2e8f0',
+    gap: 2,
   },
   trajectoryButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    borderRadius: 4,
-    backgroundColor: '#e2e8f0',
+    paddingVertical: 4,
+    paddingHorizontal: 7,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
     gap: 3,
     minHeight: 22,
   },
   trajectoryButtonActive: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#16a34a',
   },
   trajectoryButtonActiveAir: {
     backgroundColor: '#f59e0b',

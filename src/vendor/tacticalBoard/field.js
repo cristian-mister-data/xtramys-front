@@ -4959,14 +4959,13 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
     case 'ball':
       return <BallImage size={size} />;
     case 'ball-shadow': {
-      // Sombra sintética generada durante interpolación aérea del balón.
-      // Se representa como una elipse oscura semitransparente en el suelo.
-      // `shadowScale` y `opacity` vienen modulados por la altura del arco.
       const shadowScale = typeof icon.shadowScale === 'number' ? icon.shadowScale : 0.8;
       const shadowOpacity = typeof icon.opacity === 'number' ? icon.opacity : 0.35;
-      const baseSize = size;
-      const shadowW = baseSize * 0.9 * shadowScale;
-      const shadowH = baseSize * 0.35 * shadowScale;
+      const baseSize = size * 0.82;
+      const shadowW = baseSize * 0.92 * shadowScale;
+      const shadowH = baseSize * 0.34 * shadowScale;
+      const softOpacity = Math.max(0, shadowOpacity * 0.28);
+      const midOpacity = Math.max(0, shadowOpacity * 0.55);
       return (
         <View
           pointerEvents="none"
@@ -4975,16 +4974,35 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
             height: baseSize,
             alignItems: 'center',
             justifyContent: 'center',
+            transform: [
+              { translateX: shadowW * 0.1 },
+              { translateY: shadowH * 0.04 },
+              { rotate: '-8deg' },
+            ],
           }}
         >
           <View style={{
+            position: 'absolute',
             width: shadowW,
             height: shadowH,
             borderRadius: shadowH / 2,
             backgroundColor: '#000',
+            opacity: softOpacity,
+          }} />
+          <View style={{
+            position: 'absolute',
+            width: shadowW * 0.72,
+            height: shadowH * 0.7,
+            borderRadius: (shadowH * 0.7) / 2,
+            backgroundColor: '#000',
+            opacity: midOpacity,
+          }} />
+          <View style={{
+            width: shadowW * 0.42,
+            height: shadowH * 0.48,
+            borderRadius: (shadowH * 0.48) / 2,
+            backgroundColor: '#000',
             opacity: shadowOpacity,
-            // Suave blur a través de varias capas concéntricas (RN-web no
-            // soporta filter: blur fiablemente en captureRef).
           }} />
         </View>
       );

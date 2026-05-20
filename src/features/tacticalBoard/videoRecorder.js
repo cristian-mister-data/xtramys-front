@@ -38,6 +38,10 @@ const VIDEO_BITRATE = 32_000_000;
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function lerpPointArray(aPts, bPts, t) {
   if (!Array.isArray(aPts) || !Array.isArray(bPts)) return undefined;
   const n = Math.min(aPts.length, bPts.length);
@@ -67,14 +71,24 @@ function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
   const dx = (toBall.x || 0) - (fromBall.x || 0);
   const dy = (toBall.y || 0) - (fromBall.y || 0);
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const arcHeight = Math.max(0.0015, Math.min(distance * 0.025, 0.012));
-  const arc = Math.sin(Math.PI * linearProgress);
-  const scaleBoost = 1 + arc * 0.04;
-  const shadowOpacity = Math.max(0.25, 0.5 - arc * 0.2);
-  const shadowScale = 1 - arc * 0.12;
+  const arcHeight = clamp(distance * 0.18, 0.018, 0.07);
+  const heightProgress = 4 * linearProgress * (1 - linearProgress);
+  const airborne = heightProgress > 0.025 && linearProgress > 0.015 && linearProgress < 0.985;
+  const scaleBoost = 1 + heightProgress * 0.045;
+
+  if (!airborne) {
+    return {
+      ballYOffset: 0,
+      ballScale: scaleBoost,
+      shadow: null,
+    };
+  }
+
+  const shadowOpacity = 0.08 + heightProgress * 0.42;
+  const shadowScale = 1.08 - heightProgress * 0.52;
 
   return {
-    ballYOffset: -arcHeight * arc,
+    ballYOffset: -arcHeight * heightProgress,
     ballScale: scaleBoost,
     shadow: {
       id: `${ballElement.id}__shadow`,
@@ -82,8 +96,8 @@ function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
       x: ballElement.x,
       y: ballElement.y,
       size: ballElement.size || 14,
-      opacity: shadowOpacity,
-      shadowScale,
+      opacity: clamp(shadowOpacity, 0.08, 0.5),
+      shadowScale: clamp(shadowScale, 0.5, 1.08),
       zIndex: (ballElement.zIndex || 200) - 1,
     },
   };
@@ -110,10 +124,9 @@ export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
 
   for (const be of b) {
     const ae = aMap.get(be.id);
-    let interpEl = ae ? interpElement(ae, be, t) : { ...be };
-
     const fromBall = ae && ae.type === 'ball' && ae.trajectory === 'air' ? ae : null;
     const toBall = be && be.type === 'ball' && be.trajectory === 'air' ? be : null;
+    let interpEl = ae ? interpElement(ae, be, fromBall && toBall ? linearProgress : t) : { ...be };
 
     if (fromBall && toBall && interpEl.type === 'ball') {
       const effect = applyBallAirEffect(interpEl, fromBall, toBall, linearProgress);
@@ -127,17 +140,17 @@ export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
           zIndex: (interpEl.zIndex || 200) + 50,
           isAirborne: true,
         };
-        effect.shadow.x = groundX;
-        effect.shadow.y = groundY;
-        shadows.push(effect.shadow);
+        if (effect.shadow) {
+          effect.shadow.x = groundX;
+          effect.shadow.y = groundY;
+          shadows.push(effect.shadow);
+        }
       }
     }
     result.push(interpEl);
   }
 
-  for (const s of shadows) result.push(s);
-
-  return result;
+  return [...shadows.filter(Boolean), ...result];
 }
 
 export function totalDuration({ keyframes, moveDuration, holdDuration, tailSeconds = 0.5 }) {
