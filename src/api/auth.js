@@ -27,6 +27,22 @@ export const resetPassword = ({ correo, token, nuevaContraseña }) =>
 export const changePassword = ({ userId, contraseñaActual, nuevaContraseña }) =>
   api.post(`/user/${userId}/password`, { contraseñaActual, nuevaContraseña }).then((res) => res.data);
 
+// Cambio de email con verificación por código de 6 dígitos.
+// El correo actual sigue activo hasta que se confirma el nuevo.
+export const requestEmailChange = ({ userId, nuevoCorreo }) =>
+  api.post(`/user/${userId}/email-change/request`, {
+    nuevoCorreo: String(nuevoCorreo || '').toLowerCase().replace(/\s+/g, ''),
+  }).then((res) => res.data);
+
+export const confirmEmailChange = ({ userId, codigo }) =>
+  api.post(`/user/${userId}/email-change/confirm`, { codigo }).then((res) => res.data);
+
+export const resendEmailChangeCode = ({ userId }) =>
+  api.post(`/user/${userId}/email-change/resend`).then((res) => res.data);
+
+export const cancelEmailChange = ({ userId }) =>
+  api.post(`/user/${userId}/email-change/cancel`).then((res) => res.data);
+
 export const google = (idToken) => api.post('/auth/google', { idToken });
 export const apple = (payload) => api.post('/auth/apple', payload);
 

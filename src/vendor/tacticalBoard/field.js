@@ -796,7 +796,7 @@ const getInitialIcons = () => [
 ];
 
 // Set de tipos de materiales/herramientas para filtrado r�pido
-const MATERIAL_TYPES_SET = new Set(['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights']);
+const MATERIAL_TYPES_SET = new Set(['ball', 'ball-shadow', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights']);
 
 // Set de tipos de l�neas/formas
 const LINE_TYPES_SET = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
@@ -4958,6 +4958,37 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
       );
     case 'ball':
       return <BallImage size={size} />;
+    case 'ball-shadow': {
+      // Sombra sintética generada durante interpolación aérea del balón.
+      // Se representa como una elipse oscura semitransparente en el suelo.
+      // `shadowScale` y `opacity` vienen modulados por la altura del arco.
+      const shadowScale = typeof icon.shadowScale === 'number' ? icon.shadowScale : 0.8;
+      const shadowOpacity = typeof icon.opacity === 'number' ? icon.opacity : 0.35;
+      const baseSize = size;
+      const shadowW = baseSize * 0.9 * shadowScale;
+      const shadowH = baseSize * 0.35 * shadowScale;
+      return (
+        <View
+          pointerEvents="none"
+          style={{
+            width: baseSize,
+            height: baseSize,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <View style={{
+            width: shadowW,
+            height: shadowH,
+            borderRadius: shadowH / 2,
+            backgroundColor: '#000',
+            opacity: shadowOpacity,
+            // Suave blur a través de varias capas concéntricas (RN-web no
+            // soporta filter: blur fiablemente en captureRef).
+          }} />
+        </View>
+      );
+    }
     case 'cone':
       // Cono de f�tbol con base negra y cuerpo naranja
       return (
@@ -5334,10 +5365,50 @@ return (
         width: size,
         height: size,
         zIndex: icon.calculatedZIndex || (icon.locked === true ? 1 : (icon.zIndex || 200)),
-        opacity: showDeleteIndicator ? 0.5 : 1,
-        transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
       }}
     >
+    {/* Indicador visual de zona de eliminacion - se renderiza FUERA del wrapper
+        escalado/opacado para que sea nitido y completamente visible (mismo
+        comportamiento que ahora tiene el texto al sacarse de la pizarra). */}
+    {showDeleteIndicator && (
+      <View pointerEvents="none" style={{
+        position: 'absolute',
+        top: -12,
+        left: -12,
+        right: -12,
+        bottom: -12,
+        borderRadius: (size + 24) / 2,
+        borderWidth: 3,
+        borderColor: '#e74c3c',
+        borderStyle: 'dashed',
+        backgroundColor: 'rgba(231, 76, 60, 0.22)',
+        zIndex: 99,
+      }}>
+        <View style={{
+          position: 'absolute',
+          top: -10,
+          right: -10,
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: '#e74c3c',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.3,
+          shadowRadius: 2,
+          elevation: 4,
+        }}>
+          <Feather name="trash-2" size={12} color="#fff" />
+        </View>
+      </View>
+    )}
+    <View style={{
+      flex: 1,
+      opacity: showDeleteIndicator ? 0.5 : 1,
+      transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
+    }} pointerEvents="box-none">
     <TapGestureHandler
       ref={tapRef}
       waitFor={panRef}
@@ -5578,23 +5649,6 @@ return (
       }}
     >
       <View style={{ flex: 1 }}>
-        {/* Indicador visual de que se va a eliminar */}
-        {showDeleteIndicator && (
-          <View style={{
-            position: 'absolute',
-            top: -8,
-            left: -8,
-            right: -8,
-            bottom: -8,
-            borderRadius: (size + 16) / 2,
-            borderWidth: 3,
-            borderColor: '#e74c3c',
-            borderStyle: 'dashed',
-            backgroundColor: 'rgba(231, 76, 60, 0.15)',
-            pointerEvents: 'none',
-            zIndex: -1
-          }} />
-        )}
         <View
           pointerEvents={isDrawingMode ? "none" : "box-none"}
           style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
@@ -5717,6 +5771,7 @@ return (
     </PanGestureHandler>
       </View>
     </TapGestureHandler>
+    </View>
     </View>
   );
 }, (prevProps, nextProps) => {
@@ -9244,6 +9299,17 @@ export default function Field(props = {}) {
       if (snap.ownerType) clone.ownerType = snap.ownerType;
     }
 
+    // Sombra sintética del balón (solo se inserta durante reproducción de
+    // video con trayectoria 'air'). Conservamos las propiedades visuales
+    // específicas y forzamos el tamaño real para que la elipse se calcule
+    // a partir del tamaño base del balón.
+    if (snap.type === 'ball-shadow') {
+      if (snap.size !== undefined) clone.size = snap.size;
+      if (snap.opacity !== undefined) clone.opacity = snap.opacity;
+      if (snap.shadowScale !== undefined) clone.shadowScale = snap.shadowScale;
+      clone.locked = true;
+    }
+
     // Staff (cuerpo t�cnico)
     if (snap.type === 'staff') {
       if (snap.staffRole) clone.staffRole = snap.staffRole;
@@ -9547,6 +9613,9 @@ export default function Field(props = {}) {
           timestamp: kf.timestamp,
           elements: kf.elements || [],
           connectors: kf.connectors || [],
+          // Preservar el tipo de trayectoria del balón para el segmento que
+          // sale de este keyframe (suelo por defecto, aire si así se guardó).
+          ballTrajectoryType: kf.ballTrajectoryType || 'ground',
           // No incluimos fieldImageData porque se generar� al capturar
         }));
 

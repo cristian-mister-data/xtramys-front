@@ -7,7 +7,14 @@ import { MdPlayCircleOutline } from 'react-icons/md';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
-import { changePassword } from '@/api/auth';
+import Modal from '@/ui/Modal';
+import {
+  changePassword,
+  requestEmailChange,
+  confirmEmailChange,
+  resendEmailChangeCode,
+  cancelEmailChange,
+} from '@/api/auth';
 import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
 import api from '@/api/client';
@@ -185,6 +192,28 @@ const DangerBtn = styled(AccountBtn)`
   &:hover { background: #fef2f2; }
 `;
 
+const PendingBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: ${({ theme }) => theme.radius.sm};
+  background: ${({ theme }) => theme.colors.warningSoft || '#fff7ed'};
+  border: 1px solid ${({ theme }) => theme.colors.warning || '#f59e0b'};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 13px;
+  line-height: 1.4;
+  flex-wrap: wrap;
+`;
+
+const CodeInput = styled(Input)`
+  font-size: 22px;
+  letter-spacing: 6px;
+  text-align: center;
+  font-weight: 600;
+`;
+
 export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -204,6 +233,16 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Verificación de cambio de email (similar al registro inicial).
+  // Mientras hay cambio pendiente, el correo actual sigue activo y
+  // únicamente al confirmar el código se sustituye el correo principal.
+  const [emailVerifyOpen, setEmailVerifyOpen] = useState(false);
+  const [emailVerifyTarget, setEmailVerifyTarget] = useState('');
+  const [emailVerifyCode, setEmailVerifyCode] = useState('');
+  const [emailVerifying, setEmailVerifying] = useState(false);
+  const [emailResending, setEmailResending] = useState(false);
+  const [emailVerifyError, setEmailVerifyError] = useState('');
+
   useEffect(() => {
     if (!user) return;
     setNombre(user.nombre || '');
@@ -212,6 +251,14 @@ export default function Profile() {
     setLanguage(user.idioma || 'es');
   }, [user]);
 
+  useEffect(() => {
+    // Si el usuario refresca la página y aún tiene un cambio de email
+    // pendiente, ofrecemos abrir directamente el modal de verificación.
+    if (!emailVerifyOpen && user?.pendingEmail) {
+      setEmailVerifyTarget(user.pendingEmail);
+    }
+  }, [user?.pendingEmail, emailVerifyOpen]);
+
   if (!user) {
     return <Muted>{t('message.loading', 'Cargando...')}</Muted>;
   }
@@ -219,14 +266,45 @@ export default function Profile() {
   const isAdmin = user.role === 'admin';
 
   const handleSave = async () => {
+    const normalizedNew = String(correo || '').trim().toLowerCase();
+    const normalizedOld = String(user.correo || '').trim().toLowerCase();
+    const emailChanged = normalizedNew && normalizedNew !== normalizedOld;
+
     setSaving(true);
     try {
+      // 1) Guardamos primero el resto de datos sin tocar el correo. El correo
+      //    requiere verificación independiente y no debe cambiarse aquí.
       const result = await dispatch(
-        updateUsuario({ id: user._id, updatedUser: { nombre, apellido, correo, idioma: language } }),
+        updateUsuario({ id: user._id, updatedUser: { nombre, apellido, idioma: language } }),
       ).unwrap();
       if (result?.idioma) i18n.changeLanguage(result.idioma);
+
+      // 2) Si además el usuario cambió el correo, iniciamos el flujo de
+      //    verificación enviando un código al nuevo email. Hasta que se
+      //    confirme, el correo actual sigue siendo el activo.
+      if (emailChanged) {
+        try {
+          await requestEmailChange({ userId: user._id, nuevoCorreo: normalizedNew });
+          setEmailVerifyTarget(normalizedNew);
+          setEmailVerifyCode('');
+          setEmailVerifyError('');
+          setEmailVerifyOpen(true);
+          // Reflejamos pendingEmail en el store para que el badge aparezca
+          // al instante sin esperar a un fetch.
+          dispatch(setUser({ ...user, ...result, pendingEmail: normalizedNew }));
+          toast.success(t('profile.emailChangeTitle', 'Verificar nuevo correo'));
+        } catch (err) {
+          const msg = err?.response?.data?.message || err?.message;
+          toast.error(msg || t('profile.emailChangeRequestError', 'No se pudo enviar el código al nuevo correo'));
+          // Restauramos el correo a su valor real porque el cambio no
+          // se ha podido iniciar.
+          setCorreo(user.correo || '');
+        }
+      } else {
+        toast.success(t('message.userUpdated', 'Datos actualizados'));
+      }
+
       setEditing(false);
-      toast.success(t('message.userUpdated', 'Datos actualizados'));
     } catch {
       toast.error(t('message.userUpdateError', 'No se pudo actualizar'));
     } finally {
@@ -240,6 +318,62 @@ export default function Profile() {
     setCorreo(user.correo || '');
     setLanguage(user.idioma || 'es');
     setEditing(false);
+  };
+
+  const handleConfirmEmailCode = async () => {
+    const code = String(emailVerifyCode || '').trim();
+    if (!/^\d{6}$/.test(code)) {
+      setEmailVerifyError(t('profile.emailChangeCodeRequired', 'Introduce el código de verificación'));
+      return;
+    }
+    setEmailVerifying(true);
+    setEmailVerifyError('');
+    try {
+      const res = await confirmEmailChange({ userId: user._id, codigo: code });
+      const updated = res?.user || { ...user, correo: emailVerifyTarget, pendingEmail: null };
+      dispatch(setUser({ ...user, ...updated, pendingEmail: null }));
+      setCorreo(updated.correo || emailVerifyTarget);
+      setEmailVerifyOpen(false);
+      setEmailVerifyCode('');
+      setEmailVerifyTarget('');
+      toast.success(t('profile.emailChangeSuccess', 'Correo actualizado correctamente'));
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message;
+      setEmailVerifyError(msg || t('profile.emailChangeInvalidCode', 'Código incorrecto'));
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
+  const handleResendEmailCode = async () => {
+    setEmailResending(true);
+    setEmailVerifyError('');
+    try {
+      await resendEmailChangeCode({ userId: user._id });
+      toast.success(t('profile.emailChangeResent', 'Se ha enviado un nuevo código'));
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message;
+      toast.error(msg || t('profile.emailChangeResendError', 'No se pudo reenviar el código'));
+    } finally {
+      setEmailResending(false);
+    }
+  };
+
+  const handleCancelEmailChange = async () => {
+    const ok = await confirmAction(t('profile.emailChangeCancel', '¿Cancelar el cambio de correo?'));
+    if (!ok) return;
+    try {
+      await cancelEmailChange({ userId: user._id });
+      dispatch(setUser({ ...user, pendingEmail: null }));
+      setEmailVerifyOpen(false);
+      setEmailVerifyCode('');
+      setEmailVerifyTarget('');
+      setCorreo(user.correo || '');
+      toast.success(t('profile.emailChangeCancelled', 'Cambio de correo cancelado'));
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message;
+      toast.error(msg || t('message.userUpdateError', 'No se pudo cancelar'));
+    }
   };
 
   const handlePickPhoto = async (e) => {
@@ -371,6 +505,34 @@ export default function Profile() {
           <Field>
             <Label>✉️ {t('register.email', 'Correo electrónico')}</Label>
             <Input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} disabled={!editing} />
+            {user.pendingEmail ? (
+              <PendingBadge>
+                <span>⏳</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {t('profile.emailChangePendingBadge', 'Pendiente de verificación: {{email}}', { email: user.pendingEmail })}
+                </div>
+                <Button
+                  $variant="ghost"
+                  type="button"
+                  onClick={() => {
+                    setEmailVerifyTarget(user.pendingEmail);
+                    setEmailVerifyCode('');
+                    setEmailVerifyError('');
+                    setEmailVerifyOpen(true);
+                  }}
+                >
+                  {t('profile.emailChangeTitle', 'Verificar')}
+                </Button>
+                <Button
+                  $variant="ghost"
+                  type="button"
+                  onClick={handleCancelEmailChange}
+                  style={{ color: '#ef4444' }}
+                >
+                  {t('edition.cancel', 'Cancelar')}
+                </Button>
+              </PendingBadge>
+            ) : null}
           </Field>
         </Stack>
       </FormCard>
@@ -493,6 +655,87 @@ export default function Profile() {
           </DangerBtn>
         </Row>
       </FormCard>
+
+      <Modal
+        open={emailVerifyOpen}
+        onClose={() => {
+          if (emailVerifying) return;
+          setEmailVerifyOpen(false);
+        }}
+        title={t('profile.emailChangeTitle', 'Verificar nuevo correo')}
+        footer={
+          <>
+            <Button
+              type="button"
+              $variant="ghost"
+              onClick={() => setEmailVerifyOpen(false)}
+              disabled={emailVerifying}
+            >
+              {t('edition.cancel', 'Cancelar')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmEmailCode}
+              disabled={emailVerifying || !emailVerifyCode}
+            >
+              {emailVerifying
+                ? t('common.saving', 'Verificando...')
+                : t('verify.verify', 'Verificar')}
+            </Button>
+          </>
+        }
+      >
+        <Stack style={{ gap: 14 }}>
+          <Muted>
+            {t('profile.emailChangeSubtitle', 'Hemos enviado un código de 6 dígitos a {{email}}. Hasta que lo verifiques, tu correo actual seguirá activo.', {
+              email: emailVerifyTarget || user.pendingEmail || '',
+            })}
+          </Muted>
+          <Field>
+            <Label>{t('verify.title', 'Código de verificación')}</Label>
+            <CodeInput
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={emailVerifyCode}
+              onChange={(e) => {
+                setEmailVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                if (emailVerifyError) setEmailVerifyError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirmEmailCode();
+              }}
+              autoFocus
+            />
+          </Field>
+          {emailVerifyError ? (
+            <div style={{ color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
+              {emailVerifyError}
+            </div>
+          ) : null}
+          <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <Button
+              type="button"
+              $variant="ghost"
+              onClick={handleResendEmailCode}
+              disabled={emailResending || emailVerifying}
+            >
+              {emailResending
+                ? t('common.saving', 'Enviando...')
+                : t('verify.resend', 'Reenviar código')}
+            </Button>
+            <Button
+              type="button"
+              $variant="ghost"
+              onClick={handleCancelEmailChange}
+              disabled={emailVerifying}
+              style={{ color: '#ef4444' }}
+            >
+              {t('profile.emailChangeCancel', 'Cancelar cambio de correo')}
+            </Button>
+          </Row>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

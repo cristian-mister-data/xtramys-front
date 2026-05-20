@@ -232,6 +232,33 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose, is
         </Field>
       )}
 
+      {/* Trayectoria (balón) */}
+      {el.type === 'ball' && (
+        <Field>
+          <Label>{t('tacticalBoard.editPanel.trajectory', 'Trayectoria')}</Label>
+          <Row>
+            <ToggleBtn
+              type="button"
+              $active={!el.trajectory || el.trajectory === 'ground'}
+              onClick={() => update({ trajectory: 'ground' })}
+              style={(!el.trajectory || el.trajectory === 'ground') ? { borderColor: '#4CAF50', background: 'rgba(76,175,80,0.18)' } : {}}
+            >
+              <span style={{ fontSize: 14, marginRight: 4 }}>➡</span>
+              {t('tacticalBoard.editPanel.ground', 'Suelo')}
+            </ToggleBtn>
+            <ToggleBtn
+              type="button"
+              $active={el.trajectory === 'air'}
+              onClick={() => update({ trajectory: 'air' })}
+              style={el.trajectory === 'air' ? { borderColor: '#f59e0b', background: 'rgba(245,158,11,0.18)' } : {}}
+            >
+              <span style={{ fontSize: 14, marginRight: 4 }}>↗</span>
+              {t('tacticalBoard.editPanel.air', 'Aire')}
+            </ToggleBtn>
+          </Row>
+        </Field>
+      )}
+
       {/* Tamaño (iconos) */}
       {(isPlayer || isMaterial) && (
         <Field>

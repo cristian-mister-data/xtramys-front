@@ -62,6 +62,33 @@ function interpElement(a, b, t) {
   return out;
 }
 
+function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
+  if (!ballElement || !fromBall || !toBall) return null;
+  const dx = (toBall.x || 0) - (fromBall.x || 0);
+  const dy = (toBall.y || 0) - (fromBall.y || 0);
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const arcHeight = Math.max(0.0015, Math.min(distance * 0.025, 0.012));
+  const arc = Math.sin(Math.PI * linearProgress);
+  const scaleBoost = 1 + arc * 0.04;
+  const shadowOpacity = Math.max(0.25, 0.5 - arc * 0.2);
+  const shadowScale = 1 - arc * 0.12;
+
+  return {
+    ballYOffset: -arcHeight * arc,
+    ballScale: scaleBoost,
+    shadow: {
+      id: `${ballElement.id}__shadow`,
+      type: 'ball-shadow',
+      x: ballElement.x,
+      y: ballElement.y,
+      size: ballElement.size || 14,
+      opacity: shadowOpacity,
+      shadowScale,
+      zIndex: (ballElement.zIndex || 200) - 1,
+    },
+  };
+}
+
 export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
   if (!keyframes || keyframes.length === 0) return [];
   const segDuration = moveDuration + holdDuration;
@@ -69,17 +96,48 @@ export function frameAt({ keyframes, time, moveDuration, holdDuration }) {
   const localT = time - segmentIdx * segDuration;
   const a = keyframes[segmentIdx]?.elements || [];
   const b = keyframes[segmentIdx + 1]?.elements || a;
-  let t;
+  let t, linearProgress;
   if (localT >= moveDuration) {
     t = 1;
+    linearProgress = 1;
   } else {
-    t = EASE.easeInOutCubic(Math.max(0, Math.min(1, localT / moveDuration)));
+    linearProgress = Math.max(0, Math.min(1, localT / moveDuration));
+    t = EASE.easeInOutCubic(linearProgress);
   }
   const aMap = new Map(a.map((e) => [e.id, e]));
-  return b.map((be) => {
+  const result = [];
+  const shadows = [];
+
+  for (const be of b) {
     const ae = aMap.get(be.id);
-    return ae ? interpElement(ae, be, t) : be;
-  });
+    let interpEl = ae ? interpElement(ae, be, t) : { ...be };
+
+    const fromBall = ae && ae.type === 'ball' && ae.trajectory === 'air' ? ae : null;
+    const toBall = be && be.type === 'ball' && be.trajectory === 'air' ? be : null;
+
+    if (fromBall && toBall && interpEl.type === 'ball') {
+      const effect = applyBallAirEffect(interpEl, fromBall, toBall, linearProgress);
+      if (effect) {
+        const groundX = interpEl.x;
+        const groundY = interpEl.y;
+        interpEl = {
+          ...interpEl,
+          y: (groundY || 0) + effect.ballYOffset,
+          size: (interpEl.size || 14) * effect.ballScale,
+          zIndex: (interpEl.zIndex || 200) + 50,
+          isAirborne: true,
+        };
+        effect.shadow.x = groundX;
+        effect.shadow.y = groundY;
+        shadows.push(effect.shadow);
+      }
+    }
+    result.push(interpEl);
+  }
+
+  for (const s of shadows) result.push(s);
+
+  return result;
 }
 
 export function totalDuration({ keyframes, moveDuration, holdDuration, tailSeconds = 0.5 }) {

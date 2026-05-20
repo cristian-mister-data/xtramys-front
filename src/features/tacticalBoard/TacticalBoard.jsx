@@ -12,7 +12,7 @@
  *     line, curve, rect, circle, text.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
+import { Stage, Layer, Line, Text, Group, Rect, Ellipse } from 'react-konva';
 import styled from 'styled-components';
 import FieldSVGRenderer from './FieldSVGRenderer';
 import {
@@ -508,6 +508,36 @@ export default function TacticalBoard({
     const common = { key: el.id };
     const pt = (typeof el.x === 'number' && typeof el.y === 'number') ? r2p(el.x, el.y) : null;
 
+    // Synthetic ball shadow (generated during air trajectory animation)
+    if (el.type === 'ball-shadow' && pt) {
+      const shadowScale = typeof el.shadowScale === 'number' ? el.shadowScale : 0.8;
+      const shadowOpacity = typeof el.opacity === 'number' ? el.opacity : 0.35;
+      const basePx = (el.size || 24) * 1.4 * Math.max(0.7, Math.min(1.6, size.w / 900));
+      const shadowW = basePx * 1.0 * shadowScale;
+      const shadowH = basePx * 0.5 * shadowScale;
+      const maxR = Math.max(shadowW, shadowH) / 2;
+      return (
+        <Ellipse
+          key={el.id}
+          x={pt.x}
+          y={pt.y}
+          radiusX={shadowW / 2}
+          radiusY={shadowH / 2}
+          fillRadialGradientStartPoint={{ x: 0, y: 0 }}
+          fillRadialGradientStartRadius={0}
+          fillRadialGradientEndPoint={{ x: 0, y: 0 }}
+          fillRadialGradientEndRadius={maxR}
+          fillRadialGradientColorStops={[
+            0, `rgba(0,0,0,${Math.min(1, shadowOpacity * 2)})`,
+            0.4, `rgba(0,0,0,${shadowOpacity * 0.9})`,
+            0.7, `rgba(0,0,0,${shadowOpacity * 0.4})`,
+            1, `rgba(0,0,0,0)`,
+          ]}
+          listening={false}
+        />
+      );
+    }
+
     if (el.type === 'connector') {
       const a = elementsById.get(el.fromId);
       const b = elementsById.get(el.toId);
@@ -698,6 +728,60 @@ export default function TacticalBoard({
               onClose={() => setSelectedId(null)}
             />
           )}
+          {(() => {
+            const selEl = elements.find((e) => e.id === selectedId);
+            if (!selEl || selEl.type !== 'ball') return null;
+            const bp = r2p(selEl.x, selEl.y);
+            const isAir = selEl.trajectory === 'air';
+            return (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: bp.x - 50,
+                  top: bp.y + 22,
+                  display: 'flex',
+                  gap: 2,
+                  background: 'rgba(15,23,42,0.92)',
+                  borderRadius: 8,
+                  padding: 3,
+                  zIndex: 20,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); applyChange((prev) => prev.map((it) => (it.id === selectedId ? { ...it, trajectory: 'ground' } : it))); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 3,
+                    padding: '3px 8px', border: 0, borderRadius: 5,
+                    cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                    background: !isAir ? '#4CAF50' : 'rgba(255,255,255,0.1)',
+                    color: !isAir ? '#fff' : 'rgba(255,255,255,0.6)',
+                    transition: 'all 0.15s',
+                  }}
+                  title="Trayectoria por suelo"
+                >
+                  <span style={{ fontSize: 13 }}>➡</span> Suelo
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); applyChange((prev) => prev.map((it) => (it.id === selectedId ? { ...it, trajectory: 'air' } : it))); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 3,
+                    padding: '3px 8px', border: 0, borderRadius: 5,
+                    cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                    background: isAir ? '#f59e0b' : 'rgba(255,255,255,0.1)',
+                    color: isAir ? '#fff' : 'rgba(255,255,255,0.6)',
+                    transition: 'all 0.15s',
+                  }}
+                  title="Trayectoria por aire"
+                >
+                  <span style={{ fontSize: 13 }}>↗</span> Aire
+                </button>
+              </div>
+            );
+          })()}
           {editingPaletteItem && (
             <LeftEditPanel
               element={editingPaletteItem}

@@ -7,7 +7,7 @@
  *     que interpola entre keyframes y graba el stream del canvas de Konva.
  *  3. Se muestra preview y enlace de descarga .webm. No hay backend implicado.
  */
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { MdDelete, MdAdd, MdPlayArrow, MdDownload, MdClose } from 'react-icons/md';
 import Modal from '@/ui/Modal';
@@ -113,13 +113,14 @@ export default function VideoRecorderPanel({
   const [rendering, setRendering] = useState(false);
   const [result, setResult] = useState(null); // { url, blob, mimeType, durationSec }
   const [error, setError] = useState(null);
+  const elementsBeforeRecordRef = useRef(null);
 
   const addKeyframe = () => {
     const stage = stageRef.current;
     let thumb = null;
     try { thumb = stage?.toDataURL({ pixelRatio: 0.3, mimeType: 'image/jpeg', quality: 0.6 }); } catch { /* ignore */ }
-    const snapshot = JSON.parse(JSON.stringify(elements || []));
-    setKeyframes((prev) => [...prev, { id: Date.now() + Math.random(), elements: snapshot, thumb }]);
+    const snapshot = (elements || []).filter((el) => el.type !== 'ball-shadow');
+    setKeyframes((prev) => [...prev, { id: Date.now() + Math.random(), elements: JSON.parse(JSON.stringify(snapshot)), thumb }]);
   };
 
   const removeKeyframe = (id) => {
@@ -136,6 +137,7 @@ export default function VideoRecorderPanel({
     setError(null);
     setProgress(0);
     setRendering(true);
+    elementsBeforeRecordRef.current = elements;
     try {
       const res = await recordStageAnimation({
         stage: stageRef.current,
@@ -156,6 +158,10 @@ export default function VideoRecorderPanel({
 
   const close = () => {
     clearResult();
+    if (elementsBeforeRecordRef.current) {
+      setFrame(elementsBeforeRecordRef.current.filter((el) => el.type !== 'ball-shadow'));
+      elementsBeforeRecordRef.current = null;
+    }
     onClose?.();
   };
 
@@ -199,9 +205,31 @@ export default function VideoRecorderPanel({
               <KeyframeCard key={k.id}>
                 <KFHeader>
                   <span>#{i + 1}</span>
-                  <DelBtn type="button" title="Eliminar" onClick={() => removeKeyframe(k.id)} disabled={rendering}>
-                    <MdDelete />
-                  </DelBtn>
+                  <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    {(k.elements || []).filter(el => el.type === 'ball').map((ball, bi) => {
+                      const isAir = ball.trajectory === 'air';
+                      return (
+                        <span
+                          key={bi}
+                          title={isAir ? 'Aire' : 'Suelo'}
+                          style={{
+                            fontSize: 10,
+                            padding: '1px 5px',
+                            borderRadius: 3,
+                            background: isAir ? '#f59e0b' : '#4CAF50',
+                            color: '#fff',
+                            fontWeight: 700,
+                            lineHeight: '16px',
+                          }}
+                        >
+                          {isAir ? '↗' : '➡'}
+                        </span>
+                      );
+                    })}
+                    <DelBtn type="button" title="Eliminar" onClick={() => removeKeyframe(k.id)} disabled={rendering}>
+                      <MdDelete />
+                    </DelBtn>
+                  </div>
                 </KFHeader>
                 <Thumb $src={k.thumb} />
               </KeyframeCard>

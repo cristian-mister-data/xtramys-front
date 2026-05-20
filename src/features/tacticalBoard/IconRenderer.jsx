@@ -130,10 +130,17 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
 
   // ---------------------- BALL ----------------------
   if (el.type === 'ball') {
+    const isAir = el.trajectory === 'air';
     return (
       <Group {...groupProps}>
         <DelIndicator width={size} height={size} />
         <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} />
+        {isAir && !selected && (
+          <Group x={half * 0.6} y={-half * 0.6} listening={false}>
+            <Circle radius={size * 0.16} fill="#f59e0b" />
+            <Text text="↗" fontSize={size * 0.28} fill="#fff" fontStyle="bold" align="center" verticalAlign="middle" width={size * 0.32} height={size * 0.32} offsetX={size * 0.16} offsetY={size * 0.16} listening={false} />
+          </Group>
+        )}
         {selected && <Circle radius={half * 1.15} stroke="#fbbf24" strokeWidth={1.5} dash={[3, 3]} listening={false} />}
       </Group>
     );
