@@ -1783,11 +1783,6 @@ export default function VideoRecorder({
                                       trajectory === 'ground' && styles.trajectoryButtonActive,
                                     ]}
                                   >
-                                    <Feather
-                                      name="minus"
-                                      size={11}
-                                      color={trajectory === 'ground' ? '#fff' : '#475569'}
-                                    />
                                     <Text
                                       style={[
                                         styles.trajectoryButtonText,
@@ -1804,11 +1799,6 @@ export default function VideoRecorder({
                                       trajectory === 'air' && styles.trajectoryButtonActiveAir,
                                     ]}
                                   >
-                                    <Feather
-                                      name="trending-up"
-                                      size={11}
-                                      color={trajectory === 'air' ? '#fff' : '#475569'}
-                                    />
                                     <Text
                                       style={[
                                         styles.trajectoryButtonText,
