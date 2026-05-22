@@ -6,7 +6,6 @@ import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
 
-// Auth (pequeñas, eager para que el primer login no muestre fallback)
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
@@ -15,7 +14,6 @@ import ForgotPassword from '@/pages/auth/ForgotPassword';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import NotFound from '@/pages/NotFound';
 
-// App pages (lazy → cada página en su propio chunk; reduce drasticamente bundle inicial)
 const Home = lazy(() => import('@/pages/Home'));
 const Season = lazy(() => import('@/pages/Season'));
 const CreateSeason = lazy(() => import('@/pages/CreateSeason'));
@@ -42,12 +40,12 @@ const WellnessManagement = lazy(() => import('@/pages/WellnessManagement'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
+const Subscribe = lazy(() => import('@/pages/Subscribe'));
+const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 
-// Public forms
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 
-// Fallback minimal (sin spinner pesado para no introducir dependencias)
 const RouteFallback = () => (
   <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }} />
 );
@@ -70,6 +68,24 @@ export default function AppRouter() {
       {/* Public forms (sin auth) */}
       <Route path="/public/wellness/:token" element={lazy_(<WellnessForm />)} />
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
+
+      {/* Subscription (auth required, no app layout) */}
+      <Route
+        path="/subscribe"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<Subscribe />)}
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/payment/success"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<PaymentSuccess />)}
+          </ProtectedRoute>
+        )}
+      />
 
       {/* Alta inicial: protegida, pero sin menú/header de la app */}
       <Route
@@ -117,7 +133,7 @@ export default function AppRouter() {
         <Route path="/profile" element={lazy_(<Profile />)} />
       </Route>
 
-      {/* Tactical Board: layout fullscreen sin sidebar (replica UX landscape nativo) */}
+      {/* Tactical Board: layout fullscreen sin sidebar */}
       <Route
         element={
           <ProtectedRoute>

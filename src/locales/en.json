@@ -4647,6 +4647,51 @@
         "NOT_FOUND": "Resource not found",
         "FORBIDDEN": "Access denied",
         "VALIDATION_ERROR": "Validation error",
-        "DUPLICATE_ENTRY": "This record already exists"
+        "DUPLICATE_ENTRY": "This record already exists",
+        "SUBSCRIPTION_REQUIRED": "An active subscription is required to access this resource",
+        "ALREADY_SUBSCRIBED": "You already have an active subscription",
+        "NO_SUBSCRIPTION": "You don't have an associated subscription",
+        "CHECKOUT_ERROR": "Error creating checkout session",
+        "PORTAL_ERROR": "Error creating portal session",
+        "SUBSCRIPTION_STATUS_ERROR": "Error getting subscription status",
+        "SUBSCRIPTION_CHECK_ERROR": "Error verifying subscription"
+    },
+    "subscription": {
+        "title": "Subscription required",
+        "subtitle": "Activate your subscription to access all Xtramys features",
+        "year": "year",
+        "subscribe": "Subscribe now",
+        "loading": "Processing...",
+        "active": "Your subscription is active",
+        "validUntil": "Valid until",
+        "manage": "Manage subscription",
+        "updatePayment": "Update payment method",
+        "refresh": "Verify subscription status",
+        "error": "Error starting the payment process",
+        "portalError": "Error opening the management portal",
+        "afterPayment": "After payment, your access will be activated automatically.",
+        "features": {
+            "tacticalBoard": "Tactical board with video recording",
+            "training": "Training session planning",
+            "wellness": "Wellness monitoring",
+            "rivals": "Opponent analysis",
+            "matchSheets": "Match sheets",
+            "statistics": "Advanced statistics",
+            "nutrition": "Nutritional tracking",
+            "injuries": "Injury management",
+            "methodology": "Game methodology"
+        }
+    },
+    "payment": {
+        "successTitle": "Payment successful!",
+        "successMessage": "Your subscription is active. Redirecting...",
+        "goToApp": "Go to app",
+        "pendingTitle": "Processing payment",
+        "pendingMessage": "Your payment is being processed. This may take a few minutes.",
+        "goToSubscribe": "Go to subscription",
+        "activateNow": "Activate subscription now",
+        "verifyingTitle": "Verifying payment...",
+        "verifyingMessage": "We are confirming your subscription. This will take a few seconds.",
+        "sessionId": "Session"
     }
 }

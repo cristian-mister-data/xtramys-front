@@ -1,14 +1,17 @@
 // Configuración de URLs y modo de auth.
 // Vite expone variables que empiezan por VITE_ en import.meta.env
 
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-export const API_URL = `${BACKEND_URL}/api`;
+const isDev = import.meta.env.DEV;
+
+// En desarrollo usamos el proxy de Vite (/api) para evitar CORS.
+// En producción se usa la URL directa del backend.
+export const BACKEND_URL = isDev ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
+export const API_URL = isDev ? '/api' : `${BACKEND_URL}/api`;
 
 const CDN_ORIGIN = 'https://cdn.xtramys.com';
 
 // En desarrollo usamos el proxy de Vite (/cdn) para evitar CORS.
 // En producción se usa la URL directa del CDN.
-const isDev = import.meta.env.DEV;
 export const R2_PUBLIC_URL = isDev
   ? '/cdn'
   : (import.meta.env.VITE_R2_PUBLIC_URL || CDN_ORIGIN);

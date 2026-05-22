@@ -1,7 +1,7 @@
-// store/slices/user/userThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import * as authApi from '@/api/auth';
+import * as subscriptionApi from '@/api/subscription';
 import { saveUser, saveToken, clearUser } from '@/auth/storage';
 import { USE_COOKIE_AUTH } from '@/config';
 import { RESET_STORE } from '@/store/actionTypes';
@@ -79,5 +79,20 @@ export const logoutThunk = createAsyncThunk(
     clearUser();
     dispatch({ type: RESET_STORE });
     return true;
+  }
+);
+
+export const checkSubscription = createAsyncThunk(
+  'usuario/checkSubscription',
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await subscriptionApi.getSubscriptionStatus();
+      return data;
+    } catch (error) {
+      return rejectWithValue({
+        message: error?.response?.data?.message || error.message,
+        code: error?.code || error?.response?.data?.code,
+      });
+    }
   }
 );

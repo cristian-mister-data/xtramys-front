@@ -4657,6 +4657,51 @@
         "NOT_FOUND": "Recurso no encontrado",
         "FORBIDDEN": "Acceso denegado",
         "VALIDATION_ERROR": "Error de validación",
-        "DUPLICATE_ENTRY": "Este registro ya existe"
+        "DUPLICATE_ENTRY": "Este registro ya existe",
+        "SUBSCRIPTION_REQUIRED": "Se requiere una suscripción activa para acceder a este recurso",
+        "ALREADY_SUBSCRIBED": "Ya tienes una suscripción activa",
+        "NO_SUBSCRIPTION": "No tienes una suscripción asociada",
+        "CHECKOUT_ERROR": "Error al crear la sesión de pago",
+        "PORTAL_ERROR": "Error al crear la sesión del portal",
+        "SUBSCRIPTION_STATUS_ERROR": "Error al obtener el estado de la suscripción",
+        "SUBSCRIPTION_CHECK_ERROR": "Error al verificar la suscripción"
+    },
+    "subscription": {
+        "title": "Suscripción requerida",
+        "subtitle": "Activa tu suscripción para acceder a todas las funcionalidades de Xtramys",
+        "year": "año",
+        "subscribe": "Suscribirme ahora",
+        "loading": "Procesando...",
+        "active": "Tu suscripción está activa",
+        "validUntil": "Válida hasta el",
+        "manage": "Gestionar suscripción",
+        "updatePayment": "Actualizar método de pago",
+        "refresh": "Verificar estado de suscripción",
+        "error": "Error al iniciar el proceso de pago",
+        "portalError": "Error al abrir el portal de gestión",
+        "afterPayment": "Tras el pago, tu acceso se activará automáticamente.",
+        "features": {
+            "tacticalBoard": "Pizarra táctica con grabación de vídeo",
+            "training": "Planificación de entrenamientos",
+            "wellness": "Monitorización wellness",
+            "rivals": "Análisis de rivales",
+            "matchSheets": "Fichas de partido",
+            "statistics": "Estadísticas avanzadas",
+            "nutrition": "Seguimiento nutricional",
+            "injuries": "Control de lesiones",
+            "methodology": "Metodología de juego"
+        }
+    },
+    "payment": {
+        "successTitle": "¡Pago exitoso!",
+        "successMessage": "Tu suscripción está activa. Redirigiendo...",
+        "goToApp": "Ir a la aplicación",
+        "pendingTitle": "Procesando pago",
+        "pendingMessage": "Tu pago está siendo procesado. Esto puede tardar unos minutos.",
+        "goToSubscribe": "Ir a suscripción",
+        "activateNow": "Activar suscripción ahora",
+        "verifyingTitle": "Verificando pago...",
+        "verifyingMessage": "Estamos confirmando tu suscripción. Esto tardará unos segundos.",
+        "sessionId": "Sesión"
     }
 }
