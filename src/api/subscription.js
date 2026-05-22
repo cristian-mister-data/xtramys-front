@@ -6,5 +6,8 @@ export const createCheckoutSession = (successBaseUrl) =>
 export const createPortalSession = () =>
   api.post('/stripe/create-portal-session').then((res) => res.data);
 
+export const reactivateSubscription = () =>
+  api.post('/stripe/reactivate-subscription').then((res) => res.data);
+
 export const getSubscriptionStatus = () =>
   api.get('/stripe/subscription-status').then((res) => res.data);

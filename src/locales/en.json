@@ -4670,6 +4670,13 @@
         "error": "Error starting the payment process",
         "portalError": "Error opening the management portal",
         "afterPayment": "After payment, your access will be activated automatically.",
+        "autoRenew": "Renews automatically",
+        "cancelledEndPeriod": "Subscription cancelled. Access until",
+        "reactivate": "Reactivate subscription",
+        "renewsOn": "Renews on",
+        "accessUntil": "Access until",
+        "cancelled": "Subscription cancelled",
+        "willLoseAccess": "You will lose access on",
         "features": {
             "tacticalBoard": "Tactical board with video recording",
             "training": "Training session planning",

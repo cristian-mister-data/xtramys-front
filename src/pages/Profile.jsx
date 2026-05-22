@@ -17,6 +17,8 @@ import {
 } from '@/api/auth';
 import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
+import { checkSubscription } from '@/store/slices/user/userThunks';
+import { createPortalSession, createCheckoutSession, reactivateSubscription } from '@/api/subscription';
 import api from '@/api/client';
 import { fileToBase64 } from '@/components/player/playerHelpers';
 import { useTutorial } from '@/components/shared/TutorialProvider';
@@ -214,6 +216,34 @@ const CodeInput = styled(Input)`
   font-weight: 600;
 `;
 
+const SubscriptionCard = styled.div`
+  background: ${({ $plan, theme }) =>
+    $plan === 'pro'
+      ? 'linear-gradient(135deg, #FF6B00, #E55A00)'
+      : theme.colors.surface};
+  border: ${({ $plan, theme }) =>
+    $plan === 'pro' ? 'none' : `1px solid ${theme.colors.border}`};
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+`;
+
+const SubBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: ${({ $active }) => ($active ? 'rgba(255,255,255,0.2)' : 'rgba(239,68,68,0.15)')};
+  color: ${({ $active }) => ($active ? '#fff' : '#EF4444')};
+`;
+
 export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -234,6 +264,7 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // Verificación de cambio de email (similar al registro inicial).
+  const [portalLoading, setPortalLoading] = useState(false);
   // Mientras hay cambio pendiente, el correo actual sigue activo y
   // únicamente al confirmar el código se sustituye el correo principal.
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false);
@@ -258,6 +289,13 @@ export default function Profile() {
       setEmailVerifyTarget(user.pendingEmail);
     }
   }, [user?.pendingEmail, emailVerifyOpen]);
+
+  useEffect(() => {
+    // Cargar estado de suscripción
+    if (user?.plan !== 'pro') {
+      dispatch(checkSubscription());
+    }
+  }, [dispatch, user?.plan]);
 
   if (!user) {
     return <Muted>{t('message.loading', 'Cargando...')}</Muted>;
@@ -423,6 +461,46 @@ export default function Profile() {
     if (!ok) return;
     await dispatch(logoutThunk());
     navigate('/auth/login');
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const data = await createPortalSession();
+      if (data?.url) window.location.href = data.url;
+    } catch (err) {
+      toast.error(err?.response?.data?.mensaje || 'Error al abrir gestión de suscripción');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setPortalLoading(true);
+    try {
+      const baseUrl = window.location.origin;
+      const data = await createCheckoutSession(baseUrl);
+      if (data?.url) window.location.href = data.url;
+    } catch (err) {
+      toast.error(err?.response?.data?.mensaje || 'Error al iniciar suscripción');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const data = await reactivateSubscription();
+      if (data) {
+        dispatch(setUser({ ...user, subscriptionCancelAtPeriodEnd: false, subscriptionStatus: data.subscriptionStatus }));
+        toast.success(data.mensaje || 'Suscripción reactivada correctamente');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.mensaje || 'Error al reactivar suscripción');
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -626,6 +704,95 @@ export default function Profile() {
             {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
           </Button>
         </ActionRow>
+      </FormCard>
+
+      <FormCard>
+        <CardHeader>
+          <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
+        </CardHeader>
+        <SubscriptionCard $plan={user.plan}>
+          {user.plan === 'pro' && user.subscriptionStatus === 'active' ? (
+            <>
+              <SubBadge $active>✓ {t('subscription.active', 'Activa')}</SubBadge>
+              <div style={{ marginTop: 12, color: '#fff' }}>
+                <div style={{ fontWeight: 700, fontSize: 18 }}>
+                  {t('subscription.plan', 'Plan Profesional')}
+                </div>
+                {user.subscriptionCurrentPeriodEnd && (
+                  <div style={{ fontSize: 14, marginTop: 8, opacity: 0.9 }}>
+                    {user.subscriptionCancelAtPeriodEnd 
+                      ? t('subscription.accessUntil', 'Acceso hasta')
+                      : t('subscription.renewsOn', 'Se renueva el')}: {' '}
+                    <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString()}</strong>
+                  </div>
+                )}
+                {user.subscriptionCancelAtPeriodEnd ? (
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(255,193,7,0.15)', borderRadius: '8px', border: '1px solid rgba(255,193,7,0.3)' }}>
+                    <div style={{ color: '#FFC107', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                      ⚠️ {t('subscription.cancelled', 'Suscripción cancelada')}
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
+                      {t('subscription.willLoseAccess', 'Perderás el acceso el')}:{' '}
+                      <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString()}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(16,185,129,0.15)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    <div style={{ color: '#10B981', fontSize: 13, fontWeight: 600 }}>
+                      ✓ {t('subscription.autoRenew', 'Se renueva automáticamente')}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <Button 
+                  type="button" 
+                  onClick={handleManageSubscription} 
+                  disabled={portalLoading}
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    border: '1px solid rgba(255,255,255,0.3)', 
+                    color: '#fff' 
+                  }}
+                >
+                  {portalLoading ? '...' : t('subscription.manage', 'Gestionar')}
+                </Button>
+                {user.subscriptionCancelAtPeriodEnd && (
+                  <Button 
+                    type="button" 
+                    onClick={handleReactivateSubscription} 
+                    disabled={portalLoading}
+                    style={{ 
+                      background: '#10B981', 
+                      border: 'none', 
+                      color: '#fff' 
+                    }}
+                  >
+                    {portalLoading ? '...' : '🔄 ' + t('subscription.reactivate', 'Reactivar suscripción')}
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <SubBadge $active={false}>{t('subscription.inactive', 'Gratuita')}</SubBadge>
+              <div style={{ marginTop: 12 }}>
+                <div style={{ color: theme.colors.text, fontWeight: 700, fontSize: 18 }}>
+                  {t('subscription.freePlan', 'Plan Gratuito')}
+                </div>
+                <Muted style={{ fontSize: 13, marginTop: 4 }}>
+                  {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
+                </Muted>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Button type="button" onClick={handleSubscribe} disabled={portalLoading}
+                  style={{ background: '#FF6B00', border: 'none', color: '#fff' }}>
+                  {portalLoading ? '...' : t('subscription.subscribe', 'Suscribirme ahora')}
+                </Button>
+              </div>
+            </>
+          )}
+        </SubscriptionCard>
       </FormCard>
 
       <FormCard>

@@ -101,6 +101,8 @@ const userSlice = createSlice({
         if (s.user) {
           s.user.subscriptionStatus = a.payload?.subscriptionStatus || null;
           s.user.plan = a.payload?.plan || 'free';
+          s.user.subscriptionCurrentPeriodEnd = a.payload?.currentPeriodEnd || null;
+          s.user.subscriptionCancelAtPeriodEnd = a.payload?.cancelAtPeriodEnd || false;
         }
       });
   },

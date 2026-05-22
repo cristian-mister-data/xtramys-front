@@ -4680,6 +4680,13 @@
         "error": "Error al iniciar el proceso de pago",
         "portalError": "Error al abrir el portal de gestión",
         "afterPayment": "Tras el pago, tu acceso se activará automáticamente.",
+        "autoRenew": "Se renueva automáticamente",
+        "cancelledEndPeriod": "Suscripción cancelada. Acceso hasta",
+        "reactivate": "Reactivar suscripción",
+        "renewsOn": "Se renueva el",
+        "accessUntil": "Acceso hasta",
+        "cancelled": "Suscripción cancelada",
+        "willLoseAccess": "Perderás el acceso el",
         "features": {
             "tacticalBoard": "Pizarra táctica con grabación de vídeo",
             "training": "Planificación de entrenamientos",

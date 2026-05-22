@@ -115,8 +115,6 @@ const IconCircle = styled.div`
   background: ${({ $bg }) => $bg || 'rgba(34,197,94,0.2)'};
 `;
 
-type Step = 'polling' | 'activating' | 'success' | 'failed';
-
 export default function PaymentSuccess() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -125,7 +123,7 @@ export default function PaymentSuccess() {
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
 
   const sessionId = searchParams.get('session_id');
-  const [step, setStep] = useState<Step>('polling');
+  const [step, setStep] = useState('polling');
   const [pollAttempts, setPollAttempts] = useState(0);
   const [activateAttempts, setActivateAttempts] = useState(0);
   const [error, setError] = useState('');
