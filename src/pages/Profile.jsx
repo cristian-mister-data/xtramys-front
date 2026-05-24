@@ -217,31 +217,177 @@ const CodeInput = styled(Input)`
 `;
 
 const SubscriptionCard = styled.div`
-  background: ${({ $plan, theme }) =>
-    $plan === 'pro'
-      ? 'linear-gradient(135deg, #FF6B00, #E55A00)'
-      : theme.colors.surface};
+  background: ${({ $plan, $cancelled, theme }) => {
+    if ($cancelled) return 'linear-gradient(135deg, #92400E, #B45309)';
+    if ($plan === 'pro') return 'linear-gradient(135deg, #1E40AF, #3B82F6)';
+    return theme.colors.surface;
+  }};
   border: ${({ $plan, theme }) =>
     $plan === 'pro' ? 'none' : `1px solid ${theme.colors.border}`};
   border-radius: 16px;
-  padding: 20px;
+  padding: 24px;
   margin-top: 16px;
   overflow: hidden;
   position: relative;
+`;
+
+const SubHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 `;
 
 const SubBadge = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: ${({ $active }) => ($active ? 'rgba(255,255,255,0.2)' : 'rgba(239,68,68,0.15)')};
-  color: ${({ $active }) => ($active ? '#fff' : '#EF4444')};
+  background: ${({ $status }) => {
+    if ($status === 'active') return 'rgba(16,185,129,0.2)';
+    if ($status === 'cancelled') return 'rgba(245,158,11,0.2)';
+    return 'rgba(239,68,68,0.15)';
+  }};
+  color: ${({ $status }) => {
+    if ($status === 'active') return '#10B981';
+    if ($status === 'cancelled') return '#F59E0B';
+    return '#EF4444';
+  }};
+`;
+
+const SubIcon = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: ${({ $plan }) => $plan === 'pro' ? 'rgba(255,255,255,0.15)' : 'rgba(107,114,128,0.1)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+`;
+
+const SubPlanName = styled.div`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${({ $plan }) => $plan === 'pro' ? '#fff' : 'inherit'};
+  margin-bottom: 4px;
+`;
+
+const SubInfoRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: ${({ $type }) => {
+    if ($type === 'renew') return 'rgba(16,185,129,0.12)';
+    if ($type === 'cancelled') return 'rgba(245,158,11,0.12)';
+    return 'rgba(255,255,255,0.08)';
+  }};
+  border: ${({ $type }) => {
+    if ($type === 'renew') return '1px solid rgba(16,185,129,0.25)';
+    if ($type === 'cancelled') return '1px solid rgba(245,158,11,0.25)';
+    return '1px solid rgba(255,255,255,0.12)';
+  }};
+  margin-top: 12px;
+`;
+
+const SubInfoIcon = styled.span`
+  font-size: 18px;
+`;
+
+const SubInfoText = styled.div`
+  flex: 1;
+  font-size: 14px;
+  color: ${({ $plan }) => $plan === 'pro' ? 'rgba(255,255,255,0.9)' : 'inherit'};
+  line-height: 1.4;
+`;
+
+const SubInfoDate = styled.strong`
+  color: ${({ $plan }) => $plan === 'pro' ? '#fff' : 'inherit'};
+`;
+
+const SubActions = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+`;
+
+const SubBtn = styled.button`
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${({ disabled }) => disabled ? 0.6 : 1};
+  transition: all 150ms ease;
+  border: ${({ $variant }) => $variant === 'primary' ? 'none' : '1px solid rgba(255,255,255,0.25)'};
+  background: ${({ $variant }) => {
+    if ($variant === 'primary') return '#10B981';
+    if ($variant === 'secondary') return 'rgba(255,255,255,0.15)';
+    return 'rgba(255,255,255,0.1)';
+  }};
+  color: #fff;
+  &:hover {
+    background: ${({ $variant }) => {
+      if ($variant === 'primary') return '#059669';
+      if ($variant === 'secondary') return 'rgba(255,255,255,0.25)';
+      return 'rgba(255,255,255,0.15)';
+    }};
+  }
+`;
+
+const FreeCard = styled.div`
+  text-align: center;
+`;
+
+const FreeIcon = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
+`;
+
+const FreeTitle = styled.div`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 6px;
+`;
+
+const FreeDesc = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.muted || '#6B7280'};
+  margin-bottom: 20px;
+`;
+
+const FreeBtn = styled.button`
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${({ disabled }) => disabled ? 0.6 : 1};
+  transition: all 150ms ease;
+  border: none;
+  background: linear-gradient(135deg, #FF6B00, #E55A00);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255,107,0,0.35);
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255,107,0,0.4);
+  }
 `;
 
 export default function Profile() {
@@ -291,11 +437,9 @@ export default function Profile() {
   }, [user?.pendingEmail, emailVerifyOpen]);
 
   useEffect(() => {
-    // Cargar estado de suscripción
-    if (user?.plan !== 'pro') {
-      dispatch(checkSubscription());
-    }
-  }, [dispatch, user?.plan]);
+    // Cargar estado de suscripción siempre para tener datos frescos
+    dispatch(checkSubscription());
+  }, [dispatch]);
 
   if (!user) {
     return <Muted>{t('message.loading', 'Cargando...')}</Muted>;
@@ -710,87 +854,85 @@ export default function Profile() {
         <CardHeader>
           <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
         </CardHeader>
-        <SubscriptionCard $plan={user.plan}>
+        <SubscriptionCard $plan={user.plan} $cancelled={user.subscriptionCancelAtPeriodEnd}>
           {user.plan === 'pro' && user.subscriptionStatus === 'active' ? (
             <>
-              <SubBadge $active>✓ {t('subscription.active', 'Activa')}</SubBadge>
-              <div style={{ marginTop: 12, color: '#fff' }}>
-                <div style={{ fontWeight: 700, fontSize: 18 }}>
-                  {t('subscription.plan', 'Plan Profesional')}
+              <SubHeader>
+                <div>
+                  <SubBadge $status={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'active'}>
+                    {user.subscriptionCancelAtPeriodEnd ? '⚠️ Cancelada' : '✓ Activa'}
+                  </SubBadge>
                 </div>
-                {user.subscriptionCurrentPeriodEnd && (
-                  <div style={{ fontSize: 14, marginTop: 8, opacity: 0.9 }}>
+                <SubIcon $plan={user.plan}>👑</SubIcon>
+              </SubHeader>
+              
+              <SubPlanName $plan={user.plan}>{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
+              
+              {user.subscriptionCurrentPeriodEnd && (
+                <SubInfoRow $type={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'renew'}>
+                  <SubInfoIcon>
+                    {user.subscriptionCancelAtPeriodEnd ? '⏰' : '🔄'}
+                  </SubInfoIcon>
+                  <SubInfoText $plan={user.plan}>
                     {user.subscriptionCancelAtPeriodEnd 
                       ? t('subscription.accessUntil', 'Acceso hasta')
                       : t('subscription.renewsOn', 'Se renueva el')}: {' '}
-                    <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString()}</strong>
-                  </div>
-                )}
-                {user.subscriptionCancelAtPeriodEnd ? (
-                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(255,193,7,0.15)', borderRadius: '8px', border: '1px solid rgba(255,193,7,0.3)' }}>
-                    <div style={{ color: '#FFC107', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-                      ⚠️ {t('subscription.cancelled', 'Suscripción cancelada')}
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
-                      {t('subscription.willLoseAccess', 'Perderás el acceso el')}:{' '}
-                      <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString()}</strong>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(16,185,129,0.15)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    <div style={{ color: '#10B981', fontSize: 13, fontWeight: 600 }}>
-                      ✓ {t('subscription.autoRenew', 'Se renueva automáticamente')}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div style={{ marginTop: 16, display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <Button 
+                    <SubInfoDate $plan={user.plan}>
+                      {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString('es-ES', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </SubInfoDate>
+                  </SubInfoText>
+                </SubInfoRow>
+              )}
+
+              {!user.subscriptionCancelAtPeriodEnd && (
+                <SubInfoRow $type="info">
+                  <SubInfoIcon>✅</SubInfoIcon>
+                  <SubInfoText $plan={user.plan}>
+                    {t('subscription.autoRenew', 'Renovación automática activada')}
+                  </SubInfoText>
+                </SubInfoRow>
+              )}
+              
+              <SubActions>
+                <SubBtn 
                   type="button" 
+                  $variant="secondary"
                   onClick={handleManageSubscription} 
                   disabled={portalLoading}
-                  style={{ 
-                    background: 'rgba(255,255,255,0.2)', 
-                    border: '1px solid rgba(255,255,255,0.3)', 
-                    color: '#fff' 
-                  }}
                 >
-                  {portalLoading ? '...' : t('subscription.manage', 'Gestionar')}
-                </Button>
+                  {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                </SubBtn>
                 {user.subscriptionCancelAtPeriodEnd && (
-                  <Button 
+                  <SubBtn 
                     type="button" 
+                    $variant="primary"
                     onClick={handleReactivateSubscription} 
                     disabled={portalLoading}
-                    style={{ 
-                      background: '#10B981', 
-                      border: 'none', 
-                      color: '#fff' 
-                    }}
                   >
-                    {portalLoading ? '...' : '🔄 ' + t('subscription.reactivate', 'Reactivar suscripción')}
-                  </Button>
+                    {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
+                  </SubBtn>
                 )}
-              </div>
+              </SubActions>
             </>
           ) : (
-            <>
-              <SubBadge $active={false}>{t('subscription.inactive', 'Gratuita')}</SubBadge>
-              <div style={{ marginTop: 12 }}>
-                <div style={{ color: theme.colors.text, fontWeight: 700, fontSize: 18 }}>
-                  {t('subscription.freePlan', 'Plan Gratuito')}
-                </div>
-                <Muted style={{ fontSize: 13, marginTop: 4 }}>
-                  {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
-                </Muted>
-              </div>
-              <div style={{ marginTop: 16 }}>
-                <Button type="button" onClick={handleSubscribe} disabled={portalLoading}
-                  style={{ background: '#FF6B00', border: 'none', color: '#fff' }}>
-                  {portalLoading ? '...' : t('subscription.subscribe', 'Suscribirme ahora')}
-                </Button>
-              </div>
-            </>
+            <FreeCard>
+              <FreeIcon>🆓</FreeIcon>
+              <FreeTitle>{t('subscription.freePlan', 'Plan Gratuito')}</FreeTitle>
+              <FreeDesc>
+                {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
+              </FreeDesc>
+              <FreeBtn 
+                type="button" 
+                onClick={handleSubscribe} 
+                disabled={portalLoading}
+              >
+                {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
+              </FreeBtn>
+            </FreeCard>
           )}
         </SubscriptionCard>
       </FormCard>

@@ -22,7 +22,7 @@ export default function CreateSeasonModal({ open, onClose, onCreate, loading }) 
     <Modal
       open={open}
       onClose={onClose}
-      title={t('season.createNewSeason', 'Crear nueva temporada')}
+      title={t('season.createNewSeason')}
       width={420}
     >
       <Field>

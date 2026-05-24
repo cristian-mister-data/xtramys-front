@@ -2949,7 +2949,7 @@ export default function AddEventModal({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color="#fff" />
+              <Ionicons name="add-circle" size={20} color={theme.colors.text} />
               <Text style={styles.footerSaveBtnText}>{t('schedule.createMatchSheet')}</Text>
             </>
           )}
@@ -3761,7 +3761,7 @@ export default function AddEventModal({
                   {player.foto ? (
                     <Image source={{ uri: player.foto }} style={styles.extraPlayerChipPhoto} />
                   ) : (
-<View style={[styles.extraPlayerChipAvatar, isSelected && styles.extraPlayerChipAvatarSelected]}>
+                    <View style={[styles.extraPlayerChipAvatar, isSelected && styles.extraPlayerChipAvatarSelected]}>
                       <Text style={styles.extraPlayerChipInitials}>
                         {getPlayerInitials(player)}
                       </Text>
@@ -4250,7 +4250,7 @@ export default function AddEventModal({
           <Text style={styles.footerCancelBtnText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.footerSaveBtn, { backgroundColor: theme.colors.success }, loading && styles.footerSaveBtnDisabled]}
+          style={[styles.footerSaveBtn, loading && styles.footerSaveBtnDisabled]}
           onPress={handleCreateSession}
           disabled={loading}
         >
@@ -4258,7 +4258,7 @@ export default function AddEventModal({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color="#fff" />
+              <Ionicons name="add-circle" size={20} color={theme.colors.text} />
               <Text style={styles.footerSaveBtnText}>{t('schedule.createSessionBtn')}</Text>
             </>
           )}
@@ -5194,7 +5194,7 @@ const makeStyles = (theme) => StyleSheet.create({
   footerSaveBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.onPrimary,
+    color: theme.colors.text,
   },
   
   // Info Note

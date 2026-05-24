@@ -1732,7 +1732,7 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.colors.primary,
   },
   saveBtnDisabled: {
     opacity: 0.6,

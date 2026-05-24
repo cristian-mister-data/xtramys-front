@@ -89,7 +89,7 @@ export default function SeasonSelectorModal({
         )}
       </List>
       <Footer>
-        <Button onClick={onCreateNew}>+ {t('season.createNewSeason', 'Crear nueva temporada')}</Button>
+        <Button onClick={onCreateNew}>+ {t('season.createNewSeason')}</Button>
       </Footer>
     </Modal>
   );
