@@ -5,10 +5,15 @@ const isDev = import.meta.env.DEV;
 const rawBackendUrl = import.meta.env.VITE_BACKEND_URL;
 const backendUrl = rawBackendUrl ? rawBackendUrl.replace(/\/+$/, '') : '';
 
-// Si se define VITE_BACKEND_URL, se usa directamente (dev o prod).
-// Si no, en desarrollo se usa el proxy de Vite (/api) para evitar CORS.
+// BACKEND_URL: usado para apiBase (wellness/prewellness) y generación de enlaces.
+// Si VITE_BACKEND_URL está definido, se usa directamente. Si no, en dev se queda vacío
+// (mismo origen / Vite proxy) y en prod usa localhost:3000 como fallback.
 export const BACKEND_URL = backendUrl || (isDev ? '' : 'http://localhost:3000');
-export const API_URL = backendUrl ? `${backendUrl}/api` : (isDev ? '/api' : `${BACKEND_URL}/api`);
+
+// API_URL: usado para el api principal (axios con baseURL).
+// EN DESARROLLO: proxy de Vite (/api) → evita CORS por completo.
+// EN PRODUCCIÓN: se usa VITE_BACKEND_URL si está definido, o el default.
+export const API_URL = isDev ? '/api' : `${BACKEND_URL}/api`;
 
 const CDN_ORIGIN = 'https://cdn.xtramys.com';
 

@@ -119,6 +119,10 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/cdn/, ''),
       },
+      '/prewellness': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
