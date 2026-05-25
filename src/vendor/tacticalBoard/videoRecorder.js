@@ -973,34 +973,31 @@ export default function VideoRecorder({
       }
 
       // 2. Preparar canvas fijo para renderizado independiente de pantalla
-      const aspect = fieldWidth > 0 && fieldHeight > 0 ? fieldWidth / fieldHeight : 16 / 9;
-      const { width: canvasW, height: canvasH } = getVideoDimensions(aspect);
+      const { width: canvasW, height: canvasH } = getVideoDimensions();
       const canvas = document.createElement('canvas');
       canvas.width = canvasW;
       canvas.height = canvasH;
       const ctx = canvas.getContext('2d', { alpha: false });
 
-      // Cargar imagen del campo como fondo
+      // Capturar imagen real del campo desde el DOM a alta resolución
       let fieldBgImage = null;
-      const fieldImgSrc = keyframes[0]?.fieldImageData || fieldImage;
-      if (fieldImgSrc) {
+      if (fieldBaseRef?.current?.capture) {
         try {
-          fieldBgImage = await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            if (typeof fieldImgSrc === 'string' && fieldImgSrc.startsWith('data:')) {
-              img.src = fieldImgSrc;
-            } else if (typeof fieldImgSrc === 'string' && fieldImgSrc.startsWith('blob:')) {
-              img.src = fieldImgSrc;
-            } else if (fieldImgSrc instanceof Blob) {
-              img.src = URL.createObjectURL(fieldImgSrc);
-            } else {
-              reject(new Error('Formato de imagen no soportado'));
-            }
+          const capturePixelRatio = Math.max(2, Math.ceil(1280 / Math.max(1, fieldWidth || 360)));
+          const captureUri = await fieldBaseRef.current.capture({
+            format: 'png',
+            pixelRatio: capturePixelRatio,
           });
+          if (captureUri) {
+            fieldBgImage = await new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = captureUri;
+            });
+          }
         } catch (e) {
-          console.warn('[videoRecorder] No se pudo cargar imagen del campo:', e.message);
+          console.warn('[videoRecorder] No se pudo capturar imagen del campo:', e.message);
         }
       }
 
@@ -2599,7 +2596,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   saveModalActions: {
     flexDirection: 'row',

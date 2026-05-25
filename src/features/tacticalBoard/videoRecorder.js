@@ -25,6 +25,9 @@ export const SPEED_TO_DURATIONS = {
 /** Resolución de captura: 4× = las fotos de jugadores se ven nítidas. */
 const VIDEO_PIXEL_RATIO = 4;
 
+/** Ancho lógico fijo del campo para vídeo consistente en todos los dispositivos. */
+const RECORDING_LOGICAL_WIDTH = 1200;
+
 function applyHighQualityCanvas2D(context) {
   if (!context) return;
   context.imageSmoothingEnabled = true;
@@ -176,11 +179,11 @@ function pickMimeType(preferred) {
  * imágenes de fotos de jugadores) se renderizan a 4× su tamaño visual,
  * aprovechando la resolución completa de la imagen CDN original.
  */
-function renderHiResFrame(stage, ctx, outW, outH) {
+function renderHiResFrame(stage, ctx, outW, outH, effectivePixelRatio) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, outW, outH);
   try {
-    const hiRes = stage.toCanvas({ pixelRatio: VIDEO_PIXEL_RATIO });
+    const hiRes = stage.toCanvas({ pixelRatio: effectivePixelRatio });
     ctx.drawImage(hiRes, 0, 0);
   } catch {
     // Fallback: captura directa de los canvas de las capas
@@ -211,8 +214,12 @@ export async function recordStageAnimation({
 
   const sw = Math.max(1, stage.width());
   const sh = Math.max(1, stage.height());
-  const outW = sw * VIDEO_PIXEL_RATIO;
-  const outH = sh * VIDEO_PIXEL_RATIO;
+
+  // Pixel ratio dinámico para que el vídeo siempre tenga el mismo ancho lógico
+  // independientemente del tamaño de pantalla del dispositivo.
+  const effectivePixelRatio = VIDEO_PIXEL_RATIO * RECORDING_LOGICAL_WIDTH / sw;
+  const outW = RECORDING_LOGICAL_WIDTH * VIDEO_PIXEL_RATIO;
+  const outH = Math.round(outW * sh / sw);
 
   const streamCanvas = document.createElement('canvas');
   streamCanvas.width = outW;
@@ -221,7 +228,7 @@ export async function recordStageAnimation({
   applyHighQualityCanvas2D(ctx);
 
   // Render initial frame
-  renderHiResFrame(stage, ctx, outW, outH);
+  renderHiResFrame(stage, ctx, outW, outH, effectivePixelRatio);
 
   const mt = pickMimeType(mimeType);
   const stream = streamCanvas.captureStream(fps);
@@ -266,7 +273,7 @@ export async function recordStageAnimation({
 
       requestAnimationFrame(() => {
         try {
-          renderHiResFrame(stage, ctx, outW, outH);
+          renderHiResFrame(stage, ctx, outW, outH, effectivePixelRatio);
         } catch { /* ignore */ }
 
         if (onProgress) onProgress(Math.min(1, elapsed / (duration * 1000)));

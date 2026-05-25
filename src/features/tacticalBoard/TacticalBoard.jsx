@@ -37,6 +37,8 @@ import {
 } from './icons';
 import { Muted } from '@/ui/primitives';
 
+const LOGICAL_WIDTH = 1200;
+
 const ICON_TYPES_SET = new Set([
   'player', 'team-players', 'coaching-staff', 'ball',
   ...MATERIAL_TYPES_SET,
@@ -137,10 +139,20 @@ export default function TacticalBoard({
 }) {
   const wrapRef = useRef(null);
   const stageRef = useRef(null);
+  const displayScaleRef = useRef(1);
 
-  const [size, setSize] = useState({ w: 1200, h: 1200 * getAspectForView('entire') });
   const [lineType, setLineType] = useState(initialLineType);
   const [viewMode, setViewMode] = useState(initialViewMode);
+
+  const aspect = getAspectForView(viewMode);
+  const logicalSize = useMemo(() => ({ w: LOGICAL_WIDTH, h: LOGICAL_WIDTH * aspect }), [aspect]);
+
+  const [containerWidth, setContainerWidth] = useState(LOGICAL_WIDTH);
+  const displayScale = containerWidth > 0 ? containerWidth / LOGICAL_WIDTH : 1;
+  const displaySize = useMemo(() => ({
+    w: containerWidth,
+    h: containerWidth * aspect,
+  }), [containerWidth, aspect]);
 
   const [elements, setElements] = useState(() =>
     Array.isArray(initialElements) && initialElements.length > 0
@@ -190,18 +202,20 @@ export default function TacticalBoard({
   const [keyframes, setKeyframes] = useState([]);
   const [draggingOutside, setDraggingOutside] = useState(false);
 
-  // --- stage sizing — depende del viewMode (aspect varía) ---
+  // --- stage sizing — responsive container + fixed logical coords ---
   useEffect(() => {
     const update = () => {
-      const w = wrapRef.current?.clientWidth || 1200;
-      const aspect = getAspectForView(viewMode);
-      const h = w * aspect;
-      setSize({ w, h });
+      const w = wrapRef.current?.clientWidth || LOGICAL_WIDTH;
+      setContainerWidth(w);
     };
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, [viewMode]);
+
+  useEffect(() => {
+    displayScaleRef.current = displayScale;
+  }, [displayScale]);
 
   // --- history helpers ---
   const pushHistory = useCallback((prev) => {
@@ -279,15 +293,16 @@ export default function TacticalBoard({
     return () => window.removeEventListener('keydown', onKey);
   }, [applyChange, undo, redo, selectedId]);
 
-  // --- coord helpers ---
-  const r2p = useCallback((xR, yR) => ratioToDisplay(xR, yR, viewMode, size.w, size.h), [viewMode, size.w, size.h]);
-  const p2r = useCallback((px, py) => displayToRatio(px, py, viewMode, size.w, size.h), [viewMode, size.w, size.h]);
+  // --- coord helpers (logical coords, 0..LOGICAL_WIDTH) ---
+  const r2p = useCallback((xR, yR) => ratioToDisplay(xR, yR, viewMode, logicalSize.w, logicalSize.h), [viewMode, logicalSize.w, logicalSize.h]);
+  const p2r = useCallback((px, py) => displayToRatio(px, py, viewMode, logicalSize.w, logicalSize.h), [viewMode, logicalSize.w, logicalSize.h]);
 
   const stageToRatio = useCallback(
     (stage) => {
       const pos = stage.getPointerPosition();
       if (!pos) return null;
-      return p2r(pos.x, pos.y);
+      const s = displayScaleRef.current || 1;
+      return p2r(pos.x / s, pos.y / s);
     },
     [p2r],
   );
@@ -396,7 +411,7 @@ export default function TacticalBoard({
   const onElementDragMove = (e) => {
     const node = getDraggableGroup(e.target);
     if (!node) return;
-    const outside = isDraggedNodeOutside(node, size.w, size.h);
+    const outside = isDraggedNodeOutside(node, logicalSize.w, logicalSize.h);
     setDraggingOutside(outside);
     if (outside) {
       node.opacity(0.4); node.scaleX(0.75); node.scaleY(0.75);
@@ -411,7 +426,7 @@ export default function TacticalBoard({
   const onElementDragEnd = (id) => (e) => {
     const node = getDraggableGroup(e.target);
     if (!node) return;
-    const outside = isDraggedNodeOutside(node, size.w, size.h);
+    const outside = isDraggedNodeOutside(node, logicalSize.w, logicalSize.h);
     const r = p2r(node.x(), node.y());
     node.opacity(1); node.scaleX(1); node.scaleY(1);
     setDeleteIndicatorVisible(node, false);
@@ -498,7 +513,7 @@ export default function TacticalBoard({
   const canUndo = historyRef.current.past.length > 0;
   const canRedo = historyRef.current.future.length > 0;
 
-  const refScale = useMemo(() => Math.max(size.w, size.h) || size.w, [size]);
+  const refScale = LOGICAL_WIDTH;
 
   // --- renderers ---
   const elementsById = useMemo(() => {
@@ -571,7 +586,7 @@ export default function TacticalBoard({
         <IconRenderer
           key={el.id}
           el={el}
-          scale={size.w}
+          scale={LOGICAL_WIDTH}
           x={pt.x}
           y={pt.y}
           selected={selected}
@@ -701,26 +716,28 @@ export default function TacticalBoard({
       </StatusLine>
 
       <StageWrap ref={wrapRef}>
-        <StageInner style={{ height: size.h }}>
+        <StageInner style={{ height: displaySize.h }}>
           <FieldLayer>
             <FieldSVGRenderer
               lineType={lineType}
               viewMode={viewMode}
-              width={size.w}
-              height={size.h}
+              width={displaySize.w}
+              height={displaySize.h}
             />
           </FieldLayer>
           <KonvaLayer>
             <Stage
               ref={stageRef}
-              width={size.w}
-              height={size.h}
+              width={displaySize.w}
+              height={displaySize.h}
               onMouseDown={handleStageMouseDown}
               onTouchStart={handleStageMouseDown}
             >
               <Layer>
-                {elements.map(renderElement)}
-                {renderDrawingPreview()}
+                <Group scaleX={displayScale} scaleY={displayScale}>
+                  {elements.map(renderElement)}
+                  {renderDrawingPreview()}
+                </Group>
               </Layer>
             </Stage>
           </KonvaLayer>
@@ -778,8 +795,8 @@ export default function TacticalBoard({
               <div
                 style={{
                   position: 'absolute',
-                  left: bp.x - 50,
-                  top: bp.y + 22,
+                  left: bp.x * displayScale - 50 * displayScale,
+                  top: bp.y * displayScale + 22 * displayScale,
                   display: 'flex',
                   gap: 2,
                   background: 'rgba(15,23,42,0.92)',
@@ -788,6 +805,8 @@ export default function TacticalBoard({
                   zIndex: 20,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                   backdropFilter: 'blur(6px)',
+                  transform: `scale(${displayScale})`,
+                  transformOrigin: 'top left',
                 }}
               >
                 <button
@@ -860,9 +879,9 @@ export default function TacticalBoard({
                 }}
                 style={{
                   position: 'absolute',
-                  left: pt.x,
-                  top: pt.y,
-                  fontSize: fs,
+                  left: pt.x * displayScale,
+                  top: pt.y * displayScale,
+                  fontSize: fs * displayScale,
                   fontWeight: 'bold',
                   color: el.color || '#000',
                   background: 'rgba(255,255,255,0.95)',
@@ -871,7 +890,7 @@ export default function TacticalBoard({
                   padding: '2px 6px',
                   outline: 'none',
                   zIndex: 10,
-                  minWidth: 80,
+                  minWidth: 80 * displayScale,
                 }}
               />
             );
@@ -899,16 +918,6 @@ export default function TacticalBoard({
         lineType={lineType}
         viewMode={viewMode}
         onSelect={onFieldSelect}
-      />
-
-      <VideoRecorderPanel
-        open={recorderOpen}
-        onClose={() => setRecorderOpen(false)}
-        stageRef={stageRef}
-        elements={elements}
-        setFrame={setFrameElements}
-        keyframes={keyframes}
-        setKeyframes={setKeyframes}
       />
     </Wrap>
   );

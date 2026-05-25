@@ -1,10 +1,11 @@
 const VIDEO_WIDTH = 1280;
 const FIELD_BG = '#4a8c3f';
+const FIELD_AR = 105 / 68;
 
 function ensureEven(n) { return n % 2 === 0 ? n : n + 1; }
 
-export function getVideoDimensions(aspectRatio) {
-  return { width: ensureEven(VIDEO_WIDTH), height: ensureEven(Math.round(VIDEO_WIDTH / aspectRatio)) };
+export function getVideoDimensions() {
+  return { width: ensureEven(VIDEO_WIDTH), height: ensureEven(Math.round(VIDEO_WIDTH / FIELD_AR)) };
 }
 
 function getScale(cw, ch) { return Math.min(cw, ch) / 500; }
@@ -343,16 +344,15 @@ function drawGoalLarge(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
   const size = (elem.baseSize || 50) * scale;
   const s = size / 120;
-  const ox = p.x, oy = p.y;
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
   ctx.beginPath();
-  ctx.moveTo(ox - 55 * s, oy + 30 * s);
-  ctx.lineTo(ox - 55 * s, oy - 25 * s);
-  ctx.lineTo(ox + 55 * s, oy - 25 * s);
-  ctx.lineTo(ox + 55 * s, oy + 30 * s);
+  ctx.moveTo(p.x - 55 * s, p.y + 30 * s);
+  ctx.lineTo(p.x - 55 * s, p.y - 25 * s);
+  ctx.lineTo(p.x + 55 * s, p.y - 25 * s);
+  ctx.lineTo(p.x + 55 * s, p.y + 30 * s);
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 4 * s;
   ctx.stroke();
@@ -360,16 +360,16 @@ function drawGoalLarge(ctx, cw, ch, elem, scale) {
   ctx.strokeStyle = 'rgba(204,204,204,0.6)';
   ctx.lineWidth = 1;
   for (let i = 0; i < 7; i++) {
-    const x = ox + (-45 + i * 15) * s;
+    const x = p.x + (-45 + i * 15) * s;
     ctx.beginPath();
-    ctx.moveTo(x, oy - 25 * s);
-    ctx.lineTo(x, oy + 30 * s);
+    ctx.moveTo(x, p.y - 25 * s);
+    ctx.lineTo(x, p.y + 30 * s);
     ctx.stroke();
   }
   for (const yOff of [-10, 5, 20]) {
     ctx.beginPath();
-    ctx.moveTo(ox - 55 * s, oy + yOff * s);
-    ctx.lineTo(ox + 55 * s, oy + yOff * s);
+    ctx.moveTo(p.x - 55 * s, p.y + yOff * s);
+    ctx.lineTo(p.x + 55 * s, p.y + yOff * s);
     ctx.stroke();
   }
 
@@ -571,16 +571,16 @@ function drawWeights(ctx, cw, ch, elem, scale) {
 }
 
 function drawStraightLine(ctx, cw, ch, elem, scale) {
-  if (!elem.pointsRatio || elem.pointsRatio.length < 2) {
-    if (elem.x1 !== undefined) {
-      const p1 = { x: elem.x1 / (elem.sourceWidth || cw) * cw, y: elem.y1 / (elem.sourceHeight || ch) * ch };
-      const p2 = { x: elem.x2 / (elem.sourceWidth || cw) * cw, y: elem.y2 / (elem.sourceHeight || ch) * ch };
-      drawLineSegment(ctx, p1, p2, elem, scale);
-    }
+  let p1, p2;
+  if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
+    p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
+    p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+  } else if (elem.x1 !== undefined && elem.x2 !== undefined) {
+    p1 = { x: elem.x1, y: elem.y1 };
+    p2 = { x: elem.x2, y: elem.y2 };
+  } else {
     return;
   }
-  const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
-  const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
   drawLineSegment(ctx, p1, p2, elem, scale);
 
   if (elem.type === 'straight-arrow') {
@@ -801,12 +801,12 @@ const LINE_DRAWERS = {
   'custom-shape': drawCustomShape,
 };
 
-export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, options = {}) {
-  ctx.fillStyle = FIELD_BG;
-  ctx.fillRect(0, 0, cw, ch);
-
-  if (fieldImage) {
-    ctx.drawImage(fieldImage, 0, 0, cw, ch);
+export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldBgImage) {
+  if (fieldBgImage) {
+    ctx.drawImage(fieldBgImage, 0, 0, cw, ch);
+  } else {
+    ctx.fillStyle = FIELD_BG;
+    ctx.fillRect(0, 0, cw, ch);
   }
 
   const scale = getScale(cw, ch);
@@ -817,7 +817,7 @@ export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImag
       LINE_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
     } else if (POSITIONED_DRAWERS[elem.type]) {
       POSITIONED_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
-    } else if (elem.type === 'free-text' || elem.text) {
+    } else if (elem.type === 'free-text' || elem.type === 'text' || elem.text) {
       drawFreeText(ctx, cw, ch, elem, scale);
     }
   }

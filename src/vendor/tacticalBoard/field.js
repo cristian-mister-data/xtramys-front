@@ -1032,7 +1032,7 @@ function OptionsMenu({
     flexShrink: 0,
     // Optimizaci�n multiplataforma
     includeFontPadding: false,
-    textAlignVertical: 'center',
+    verticalAlign: 'center',
   };
 
   const iconContainerStyle = {
@@ -1473,7 +1473,6 @@ const FreeTextTool = React.memo(({
             }}
           >
             <Text
-              selectable={false}
               style={{
                 fontSize: textObj.size || 18,
                 color: textObj.color || "#000",
@@ -1721,7 +1720,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                           fontSize: isMobile ? 14 : parseInt(size) || 18,
                           color: color,
                           minHeight: 60,
-                          textAlignVertical: 'top',
+                          verticalAlign: 'top',
                         }
                       ]}
                     />
@@ -4931,7 +4930,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
               lineHeight: fontSize,
               textAlign: 'center',
               includeFontPadding: false,
-              textAlignVertical: 'center',
+              verticalAlign: 'center',
               ...(Platform.OS === 'web' ? {
                 display: 'flex',
                 alignItems: 'center',
@@ -4968,7 +4967,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
             lineHeight: staffFontSize,
             textAlign: 'center',
             includeFontPadding: false,
-            textAlignVertical: 'center',
+            verticalAlign: 'center',
             ...(Platform.OS === 'web' ? {
               display: 'flex',
               alignItems: 'center',
@@ -8713,7 +8712,9 @@ export default function Field(props = {}) {
       if (!isMounted) return;
       try {
         if (isWebPlatform && typeof window !== 'undefined' && window.screen?.orientation?.lock) {
-          await window.screen.orientation.lock('landscape');
+          try {
+            await window.screen.orientation.lock('landscape');
+          } catch { /* screen.orientation.lock() not supported on this device/browser */ }
         }
 
         if (ScreenOrientation?.lockAsync) {
@@ -8722,7 +8723,7 @@ export default function Field(props = {}) {
           );
         }
       } catch (error) {
-        console.warn('Error al bloquear orientación:', error);
+        // Silenced: orientation lock errors are expected on unsupported devices
       }
     };
 
