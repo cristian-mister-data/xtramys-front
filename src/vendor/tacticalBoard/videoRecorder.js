@@ -22,6 +22,7 @@ import RNFS from 'react-native-fs';
 import { captureRef } from 'react-native-view-shot';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { initRecordingSession, generateVideo as encodeVideo, warmUpFFmpeg, createStreamingVideoEncoder } from '@/utils/videoUtils';
+import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
 import { SPEED_TO_FPS } from '@/constants/video';
 import { 
   saveVideo as apiSaveVideo,
@@ -45,11 +46,6 @@ const VIDEO_CAPTURE_EXTENSION = 'jpg';
 const VIDEO_CAPTURE_QUALITY = 0.97;
 const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
 const STREAMING_ENCODE_BACKLOG = 6;
-
-function getVideoCapturePixelRatio() {
-  const ratio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  return Math.max(1, Math.min(ratio, VIDEO_CAPTURE_MAX_PIXEL_RATIO));
-}
 
 // ============================================================
 // COMPONENTE AISLADO DE PREVIEW — React.memo + su propio player
@@ -949,7 +945,6 @@ export default function VideoRecorder({
       return;
     }
 
-    let savedZoom = null;
     let streamingEncoder = null;
     let streamingChain = Promise.resolve();
     let streamingBacklog = 0;
@@ -964,8 +959,8 @@ export default function VideoRecorder({
       setVideoThumbnail(null);
 
       const fps = SPEED_TO_FPS[videoSpeed] || 30;
-      const moveDuration = 0.9;  // 90% movimiento a x1
-      const holdDuration = 0.1;  // 10% pausa en destino a x1
+      const moveDuration = 0.9;
+      const holdDuration = 0.1;
       const extraDurationEnd = 0.5;
 
       // 1. Interpolar todos los frames
@@ -977,13 +972,37 @@ export default function VideoRecorder({
         throw new Error('No se pudieron generar frames');
       }
 
-      // 2. Deseleccionar elementos y resetear zoom para captura limpia
-      videoFrameControl.current.deselectAll();
-      // resetZoom ahora devuelve Promise que se resuelve DESPUÉS del commit de React,
-      // garantizando que la transformación de zoom ya se eliminó de la vista nativa.
-      savedZoom = await videoFrameControl.current.resetZoom?.() ?? null;
-      // 2 rAFs extra para que el layout nativo se actualice tras el commit
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // 2. Preparar canvas fijo para renderizado independiente de pantalla
+      const aspect = fieldWidth > 0 && fieldHeight > 0 ? fieldWidth / fieldHeight : 16 / 9;
+      const { width: canvasW, height: canvasH } = getVideoDimensions(aspect);
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+      const ctx = canvas.getContext('2d', { alpha: false });
+
+      // Cargar imagen del campo como fondo
+      let fieldBgImage = null;
+      const fieldImgSrc = keyframes[0]?.fieldImageData || fieldImage;
+      if (fieldImgSrc) {
+        try {
+          fieldBgImage = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            if (typeof fieldImgSrc === 'string' && fieldImgSrc.startsWith('data:')) {
+              img.src = fieldImgSrc;
+            } else if (typeof fieldImgSrc === 'string' && fieldImgSrc.startsWith('blob:')) {
+              img.src = fieldImgSrc;
+            } else if (fieldImgSrc instanceof Blob) {
+              img.src = URL.createObjectURL(fieldImgSrc);
+            } else {
+              reject(new Error('Formato de imagen no soportado'));
+            }
+          });
+        } catch (e) {
+          console.warn('[videoRecorder] No se pudo cargar imagen del campo:', e.message);
+        }
+      }
 
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
@@ -1039,36 +1058,26 @@ export default function VideoRecorder({
         streamingEncoder = null;
       }
 
-      // Primer render estable antes de empezar a guardar frames.
-      await videoFrameControl.current.setFrame(allFrames[0].elements, allFrames[0].connectors);
       setGenerationPhase('generationCapturing');
 
-      // 4. Capturar cada frame en JPEG: suficiente para H.264 y bastante mas rapido que PNG.
+      // 4. Renderizar cada frame en canvas y capturar como blob
       for (let i = 0; i < totalFrames; i++) {
         if (generationCancelledRef.current) {
           streamingEncoder?.abort?.();
           RNFS.unlink(framesDir).catch(() => {});
           setGenerationProgress(0);
-          // Restaurar zoom si fue guardado
-          if (savedZoom && videoFrameControl.current.restoreZoom) {
-            videoFrameControl.current.restoreZoom(savedZoom);
-          }
           return;
         }
 
         const frame = allFrames[i];
 
-        // setFrame devuelve Promise que resuelve DESPUÉS del commit de React
-        await videoFrameControl.current.setFrame(frame.elements, frame.connectors);
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage);
 
-        // Captura web optimizada para video; H.264 ya es lossy, asi evitamos PNG por frame.
-        const frameCapture = await captureRef(fieldRef.current, {
-          format: VIDEO_CAPTURE_FORMAT,
-          quality: VIDEO_CAPTURE_QUALITY,
-          result: 'blob',
-          pixelRatio: getVideoCapturePixelRatio(),
-          cacheBust: false,
-          backgroundColor: '#ffffff',
+        const frameCapture = await new Promise((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob failed'));
+          }, `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`, VIDEO_CAPTURE_QUALITY);
         });
 
         if (i === 0) {
@@ -1094,13 +1103,7 @@ export default function VideoRecorder({
         updateLinearProgress();
       }
 
-      // 5. Restaurar zoom antes de codificar
-      if (savedZoom && videoFrameControl.current.restoreZoom) {
-        videoFrameControl.current.restoreZoom(savedZoom);
-      }
-
-      // 6. Finalizar/codificar el vídeo. El progreso es lineal por trabajo total:
-      // frames capturados + frames codificados, sin reparto fijo tipo 80/20.
+      // 5. Finalizar/codificar el vídeo
       await new Promise((resolve) => requestAnimationFrame(resolve));
       setGenerationPhase('generationEncoding');
       let outputPath;
@@ -1169,10 +1172,6 @@ export default function VideoRecorder({
       }
     } catch (error) {
       streamingEncoder?.abort?.();
-      // Restaurar zoom en caso de error
-      if (savedZoom && videoFrameControl?.current?.restoreZoom) {
-        videoFrameControl.current.restoreZoom(savedZoom);
-      }
       if (generationCancelledRef.current) return;
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');

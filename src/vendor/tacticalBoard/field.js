@@ -1219,14 +1219,13 @@ const FreeTextTool = React.memo(({
   viewMode,
   zoomLevel = 1,
   setDraggingOutside = null,
-  isVideoGenerating = false,
 }) => {
   // Detectar si es m�vil
   const { width, height } = Dimensions.get('window');
   const isMobile = Math.min(width, height) < 768;
-  // Factor de escala aumentado para m�viles (desactivado durante generación de video)
+  // Factor de escala aumentado para m�viles
   const baseScale = Math.min(imageWidth, imageHeight) / 500;
-  const scale = (isMobile && !isVideoGenerating) ? baseScale * 1.35 : baseScale;
+  const scale = isMobile ? baseScale * 1.35 : baseScale;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
 
@@ -8924,8 +8923,7 @@ export default function Field(props = {}) {
   // Estados para el grabador de video
   const [videoRecorderVisible, setVideoRecorderVisible] = useState(false);
   const [fieldImageForVideo, setFieldImageForVideo] = useState(null);
-  const [videoKeyframes, setVideoKeyframes] = useState([]); // Estado para persistir keyframes
-  const [isVideoGenerating, setIsVideoGenerating] = useState(false);
+  const [videoKeyframes, setVideoKeyframes] = useState([]);
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -13268,8 +13266,8 @@ const handleCancelar = useCallback(async () => {
   // OPTIMIZACIÓN: Escala memoizada
   const renderScale = useMemo(() => {
     const baseScale = Math.min(imageWidth, imageHeight) / 500;
-    return (isMobile && !isVideoGenerating) ? baseScale * 1.35 : baseScale;
-  }, [imageWidth, imageHeight, isMobile, isVideoGenerating]);
+    return isMobile ? baseScale * 1.35 : baseScale;
+  }, [imageWidth, imageHeight, isMobile]);
 
   // OPTIMIZACIÓN: Verificar si hay alg�n modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
@@ -16215,7 +16213,6 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
                               setDraggingOutside={setDraggingOutside}
-                              isVideoGenerating={isVideoGenerating}
                             />
                           );
                         })}
@@ -17059,7 +17056,6 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             presetFolderId={presetFolderId}
             isGlobalExercise={isGlobalExercise}
             onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
-            onGeneratingChange={setIsVideoGenerating}
           />
         )}
 

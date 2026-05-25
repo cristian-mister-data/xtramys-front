@@ -1,0 +1,830 @@
+const VIDEO_WIDTH = 1280;
+const FIELD_BG = '#4a8c3f';
+
+function ensureEven(n) { return n % 2 === 0 ? n : n + 1; }
+
+export function getVideoDimensions(aspectRatio) {
+  return { width: ensureEven(VIDEO_WIDTH), height: ensureEven(Math.round(VIDEO_WIDTH / aspectRatio)) };
+}
+
+function getScale(cw, ch) { return Math.min(cw, ch) / 500; }
+
+function pos(elem, cw, ch) {
+  if (elem.xRatio !== undefined && elem.yRatio !== undefined) {
+    return { x: elem.xRatio * cw, y: elem.yRatio * ch };
+  }
+  return { x: elem.x || 0, y: elem.y || 0 };
+}
+
+function applyRotation(ctx, x, y, rotation) {
+  if (rotation) {
+    ctx.translate(x, y);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.translate(-x, -y);
+  }
+}
+
+function setLineDash(ctx, elem, scale) {
+  if (elem.lineType === 'dotted') {
+    const ds = (elem.dotSize || 2) * scale;
+    const sp = (elem.dotSpacing || 4) * scale;
+    ctx.setLineDash([ds, sp]);
+  } else {
+    ctx.setLineDash([]);
+  }
+}
+
+function drawPlayer(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const baseSize = elem.baseSize || 24;
+  const size = baseSize * scale;
+  const r = size / 2;
+  const color = elem.color || '#2176ff';
+  const numberColor = elem.numberColor || '#ffffff';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  if (elem.isGoalkeeper && elem.differentiateGoalkeeper) {
+    const sc = elem.goalkeeperStripeColor || '#ffffff';
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = sc;
+    ctx.lineWidth = 2;
+    for (const off of [0.1, 0.35, 0.6, 0.85]) {
+      const y = p.y - r + size * off;
+      ctx.beginPath();
+      ctx.moveTo(p.x - r, y);
+      ctx.lineTo(p.x + r, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
+  if (displayText !== undefined && elem.playersWithNumber !== false) {
+    const isLabel = elem.displayLabel !== undefined;
+    const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
+    ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px sans-serif`;
+    ctx.fillStyle = numberColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(displayText), p.x, p.y);
+  }
+
+  ctx.restore();
+
+  if (elem.playerData && (elem.playerData.nombre || elem.playerData.name)) {
+    const name = elem.playerData.nombre || elem.playerData.name;
+    const fs = size * 0.3;
+    ctx.font = `${fs}px sans-serif`;
+    const tw = ctx.measureText(name).width;
+    const pad = 2;
+    const ny = p.y + r + fs / 2 + 3;
+    const bg = elem.textBackgroundColor || '#fff';
+
+    ctx.fillStyle = bg === 'transparent' ? 'rgba(255,255,255,0)' : bg;
+    if (bg !== 'transparent') {
+      ctx.fillRect(p.x - tw / 2 - pad, ny - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(p.x - tw / 2 - pad, ny - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
+    }
+    ctx.fillStyle = elem.textColor || '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, p.x, ny);
+  }
+}
+
+function drawStaff(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const baseSize = elem.baseSize || 24;
+  const size = baseSize * scale;
+  const r = size / 2;
+  const color = elem.color || '#333';
+  const label = elem.displayLabel || 'CT';
+  const fs = String(label).length > 2 ? size * 0.4 : size * 0.5;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.font = `bold ${fs}px sans-serif`;
+  ctx.fillStyle = elem.numberColor || '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, p.x, p.y);
+
+  ctx.restore();
+}
+
+function drawBall(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const baseSize = elem.baseSize || 18;
+  const size = baseSize * scale;
+  const r = size / 2;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  const inner = r * 0.65;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, inner, 0, Math.PI * 2);
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBallShadow(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const baseSize = (elem.baseSize || elem.size || 18) * scale;
+  const shadowScale = elem.shadowScale ?? 0.8;
+  const opacity = elem.opacity ?? 0.35;
+  const w = baseSize * 0.92 * shadowScale;
+  const h = baseSize * 0.34 * shadowScale;
+
+  ctx.save();
+  ctx.translate(p.x + w * 0.1, p.y + h * 0.04);
+  ctx.rotate(-8 * Math.PI / 180);
+
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = opacity * 0.28;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.72 / 2, h * 0.7 / 2, 0, 0, Math.PI * 2);
+  ctx.globalAlpha = opacity * 0.55;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.42 / 2, h * 0.48 / 2, 0, 0, Math.PI * 2);
+  ctx.globalAlpha = opacity;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawCone(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const baseSize = elem.baseSize || 24;
+  const size = baseSize * scale;
+  const color = elem.color || '#FF6B00';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  const topY = p.y - size * 0.42;
+  const botY = p.y + size * 0.42;
+  const halfW = size * 0.45;
+  ctx.beginPath();
+  ctx.moveTo(p.x, topY);
+  ctx.lineTo(p.x + halfW, botY);
+  ctx.lineTo(p.x - halfW, botY);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#222';
+  const barH = size * 0.1;
+  const barW = size * 0.55;
+  ctx.beginPath();
+  ctx.roundRect(p.x - barW / 2, botY - barH / 2, barW, barH, barH / 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawConePro(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 24) * scale;
+  const color = elem.color || '#FF6B00';
+  const s = size / 50;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 15 * s, p.y + 5 * s);
+  ctx.lineTo(p.x, p.y - 17 * s);
+  ctx.lineTo(p.x + 15 * s, p.y + 5 * s);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 10 * s, p.y + 2 * s);
+  ctx.lineTo(p.x, p.y - 10 * s);
+  ctx.lineTo(p.x + 10 * s, p.y + 2 * s);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2 * s;
+  ctx.globalAlpha = 0.7;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(p.x - 17 * s, p.y + 3 * s, 34 * s, 5 * s, s);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawConeFlat(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 18) * scale;
+  const color = elem.color || '#FF6B00';
+  const s = size / 40;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 18 * s, p.y);
+  ctx.quadraticCurveTo(p.x, p.y + 8 * s, p.x + 18 * s, p.y);
+  ctx.quadraticCurveTo(p.x, p.y - 8 * s, p.x - 18 * s, p.y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 12 * s, p.y - 2 * s);
+  ctx.quadraticCurveTo(p.x, p.y - 6 * s, p.x + 12 * s, p.y - 2 * s);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 2 * s;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRing(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 24) * scale;
+  const color = elem.color || '#FFD700';
+  const sw = Math.max(2, size * 0.12);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = sw;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, size * 0.325, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawGoal(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 50) * scale;
+  const s = size / 100;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 40 * s, p.y - 20 * s);
+  ctx.lineTo(p.x - 40 * s, p.y + 20 * s);
+  ctx.moveTo(p.x - 40 * s, p.y - 20 * s);
+  ctx.lineTo(p.x + 40 * s, p.y - 20 * s);
+  ctx.moveTo(p.x + 40 * s, p.y - 20 * s);
+  ctx.lineTo(p.x + 40 * s, p.y + 20 * s);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3 * s;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawGoalLarge(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 50) * scale;
+  const s = size / 120;
+  const ox = p.x, oy = p.y;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(ox - 55 * s, oy + 30 * s);
+  ctx.lineTo(ox - 55 * s, oy - 25 * s);
+  ctx.lineTo(ox + 55 * s, oy - 25 * s);
+  ctx.lineTo(ox + 55 * s, oy + 30 * s);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 4 * s;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(204,204,204,0.6)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 7; i++) {
+    const x = ox + (-45 + i * 15) * s;
+    ctx.beginPath();
+    ctx.moveTo(x, oy - 25 * s);
+    ctx.lineTo(x, oy + 30 * s);
+    ctx.stroke();
+  }
+  for (const yOff of [-10, 5, 20]) {
+    ctx.beginPath();
+    ctx.moveTo(ox - 55 * s, oy + yOff * s);
+    ctx.lineTo(ox + 55 * s, oy + yOff * s);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawGoalSmall(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 30) * scale;
+  const s = size / 80;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 35 * s, p.y + 20 * s);
+  ctx.lineTo(p.x - 35 * s, p.y - 12 * s);
+  ctx.lineTo(p.x + 35 * s, p.y - 12 * s);
+  ctx.lineTo(p.x + 35 * s, p.y + 20 * s);
+  ctx.strokeStyle = '#FF6B00';
+  ctx.lineWidth = 3 * s;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(204,204,204,0.5)';
+  ctx.lineWidth = 1;
+  for (const xOff of [-15, 5, 25]) {
+    ctx.beginPath();
+    ctx.moveTo(p.x + xOff * s, p.y - 12 * s);
+    ctx.lineTo(p.x + xOff * s, p.y + 20 * s);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(p.x - 35 * s, p.y + 5 * s);
+  ctx.lineTo(p.x + 35 * s, p.y + 5 * s);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBarrier(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 24) * scale;
+  const s = size / 100;
+  const color = elem.color || '#ffffff';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 45 * s, p.y + 15 * s);
+  ctx.lineTo(p.x - 45 * s, p.y - 12 * s);
+  ctx.lineTo(p.x + 45 * s, p.y - 12 * s);
+  ctx.lineTo(p.x + 45 * s, p.y + 15 * s);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3 * s;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawDummy(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 40) * scale;
+  const s = size / 80;
+  const color = elem.color || '#2196F3';
+  const dark = color === '#2196F3' ? '#1565C0' : color;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y + 30 * s, 8 * s, 4 * s, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#333';
+  ctx.fill();
+
+  ctx.fillStyle = '#444';
+  ctx.fillRect(p.x - 2 * s, p.y - 15 * s, 4 * s, 45 * s);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 12 * s, p.y - 15 * s);
+  ctx.quadraticCurveTo(p.x, p.y - 20 * s, p.x + 12 * s, p.y - 15 * s);
+  ctx.lineTo(p.x + 10 * s, p.y + 10 * s);
+  ctx.quadraticCurveTo(p.x, p.y + 12 * s, p.x - 10 * s, p.y + 10 * s);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 15 * s, p.y - 12 * s);
+  ctx.quadraticCurveTo(p.x, p.y - 18 * s, p.x + 15 * s, p.y - 12 * s);
+  ctx.strokeStyle = dark;
+  ctx.lineWidth = 3 * s;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y - 28 * s, 8 * s, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFE0B2';
+  ctx.fill();
+  ctx.strokeStyle = '#FFCC80';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawPole(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 24) * scale;
+  const s = size / 80;
+  const color = elem.color || '#FFD700';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.fillStyle = color;
+  ctx.fillRect(p.x - 2 * s, p.y - 35 * s, 4 * s, 55 * s);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 8 * s, p.y + 20 * s);
+  ctx.lineTo(p.x, p.y + 5 * s);
+  ctx.lineTo(p.x + 8 * s, p.y + 20 * s);
+  ctx.closePath();
+  ctx.fillStyle = '#FF6B00';
+  ctx.fill();
+  ctx.strokeStyle = '#E65100';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#E65100';
+  ctx.beginPath();
+  ctx.roundRect(p.x - 10 * s, p.y + 18 * s, 20 * s, 4 * s, s);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawLadder(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 24) * scale;
+  const color = elem.color || '#FFD700';
+  const hw = size / 2;
+  const hh = size * 0.2;
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(p.x - hw, p.y - hh);
+  ctx.lineTo(p.x + hw, p.y - hh);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(p.x - hw, p.y + hh);
+  ctx.lineTo(p.x + hw, p.y + hh);
+  ctx.stroke();
+
+  for (const f of [0.2, 0.4, 0.6, 0.8]) {
+    ctx.beginPath();
+    ctx.moveTo(p.x - hw + size * f, p.y - hh);
+    ctx.lineTo(p.x - hw + size * f, p.y + hh);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawWeights(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const size = (elem.baseSize || 40) * scale;
+  const s = size / 50;
+  const color = elem.color || '#333';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.fillStyle = '#666';
+  ctx.beginPath();
+  ctx.roundRect(p.x - 15 * s, p.y - 3 * s, 30 * s, 6 * s, s);
+  ctx.fill();
+
+  for (const [x, w, h, yOff] of [[-21, 6, 26, 0], [-17, 4, 18, -4], [13, 4, 18, -4], [17, 6, 26, 0]]) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(p.x + x * s, p.y + (yOff - h / 2) * s, w * s, h * s, s);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(p.x - 19 * s, p.y - 11 * s, 2 * s, 8 * s);
+  ctx.fillRect(p.x + 19 * s, p.y - 11 * s, 2 * s, 8 * s);
+
+  ctx.restore();
+}
+
+function drawStraightLine(ctx, cw, ch, elem, scale) {
+  if (!elem.pointsRatio || elem.pointsRatio.length < 2) {
+    if (elem.x1 !== undefined) {
+      const p1 = { x: elem.x1 / (elem.sourceWidth || cw) * cw, y: elem.y1 / (elem.sourceHeight || ch) * ch };
+      const p2 = { x: elem.x2 / (elem.sourceWidth || cw) * cw, y: elem.y2 / (elem.sourceHeight || ch) * ch };
+      drawLineSegment(ctx, p1, p2, elem, scale);
+    }
+    return;
+  }
+  const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
+  const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+  drawLineSegment(ctx, p1, p2, elem, scale);
+
+  if (elem.type === 'straight-arrow') {
+    drawArrowhead(ctx, p1, p2, elem, scale);
+  }
+}
+
+function drawLineSegment(ctx, p1, p2, elem, scale) {
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  ctx.lineCap = 'round';
+  setLineDash(ctx, elem, scale);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawArrowhead(ctx, from, to, elem, scale) {
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  const headLen = Math.max(8, thickness * 4);
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(to.x, to.y);
+  ctx.lineTo(to.x - headLen * Math.cos(angle - Math.PI / 6), to.y - headLen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(to.x - headLen * Math.cos(angle + Math.PI / 6), to.y - headLen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fillStyle = elem.color || '#000';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCurveLine(ctx, cw, ch, elem, scale) {
+  const pts = elem.pointsRatio || elem.points;
+  if (!pts || pts.length < 2) return;
+  const points = elem.pointsRatio ? pts.map(p => ({ x: p.x * cw, y: p.y * ch })) : pts;
+
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  if (points.length === 2) {
+    ctx.lineTo(points[1].x, points[1].y);
+  } else if (points.length === 3) {
+    ctx.quadraticCurveTo(points[1].x, points[1].y, points[2].x, points[2].y);
+  } else {
+    for (let i = 1; i < points.length - 2; i++) {
+      const mx = (points[i].x + points[i + 1].x) / 2;
+      const my = (points[i].y + points[i + 1].y) / 2;
+      ctx.quadraticCurveTo(points[i].x, points[i].y, mx, my);
+    }
+    const last = points[points.length - 1];
+    ctx.quadraticCurveTo(points[points.length - 2].x, points[points.length - 2].y, last.x, last.y);
+  }
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  setLineDash(ctx, elem, scale);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  if (elem.type === 'curve-arrow' && points.length >= 2) {
+    const end = points[points.length - 1];
+    const prev = points[points.length - 2];
+    drawArrowhead(ctx, prev, end, elem, scale);
+  }
+}
+
+function drawCircleShape(ctx, cw, ch, elem, scale) {
+  if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.radius) {
+    const cx = elem.xRatio * cw;
+    const cy = elem.yRatio * ch;
+    const r = elem.radius;
+    const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    if (elem.fillColor && elem.fillColor !== 'transparent') {
+      ctx.fillStyle = elem.fillColor;
+      ctx.fill();
+    }
+    ctx.strokeStyle = elem.color || '#000';
+    ctx.lineWidth = Math.max(1, thickness);
+    setLineDash(ctx, elem, scale);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+function drawRectangleShape(ctx, cw, ch, elem, scale) {
+  if (elem.x !== undefined && elem.width) {
+    const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+    ctx.save();
+    applyRotation(ctx, elem.x + elem.width / 2, elem.y + elem.height / 2, elem.rotation);
+    if (elem.fillColor && elem.fillColor !== 'transparent') {
+      ctx.fillStyle = elem.fillColor;
+      ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
+    }
+    ctx.strokeStyle = elem.color || '#000';
+    ctx.lineWidth = Math.max(1, thickness);
+    setLineDash(ctx, elem, scale);
+    ctx.strokeRect(elem.x, elem.y, elem.width, elem.height);
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+function drawCustomShape(ctx, cw, ch, elem, scale) {
+  const pts = elem.pointsRatio || elem.points;
+  if (!pts || pts.length < 2) return;
+  const points = elem.pointsRatio ? pts.map(p => ({ x: p.x * cw, y: p.y * ch })) : pts;
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  if (elem.closed || elem.isCustomShapeComplete) {
+    ctx.closePath();
+  }
+  if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.fillStyle = elem.fillColor;
+    ctx.fill();
+  }
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  setLineDash(ctx, elem, scale);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawFreeText(ctx, cw, ch, elem, scale) {
+  const p = pos(elem, cw, ch);
+  const text = elem.text || elem.value || '';
+  if (!text) return;
+  const baseFontSize = elem.baseFontSize || elem.baseSize || elem.fontSize || 16;
+  const fs = baseFontSize * scale;
+  const color = elem.color || '#000';
+  const bg = elem.backgroundColor || 'transparent';
+
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
+
+  ctx.font = `${fs}px sans-serif`;
+  const tw = ctx.measureText(text).width;
+  const pad = fs * 0.2;
+
+  if (bg && bg !== 'transparent') {
+    ctx.fillStyle = bg;
+    ctx.fillRect(p.x - tw / 2 - pad, p.y - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
+  }
+
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, p.x, p.y);
+
+  ctx.restore();
+}
+
+function drawConnector(ctx, cw, ch, conn, elements) {
+  const fromEl = elements.find(e => e.id === conn.fromId);
+  const toEl = elements.find(e => e.id === conn.toId);
+  if (!fromEl || !toEl) return;
+
+  const p1 = pos(fromEl, cw, ch);
+  const p2 = pos(toEl, cw, ch);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.strokeStyle = conn.color || '#000';
+  ctx.lineWidth = conn.thickness || 2;
+  ctx.setLineDash([6, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+const POSITIONED_DRAWERS = {
+  player: drawPlayer,
+  staff: drawStaff,
+  ball: drawBall,
+  'ball-shadow': drawBallShadow,
+  cone: drawCone,
+  'cone-pro': drawConePro,
+  'cone-flat': drawConeFlat,
+  ring: drawRing,
+  goal: drawGoal,
+  'goal-large': drawGoalLarge,
+  'goal-small': drawGoalSmall,
+  barrier: drawBarrier,
+  dummy: drawDummy,
+  pole: drawPole,
+  ladder: drawLadder,
+  weights: drawWeights,
+};
+
+const LINE_DRAWERS = {
+  'straight-line': drawStraightLine,
+  'straight-arrow': drawStraightLine,
+  'curve-line': drawCurveLine,
+  'curve-arrow': drawCurveLine,
+  circle: drawCircleShape,
+  rectangle: drawRectangleShape,
+  'custom-shape': drawCustomShape,
+};
+
+export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, options = {}) {
+  ctx.fillStyle = FIELD_BG;
+  ctx.fillRect(0, 0, cw, ch);
+
+  if (fieldImage) {
+    ctx.drawImage(fieldImage, 0, 0, cw, ch);
+  }
+
+  const scale = getScale(cw, ch);
+  const sorted = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+  for (const elem of sorted) {
+    if (LINE_DRAWERS[elem.type]) {
+      LINE_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
+    } else if (POSITIONED_DRAWERS[elem.type]) {
+      POSITIONED_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
+    } else if (elem.type === 'free-text' || elem.text) {
+      drawFreeText(ctx, cw, ch, elem, scale);
+    }
+  }
+
+  if (connectors && connectors.length) {
+    for (const conn of connectors) {
+      drawConnector(ctx, cw, ch, conn, sorted);
+    }
+  }
+}
