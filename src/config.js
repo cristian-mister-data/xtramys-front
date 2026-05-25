@@ -2,11 +2,13 @@
 // Vite expone variables que empiezan por VITE_ en import.meta.env
 
 const isDev = import.meta.env.DEV;
+const rawBackendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = rawBackendUrl ? rawBackendUrl.replace(/\/+$/, '') : '';
 
-// En desarrollo usamos el proxy de Vite (/api) para evitar CORS.
-// En producción se usa la URL directa del backend.
-export const BACKEND_URL = isDev ? '' : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
-export const API_URL = isDev ? '/api' : `${BACKEND_URL}/api`;
+// Si se define VITE_BACKEND_URL, se usa directamente (dev o prod).
+// Si no, en desarrollo se usa el proxy de Vite (/api) para evitar CORS.
+export const BACKEND_URL = backendUrl || (isDev ? '' : 'http://localhost:3000');
+export const API_URL = backendUrl ? `${backendUrl}/api` : (isDev ? '/api' : `${BACKEND_URL}/api`);
 
 const CDN_ORIGIN = 'https://cdn.xtramys.com';
 
