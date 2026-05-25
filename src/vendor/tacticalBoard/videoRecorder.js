@@ -456,11 +456,16 @@ export default function VideoRecorder({
   presetFolderId = null, // Carpeta preseleccionada (se usa automáticamente)
   isGlobalExercise = false, // Si el ejercicio es global (app) - solo mostrar carpetas globales
   onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
+  onGeneratingChange = null, // Callback cuando el estado de generación cambia (isGenerating)
 }) {
   const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [showPreviewScreen, setShowPreviewScreen] = useState(false);
+
+  useEffect(() => {
+    onGeneratingChange?.(isGenerating);
+  }, [isGenerating, onGeneratingChange]);
 
   // Android back button handler para la pantalla de preview
   useEffect(() => {
@@ -645,11 +650,10 @@ export default function VideoRecorder({
           id: elem.id,
         };
         
-        // Calcular el factor de escala EXACTAMENTE igual que en field.js
         const { width, height } = Dimensions.get('window');
         const isMobile = Math.min(width, height) < 768;
         const baseScale = Math.min(fieldWidth, fieldHeight) / 500;
-        const scaleFactor = isMobile ? baseScale * 1.35 : baseScale;
+        const scaleFactor = baseScale;
         
         // Para elementos con xRatio/yRatio, convertir a coordenadas absolutas
         if (elem.xRatio !== undefined && elem.yRatio !== undefined) {

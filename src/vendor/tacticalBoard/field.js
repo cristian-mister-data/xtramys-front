@@ -1207,11 +1207,6 @@ const FreeTextTool = React.memo(({
   idx,
   imageWidth,
   imageHeight,
-  selectedCloneId,
-  setSelectedCloneId,
-  setClones,
-  dragStart,
-  applySmootherMovement,
   setOptionsMenu,
   saveClonesHistory,
   multiSelectMode,
@@ -1223,14 +1218,15 @@ const FreeTextTool = React.memo(({
   onEraseElement,
   viewMode,
   zoomLevel = 1,
-  setDraggingOutside = null
+  setDraggingOutside = null,
+  isVideoGenerating = false,
 }) => {
   // Detectar si es m�vil
   const { width, height } = Dimensions.get('window');
   const isMobile = Math.min(width, height) < 768;
-  // Factor de escala aumentado para m�viles
+  // Factor de escala aumentado para m�viles (desactivado durante generación de video)
   const baseScale = Math.min(imageWidth, imageHeight) / 500;
-  const scale = isMobile ? baseScale * 1.35 : baseScale;
+  const scale = (isMobile && !isVideoGenerating) ? baseScale * 1.35 : baseScale;
   const rafRef = useRef(null);
   const pendingUpdateRef = useRef(null);
 
@@ -4933,12 +4929,20 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
               color: textColor,
               fontWeight: isPositionLabel ? '600' : 'bold',
               fontSize,
-              // En RNW <Text> es un <div>; sin lineHeight expl�cito el alto de l�nea
-              // arrastra padding vertical y el n�mero aparece descentrado.
               lineHeight: fontSize,
               textAlign: 'center',
               includeFontPadding: false,
               textAlignVertical: 'center',
+              ...(Platform.OS === 'web' ? {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              } : {}),
             }}>{displayText}</Text>
           }
         </View>
@@ -4966,6 +4970,16 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
             textAlign: 'center',
             includeFontPadding: false,
             textAlignVertical: 'center',
+            ...(Platform.OS === 'web' ? {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            } : {}),
           }}>{staffDisplayText}</Text>
         </View>
       );
@@ -5827,7 +5841,8 @@ return (
 
   // Comparaci�n ultra-r�pida: solo verificar cambios relevantes
   if (prevProps.imageWidth !== nextProps.imageWidth ||
-      prevProps.imageHeight !== nextProps.imageHeight) {
+      prevProps.imageHeight !== nextProps.imageHeight ||
+      prevProps.scale !== nextProps.scale) {
     return false;
   }
 
@@ -8910,6 +8925,7 @@ export default function Field(props = {}) {
   const [videoRecorderVisible, setVideoRecorderVisible] = useState(false);
   const [fieldImageForVideo, setFieldImageForVideo] = useState(null);
   const [videoKeyframes, setVideoKeyframes] = useState([]); // Estado para persistir keyframes
+  const [isVideoGenerating, setIsVideoGenerating] = useState(false);
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -13252,8 +13268,8 @@ const handleCancelar = useCallback(async () => {
   // OPTIMIZACIÓN: Escala memoizada
   const renderScale = useMemo(() => {
     const baseScale = Math.min(imageWidth, imageHeight) / 500;
-    return isMobile ? baseScale * 1.35 : baseScale;
-  }, [imageWidth, imageHeight, isMobile]);
+    return (isMobile && !isVideoGenerating) ? baseScale * 1.35 : baseScale;
+  }, [imageWidth, imageHeight, isMobile, isVideoGenerating]);
 
   // OPTIMIZACIÓN: Verificar si hay alg�n modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
@@ -16199,6 +16215,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
                               setDraggingOutside={setDraggingOutside}
+                              isVideoGenerating={isVideoGenerating}
                             />
                           );
                         })}
@@ -17042,6 +17059,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             presetFolderId={presetFolderId}
             isGlobalExercise={isGlobalExercise}
             onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
+            onGeneratingChange={setIsVideoGenerating}
           />
         )}
 
