@@ -32,6 +32,7 @@ import { cdnUrl } from '@/config';
 
 const FIELD_CAPTURE_BACKGROUND = '#4a8c3f';
 const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND };
+const VIDEO_CAPTURE_BASE_WIDTH = 1280;
 
 function getFieldCaptureOptions(extraOptions = {}) {
   return Platform.OS === 'web'
@@ -5811,7 +5812,7 @@ return (
                 left: -20,
                 right: -20,
                 textAlign: 'center',
-                fontSize: isMobile ? 8 : 10,
+                fontSize: (isMobile && !isVideoGenerating) ? 8 : 10,
                 color: icon.textColor || '#000',
                 backgroundColor: icon.textBackgroundColor === 'transparent' ? 'transparent' : (icon.textBackgroundColor || '#fff'),
                 paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
@@ -10353,7 +10354,7 @@ export default function Field(props = {}) {
   const aspect = getAspectForView(viewMode);
 
   // Calcular tama�o �ptimo para el campo (memoizado para estabilidad de referencias)
-  const { imageWidth, imageHeight } = useMemo(() => {
+  const { imageWidth: screenImageWidth, imageHeight: screenImageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
       const topButtonsSpace = 60;
@@ -10387,6 +10388,14 @@ export default function Field(props = {}) {
     }
     return { imageWidth: w, imageHeight: h };
   }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect]);
+
+  // Durante generación de video, usar resolución fija para capturas idénticas en cualquier pantalla
+  const videoCaptureWidth = VIDEO_CAPTURE_BASE_WIDTH;
+  const videoCaptureHeight = Math.round(VIDEO_CAPTURE_BASE_WIDTH / aspect);
+  const videoScaleFactor = screenImageWidth / videoCaptureWidth;
+
+  const imageWidth = isVideoGenerating ? videoCaptureWidth : screenImageWidth;
+  const imageHeight = isVideoGenerating ? videoCaptureHeight : screenImageHeight;
 
   // Helper: calcular el centro visible del campo seg�n el viewMode activo
   const getVisibleCenterRatio = useCallback(() => {
@@ -15789,7 +15798,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           height: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'visible', // Permitir ver elementos fuera del campo
+          overflow: 'hidden',
         }}>
           <View
             style={{
@@ -15797,7 +15806,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
               height: '100%',
               alignItems: 'center',
               justifyContent: 'center',
-              overflow: 'visible', // Permitir ver elementos fuera del campo
+              overflow: 'hidden',
             }}
           >
             <View
@@ -15809,8 +15818,12 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   alignSelf: 'center',
                   flex: 0,
                   backgroundColor: 'transparent',
-                  marginBottom: isMobile ? 4 : 8, // Menos margen en m�vil
-                  overflow: 'visible', // Permitir ver elementos fuera del campo
+                  marginBottom: isMobile ? 4 : 8,
+                  overflow: 'visible',
+                  ...(isVideoGenerating ? {
+                    transform: [{ scale: videoScaleFactor }],
+                    transformOrigin: 'top center',
+                  } : {}),
                 },
               ]}
             >

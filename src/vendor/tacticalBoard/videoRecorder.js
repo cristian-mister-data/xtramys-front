@@ -47,8 +47,7 @@ const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
 const STREAMING_ENCODE_BACKLOG = 6;
 
 function getVideoCapturePixelRatio() {
-  const ratio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  return Math.max(1, Math.min(ratio, VIDEO_CAPTURE_MAX_PIXEL_RATIO));
+  return 1;
 }
 
 // ============================================================
