@@ -1,6 +1,22 @@
 import { useRef, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, PanResponder, TextInput, StyleSheet, Modal, Dimensions } from 'react-native';
+import { View, Text, Pressable, PanResponder, TextInput, StyleSheet, Modal, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        style,
+        pressed && !disabled && { opacity: activeOpacity },
+      ]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 // Helpers
 function hsvToRgb(h, s, v) {

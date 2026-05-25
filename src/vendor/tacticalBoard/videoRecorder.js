@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Modal,
   Alert,
@@ -14,6 +14,23 @@ import {
   StatusBar,
   BackHandler,
 } from 'react-native';
+
+function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        style,
+        pressed && !disabled && { opacity: activeOpacity },
+      ]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as MediaLibrary from 'expo-media-library';
@@ -646,8 +663,6 @@ export default function VideoRecorder({
           id: elem.id,
         };
         
-        const { width, height } = Dimensions.get('window');
-        const isMobile = Math.min(width, height) < 768;
         const baseScale = Math.min(fieldWidth, fieldHeight) / 500;
         const scaleFactor = baseScale;
         
@@ -2599,7 +2614,7 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   saveModalActions: {
     flexDirection: 'row',

@@ -19,11 +19,27 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        style,
+        pressed && !disabled && { opacity: activeOpacity },
+      ]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </Pressable>
+  );
+}
 import { useTranslation } from 'react-i18next';
 import FieldSVGRenderer from './fields/FieldSVGRenderer';
 import { getLineTypeList, getViewModeList, getAspectForView } from './fields/fieldConfigs';

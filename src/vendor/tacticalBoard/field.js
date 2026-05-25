@@ -3,7 +3,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, Pressable, Image, TextInput,
-  ScrollView, Dimensions, TouchableOpacity, BackHandler, Animated, Button, Modal, TouchableWithoutFeedback, Platform, StatusBar, Switch, ActivityIndicator, InteractionManager, Alert
+  ScrollView, Dimensions, BackHandler, Animated, Button, Modal, TouchableWithoutFeedback, Platform, StatusBar, Switch, ActivityIndicator, InteractionManager, Alert
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -30,8 +30,25 @@ import { FieldSVGRenderer, decomposeFieldId, composeFieldId, getAspectForView, r
 import FieldSelectorModal from './FieldSelectorModal';
 import { cdnUrl } from '@/config';
 
+function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        style,
+        pressed && !disabled && { opacity: activeOpacity },
+      ]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 const FIELD_CAPTURE_BACKGROUND = '#4a8c3f';
 const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND };
+const REFERENCE_WIDTH = 1280;
 
 function getFieldCaptureOptions(extraOptions = {}) {
   return Platform.OS === 'web'
@@ -1032,7 +1049,7 @@ function OptionsMenu({
     flexShrink: 0,
     // Optimizaci�n multiplataforma
     includeFontPadding: false,
-    textAlignVertical: 'center',
+    verticalAlign: 'middle',
   };
 
   const iconContainerStyle = {
@@ -1473,7 +1490,6 @@ const FreeTextTool = React.memo(({
             }}
           >
             <Text
-              selectable={false}
               style={{
                 fontSize: textObj.size || 18,
                 color: textObj.color || "#000",
@@ -1721,7 +1737,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                           fontSize: isMobile ? 14 : parseInt(size) || 18,
                           color: color,
                           minHeight: 60,
-                          textAlignVertical: 'top',
+                          verticalAlign: 'top',
                         }
                       ]}
                     />
@@ -4931,7 +4947,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
               lineHeight: fontSize,
               textAlign: 'center',
               includeFontPadding: false,
-              textAlignVertical: 'center',
+              verticalAlign: 'middle',
               ...(Platform.OS === 'web' ? {
                 display: 'flex',
                 alignItems: 'center',
@@ -4968,7 +4984,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
             lineHeight: staffFontSize,
             textAlign: 'center',
             includeFontPadding: false,
-            textAlignVertical: 'center',
+            verticalAlign: 'middle',
             ...(Platform.OS === 'web' ? {
               display: 'flex',
               alignItems: 'center',
@@ -5918,8 +5934,9 @@ return (
 
 function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
   const baseSize = icon.size || standardSize;
-  // Escalamos el tama�o seg�n el ancho de la imagen
-  const scaleFactor = Math.max(0.5, Math.min(1.5, imageWidth / 500));
+  const REFERENCE_SCALE = 1.5;
+  const viewportRatio = imageWidth / REFERENCE_WIDTH;
+  const scaleFactor = Math.max(0.5, REFERENCE_SCALE * viewportRatio);
   return baseSize * scaleFactor;
 }
 
@@ -8722,7 +8739,9 @@ export default function Field(props = {}) {
           );
         }
       } catch (error) {
-        console.warn('Error al bloquear orientación:', error);
+        if (error?.name !== 'NotSupportedError' && error?.name !== 'AbortError') {
+          console.warn('Error al bloquear orientación:', error);
+        }
       }
     };
 
@@ -9923,13 +9942,13 @@ export default function Field(props = {}) {
         typeof clone.x === 'number' &&
         typeof clone.y === 'number'
       ) {
-        const aspect = getAspectForView(viewMode);
-        const imageWidth = SCREEN_WIDTH;
-        const imageHeight = SCREEN_WIDTH * aspect;
+        const initAspect = getAspectForView(viewMode);
+        const initW = REFERENCE_WIDTH;
+        const initH = REFERENCE_WIDTH * initAspect;
         return {
           ...clone,
-          xRatio: clone.x / imageWidth,
-          yRatio: clone.y / imageHeight
+          xRatio: clone.x / initW,
+          yRatio: clone.y / initH
         };
       } else {
         return { ...clone };
@@ -10349,6 +10368,9 @@ export default function Field(props = {}) {
   const dragStart = useRef({});
 
   const aspect = getAspectForView(viewMode);
+
+  const referenceWidth = REFERENCE_WIDTH;
+  const referenceHeight = REFERENCE_WIDTH * aspect;
 
   // Calcular tama�o �ptimo para el campo (memoizado para estabilidad de referencias)
   const { imageWidth, imageHeight } = useMemo(() => {
@@ -13265,9 +13287,8 @@ const handleCancelar = useCallback(async () => {
 
   // OPTIMIZACIÓN: Escala memoizada
   const renderScale = useMemo(() => {
-    const baseScale = Math.min(imageWidth, imageHeight) / 500;
-    return isMobile ? baseScale * 1.35 : baseScale;
-  }, [imageWidth, imageHeight, isMobile]);
+    return Math.min(imageWidth, imageHeight) / 500;
+  }, [imageWidth, imageHeight]);
 
   // OPTIMIZACIÓN: Verificar si hay alg�n modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
@@ -15812,17 +15833,17 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                 },
               ]}
             >
-              <View style={{ position: 'absolute', left: -10000, top: 0, width: imageWidth, height: imageHeight }}>
+              <View style={{ position: 'absolute', left: -10000, top: 0, width: referenceWidth, height: referenceHeight }}>
                 <ViewShot
                   ref={fieldBaseRef}
                   options={FIELD_CAPTURE_OPTIONS}
-                  style={{ width: imageWidth, height: imageHeight, backgroundColor: FIELD_CAPTURE_BACKGROUND }}
+                  style={{ width: referenceWidth, height: referenceHeight, backgroundColor: FIELD_CAPTURE_BACKGROUND }}
                 >
                   <FieldSVGRenderer
                     lineType={fieldLineType}
                     viewMode={viewMode}
-                    width={imageWidth}
-                    height={imageHeight}
+                    width={referenceWidth}
+                    height={referenceHeight}
                   />
                 </ViewShot>
               </View>
@@ -17029,8 +17050,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
             connectors={connectors}
             fieldImage={fieldImageForVideo}
             onClose={handleCloseVideoRecorder}
-            fieldWidth={imageWidth}
-            fieldHeight={imageHeight}
+            fieldWidth={referenceWidth}
+            fieldHeight={referenceHeight}
             fieldRef={fieldRef}
             videoFrameControl={videoFrameControlRef}
             fieldBaseRef={fieldBaseRef}
