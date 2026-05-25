@@ -4,11 +4,12 @@ import styled from 'styled-components';
 const Shell = styled.div`
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
-  background: #4a8c3f; /* same green as tactical board, avoids any flash */
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  background: #4a8c3f;
   overflow: hidden;
-  /* Provide a flex context so children with flex:1 fill correctly */
   display: flex;
 `;
 

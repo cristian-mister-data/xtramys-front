@@ -15676,7 +15676,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#4a8c3f' }}>
-      <View ref={containerRef} style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#4a8c3f' }}>
+      <View ref={containerRef} style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#4a8c3f', position: 'relative' }}>
         <StatusBar
           barStyle="light-content"
           backgroundColor="#4a8c3f"
