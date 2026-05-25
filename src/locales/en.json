@@ -62,7 +62,8 @@
         "imageUploaded": "Image uploaded successfully",
         "confirm": "Confirm",
         "deleteImageConfirm": "Are you sure you want to delete this image?",
-        "imageDeleted": "Image deleted successfully"
+        "imageDeleted": "Image deleted successfully",
+        "delete": "Delete"
     },
     "connection": {
         "offlineTitle": "No connection",

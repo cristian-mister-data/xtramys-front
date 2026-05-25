@@ -62,7 +62,8 @@
         "imageUploaded": "Imagen subida correctamente",
         "confirm": "Confirmar",
         "deleteImageConfirm": "¿Estás seguro de que quieres eliminar esta imagen?",
-        "imageDeleted": "Imagen eliminada correctamente"
+        "imageDeleted": "Imagen eliminada correctamente",
+        "delete": "Eliminar"
     },
     "connection": {
         "offlineTitle": "Sin conexión",
