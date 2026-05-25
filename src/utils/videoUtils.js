@@ -78,6 +78,7 @@ export async function ensureMp4Blob(blob) {
 }
 
 export const warmUpFFmpeg = () => {
+  if (isMobileBrowser()) return;
   const run = () => getFFmpeg().catch(() => {});
   if (typeof window !== 'undefined' && window.requestIdleCallback) {
     window.requestIdleCallback(run, { timeout: 3000 });
@@ -661,11 +662,19 @@ async function generateVideoWithMediaRecorder(framesDir, frameCount, speed = 1, 
   return { outputPath, frameCount: keys.length, mimeType: finalMime };
 }
 
+const isMobileBrowser = () =>
+  /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+  ('ontouchstart' in window && window.innerWidth < 1024);
+
 export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress) => {
   try {
     return await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);
   } catch (webCodecsError) {
-    console.warn('[videoUtils] WebCodecs falló, usando FFmpeg fallback', webCodecsError);
+    console.warn('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
+    if (isMobileBrowser()) {
+      console.warn('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
+      return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
+    }
     try {
       return await generateVideoWithFFmpeg(framesDir, frameCount, speed, onProgress);
     } catch (ffmpegError) {

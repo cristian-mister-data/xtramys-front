@@ -465,8 +465,8 @@ export default function MyVideos() {
           folderId: videoData.folder?._id || videoData.folder || null,
         };
         
-        // Navegar al editor de video
-        navigation.navigate('VideoEditorDrawer');
+        // Navegar a la pizarra táctica para editar
+        navigation.navigate('TacticalBoard');
       } else {
         showNotification(t('myVideos.couldNotLoadVideo'), 'error');
       }

@@ -1,30 +1,15 @@
-/**
- * Shim de react-native-view-shot para web.
- * Usa html-to-image (foreignObject + motor del browser) para capturar un nodo DOM como dataURL.
- *
- * captureRef(refOrNode, options) → Promise<string dataURL | Blob>
- *
- * Soporta dos patrones de uso típicos del código vendor:
- *   1) `captureRef(viewShotRef.current, options)` — directo
- *   2) `viewShotRef.current.capture(options)` — método imperativo
- *
- * Por defecto devuelve una `dataURL` (`data:image/png;base64,...`). Para video
- * puede devolver `Blob` con `result: 'blob'`, evitando base64 por frame.
- */
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { toPng, toJpeg, toBlob } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 function resolveNode(refOrNode) {
   if (!refOrNode) return null;
-  // RN ref: { current: ... }
   if (refOrNode.current !== undefined && refOrNode.current !== null) {
     refOrNode = refOrNode.current;
   }
   if (!refOrNode) return null;
-  // Imperative handle del ViewShot shim: { capture, _node }
   if (refOrNode._node instanceof HTMLElement) return refOrNode._node;
   if (refOrNode instanceof HTMLElement) return refOrNode;
-  // RNW expone componentes con stateNode
   if (refOrNode._reactInternals?.stateNode instanceof HTMLElement) {
     return refOrNode._reactInternals.stateNode;
   }
@@ -32,41 +17,66 @@ function resolveNode(refOrNode) {
   return null;
 }
 
-export async function captureRef(refOrNode, options = {}) {
-  const node = resolveNode(refOrNode);
-  if (!node) throw new Error('view-shot shim: no DOM node resolved');
-  // html-to-image usa <foreignObject> + el motor del browser para renderizar,
-  // por lo que reproduce CSS (sombras, transformaciones, fuentes, opacidades)
-  // con mucha mayor fidelidad que html2canvas.
-  // Forzamos pixelRatio mínimo de 2 para preservar nitidez en líneas/iconos
-  // pequeños (números de jugadores, líneas del campo) cuando se usa para
-  // grabar video o exportar gráficos.
+function captureHtmlToImage(node, options) {
   const pixelRatio = options.pixelRatio || Math.max(window.devicePixelRatio || 1, 2);
   const isJpeg = options.format === 'jpg' || options.format === 'jpeg';
   const commonOpts = {
     pixelRatio,
     cacheBust: options.cacheBust ?? true,
     backgroundColor: options.backgroundColor || undefined,
-    // Fuerza el tamaño exacto del nodo evitando recortes por scroll/transform.
     width: node.offsetWidth,
     height: node.offsetHeight,
   };
 
-  if (options.result === 'blob') {
-    const blob = await toBlob(node, {
-      ...commonOpts,
-      type: isJpeg ? 'image/jpeg' : 'image/png',
-      quality: isJpeg ? options.quality ?? 0.92 : 1,
-    });
-    if (!blob) throw new Error('view-shot shim: no se pudo generar Blob');
-    return blob;
+  if (options.result === 'blob') return toBlob(node, { ...commonOpts, type: isJpeg ? 'image/jpeg' : 'image/png', quality: isJpeg ? options.quality ?? 0.92 : 1 });
+  return isJpeg ? toJpeg(node, { ...commonOpts, quality: options.quality ?? 0.92 }) : toPng(node, commonOpts);
+}
+
+function captureHtml2Canvas(node, options) {
+  return html2canvas(node, {
+    scale: options.pixelRatio || Math.max(window.devicePixelRatio || 1, 2),
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: options.backgroundColor || null,
+    width: node.offsetWidth,
+    height: node.offsetHeight,
+    logging: false,
+  }).then((canvas) => {
+    const isJpeg = options.format === 'jpg' || options.format === 'jpeg';
+    const quality = isJpeg ? (options.quality ?? 0.92) : 1;
+    const type = isJpeg ? 'image/jpeg' : 'image/png';
+
+    if (options.result === 'blob') {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('html2canvas: no se pudo generar Blob'));
+        }, type, quality);
+      });
+    }
+
+    const dataUrl = canvas.toDataURL(type, quality);
+    if (options.result === 'base64') return dataUrl.split(',')[1];
+    return dataUrl;
+  });
+}
+
+export async function captureRef(refOrNode, options = {}) {
+  const node = resolveNode(refOrNode);
+  if (!node) throw new Error('view-shot shim: no DOM node resolved');
+
+  try {
+    return await captureHtmlToImage(node, options);
+  } catch (e) {
+    console.warn('[view-shot] html-to-image falló, intentando con html2canvas:', e.message);
   }
 
-  const dataUrl = isJpeg
-    ? await toJpeg(node, { ...commonOpts, quality: options.quality ?? 0.92 })
-    : await toPng(node, commonOpts);
-  if (options.result === 'base64') return dataUrl.split(',')[1];
-  return dataUrl;
+  try {
+    return await captureHtml2Canvas(node, options);
+  } catch (e) {
+    console.warn('[view-shot] html2canvas también falló:', e.message);
+    throw new Error('view-shot shim: no se pudo capturar el nodo');
+  }
 }
 
 export async function captureScreen(options) {
@@ -75,23 +85,12 @@ export async function captureScreen(options) {
 
 export default forwardRef(function ViewShot({ children, style, options: defaultOptions }, ref) {
   const innerRef = useRef(null);
-  // Exponemos un handle con `.capture()` (igual que la API nativa de
-  // react-native-view-shot) y `_node` para que `captureRef` pueda resolver
-  // el nodo DOM cuando se llama directamente con la ref.
-  useImperativeHandle(
-    ref,
-    () => ({
-      _node: innerRef.current,
-      get node() { return innerRef.current; },
-      capture: (opts) => captureRef(innerRef.current, { ...(defaultOptions || {}), ...(opts || {}) }),
-      // Algunos componentes vendor pueden llamar a getBoundingClientRect directamente.
-      getBoundingClientRect: () => innerRef.current?.getBoundingClientRect?.(),
-    }),
-    // Se actualiza si cambian las opciones por defecto (raro, pero correcto).
-    // innerRef.current se resuelve perezosamente dentro de capture(), así que
-    // no hace falta dep adicional sobre el nodo.
-    [defaultOptions],
-  );
+  useImperativeHandle(ref, () => ({
+    _node: innerRef.current,
+    get node() { return innerRef.current; },
+    capture: (opts) => captureRef(innerRef.current, { ...(defaultOptions || {}), ...(opts || {}) }),
+    getBoundingClientRect: () => innerRef.current?.getBoundingClientRect?.(),
+  }), [defaultOptions]);
   return (
     <div ref={innerRef} style={style}>
       {children}
