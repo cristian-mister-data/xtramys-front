@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import {
@@ -39,6 +39,8 @@ const SecondaryButton = styled.button`
 
 export default function Welcome() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const fromState = location.state?.from ? { from: location.state.from } : undefined;
 
   return (
     <AuthFormShell maxWidth="480px">
@@ -46,10 +48,10 @@ export default function Welcome() {
       <FormSubtitle $center>{t('login.subtitle', 'Accede a tu cuenta para continuar')}</FormSubtitle>
 
       <ButtonStack>
-        <Link to="/auth/login">
+        <Link to="/auth/login" state={fromState}>
           <PrimaryButton as="span" type="button" $spacious={false}>{t('login.buttonLogin', 'Iniciar sesión')}</PrimaryButton>
         </Link>
-        <Link to="/auth/register">
+        <Link to="/auth/register" state={fromState}>
           <SecondaryButton type="button">{t('login.createAccount', 'Crear cuenta')}</SecondaryButton>
         </Link>
       </ButtonStack>

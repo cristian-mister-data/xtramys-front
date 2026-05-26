@@ -327,10 +327,9 @@ const SubBtn = styled.button`
   cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
   opacity: ${({ disabled }) => disabled ? 0.6 : 1};
   transition: all 150ms ease;
-  border: ${({ $variant }) => $variant === 'primary' ? 'none' : $variant === 'danger' ? 'none' : '1px solid rgba(255,255,255,0.25)'};
+  border: ${({ $variant }) => $variant === 'primary' ? 'none' : '1px solid rgba(255,255,255,0.25)'};
   background: ${({ $variant }) => {
     if ($variant === 'primary') return '#10B981';
-    if ($variant === 'danger') return '#ef4444';
     if ($variant === 'secondary') return 'rgba(255,255,255,0.15)';
     return 'rgba(255,255,255,0.1)';
   }};
@@ -338,7 +337,6 @@ const SubBtn = styled.button`
   &:hover {
     background: ${({ $variant }) => {
       if ($variant === 'primary') return '#059669';
-      if ($variant === 'danger') return '#dc2626';
       if ($variant === 'secondary') return 'rgba(255,255,255,0.25)';
       return 'rgba(255,255,255,0.15)';
     }};
@@ -415,7 +413,7 @@ export default function Profile() {
   // Verificación de cambio de email (similar al registro inicial).
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [ cancellingModal, setCancellingModal] = useState(false);
+  const [cancellingModal, setCancellingModal] = useState(false);
   // Mientras hay cambio pendiente, el correo actual sigue activo y
   // únicamente al confirmar el código se sustituye el correo principal.
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false);
@@ -634,10 +632,10 @@ export default function Profile() {
     try {
       const data = await cancelSubscription(user.paymentProvider);
       await dispatch(checkSubscription()).unwrap();
-      toast.success(data.mensaje || 'Suscripción cancelada. Tendrás acceso hasta el final del período actual.');
+      toast.success(data.mensaje || 'SuscripciÃ³n cancelada. TendrÃ¡s acceso hasta el final del perÃ­odo actual.');
       setCancellingModal(false);
     } catch (err) {
-      toast.error(err?.response?.data?.mensaje || 'Error al cancelar la suscripción');
+      toast.error(err?.response?.data?.mensaje || 'Error al cancelar la suscripciÃ³n');
     } finally {
       setCancelling(false);
     }
@@ -705,74 +703,200 @@ export default function Profile() {
 
   const initials = `${(user.nombre || '?').charAt(0)}${(user.apellido || '').charAt(0)}`.toUpperCase();
 
-const hasSubAccess = user.subscriptionStatus === 'active'
-    || (user.subscriptionStatus === 'canceled' && user.subscriptionCurrentPeriodEnd && new Date() < new Date(user.subscriptionCurrentPeriodEnd))
-    || (user.subscriptionCancelAtPeriodEnd && user.subscriptionCurrentPeriodEnd && new Date() < new Date(user.subscriptionCurrentPeriodEnd));
-  const isCancelled = user.subscriptionStatus === 'canceled' || user.subscriptionCancelAtPeriodEnd;
-
   return (
-    <ProfileWrapper>
-      <ScrollContainer>
-        <ProfileTitle>{t('profile.title', 'Mi perfil')}</ProfileTitle>
+    <Stack style={{ gap: 0 }}>
+      <Hero>
+        <AvatarWrap>
+          <Avatar>
+            {uploading
+              ? <span style={{ fontSize: 14, color: '#3578e5' }}>...</span>
+              : user.imagen
+                ? <img src={user.imagen} alt="" />
+                : initials}
+            <input type="file" accept="image/*" onChange={handlePickPhoto} disabled={uploading} />
+          </Avatar>
+          <CameraBadge>📷</CameraBadge>
+        </AvatarWrap>
+        {user.imagen ? (
+          <Button $variant="ghost" type="button" onClick={handleDeletePhoto} disabled={uploading}
+            style={{ background: 'rgba(239,68,68,0.18)', color: '#fff', border: 'none' }}>
+            🗑 {t('common.delete', 'Eliminar foto')}
+          </Button>
+        ) : null}
+        <HeroName>{user.nombre} {user.apellido}</HeroName>
+        <HeroEmail>{user.correo}</HeroEmail>
+        {isAdmin ? <div><RoleBadge>🛡 Admin</RoleBadge></div> : null}
+      </Hero>
 
-        <AvatarSection>
-          <AvatarCircle>{user.nombre?.charAt(0)}{user.apellido?.charAt(0)}</AvatarCircle>
-          <UserName>{user.nombre} {user.apellido}</UserName>
-          <UserEmail>{user.correo}</UserEmail>
-          {user.role === 'admin' && <AdminBadge>Admin</AdminBadge>}
-        </AvatarSection>
+      <FormCard>
+        <CardHeader>
+          <CardTitle>👤 {t('profile.personalInfo', 'Información personal')}</CardTitle>
+          {!editing ? (
+            <Button $variant="ghost" type="button" onClick={() => setEditing(true)}>
+              ✏️ {t('edition.edit', 'Editar')}
+            </Button>
+          ) : null}
+        </CardHeader>
+        <Stack style={{ gap: 12 }}>
+          <Field>
+            <Label>🪪 {t('register.firstName', 'Nombre')}</Label>
+            <Input value={nombre} onChange={(e) => setNombre(e.target.value)} disabled={!editing} />
+          </Field>
+          <Field>
+            <Label>🪪 {t('register.lastName', 'Apellido')}</Label>
+            <Input value={apellido} onChange={(e) => setApellido(e.target.value)} disabled={!editing} />
+          </Field>
+          <Field>
+            <Label>✉️ {t('register.email', 'Correo electrónico')}</Label>
+            <Input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} disabled={!editing} />
+            {user.pendingEmail ? (
+              <PendingBadge>
+                <span>⏳</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {t('profile.emailChangePendingBadge', 'Pendiente de verificación: {{email}}', { email: user.pendingEmail })}
+                </div>
+                <Button
+                  $variant="ghost"
+                  type="button"
+                  onClick={() => {
+                    setEmailVerifyTarget(user.pendingEmail);
+                    setEmailVerifyCode('');
+                    setEmailVerifyError('');
+                    setEmailVerifyOpen(true);
+                  }}
+                >
+                  {t('profile.emailChangeTitle', 'Verificar')}
+                </Button>
+                <Button
+                  $variant="ghost"
+                  type="button"
+                  onClick={handleCancelEmailChange}
+                  style={{ color: '#ef4444' }}
+                >
+                  {t('edition.cancel', 'Cancelar')}
+                </Button>
+              </PendingBadge>
+            ) : null}
+          </Field>
+        </Stack>
+      </FormCard>
 
-        <FormCard>
-          <CardHeader>
-            <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
-          </CardHeader>
-          <SubscriptionCard $plan={user.plan} $cancelled={isCancelled}>
-            {user.plan === 'pro' && hasSubAccess ? (
+      <FormCard>
+        <CardHeader>
+          <CardTitle>🌐 {t('profile.language', 'Idioma')}</CardTitle>
+        </CardHeader>
+        <LangRow>
+          <LangBtn
+            type="button"
+            $active={language === 'es'}
+            $disabled={!editing}
+            disabled={!editing}
+            onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
+          >
+            <Flag>
+              <FlagImage src={flagEs} alt="Español" />
+            </Flag>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600 }}>Español</div>
+              <Muted style={{ fontSize: 12 }}>Spanish</Muted>
+            </div>
+            {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+          </LangBtn>
+          <LangBtn
+            type="button"
+            $active={language === 'en'}
+            $disabled={!editing}
+            disabled={!editing}
+            onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
+          >
+            <Flag>
+              <FlagImage src={flagEn} alt="English" />
+            </Flag>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600 }}>English</div>
+              <Muted style={{ fontSize: 12 }}>Inglés</Muted>
+            </div>
+            {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+          </LangBtn>
+        </LangRow>
+      </FormCard>
+
+      {editing ? (
+        <ActionRow>
+          <Button type="button" $variant="ghost" onClick={handleCancel} disabled={saving}>
+            {t('edition.cancel', 'Cancelar')}
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={saving}>
+            {saving ? t('common.saving', 'Guardando...') : `✓ ${t('edition.saveChanges', 'Guardar cambios')}`}
+          </Button>
+        </ActionRow>
+      ) : null}
+
+      <FormCard>
+        <CardHeader>
+          <CardTitle>🔒 {t('profile.changePassword', 'Cambiar contraseña')}</CardTitle>
+        </CardHeader>
+        <Stack style={{ gap: 12 }}>
+          <Field>
+            <Label>{t('profile.currentPassword', 'Contraseña actual')}</Label>
+            <Input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </Field>
+          <Field>
+            <Label>{t('reset.newPassword', 'Nueva contraseña')}</Label>
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
+          <Field>
+            <Label>{t('profile.confirmNewPassword', 'Confirmar nueva contraseña')}</Label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
+        </Stack>
+        <ActionRow>
+          <Button type="button" onClick={handleChangePassword} disabled={changingPassword}>
+            {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
+          </Button>
+        </ActionRow>
+      </FormCard>
+
+      <FormCard>
+        <CardHeader>
+          <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
+        </CardHeader>
+        <SubscriptionCard $plan={user.plan} $cancelled={user.subscriptionCancelAtPeriodEnd}>
+          {user.plan === 'pro' && user.subscriptionStatus === 'active' ? (
             <>
               <SubHeader>
                 <div>
-                  <SubBadge $status={isCancelled ? 'cancelled' : 'active'}>
-                    {isCancelled ? '⚠️ Cancelada' : '✓ Activa'}
+                  <SubBadge $status={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'active'}>
+                    {user.subscriptionCancelAtPeriodEnd ? '⚠️ Cancelada' : '✓ Activa'}
                   </SubBadge>
                 </div>
                 <SubIcon $plan={user.plan}>👑</SubIcon>
               </SubHeader>
               
               <SubPlanName $plan={user.plan}>{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
-
-              {user.paymentProvider && (
-                <SubInfoRow $type="info">
-                  <SubInfoIcon>💰</SubInfoIcon>
-                  <SubInfoText $plan={user.plan}>
-                    {t('subscription.paymentMethod', 'Método de pago')}: {' '}
-                    <SubInfoDate $plan={user.plan}>
-                      {user.paymentProvider === 'paypal' ? 'PayPal' : 'Tarjeta'}
-                    </SubInfoDate>
-                  </SubInfoText>
-                </SubInfoRow>
-              )}
-
-              {user.subscriptionStartedAt && (
-                <SubInfoRow $type="info">
-                  <SubInfoIcon>📅</SubInfoIcon>
-                  <SubInfoText $plan={user.plan}>
-                    {t('subscription.startedOn', 'Activa desde')}: {' '}
-                    <SubInfoDate $plan={user.plan}>
-                      {new Date(user.subscriptionStartedAt).toLocaleDateString('es-ES', { 
-                        day: 'numeric', month: 'long', year: 'numeric' 
-                      })}
-                    </SubInfoDate>
-                  </SubInfoText>
-                </SubInfoRow>
-              )}
               
               {user.subscriptionCurrentPeriodEnd && (
-                <SubInfoRow $type={isCancelled ? 'cancelled' : 'renew'}>
+                <SubInfoRow $type={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'renew'}>
                   <SubInfoIcon>
-                    {isCancelled ? '⏰' : '🔄'}
+                    {user.subscriptionCancelAtPeriodEnd ? '⏰' : '🔄'}
                   </SubInfoIcon>
                   <SubInfoText $plan={user.plan}>
-                    {isCancelled
+                    {user.subscriptionCancelAtPeriodEnd 
                       ? t('subscription.accessUntil', 'Acceso hasta')
                       : t('subscription.renewsOn', 'Se renueva el')}: {' '}
                     <SubInfoDate $plan={user.plan}>
@@ -786,21 +910,7 @@ const hasSubAccess = user.subscriptionStatus === 'active'
                 </SubInfoRow>
               )}
 
-              {user.subscriptionCanceledAt && isCancelled && (
-                <SubInfoRow $type="cancelled">
-                  <SubInfoIcon>❌</SubInfoIcon>
-                  <SubInfoText $plan={user.plan}>
-                    {t('subscription.canceledOn', 'Cancelada el')}: {' '}
-                    <SubInfoDate $plan={user.plan}>
-                      {new Date(user.subscriptionCanceledAt).toLocaleDateString('es-ES', { 
-                        day: 'numeric', month: 'long', year: 'numeric' 
-                      })}
-                    </SubInfoDate>
-                  </SubInfoText>
-                </SubInfoRow>
-              )}
-
-{!isCancelled && (
+              {!user.subscriptionCancelAtPeriodEnd && (
                 <SubInfoRow $type="info">
                   <SubInfoIcon>✅</SubInfoIcon>
                   <SubInfoText $plan={user.plan}>
@@ -808,61 +918,28 @@ const hasSubAccess = user.subscriptionStatus === 'active'
                   </SubInfoText>
                 </SubInfoRow>
               )}
-
-              {user.invoices && user.invoices.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: user.plan === 'pro' ? 'rgba(255,255,255,0.7)' : 'inherit' }}>
-                    {t('subscription.paymentHistory', 'Historial de pagos')}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {user.invoices.slice(0, 5).map((inv) => (
-                      <div key={inv.id} style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        background: 'rgba(255,255,255,0.06)',
-                        fontSize: 12,
-                      }}>
-                        <span style={{ color: user.plan === 'pro' ? 'rgba(255,255,255,0.8)' : 'inherit' }}>
-                          {new Date(inv.created * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        <span style={{ 
-                          fontWeight: 600,
-                          color: user.plan === 'pro' ? '#fff' : 'inherit',
-                        }}>
-                          {((inv.amount || 0) / 100).toFixed(2)}{'€'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               
               <SubActions>
-                {user.paymentProvider === 'stripe' && !isCancelled && (
-                  <SubBtn 
-                    type="button" 
-                    $variant="secondary"
-                    onClick={handleManageSubscription} 
-                    disabled={portalLoading}
-                  >
-                    {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.billingPortal', 'Facturación')}
-                  </SubBtn>
-                )}
-                {!isCancelled && (
-                  <SubBtn 
-                    type="button" 
+                <SubBtn 
+                  type="button" 
+                  $variant="secondary"
+                  onClick={handleManageSubscription} 
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                </SubBtn>
+                {!user.subscriptionCancelAtPeriodEnd && (
+                  <SubBtn
+                    type="button"
                     $variant="danger"
                     onClick={() => setCancellingModal(true)}
                     disabled={portalLoading}
-                    style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}
+                    style={{ background: '#ef4444', border: 'none' }}
                   >
-                    {t('subscription.cancel', 'Cancelar suscripción')}
+                    {t('subscription.cancel', 'Cancelar suscripciÃ³n')}
                   </SubBtn>
                 )}
-                {isCancelled && (
+                {user.subscriptionCancelAtPeriodEnd && (
                   <SubBtn 
                     type="button" 
                     $variant="primary"
@@ -924,7 +1001,7 @@ const hasSubAccess = user.subscriptionStatus === 'active'
       <Modal
         open={cancellingModal}
         onClose={() => { if (!cancelling) setCancellingModal(false); }}
-        title={t('subscription.cancelTitle', 'Cancelar suscripción')}
+        title={t('subscription.cancelTitle', 'Cancelar suscripciÃ³n')}
         footer={
           <>
             <Button
@@ -941,14 +1018,14 @@ const hasSubAccess = user.subscriptionStatus === 'active'
               disabled={cancelling}
               style={{ background: '#ef4444', borderColor: '#ef4444' }}
             >
-              {cancelling ? t('common.saving', 'Cancelando...') : t('subscription.confirmCancel', 'Sí, cancelar')}
+              {cancelling ? t('common.saving', 'Cancelando...') : t('subscription.confirmCancel', 'SÃ­, cancelar')}
             </Button>
           </>
         }
       >
         <Stack style={{ gap: 14 }}>
           <Muted>
-            {t('subscription.cancelMessage', '¿Estás seguro de que quieres cancelar tu suscripción? Seguirás teniendo acceso hasta el final del período actual.')}
+            {t('subscription.cancelMessage', 'Â¿EstÃ¡s seguro de que quieres cancelar tu suscripciÃ³n? SeguirÃ¡s teniendo acceso hasta el final del perÃ­odo actual.')}
           </Muted>
           {user.subscriptionCurrentPeriodEnd && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', fontSize: 13 }}>

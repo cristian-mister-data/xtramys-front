@@ -48,10 +48,11 @@ export const google = (idToken) => api.post('/auth/google', { idToken }).then((r
 
 // Google OAuth: server-side redirect URL
 // Usage: window.location.href = getGoogleOAuthURL(lang, nextPath)
-export const getGoogleOAuthURL = (lang = 'es', nextPath = '/') => {
+export const getGoogleOAuthURL = (lang = 'es', nextPath = '/', redirectBase = window.location.origin) => {
   const base = BACKEND_URL || window.location.origin;
   const next = encodeURIComponent(nextPath);
-  return `${base}/api/auth/google?lang=${lang}&next=${next}`;
+  const redirectBaseParam = encodeURIComponent(redirectBase);
+  return `${base}/api/auth/google?lang=${lang}&next=${next}&redirectBase=${redirectBaseParam}`;
 };
 
 export const apple = (payload) => api.post('/auth/apple', payload);

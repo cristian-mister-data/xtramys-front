@@ -445,6 +445,7 @@ export default function Subscribe() {
                   clientId: PAYPAL_CLIENT_ID,
                   vault: true,
                   intent: 'subscription',
+                  locale: isEs ? 'es_ES' : 'en_US',
                 }}>
                   <PayPalWrapper>
                     <PayPalLabel>

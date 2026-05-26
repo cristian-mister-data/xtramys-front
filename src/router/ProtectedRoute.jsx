@@ -19,7 +19,8 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/welcome" state={{ from: location }} replace />;
+    const isSubscribeFlow = SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p));
+    return <Navigate to={isSubscribeFlow ? '/auth/login' : '/auth/welcome'} state={{ from: location }} replace />;
   }
   if (user?.authProvider === 'local' && user.emailVerificado === false) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;

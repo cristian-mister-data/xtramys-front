@@ -4660,10 +4660,14 @@
     "subscription": {
         "title": "Subscription required",
         "subtitle": "Activate your subscription to access all Xtramys features",
+        "planBadge": "Pro",
         "year": "year",
+        "month": "month",
+        "annual": "Annual billing",
         "subscribe": "Subscribe now",
         "loading": "Processing...",
         "active": "Your subscription is active",
+        "cancelledUntilEnd": "Subscription cancelled. Access until",
         "validUntil": "Valid until",
         "manage": "Manage subscription",
         "updatePayment": "Update payment method",
@@ -4691,6 +4695,7 @@
         },
         "payWithPaypal": "Pay with PayPal",
         "payWithCard": "Pay with card",
+        "paypalError": "Error processing PayPal payment",
         "or": "or",
         "paymentNote": "After payment, your access will be activated automatically."
     },
