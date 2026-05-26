@@ -189,7 +189,7 @@ export default function PaymentSuccess() {
       window.addEventListener('popstate', () => {
         window.history.pushState(null, '', window.location.href);
       });
-      const timer = setTimeout(() => navigate('/', { replace: true }), 3000);
+      const timer = setTimeout(() => navigate('/season/create', { replace: true }), 3000);
       return () => clearTimeout(timer);
     }
   }, [step, navigate]);

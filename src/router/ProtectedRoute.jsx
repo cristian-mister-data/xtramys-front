@@ -25,7 +25,12 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;
   }
 
-  if (user?.role !== 'admin' && subscriptionStatus !== 'active') {
+  const isActive = subscriptionStatus === 'active';
+  const isCancellingButStillValid = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled')
+    && user?.subscriptionCurrentPeriodEnd
+    && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
+
+  if (user?.role !== 'admin' && !isActive && !isCancellingButStillValid) {
     if (!SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p))) {
       return <Navigate to="/subscribe" state={{ from: location }} replace />;
     }

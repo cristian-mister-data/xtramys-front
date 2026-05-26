@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
-import { setNetworkErrorHandler, setUnauthorizedHandler } from './api/client';
+import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
+import { setUser, clearUserState, subscriptionRequired } from './store/slices/user/userSlice';
 import Toaster from './ui/Toaster';
 
 const ApiUnavailable = ({ checking, onRetry }) => (
@@ -60,6 +61,9 @@ export default function App() {
   useEffect(() => {
     setUnauthorizedHandler(() => {
       dispatch(logoutThunk());
+    });
+    setSubscriptionRequiredHandler(() => {
+      dispatch(subscriptionRequired());
     });
     setNetworkErrorHandler((type, ctx) => {
       if (type === 'OFFLINE' || type === 'TIMEOUT') {

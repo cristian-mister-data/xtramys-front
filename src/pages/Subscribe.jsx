@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import { createCheckoutSession, createPortalSession, verifyPayPalSubscription } from '@/api/subscription';
+import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
 import styled, { keyframes } from 'styled-components';
@@ -340,12 +341,17 @@ const CheckIcon = () => (
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const user = useSelector((s) => s.usuario.user);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const isActive = subscriptionStatus === 'active';
+  const isCancelling = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled')
+    && user?.subscriptionCurrentPeriodEnd
+    && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
+  const hasAccess = isActive || isCancelling;
   const locale = i18n.language?.startsWith('es') ? 'es-ES' : 'en-US';
   const isEs = i18n.language?.startsWith('es');
 
@@ -363,17 +369,8 @@ export default function Subscribe() {
     }
   };
 
-  const handleManage = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await createPortalSession();
-      if (data.url) window.location.href = data.url;
-    } catch (err) {
-      setError(err?.message || t('subscription.portalError', 'Error al abrir el portal de gestión'));
-    } finally {
-      setLoading(false);
-    }
+  const handleManage = () => {
+    navigate('/profile');
   };
 
   const handleRefresh = async () => {
@@ -397,13 +394,17 @@ export default function Subscribe() {
   return (
     <Page>
       <Card>
-        {isActive ? (
+        {hasAccess ? (
           <StatusCard>
             <StatusIcon><CheckIcon /></StatusIcon>
-            <StatusTitle>{t('subscription.active', 'Tu suscripción está activa')}</StatusTitle>
+            <StatusTitle>
+              {isCancelling
+                ? t('subscription.cancelledUntilEnd', 'Suscripción cancelada — acceso hasta el')
+                : t('subscription.active', 'Tu suscripción está activa')}
+            </StatusTitle>
             {user?.subscriptionCurrentPeriodEnd && (
               <StatusDate>
-                {t('subscription.validUntil', 'Válida hasta el')}{' '}
+                {isCancelling ? '' : t('subscription.validUntil', 'Válida hasta el')}{' '}
                 {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(
                   locale, { year: 'numeric', month: 'long', day: 'numeric' }
                 )}
@@ -460,8 +461,9 @@ export default function Subscribe() {
                       onApprove={async (data) => {
                         setError(null);
                         try {
-                          const result = await verifyPayPalSubscription(data.subscriptionID);
+                          await verifyPayPalSubscription(data.subscriptionID);
                           await dispatch(checkSubscription()).unwrap();
+                          setTimeout(() => navigate('/season/create', { replace: true }), 100);
                         } catch (err) {
                           setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
                         }

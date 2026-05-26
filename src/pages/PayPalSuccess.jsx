@@ -84,7 +84,7 @@ export default function PayPalSuccess() {
   useEffect(() => {
     if (step !== 'success') return;
     const timer = setTimeout(() => {
-      navigate('/', { replace: true });
+      navigate('/season/create', { replace: true });
     }, 3000);
     return () => clearTimeout(timer);
   }, [step, navigate]);

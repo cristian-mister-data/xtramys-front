@@ -16,6 +16,11 @@ export const setUnauthorizedHandler = (h) => {
   _onUnauthorized = h;
 };
 
+let _onSubscriptionRequired = null;
+export const setSubscriptionRequiredHandler = (h) => {
+  _onSubscriptionRequired = h;
+};
+
 let _lastWarning = { key: '', at: 0 };
 
 function shouldLogWarning(key) {
@@ -69,6 +74,7 @@ function attachInterceptors(instance) {
 
       if (errorType && _networkErrorHandler) _networkErrorHandler(errorType, `${method} ${url}`);
       if (errorType === 'SESSION_EXPIRED' && _onUnauthorized) _onUnauthorized();
+      if (error.response?.status === 402 && _onSubscriptionRequired) _onSubscriptionRequired();
 
       const errorCode = error.response?.data?.code;
       let translatedMessage;

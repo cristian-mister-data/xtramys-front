@@ -31,6 +31,14 @@ const userSlice = createSlice({
       state.subscriptionStatus = null;
       state.plan = 'free';
     },
+    subscriptionRequired: (state) => {
+      state.subscriptionStatus = 'canceled';
+      if (state.user) {
+        state.user.subscriptionStatus = 'canceled';
+        state.user.plan = 'free';
+      }
+      state.plan = 'free';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -103,10 +111,14 @@ const userSlice = createSlice({
           s.user.plan = a.payload?.plan || 'free';
           s.user.subscriptionCurrentPeriodEnd = a.payload?.currentPeriodEnd || null;
           s.user.subscriptionCancelAtPeriodEnd = a.payload?.cancelAtPeriodEnd || false;
+          s.user.paymentProvider = a.payload?.paymentProvider || null;
+          s.user.subscriptionStartedAt = a.payload?.startedAt || null;
+          s.user.subscriptionCanceledAt = a.payload?.canceledAt || null;
+          s.user.invoices = a.payload?.invoices || [];
         }
       });
   },
 });
 
-export const { setUser, clearUserState } = userSlice.actions;
+export const { setUser, clearUserState, subscriptionRequired } = userSlice.actions;
 export default userSlice.reducer;
