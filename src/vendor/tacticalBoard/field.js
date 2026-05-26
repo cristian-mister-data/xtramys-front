@@ -11151,6 +11151,8 @@ const handleCancelar = useCallback(async () => {
   }, [clearBoardState, unlockOrientationAndGoBack]);
 
   const handleCloseVideoRecorder = useCallback(() => {
+    // Mantener los elementos dibujados en el campo al cerrar
+    keepVideoChangesRef.current = true;
     setVideoRecorderVisible(false);
     setFieldImageForVideo(null);
 
@@ -15626,89 +15628,88 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
         {
           transform: [{ translateX: slideAnim }],
         },
-        isMobile && {
-          top: 'auto',
-          bottom: 20,
-          marginTop: 0,
-          left: 0,
-          borderTopRightRadius: 15,
-          borderBottomRightRadius: 15,
-          maxWidth: 70,
-        }
+        isMobile && styles.slidingZoomControlsMobile
       ]}
       pointerEvents="auto"
     >
         {/* Header */}
-        <View style={[styles.slidingZoomHeader, isMobile && { paddingHorizontal: 5, paddingBottom: 5 }]}>
-          <Text style={[styles.slidingZoomTitle, isMobile && { fontSize: 12 }]}>{t('tacticalBoard.zoom')}</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+        <View style={[styles.slidingZoomHeader, isMobile && styles.slidingZoomHeaderMobile]}>
+          <Text style={[styles.slidingZoomTitle, isMobile && styles.slidingZoomTitleMobile]}>{t('tacticalBoard.zoom')}</Text>
+          <TouchableOpacity onPress={onClose} activeOpacity={0.7} accessibilityLabel={t('tacticalBoard.close')}>
             <Feather name="x" size={isMobile ? 16 : 20} color="#fff" />
           </TouchableOpacity>
         </View>
 
         {/* Contenido */}
-        <View style={[styles.slidingZoomContent, isMobile && { paddingTop: 5 }]}>
+        <View style={[styles.slidingZoomContent, isMobile && styles.slidingZoomContentMobile]}>
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onZoomIn}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.zoomIn')}
           >
-            <Feather name="zoom-in" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="zoom-in" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onZoomOut}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.zoomOut')}
           >
-            <Feather name="zoom-out" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="zoom-out" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
-          <View style={[styles.zoomSeparator, isMobile && { marginVertical: 3 }]} />
+          <View style={[styles.zoomSeparator, isMobile && styles.zoomSeparatorMobile]} />
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onPanUp}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.panUp')}
           >
-            <Feather name="chevron-up" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="chevron-up" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onPanDown}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.panDown')}
           >
-            <Feather name="chevron-down" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="chevron-down" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onPanLeft}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.panLeft')}
           >
-            <Feather name="chevron-left" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="chevron-left" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onPanRight}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.panRight')}
           >
-            <Feather name="chevron-right" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="chevron-right" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
-          <View style={[styles.zoomSeparator, isMobile && { marginVertical: 3 }]} />
+          <View style={[styles.zoomSeparator, isMobile && styles.zoomSeparatorMobile]} />
 
           <TouchableOpacity
-            style={[styles.zoomControlButton, isMobile && { width: 32, height: 32, borderRadius: 16, marginVertical: 2 }]}
+            style={[styles.zoomControlBtn, isMobile && styles.zoomControlBtnMobile]}
             onPress={onReset}
             activeOpacity={0.7}
+            accessibilityLabel={t('tacticalBoard.resetZoom')}
           >
-            <Feather name="maximize" size={isMobile ? 16 : 24} color="#fff" />
+            <Feather name="maximize" size={isMobile ? 18 : 24} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={[styles.zoomLevelText, isMobile && { fontSize: 10, marginTop: 3 }]}>{Math.round(zoomLevel * 100)}%</Text>
+          <Text style={[styles.zoomLevelText, isMobile && styles.zoomLevelTextMobile]}>{Math.round(zoomLevel * 100)}%</Text>
         </View>
       </Animated.View>
   );
@@ -17624,6 +17625,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     marginVertical: 8,
   },
+  zoomSeparatorMobile: {
+    marginVertical: 4,
+  },
+  zoomLevelText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  zoomLevelTextMobile: {
+    fontSize: 10,
+    marginTop: 4,
+  },
   zoomText: {
     color: '#fff',
     fontSize: 12,
@@ -17861,54 +17875,71 @@ paletteIconButtonSelected: {
   borderWidth: 2,
   borderColor: '#fff',
 },
-slidingZoomControls: {
-  position: 'absolute',
-  left: 0,
-  top: '50%',
-  marginTop: -150,
-  backgroundColor: 'rgba(0, 0, 0, 0.85)',
-  borderTopRightRadius: 15,
-  borderBottomRightRadius: 15,
-  padding: 10,
-  elevation: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 2, height: 0 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-},
-slidingZoomHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: 10,
-  paddingBottom: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-},
-slidingZoomTitle: {
-  color: '#fff',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
-slidingZoomContent: {
-  paddingTop: 10,
-  alignItems: 'center',
-},
-zoomControlButton: {
-  width: 44,
-  height: 44,
-  borderRadius: 22,
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginVertical: 4,
-},
-zoomLevelText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 'bold',
-  marginTop: 8,
-},
+  slidingZoomControls: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    marginTop: -160,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    borderTopRightRadius: 15,
+    borderBottomRightRadius: 15,
+    padding: 10,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 999,
+  },
+  slidingZoomControlsMobile: {
+    top: '50%',
+    marginTop: -140,
+    padding: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+  },
+  slidingZoomHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  slidingZoomHeaderMobile: {
+    paddingHorizontal: 4,
+    paddingBottom: 6,
+  },
+  slidingZoomTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  slidingZoomTitleMobile: {
+    fontSize: 11,
+  },
+  slidingZoomContent: {
+    paddingTop: 10,
+    alignItems: 'center',
+  },
+  slidingZoomContentMobile: {
+    paddingTop: 4,
+  },
+  zoomControlBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  zoomControlBtnMobile: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginVertical: 2,
+  },
 teamPlayersModal: {
   position: 'absolute',
   right: 0,
