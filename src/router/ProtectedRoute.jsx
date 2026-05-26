@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 
 const SUBSCRIBE_PATHS = ['/subscribe', '/suscripcion', '/en/subscribe', '/es/subscribe', '/es/suscripcion', '/payment/success', '/payment/paypal/success'];
 
@@ -26,12 +27,9 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;
   }
 
-  const isActive = subscriptionStatus === 'active';
-  const isCancellingButStillValid = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled')
-    && user?.subscriptionCurrentPeriodEnd
-    && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
+  const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
 
-  if (user?.role !== 'admin' && !isActive && !isCancellingButStillValid) {
+  if (user?.role !== 'admin' && !hasAccess) {
     if (!SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p))) {
       return <Navigate to="/subscribe" state={{ from: location }} replace />;
     }

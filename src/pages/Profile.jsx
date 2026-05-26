@@ -663,6 +663,10 @@ export default function Profile() {
         toast.success(data.mensaje || 'Suscripción reactivada correctamente');
       }
     } catch (err) {
+      if (err?.code === 'PAYPAL_REACTIVATE_REQUIRES_APPROVAL') {
+        navigate('/subscribe');
+        return;
+      }
       toast.error(err?.response?.data?.mensaje || 'Error al reactivar suscripción');
     } finally {
       setPortalLoading(false);
@@ -920,6 +924,7 @@ export default function Profile() {
               )}
               
               <SubActions>
+                {user.paymentProvider === 'stripe' && (
                 <SubBtn 
                   type="button" 
                   $variant="secondary"
@@ -928,6 +933,7 @@ export default function Profile() {
                 >
                   {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
                 </SubBtn>
+                )}
                 {!user.subscriptionCancelAtPeriodEnd && (
                   <SubBtn
                     type="button"

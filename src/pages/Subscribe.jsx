@@ -6,6 +6,7 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
+import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 import styled, { keyframes } from 'styled-components';
 
 const fadeIn = keyframes`from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}`;
@@ -347,11 +348,10 @@ export default function Subscribe() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const isActive = subscriptionStatus === 'active';
-  const isCancelling = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled')
+  const isCancelling = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled' || subscriptionStatus === 'cancelled')
     && user?.subscriptionCurrentPeriodEnd
     && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
-  const hasAccess = isActive || isCancelling;
+  const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
   const locale = i18n.language?.startsWith('es') ? 'es-ES' : 'en-US';
   const isEs = i18n.language?.startsWith('es');
 
@@ -441,11 +441,12 @@ export default function Subscribe() {
 
             <PaymentSection>
               {PAYPAL_CLIENT_ID ? (
-                <PayPalScriptProvider options={{
+                <PayPalScriptProvider key={`${PAYPAL_CLIENT_ID}-${locale}`} options={{
                   clientId: PAYPAL_CLIENT_ID,
                   vault: true,
                   intent: 'subscription',
                   locale: isEs ? 'es_ES' : 'en_US',
+                  components: 'buttons',
                 }}>
                   <PayPalWrapper>
                     <PayPalLabel>
@@ -455,6 +456,7 @@ export default function Subscribe() {
                       {t('subscription.payWithPaypal', 'Pagar con PayPal')}
                     </PayPalLabel>
                     <PayPalButtons
+                      forceReRender={[PAYPAL_PLAN_ID, locale]}
                       style={{ layout: 'vertical', shape: 'pill', label: 'subscribe', height: 45, color: 'gold' }}
                       createSubscription={(data, actions) =>
                         actions.subscription.create({ plan_id: PAYPAL_PLAN_ID })
