@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { MdSearch, MdAdd, MdClose, MdCheck, MdShield, MdImage } from 'react-icons/md';
 import Modal from '@/ui/Modal';
+import ImageCropper from '@/components/season/ImageCropper';
 import { Button, Field, Label, Input, Row, Stack, Muted } from '@/ui/primitives';
 import { fetchRivalsByTeam, createRival } from '@/store/slices/rival/rivalThunks';
 import { toast } from '@/ui/toast';
@@ -102,6 +103,7 @@ export default function RivalSelector({
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCrest, setNewCrest] = useState(null);
+  const [cropperSrc, setCropperSrc] = useState(null);
   const [creating, setCreating] = useState(false);
   const fileRef = useRef(null);
 
@@ -138,9 +140,7 @@ export default function RivalSelector({
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setNewCrest(reader.result);
-    reader.readAsDataURL(file);
+    setCropperSrc(URL.createObjectURL(file));
   };
 
   const handleCreate = async () => {
@@ -269,6 +269,18 @@ export default function RivalSelector({
           </Row>
         </Stack>
       </Modal>
+
+      {cropperSrc ? (
+        <ImageCropper
+          src={cropperSrc}
+          title={t('rivals.adjustShield', 'Ajustar escudo')}
+          onConfirm={(dataUrl) => {
+            setNewCrest(dataUrl);
+            setCropperSrc(null);
+          }}
+          onCancel={() => setCropperSrc(null)}
+        />
+      ) : null}
     </>
   );
 }

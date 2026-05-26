@@ -20,7 +20,7 @@ import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { createPortalSession, createCheckoutSession, reactivateSubscription } from '@/api/subscription';
 import api from '@/api/client';
-import { fileToBase64 } from '@/components/player/playerHelpers';
+import ImageCropper from '@/components/season/ImageCropper';
 import { useTutorial } from '@/components/shared/TutorialProvider';
 import flagEs from '@/images/spain.png';
 import flagEn from '@/images/united-kingdom.png';
@@ -400,6 +400,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropperSrc, setCropperSrc] = useState(null);
   const [changingPassword, setChangingPassword] = useState(false);
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -558,21 +559,27 @@ export default function Profile() {
     }
   };
 
-  const handlePickPhoto = async (e) => {
+  const handlePickPhoto = (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast.error(t('message.invalidImage', 'El archivo no es una imagen válida'));
       return;
     }
+    setCropperSrc(URL.createObjectURL(file));
+  };
+
+  const handleCropConfirm = async (dataUrl) => {
+    setCropperSrc(null);
     setUploading(true);
     try {
-      const dataUrl = await fileToBase64(file);
-      // strip data URL prefix to send raw base64
-      const base64 = String(dataUrl).split(',')[1] || dataUrl;
+      const [header, b64] = dataUrl.split(',');
+      const mimeType = (header.match(/data:(.*?);/) || [])[1] || 'image/jpeg';
+      const base64 = b64 || dataUrl;
       const res = await api.post(`/user/${user._id}/image`, {
         imagen: base64,
-        mimeType: file.type || 'image/jpeg',
+        mimeType,
       });
       const updated = { ...user, imagen: res.data?.imagen || dataUrl };
       dispatch(setUser(updated));
@@ -581,7 +588,6 @@ export default function Profile() {
       toast.error(t('message.imageUploadError', 'Error al subir la imagen'));
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
   };
 
@@ -1045,6 +1051,15 @@ export default function Profile() {
           </Row>
         </Stack>
       </Modal>
+
+      {cropperSrc ? (
+        <ImageCropper
+          src={cropperSrc}
+          title={t('profile.adjustPhoto', 'Ajustar foto')}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropperSrc(null)}
+        />
+      ) : null}
     </Stack>
   );
 }

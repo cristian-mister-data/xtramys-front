@@ -123,6 +123,15 @@ const ZoomBadge = styled.span`
   text-align: center;
 `;
 
+const DragHint = styled.div`
+  font-size: 11px;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textMuted};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  padding: 6px 12px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
 export default function ImageCropper({ src, onConfirm, onCancel, title }) {
   const { t } = useTranslation();
   const canvasRef = useRef(null);
@@ -319,6 +328,10 @@ export default function ImageCropper({ src, onConfirm, onCancel, title }) {
           />
           <CornerTL />
         </Viewport>
+
+        <DragHint>
+          {t('team.dragToMove', 'Arrastra para mover')} &bull; {t('team.wheelToZoom', 'Rueda para hacer zoom')}
+        </DragHint>
 
         <Controls>
           <SliderRow>
