@@ -83,5 +83,7 @@ ${sectionsHtml}
 </body></html>`;
 
   const Print = await import('expo-print');
-  await Print.printAsync({ html });
+  const { savePdfToDownloads } = await import('@/utils/pdfDownload');
+  const { uri } = await Print.printToFileAsync({ html });
+  await savePdfToDownloads(uri, `injury-prevention-${protocol.name || 'protocol'}`);
 }

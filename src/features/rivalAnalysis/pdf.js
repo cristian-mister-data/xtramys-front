@@ -439,5 +439,7 @@ export async function generateRivalAnalysisPdf(rivalAnalysis, template, t, selec
   const userTemplates = template ? [template] : [];
   const html = generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTemplates);
   const Print = await import('expo-print');
-  await Print.printAsync({ html });
+  const { savePdfToDownloads } = await import('@/utils/pdfDownload');
+  const { uri } = await Print.printToFileAsync({ html });
+  await savePdfToDownloads(uri, `rival-analysis-${rivalAnalysis.rival || 'report'}`);
 }

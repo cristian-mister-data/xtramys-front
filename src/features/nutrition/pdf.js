@@ -185,7 +185,9 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
 export async function generateNutritionPdf(preseasonData, seasonData, referenceData, t, optionLabel) {
   const html = buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionLabel);
   const Print = await import('expo-print');
-  await Print.printAsync({ html });
+  const { savePdfToDownloads } = await import('@/utils/pdfDownload');
+  const { uri } = await Print.printToFileAsync({ html });
+  await savePdfToDownloads(uri, `nutrition-${optionLabel || 'report'}`);
 }
 
 export { buildNutritionHTML };

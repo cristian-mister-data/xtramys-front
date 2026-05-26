@@ -1,41 +1,18 @@
-/**
- * Shim de expo-print para web.
- *
- * Usa `window.print()` del navegador en un iframe oculto. Es la única forma
- * de conseguir que el PDF en web sea visualmente idéntico al de iOS/Android,
- * porque ambos pasan por el mismo motor de Chromium / WebKit:
- *   - texto vectorial (no rasterizado),
- *   - respeta @page, page-break, page-break-inside: avoid,
- *   - flujo natural sin cortes a media línea,
- *   - mismas medidas y tipografía que el móvil.
- *
- * Inyectamos `@page { size: A4; margin: 0 }` para que el navegador no añada
- * cabeceras/pies por defecto y el padding del body se vea como en móvil.
- *
- * Limitación: el navegador exige el diálogo "Guardar como PDF" por seguridad.
- * No existe API para volcar a fichero sin esa interacción del usuario. La
- * alternativa rasterizada (html2canvas + jsPDF) producía PDFs de baja
- * calidad, así que se descarta.
- */
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
-const SENTINEL_URI = 'webprint://done';
-
-const PAGE_RULES = `
-  @page { size: A4; margin: 0; }
-  html, body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-`;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const SCALE = 2;
 
 function buildIframe(html) {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
+  iframe.style.width = '794px';
+  iframe.style.height = '1123px';
   iframe.style.border = '0';
   iframe.style.opacity = '0';
   iframe.style.pointerEvents = 'none';
@@ -43,17 +20,11 @@ function buildIframe(html) {
   const doc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!doc) {
     document.body.removeChild(iframe);
-    throw new Error('No se pudo crear el iframe de impresión');
+    throw new Error('No se pudo crear el iframe de renderizado');
   }
   doc.open();
   doc.write(html || '<html><body></body></html>');
   doc.close();
-  try {
-    const style = doc.createElement('style');
-    style.setAttribute('data-webprint', 'page-rules');
-    style.textContent = PAGE_RULES;
-    (doc.head || doc.documentElement).appendChild(style);
-  } catch { /* noop */ }
   return iframe;
 }
 
@@ -87,19 +58,72 @@ function waitForResources(iframe) {
   });
 }
 
-async function printViaIframe(html) {
+async function htmlToPdfBlob(html) {
   const iframe = buildIframe(html);
   try {
     await waitForResources(iframe);
-    await new Promise((r) => setTimeout(r, 80));
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-    setTimeout(() => {
-      try { document.body.removeChild(iframe); } catch { /* noop */ }
-    }, 60_000);
-  } catch (e) {
+    await new Promise((r) => setTimeout(r, 100));
+
+    const doc = iframe.contentDocument;
+    const body = doc.body;
+
+    const pxPerMm = 96 / 25.4;
+    const pageWidthPx = Math.round(A4_WIDTH_MM * pxPerMm);
+    const pageHeightPx = Math.round(A4_HEIGHT_MM * pxPerMm);
+
+    const fullCanvas = await html2canvas(body, {
+      scale: SCALE,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: body.scrollWidth,
+      height: body.scrollHeight,
+      windowWidth: body.scrollWidth,
+      windowHeight: body.scrollHeight,
+      logging: false,
+    });
+
+    const imgWidthPx = fullCanvas.width;
+    const imgHeightPx = fullCanvas.height;
+
+    const numPages = Math.ceil(imgHeightPx / (pageHeightPx * SCALE));
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    for (let i = 0; i < numPages; i++) {
+      if (i > 0) pdf.addPage();
+
+      const srcY = i * pageHeightPx * SCALE;
+      const srcH = Math.min(pageHeightPx * SCALE, imgHeightPx - srcY);
+
+      if (srcH <= 0) break;
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = imgWidthPx;
+      pageCanvas.height = srcH;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(
+        fullCanvas,
+        0, srcY, imgWidthPx, srcH,
+        0, 0, imgWidthPx, srcH
+      );
+
+      const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+      const ratioW = A4_WIDTH_MM / (imgWidthPx / SCALE);
+      const drawH = (srcH / SCALE) * ratioW;
+      pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH_MM, drawH);
+    }
+
+    const blob = pdf.output('blob');
+    return blob;
+  } finally {
     try { document.body.removeChild(iframe); } catch { /* noop */ }
-    throw e;
   }
 }
 
@@ -109,17 +133,17 @@ export async function printAsync({ html, uri } = {}) {
     if (w) w.focus();
     return;
   }
-  await printViaIframe(html);
+  const blob = await htmlToPdfBlob(html);
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (w) w.focus();
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch {} }, 60_000);
 }
 
-/**
- * En móvil esto produciría un fichero PDF temporal. En web no es posible sin
- * un servidor — devolvemos un URI sentinela que `savePdfToDownloads` detecta
- * para no intentar descargar tras la impresión nativa.
- */
 export async function printToFileAsync({ html } = {}) {
-  await printViaIframe(html);
-  return { uri: SENTINEL_URI, base64: null, numberOfPages: 1 };
+  const blob = await htmlToPdfBlob(html);
+  const url = URL.createObjectURL(blob);
+  return { uri: url, base64: null, numberOfPages: 1 };
 }
 
 export async function selectPrinterAsync() {
@@ -130,7 +154,5 @@ export const Orientation = {
   portrait: 'portrait',
   landscape: 'landscape',
 };
-
-export const WEB_PRINT_SENTINEL = SENTINEL_URI;
 
 export default { printAsync, printToFileAsync, selectPrinterAsync, Orientation };
