@@ -657,43 +657,82 @@ function drawCurveLine(ctx, cw, ch, elem, scale) {
 }
 
 function drawCircleShape(ctx, cw, ch, elem, scale) {
-  if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.radius) {
-    const cx = elem.xRatio * cw;
-    const cy = elem.yRatio * ch;
-    const r = elem.radius;
-    const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    if (elem.fillColor && elem.fillColor !== 'transparent') {
-      ctx.fillStyle = elem.fillColor;
-      ctx.fill();
-    }
-    ctx.strokeStyle = elem.color || '#000';
-    ctx.lineWidth = Math.max(1, thickness);
-    setLineDash(ctx, elem, scale);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
+  let cx, cy, r;
+
+  if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
+    const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
+    const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+    cx = (p1.x + p2.x) / 2;
+    cy = (p1.y + p2.y) / 2;
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    r = Math.sqrt(dx * dx + dy * dy) / 2;
+  } else if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.radius) {
+    cx = elem.xRatio * cw;
+    cy = elem.yRatio * ch;
+    r = elem.radius;
+  } else if (elem.x !== undefined && elem.y !== undefined && elem.radius) {
+    const scaleX = cw / (elem.sourceWidth || cw);
+    const scaleY = ch / (elem.sourceHeight || ch);
+    cx = elem.x * scaleX;
+    cy = elem.y * scaleY;
+    r = elem.radius * Math.min(scaleX, scaleY);
+  } else {
+    return;
   }
+
+  if (!r || r <= 0) return;
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.fillStyle = elem.fillColor;
+    ctx.fill();
+  }
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  setLineDash(ctx, elem, scale);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function drawRectangleShape(ctx, cw, ch, elem, scale) {
-  if (elem.x !== undefined && elem.width) {
-    const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
-    ctx.save();
-    applyRotation(ctx, elem.x + elem.width / 2, elem.y + elem.height / 2, elem.rotation);
-    if (elem.fillColor && elem.fillColor !== 'transparent') {
-      ctx.fillStyle = elem.fillColor;
-      ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
-    }
-    ctx.strokeStyle = elem.color || '#000';
-    ctx.lineWidth = Math.max(1, thickness);
-    setLineDash(ctx, elem, scale);
-    ctx.strokeRect(elem.x, elem.y, elem.width, elem.height);
-    ctx.setLineDash([]);
-    ctx.restore();
+  let rx, ry, rw, rh;
+
+  if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
+    const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
+    const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+    rx = Math.min(p1.x, p2.x);
+    ry = Math.min(p1.y, p2.y);
+    rw = Math.abs(p2.x - p1.x);
+    rh = Math.abs(p2.y - p1.y);
+  } else if (elem.x !== undefined && elem.width) {
+    const scaleX = cw / (elem.sourceWidth || cw);
+    const scaleY = ch / (elem.sourceHeight || ch);
+    rx = elem.x * scaleX;
+    ry = elem.y * scaleY;
+    rw = elem.width * scaleX;
+    rh = elem.height * scaleY;
+  } else {
+    return;
   }
+
+  if (!rw || rw <= 0 || !rh || rh <= 0) return;
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  ctx.save();
+  applyRotation(ctx, rx + rw / 2, ry + rh / 2, elem.rotation);
+  if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.fillStyle = elem.fillColor;
+    ctx.fillRect(rx, ry, rw, rh);
+  }
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  setLineDash(ctx, elem, scale);
+  ctx.strokeRect(rx, ry, rw, rh);
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function drawCustomShape(ctx, cw, ch, elem, scale) {
@@ -801,7 +840,7 @@ const LINE_DRAWERS = {
   'custom-shape': drawCustomShape,
 };
 
-export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, options = {}) {
+export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, _options = {}) {
   ctx.fillStyle = FIELD_BG;
   ctx.fillRect(0, 0, cw, ch);
 

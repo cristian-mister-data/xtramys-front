@@ -1224,6 +1224,8 @@ const FreeTextTool = React.memo(({
   idx,
   imageWidth,
   imageHeight,
+  selectedCloneId,
+  setSelectedCloneId,
   setOptionsMenu,
   saveClonesHistory,
   multiSelectMode,
@@ -1231,6 +1233,8 @@ const FreeTextTool = React.memo(({
   selectedCloneIdsSet,
   selectionInteractionMode,
   clones,
+  setClones,
+  dragStart,
   eraserMode,
   onEraseElement,
   viewMode,
@@ -10033,6 +10037,22 @@ export default function Field(props = {}) {
     actualClonesRef.current = actualClones;
   }, [actualClones]);
 
+  useEffect(() => {
+    if (!isMobile || Platform.OS !== 'web') return;
+    const prevent = (e) => {
+      if (e.touches && e.touches.length > 1) e.preventDefault();
+    };
+    const preventWheel = (e) => {
+      if (e.ctrlKey) e.preventDefault();
+    };
+    document.addEventListener('touchmove', prevent, { passive: false });
+    document.addEventListener('wheel', preventWheel, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', prevent);
+      document.removeEventListener('wheel', preventWheel);
+    };
+  }, [isMobile]);
+
   // =====================================================
   // SISTEMA IMPERATIVO DE GUARDADO DE HISTORIAL
   // No usa useEffect sobre actualClones "� evita "Maximum update depth exceeded"
@@ -10376,9 +10396,11 @@ export default function Field(props = {}) {
   const { imageWidth, imageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
-      const topButtonsSpace = 60;
-      const bottomButtonsSpace = 60;
-      const usableWidth = SCREEN_WIDTH - 16;
+      const topButtonsSpace = 44;
+      const bottomButtonsSpace = 44;
+      const videoPanelW = videoRecorderVisible ? 112 : 0;
+      const sideMargin = 6;
+      const usableWidth = SCREEN_WIDTH - sideMargin * 2 - videoPanelW;
       const usableHeight = SCREEN_HEIGHT - topButtonsSpace - bottomButtonsSpace;
 
       w = usableWidth;
@@ -10406,7 +10428,7 @@ export default function Field(props = {}) {
       }
     }
     return { imageWidth: w, imageHeight: h };
-  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect]);
+  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible]);
 
   // Helper: calcular el centro visible del campo seg�n el viewMode activo
   const getVisibleCenterRatio = useCallback(() => {
@@ -15711,7 +15733,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#4a8c3f' }}>
-      <View ref={containerRef} style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#4a8c3f', position: 'relative' }}>
+      <View ref={containerRef} style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#4a8c3f', position: 'relative', touchAction: isMobile ? 'none' : 'auto', overflow: 'hidden', paddingRight: isMobile && videoRecorderVisible ? 112 : 0 }}>
         <StatusBar
           barStyle="light-content"
           backgroundColor="#4a8c3f"
@@ -15804,11 +15826,9 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           left: 0,
           right: 0,
           bottom: 0,
-          width: '100%',
-          height: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'visible', // Permitir ver elementos fuera del campo
+          overflow: 'visible',
         }}>
           <View
             style={{
@@ -15828,8 +15848,9 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                   alignSelf: 'center',
                   flex: 0,
                   backgroundColor: 'transparent',
-                  marginBottom: isMobile ? 4 : 8, // Menos margen en m�vil
-                  overflow: 'visible', // Permitir ver elementos fuera del campo
+                  marginBottom: isMobile ? 4 : 8,
+                  overflow: 'visible',
+                  touchAction: isMobile ? 'none' : 'auto',
                 },
               ]}
             >
@@ -15844,6 +15865,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                     viewMode={viewMode}
                     width={referenceWidth}
                     height={referenceHeight}
+                    clipIdPrefix="capture-"
                   />
                 </ViewShot>
               </View>
@@ -15880,6 +15902,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         backgroundColor: FIELD_CAPTURE_BACKGROUND,
                         opacity: fieldImageReady ? 1 : 0,
                         userSelect: 'none',
+                        touchAction: 'none',
                         zIndex: multiSelectMode ? 9999 :
                                (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
                                  drawingCurveLine || drawingCurveArrow || drawingCustomShape || eraserMode) ? 9999 : 0
@@ -15980,6 +16003,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                           viewMode={viewMode}
                           width={imageWidth}
                           height={imageHeight}
+                          clipIdPrefix="visible-"
                         />
                       </View>
 

@@ -15,6 +15,10 @@ import {
   BackHandler,
 } from 'react-native';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const IS_MOBILE = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
+
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
     <Pressable
@@ -1084,6 +1088,11 @@ export default function VideoRecorder({
           return;
         }
 
+        // Yield to the browser every 4 frames to prevent throttling
+        if (i % 4 === 0) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+
         const frame = allFrames[i];
 
         renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage);
@@ -1632,197 +1641,161 @@ export default function VideoRecorder({
 
   return (
     <>
-      {/* Panel lateral flotante de controles */}
-      <View style={styles.floatingPanel}>
+      {/* Video Recorder Panel */}
+      <View style={IS_MOBILE ? styles.panelMobile : styles.panelDesktop}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{t('videoRecorder.title')}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{t('videoRecorder.title')}</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <Feather name="x" size={14} color="#94a3b8" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
-          showsVerticalScrollIndicator={true}
-          contentContainerStyle={styles.contentContainer}
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
           nestedScrollEnabled={true}
         >
-          <View style={styles.controls}>
-            <TouchableOpacity
-              style={[styles.button, styles.captureButton]}
-              onPress={captureKeyframe}
-              disabled={isGenerating}
-            >
-              <Text style={styles.buttonText}>{t('videoRecorder.capture')}</Text>
-            </TouchableOpacity>
+          {/* Capture button */}
+          <TouchableOpacity
+            style={styles.btnCapture}
+            onPress={captureKeyframe}
+            disabled={isGenerating}
+          >
+            <Text style={styles.btnCaptureText}>{t('videoRecorder.capture')}</Text>
+          </TouchableOpacity>
 
-            <Text style={styles.keyframeCount}>
-              {t('videoRecorder.captures')} {keyframes.length}
-            </Text>
-
-            {keyframes.length > 0 && (
-              <TouchableOpacity
-                style={[styles.button, styles.deleteLastButton]}
-                onPress={removeLastKeyframe}
-                disabled={isGenerating}
-              >
-                <Text style={styles.buttonText}>{t('videoRecorder.deleteLast')}</Text>
-              </TouchableOpacity>
-            )}
-
-            {keyframes.length >= 2 && (
-              <>
-                {/* Selector de velocidad */}
-                <View style={styles.speedSection}>
-                  <Text style={styles.speedLabel}>{t('videoRecorder.speed')}</Text>
-                  <View style={styles.speedButtons}>
-                    <TouchableOpacity
-                      style={[
-                        styles.speedButton,
-                        videoSpeed === 0.5 && styles.speedButtonActive
-                      ]}
-                      onPress={() => setVideoSpeed(0.5)}
-                    >
-                      <Text style={[
-                        styles.speedButtonText,
-                        videoSpeed === 0.5 && styles.speedButtonTextActive
-                      ]}>x0.5</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.speedButton,
-                        videoSpeed === 1.0 && styles.speedButtonActive
-                      ]}
-                      onPress={() => setVideoSpeed(1.0)}
-                    >
-                      <Text style={[
-                        styles.speedButtonText,
-                        videoSpeed === 1.0 && styles.speedButtonTextActive
-                      ]}>x1</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.speedButton,
-                        videoSpeed === 2.0 && styles.speedButtonActive
-                      ]}
-                      onPress={() => setVideoSpeed(2.0)}
-                    >
-                      <Text style={[
-                        styles.speedButtonText,
-                        videoSpeed === 2.0 && styles.speedButtonTextActive
-                      ]}>x2</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                
-                <TouchableOpacity
-                  style={[styles.button, styles.generateButton]}
-                  onPress={generateVideo}
-                  disabled={isGenerating}
-                >
-                  <Text style={styles.buttonText}>
-                    {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.generate')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {keyframes.length > 0 && (
-              <TouchableOpacity
-                style={[styles.button, styles.clearButton]}
-                onPress={clearKeyframes}
-                disabled={isGenerating}
-              >
-                <Text style={styles.buttonText}>{t('videoRecorder.clearAll')}</Text>
-              </TouchableOpacity>
-            )}
+          {/* Counter */}
+          <View style={styles.counterRow}>
+            <View style={[styles.counterBadge, keyframes.length > 0 && styles.counterBadgeActive]}>
+              <Text style={[styles.counterBadgeText, keyframes.length > 0 && styles.counterBadgeTextActive]}>
+                {keyframes.length}
+              </Text>
+            </View>
+            <Text style={styles.counterLabel}>{t('videoRecorder.captures')}</Text>
           </View>
 
-          {/* Lista de posiciones capturadas */}
+          {/* Secondary actions */}
           {keyframes.length > 0 && (
-            <View style={styles.keyframeSection}>
-              <Text style={styles.sectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
-              <View style={styles.keyframeList}>
+            <View style={styles.secondaryRow}>
+              <TouchableOpacity
+                style={styles.btnSecondary}
+                onPress={removeLastKeyframe}
+                disabled={isGenerating}
+                accessibilityRole="button"
+                accessibilityLabel={t('videoRecorder.deleteLast')}
+              >
+                <Text style={styles.btnSecondaryText}>{t('videoRecorder.deleteLast')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.btnDanger}
+                onPress={clearKeyframes}
+                disabled={isGenerating}
+                accessibilityRole="button"
+                accessibilityLabel={t('videoRecorder.clearAll')}
+              >
+                <Text style={styles.btnDangerText}>{t('videoRecorder.clearAll')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Speed selector */}
+          {keyframes.length >= 2 && (
+            <View style={styles.speedSection}>
+              <Text style={styles.speedLabel}>{t('videoRecorder.speed')}</Text>
+              <View style={styles.speedGroup}>
+                {[0.5, 1.0, 2.0].map((spd) => (
+                  <TouchableOpacity
+                    key={spd}
+                    style={[styles.speedBtn, videoSpeed === spd && styles.speedBtnActive]}
+                    onPress={() => setVideoSpeed(spd)}
+                  >
+                    <Text style={[styles.speedBtnText, videoSpeed === spd && styles.speedBtnTextActive]}>
+                      x{spd}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Generate button */}
+          {keyframes.length >= 2 && (
+            <TouchableOpacity
+              style={[styles.btnGenerate, isGenerating && styles.btnGenerateDisabled]}
+              onPress={generateVideo}
+              disabled={isGenerating}
+            >
+              <Text style={styles.btnGenerateText}>
+                {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.generate')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Keyframe list */}
+          {keyframes.length > 0 && (
+            <View style={styles.kfSection}>
+              <Text style={styles.kfSectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
+              <View style={styles.kfList}>
                 {keyframes.map((keyframe, index) => {
                   const isLast = index === keyframes.length - 1;
-                  const balls = (keyframe.elements || []).filter(element => element.type === 'ball');
+                  const balls = (keyframe.elements || []).filter(el => el.type === 'ball');
                   const getTrajectory = (ballId) => getBallTrajectoryForSegment(keyframe, ballId);
                   const setTrajectory = (ballId, newType) => {
                     onKeyframesChange(
                       keyframes.map((kf, i) => {
                         if (i !== index) return kf;
-                        const ballTrajectoryById = {
-                          ...(kf.ballTrajectoryById || {}),
-                          [ballId]: newType,
-                        };
                         return {
                           ...kf,
-                          ballTrajectoryById,
+                          ballTrajectoryById: { ...(kf.ballTrajectoryById || {}), [ballId]: newType },
                           ballTrajectoryType: balls.length <= 1 ? newType : (kf.ballTrajectoryType || 'ground'),
                         };
                       })
                     );
                   };
                   return (
-                    <View key={index} style={styles.keyframeItem}>
-                      <View style={styles.keyframeItemHeader}>
-                        <Text style={styles.keyframeText}>{index + 1}</Text>
-
+                    <View key={index} style={styles.kfItem}>
+                      <View style={styles.kfItemTop}>
+                        <View style={styles.kfNum}>
+                          <Text style={styles.kfNumText}>{index + 1}</Text>
+                        </View>
                         <TouchableOpacity
                           onPress={() => onSelectKeyframe && onSelectKeyframe(index)}
-                          style={styles.viewButton}
+                          style={styles.kfViewBtn}
                         >
-                          <Text style={styles.viewButtonText}>{t('videoRecorder.view')}</Text>
+                          <Text style={styles.kfViewBtnText}>{t('videoRecorder.view')}</Text>
                         </TouchableOpacity>
-
                         <TouchableOpacity
                           onPress={() => removeKeyframe(index)}
-                          style={styles.removeButton}
+                          style={styles.kfRemoveBtn}
                         >
-                          <Text style={styles.removeButtonText}>×</Text>
+                          <Text style={styles.kfRemoveBtnText}>×</Text>
                         </TouchableOpacity>
                       </View>
 
                       {!isLast && balls.length > 0 && (
-                        <View style={styles.trajectoryList}>
+                        <View style={styles.trajSection}>
                           {balls.map((ball, ballIndex) => {
                             const trajectory = getTrajectory(ball.id);
                             const label = ball.name || ball.label || `${t('videoRecorder.ballTrajectory', 'Balón')} ${ballIndex + 1}`;
                             return (
-                              <View key={ball.id || ballIndex} style={styles.trajectoryRow}>
-                                <Text style={styles.trajectoryLabel} numberOfLines={1}>
-                                  {label}
-                                </Text>
-                                <View style={styles.trajectoryToggle}>
+                              <View key={ball.id || ballIndex} style={styles.trajRow}>
+                                <Text style={styles.trajLabel} numberOfLines={1}>{label}</Text>
+                                <View style={styles.trajToggle}>
                                   <TouchableOpacity
                                     onPress={() => setTrajectory(ball.id, 'ground')}
-                                    style={[
-                                      styles.trajectoryButton,
-                                      trajectory === 'ground' && styles.trajectoryButtonActive,
-                                    ]}
+                                    style={[styles.trajOpt, trajectory === 'ground' && styles.trajOptActive]}
                                   >
-                                    <Text
-                                      style={[
-                                        styles.trajectoryButtonText,
-                                        trajectory === 'ground' && styles.trajectoryButtonTextActive,
-                                      ]}
-                                    >
+                                    <Text style={[styles.trajOptText, trajectory === 'ground' && styles.trajOptTextActive]}>
                                       {t('videoRecorder.ballGround', 'Suelo')}
                                     </Text>
                                   </TouchableOpacity>
                                   <TouchableOpacity
                                     onPress={() => setTrajectory(ball.id, 'air')}
-                                    style={[
-                                      styles.trajectoryButton,
-                                      trajectory === 'air' && styles.trajectoryButtonActiveAir,
-                                    ]}
+                                    style={[styles.trajOpt, trajectory === 'air' && styles.trajOptActiveAir]}
                                   >
-                                    <Text
-                                      style={[
-                                        styles.trajectoryButtonText,
-                                        trajectory === 'air' && styles.trajectoryButtonTextActive,
-                                      ]}
-                                    >
+                                    <Text style={[styles.trajOptText, trajectory === 'air' && styles.trajOptTextActive]}>
                                       {t('videoRecorder.ballAir', 'Aire')}
                                     </Text>
                                   </TouchableOpacity>
@@ -2209,242 +2182,320 @@ export default function VideoRecorder({
 }
 
 const styles = StyleSheet.create({
-  floatingPanel: {
+  // ── Panel ──
+  panelDesktop: {
     position: 'absolute',
-    left: 20,
-    top: 85,
-    width: 120,
+    left: 16,
+    top: 80,
+    width: 155,
     maxHeight: '80%',
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 12,
+    padding: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
     zIndex: 1000,
   },
-  floatingPanelMobile: {
+  panelMobile: {
     position: 'absolute',
-    left: 20,
-    top: 85,
-    width: 120,
-    maxHeight: '80%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
+    right: 6,
+    top: 55,
+    width: 100,
+    maxHeight: '84%',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 10,
     zIndex: 1000,
   },
+  // ── Header ──
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 10,
+    paddingBottom: 8,
+    marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#f1f5f9',
   },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    padding: 4,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  content: {
+  headerTitle: {
+    fontSize: IS_MOBILE ? 11 : 13,
+    fontWeight: '700',
+    color: '#0f172a',
     flex: 1,
   },
-  contentContainer: {
-    paddingBottom: 20,
-  },
-  controls: {
-    gap: 10,
-    marginBottom: 15,
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+  closeBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  // ── Scroll ──
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 6 },
+  // ── Capture button ──
+  btnCapture: {
+    backgroundColor: '#16a34a',
+    borderRadius: 8,
+    paddingVertical: IS_MOBILE ? 7 : 9,
+    alignItems: 'center',
+    shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    flex: 1,
-    minWidth: 80,
+    marginBottom: 6,
   },
-  captureButton: {
-    backgroundColor: '#4CAF50',
+  btnCaptureText: {
+    color: '#fff',
+    fontSize: IS_MOBILE ? 10 : 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  generateButton: {
-    backgroundColor: '#2196F3',
-  },
-  deleteLastButton: {
-    backgroundColor: '#FF9800',
-  },
-  clearButton: {
-    backgroundColor: '#f44336',
-  },
-  previewButton: {
-    backgroundColor: '#9C27B0',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-  },
-  downloadButton: {
-    backgroundColor: '#2196F3',
-  },
-  closeModalButton: {
-    backgroundColor: '#757575',
-  },
-  confirmButton: {
-    backgroundColor: '#4CAF50',
-    flex: 1,
-    marginRight: 8,
-  },
-  cancelButton: {
-    backgroundColor: '#f44336',
-    flex: 1,
-    marginLeft: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  keyframeCount: {
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
-    paddingVertical: 6,
-    fontWeight: '500',
-  },
-  keyframeSection: {
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  keyframeList: {
-    // Sin maxHeight - el scroll externo maneja toda la lista
-  },
-  keyframeItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
-    marginBottom: 5,
-    borderLeftWidth: 3,
-    borderLeftColor: '#2196F3',
-  },
-  keyframeItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  trajectoryList: {
-    marginTop: 7,
-    gap: 5,
-  },
-  trajectoryRow: {
+  // ── Counter ──
+  counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginBottom: 6,
   },
-  trajectoryLabel: {
-    flex: 1,
-    fontSize: 10,
-    color: '#64748b',
-    fontWeight: '700',
-  },
-  trajectoryToggle: {
-    flexDirection: 'row',
-    padding: 2,
-    borderRadius: 999,
-    backgroundColor: '#e2e8f0',
-    gap: 2,
-  },
-  trajectoryButton: {
-    flexDirection: 'row',
+  counterBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  counterBadgeActive: {
+    backgroundColor: '#2563EB',
+  },
+  counterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+  },
+  counterBadgeTextActive: {
+    color: '#fff',
+  },
+  counterLabel: {
+    fontSize: IS_MOBILE ? 10 : 11,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  // ── Secondary actions ──
+  secondaryRow: {
+    flexDirection: IS_MOBILE ? 'column' : 'row',
+    gap: IS_MOBILE ? 3 : 4,
+    marginBottom: IS_MOBILE ? 5 : 6,
+  },
+  btnSecondary: {
+    backgroundColor: '#d97706',
+    borderRadius: 6,
+    paddingVertical: IS_MOBILE ? 6 : 7,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: IS_MOBILE ? 28 : 30,
+  },
+  btnSecondaryText: {
+    color: '#fff',
+    fontSize: IS_MOBILE ? 9 : 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  btnDanger: {
+    backgroundColor: '#dc2626',
+    borderRadius: 6,
+    paddingVertical: IS_MOBILE ? 6 : 7,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: IS_MOBILE ? 28 : 30,
+  },
+  btnDangerText: {
+    color: '#fff',
+    fontSize: IS_MOBILE ? 9 : 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  // ── Speed ──
+  speedSection: {
+    marginBottom: 6,
+  },
+  speedLabel: {
+    fontSize: IS_MOBILE ? 9 : 10,
+    color: '#64748b',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  speedGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 6,
+    padding: 2,
+    gap: 2,
+  },
+  speedBtn: {
+    flex: 1,
     paddingVertical: 4,
-    paddingHorizontal: 7,
+    borderRadius: 4,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  speedBtnActive: {
+    backgroundColor: '#2563EB',
+  },
+  speedBtnText: {
+    fontSize: IS_MOBILE ? 9 : 10,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  speedBtnTextActive: {
+    color: '#fff',
+  },
+  // ── Generate ──
+  btnGenerate: {
+    backgroundColor: '#2563EB',
+    borderRadius: 8,
+    paddingVertical: IS_MOBILE ? 7 : 9,
+    alignItems: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+    marginBottom: 6,
+  },
+  btnGenerateDisabled: {
+    opacity: 0.5,
+  },
+  btnGenerateText: {
+    color: '#fff',
+    fontSize: IS_MOBILE ? 10 : 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  // ── Keyframe section ──
+  kfSection: {
+    marginTop: 2,
+  },
+  kfSectionTitle: {
+    fontSize: IS_MOBILE ? 8 : 9,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  kfList: {
+    maxHeight: IS_MOBILE ? 120 : 200,
+  },
+  kfItem: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 6,
+    padding: 5,
+    marginBottom: 3,
+    borderLeftWidth: 2,
+    borderLeftColor: '#2563EB',
+  },
+  kfItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  kfNum: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kfNumText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  kfViewBtn: {
+    flex: 1,
+    backgroundColor: '#eff6ff',
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  kfViewBtnText: {
+    fontSize: IS_MOBILE ? 8 : 9,
+    fontWeight: '600',
+    color: '#2563EB',
+  },
+  kfRemoveBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#fef2f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kfRemoveBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ef4444',
+    lineHeight: 14,
+  },
+  // ── Trajectory ──
+  trajSection: {
+    marginTop: 4,
+    gap: 3,
+  },
+  trajRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trajLabel: {
+    flex: 1,
+    fontSize: IS_MOBILE ? 8 : 9,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  trajToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 999,
+    padding: 1,
+    gap: 1,
+  },
+  trajOpt: {
+    paddingVertical: 1,
+    paddingHorizontal: 5,
     borderRadius: 999,
     backgroundColor: 'transparent',
-    gap: 3,
-    minHeight: 22,
   },
-  trajectoryButtonActive: {
+  trajOptActive: {
     backgroundColor: '#16a34a',
   },
-  trajectoryButtonActiveAir: {
+  trajOptActiveAir: {
     backgroundColor: '#f59e0b',
   },
-  trajectoryButtonText: {
-    fontSize: 9,
+  trajOptText: {
+    fontSize: 7,
     fontWeight: '600',
     color: '#475569',
   },
-  trajectoryButtonTextActive: {
+  trajOptTextActive: {
     color: '#fff',
-  },
-  keyframeText: {
-    fontSize: 11,
-    color: '#333',
-    flex: 1,
-  },
-  removeButton: {
-    padding: 3,
-    marginLeft: 6,
-  },
-  viewButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginLeft: 8,
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
-  },
-  viewButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  applyButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginLeft: 8,
-    backgroundColor: '#4caf50',
-    borderRadius: 4,
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  removeButtonText: {
-    fontSize: 16,
-    color: '#f44336',
-    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
@@ -2530,7 +2581,7 @@ const styles = StyleSheet.create({
   previewVideoWrapper: {
     width: '100%',
     aspectRatio: 16 / 9,
-    maxHeight: '100%',
+    maxHeight: IS_MOBILE ? '50%' : '100%',
     backgroundColor: '#000',
     overflow: 'hidden',
   },
@@ -2542,24 +2593,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    gap: 32,
+    paddingVertical: IS_MOBILE ? 10 : 16,
+    paddingHorizontal: IS_MOBILE ? 16 : 24,
+    gap: IS_MOBILE ? 24 : 32,
   },
   previewBottomBtn: {
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   previewBottomBtnIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: IS_MOBILE ? 42 : 52,
+    height: IS_MOBILE ? 42 : 52,
+    borderRadius: IS_MOBILE ? 21 : 26,
     backgroundColor: 'rgba(255,255,255,0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   previewBottomBtnText: {
-    fontSize: 12,
+    fontSize: IS_MOBILE ? 10 : 12,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.8)',
   },
@@ -2568,7 +2619,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     width: '100%',
-    maxWidth: 380,
+    maxWidth: IS_MOBILE ? '92%' : 380,
     maxHeight: '90%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -2655,13 +2706,13 @@ const styles = StyleSheet.create({
   },
   notification: {
     position: 'absolute',
-    top: 20,
-    left: 20,
-    right: 20,
+    top: IS_MOBILE ? 10 : 20,
+    left: IS_MOBILE ? 10 : 20,
+    right: IS_MOBILE ? 10 : 20,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    paddingVertical: IS_MOBILE ? 10 : 14,
+    paddingHorizontal: IS_MOBILE ? 12 : 18,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -2758,7 +2809,7 @@ const styles = StyleSheet.create({
   createFolderModal: {
     backgroundColor: 'white',
     borderRadius: 16,
-    width: '90%',
+    width: IS_MOBILE ? '92%' : '90%',
     maxWidth: 380,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -2899,6 +2950,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 6,
   },
+  speedSectionMobile: {
+    marginTop: 4,
+    marginBottom: 2,
+  },
   speedLabel: {
     fontSize: 10,
     color: '#666',
@@ -2941,9 +2996,10 @@ const styles = StyleSheet.create({
   },
   progressModal: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: 320,
+    borderRadius: 14,
+    padding: IS_MOBILE ? 18 : 24,
+    width: IS_MOBILE ? '85%' : 320,
+    maxWidth: 360,
     alignItems: 'stretch',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -2952,21 +3008,21 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   progressIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: IS_MOBILE ? 36 : 44,
+    height: IS_MOBILE ? 36 : 44,
+    borderRadius: IS_MOBILE ? 18 : 22,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 12,
+    marginBottom: IS_MOBILE ? 8 : 12,
   },
   progressTitle: {
-    fontSize: 17,
+    fontSize: IS_MOBILE ? 15 : 17,
     fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
-    marginBottom: 14,
+    marginBottom: IS_MOBILE ? 10 : 14,
   },
   progressStatusRow: {
     flexDirection: 'row',

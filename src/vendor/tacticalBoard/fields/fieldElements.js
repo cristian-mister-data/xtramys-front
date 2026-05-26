@@ -87,7 +87,7 @@ export const CenterMark = memo(({ w, h, margin, lineColor = '#ffffff', strokeWid
   return (
     <G>
       <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} stroke={lineColor} strokeWidth={strokeWidth} fill="none" />
-      <Circle cx={cx} cy={cy} r={3} fill={lineColor} />
+      <Circle cx={cx} cy={cy} r={Math.max(1.5, strokeWidth * 1.5)} fill={lineColor} />
     </G>
   );
 });
@@ -95,7 +95,7 @@ export const CenterMark = memo(({ w, h, margin, lineColor = '#ffffff', strokeWid
 // ──────────────────────────────────────────────
 // 4. Penalty Area (one side)
 // ──────────────────────────────────────────────
-export const PenaltyArea = memo(({ w, h, margin, side = 'left', lineColor = '#ffffff', strokeWidth = 2 }) => {
+export const PenaltyArea = memo(({ w, h, margin, side = 'left', lineColor = '#ffffff', strokeWidth = 2, clipIdPrefix = '' }) => {
   const fw = w - 2 * margin;
   const fh = h - 2 * margin;
   const pa = side === 'left' ? FIELD.LEFT_PENALTY : FIELD.RIGHT_PENALTY;
@@ -121,14 +121,18 @@ export const PenaltyArea = memo(({ w, h, margin, side = 'left', lineColor = '#ff
   // Penalty arc (only the part outside penalty area)
   const arcRx = FIELD.PENALTY_ARC_RX * fw;
   const arcRy = FIELD.PENALTY_ARC_RY * fh;
-  // Calculate the angle where arc intersects penalty area box
-  const arcStartAngle = side === 'left' ? -60 : 120;
-  const arcEndAngle = side === 'left' ? 60 : 240;
+  const paEdgeX = side === 'left' ? margin + paDepth : margin + fw - paDepth;
+  const dx = paEdgeX - spotX;
+  const arcAngleDeg = dx !== 0 && arcRx !== 0
+    ? Math.acos(Math.max(-1, Math.min(1, dx / arcRx))) * (180 / Math.PI)
+    : 0;
+  const arcStartAngle = side === 'left' ? -arcAngleDeg : 180 - arcAngleDeg;
+  const arcEndAngle = side === 'left' ? arcAngleDeg : 180 + arcAngleDeg;
 
   const arcPath = describeArc(spotX, spotY, arcRx, arcRy, arcStartAngle, arcEndAngle);
 
   // Clip path ID — unique per side
-  const clipId = `penalty-arc-clip-${side}`;
+  const clipId = `${clipIdPrefix}penalty-arc-clip-${side}`;
 
   return (
     <G>
@@ -137,7 +141,7 @@ export const PenaltyArea = memo(({ w, h, margin, side = 'left', lineColor = '#ff
       {/* Goal area */}
       <Rect x={gaX} y={gaTop} width={gaDepth} height={gaBottom - gaTop} stroke={lineColor} strokeWidth={strokeWidth} fill="none" />
       {/* Penalty spot */}
-      <Circle cx={spotX} cy={spotY} r={3} fill={lineColor} />
+      <Circle cx={spotX} cy={spotY} r={Math.max(1.5, strokeWidth * 1.5)} fill={lineColor} />
       {/* Penalty arc - clipped to show only outside penalty area */}
       <Defs>
         <ClipPath id={clipId}>
