@@ -14,3 +14,6 @@ export const getSubscriptionStatus = () =>
 
 export const verifyPayPalSubscription = (subscriptionId) =>
   api.post('/paypal/verify-subscription', { subscriptionId }).then((res) => res.data);
+
+export const capturePayPalOrder = (orderId) =>
+  api.post('/paypal/capture-order', { orderId }).then((res) => res.data);
