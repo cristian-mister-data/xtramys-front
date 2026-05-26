@@ -4698,7 +4698,17 @@
             "nutrition": "Seguimiento nutricional",
             "injuries": "Control de lesiones",
             "methodology": "Metodología de juego"
-        }
+        },
+        "payWithPaypal": "Pagar con PayPal",
+        "payWithCard": "Pagar con tarjeta",
+        "or": "o",
+        "paymentNote": "Tras el pago, tu acceso se activará automáticamente."
+    },
+    "notFound": {
+        "title": "Página no encontrada",
+        "description": "Lo sentimos, la página que buscas no existe o ha sido movida.",
+        "backHome": "Volver al inicio",
+        "goPricing": "Ver precios"
     },
     "payment": {
         "successTitle": "¡Pago exitoso!",

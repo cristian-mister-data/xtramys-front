@@ -11,3 +11,6 @@ export const reactivateSubscription = () =>
 
 export const getSubscriptionStatus = () =>
   api.get('/stripe/subscription-status').then((res) => res.data);
+
+export const verifyPayPalSubscription = (subscriptionId) =>
+  api.post('/paypal/verify-subscription', { subscriptionId }).then((res) => res.data);

@@ -1,6 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
+const SUBSCRIBE_PATHS = ['/subscribe', '/suscripcion', '/en/subscribe', '/es/subscribe', '/es/suscripcion', '/payment/success', '/payment/paypal/success'];
+
 const GuardFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
 );
@@ -24,7 +26,7 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (user?.role !== 'admin' && subscriptionStatus !== 'active') {
-    if (location.pathname !== '/subscribe' && location.pathname !== '/payment/success') {
+    if (!SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p))) {
       return <Navigate to="/subscribe" state={{ from: location }} replace />;
     }
   }

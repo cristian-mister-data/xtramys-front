@@ -5,6 +5,7 @@ import RequireSeason from './RequireSeason';
 import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
+import LangSubscribe from '@/pages/LangSubscribe';
 
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
@@ -42,6 +43,7 @@ const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
 const Subscribe = lazy(() => import('@/pages/Subscribe'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
+const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
@@ -51,6 +53,12 @@ const RouteFallback = () => (
 );
 
 const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
+
+const SubscribeRoute = (
+  <ProtectedRoute>
+    {lazy_(<Subscribe />)}
+  </ProtectedRoute>
+);
 
 export default function AppRouter() {
   return (
@@ -70,19 +78,24 @@ export default function AppRouter() {
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
 
       {/* Subscription (auth required, no app layout) */}
-      <Route
-        path="/subscribe"
-        element={(
-          <ProtectedRoute>
-            {lazy_(<Subscribe />)}
-          </ProtectedRoute>
-        )}
-      />
+      <Route path="/subscribe" element={SubscribeRoute} />
+      <Route path="/suscripcion" element={<LangSubscribe lang="es" />} />
+      <Route path="/en/subscribe" element={<LangSubscribe lang="en" />} />
+      <Route path="/es/subscribe" element={<Navigate to="/suscripcion" replace />} />
+      <Route path="/es/suscripcion" element={<Navigate to="/suscripcion" replace />} />
       <Route
         path="/payment/success"
         element={(
           <ProtectedRoute>
             {lazy_(<PaymentSuccess />)}
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/payment/paypal/success"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<PayPalSuccess />)}
           </ProtectedRoute>
         )}
       />

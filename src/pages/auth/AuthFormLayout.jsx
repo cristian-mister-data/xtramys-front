@@ -358,6 +358,65 @@ export const InfoMessage = styled.div`
   text-align: ${({ $center }) => ($center ? 'center' : 'left')};
 `;
 
+export const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: 500;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: ${({ theme }) => theme.colors.border};
+  }
+`;
+
+export const SocialButton = styled.button`
+  display: inline-flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  svg, img {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+`;
+
 export const LanguageSection = styled.div`
   display: flex;
   flex-direction: column;

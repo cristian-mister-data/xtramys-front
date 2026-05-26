@@ -1,4 +1,5 @@
 import api from './client';
+import { BACKEND_URL } from '../config';
 
 // El backend acepta tanto cookie httpOnly como Bearer.
 // En modo cookie, el backend setea la cookie en login/verify/google/apple.
@@ -28,7 +29,6 @@ export const changePassword = ({ userId, contraseñaActual, nuevaContraseña }) 
   api.post(`/user/${userId}/password`, { contraseñaActual, nuevaContraseña }).then((res) => res.data);
 
 // Cambio de email con verificación por código de 6 dígitos.
-// El correo actual sigue activo hasta que se confirma el nuevo.
 export const requestEmailChange = ({ userId, nuevoCorreo }) =>
   api.post(`/user/${userId}/email-change/request`, {
     nuevoCorreo: String(nuevoCorreo || '').toLowerCase().replace(/\s+/g, ''),
@@ -43,9 +43,18 @@ export const resendEmailChangeCode = ({ userId }) =>
 export const cancelEmailChange = ({ userId }) =>
   api.post(`/user/${userId}/email-change/cancel`).then((res) => res.data);
 
-export const google = (idToken) => api.post('/auth/google', { idToken });
+// Google OAuth: sends idToken from @react-oauth/google (client-side flow)
+export const google = (idToken) => api.post('/auth/google', { idToken }).then((res) => res.data);
+
+// Google OAuth: server-side redirect URL
+// Usage: window.location.href = getGoogleOAuthURL(lang, nextPath)
+export const getGoogleOAuthURL = (lang = 'es', nextPath = '/') => {
+  const base = BACKEND_URL || window.location.origin;
+  const next = encodeURIComponent(nextPath);
+  return `${base}/api/auth/google?lang=${lang}&next=${next}`;
+};
+
 export const apple = (payload) => api.post('/auth/apple', payload);
 
-// Endpoint nuevo añadido al backend en la migración a web
 export const me = () => api.get('/auth/me').then((res) => res.data);
 export const logout = () => api.post('/auth/logout').then((res) => res.data);

@@ -4688,7 +4688,17 @@
             "nutrition": "Nutritional tracking",
             "injuries": "Injury management",
             "methodology": "Game methodology"
-        }
+        },
+        "payWithPaypal": "Pay with PayPal",
+        "payWithCard": "Pay with card",
+        "or": "or",
+        "paymentNote": "After payment, your access will be activated automatically."
+    },
+    "notFound": {
+        "title": "Page not found",
+        "description": "Sorry, the page you're looking for doesn't exist or has been moved.",
+        "backHome": "Back to home",
+        "goPricing": "View pricing"
     },
     "payment": {
         "successTitle": "Payment successful!",
