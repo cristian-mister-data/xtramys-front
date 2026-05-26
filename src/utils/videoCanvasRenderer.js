@@ -687,8 +687,10 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
   ctx.lineWidth = Math.max(1, thickness);
@@ -724,8 +726,10 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, rx + rw / 2, ry + rh / 2, elem.rotation);
   if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
     ctx.fillRect(rx, ry, rw, rh);
+    ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
   ctx.lineWidth = Math.max(1, thickness);
@@ -751,8 +755,10 @@ function drawCustomShape(ctx, cw, ch, elem, scale) {
     ctx.closePath();
   }
   if (elem.fillColor && elem.fillColor !== 'transparent') {
+    ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
   ctx.lineWidth = Math.max(1, thickness);
