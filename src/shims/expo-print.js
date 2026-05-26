@@ -1,18 +1,23 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
+const A4_PORTRAIT_W_MM = 210;
+const A4_PORTRAIT_H_MM = 297;
 const SCALE = 2;
 
-function buildIframe(html) {
+function buildIframe(html, landscape) {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
   iframe.style.left = '-9999px';
   iframe.style.top = '0';
-  iframe.style.width = '794px';
-  iframe.style.height = '1123px';
+  if (landscape) {
+    iframe.style.width = '1123px';
+    iframe.style.height = '794px';
+  } else {
+    iframe.style.width = '794px';
+    iframe.style.height = '1123px';
+  }
   iframe.style.border = '0';
   iframe.style.opacity = '0';
   iframe.style.pointerEvents = 'none';
@@ -58,8 +63,18 @@ function waitForResources(iframe) {
   });
 }
 
-async function htmlToPdfBlob(html) {
-  const iframe = buildIframe(html);
+function isLandscape(opts) {
+  if (opts.orientation === 'landscape') return true;
+  if (opts.width && opts.height && opts.width > opts.height) return true;
+  return false;
+}
+
+async function htmlToPdfBlob(html, opts = {}) {
+  const landscape = isLandscape(opts);
+  const pageWmm = landscape ? A4_PORTRAIT_H_MM : A4_PORTRAIT_W_MM;
+  const pageHmm = landscape ? A4_PORTRAIT_W_MM : A4_PORTRAIT_H_MM;
+
+  const iframe = buildIframe(html, landscape);
   try {
     await waitForResources(iframe);
     await new Promise((r) => setTimeout(r, 100));
@@ -68,8 +83,8 @@ async function htmlToPdfBlob(html) {
     const body = doc.body;
 
     const pxPerMm = 96 / 25.4;
-    const pageWidthPx = Math.round(A4_WIDTH_MM * pxPerMm);
-    const pageHeightPx = Math.round(A4_HEIGHT_MM * pxPerMm);
+    const pageWidthPx = Math.round(pageWmm * pxPerMm);
+    const pageHeightPx = Math.round(pageHmm * pxPerMm);
 
     const fullCanvas = await html2canvas(body, {
       scale: SCALE,
@@ -89,7 +104,7 @@ async function htmlToPdfBlob(html) {
     const numPages = Math.ceil(imgHeightPx / (pageHeightPx * SCALE));
 
     const pdf = new jsPDF({
-      orientation: 'portrait',
+      orientation: landscape ? 'landscape' : 'portrait',
       unit: 'mm',
       format: 'a4',
     });
@@ -115,9 +130,9 @@ async function htmlToPdfBlob(html) {
       );
 
       const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
-      const ratioW = A4_WIDTH_MM / (imgWidthPx / SCALE);
+      const ratioW = pageWmm / (imgWidthPx / SCALE);
       const drawH = (srcH / SCALE) * ratioW;
-      pdf.addImage(imgData, 'JPEG', 0, 0, A4_WIDTH_MM, drawH);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWmm, drawH);
     }
 
     const blob = pdf.output('blob');
@@ -127,21 +142,21 @@ async function htmlToPdfBlob(html) {
   }
 }
 
-export async function printAsync({ html, uri } = {}) {
+export async function printAsync({ html, uri, orientation, width, height } = {}) {
   if (uri) {
     const w = window.open(uri, '_blank');
     if (w) w.focus();
     return;
   }
-  const blob = await htmlToPdfBlob(html);
+  const blob = await htmlToPdfBlob(html, { orientation, width, height });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
   if (w) w.focus();
   setTimeout(() => { try { URL.revokeObjectURL(url); } catch {} }, 60_000);
 }
 
-export async function printToFileAsync({ html } = {}) {
-  const blob = await htmlToPdfBlob(html);
+export async function printToFileAsync({ html, orientation, width, height } = {}) {
+  const blob = await htmlToPdfBlob(html, { orientation, width, height });
   const url = URL.createObjectURL(blob);
   return { uri: url, base64: null, numberOfPages: 1 };
 }
