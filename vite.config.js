@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -39,7 +39,12 @@ function rnJsxPlugin() {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  // loadEnv carga TODAS las variables (incluyendo VITE_*) en el contexto de Node
+  const env = loadEnv(mode, process.cwd(), '');
+  const backendTarget = env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+  return {
   root: path.resolve(__dirname),
   plugins: [
     rnJsxPlugin(),
@@ -111,7 +116,7 @@ export default defineConfig(({ mode }) => ({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/cdn': {
@@ -120,7 +125,7 @@ export default defineConfig(({ mode }) => ({
         rewrite: (path) => path.replace(/^\/cdn/, ''),
       },
       '/prewellness': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
+        target: backendTarget,
         changeOrigin: true,
       },
     },
@@ -160,4 +165,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-}));
+  };
+});
