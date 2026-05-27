@@ -20,6 +20,7 @@ import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { createPortalSession, createCheckoutSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
+import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 import ImageCropper from '@/components/season/ImageCropper';
 import { useTutorial } from '@/components/shared/TutorialProvider';
 import flagEs from '@/images/spain.png';
@@ -880,93 +881,101 @@ export default function Profile() {
         <CardHeader>
           <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
         </CardHeader>
-        <SubscriptionCard $plan={user.plan} $cancelled={user.subscriptionCancelAtPeriodEnd}>
-          {user.plan === 'pro' && user.subscriptionStatus === 'active' ? (
-            <>
-              <SubHeader>
-                <div>
-                  <SubBadge $status={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'active'}>
-                    {user.subscriptionCancelAtPeriodEnd ? '⚠️ Cancelada' : '✓ Activa'}
-                  </SubBadge>
-                </div>
-                <SubIcon $plan={user.plan}>👑</SubIcon>
-              </SubHeader>
-              
-              <SubPlanName $plan={user.plan}>{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
-              
-              {user.subscriptionCurrentPeriodEnd && (
-                <SubInfoRow $type={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'renew'}>
-                  <SubInfoIcon>
-                    {user.subscriptionCancelAtPeriodEnd ? '⏰' : '🔄'}
-                  </SubInfoIcon>
-                  <SubInfoText $plan={user.plan}>
-                    {user.subscriptionCancelAtPeriodEnd 
-                      ? t('subscription.accessUntil', 'Acceso hasta')
-                      : t('subscription.renewsOn', 'Se renueva el')}: {' '}
-                    <SubInfoDate $plan={user.plan}>
-                      {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString('es-ES', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </SubInfoDate>
-                  </SubInfoText>
-                </SubInfoRow>
-              )}
+        <SubscriptionCard $plan={hasPaidSubscriptionAccess(user) ? 'pro' : 'free'} $cancelled={user.subscriptionCancelAtPeriodEnd}>
+          {hasPaidSubscriptionAccess(user) ? (
+            (() => {
+              // Detect if subscription is cancelled-but-active (e.g. PayPal cancelled but period not expired)
+              const isCancelledActive =
+                user.subscriptionCancelAtPeriodEnd ||
+                (user.subscriptionStatus === 'canceled' || user.subscriptionStatus === 'cancelled');
+              return (
+                <>
+                  <SubHeader>
+                    <div>
+                      <SubBadge $status={isCancelledActive ? 'cancelled' : 'active'}>
+                        {isCancelledActive ? '⚠️ Cancelada' : '✓ Activa'}
+                      </SubBadge>
+                    </div>
+                    <SubIcon $plan="pro">👑</SubIcon>
+                  </SubHeader>
 
-              {!user.subscriptionCancelAtPeriodEnd && (
-                <SubInfoRow $type="info">
-                  <SubInfoIcon>✅</SubInfoIcon>
-                  <SubInfoText $plan={user.plan}>
-                    {t('subscription.autoRenew', 'Renovación automática activada')}
-                  </SubInfoText>
-                </SubInfoRow>
-              )}
-              
-              <SubActions>
-                {user.paymentProvider === 'stripe' && (
-                <SubBtn 
-                  type="button" 
-                  $variant="secondary"
-                  onClick={handleManageSubscription} 
-                  disabled={portalLoading}
-                >
-                  {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
-                </SubBtn>
-                )}
-                {!user.subscriptionCancelAtPeriodEnd && (
-                  <SubBtn
-                    type="button"
-                    $variant="danger"
-                    onClick={() => setCancellingModal(true)}
-                    disabled={portalLoading}
-                    style={{ background: '#ef4444', border: 'none' }}
-                  >
-                    {t('subscription.cancel', 'Cancelar suscripciÃ³n')}
-                  </SubBtn>
-                )}
-                {user.subscriptionCancelAtPeriodEnd && (
-                  <SubBtn 
-                    type="button" 
-                    $variant="primary"
-                    onClick={handleReactivateSubscription} 
-                    disabled={portalLoading}
-                  >
-                    {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
-                  </SubBtn>
-                )}
-              </SubActions>
-            </>
+                  <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
+
+                  {user.subscriptionCurrentPeriodEnd && (
+                    <SubInfoRow $type={isCancelledActive ? 'cancelled' : 'renew'}>
+                      <SubInfoIcon>
+                        {isCancelledActive ? '⏰' : '🔄'}
+                      </SubInfoIcon>
+                      <SubInfoText $plan="pro">
+                        {isCancelledActive
+                          ? t('subscription.accessUntil', 'Acceso hasta')
+                          : t('subscription.renewsOn', 'Se renueva el')}: {' '}
+                        <SubInfoDate $plan="pro">
+                          {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </SubInfoDate>
+                      </SubInfoText>
+                    </SubInfoRow>
+                  )}
+
+                  {!isCancelledActive && (
+                    <SubInfoRow $type="info">
+                      <SubInfoIcon>✅</SubInfoIcon>
+                      <SubInfoText $plan="pro">
+                        {t('subscription.autoRenew', 'Renovación automática activada')}
+                      </SubInfoText>
+                    </SubInfoRow>
+                  )}
+
+                  <SubActions>
+                    {user.paymentProvider === 'stripe' && (
+                      <SubBtn
+                        type="button"
+                        $variant="secondary"
+                        onClick={handleManageSubscription}
+                        disabled={portalLoading}
+                      >
+                        {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                      </SubBtn>
+                    )}
+                    {!isCancelledActive && (
+                      <SubBtn
+                        type="button"
+                        $variant="danger"
+                        onClick={() => setCancellingModal(true)}
+                        disabled={portalLoading}
+                        style={{ background: '#ef4444', border: 'none' }}
+                      >
+                        {t('subscription.cancel', 'Cancelar suscripción')}
+                      </SubBtn>
+                    )}
+                    {user.subscriptionCancelAtPeriodEnd && (
+                      <SubBtn
+                        type="button"
+                        $variant="primary"
+                        onClick={handleReactivateSubscription}
+                        disabled={portalLoading}
+                      >
+                        {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
+                      </SubBtn>
+                    )}
+                  </SubActions>
+                </>
+              );
+            })()
           ) : (
             <FreeCard>
-              <FreeIcon>🆓</FreeIcon>
-              <FreeTitle>{t('subscription.freePlan', 'Plan Gratuito')}</FreeTitle>
+              <FreeIcon>🔒</FreeIcon>
+              <FreeTitle>{t('subscription.noPlan', 'Sin suscripción activa')}</FreeTitle>
               <FreeDesc>
                 {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
               </FreeDesc>
-              <FreeBtn 
-                type="button" 
-                onClick={handleSubscribe} 
+              <FreeBtn
+                type="button"
+                onClick={handleSubscribe}
                 disabled={portalLoading}
               >
                 {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
