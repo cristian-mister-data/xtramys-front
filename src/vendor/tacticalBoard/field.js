@@ -11820,7 +11820,7 @@ const handleCancelar = useCallback(async () => {
     };
 
     // TODOS los listeners en window con capture=true para garantizar
-    // recepci�n antes que cualquier handler del overlay/hijos.
+    // recepcin antes que cualquier handler del overlay/hijos.
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onUp, true);
@@ -11847,6 +11847,7 @@ const handleCancelar = useCallback(async () => {
     setViewMode(newViewMode);
     setFieldImageReady(true);
     setIsLoadingField(false);
+    setDraggingOutside(false);
   }, []);
 
   const [paletteEdit, setPaletteEdit] = useState({ visible: false, icon: null, paletteIndex: null });
@@ -11889,14 +11890,14 @@ const handleCancelar = useCallback(async () => {
 
     setClones(prev => [newTextElement, ...prev]);
 
-    // Abrir inmediatamente el panel de edici�n para el nuevo texto (marcado como nuevo)
+    // Abrir inmediatamente el panel de edicin para el nuevo texto (marcado como nuevo)
     setTimeout(() => {
       setTextEditPanel({ visible: true, icon: newTextElement, isNew: true });
       setSelectedCloneId(newTextId);
     }, 100);
   }, [getNextZIndex]);
 
-  // Funci�n para activar/desactivar el modo goma de borrar
+  // Funcin para activar/desactivar el modo goma de borrar
   const handleToggleEraser = useCallback(() => {
     // Desactivar todas las herramientas de dibujo
     setDrawingStraightArrow(false);
@@ -11913,7 +11914,7 @@ const handleCancelar = useCallback(async () => {
     clearMultiSelect();
   }, [clearMultiSelect]);
 
-  // Funci�n para actualizar estados relacionados cuando se elimina un elemento (sin hacer setClones)
+  // Funcin para actualizar estados relacionados cuando se elimina un elemento (sin hacer setClones)
   const handleElementDeleted = useCallback((cloneToDelete) => {
     if (!cloneToDelete) return;
 
@@ -11922,26 +11923,26 @@ const handleCancelar = useCallback(async () => {
     // Eliminar conectores relacionados
     setConnectors(prev => prev.filter(c => c.fromId !== cloneToDelete.id && c.toId !== cloneToDelete.id));
 
-    // Si es un jugador del equipo, removerlo de selectedPlayerIds y a�adirlo a availablePlayers
+    // Si es un jugador del equipo, removerlo de selectedPlayerIds y aadirlo a availablePlayers
     if (cloneToDelete.playerData) {
       setSelectedPlayerIds(prev => prev.filter(uid => uid !== cloneToDelete.playerData.uniqueId));
       setAvailablePlayers(prev => [...prev, cloneToDelete.playerData]);
     }
 
-    // Si es un miembro del cuerpo t�cnico, removerlo de selectedStaffIds para que vuelva a la paleta
+    // Si es un miembro del cuerpo tcnico, removerlo de selectedStaffIds para que vuelva a la paleta
     if (cloneToDelete.type === 'staff' && cloneToDelete.staffRole) {
       setSelectedStaffIds(prev => prev.filter(staffId => staffId !== cloneToDelete.staffRole));
     }
   }, []);
 
-  // Funci�n para borrar un elemento por ID (incluyendo setClones)
+  // Funcin para borrar un elemento por ID (incluyendo setClones)
   const eraseElementById = useCallback((id) => {
     const cloneToDelete = actualClonesRef.current.find(clone => clone.id === id);
     setClones(prev => prev.filter(clone => clone.id !== id));
     handleElementDeleted(cloneToDelete);
-  }, [handleElementDeleted]); // Sin [clones] "� usa actualClonesRef
+  }, [handleElementDeleted]); // Sin [clones] " usa actualClonesRef
 
-  // Funci�n auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
+  // Funcin auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
   const distanceToSegment = useCallback((px, py, x1, y1, x2, y2) => {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -11952,33 +11953,33 @@ const handleCancelar = useCallback(async () => {
     return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }, []);
 
-  // Funci�n para encontrar elemento en una posici�n (para la goma)
+  // Funcin para encontrar elemento en una posicin (para la goma)
   // Tolerancia ajustada para detectar elementos bajo el dedo
   const findElementAtPosition = useCallback((touchX, touchY) => {
-    const LINE_TOLERANCE = 8; // Tolerancia para l�neas
+    const LINE_TOLERANCE = 8; // Tolerancia para lneas
     const ICON_TOLERANCE = 8; // Tolerancia para iconos
 
     // Buscar en clones (iconos, jugadores, textos, etc.)
     for (let i = actualClonesRef.current.length - 1; i >= 0; i--) {
       const clone = actualClonesRef.current[i];
 
-      // Para elementos con puntos (l�neas, formas)
+      // Para elementos con puntos (lneas, formas)
       if (clone.points && clone.points.length > 0) {
-        // Para l�neas (rectas o curvas)
+        // Para lneas (rectas o curvas)
         if (clone.type === 'straight-line' || clone.type === 'straight-arrow' ||
             clone.type === 'curve-line' || clone.type === 'curve-arrow') {
           const pts = clone.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
 
-          // Verificar proximidad a cada segmento de la l�nea
+          // Verificar proximidad a cada segmento de la lnea
           for (let j = 0; j < pts.length - 1; j++) {
             const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[j+1].x, pts[j+1].y);
-            // Solo borrar si est� MUY cerca de la l�nea
+            // Solo borrar si est MUY cerca de la lnea
             if (dist <= LINE_TOLERANCE) {
               return clone.id;
             }
           }
         }
-        // Para rect�ngulos - solo borrar si est� sobre el borde, no dentro
+        // Para rectngulos - solo borrar si est sobre el borde, no dentro
         else if (clone.type === 'rectangle' && clone.points.length === 2) {
           const { x: p1x, y: p1y } = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
           const { x: p2x, y: p2y } = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
@@ -11987,7 +11988,7 @@ const handleCancelar = useCallback(async () => {
           const minY = Math.min(p1y, p2y);
           const maxY = Math.max(p1y, p2y);
 
-          // Verificar si est� sobre alg�n borde del rect�ngulo (no dentro)
+          // Verificar si est sobre algn borde del rectngulo (no dentro)
           const onTopEdge = touchY >= minY - LINE_TOLERANCE && touchY <= minY + LINE_TOLERANCE && touchX >= minX && touchX <= maxX;
           const onBottomEdge = touchY >= maxY - LINE_TOLERANCE && touchY <= maxY + LINE_TOLERANCE && touchX >= minX && touchX <= maxX;
           const onLeftEdge = touchX >= minX - LINE_TOLERANCE && touchX <= minX + LINE_TOLERANCE && touchY >= minY && touchY <= maxY;
@@ -11997,14 +11998,14 @@ const handleCancelar = useCallback(async () => {
             return clone.id;
           }
         }
-        // Para c�rculos - detectar si est� sobre el borde (igual que rect�ngulo)
+        // Para crculos - detectar si est sobre el borde (igual que rectngulo)
         else if (clone.type === 'circle' && clone.points.length === 2) {
           const { x: centerX, y: centerY } = ratioToDisplay(clone.points[0].x, clone.points[0].y, viewMode, imageWidth, imageHeight);
           const { x: edgeX, y: edgeY } = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
           const radius = Math.hypot(edgeX - centerX, edgeY - centerY);
           const distFromCenter = Math.hypot(touchX - centerX, touchY - centerY);
 
-          // Detectar si est� en la zona del borde del c�rculo (como rect�ngulo)
+          // Detectar si est en la zona del borde del crculo (como rectngulo)
           // Zona externa: desde radius - tolerancia hasta radius + tolerancia
           const innerRadius = Math.max(0, radius - LINE_TOLERANCE);
           const outerRadius = radius + LINE_TOLERANCE;
@@ -12013,11 +12014,11 @@ const handleCancelar = useCallback(async () => {
             return clone.id;
           }
         }
-        // Para formas personalizadas - solo si est� sobre un borde
+        // Para formas personalizadas - solo si est sobre un borde
         else if (clone.type === 'custom-shape') {
           const pts = clone.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
 
-          // Verificar si est� cerca de alg�n borde de la forma
+          // Verificar si est cerca de algn borde de la forma
           for (let j = 0; j < pts.length; j++) {
             const nextIdx = (j + 1) % pts.length;
             const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[nextIdx].x, pts[nextIdx].y);
@@ -12027,11 +12028,11 @@ const handleCancelar = useCallback(async () => {
           }
         }
       }
-      // Para elementos con posici�n (iconos, jugadores, textos)
+      // Para elementos con posicin (iconos, jugadores, textos)
       else if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
         const { x: elemX, y: elemY } = ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight);
 
-        // Para textos, usar un �rea m�s grande basada en el texto
+        // Para textos, usar un rea ms grande basada en el texto
         if (clone.type === 'free-text') {
           const textLength = (clone.value || '').length;
           const fontSize = clone.size || 18;
@@ -12047,7 +12048,7 @@ const handleCancelar = useCallback(async () => {
           const elemSize = clone.size || 40;
           const halfSize = elemSize / 2;
 
-          // Solo borrar si el dedo est� DENTRO del �rea del elemento
+          // Solo borrar si el dedo est DENTRO del rea del elemento
           if (touchX >= elemX - halfSize - ICON_TOLERANCE && touchX <= elemX + halfSize + ICON_TOLERANCE &&
               touchY >= elemY - halfSize - ICON_TOLERANCE && touchY <= elemY + halfSize + ICON_TOLERANCE) {
             return clone.id;
@@ -12056,7 +12057,7 @@ const handleCancelar = useCallback(async () => {
       }
     }
     return null;
-  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] "� usa actualClonesRef
+  }, [imageWidth, imageHeight, distanceToSegment]); // Sin [clones] " usa actualClonesRef
 
   // Ref para trackear elementos ya borrados durante un arrastre
   const erasedElementsRef = useRef(new Set());
@@ -12115,7 +12116,7 @@ const handleCancelar = useCallback(async () => {
     );
   }, [viewMode, imageWidth, imageHeight, standardSize, selectedCloneId]);
 
-  // Handler para iniciar arrastre de cualquier elemento existente si su detector espec�fico no captura el gesto.
+  // Handler para iniciar arrastre de cualquier elemento existente si su detector especfico no captura el gesto.
   const handleElementDragStart = useCallback((e) => {
     if (multiSelectMode && selectionInteractionMode === 'select') return false;
 
@@ -12228,7 +12229,7 @@ const handleCancelar = useCallback(async () => {
     if (saveClonesHistory) saveClonesHistory();
   }, [viewMode, imageWidth, imageHeight, dragStart, setClones, handleElementDeleted, releaseElementDragLock, saveClonesHistory]);
 
-  // Funciones para dibujar l�neas rectas
+  // Funciones para dibujar lneas rectas
   const handleStraightLineDrawStart = useCallback((e) => {
     if (!drawingStraightArrow && !drawingStraightLine &&
         !drawingCircle && !drawingRectangle) return;
@@ -12250,7 +12251,7 @@ const handleCancelar = useCallback(async () => {
     ]);
   }, [drawingStraightArrow, drawingStraightLine, drawingCircle, drawingRectangle, straightLineStart, viewMode, imageWidth, imageHeight]);
 
-  // 5. Reemplazar la funci�n handleStraightLineDrawEnd
+  // 5. Reemplazar la funcin handleStraightLineDrawEnd
   const handleStraightLineDrawEnd = () => {
     if ((!drawingStraightArrow && !drawingStraightLine &&
         !drawingCircle && !drawingRectangle) ||
@@ -12272,7 +12273,7 @@ const handleCancelar = useCallback(async () => {
       { x: straightLineEnd.x, y: straightLineEnd.y }
     ];
 
-    // Obtener el icono de la paleta para usar su Configuraci�n
+    // Obtener el icono de la paleta para usar su Configuracin
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
 
@@ -12284,7 +12285,7 @@ const handleCancelar = useCallback(async () => {
       lineType: lineType,
       dotSize: dotSize,
       dotSpacing: dotSpacing,
-      // Relleno para formas geom�tricas
+      // Relleno para formas geomtricas
       fillColor: (pendingLineAction?.icon?.fillColor !== undefined) ? pendingLineAction.icon.fillColor : (paletteIcon?.fillColor || 'transparent'),
       size: standardSize, // Usar standardSize directamente
       points: points,
@@ -12301,8 +12302,8 @@ const handleCancelar = useCallback(async () => {
     setStraightLineStart(null);
     setStraightLineEnd(null);
     setTemporaryLinePoints([]);
-    // Mantener el modo de dibujo activo para formas geom�tricas (c�rculos y rect�ngulos)
-    // Solo resetear para l�neas y flechas rectas
+    // Mantener el modo de dibujo activo para formas geomtricas (crculos y rectngulos)
+    // Solo resetear para lneas y flechas rectas
     // setDrawingStraightArrow(false);
     // setDrawingStraightLine(false);
     // No resetear drawingCircle y drawingRectangle para permitir dibujo continuo
@@ -12328,7 +12329,7 @@ const handleCancelar = useCallback(async () => {
     setCurvePoints(prev => [...prev, newPoint]);
   }, [drawingCurveLine, drawingCurveArrow, isDrawing, viewMode, imageWidth, imageHeight]);
 
-  // 6. Reemplazar la funci�n handleCurveDrawEnd
+  // 6. Reemplazar la funcin handleCurveDrawEnd
   const handleCurveDrawEnd = () => {
     if ((!drawingCurveLine && !drawingCurveArrow) || !isDrawing || curvePoints.length < 2) {
       setCurvePoints([]);
@@ -12338,7 +12339,7 @@ const handleCancelar = useCallback(async () => {
 
     const type = drawingCurveArrow ? 'curve-arrow' : 'curve-line';
 
-    // Obtener el icono de la paleta para usar su Configuraci�n
+    // Obtener el icono de la paleta para usar su Configuracin
     const paletteIcon = paletteIcons.find(ic => ic.type === type);
     const paletteIndex = paletteIcons.findIndex(ic => ic.type === type);
 
@@ -12364,7 +12365,7 @@ const handleCancelar = useCallback(async () => {
     setIsDrawing(false);
   };
 
-  // 7. Funci�n para renderizar l�neas rectas directamente en SVG
+  // 7. Funcin para renderizar lneas rectas directamente en SVG
   function renderStraightLine({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length !== 2) return null;
 
@@ -12384,16 +12385,16 @@ const handleCancelar = useCallback(async () => {
     const x2 = pts[1].x;
     const y2 = pts[1].y;
 
-    // Grosor reducido para l�neas m�s finas
+    // Grosor reducido para lneas ms finas
     const thickness = (icon.thickness || 1) * scale * 0.7;
 
-    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
+    // Determinar si est seleccionado en modo multi-seleccin (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
 
-    // Crear elementos SVG para la l�nea
+    // Crear elementos SVG para la lnea
     const lineElements = [];
 
-    // Calcular punto final de la l�nea si es una flecha
+    // Calcular punto final de la lnea si es una flecha
     let lineEndX = x2;
     let lineEndY = y2;
     let arrowPoints = '';
@@ -12411,7 +12412,7 @@ const handleCancelar = useCallback(async () => {
       lineEndY = arrowData.lineEnd.y;
     }
 
-    // Si est� multi-seleccionada, a�adir una capa exterior para destacar
+    // Si est multi-seleccionada, aadir una capa exterior para destacar
     if (isMultiSelected) {
       lineElements.push(
         <Path
@@ -12426,7 +12427,7 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // L�nea principal (con o sin punteado)
+    // Lnea principal (con o sin punteado)
     const lineStrokeDasharray = icon.lineType === 'dotted'
       ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
@@ -12466,19 +12467,19 @@ const handleCancelar = useCallback(async () => {
     // Eliminar conectores relacionados con el elemento eliminado
     setConnectors(prev => prev.filter(c => c.fromId !== id && c.toId !== id));
 
-    // Si es un jugador del equipo, removerlo de selectedPlayerIds y a�adirlo a availablePlayers
+    // Si es un jugador del equipo, removerlo de selectedPlayerIds y aadirlo a availablePlayers
     if (cloneToDelete && cloneToDelete.playerData) {
       setSelectedPlayerIds(prev => prev.filter(uid => uid !== cloneToDelete.playerData.uniqueId));
       setAvailablePlayers(prev => [...prev, cloneToDelete.playerData]);
     }
 
-    // Si es un miembro del cuerpo t�cnico, removerlo de selectedStaffIds para que vuelva a la paleta
+    // Si es un miembro del cuerpo tcnico, removerlo de selectedStaffIds para que vuelva a la paleta
     if (cloneToDelete && cloneToDelete.type === 'staff' && cloneToDelete.staffRole) {
       setSelectedStaffIds(prev => prev.filter(staffId => staffId !== cloneToDelete.staffRole));
     }
-  }, []); // Sin [clones] "� usa actualClonesRef para identidad estable
+  }, []); // Sin [clones] " usa actualClonesRef para identidad estable
 
-  // Funci�n para duplicar un elemento
+  // Funcin para duplicar un elemento
   const handleDuplicateClone = useCallback((id) => {
     const elementToDuplicate = actualClonesRef.current.find(clone => clone.id === id);
 
@@ -12489,27 +12490,27 @@ const handleCancelar = useCallback(async () => {
         id: `${elementToDuplicate.type}-${Date.now()}`, // Generar un nuevo ID
       };
 
-      // Desplazar ligeramente el elemento duplicado seg�n su tipo
+      // Desplazar ligeramente el elemento duplicado segn su tipo
       if (duplicatedElement.points && duplicatedElement.points.length > 0) {
-        // Para formas con puntos (l�neas, pol�gonos, etc.)
+        // Para formas con puntos (lneas, polgonos, etc.)
         duplicatedElement.points = duplicatedElement.points.map(point => ({
           x: Math.min(1, point.x + 0.05), // Desplazar a la derecha un 5%
           y: Math.min(1, point.y + 0.05)  // Desplazar hacia abajo un 5%
         }));
       } else {
-        // Para elementos con posici�n por ratio (iconos, textos, etc.)
+        // Para elementos con posicin por ratio (iconos, textos, etc.)
         duplicatedElement.xRatio = Math.min(1, (duplicatedElement.xRatio || 0.5) + 0.05);
         duplicatedElement.yRatio = Math.min(1, (duplicatedElement.yRatio || 0.5) + 0.05);
       }
 
-      // A�adir el elemento duplicado al array de clones (con nuevo zIndex)
+      // Aadir el elemento duplicado al array de clones (con nuevo zIndex)
       const duplicatedWithZIndex = { ...duplicatedElement, zIndex: getNextZIndex(duplicatedElement.type) };
       setClones(prev => [duplicatedWithZIndex, ...prev]);
 
       // Seleccionar el nuevo elemento duplicado
       setSelectedCloneId(duplicatedWithZIndex.id);
     }
-  }, [getNextZIndex]); // Sin [clones] "� usa actualClonesRef
+  }, [getNextZIndex]); // Sin [clones] " usa actualClonesRef
   const duplicateSelectedElements = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12553,13 +12554,13 @@ const handleCancelar = useCallback(async () => {
       };
 
       if (duplicatedElement.points && duplicatedElement.points.length > 0) {
-        // Mantener la posici�n relativa: aplicar el mismo offset a todos los puntos
+        // Mantener la posicin relativa: aplicar el mismo offset a todos los puntos
         duplicatedElement.points = duplicatedElement.points.map(point => ({
           x: Math.max(0, Math.min(1, point.x + offsetX)),
           y: Math.max(0, Math.min(1, point.y + offsetY))
         }));
       } else {
-        // Mantener la posici�n relativa: aplicar el mismo offset
+        // Mantener la posicin relativa: aplicar el mismo offset
         duplicatedElement.xRatio = Math.max(0, Math.min(1, (duplicatedElement.xRatio || 0.5) + offsetX));
         duplicatedElement.yRatio = Math.max(0, Math.min(1, (duplicatedElement.yRatio || 0.5) + offsetY));
       }
@@ -12572,9 +12573,9 @@ const handleCancelar = useCallback(async () => {
     setClones(prev => [...duplicates, ...prev]);
     setSelectedCloneIds(duplicates.map(d => d.id));
     setSelectedCloneId(duplicates[0].id);
-  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] "� usa actualClonesRef
+  }, [selectedCloneIds, getNextZIndex]); // Sin [clones] " usa actualClonesRef
 
-  // Funci�n para rotar elementos seleccionados alrededor del centroide del grupo
+  // Funcin para rotar elementos seleccionados alrededor del centroide del grupo
   const rotateSelectedElements = useCallback((angleDegrees = 15) => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12604,7 +12605,7 @@ const handleCancelar = useCallback(async () => {
     const centroidX = count > 0 ? sumX / count : 0.5;
     const centroidY = count > 0 ? sumY / count : 0.5;
 
-    // Convertir �ngulo a radianes
+    // Convertir ngulo a radianes
     const angleRad = (angleDegrees * Math.PI) / 180;
     const cosAngle = Math.cos(angleRad);
     const sinAngle = Math.sin(angleRad);
@@ -12626,7 +12627,7 @@ const handleCancelar = useCallback(async () => {
         });
         return { ...c, points: newPoints };
       } else {
-        // Rotar la posici�n del elemento alrededor del centroide
+        // Rotar la posicin del elemento alrededor del centroide
         const dx = (c.xRatio || 0.5) - centroidX;
         const dy = (c.yRatio || 0.5) - centroidY;
         const newX = centroidX + (dx * cosAngle - dy * sinAngle);
@@ -12638,9 +12639,9 @@ const handleCancelar = useCallback(async () => {
         };
       }
     }));
-  }, [selectedCloneIds]); // Sin [clones] "� usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] " usa actualClonesRef
 
-  // Funci�n para alternar bloquear/desbloquear todos los seleccionados
+  // Funcin para alternar bloquear/desbloquear todos los seleccionados
   const toggleLockSelected = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12661,9 +12662,9 @@ const handleCancelar = useCallback(async () => {
       }
       return c;
     }));
-  }, [selectedCloneIds]); // Sin [clones] "� usa actualClonesRef
+  }, [selectedCloneIds]); // Sin [clones] " usa actualClonesRef
 
-  // Funci�n para traer los seleccionados al frente
+  // Funcin para traer los seleccionados al frente
   const bringSelectedToFront = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12678,7 +12679,7 @@ const handleCancelar = useCallback(async () => {
     });
   }, [selectedCloneIds]);
 
-  // Funci�n para enviar los seleccionados al fondo
+  // Funcin para enviar los seleccionados al fondo
   const sendSelectedToBack = useCallback(() => {
     if (!selectedCloneIds || selectedCloneIds.length === 0) return;
 
@@ -12692,7 +12693,7 @@ const handleCancelar = useCallback(async () => {
     });
   }, [selectedCloneIds]);
 
-  // Funci�n para aumentar el tama�o de un elemento
+  // Funcin para aumentar el tamao de un elemento
   const handleIncreaseSize = useCallback((iconId) => {
     if (!iconId) return;
 
@@ -12712,7 +12713,7 @@ const handleCancelar = useCallback(async () => {
           };
         }
 
-        // Para l�neas/flechas, aumentamos el grosor
+        // Para lneas/flechas, aumentamos el grosor
         if (c.type === 'straight-line' || c.type === 'straight-arrow' || c.type === 'curve-line' || c.type === 'curve-arrow') {
           return {
             ...c,
@@ -12720,7 +12721,7 @@ const handleCancelar = useCallback(async () => {
           };
         }
 
-        // Para iconos y otros elementos, aumentamos el tama�o (sin l�mite m�ximo)
+        // Para iconos y otros elementos, aumentamos el tamao (sin lmite mximo)
         return {
           ...c,
           size: (c.size || standardSize) + 2
@@ -12730,7 +12731,7 @@ const handleCancelar = useCallback(async () => {
     }));
   }, [standardSize]);
 
-  // Funci�n para disminuir el tama�o de un elemento
+  // Funcin para disminuir el tamao de un elemento
   const handleDecreaseSize = useCallback((iconId) => {
     if (!iconId) return;
 
@@ -12745,7 +12746,7 @@ const handleCancelar = useCallback(async () => {
             x: Math.max(0, Math.min(1, cx + (p.x - cx) * sf)),
             y: Math.max(0, Math.min(1, cy + (p.y - cy) * sf))
           }));
-          // Verificar tama�o m�nimo
+          // Verificar tamao mnimo
           const xs = newPts.map(p => p.x);
           const ys = newPts.map(p => p.y);
           const w = Math.max(...xs) - Math.min(...xs);
@@ -12754,7 +12755,7 @@ const handleCancelar = useCallback(async () => {
           return { ...c, points: newPts };
         }
 
-        // Para l�neas/flechas, disminuimos el grosor
+        // Para lneas/flechas, disminuimos el grosor
         if (c.type === 'straight-line' || c.type === 'straight-arrow' || c.type === 'curve-line' || c.type === 'curve-arrow') {
           return {
             ...c,
@@ -12762,7 +12763,7 @@ const handleCancelar = useCallback(async () => {
           };
         }
 
-        // Para iconos y otros elementos, disminuimos el tama�o
+        // Para iconos y otros elementos, disminuimos el tamao
         return {
           ...c,
           size: Math.max(10, (c.size || standardSize) - 2)
@@ -12772,7 +12773,7 @@ const handleCancelar = useCallback(async () => {
     }));
   }, [standardSize]);
 
-  // Funci�n para bloquear/desbloquear un elemento
+  // Funcin para bloquear/desbloquear un elemento
   const handleToggleLock = useCallback((iconId) => {
     if (!iconId) return;
 
@@ -12790,7 +12791,7 @@ const handleCancelar = useCallback(async () => {
     }));
   }, []);
 
-  // Funci�n para subir un elemento a la primera capa (solo dentro de su grupo)
+  // Funcin para subir un elemento a la primera capa (solo dentro de su grupo)
   const handleBringToFront = useCallback((iconId) => {
     if (!iconId) return;
 
@@ -12809,7 +12810,7 @@ const handleCancelar = useCallback(async () => {
     });
   }, []);
 
-  // Funci�n para enviar un elemento al fondo (solo dentro de su grupo)
+  // Funcin para enviar un elemento al fondo (solo dentro de su grupo)
   const handleSendToBack = useCallback((iconId) => {
     if (!iconId) return;
 
@@ -12828,21 +12829,21 @@ const handleCancelar = useCallback(async () => {
     });
   }, []);
 
-  // Funci�n para desbloquear un elemento desde el panel de elementos bloqueados
+  // Funcin para desbloquear un elemento desde el panel de elementos bloqueados
   const handleUnlockFromPanel = useCallback((iconId) => {
     setClones(prev => prev.map(clone =>
       clone.id === iconId
         ? {
             ...clone,
             locked: false,
-            // Restaurar zIndex original o usar valor por defecto seg�n tipo
+            // Restaurar zIndex original o usar valor por defecto segn tipo
             zIndex: clone.originalZIndex || getZIndexBaseForType(clone.type)
           }
         : clone
     ));
   }, []);
 
-  // 8. Funci�n para renderizar l�neas curvas directamente en SVG
+  // 8. Funcin para renderizar lneas curvas directamente en SVG
   function renderCurveLine({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length < 2) return null;
 
@@ -12858,26 +12859,26 @@ const handleCancelar = useCallback(async () => {
       y: p.y * imageHeight,
     }));
 
-    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
+    // Determinar si est seleccionado en modo multi-seleccin (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
 
     // Generar path para SVG
     const pathData = generateCurvePath(pts);
 
-    // Grosor reducido para l�neas m�s finas
+    // Grosor reducido para lneas ms finas
     const thickness = (icon.thickness || 1) * scale * 0.7;
 
-    // Encontrar los dos �ltimos puntos significativos para calcular la direcci�n de la flecha
+    // Encontrar los dos ltimos puntos significativos para calcular la direccin de la flecha
     let lastIdx = pts.length - 1;
     let secondLastIdx = lastIdx - 1;
 
-    // Si los �ltimos puntos est�n muy cerca, buscar uno m�s alejado para mejor direcci�n
+    // Si los ltimos puntos estn muy cerca, buscar uno ms alejado para mejor direccin
     while (secondLastIdx >= 0 && lastIdx > 0) {
       const dist = Math.sqrt(
         Math.pow(pts[lastIdx].x - pts[secondLastIdx].x, 2) +
         Math.pow(pts[lastIdx].y - pts[secondLastIdx].y, 2)
       );
-      if (dist > 5) break; // Al menos 5 p�xeles de diferencia
+      if (dist > 5) break; // Al menos 5 pxeles de diferencia
       secondLastIdx--;
     }
 
@@ -12889,7 +12890,7 @@ const handleCancelar = useCallback(async () => {
     // Crear elementos SVG para la curva
     const curveElements = [];
 
-    // Si est� multi-seleccionada, a�adir una capa exterior para destacar
+    // Si est multi-seleccionada, aadir una capa exterior para destacar
     if (isMultiSelected) {
       curveElements.push(
         <Path
@@ -12905,7 +12906,7 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // L�nea principal (con o sin punteado)
+    // Lnea principal (con o sin punteado)
     const curveStrokeDasharray = icon.lineType === 'dotted'
       ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
@@ -12933,10 +12934,10 @@ const handleCancelar = useCallback(async () => {
         thickness
       );
 
-      // Recalcular pathData sin el �ltimo segmento completo, terminando en lineEnd
+      // Recalcular pathData sin el ltimo segmento completo, terminando en lineEnd
       let adjustedPathData = pathData;
       if (pts.length > 1) {
-        // Reconstruir el path hasta el pen�ltimo punto y luego hasta lineEnd
+        // Reconstruir el path hasta el penltimo punto y luego hasta lineEnd
         adjustedPathData = `M${pts[0].x},${pts[0].y}`;
         for (let i = 1; i < pts.length - 1; i++) {
           adjustedPathData += ` L${pts[i].x},${pts[i].y}`;
@@ -12946,7 +12947,7 @@ const handleCancelar = useCallback(async () => {
 
       // Actualizar el path de la curva para terminar antes de la flecha
       if (icon.lineType === 'dotted') {
-        // Reemplazar el �ltimo elemento de punteado
+        // Reemplazar el ltimo elemento de punteado
         curveElements[curveElements.length - 1] = (
           <Path
             key={`dotted-curve-${icon.id}`}
@@ -12960,7 +12961,7 @@ const handleCancelar = useCallback(async () => {
           />
         );
       } else {
-        // Reemplazar el �ltimo elemento s�lido
+        // Reemplazar el ltimo elemento slido
         curveElements[curveElements.length - 1] = (
           <Path
             key={`curve-${icon.id}`}
@@ -12987,7 +12988,7 @@ const handleCancelar = useCallback(async () => {
     return curveElements;
   }
 
-  // 9. Funci�n para renderizar custom-shape directamente en SVG
+  // 9. Funcin para renderizar custom-shape directamente en SVG
   function renderCustomShape({ icon, imageWidth, imageHeight, selectedCloneId, selectedCloneIds = [], selectedCloneIdsSet, multiSelectMode = false }) {
     if (!icon.points || icon.points.length < 2) return null;
 
@@ -13003,7 +13004,7 @@ const handleCancelar = useCallback(async () => {
       y: p.y * imageHeight,
     }));
 
-    // Determinar si est� seleccionado en modo multi-selecci�n (O(1) con Set)
+    // Determinar si est seleccionado en modo multi-seleccin (O(1) con Set)
     const isMultiSelected = multiSelectMode && (selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id));
 
     // Generar path para custom-shape (conectar todos los puntos)
@@ -13016,7 +13017,7 @@ const handleCancelar = useCallback(async () => {
       pathData += ' Z';
     }
 
-    // Grosor reducido para l�neas m�s finas
+    // Grosor reducido para lneas ms finas
     const thickness = (icon.thickness || 5) * scale * 0.7;
 
     // Crear elementos SVG para el custom-shape
@@ -13038,7 +13039,7 @@ const handleCancelar = useCallback(async () => {
       );
     }
 
-    // L�nea principal (con o sin punteado)
+    // Lnea principal (con o sin punteado)
     const customShapeStrokeDasharray2 = icon.lineType === 'dotted'
       ? `${icon.dotSize || 2}, ${icon.dotSpacing || 4}`
       : null;
@@ -13061,22 +13062,22 @@ const handleCancelar = useCallback(async () => {
 
   const { width: canvasWidth, height: canvasHeight } = { width: imageWidth, height: imageHeight };
 
-  // Cache de positionedClones para evitar recalcular todo en cada cambio de posici�n
+  // Cache de positionedClones para evitar recalcular todo en cada cambio de posicin
   const positionedClonesCache = useRef({ clones: [], result: [], clonesLength: 0 });
 
-  // Memoizar el c�lculo y ordenamiento de clones para evitar recalcular en cada render
+  // Memoizar el clculo y ordenamiento de clones para evitar recalcular en cada render
   const positionedClones = useMemo(() => {
     const cache = positionedClonesCache.current;
 
-    // Forzar rec�lculo completo si la longitud cambi�
+    // Forzar reclculo completo si la longitud cambi
     if (cache.clonesLength !== clones.length) {
       cache.clonesLength = clones.length;
       cache.clones = [];
       cache.result = [];
     }
 
-    // Optimizaci�n: si solo cambi� la posici�n de un elemento (drag), actualizar solo ese
-    // Pero si cambi� m�s de un elemento o propiedades distintas a posici�n, recalcular todo
+    // Optimizacin: si solo cambi la posicin de un elemento (drag), actualizar solo ese
+    // Pero si cambi ms de un elemento o propiedades distintas a posicin, recalcular todo
     if (cache.clones.length === clones.length && cache.result.length > 0) {
       let changedCount = 0;
       let changedIndex = -1;
@@ -13087,11 +13088,11 @@ const handleCancelar = useCallback(async () => {
           changedCount++;
           changedIndex = i;
 
-          // Verificar si solo cambi� la posici�n o si cambiaron otras propiedades
+          // Verificar si solo cambi la posicin o si cambiaron otras propiedades
           if (changedCount === 1 && cache.clones[i]) {
             const oldClone = cache.clones[i];
             const newClone = clones[i];
-            // Si cambiaron propiedades visuales (no solo posici�n), forzar rec�lculo completo
+            // Si cambiaron propiedades visuales (no solo posicin), forzar reclculo completo
             if (oldClone.color !== newClone.color ||
                 oldClone.size !== newClone.size ||
                 oldClone.thickness !== newClone.thickness ||
@@ -13114,7 +13115,7 @@ const handleCancelar = useCallback(async () => {
         }
       }
 
-      // Si solo cambi� la posici�n de un elemento (drag), actualizar solo ese
+      // Si solo cambi la posicin de un elemento (drag), actualizar solo ese
       if (changedCount === 1 && onlyPositionChanged) {
         const clone = clones[changedIndex];
         const coords = fromRatioCoords(clone.xRatio, clone.yRatio, canvasWidth, canvasHeight, viewMode);
@@ -13135,10 +13136,10 @@ const handleCancelar = useCallback(async () => {
           return updatedResult;
         }
       }
-      // Si cambiaron propiedades visuales o m�ltiples elementos, continuar para recalcular todo
+      // Si cambiaron propiedades visuales o mltiples elementos, continuar para recalcular todo
     }
 
-    // Sin l�mite artificial - manejar cualquier cantidad de elementos
+    // Sin lmite artificial - manejar cualquier cantidad de elementos
 
     // Calcular z-index de manera optimizada
     const clonesWithZIndex = clones.map((clone, originalIndex) => {
@@ -13146,7 +13147,7 @@ const handleCancelar = useCallback(async () => {
       const isMaterialType = MATERIAL_TYPES_SET.has(clone.type);
       const coords = fromRatioCoords(clone.xRatio, clone.yRatio, canvasWidth, canvasHeight, viewMode);
 
-      // Calcular zIndex: usar el zIndex asignado en creaci�n, con fallbacks
+      // Calcular zIndex: usar el zIndex asignado en creacin, con fallbacks
       let zIndex;
       if (clone.locked === true) {
         zIndex = 1;
@@ -13187,7 +13188,16 @@ const handleCancelar = useCallback(async () => {
   const isCloneVisible = useCallback((clone) => {
     if (!viewMode || viewMode === 'entire') return true;
     // Keep elements visible while being dragged (prevents gesture handler unmount mid-drag)
-    const isDragged = Object.values(dragStart.current).some(v => v?.id === clone.id);
+    const isDragged =
+      Object.values(dragStart.current).some(v =>
+        v?.id === clone.id ||
+        (v?.selectedIds && Array.isArray(v.selectedIds) && v.selectedIds.includes(clone.id))
+      ) ||
+      (dragStart.current[clone.id] !== undefined) ||
+      (elementDragState.current && (
+        elementDragState.current.primaryId === clone.id ||
+        (elementDragState.current.selectedIds && Array.isArray(elementDragState.current.selectedIds) && elementDragState.current.selectedIds.includes(clone.id))
+      ));
     if (isDragged) return true;
     // Lines/shapes: visible if ANY point is in viewport
     if (clone.points && Array.isArray(clone.points) && clone.points.length >= 2) {

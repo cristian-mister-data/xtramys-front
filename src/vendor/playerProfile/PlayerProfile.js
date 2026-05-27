@@ -1,6 +1,6 @@
 // components/pages/PlayerProfile.js
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator, Alert, Dimensions, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { useSelector } from 'react-redux';
@@ -29,6 +29,38 @@ const getWellnessColor = (value) => {
   if (value >= 6) return '#f59e0b'; // Naranja
   if (value >= 4) return '#f97316'; // Naranja oscuro
   return '#ef4444'; // Rojo
+};
+
+// Helper para convertir URL de imagen a base64
+const imageToBase64 = async (url) => {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  try {
+    if (Platform.OS === 'web') {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      // Mobile (React Native / Expo)
+      const filename = url.split('/').pop().split('?')[0] || 'photo.jpg';
+      const localUri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.downloadAsync(url, localUri);
+      const base64 = await FileSystem.readAsStringAsync(localUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const ext = filename.split('.').pop().toLowerCase();
+      const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+      return `data:${mime};base64,${base64}`;
+    }
+  } catch (error) {
+    console.warn('Error converting image to base64, using original URL:', error);
+    return url;
+  }
 };
 
 const PlayerProfile = ({ visible, player, team, onClose }) => {
@@ -427,7 +459,11 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
     }
     
     try {
-      const html = generatePDFHTML(t);
+      let fotoBase64 = '';
+      if (player?.foto) {
+        fotoBase64 = await imageToBase64(player.foto);
+      }
+      const html = generatePDFHTML(t, fotoBase64);
       const playerName = getPlayerFullName(player);
       const filePrefix = i18n.language === 'en' ? 'profile' : 'perfil';
       const fileName = `${filePrefix}_${playerName.replace(/\s+/g, '_')}.pdf`;
@@ -1364,7 +1400,7 @@ const generateAnthropometryPDFHTML = (t) => {
     `;
   };
 
-const generatePDFHTML = (t) => {
+const generatePDFHTML = (t, fotoBase64) => {
     const playerName = getPlayerFullName(player);
     const teamName = team?.nombre || '';
     const locale = getLocale();
@@ -1498,7 +1534,7 @@ const generatePDFHTML = (t) => {
       <body>
         <div class="header">
           <div style="display: flex; align-items: center; gap: 12px;">
-            ${player.foto ? `<img src="${player.foto}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" />` : ''}
+            ${(fotoBase64 || player.foto) ? `<img src="${fotoBase64 || player.foto}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" />` : ''}
             <div>
               <div class="header-title">${t('player.profile.title')} - ${playerName}</div>
               <div class="header-subtitle">${teamName} • ${t('player.profile.dorsal')} #${player.dorsal || '-'} • ${player.posicion || '-'}</div>
