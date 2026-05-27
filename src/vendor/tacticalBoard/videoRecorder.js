@@ -1023,6 +1023,39 @@ export default function VideoRecorder({
         }
       }
 
+      // Cargar todas las fotos de los jugadores antes de empezar
+      const playerPhotos = {};
+      const uniquePhotoUrls = new Set();
+      allFrames.forEach(frame => {
+        (frame.elements || []).forEach(elem => {
+          if (elem.type === 'player' && elem.playerData?.foto) {
+            uniquePhotoUrls.add(elem.playerData.foto);
+          }
+        });
+      });
+
+      try {
+        await Promise.all(
+          Array.from(uniquePhotoUrls).map(async (fotoPath) => {
+            try {
+              const fullUrl = cdnUrl(fotoPath);
+              const img = await new Promise((resolve, reject) => {
+                const image = new Image();
+                image.crossOrigin = 'anonymous';
+                image.onload = () => resolve(image);
+                image.onerror = reject;
+                image.src = fullUrl;
+              });
+              playerPhotos[fotoPath] = img;
+            } catch (err) {
+              console.warn(`[videoRecorder] No se pudo cargar la foto del jugador ${fotoPath}:`, err);
+            }
+          })
+        );
+      } catch (e) {
+        console.warn('[videoRecorder] Error pre-cargando fotos de jugadores:', e);
+      }
+
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
 
@@ -1095,7 +1128,7 @@ export default function VideoRecorder({
 
         const frame = allFrames[i];
 
-        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage);
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, showPhotos });
 
         const frameCapture = await new Promise((resolve, reject) => {
           canvas.toBlob((blob) => {

@@ -34,7 +34,7 @@ function setLineDash(ctx, elem, scale) {
   }
 }
 
-function drawPlayer(ctx, cw, ch, elem, scale) {
+function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   const p = pos(elem, cw, ch);
   const baseSize = elem.baseSize || 24;
   const size = baseSize * scale;
@@ -45,39 +45,57 @@ function drawPlayer(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = '#222';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  const showPhotos = elem.showPhotos || options.showPhotos;
+  const photoImg = elem.playerData?.foto && options.playerPhotos?.[elem.playerData.foto];
 
-  if (elem.isGoalkeeper && elem.differentiateGoalkeeper) {
-    const sc = elem.goalkeeperStripeColor || '#ffffff';
+  if (showPhotos && photoImg) {
     ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.strokeStyle = sc;
-    ctx.lineWidth = 2;
-    for (const off of [0.1, 0.35, 0.6, 0.85]) {
-      const y = p.y - r + size * off;
-      ctx.beginPath();
-      ctx.moveTo(p.x - r, y);
-      ctx.lineTo(p.x + r, y);
-      ctx.stroke();
-    }
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r - 1, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(photoImg, p.x - r, p.y - r, size, size);
     ctx.restore();
-  }
 
-  const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
-  if (displayText !== undefined && elem.playersWithNumber !== false) {
-    const isLabel = elem.displayLabel !== undefined;
-    const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
-    ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px sans-serif`;
-    ctx.fillStyle = numberColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(displayText), p.x, p.y);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    if (elem.isGoalkeeper && elem.differentiateGoalkeeper) {
+      const sc = elem.goalkeeperStripeColor || '#ffffff';
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = sc;
+      ctx.lineWidth = 2;
+      for (const off of [0.1, 0.35, 0.6, 0.85]) {
+        const y = p.y - r + size * off;
+        ctx.beginPath();
+        ctx.moveTo(p.x - r, y);
+        ctx.lineTo(p.x + r, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
+    if (displayText !== undefined && elem.playersWithNumber !== false) {
+      const isLabel = elem.displayLabel !== undefined;
+      const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
+      ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px sans-serif`;
+      ctx.fillStyle = numberColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(displayText), p.x, p.y);
+    }
   }
 
   ctx.restore();
@@ -861,7 +879,7 @@ export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImag
     if (LINE_DRAWERS[elem.type]) {
       LINE_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
     } else if (POSITIONED_DRAWERS[elem.type]) {
-      POSITIONED_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
+      POSITIONED_DRAWERS[elem.type](ctx, cw, ch, elem, scale, _options);
     } else if (elem.type === 'free-text' || elem.text) {
       drawFreeText(ctx, cw, ch, elem, scale);
     }
