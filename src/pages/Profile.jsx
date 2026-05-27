@@ -27,19 +27,29 @@ import flagEs from '@/images/spain.png';
 import flagEn from '@/images/united-kingdom.png';
 
 const Hero = styled.div`
-  background: linear-gradient(135deg, #1e3a5f, #2563eb 60%, #3b82f6);
-  border-radius: ${({ theme }) => theme.radius.lg};
-  padding: 32px 24px;
+  background: ${({ theme }) => theme.mode === 'dark' ? 'linear-gradient(135deg, #1e293b, #0f172a)' : 'linear-gradient(135deg, #1e3a5f, #2563eb 60%, #3b82f6)'};
+  border-radius: 24px;
+  padding: 40px 24px;
   color: #fff;
   text-align: center;
-  box-shadow: ${({ theme }) => theme.shadows.lg};
+  box-shadow: ${({ theme }) => theme.mode === 'dark' ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(37, 99, 235, 0.2)'};
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGRlZnM+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xNSkiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcCkiLz48L3N2Zz4=');
+    pointer-events: none;
+  }
 `;
 
 const AvatarWrap = styled.div`
   position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 12px;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 16px;
+  z-index: 1;
 `;
 
 const Avatar = styled.label`
@@ -104,25 +114,29 @@ const RoleBadge = styled.span`
 
 const FormCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.md};
-  padding: 18px;
-  margin-top: 16px;
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: ${({ theme }) => theme.mode === 'dark' ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.03)'};
 `;
 
 const CardHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
 `;
 
 const CardTitle = styled.h3`
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: ${({ theme }) => theme.colors.text};
 `;
 
@@ -223,17 +237,33 @@ const CodeInput = styled(Input)`
 
 const SubscriptionCard = styled.div`
   background: ${({ $plan, $cancelled, theme }) => {
-    if ($cancelled) return 'linear-gradient(135deg, #92400E, #B45309)';
-    if ($plan === 'pro') return 'linear-gradient(135deg, #1E40AF, #3B82F6)';
+    if ($plan === 'pro') {
+      if ($cancelled) {
+        return theme.mode === 'dark' 
+          ? 'linear-gradient(135deg, rgba(146, 64, 14, 0.4), rgba(180, 83, 9, 0.2))' 
+          : 'linear-gradient(135deg, #FFFBEB, #FEF3C7)';
+      }
+      return theme.mode === 'dark'
+        ? 'linear-gradient(135deg, rgba(30, 64, 175, 0.4), rgba(59, 130, 246, 0.2))'
+        : 'linear-gradient(135deg, #EFF6FF, #DBEAFE)';
+    }
     return theme.colors.surface;
   }};
-  border: ${({ $plan, theme }) =>
-    $plan === 'pro' ? 'none' : `1px solid ${theme.colors.border}`};
+  border: ${({ theme, $plan, $cancelled }) => {
+    if ($plan === 'pro') {
+      if ($cancelled) {
+         return theme.mode === 'dark' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #FCD34D';
+      }
+      return theme.mode === 'dark' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #BFDBFE';
+    }
+    return `1px solid ${theme.colors.border}`;
+  }};
   border-radius: 16px;
   padding: 24px;
   margin-top: 16px;
   overflow: hidden;
   position: relative;
+  color: ${({ theme, $plan }) => $plan === 'pro' ? theme.colors.text : 'inherit'};
 `;
 
 const SubHeader = styled.div`
@@ -269,7 +299,7 @@ const SubIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: ${({ $plan }) => $plan === 'pro' ? 'rgba(255,255,255,0.15)' : 'rgba(107,114,128,0.1)'};
+  background: ${({ $plan, theme }) => $plan === 'pro' ? (theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'rgba(107,114,128,0.1)'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,7 +309,7 @@ const SubIcon = styled.div`
 const SubPlanName = styled.div`
   font-size: 20px;
   font-weight: 700;
-  color: ${({ $plan }) => $plan === 'pro' ? '#fff' : 'inherit'};
+  color: ${({ $plan, theme }) => $plan === 'pro' ? (theme.mode === 'dark' ? '#60A5FA' : '#1D4ED8') : 'inherit'};
   margin-bottom: 4px;
 `;
 
@@ -289,15 +319,15 @@ const SubInfoRow = styled.div`
   gap: 8px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: ${({ $type }) => {
-    if ($type === 'renew') return 'rgba(16,185,129,0.12)';
-    if ($type === 'cancelled') return 'rgba(245,158,11,0.12)';
-    return 'rgba(255,255,255,0.08)';
+  background: ${({ $type, theme }) => {
+    if ($type === 'renew') return theme.mode === 'dark' ? 'rgba(16,185,129,0.12)' : '#ECFDF5';
+    if ($type === 'cancelled') return theme.mode === 'dark' ? 'rgba(245,158,11,0.12)' : '#FFFBEB';
+    return theme.colors.surfaceAlt;
   }};
-  border: ${({ $type }) => {
-    if ($type === 'renew') return '1px solid rgba(16,185,129,0.25)';
-    if ($type === 'cancelled') return '1px solid rgba(245,158,11,0.25)';
-    return '1px solid rgba(255,255,255,0.12)';
+  border: ${({ $type, theme }) => {
+    if ($type === 'renew') return theme.mode === 'dark' ? '1px solid rgba(16,185,129,0.25)' : '1px solid #A7F3D0';
+    if ($type === 'cancelled') return theme.mode === 'dark' ? '1px solid rgba(245,158,11,0.25)' : '1px solid #FDE68A';
+    return `1px solid ${theme.colors.border}`;
   }};
   margin-top: 12px;
 `;
@@ -309,12 +339,12 @@ const SubInfoIcon = styled.span`
 const SubInfoText = styled.div`
   flex: 1;
   font-size: 14px;
-  color: ${({ $plan }) => $plan === 'pro' ? 'rgba(255,255,255,0.9)' : 'inherit'};
+  color: ${({ theme }) => theme.colors.text};
   line-height: 1.4;
 `;
 
 const SubInfoDate = styled.strong`
-  color: ${({ $plan }) => $plan === 'pro' ? '#fff' : 'inherit'};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const SubActions = styled.div`
@@ -332,53 +362,62 @@ const SubBtn = styled.button`
   cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'pointer'};
   opacity: ${({ disabled }) => disabled ? 0.6 : 1};
   transition: all 150ms ease;
-  border: ${({ $variant }) => $variant === 'primary' ? 'none' : '1px solid rgba(255,255,255,0.25)'};
-  background: ${({ $variant }) => {
+  border: ${({ $variant, theme }) => $variant === 'primary' || $variant === 'danger' ? 'none' : `1px solid ${theme.colors.border}`};
+  background: ${({ $variant, theme }) => {
     if ($variant === 'primary') return '#10B981';
-    if ($variant === 'secondary') return 'rgba(255,255,255,0.15)';
-    return 'rgba(255,255,255,0.1)';
+    if ($variant === 'danger') return '#EF4444';
+    if ($variant === 'secondary') return theme.colors.surfaceAlt;
+    return theme.colors.surface;
   }};
-  color: #fff;
+  color: ${({ $variant, theme }) => ($variant === 'primary' || $variant === 'danger' ? '#fff' : theme.colors.text)};
   &:hover {
-    background: ${({ $variant }) => {
+    background: ${({ $variant, theme }) => {
       if ($variant === 'primary') return '#059669';
-      if ($variant === 'secondary') return 'rgba(255,255,255,0.25)';
-      return 'rgba(255,255,255,0.15)';
+      if ($variant === 'danger') return '#DC2626';
+      if ($variant === 'secondary') return theme.colors.surfaceElevated;
+      return theme.colors.surfaceAlt;
     }};
   }
 `;
 
 const FreeCard = styled.div`
   text-align: center;
+  padding: 32px 20px;
 `;
 
 const FreeIcon = styled.div`
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #F3F4F6, #E5E7EB)'};
+  border: ${({ theme }) => theme.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : 'none'};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 16px;
+  font-size: 36px;
+  margin: 0 auto 20px;
+  box-shadow: ${({ theme }) => theme.mode === 'dark' ? 'none' : '0 10px 25px rgba(0,0,0,0.05)'};
 `;
 
 const FreeTitle = styled.div`
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 `;
 
 const FreeDesc = styled.div`
-  font-size: 14px;
+  font-size: 15px;
   color: ${({ theme }) => theme.colors.muted || '#6B7280'};
-  margin-bottom: 20px;
+  margin-bottom: 28px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
 `;
 
 const FreeBtn = styled.button`
-  padding: 12px 24px;
+  padding: 14px 28px;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
@@ -393,6 +432,91 @@ const FreeBtn = styled.button`
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(255,107,0,0.4);
   }
+`;
+
+const ProfileGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 16px 40px;
+
+  @media (min-width: 960px) {
+    grid-template-columns: 320px 1fr;
+  }
+`;
+
+const LeftColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const RightColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const ReadOnlyGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  
+  @media (min-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const ReadOnlyItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'};
+`;
+
+const ReadOnlyLabel = styled.div`
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const ReadOnlyValue = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+  word-break: break-all;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const SocialBadge = styled.span`
+  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(96, 165, 250, 0.12)' : 'rgba(29, 78, 216, 0.06)'};
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(96, 165, 250, 0.25)' : 'rgba(29, 78, 216, 0.15)'};
+  color: ${({ theme }) => theme.mode === 'dark' ? '#93c5fd' : '#1d4ed8'};
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 `;
 
 export default function Profile() {
@@ -637,10 +761,10 @@ export default function Profile() {
     try {
       const data = await cancelSubscription(user.paymentProvider);
       await dispatch(checkSubscription()).unwrap();
-      toast.success(data.mensaje || 'SuscripciÃ³n cancelada. TendrÃ¡s acceso hasta el final del perÃ­odo actual.');
+      toast.success(data.mensaje || t('subscription.cancelSuccess', 'Suscripción cancelada. Tendrás acceso hasta el final del período actual.'));
       setCancellingModal(false);
     } catch (err) {
-      toast.error(err?.response?.data?.mensaje || 'Error al cancelar la suscripciÃ³n');
+      toast.error(err?.response?.data?.mensaje || t('subscription.cancelError', 'Error al cancelar la suscripción'));
     } finally {
       setCancelling(false);
     }
@@ -712,312 +836,354 @@ export default function Profile() {
 
   const initials = `${(user.nombre || '?').charAt(0)}${(user.apellido || '').charAt(0)}`.toUpperCase();
 
-  return (
-    <Stack style={{ gap: 0 }}>
-      <Hero>
-        <AvatarWrap>
-          <Avatar>
-            {uploading
-              ? <span style={{ fontSize: 14, color: '#3578e5' }}>...</span>
-              : user.imagen
-                ? <img src={user.imagen} alt="" />
-                : initials}
-            <input type="file" accept="image/*" onChange={handlePickPhoto} disabled={uploading} />
-          </Avatar>
-          <CameraBadge>📷</CameraBadge>
-        </AvatarWrap>
-        {user.imagen ? (
-          <Button $variant="ghost" type="button" onClick={handleDeletePhoto} disabled={uploading}
-            style={{ background: 'rgba(239,68,68,0.18)', color: '#fff', border: 'none' }}>
-            🗑 {t('common.delete', 'Eliminar foto')}
-          </Button>
-        ) : null}
-        <HeroName>{user.nombre} {user.apellido}</HeroName>
-        <HeroEmail>{user.correo}</HeroEmail>
-        {isAdmin ? <div><RoleBadge>🛡 Admin</RoleBadge></div> : null}
-      </Hero>
+  const isSocialAuth = user?.authProvider !== 'local' && user?.authProvider !== undefined;
+  const isGoogle = user?.authProvider === 'google';
+  const isApple = user?.authProvider === 'apple';
 
-      <FormCard>
-        <CardHeader>
-          <CardTitle>👤 {t('profile.personalInfo', 'Información personal')}</CardTitle>
-          {!editing ? (
-            <Button $variant="ghost" type="button" onClick={() => setEditing(true)}>
-              ✏️ {t('edition.edit', 'Editar')}
+  return (
+    <ProfileGrid>
+      <LeftColumn>
+        <Hero>
+          <AvatarWrap>
+            <Avatar>
+              {uploading
+                ? <span style={{ fontSize: 14, color: '#3578e5' }}>...</span>
+                : user.imagen
+                  ? <img src={user.imagen} alt="" />
+                  : initials}
+              <input type="file" accept="image/*" onChange={handlePickPhoto} disabled={uploading} />
+            </Avatar>
+            <CameraBadge>📷</CameraBadge>
+          </AvatarWrap>
+          {user.imagen ? (
+            <Button $variant="ghost" type="button" onClick={handleDeletePhoto} disabled={uploading}
+              style={{ background: 'rgba(239,68,68,0.18)', color: '#fff', border: 'none' }}>
+              🗑 {t('common.delete', 'Eliminar foto')}
             </Button>
           ) : null}
-        </CardHeader>
-        <Stack style={{ gap: 12 }}>
-          <Field>
-            <Label>🪪 {t('register.firstName', 'Nombre')}</Label>
-            <Input value={nombre} onChange={(e) => setNombre(e.target.value)} disabled={!editing} />
-          </Field>
-          <Field>
-            <Label>🪪 {t('register.lastName', 'Apellido')}</Label>
-            <Input value={apellido} onChange={(e) => setApellido(e.target.value)} disabled={!editing} />
-          </Field>
-          <Field>
-            <Label>✉️ {t('register.email', 'Correo electrónico')}</Label>
-            <Input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} disabled={!editing} />
-            {user.pendingEmail ? (
-              <PendingBadge>
-                <span>⏳</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {t('profile.emailChangePendingBadge', 'Pendiente de verificación: {{email}}', { email: user.pendingEmail })}
-                </div>
-                <Button
-                  $variant="ghost"
-                  type="button"
-                  onClick={() => {
-                    setEmailVerifyTarget(user.pendingEmail);
-                    setEmailVerifyCode('');
-                    setEmailVerifyError('');
-                    setEmailVerifyOpen(true);
-                  }}
-                >
-                  {t('profile.emailChangeTitle', 'Verificar')}
-                </Button>
-                <Button
-                  $variant="ghost"
-                  type="button"
-                  onClick={handleCancelEmailChange}
-                  style={{ color: '#ef4444' }}
-                >
+          <HeroName>{user.nombre} {user.apellido}</HeroName>
+          <HeroEmail>{user.correo}</HeroEmail>
+          {isAdmin ? <div><RoleBadge>🛡 Admin</RoleBadge></div> : null}
+        </Hero>
+
+        <FormCard>
+          <CardHeader>
+            <CardTitle>🌐 {t('profile.language', 'Idioma')}</CardTitle>
+          </CardHeader>
+          <LangRow>
+            <LangBtn
+              type="button"
+              $active={language === 'es'}
+              $disabled={!editing}
+              disabled={!editing}
+              onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
+            >
+              <Flag>
+                <FlagImage src={flagEs} alt="Español" />
+              </Flag>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>Español</div>
+                <Muted style={{ fontSize: 12 }}>Spanish</Muted>
+              </div>
+              {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+            </LangBtn>
+            <LangBtn
+              type="button"
+              $active={language === 'en'}
+              $disabled={!editing}
+              disabled={!editing}
+              onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
+            >
+              <Flag>
+                <FlagImage src={flagEn} alt="English" />
+              </Flag>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>English</div>
+                <Muted style={{ fontSize: 12 }}>Inglés</Muted>
+              </div>
+              {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+            </LangBtn>
+          </LangRow>
+        </FormCard>
+
+        <FormCard>
+          <CardHeader>
+            <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
+          </CardHeader>
+          <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+            <AccountBtn type="button" onClick={openTutorial}>
+              <MdPlayCircleOutline size={20} />
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div>{t('tutorial.replayButton', 'Ver tutorial de nuevo')}</div>
+                <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
+                  {t('tutorial.replayHint', 'Puedes volver a ver este tutorial desde tu perfil.')}
+                </Muted>
+              </div>
+              <span style={{ color: '#cbd5e1' }}>›</span>
+            </AccountBtn>
+            <DangerBtn type="button" onClick={handleLogout}>
+              <span>🚪</span>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div>{t('profile.logout', 'Cerrar sesión')}</div>
+                <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
+                  {t('profile.logoutConfirm', '¿Cerrar sesión en este dispositivo?')}
+                </Muted>
+              </div>
+              <span style={{ color: '#cbd5e1' }}>›</span>
+            </DangerBtn>
+          </Row>
+        </FormCard>
+      </LeftColumn>
+
+      <RightColumn>
+        <FormCard>
+          <CardHeader>
+            <CardTitle>👤 {t('profile.personalInfo', 'Información personal')}</CardTitle>
+            {!editing ? (
+              <Button $variant="ghost" type="button" onClick={() => setEditing(true)}>
+                ✏️ {t('edition.edit', 'Editar')}
+              </Button>
+            ) : null}
+          </CardHeader>
+          
+          {!editing ? (
+            <ReadOnlyGrid>
+              <ReadOnlyItem>
+                <ReadOnlyLabel>🪪 {t('register.firstName', 'Nombre')}</ReadOnlyLabel>
+                <ReadOnlyValue>{nombre || '-'}</ReadOnlyValue>
+              </ReadOnlyItem>
+              <ReadOnlyItem>
+                <ReadOnlyLabel>🪪 {t('register.lastName', 'Apellido')}</ReadOnlyLabel>
+                <ReadOnlyValue>{apellido || '-'}</ReadOnlyValue>
+              </ReadOnlyItem>
+              <ReadOnlyItem style={{ gridColumn: 'span 2' }}>
+                <ReadOnlyLabel>✉️ {t('register.email', 'Correo electrónico')}</ReadOnlyLabel>
+                <ReadOnlyValue style={{ flexWrap: 'wrap', gap: 10 }}>
+                  {correo}
+                  {isSocialAuth && (
+                    <SocialBadge>
+                      🔒 {isGoogle ? t('profile.googleConnected', 'Conectado con Google') : t('profile.appleConnected', 'Conectado con Apple')}
+                    </SocialBadge>
+                  )}
+                </ReadOnlyValue>
+              </ReadOnlyItem>
+            </ReadOnlyGrid>
+          ) : (
+            <Stack style={{ gap: 16 }}>
+              <Field>
+                <Label>🪪 {t('register.firstName', 'Nombre')}</Label>
+                <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+              </Field>
+              <Field>
+                <Label>🪪 {t('register.lastName', 'Apellido')}</Label>
+                <Input value={apellido} onChange={(e) => setApellido(e.target.value)} />
+              </Field>
+              <Field>
+                <Label>✉️ {t('register.email', 'Correo electrónico')}</Label>
+                {isSocialAuth ? (
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <Input type="email" value={correo} disabled style={{ opacity: 0.85, flex: 1, paddingRight: '180px' }} />
+                    <div style={{ position: 'absolute', right: '12px', zIndex: 2 }}>
+                      <SocialBadge>
+                        🔒 {isGoogle ? t('profile.googleConnected', 'Conectado con Google') : t('profile.appleConnected', 'Conectado con Apple')}
+                      </SocialBadge>
+                    </div>
+                  </div>
+                ) : (
+                  <Input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+                )}
+                {!isSocialAuth && user.pendingEmail ? (
+                  <PendingBadge>
+                    <span>⏳</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {t('profile.emailChangePendingBadge', 'Pendiente de verificación: {{email}}', { email: user.pendingEmail })}
+                    </div>
+                    <Button
+                      $variant="ghost"
+                      type="button"
+                      onClick={() => {
+                        setEmailVerifyTarget(user.pendingEmail);
+                        setEmailVerifyCode('');
+                        setEmailVerifyError('');
+                        setEmailVerifyOpen(true);
+                      }}
+                    >
+                      {t('profile.emailChangeTitle', 'Verificar')}
+                    </Button>
+                    <Button
+                      $variant="ghost"
+                      type="button"
+                      onClick={handleCancelEmailChange}
+                      style={{ color: '#ef4444' }}
+                    >
+                      {t('edition.cancel', 'Cancelar')}
+                    </Button>
+                  </PendingBadge>
+                ) : null}
+              </Field>
+              <ActionRow>
+                <Button type="button" $variant="ghost" onClick={handleCancel} disabled={saving}>
                   {t('edition.cancel', 'Cancelar')}
                 </Button>
-              </PendingBadge>
-            ) : null}
-          </Field>
-        </Stack>
-      </FormCard>
-
-      <FormCard>
-        <CardHeader>
-          <CardTitle>🌐 {t('profile.language', 'Idioma')}</CardTitle>
-        </CardHeader>
-        <LangRow>
-          <LangBtn
-            type="button"
-            $active={language === 'es'}
-            $disabled={!editing}
-            disabled={!editing}
-            onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
-          >
-            <Flag>
-              <FlagImage src={flagEs} alt="Español" />
-            </Flag>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>Español</div>
-              <Muted style={{ fontSize: 12 }}>Spanish</Muted>
-            </div>
-            {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
-          </LangBtn>
-          <LangBtn
-            type="button"
-            $active={language === 'en'}
-            $disabled={!editing}
-            disabled={!editing}
-            onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
-          >
-            <Flag>
-              <FlagImage src={flagEn} alt="English" />
-            </Flag>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>English</div>
-              <Muted style={{ fontSize: 12 }}>Inglés</Muted>
-            </div>
-            {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
-          </LangBtn>
-        </LangRow>
-      </FormCard>
-
-      {editing ? (
-        <ActionRow>
-          <Button type="button" $variant="ghost" onClick={handleCancel} disabled={saving}>
-            {t('edition.cancel', 'Cancelar')}
-          </Button>
-          <Button type="button" onClick={handleSave} disabled={saving}>
-            {saving ? t('common.saving', 'Guardando...') : `✓ ${t('edition.saveChanges', 'Guardar cambios')}`}
-          </Button>
-        </ActionRow>
-      ) : null}
-
-      <FormCard>
-        <CardHeader>
-          <CardTitle>🔒 {t('profile.changePassword', 'Cambiar contraseña')}</CardTitle>
-        </CardHeader>
-        <Stack style={{ gap: 12 }}>
-          <Field>
-            <Label>{t('profile.currentPassword', 'Contraseña actual')}</Label>
-            <Input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </Field>
-          <Field>
-            <Label>{t('reset.newPassword', 'Nueva contraseña')}</Label>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </Field>
-          <Field>
-            <Label>{t('profile.confirmNewPassword', 'Confirmar nueva contraseña')}</Label>
-            <Input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </Field>
-        </Stack>
-        <ActionRow>
-          <Button type="button" onClick={handleChangePassword} disabled={changingPassword}>
-            {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
-          </Button>
-        </ActionRow>
-      </FormCard>
-
-      <FormCard>
-        <CardHeader>
-          <CardTitle>💳 {t('subscription.title', 'Suscripción')}</CardTitle>
-        </CardHeader>
-        <SubscriptionCard $plan={hasPaidSubscriptionAccess(user) ? 'pro' : 'free'} $cancelled={user.subscriptionCancelAtPeriodEnd}>
-          {hasPaidSubscriptionAccess(user) ? (
-            (() => {
-              // Detect if subscription is cancelled-but-active (e.g. PayPal cancelled but period not expired)
-              const isCancelledActive =
-                user.subscriptionCancelAtPeriodEnd ||
-                (user.subscriptionStatus === 'canceled' || user.subscriptionStatus === 'cancelled');
-              return (
-                <>
-                  <SubHeader>
-                    <div>
-                      <SubBadge $status={isCancelledActive ? 'cancelled' : 'active'}>
-                        {isCancelledActive
-                          ? '⚠️ ' + t('subscription.cancelledBadge', 'Cancelada')
-                          : '✓ ' + t('subscription.activeBadge', 'Activa')}
-                      </SubBadge>
-                    </div>
-                    <SubIcon $plan="pro">👑</SubIcon>
-                  </SubHeader>
-
-                  <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
-
-                  {user.subscriptionCurrentPeriodEnd && (
-                    <SubInfoRow $type={isCancelledActive ? 'cancelled' : 'renew'}>
-                      <SubInfoIcon>
-                        {isCancelledActive ? '⏰' : '🔄'}
-                      </SubInfoIcon>
-                      <SubInfoText $plan="pro">
-                        {isCancelledActive
-                          ? t('subscription.accessUntil', 'Acceso hasta')
-                          : t('subscription.renewsOn', 'Se renueva el')}: {' '}
-                        <SubInfoDate $plan="pro">
-                          {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString('es-ES', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </SubInfoDate>
-                      </SubInfoText>
-                    </SubInfoRow>
-                  )}
-
-                  {!isCancelledActive && (
-                    <SubInfoRow $type="info">
-                      <SubInfoIcon>✅</SubInfoIcon>
-                      <SubInfoText $plan="pro">
-                        {t('subscription.autoRenew', 'Renovación automática activada')}
-                      </SubInfoText>
-                    </SubInfoRow>
-                  )}
-
-                  <SubActions>
-                    {user.paymentProvider === 'stripe' && (
-                      <SubBtn
-                        type="button"
-                        $variant="secondary"
-                        onClick={handleManageSubscription}
-                        disabled={portalLoading}
-                      >
-                        {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
-                      </SubBtn>
-                    )}
-                    {!isCancelledActive && (
-                      <SubBtn
-                        type="button"
-                        $variant="danger"
-                        onClick={() => setCancellingModal(true)}
-                        disabled={portalLoading}
-                        style={{ background: '#ef4444', border: 'none' }}
-                      >
-                        {t('subscription.cancel', 'Cancelar suscripción')}
-                      </SubBtn>
-                    )}
-                    {isCancelledActive && (
-                      <SubBtn
-                        type="button"
-                        $variant="primary"
-                        onClick={handleReactivateSubscription}
-                        disabled={portalLoading}
-                      >
-                        {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
-                      </SubBtn>
-                    )}
-                  </SubActions>
-                </>
-              );
-            })()
-          ) : (
-            <FreeCard>
-              <FreeIcon>🔒</FreeIcon>
-              <FreeTitle>{t('subscription.noPlan', 'Sin suscripción activa')}</FreeTitle>
-              <FreeDesc>
-                {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
-              </FreeDesc>
-              <FreeBtn
-                type="button"
-                onClick={handleSubscribe}
-                disabled={portalLoading}
-              >
-                {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
-              </FreeBtn>
-            </FreeCard>
+                <Button type="button" onClick={handleSave} disabled={saving}>
+                  {saving ? t('common.saving', 'Guardando...') : `✓ ${t('edition.saveChanges', 'Guardar cambios')}`}
+                </Button>
+              </ActionRow>
+            </Stack>
           )}
-        </SubscriptionCard>
-      </FormCard>
+        </FormCard>
 
-      <FormCard>
-        <CardHeader>
-          <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
-        </CardHeader>
-        <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <AccountBtn type="button" onClick={openTutorial}>
-            <MdPlayCircleOutline size={20} />
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div>{t('tutorial.replayButton', 'Ver tutorial de nuevo')}</div>
-              <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
-                {t('tutorial.replayHint', 'Puedes volver a ver este tutorial desde tu perfil.')}
-              </Muted>
-            </div>
-            <span style={{ color: '#cbd5e1' }}>›</span>
-          </AccountBtn>
-          <DangerBtn type="button" onClick={handleLogout}>
-            <span>🚪</span>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div>{t('profile.logout', 'Cerrar sesión')}</div>
-              <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
-                {t('profile.logoutConfirm', '¿Cerrar sesión en este dispositivo?')}
-              </Muted>
-            </div>
-            <span style={{ color: '#cbd5e1' }}>›</span>
-          </DangerBtn>
-        </Row>
-      </FormCard>
+        <FormCard>
+          <CardHeader>
+            <CardTitle>💳 {t('subscription.titleProfile', 'Suscripción')}</CardTitle>
+          </CardHeader>
+          <SubscriptionCard $plan={hasPaidSubscriptionAccess(user) ? 'pro' : 'free'} $cancelled={user.subscriptionCancelAtPeriodEnd}>
+            {hasPaidSubscriptionAccess(user) ? (
+              (() => {
+                const isCancelledActive =
+                  user.subscriptionCancelAtPeriodEnd ||
+                  (user.subscriptionStatus === 'canceled' || user.subscriptionStatus === 'cancelled');
+                return (
+                  <>
+                    <SubHeader>
+                      <div>
+                        <SubBadge $status={isCancelledActive ? 'cancelled' : 'active'}>
+                          {isCancelledActive
+                            ? '⚠️ ' + t('subscription.cancelledBadge', 'Cancelada')
+                            : '✓ ' + t('subscription.activeBadge', 'Activa')}
+                        </SubBadge>
+                      </div>
+                      <SubIcon $plan="pro">👑</SubIcon>
+                    </SubHeader>
+
+                    <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
+
+                    {user.subscriptionCurrentPeriodEnd && (
+                      <SubInfoRow $type={isCancelledActive ? 'cancelled' : 'renew'}>
+                        <SubInfoIcon>
+                          {isCancelledActive ? '⏰' : '🔄'}
+                        </SubInfoIcon>
+                        <SubInfoText $plan="pro">
+                          {isCancelledActive
+                            ? t('subscription.accessUntil', 'Acceso hasta')
+                            : t('subscription.renewsOn', 'Se renueva el')}: {' '}
+                          <SubInfoDate $plan="pro">
+                            {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </SubInfoDate>
+                        </SubInfoText>
+                      </SubInfoRow>
+                    )}
+
+                    {!isCancelledActive && (
+                      <SubInfoRow $type="info">
+                        <SubInfoIcon>✅</SubInfoIcon>
+                        <SubInfoText $plan="pro">
+                          {t('subscription.autoRenew', 'Renovación automática activada')}
+                        </SubInfoText>
+                      </SubInfoRow>
+                    )}
+
+                    <SubActions>
+                      {user.paymentProvider === 'stripe' && (
+                        <SubBtn
+                          type="button"
+                          $variant="secondary"
+                          onClick={handleManageSubscription}
+                          disabled={portalLoading}
+                        >
+                          {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                        </SubBtn>
+                      )}
+                      {!isCancelledActive && (
+                        <SubBtn
+                          type="button"
+                          $variant="danger"
+                          onClick={() => setCancellingModal(true)}
+                          disabled={portalLoading}
+                          style={{ background: '#ef4444', border: 'none' }}
+                        >
+                          {t('subscription.cancel', 'Cancelar suscripción')}
+                        </SubBtn>
+                      )}
+                      {isCancelledActive && (
+                        <SubBtn
+                          type="button"
+                          $variant="primary"
+                          onClick={handleReactivateSubscription}
+                          disabled={portalLoading}
+                        >
+                          {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
+                        </SubBtn>
+                      )}
+                    </SubActions>
+                  </>
+                );
+              })()
+            ) : (
+              <FreeCard>
+                <FreeIcon>💳</FreeIcon>
+                <FreeTitle>{t('subscription.required', 'Suscripción necesaria')}</FreeTitle>
+                <FreeDesc>
+                  {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
+                </FreeDesc>
+                <FreeBtn
+                  type="button"
+                  onClick={handleSubscribe}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
+                </FreeBtn>
+              </FreeCard>
+            )}
+          </SubscriptionCard>
+        </FormCard>
+
+        {!isSocialAuth && (
+          <FormCard>
+            <CardHeader>
+              <CardTitle>🔒 {t('profile.changePassword', 'Cambiar contraseña')}</CardTitle>
+            </CardHeader>
+            <Stack style={{ gap: 12 }}>
+              <Field>
+                <Label>{t('profile.currentPassword', 'Contraseña actual')}</Label>
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </Field>
+              <Field>
+                <Label>{t('reset.newPassword', 'Nueva contraseña')}</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </Field>
+              <Field>
+                <Label>{t('profile.confirmNewPassword', 'Confirmar nueva contraseña')}</Label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </Field>
+            </Stack>
+            <ActionRow>
+              <Button type="button" onClick={handleChangePassword} disabled={changingPassword}>
+                {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
+              </Button>
+            </ActionRow>
+          </FormCard>
+        )}
+      </RightColumn>
 
       <Modal
         open={cancellingModal}
@@ -1050,7 +1216,7 @@ export default function Profile() {
           </Muted>
           {user.subscriptionCurrentPeriodEnd && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', fontSize: 13 }}>
-              {t('subscription.accessUntil', 'Acceso hasta')}: <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+              {t('subscription.accessUntil', 'Acceso hasta')}: <strong>{new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
             </div>
           )}
         </Stack>
@@ -1145,6 +1311,6 @@ export default function Profile() {
           onCancel={() => setCropperSrc(null)}
         />
       ) : null}
-    </Stack>
+    </ProfileGrid>
   );
 }

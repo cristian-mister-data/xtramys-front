@@ -148,7 +148,9 @@
         "emailChangeResendError": "Could not resend the code",
         "emailChangePendingBadge": "Pending verification: {{email}}",
         "emailChangeCancel": "Cancel email change",
-        "emailChangeCancelled": "Email change cancelled"
+        "emailChangeCancelled": "Email change cancelled",
+        "googleConnected": "Connected with Google",
+        "appleConnected": "Connected with Apple"
     },
     "sectionHeaders": {
         "myVideos": "Organize clips, duplicate templates, and link videos to exercises or strategies.",
@@ -4703,7 +4705,12 @@
         "payWithCard": "Pay with card",
         "paypalError": "Error processing PayPal payment",
         "or": "or",
-        "paymentNote": "After payment, your access will be activated automatically."
+        "paymentNote": "After payment, your access will be activated automatically.",
+        "titleProfile": "Subscription",
+        "cancelTitle": "Cancel subscription",
+        "cancelMessage": "Are you sure you want to cancel your subscription? You will still have access until the end of the current period.",
+        "confirmCancel": "Yes, cancel",
+        "required": "Subscription required"
     },
     "notFound": {
         "title": "Page not found",

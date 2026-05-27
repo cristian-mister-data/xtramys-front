@@ -148,7 +148,9 @@
         "emailChangeResendError": "No se pudo reenviar el código",
         "emailChangePendingBadge": "Pendiente de verificación: {{email}}",
         "emailChangeCancel": "Cancelar cambio de correo",
-        "emailChangeCancelled": "Cambio de correo cancelado"
+        "emailChangeCancelled": "Cambio de correo cancelado",
+        "googleConnected": "Conectado con Google",
+        "appleConnected": "Conectado con Apple"
     },
     "sectionHeaders": {
         "myVideos": "Clasifica clips, duplica plantillas y enlaza videos con ejercicios o estrategias.",
@@ -4712,7 +4714,12 @@
         "payWithCard": "Pagar con tarjeta",
         "paypalError": "Error al procesar el pago con PayPal",
         "or": "o",
-        "paymentNote": "Tras el pago, tu acceso se activará automáticamente."
+        "paymentNote": "Tras el pago, tu acceso se activará automáticamente.",
+        "titleProfile": "Suscripción",
+        "cancelTitle": "Cancelar suscripción",
+        "cancelMessage": "¿Estás seguro de que quieres cancelar tu suscripción? Seguirás teniendo acceso hasta el final del período actual.",
+        "confirmCancel": "Sí, cancelar",
+        "required": "Suscripción necesaria"
     },
     "notFound": {
         "title": "Página no encontrada",
