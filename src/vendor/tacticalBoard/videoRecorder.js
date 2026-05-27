@@ -45,7 +45,7 @@ import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { initRecordingSession, generateVideo as encodeVideo, warmUpFFmpeg, createStreamingVideoEncoder } from '@/utils/videoUtils';
 import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
 import { SPEED_TO_FPS } from '@/constants/video';
-import { 
+import {
   saveVideo as apiSaveVideo,
   proxyUploadToR2,
   getAllVideoFoldersFlat,
@@ -250,10 +250,24 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
   const extraFrames = Math.round(fps * extraDurationEnd);
   const frames = [];
 
-  // Hold inicial en la primera posición (misma duración que holdDuration)
+  // Control de rotación acumulada de los balones para movimiento continuo
+  const ballRotations = new Map();
   const firstKf = keyframes[0];
+  (firstKf.elements || []).forEach(e => {
+    if (e.type === 'ball') {
+      ballRotations.set(e.id, e.rotation || 0);
+    }
+  });
+
+  // Hold inicial en la primera posición (misma duración que holdDuration)
   for (let h = 0; h < holdFrames; h++) {
-    frames.push({ elements: firstKf.elements, connectors: firstKf.connectors || [] });
+    const elementsWithUpdatedRotations = (firstKf.elements || []).map(el => {
+      if (el.type === 'ball') {
+        return { ...el, rotation: ballRotations.get(el.id) || 0 };
+      }
+      return el;
+    });
+    frames.push({ elements: elementsWithUpdatedRotations, connectors: firstKf.connectors || [] });
   }
 
   for (let ki = 0; ki < keyframes.length; ki++) {
@@ -269,6 +283,27 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
       const fromMap = new Map(fromEls.map(e => [e.id, e]));
       const toMap = new Map(toEls.map(e => [e.id, e]));
       const allIds = new Set([...fromMap.keys(), ...toMap.keys()]);
+
+      // Calcular la diferencia de rotación de cada balón en esta transición
+      const segmentBallDeltas = new Map();
+      for (const id of allIds) {
+        const fe = fromMap.get(id);
+        const te = toMap.get(id);
+        if (fe && te && fe.type === 'ball' && te.type === 'ball') {
+          const dx = (te.x !== undefined && fe.x !== undefined) ? (te.x - fe.x) : ((te.xRatio || 0) - (fe.xRatio || 0)) * 1000;
+          const dy = (te.y !== undefined && fe.y !== undefined) ? (te.y - fe.y) : ((te.yRatio || 0) - (fe.yRatio || 0)) * 1000;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          let sign = 1;
+          if (Math.abs(dx) > 0.01) {
+            sign = dx > 0 ? 1 : -1;
+          } else if (Math.abs(dy) > 0.01) {
+            sign = dy > 0 ? 1 : -1;
+          }
+          const factor = 1.0; // grados por píxel nominal (rotación lenta)
+          const deltaRot = dist * sign * factor;
+          segmentBallDeltas.set(id, deltaRot);
+        }
+      }
 
       for (let f = 1; f <= framesPerTransition; f++) {
         const linearProgress = f / framesPerTransition;
@@ -286,6 +321,15 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
           } else {
             interpEl = { ...(te || fe) };
           }
+
+          // Inyectar rotación acumulada en el balón
+          if (fe && te && fe.type === 'ball' && te.type === 'ball') {
+            const startRot = ballRotations.get(id) || 0;
+            const deltaRot = segmentBallDeltas.get(id) || 0;
+            const currentProgress = isAirBall ? linearProgress : t;
+            interpEl.rotation = startRot + deltaRot * currentProgress;
+          }
+
           if (isAirBall) {
             const airEffect = applyBallAirEffect(interpEl, fe, te, linearProgress);
             if (airEffect) {
@@ -326,10 +370,22 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
         frames.push({ elements: [...airShadows, ...interpolated], connectors });
       }
 
+      // Actualizar rotaciones acumuladas al final del segmento
+      for (const [id, deltaRot] of segmentBallDeltas.entries()) {
+        const prevRot = ballRotations.get(id) || 0;
+        ballRotations.set(id, prevRot + deltaRot);
+      }
+
       // Hold: pausa breve en el punto de destino
       const destKf = keyframes[ki + 1];
       for (let h = 0; h < holdFrames; h++) {
-        frames.push({ elements: destKf.elements, connectors: destKf.connectors || [] });
+        const elementsWithUpdatedRotations = (destKf.elements || []).map(el => {
+          if (el.type === 'ball') {
+            return { ...el, rotation: ballRotations.get(el.id) || 0 };
+          }
+          return el;
+        });
+        frames.push({ elements: elementsWithUpdatedRotations, connectors: destKf.connectors || [] });
       }
     }
   }
@@ -337,7 +393,13 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
   // Extra frames al final (mantener última posición)
   const lastKf = keyframes[keyframes.length - 1];
   for (let e = 0; e < extraFrames; e++) {
-    frames.push({ elements: lastKf.elements, connectors: lastKf.connectors || [] });
+    const elementsWithUpdatedRotations = (lastKf.elements || []).map(el => {
+      if (el.type === 'ball') {
+        return { ...el, rotation: ballRotations.get(el.id) || 0 };
+      }
+      return el;
+    });
+    frames.push({ elements: elementsWithUpdatedRotations, connectors: lastKf.connectors || [] });
   }
 
   return frames;
@@ -353,30 +415,30 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
 // ============================================================
 function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
   if (!keyframes || !Array.isArray(keyframes)) return [];
-  
+
   const scaleFactor = Math.min(refWidth, refHeight) / 500;
-  
+
   return keyframes.map(kf => ({
     ...kf,
     elements: (kf.elements || []).map(elem => {
       const norm = { ...elem };
-      
+
       // === Posición desde ratios ===
       if (norm.xRatio !== undefined && norm.yRatio !== undefined) {
         norm.x = Math.round(norm.xRatio * refWidth * 100) / 100;
         norm.y = Math.round(norm.yRatio * refHeight * 100) / 100;
       }
-      
+
       // === Tamaño desde baseSize (sin multiplicador de dispositivo) ===
       if (norm.baseSize !== undefined) {
         norm.size = Math.round(norm.baseSize * scaleFactor * 100) / 100;
       }
-      
+
       // === Grosor desde baseThickness (factor 0.7 consistente con SVG rendering) ===
       if (norm.baseThickness !== undefined) {
         norm.thickness = Math.round(norm.baseThickness * 0.7 * 100) / 100;
       }
-      
+
       // === Asegurar que lineType, dotSize y dotSpacing siempre est\u00e9n presentes ===
       // Esto garantiza que el backend siempre reciba la info completa del tipo de l\u00ednea
       if (LINE_TYPE_ELEMENTS.has(norm.type)) {
@@ -384,7 +446,7 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
         if (norm.dotSize === undefined) norm.dotSize = 2;
         if (norm.dotSpacing === undefined) norm.dotSpacing = 4;
       }
-      
+
       // === Coordenadas de líneas/formas desde pointsRatio ===
       if (norm.pointsRatio && Array.isArray(norm.pointsRatio) && norm.pointsRatio.length >= 2) {
         if (norm.type === 'straight-arrow' || norm.type === 'straight-line') {
@@ -421,7 +483,7 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
           norm.imageHeight = refHeight;
         }
       }
-      
+
       // === Texto libre: recalcular fontSize y posición ===
       if (norm.type === 'free-text' || norm.type === 'text') {
         if (norm.xRatio !== undefined && norm.yRatio !== undefined) {
@@ -434,16 +496,16 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
           norm.fontSize = norm.baseSize * scaleFactor;
         }
       }
-      
+
       return norm;
     }),
   }));
 }
 
-export default function VideoRecorder({ 
-  elements, 
+export default function VideoRecorder({
+  elements,
   connectors = [], // Conectores entre elementos
-  fieldImage, 
+  fieldImage,
   onClose,
   fieldWidth,
   fieldHeight,
@@ -514,7 +576,7 @@ export default function VideoRecorder({
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100 porcentaje de generación
   const [generationPhase, setGenerationPhase] = useState('generationPreparing');
   const [isSaving, setIsSaving] = useState(false); // Estado de guardado (separado de generación)
-  
+
   // Detección de admin
   const [isAdmin, setIsAdmin] = useState(false);
   const shouldBeGlobal = isAdmin || isGlobalExercise;
@@ -525,7 +587,7 @@ export default function VideoRecorder({
       generationCancelledRef.current = true;
       // Limpiar video local si existe Y no está pendiente de upload a R2
       if (localVideoPath && localVideoPath !== uploadingPathRef.current) {
-        RNFS.unlink(localVideoPath).catch(() => {});
+        RNFS.unlink(localVideoPath).catch(() => { });
       }
     };
   }, [localVideoPath]);
@@ -557,7 +619,7 @@ export default function VideoRecorder({
             if (payload?.role === 'admin') setIsAdmin(true);
           }
         }
-      } catch {}
+      } catch { }
     };
     detectAdmin();
   }, []);
@@ -572,37 +634,37 @@ export default function VideoRecorder({
       setSelectedFolderId(preferredFolderId);
     }
   }, [presetFolderId, editingVideoFolderId]);
-  
+
   // Estados para crear carpeta
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderNameEn, setNewFolderNameEn] = useState('');
   const [newFolderColor, setNewFolderColor] = useState('#6366F1');
   const [parentFolderForNew, setParentFolderForNew] = useState(null); // Para subcarpetas
-  
+
   // Estado para velocidad de video
   const [videoSpeed, setVideoSpeed] = useState(1.0); // 0.5, 1.0, 2.0
-  
+
   const SCREEN_WIDTH = Dimensions.get('window').width;
 
   useEffect(() => {
     warmUpFFmpeg();
   }, []);
-  
+
   // Calcular duración total estimada del video
   const getVideoDuration = () => {
     if (keyframes.length < 2) return 0;
-    
+
     const firstTimestamp = keyframes[0].timestamp;
     const lastTimestamp = keyframes[keyframes.length - 1].timestamp;
     const baseDuration = (lastTimestamp - firstTimestamp) / 1000; // en segundos
     return baseDuration + 1; // +1 segundo extra al final
   };
-  
+
   // Función para mostrar notificación
   const showNotification = (message, type = 'success') => {
     setNotification({ visible: true, message, type });
-    
+
     Animated.sequence([
       Animated.timing(notificationAnim, {
         toValue: 1,
@@ -619,7 +681,7 @@ export default function VideoRecorder({
       setNotification({ visible: false, message: '', type: 'success' });
     });
   };
-  
+
   // Capturar un keyframe
   const captureKeyframe = async () => {
     try {
@@ -629,14 +691,14 @@ export default function VideoRecorder({
       }
 
       let fieldImageData = fieldImage;
-      
+
       // Si no hay imagen del campo, tomar captura automática del campo base
       if (!fieldImage) {
         if (!fieldBaseRef?.current) {
           showNotification(t('videoRecorder.cannotAccessField'), 'error');
           return;
         }
-        
+
         // Verificar que la imagen del campo esté completamente cargada
         if (!fieldImageReady) {
           showNotification(t('videoRecorder.waitingFieldImage'), 'success');
@@ -644,13 +706,13 @@ export default function VideoRecorder({
           setTimeout(() => captureKeyframe(), 500);
           return;
         }
-        
+
         try {
           const capturedUri = await fieldBaseRef.current.capture();
-          
+
           // Convertir la imagen capturada a base64
           const base64Image = await RNFS.readFile(capturedUri, 'base64');
-          
+
           fieldImageData = `data:image/png;base64,${base64Image}`;
         } catch (captureError) {
           console.error('Error capturando imagen del campo:', captureError);
@@ -658,18 +720,18 @@ export default function VideoRecorder({
           return;
         }
       }
-      
+
       // Capturar datos de elementos para interpolación - ULTRA OPTIMIZADO
       const elementsSnapshot = elements.map(elem => {
         // SOLO guardar propiedades esenciales mínimas
-        const snapshot = { 
+        const snapshot = {
           type: elem.type,
           id: elem.id,
         };
-        
+
         const baseScale = Math.min(fieldWidth, fieldHeight) / 500;
         const scaleFactor = baseScale;
-        
+
         // Para elementos con xRatio/yRatio, convertir a coordenadas absolutas
         if (elem.xRatio !== undefined && elem.yRatio !== undefined) {
           // Guardar RATIOS originales para poder restaurar exactamente
@@ -678,12 +740,12 @@ export default function VideoRecorder({
           // Redondear para reducir tamaño de datos JSON
           snapshot.x = Math.round(elem.xRatio * fieldWidth * 100) / 100;
           snapshot.y = Math.round(elem.yRatio * fieldHeight * 100) / 100;
-          
+
           // Calcular tamaño escalado
           const baseSize = elem.size || 24;
           snapshot.size = Math.round(baseSize * scaleFactor * 100) / 100;
           snapshot.baseSize = baseSize;
-          
+
           if (elem.rotation) snapshot.rotation = elem.rotation;
           if (elem.locked) snapshot.locked = elem.locked;
           if (elem.zIndex !== undefined) snapshot.zIndex = elem.zIndex;
@@ -714,8 +776,8 @@ export default function VideoRecorder({
             snapshot.showPhotos = showPhotos;
             snapshot.playersWithNumber = playersWithNumber;
             // Añadir datos del portero
-            snapshot.isGoalkeeper = elem.isGoalkeeper || 
-              elem.playerData?.posicion === 'portero' || 
+            snapshot.isGoalkeeper = elem.isGoalkeeper ||
+              elem.playerData?.posicion === 'portero' ||
               elem.playerData?.position === 'goalkeeper' ||
               elem.playerData?.demarcacion === 'POR';
             if (elem.differentiateGoalkeeper !== undefined) snapshot.differentiateGoalkeeper = elem.differentiateGoalkeeper;
@@ -725,16 +787,16 @@ export default function VideoRecorder({
             snapshot.displayLabel = elem.displayLabel; // Iniciales (E1, E2, PF, etc.)
             snapshot.color = elem.color;
             if (elem.numberColor) snapshot.numberColor = elem.numberColor;
-          } else if (elem.type === 'ball' || elem.type === 'cone' || elem.type === 'cone-pro' || 
-                     elem.type === 'cone-flat' || elem.type === 'ring' ||
-                     elem.type === 'goal' || elem.type === 'goal-large' || elem.type === 'goal-small' || 
-                     elem.type === 'barrier' || elem.type === 'dummy' || elem.type === 'pole' || 
-                     elem.type === 'ladder' || elem.type === 'weights') {
+          } else if (elem.type === 'ball' || elem.type === 'cone' || elem.type === 'cone-pro' ||
+            elem.type === 'cone-flat' || elem.type === 'ring' ||
+            elem.type === 'goal' || elem.type === 'goal-large' || elem.type === 'goal-small' ||
+            elem.type === 'barrier' || elem.type === 'dummy' || elem.type === 'pole' ||
+            elem.type === 'ladder' || elem.type === 'weights') {
             if (elem.color) snapshot.color = elem.color;
             if (elem.rotation) snapshot.rotation = elem.rotation;
           }
         }
-        
+
         // Para líneas/flechas con points, convertir a coordenadas absolutas
         if (elem.points && elem.points.length >= 2) {
           if (elem.type === 'straight-arrow' || elem.type === 'straight-line') {
@@ -748,7 +810,7 @@ export default function VideoRecorder({
             snapshot.y1 = elem.points[0].y * fieldHeight;
             snapshot.x2 = elem.points[1].x * fieldWidth;
             snapshot.y2 = elem.points[1].y * fieldHeight;
-            
+
             const baseThickness = elem.thickness || 1;
             snapshot.thickness = baseThickness;
             snapshot.baseThickness = baseThickness;
@@ -766,7 +828,7 @@ export default function VideoRecorder({
               x: pt.x * fieldWidth,
               y: pt.y * fieldHeight
             }));
-            
+
             const baseThickness = elem.thickness || 1;
             snapshot.thickness = baseThickness;
             snapshot.baseThickness = baseThickness;
@@ -776,9 +838,9 @@ export default function VideoRecorder({
             snapshot.lineType = elem.lineType || 'solid';
             snapshot.dotSize = elem.dotSize ?? 2;
             snapshot.dotSpacing = elem.dotSpacing ?? 4;
-            
+
           }
-          
+
           // Para círculos, calcular centro y radio desde points
           if (elem.type === 'circle') {
             // Guardar ratios originales
@@ -788,16 +850,16 @@ export default function VideoRecorder({
             ];
             const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
             const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
-            
+
             // Centro del círculo
             snapshot.x = (p1.x + p2.x) / 2;
             snapshot.y = (p1.y + p2.y) / 2;
-            
+
             // Radio del círculo
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
             snapshot.radius = Math.sqrt(dx * dx + dy * dy) / 2;
-            
+
             // Capturar thickness
             const baseThickness = elem.thickness || 1;
             snapshot.thickness = baseThickness;
@@ -811,7 +873,7 @@ export default function VideoRecorder({
             snapshot.dotSize = elem.dotSize ?? 2;
             snapshot.dotSpacing = elem.dotSpacing ?? 4;
           }
-          
+
           // Para rectángulos, calcular posición y dimensiones desde points
           if (elem.type === 'rectangle') {
             // Guardar ratios originales
@@ -821,17 +883,17 @@ export default function VideoRecorder({
             ];
             const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
             const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
-            
+
             const minX = Math.min(p1.x, p2.x);
             const maxX = Math.max(p1.x, p2.x);
             const minY = Math.min(p1.y, p2.y);
             const maxY = Math.max(p1.y, p2.y);
-            
+
             snapshot.x = minX;
             snapshot.y = minY;
             snapshot.width = maxX - minX;
             snapshot.height = maxY - minY;
-            
+
             // Capturar thickness
             const baseThickness = elem.thickness || 1;
             snapshot.thickness = baseThickness;
@@ -846,7 +908,7 @@ export default function VideoRecorder({
             snapshot.dotSpacing = elem.dotSpacing ?? 4;
             if (elem.rotation) snapshot.rotation = elem.rotation;
           }
-          
+
           // Para custom-shape, convertir points a coordenadas absolutas
           if (elem.type === 'custom-shape' && elem.isCustomShapeComplete) {
             // Guardar ratios originales para restauración exacta
@@ -855,7 +917,7 @@ export default function VideoRecorder({
               x: pt.x * fieldWidth,
               y: pt.y * fieldHeight
             }));
-            
+
             // Capturar thickness
             const baseThickness = elem.thickness || 1;
             snapshot.thickness = baseThickness;
@@ -874,7 +936,7 @@ export default function VideoRecorder({
             snapshot.imageHeight = fieldHeight;
           }
         }
-        
+
         // Para texto libre (free-text)
         if (elem.type === 'free-text' || elem.type === 'text') {
           snapshot.x = elem.xRatio * fieldWidth;
@@ -888,20 +950,20 @@ export default function VideoRecorder({
           snapshot.backgroundColor = elem.backgroundColor || 'transparent';
           if (elem.rotation) snapshot.rotation = elem.rotation;
         }
-        
+
         return snapshot;
       }).filter(snapshot => {
         // Filtrar snapshots incompletos que no tienen coordenadas válidas
         // Esto evita que elementos en proceso de dibujo se incluyan
         const hasPosition = (snapshot.x !== undefined && snapshot.y !== undefined) ||
-                           (snapshot.x1 !== undefined && snapshot.y1 !== undefined) ||
-                           (snapshot.points && snapshot.points.length >= 2);
-        
-        const hasValidSize = snapshot.size !== undefined || 
-                            snapshot.radius !== undefined || 
-                            (snapshot.width !== undefined && snapshot.height !== undefined) ||
-                            (snapshot.x1 !== undefined); // líneas no necesitan size
-        
+          (snapshot.x1 !== undefined && snapshot.y1 !== undefined) ||
+          (snapshot.points && snapshot.points.length >= 2);
+
+        const hasValidSize = snapshot.size !== undefined ||
+          snapshot.radius !== undefined ||
+          (snapshot.width !== undefined && snapshot.height !== undefined) ||
+          (snapshot.x1 !== undefined); // líneas no necesitan size
+
         // Para formas, verificar que tienen dimensiones válidas (no son de tamaño 0)
         if (snapshot.type === 'rectangle') {
           if (!snapshot.width || snapshot.width <= 0 || !snapshot.height || snapshot.height <= 0) {
@@ -913,10 +975,10 @@ export default function VideoRecorder({
             return false;
           }
         }
-        
+
         return hasPosition;
       });
-      
+
       // Capturar conectores - las líneas que conectan elementos
       const connectorsSnapshot = connectors.map(connector => ({
         id: connector.id,
@@ -925,7 +987,7 @@ export default function VideoRecorder({
         color: connector.color || '#000000',
         thickness: connector.thickness || 2,
       }));
-      
+
       const ballTrajectoryById = {};
       elementsSnapshot
         .filter(elem => elem.type === 'ball')
@@ -943,7 +1005,7 @@ export default function VideoRecorder({
         ballTrajectoryType: 'ground',
         ballTrajectoryById,
       };
-      
+
       onKeyframesChange([...keyframes, newKeyframe]);
       showNotification(t('videoRecorder.positionCaptured'), 'success');
     } catch (error) {
@@ -1116,7 +1178,7 @@ export default function VideoRecorder({
       for (let i = 0; i < totalFrames; i++) {
         if (generationCancelledRef.current) {
           streamingEncoder?.abort?.();
-          RNFS.unlink(framesDir).catch(() => {});
+          RNFS.unlink(framesDir).catch(() => { });
           setGenerationProgress(0);
           return;
         }
@@ -1201,10 +1263,10 @@ export default function VideoRecorder({
         encodedMime = result.mimeType;
       }
       setLocalVideoMime(encodedMime || null);
-      RNFS.unlink(framesDir).catch(() => {});
+      RNFS.unlink(framesDir).catch(() => { });
 
       if (generationCancelledRef.current) {
-        RNFS.unlink(outputPath).catch(() => {});
+        RNFS.unlink(outputPath).catch(() => { });
         setGenerationProgress(0);
         return;
       }
@@ -1332,7 +1394,7 @@ export default function VideoRecorder({
           // cleanup no borre el archivo durante la subida
           uploadingPathRef.current = videoPathToUpload;
           setLocalVideoPath(null);
-          
+
           const uploadSavedVideo = async () => {
             try {
               // Verificar que el archivo existe antes de intentar subir
@@ -1340,7 +1402,7 @@ export default function VideoRecorder({
               if (!exists) {
                 throw new Error(`R2 upload: archivo local no existe: ${videoPathToUpload}`);
               }
-              
+
               // Proxy upload: envía el vídeo al backend, que lo sube a R2
               // Evita problemas de conectividad directa con R2 (IPv6, etc.)
               let uploadOk = false;
@@ -1358,7 +1420,7 @@ export default function VideoRecorder({
                   }
                 }
               }
-              
+
               if (uploadOk && key) {
                 await apiUpdateVideo(savedVideoId, { r2Key: key });
               } else {
@@ -1369,7 +1431,7 @@ export default function VideoRecorder({
               if (Platform.OS === 'web') throw err;
             } finally {
               uploadingPathRef.current = null;
-              RNFS.unlink(videoPathToUpload).catch(() => {});
+              RNFS.unlink(videoPathToUpload).catch(() => { });
             }
           };
 
@@ -1380,20 +1442,20 @@ export default function VideoRecorder({
           }
         } else if (localVideoPath) {
           // No hay savedVideoId, limpiar archivo local
-          RNFS.unlink(localVideoPath).catch(() => {});
+          RNFS.unlink(localVideoPath).catch(() => { });
           setLocalVideoPath(null);
         }
-        
+
         // Notificar al componente padre sobre el video guardado (para asociar a ejercicio/estrategia nuevo)
         if (global.fieldCallbacks?.onVideoSaved && savedVideoId) {
           global.fieldCallbacks.onVideoSaved(savedVideoId);
         }
-        
+
         // Restaurar al estado original (antes de abrir video recorder)
         if (onRestoreOriginal) {
           onRestoreOriginal();
         }
-        
+
         // Cerrar modales primero para que la notificación sea visible (no quede debajo del modal)
         setShowSaveModal(false);
         setShowPreviewScreen(false);
@@ -1405,13 +1467,13 @@ export default function VideoRecorder({
         onClearKeyframes();
         setCurrentVideoId(null);
         setVideoUrl(null);
-        
+
         // Mostrar notificación según si es actualización o nuevo
-        const successMessage = isEditingVideo 
-          ? t('videoRecorder.videoUpdatedSuccess') 
+        const successMessage = isEditingVideo
+          ? t('videoRecorder.videoUpdatedSuccess')
           : t('videoRecorder.videoSavedSuccess');
         setTimeout(() => showNotification(successMessage, 'success'), 150);
-        
+
         // Si estamos editando, cerrar y volver atrás
         if (isEditingVideo) {
           if (onEditVideoSaved) {
@@ -1504,7 +1566,7 @@ export default function VideoRecorder({
     } finally {
       setIsGenerating(false);
     }
-  }; 
+  };
 
   // Limpiar keyframes
   const clearKeyframes = () => {
@@ -1513,8 +1575,8 @@ export default function VideoRecorder({
       t('field.clearPositionsMessage'),
       [
         { text: t('edition.cancel'), style: 'cancel' },
-        { 
-          text: t('field.delete'), 
+        {
+          text: t('field.delete'),
           onPress: () => {
             // Restaurar al estado original (posición inicial)
             // Esto SÍ se guarda en el historial para poder hacer undo
@@ -1632,7 +1694,7 @@ export default function VideoRecorder({
 
   // Colores disponibles para carpetas
   const folderColors = [
-    '#6366F1', '#8B5CF6', '#EC4899', '#EF4444', 
+    '#6366F1', '#8B5CF6', '#EC4899', '#EF4444',
     '#F97316', '#F59E0B', '#10B981', '#14B8A6',
     '#06B6D4', '#3B82F6', '#64748B', '#1E293B'
   ];
@@ -1879,8 +1941,8 @@ export default function VideoRecorder({
                 <Feather name="x" size={20} color="#666" />
               </TouchableOpacity>
             </View>
-            
-            <KeyboardAwareScrollView 
+
+            <KeyboardAwareScrollView
               showsVerticalScrollIndicator={false}
               style={styles.saveModalScroll}
               contentContainerStyle={styles.saveModalContent}
@@ -1921,76 +1983,76 @@ export default function VideoRecorder({
 
               {/* Selector de carpeta */}
               {!hideFolderPicker && (
-              <View style={styles.inputGroup}>
-                <View style={styles.inputLabelRow}>
-                  <Feather name="folder" size={14} color="#666" />
-                  <Text style={styles.inputLabel}>{t('videoRecorder.folderLabel')}</Text>
-                  <TouchableOpacity
-                    style={styles.createFolderHeaderBtn}
-                    onPress={() => openCreateFolderModal(null)}
-                  >
-                    <Feather name="folder-plus" size={14} color="#4CAF50" />
-                    <Text style={styles.createFolderHeaderBtnText}>{t('videoRecorder.newFolder') || 'Nueva'}</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.folderSelectContainer}>
-                  <ScrollView 
-                    style={styles.folderSelectList} 
-                    showsVerticalScrollIndicator={true}
-                    nestedScrollEnabled={true}
-                  >
-                    {/* Carpeta raíz */}
-                    <View style={styles.folderItemRow}>
-                      <TouchableOpacity
-                        style={[
-                          styles.folderSelectItem,
-                          styles.folderSelectItemFlex,
-                          selectedFolderId === null && styles.folderSelectItemActive
-                        ]}
-                        onPress={() => setSelectedFolderId(null)}
-                      >
-                        <View style={[styles.folderSelectIcon, { backgroundColor: '#F1F5F9' }]}>
-                          <Feather name="home" size={14} color="#64748B" />
-                        </View>
-                        <Text style={styles.folderSelectText}>{t('videoRecorder.rootFolder')}</Text>
-                        {selectedFolderId === null && (
-                          <Feather name="check-circle" size={16} color="#4CAF50" />
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                    
-                    {allFolders.map(folder => (
-                      <View key={folder.id} style={[styles.folderItemRow, folder.level === 1 && { marginLeft: 16 }]}>
+                <View style={styles.inputGroup}>
+                  <View style={styles.inputLabelRow}>
+                    <Feather name="folder" size={14} color="#666" />
+                    <Text style={styles.inputLabel}>{t('videoRecorder.folderLabel')}</Text>
+                    <TouchableOpacity
+                      style={styles.createFolderHeaderBtn}
+                      onPress={() => openCreateFolderModal(null)}
+                    >
+                      <Feather name="folder-plus" size={14} color="#4CAF50" />
+                      <Text style={styles.createFolderHeaderBtnText}>{t('videoRecorder.newFolder') || 'Nueva'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.folderSelectContainer}>
+                    <ScrollView
+                      style={styles.folderSelectList}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {/* Carpeta raíz */}
+                      <View style={styles.folderItemRow}>
                         <TouchableOpacity
                           style={[
                             styles.folderSelectItem,
                             styles.folderSelectItemFlex,
-                            selectedFolderId === folder.id && styles.folderSelectItemActive
+                            selectedFolderId === null && styles.folderSelectItemActive
                           ]}
-                          onPress={() => setSelectedFolderId(folder.id)}
+                          onPress={() => setSelectedFolderId(null)}
                         >
-                          <View style={[styles.folderSelectIcon, { backgroundColor: folder.color || '#2196F3' }]}>
-                            <Feather name="folder" size={12} color="#fff" />
+                          <View style={[styles.folderSelectIcon, { backgroundColor: '#F1F5F9' }]}>
+                            <Feather name="home" size={14} color="#64748B" />
                           </View>
-                          <Text style={styles.folderSelectText} numberOfLines={1}>
-                            {folder.displayName || folder.nombre}
-                          </Text>
-                          {selectedFolderId === folder.id && (
+                          <Text style={styles.folderSelectText}>{t('videoRecorder.rootFolder')}</Text>
+                          {selectedFolderId === null && (
                             <Feather name="check-circle" size={16} color="#4CAF50" />
                           )}
                         </TouchableOpacity>
-                        {/* Botón para crear subcarpeta */}
-                        <TouchableOpacity
-                          style={styles.createSubfolderBtn}
-                          onPress={() => openCreateFolderModal(folder.id)}
-                        >
-                          <Feather name="plus" size={14} color="#666" />
-                        </TouchableOpacity>
                       </View>
-                    ))}
-                  </ScrollView>
+
+                      {allFolders.map(folder => (
+                        <View key={folder.id} style={[styles.folderItemRow, folder.level === 1 && { marginLeft: 16 }]}>
+                          <TouchableOpacity
+                            style={[
+                              styles.folderSelectItem,
+                              styles.folderSelectItemFlex,
+                              selectedFolderId === folder.id && styles.folderSelectItemActive
+                            ]}
+                            onPress={() => setSelectedFolderId(folder.id)}
+                          >
+                            <View style={[styles.folderSelectIcon, { backgroundColor: folder.color || '#2196F3' }]}>
+                              <Feather name="folder" size={12} color="#fff" />
+                            </View>
+                            <Text style={styles.folderSelectText} numberOfLines={1}>
+                              {folder.displayName || folder.nombre}
+                            </Text>
+                            {selectedFolderId === folder.id && (
+                              <Feather name="check-circle" size={16} color="#4CAF50" />
+                            )}
+                          </TouchableOpacity>
+                          {/* Botón para crear subcarpeta */}
+                          <TouchableOpacity
+                            style={styles.createSubfolderBtn}
+                            onPress={() => openCreateFolderModal(folder.id)}
+                          >
+                            <Feather name="plus" size={14} color="#666" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
-              </View>
               )}
             </KeyboardAwareScrollView>
 
@@ -2007,7 +2069,7 @@ export default function VideoRecorder({
 
               <TouchableOpacity
                 style={[
-                  styles.saveModalBtn, 
+                  styles.saveModalBtn,
                   styles.saveModalBtnPrimary,
                   (!videoNombre.trim() || isSaving) && styles.saveModalBtnDisabled
                 ]}
@@ -2039,12 +2101,12 @@ export default function VideoRecorder({
                 <Feather name="folder-plus" size={20} color="#4CAF50" />
               </View>
               <Text style={[styles.modalTitle, { color: '#1a1a1a' }]}>
-                {parentFolderForNew 
+                {parentFolderForNew
                   ? (t('videoRecorder.createSubfolder') || 'Nueva subcarpeta')
                   : (t('videoRecorder.createFolder') || 'Nueva carpeta')}
               </Text>
-              <TouchableOpacity 
-                style={styles.modalCloseBtn} 
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
                 onPress={closeCreateFolderModal}
               >
                 <Feather name="x" size={20} color="#666" />
@@ -2137,7 +2199,7 @@ export default function VideoRecorder({
 
               <TouchableOpacity
                 style={[
-                  styles.saveModalBtn, 
+                  styles.saveModalBtn,
                   styles.saveModalBtnPrimary,
                   !newFolderName.trim() && styles.saveModalBtnDisabled
                 ]}

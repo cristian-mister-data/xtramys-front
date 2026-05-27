@@ -4,9 +4,9 @@
  * All coordinates use the 0-1 normalized system from fieldDimensions.
  */
 import React, { memo } from 'react';
-import Svg, { 
-  Rect, Line, Circle, Ellipse, Path, G, Defs, 
-  ClipPath, Pattern 
+import Svg, {
+  Rect, Line, Circle, Ellipse, Path, G, Defs,
+  ClipPath, Pattern
 } from 'react-native-svg';
 import { FIELD, GRASS_STRIPE_COUNT } from './fieldDimensions';
 
@@ -145,11 +145,11 @@ export const PenaltyArea = memo(({ w, h, margin, side = 'left', lineColor = '#ff
       {/* Penalty arc - clipped to show only outside penalty area */}
       <Defs>
         <ClipPath id={clipId}>
-          <Rect 
-            x={side === 'left' ? margin + paDepth : margin} 
-            y={margin} 
-            width={fw - paDepth} 
-            height={fh} 
+          <Rect
+            x={side === 'left' ? margin + paDepth : margin}
+            y={margin}
+            width={fw - paDepth}
+            height={fh}
           />
         </ClipPath>
       </Defs>
@@ -193,53 +193,109 @@ export const GoalNet = memo(({ w, h, margin, side = 'left', lineColor = '#ffffff
 
   const goalTop = margin + goal.top * fh;
   const goalBottom = margin + goal.bottom * fh;
-  const goalDepth = goal.depth * fw;
   const goalHeight = goalBottom - goalTop;
 
-  let x, crossbars;
+  // El espacio de coordenadas local de la portería es 120 x 70.
+  // El ancho de la boca es 90 (de x=15 a x=105).
+  // Escalamos para que el ancho local (90) sea igual al goalHeight real.
+  const scale = goalHeight / 90;
+
+  // Parámetros de transformación para rotar y posicionar en la línea de meta
+  let tx, ty, rot;
   if (side === 'left') {
-    x = margin - goalDepth;
-    crossbars = (
-      <G>
-        <Rect x={x} y={goalTop} width={goalDepth} height={goalHeight} stroke={lineColor} strokeWidth={strokeWidth + 0.5} fill="none" />
-        {/* Net pattern lines */}
-        {[0.25, 0.5, 0.75].map((r) => (
-          <Line key={`h-${r}`} x1={x} y1={goalTop + goalHeight * r} x2={x + goalDepth} y2={goalTop + goalHeight * r} stroke={lineColor} strokeWidth={0.5} opacity={0.5} />
-        ))}
-        {[0.33, 0.66].map((r) => (
-          <Line key={`v-${r}`} x1={x + goalDepth * r} y1={goalTop} x2={x + goalDepth * r} y2={goalBottom} stroke={lineColor} strokeWidth={0.5} opacity={0.5} />
-        ))}
-      </G>
-    );
+    // Rotación de -90 grados (apunta a la izquierda, boca a la derecha)
+    tx = margin - 38 * scale;
+    ty = goalTop + 105 * scale;
+    rot = -90;
   } else {
-    x = margin + fw;
-    crossbars = (
-      <G>
-        <Rect x={x} y={goalTop} width={goalDepth} height={goalHeight} stroke={lineColor} strokeWidth={strokeWidth + 0.5} fill="none" />
-        {[0.25, 0.5, 0.75].map((r) => (
-          <Line key={`h-${r}`} x1={x} y1={goalTop + goalHeight * r} x2={x + goalDepth} y2={goalTop + goalHeight * r} stroke={lineColor} strokeWidth={0.5} opacity={0.5} />
-        ))}
-        {[0.33, 0.66].map((r) => (
-          <Line key={`v-${r}`} x1={x + goalDepth * r} y1={goalTop} x2={x + goalDepth * r} y2={goalBottom} stroke={lineColor} strokeWidth={0.5} opacity={0.5} />
-        ))}
-      </G>
-    );
+    // Rotación de 90 grados (apunta a la derecha, boca a la izquierda)
+    tx = margin + fw + 38 * scale;
+    ty = goalTop - 15 * scale;
+    rot = 90;
   }
 
-  return crossbars;
+  // Generamos el mismo patrón de red procedimental de ojo de halcón
+  const netD = React.useMemo(() => {
+    const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
+      const getPt = (u, v) => {
+        const x = (1 - u) * ((1 - v) * p0.x + v * p3.x) + u * ((1 - v) * p1.x + v * p2.x);
+        const y = (1 - u) * ((1 - v) * p0.y + v * p3.y) + u * ((1 - v) * p1.y + v * p2.y);
+        return { x, y };
+      };
+      let d = '';
+      for (let i = 0; i < uDivs; i++) {
+        for (let j = 0; j <= vDivs; j++) {
+          const u1 = i / uDivs;
+          const v1 = j / vDivs;
+          if (j < vDivs) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j + 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+          if (j > 0) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j - 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+        }
+      }
+      return d;
+    };
+
+    // Panels for Large Goal
+    const topPanel = getQuadNetPath({ x: 15, y: 32 }, { x: 105, y: 32 }, { x: 98, y: 12 }, { x: 22, y: 12 }, 10, 4);
+    const backPanel = getQuadNetPath({ x: 22, y: 12 }, { x: 98, y: 12 }, { x: 98, y: 22 }, { x: 22, y: 22 }, 10, 4);
+    const leftPanel = getQuadNetPath({ x: 15, y: 32 }, { x: 22, y: 12 }, { x: 22, y: 22 }, { x: 15, y: 38 }, 4, 4);
+    const rightPanel = getQuadNetPath({ x: 105, y: 32 }, { x: 105, y: 38 }, { x: 98, y: 22 }, { x: 98, y: 12 }, 4, 4);
+
+    return `${topPanel}${backPanel}${leftPanel}${rightPanel}`;
+  }, []);
+
+  return (
+    <G transform={`translate(${tx}, ${ty}) scale(${scale}) rotate(${rot})`}>
+      {/* Fondo translúcido de la red */}
+      <Path
+        d="M 15 32 L 22 12 L 98 12 L 105 32 L 105 38 L 98 22 L 22 22 L 15 38 Z"
+        fill="rgba(255,255,255,0.06)"
+      />
+
+      {/* Patrón de red de diamantes */}
+      <Path d={netD} stroke="#cccccc" strokeWidth="0.8" fill="none" opacity="0.65" />
+
+      {/* Estructura de soporte posterior (metal blanco fino) */}
+      <Path d="M 22 12 L 98 12" stroke={lineColor} strokeWidth="2.5" fill="none" />
+      <Path d="M 22 22 L 98 22" stroke={lineColor} strokeWidth="2.5" fill="none" />
+      <Path d="M 22 12 L 22 22" stroke={lineColor} strokeWidth="2" fill="none" />
+      <Path d="M 98 12 L 98 22" stroke={lineColor} strokeWidth="2" fill="none" />
+
+      {/* Profundidad lateral */}
+      <Path d="M 15 32 L 22 12" stroke={lineColor} strokeWidth="2.5" fill="none" />
+      <Path d="M 105 32 L 98 12" stroke={lineColor} strokeWidth="2.5" fill="none" />
+      <Path d="M 15 38 L 22 22" stroke={lineColor} strokeWidth="2.5" fill="none" />
+      <Path d="M 105 38 L 98 22" stroke={lineColor} strokeWidth="2.5" fill="none" />
+
+      {/* Marco principal frontal (Postes y travesaño blanco grueso) */}
+      <Path d="M 15 38 L 15 32 L 105 32 L 105 38" stroke={lineColor} strokeWidth="4" fill="none" strokeLinecap="square" />
+    </G>
+  );
 });
 
 // ──────────────────────────────────────────────
 // 7. Zone Division Lines (solid grid style)
 // ──────────────────────────────────────────────
-export const ZoneDividers = memo(({ w, h, margin, zones = 1, lineColor = '#ffffff', strokeWidth = 2 }) => {
-  const fw = w - 2 * margin;
+export const ZoneDividers = memo(({ w, h, margin, hMargin, zones = 1, lineColor = '#ffffff', strokeWidth = 2 }) => {
+  const hm = hMargin ?? margin;
+  const fw = w - 2 * hm;
   const fh = h - 2 * margin;
   const lines = [];
 
   if (zones === 2) {
     // 2 zones: vertical center line (2 columns)
-    const midX = margin + fw / 2;
+    const midX = hm + fw / 2;
     lines.push(
       <Line key="v-center" x1={midX} y1={margin} x2={midX} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
@@ -249,22 +305,22 @@ export const ZoneDividers = memo(({ w, h, margin, zones = 1, lineColor = '#fffff
     // 3 zones: 2 vertical lines (3 equal columns)
     const third = fw / 3;
     lines.push(
-      <Line key="v1" x1={margin + third} y1={margin} x2={margin + third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
+      <Line key="v1" x1={hm + third} y1={margin} x2={hm + third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
     lines.push(
-      <Line key="v2" x1={margin + 2 * third} y1={margin} x2={margin + 2 * third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
+      <Line key="v2" x1={hm + 2 * third} y1={margin} x2={hm + 2 * third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
   }
 
   if (zones === 4) {
     // 4 zones: cross divider (vertical center + horizontal center = 4 quadrants)
-    const midX = margin + fw / 2;
+    const midX = hm + fw / 2;
     const midY = margin + fh / 2;
     lines.push(
       <Line key="v-center" x1={midX} y1={margin} x2={midX} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
     lines.push(
-      <Line key="h-center" x1={margin} y1={midY} x2={margin + fw} y2={midY} stroke={lineColor} strokeWidth={strokeWidth} />
+      <Line key="h-center" x1={hm} y1={midY} x2={hm + fw} y2={midY} stroke={lineColor} strokeWidth={strokeWidth} />
     );
   }
 

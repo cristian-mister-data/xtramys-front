@@ -88,9 +88,16 @@ const FieldSVGRenderer = memo(({
     groupTransform = '';
   }
 
-  const margin = Math.min(virtualW, virtualH) * MARGIN_RATIO;
+  const isZoneField = lineConfig.id.startsWith('zones');
+  const margin = isZoneField 
+    ? Math.min(virtualW, virtualH) * 0.16 
+    : Math.min(virtualW, virtualH) * MARGIN_RATIO;
+
   const scaledStrokeWidth = strokeWidth * (Math.min(virtualW, virtualH) / 500);
-  const hMargin = lineConfig.id === 'zones1' ? Math.max(margin, virtualW * 0.22) : margin;
+
+  const hMargin = isZoneField 
+    ? Math.max(margin, virtualW * 0.22) 
+    : margin;
 
   return (
     <Svg key={viewMode} width={width} height={height} viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}>
@@ -129,7 +136,7 @@ const FieldSVGRenderer = memo(({
 
         {/* Zone dividers */}
         {lineConfig.zones > 0 && (
-          <ZoneDividers w={virtualW} h={virtualH} margin={margin} zones={lineConfig.zones} lineColor={lineColor} strokeWidth={scaledStrokeWidth} />
+          <ZoneDividers w={virtualW} h={virtualH} margin={margin} hMargin={hMargin} zones={lineConfig.zones} lineColor={lineColor} strokeWidth={scaledStrokeWidth} />
         )}
       </G>
     </Svg>

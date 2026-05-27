@@ -1,4 +1,4 @@
-const VIDEO_WIDTH = 1280;
+const VIDEO_WIDTH = 1920;
 const FIELD_BG = '#4a8c3f';
 
 function ensureEven(n) { return n % 2 === 0 ? n : n + 1; }
@@ -156,91 +156,18 @@ function drawBall(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
   const baseSize = elem.baseSize || 18;
   const size = baseSize * scale;
-  const r = size / 2;
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  // 1. Recortar al área circular del balón
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-  ctx.clip();
-
-  // 2. Pintar el fondo blanco del balón
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-
-  // 3. Pintar los pentágonos negros
-  ctx.fillStyle = '#1e1e1e';
-  const f = r / 48;
-
-  const drawPolygon = (points) => {
-    ctx.beginPath();
-    ctx.moveTo(p.x + points[0][0] * f, p.y + points[0][1] * f);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(p.x + points[i][0] * f, p.y + points[i][1] * f);
-    }
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  // Pentágono central
-  drawPolygon([[0, -15], [14.3, -4.6], [8.8, 12.1], [-8.8, 12.1], [-14.3, -4.6]]);
-
-  // Pentágonos exteriores
-  drawPolygon([[0, -32], [-12, -41], [-20, -55], [20, -55], [12, -41]]);
-  drawPolygon([[28.3, -9.2], [37.2, -29], [55, -25], [55, -5], [38.6, 0]]);
-  drawPolygon([[17.6, 24.2], [40.5, 22], [50, 40], [27.2, 55], [12.1, 38.6]]);
-  drawPolygon([[-17.6, 24.2], [-12.1, 38.6], [-27.2, 55], [-50, 40], [-40.5, 22]]);
-  drawPolygon([[-28.3, -9.2], [-38.6, 0], [-55, -5], [-55, -25], [-37.2, -29]]);
-
-  // 4. Dibujar las costuras (líneas conectoras)
-  ctx.strokeStyle = '#1e1e1e';
-  ctx.lineWidth = Math.max(0.5, 0.75 * scale);
+  // Escribir el emoji ⚽ como texto en el canvas sin comillas en el font-family
+  ctx.font = `${size * 0.95}px Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   
-  const drawLine = (x1, y1, x2, y2) => {
-    ctx.beginPath();
-    ctx.moveTo(p.x + x1 * f, p.y + y1 * f);
-    ctx.lineTo(p.x + x2 * f, p.y + y2 * f);
-    ctx.stroke();
-  };
+  // Dejamos que el navegador renderice el emoji nativo a color.
+  ctx.fillText('⚽', p.x, p.y);
 
-  // Conexiones del pentágono central
-  drawLine(0, -15, 0, -32);
-  drawLine(14.3, -4.6, 28.3, -9.2);
-  drawLine(8.8, 12.1, 17.6, 24.2);
-  drawLine(-8.8, 12.1, -17.6, 24.2);
-  drawLine(-14.3, -4.6, -28.3, -9.2);
-
-  // Conexiones de pentágonos exteriores
-  drawLine(0, -32, -12, -41);
-  drawLine(0, -32, 12, -41);
-  drawLine(28.3, -9.2, 37.2, -29);
-  drawLine(28.3, -9.2, 38.6, 0);
-  drawLine(17.6, 24.2, 40.5, 22);
-  drawLine(17.6, 24.2, 12.1, 38.6);
-  drawLine(-17.6, 24.2, -12.1, 38.6);
-  drawLine(-17.6, 24.2, -40.5, 22);
-  drawLine(-28.3, -9.2, -37.2, -29);
-  drawLine(-28.3, -9.2, -38.6, 0);
-
-  // Líneas conectoras exteriores perimetrales
-  drawLine(-12, -41, -37.2, -29);
-  drawLine(12, -41, 37.2, -29);
-  drawLine(38.6, 0, 40.5, 22);
-  drawLine(12.1, 38.6, -12.1, 38.6);
-  drawLine(-40.5, 22, -38.6, 0);
-
-  ctx.restore();
-
-  // 5. Dibujar el borde circular exterior del balón sobre el recorte para evitar dientes de sierra
-  ctx.save();
-  applyRotation(ctx, p.x, p.y, elem.rotation);
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-  ctx.strokeStyle = '#1e1e1e';
-  ctx.lineWidth = Math.max(1, 1.25 * scale);
-  ctx.stroke();
   ctx.restore();
 }
 
@@ -401,25 +328,7 @@ function drawRing(ctx, cw, ch, elem, scale) {
 }
 
 function drawGoal(ctx, cw, ch, elem, scale) {
-  const p = pos(elem, cw, ch);
-  const size = (elem.baseSize || 50) * scale;
-  const s = size / 100;
-
-  ctx.save();
-  applyRotation(ctx, p.x, p.y, elem.rotation);
-
-  ctx.beginPath();
-  ctx.moveTo(p.x - 40 * s, p.y - 20 * s);
-  ctx.lineTo(p.x - 40 * s, p.y + 20 * s);
-  ctx.moveTo(p.x - 40 * s, p.y - 20 * s);
-  ctx.lineTo(p.x + 40 * s, p.y - 20 * s);
-  ctx.moveTo(p.x + 40 * s, p.y - 20 * s);
-  ctx.lineTo(p.x + 40 * s, p.y + 20 * s);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3 * s;
-  ctx.stroke();
-
-  ctx.restore();
+  drawGoalLarge(ctx, cw, ch, elem, scale);
 }
 
 function drawGoalLarge(ctx, cw, ch, elem, scale) {
@@ -431,30 +340,106 @@ function drawGoalLarge(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
+  const getX = (xVal) => ox + (xVal - 60) * s;
+  const getY = (yVal) => oy + (yVal - 35) * s;
+
+  // Fondo translúcido de la red
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
   ctx.beginPath();
-  ctx.moveTo(ox - 55 * s, oy + 30 * s);
-  ctx.lineTo(ox - 55 * s, oy - 25 * s);
-  ctx.lineTo(ox + 55 * s, oy - 25 * s);
-  ctx.lineTo(ox + 55 * s, oy + 30 * s);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 4 * s;
+  ctx.moveTo(getX(15), getY(32));
+  ctx.lineTo(getX(22), getY(12));
+  ctx.lineTo(getX(98), getY(12));
+  ctx.lineTo(getX(105), getY(32));
+  ctx.lineTo(getX(105), getY(38));
+  ctx.lineTo(getX(98), getY(22));
+  ctx.lineTo(getX(22), getY(22));
+  ctx.lineTo(getX(15), getY(38));
+  ctx.closePath();
+  ctx.fill();
+
+  // Patrón de red de diamantes
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 0.8 * s;
+  ctx.beginPath();
+
+  const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
+    const getPt = (u, v) => {
+      const x = (1 - u) * ((1 - v) * p0.x + v * p3.x) + u * ((1 - v) * p1.x + v * p2.x);
+      const y = (1 - u) * ((1 - v) * p0.y + v * p3.y) + u * ((1 - v) * p1.y + v * p2.y);
+      return { x, y };
+    };
+    for (let i = 0; i < uDivs; i++) {
+      for (let j = 0; j <= vDivs; j++) {
+        const u1 = i / uDivs;
+        const v1 = j / vDivs;
+        if (j < vDivs) {
+          const u2 = (i + 1) / uDivs;
+          const v2 = (j + 1) / vDivs;
+          const pt1 = getPt(u1, v1);
+          const pt2 = getPt(u2, v2);
+          ctx.moveTo(getX(pt1.x), getY(pt1.y));
+          ctx.lineTo(getX(pt2.x), getY(pt2.y));
+        }
+        if (j > 0) {
+          const u2 = (i + 1) / uDivs;
+          const v2 = (j - 1) / vDivs;
+          const pt1 = getPt(u1, v1);
+          const pt2 = getPt(u2, v2);
+          ctx.moveTo(getX(pt1.x), getY(pt1.y));
+          ctx.lineTo(getX(pt2.x), getY(pt2.y));
+        }
+      }
+    }
+  };
+
+  // Panels for Large Goal
+  getQuadNetPath({x: 15, y: 32}, {x: 105, y: 32}, {x: 98, y: 12}, {x: 22, y: 12}, 10, 4);
+  getQuadNetPath({x: 22, y: 12}, {x: 98, y: 12}, {x: 98, y: 22}, {x: 22, y: 22}, 10, 4);
+  getQuadNetPath({x: 15, y: 32}, {x: 22, y: 12}, {x: 22, y: 22}, {x: 15, y: 38}, 4, 4);
+  getQuadNetPath({x: 105, y: 32}, {x: 105, y: 38}, {x: 98, y: 22}, {x: 98, y: 12}, 4, 4);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(204,204,204,0.6)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 7; i++) {
-    const x = ox + (-45 + i * 15) * s;
-    ctx.beginPath();
-    ctx.moveTo(x, oy - 25 * s);
-    ctx.lineTo(x, oy + 30 * s);
-    ctx.stroke();
-  }
-  for (const yOff of [-10, 5, 20]) {
-    ctx.beginPath();
-    ctx.moveTo(ox - 55 * s, oy + yOff * s);
-    ctx.lineTo(ox + 55 * s, oy + yOff * s);
-    ctx.stroke();
-  }
+  // Estructura de soporte posterior (metal blanco fino)
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 2.5 * s;
+  ctx.beginPath();
+  ctx.moveTo(getX(22), getY(12));
+  ctx.lineTo(getX(98), getY(12));
+  ctx.moveTo(getX(22), getY(22));
+  ctx.lineTo(getX(98), getY(22));
+  ctx.stroke();
+
+  ctx.lineWidth = 2 * s;
+  ctx.beginPath();
+  ctx.moveTo(getX(22), getY(12));
+  ctx.lineTo(getX(22), getY(22));
+  ctx.moveTo(getX(98), getY(12));
+  ctx.lineTo(getX(98), getY(22));
+  ctx.stroke();
+
+  // Profundidad lateral
+  ctx.lineWidth = 2.5 * s;
+  ctx.beginPath();
+  ctx.moveTo(getX(15), getY(32));
+  ctx.lineTo(getX(22), getY(12));
+  ctx.moveTo(getX(105), getY(32));
+  ctx.lineTo(getX(98), getY(12));
+  ctx.moveTo(getX(15), getY(38));
+  ctx.lineTo(getX(22), getY(22));
+  ctx.moveTo(getX(105), getY(38));
+  ctx.lineTo(getX(98), getY(22));
+  ctx.stroke();
+
+  // Marco principal frontal (Postes y travesaño blanco grueso)
+  ctx.lineWidth = 4 * s;
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  ctx.moveTo(getX(15), getY(38));
+  ctx.lineTo(getX(15), getY(32));
+  ctx.lineTo(getX(105), getY(32));
+  ctx.lineTo(getX(105), getY(38));
+  ctx.stroke();
 
   ctx.restore();
 }
@@ -463,30 +448,110 @@ function drawGoalSmall(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
   const size = (elem.baseSize || 30) * scale;
   const s = size / 80;
+  const ox = p.x, oy = p.y;
+  const color = elem.color || '#FF6B00';
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
+  const getX = (xVal) => ox + (xVal - 40) * s;
+  const getY = (yVal) => oy + (yVal - 25) * s;
+
+  // Fondo translúcido de la red
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
   ctx.beginPath();
-  ctx.moveTo(p.x - 35 * s, p.y + 20 * s);
-  ctx.lineTo(p.x - 35 * s, p.y - 12 * s);
-  ctx.lineTo(p.x + 35 * s, p.y - 12 * s);
-  ctx.lineTo(p.x + 35 * s, p.y + 20 * s);
-  ctx.strokeStyle = '#FF6B00';
-  ctx.lineWidth = 3 * s;
+  ctx.moveTo(getX(10), getY(23));
+  ctx.lineTo(getX(15), getY(10));
+  ctx.lineTo(getX(65), getY(10));
+  ctx.lineTo(getX(70), getY(23));
+  ctx.lineTo(getX(70), getY(28));
+  ctx.lineTo(getX(65), getY(17));
+  ctx.lineTo(getX(15), getY(17));
+  ctx.lineTo(getX(10), getY(28));
+  ctx.closePath();
+  ctx.fill();
+
+  // Patrón de red de diamantes
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 0.75 * s;
+  ctx.beginPath();
+
+  const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
+    const getPt = (u, v) => {
+      const x = (1 - u) * ((1 - v) * p0.x + v * p3.x) + u * ((1 - v) * p1.x + v * p2.x);
+      const y = (1 - u) * ((1 - v) * p0.y + v * p3.y) + u * ((1 - v) * p1.y + v * p2.y);
+      return { x, y };
+    };
+    for (let i = 0; i < uDivs; i++) {
+      for (let j = 0; j <= vDivs; j++) {
+        const u1 = i / uDivs;
+        const v1 = j / vDivs;
+        if (j < vDivs) {
+          const u2 = (i + 1) / uDivs;
+          const v2 = (j + 1) / vDivs;
+          const pt1 = getPt(u1, v1);
+          const pt2 = getPt(u2, v2);
+          ctx.moveTo(getX(pt1.x), getY(pt1.y));
+          ctx.lineTo(getX(pt2.x), getY(pt2.y));
+        }
+        if (j > 0) {
+          const u2 = (i + 1) / uDivs;
+          const v2 = (j - 1) / vDivs;
+          const pt1 = getPt(u1, v1);
+          const pt2 = getPt(u2, v2);
+          ctx.moveTo(getX(pt1.x), getY(pt1.y));
+          ctx.lineTo(getX(pt2.x), getY(pt2.y));
+        }
+      }
+    }
+  };
+
+  // Panels for Small Goal
+  getQuadNetPath({x: 10, y: 23}, {x: 70, y: 23}, {x: 65, y: 10}, {x: 15, y: 10}, 8, 4);
+  getQuadNetPath({x: 15, y: 10}, {x: 65, y: 10}, {x: 65, y: 17}, {x: 15, y: 17}, 8, 4);
+  getQuadNetPath({x: 10, y: 23}, {x: 15, y: 10}, {x: 15, y: 17}, {x: 10, y: 28}, 4, 4);
+  getQuadNetPath({x: 70, y: 23}, {x: 70, y: 28}, {x: 65, y: 17}, {x: 65, y: 10}, 4, 4);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(204,204,204,0.5)';
-  ctx.lineWidth = 1;
-  for (const xOff of [-15, 5, 25]) {
-    ctx.beginPath();
-    ctx.moveTo(p.x + xOff * s, p.y - 12 * s);
-    ctx.lineTo(p.x + xOff * s, p.y + 20 * s);
-    ctx.stroke();
-  }
+  // Estructura de soporte posterior
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2 * s;
   ctx.beginPath();
-  ctx.moveTo(p.x - 35 * s, p.y + 5 * s);
-  ctx.lineTo(p.x + 35 * s, p.y + 5 * s);
+  ctx.moveTo(getX(15), getY(10));
+  ctx.lineTo(getX(65), getY(10));
+  ctx.moveTo(getX(15), getY(17));
+  ctx.lineTo(getX(65), getY(17));
+  ctx.stroke();
+
+  ctx.lineWidth = 1.5 * s;
+  ctx.beginPath();
+  ctx.moveTo(getX(15), getY(10));
+  ctx.lineTo(getX(15), getY(17));
+  ctx.moveTo(getX(65), getY(10));
+  ctx.lineTo(getX(65), getY(17));
+  ctx.stroke();
+
+  // Profundidad lateral
+  ctx.lineWidth = 2 * s;
+  ctx.beginPath();
+  ctx.moveTo(getX(10), getY(23));
+  ctx.lineTo(getX(15), getY(10));
+  ctx.moveTo(getX(70), getY(23));
+  ctx.lineTo(getX(65), getY(10));
+  ctx.moveTo(getX(10), getY(28));
+  ctx.lineTo(getX(15), getY(17));
+  ctx.moveTo(getX(70), getY(28));
+  ctx.lineTo(getX(65), getY(17));
+  ctx.stroke();
+
+  // Marco principal frontal (Postes y travesaño)
+  ctx.lineWidth = 3.5 * s;
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  ctx.moveTo(getX(10), getY(28));
+  ctx.lineTo(getX(10), getY(23));
+  ctx.lineTo(getX(70), getY(23));
+  ctx.lineTo(getX(70), getY(28));
   ctx.stroke();
 
   ctx.restore();

@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath, RadialGradient, Stop } from 'react-native-svg';
 import ViewShot from "react-native-view-shot";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy'; // Usar la API legacy
@@ -92,73 +92,71 @@ function fromRatioCoords(xRatio, yRatio, imageWidth, imageHeight, viewMode) {
 }
 
 // Componentes memoizados para iconos SVG personalizados
-const BallImage = React.memo(({ size }) => {
+const BallImage = React.memo(({ size, rotation }) => {
   return (
-    <View style={{
-      width: size,
-      height: size,
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}>
-      <Svg width={size} height={size} viewBox="0 0 100 100">
-        <Defs>
-          <ClipPath id="ball-clip">
-            <Circle cx="50" cy="50" r="48" />
-          </ClipPath>
-        </Defs>
-        {/* Fondo blanco del balón */}
-        <Circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#1e1e1e" strokeWidth="3" />
-        
-        {/* Elementos recortados por la forma circular del balón */}
-        <G clipPath="url(#ball-clip)">
-          {/* Pentágono central */}
-          <Polygon points="50,35 64.3,45.4 58.8,62.1 41.2,62.1 35.7,45.4" fill="#1e1e1e" />
-          
-          {/* Pentágonos exteriores */}
-          <Polygon points="50,18 38,9 30,-5 70,-5 62,9" fill="#1e1e1e" />
-          <Polygon points="78.3,40.8 87.2,21 105,25 105,45 88.6,50" fill="#1e1e1e" />
-          <Polygon points="67.6,74.2 90.5,72 100,90 77.2,105 62.1,88.6" fill="#1e1e1e" />
-          <Polygon points="32.4,74.2 37.9,88.6 22.8,105 0,90 9.5,72" fill="#1e1e1e" />
-          <Polygon points="21.7,40.8 11.4,50 -5,45 -5,25 12.8,21" fill="#1e1e1e" />
-          
-          {/* Líneas de costura (seams) */}
-          <Path
-            d="M 50 35 L 50 18
-               M 64.3 45.4 L 78.3 40.8
-               M 58.8 62.1 L 67.6 74.2
-               M 41.2 62.1 L 32.4 74.2
-               M 35.7 45.4 L 21.7 40.8
-               
-               M 50 18 L 38 9
-               M 50 18 L 62 9
-               M 78.3 40.8 L 87.2 21
-               M 78.3 40.8 L 88.6 50
-               M 67.6 74.2 L 90.5 72
-               M 67.6 74.2 L 62.1 88.6
-               M 32.4 74.2 L 37.9 88.6
-               M 32.4 74.2 L 9.5 72
-               M 21.7 40.8 L 12.8 21
-               M 21.7 40.8 L 11.4 50
-               
-               M 38 9 L 12.8 21
-               M 62 9 L 87.2 21
-               M 88.6 50 L 90.5 72
-               M 62.1 88.6 L 37.9 88.6
-               M 9.5 72 L 11.4 50"
-            stroke="#1e1e1e"
-            strokeWidth="2"
-            fill="none"
-          />
-        </G>
-      </Svg>
+    <View style={[
+      {
+        width: size,
+        height: size,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined
+    ]}>
+      <Text style={{ 
+        fontSize: size * 0.95, 
+        lineHeight: size, 
+        textAlign: 'center',
+        fontFamily: Platform.OS === 'web' ? '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' : undefined
+      }}>⚽</Text>
     </View>
   );
-}, (prevProps, nextProps) => prevProps.size === nextProps.size);
+}, (prevProps, nextProps) => prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation);
 
-// Porter�a grande profesional (11 jugadores)
+// Portería grande profesional (11 jugadores) - 3D con perspectiva profesional y red
 const GoalLargeImage = React.memo(({ size, rotation }) => {
   const width = size;
-  const height = size * 0.6;
+  const height = size * 0.65;
+
+  const netD = React.useMemo(() => {
+    const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
+      const getPt = (u, v) => {
+        const x = (1 - u) * ((1 - v) * p0.x + v * p3.x) + u * ((1 - v) * p1.x + v * p2.x);
+        const y = (1 - u) * ((1 - v) * p0.y + v * p3.y) + u * ((1 - v) * p1.y + v * p2.y);
+        return { x, y };
+      };
+      let d = '';
+      for (let i = 0; i < uDivs; i++) {
+        for (let j = 0; j <= vDivs; j++) {
+          const u1 = i / uDivs;
+          const v1 = j / vDivs;
+          if (j < vDivs) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j + 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+          if (j > 0) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j - 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+        }
+      }
+      return d;
+    };
+
+    // Panels for Large Goal
+    const topPanel = getQuadNetPath({x: 15, y: 32}, {x: 105, y: 32}, {x: 98, y: 12}, {x: 22, y: 12}, 10, 4);
+    const backPanel = getQuadNetPath({x: 22, y: 12}, {x: 98, y: 12}, {x: 98, y: 22}, {x: 22, y: 22}, 10, 4);
+    const leftPanel = getQuadNetPath({x: 15, y: 32}, {x: 22, y: 12}, {x: 22, y: 22}, {x: 15, y: 38}, 4, 4);
+    const rightPanel = getQuadNetPath({x: 105, y: 32}, {x: 105, y: 38}, {x: 98, y: 22}, {x: 98, y: 12}, 4, 4);
+
+    return `${topPanel}${backPanel}${leftPanel}${rightPanel}`;
+  }, []);
 
   return (
     <View
@@ -168,20 +166,29 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
       ]}
     >
       <Svg width={width} height={height} viewBox="0 0 120 70">
-        {/* Marco exterior de la porter�a */}
-        <Path d="M 5 65 L 5 10 L 115 10 L 115 65" stroke="#FFFFFF" strokeWidth="4" fill="none" />
-        {/* Red - l�neas verticales */}
-        <Path d="M 15 10 L 15 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 30 10 L 30 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 45 10 L 45 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 60 10 L 60 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 75 10 L 75 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 90 10 L 90 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 105 10 L 105 65" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        {/* Red - l�neas horizontales */}
-        <Path d="M 5 25 L 115 25" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 5 40 L 115 40" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
-        <Path d="M 5 55 L 115 55" stroke="#CCCCCC" strokeWidth="1" opacity="0.6" />
+        {/* Fondo translúcido de la red */}
+        <Path 
+          d="M 15 32 L 22 12 L 98 12 L 105 32 L 105 38 L 98 22 L 22 22 L 15 38 Z" 
+          fill="rgba(0,0,0,0.06)" 
+        />
+
+        {/* Patrón de red de diamantes */}
+        <Path d={netD} stroke="#cccccc" strokeWidth="0.8" fill="none" opacity="0.65" />
+
+        {/* Estructura de soporte posterior (metal blanco fino) */}
+        <Path d="M 22 12 L 98 12" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <Path d="M 22 22 L 98 22" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <Path d="M 22 12 L 22 22" stroke="#FFFFFF" strokeWidth="2" fill="none" />
+        <Path d="M 98 12 L 98 22" stroke="#FFFFFF" strokeWidth="2" fill="none" />
+
+        {/* Profundidad lateral */}
+        <Path d="M 15 32 L 22 12" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <Path d="M 105 32 L 98 12" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <Path d="M 15 38 L 22 22" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+        <Path d="M 105 38 L 98 22" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
+
+        {/* Marco principal frontal (Postes y travesaño blanco grueso) */}
+        <Path d="M 15 38 L 15 32 L 105 32 L 105 38" stroke="#FFFFFF" strokeWidth="4" fill="none" strokeLinecap="square" />
       </Svg>
     </View>
   );
@@ -189,10 +196,50 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
   prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation
 );
 
-// Porter�a peque�a (f�tbol 7 / mini)
+// Portería pequeña (fútbol 7 / mini) - 3D con perspectiva profesional y red
 const GoalSmallImage = React.memo(({ size, rotation }) => {
-  const width = size * 0.7;
-  const height = size * 0.5;
+  const width = size * 0.75;
+  const height = size * 0.55;
+
+  const netD = React.useMemo(() => {
+    const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
+      const getPt = (u, v) => {
+        const x = (1 - u) * ((1 - v) * p0.x + v * p3.x) + u * ((1 - v) * p1.x + v * p2.x);
+        const y = (1 - u) * ((1 - v) * p0.y + v * p3.y) + u * ((1 - v) * p1.y + v * p2.y);
+        return { x, y };
+      };
+      let d = '';
+      for (let i = 0; i < uDivs; i++) {
+        for (let j = 0; j <= vDivs; j++) {
+          const u1 = i / uDivs;
+          const v1 = j / vDivs;
+          if (j < vDivs) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j + 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+          if (j > 0) {
+            const u2 = (i + 1) / uDivs;
+            const v2 = (j - 1) / vDivs;
+            const pt1 = getPt(u1, v1);
+            const pt2 = getPt(u2, v2);
+            d += `M ${pt1.x.toFixed(1)} ${pt1.y.toFixed(1)} L ${pt2.x.toFixed(1)} ${pt2.y.toFixed(1)} `;
+          }
+        }
+      }
+      return d;
+    };
+
+    // Panels for Small Goal
+    const topPanel = getQuadNetPath({x: 10, y: 23}, {x: 70, y: 23}, {x: 65, y: 10}, {x: 15, y: 10}, 8, 4);
+    const backPanel = getQuadNetPath({x: 15, y: 10}, {x: 65, y: 10}, {x: 65, y: 17}, {x: 15, y: 17}, 8, 4);
+    const leftPanel = getQuadNetPath({x: 10, y: 23}, {x: 15, y: 10}, {x: 15, y: 17}, {x: 10, y: 28}, 4, 4);
+    const rightPanel = getQuadNetPath({x: 70, y: 23}, {x: 70, y: 28}, {x: 65, y: 17}, {x: 65, y: 10}, 4, 4);
+
+    return `${topPanel}${backPanel}${leftPanel}${rightPanel}`;
+  }, []);
 
   return (
     <View
@@ -202,13 +249,29 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
       ]}
     >
       <Svg width={width} height={height} viewBox="0 0 80 50">
-        {/* Marco de porter�a peque�a */}
-        <Path d="M 5 45 L 5 8 L 75 8 L 75 45" stroke="#FF6B00" strokeWidth="3" fill="none" />
-        {/* Red simplificada */}
-        <Path d="M 20 8 L 20 45" stroke="#CCCCCC" strokeWidth="1" opacity="0.5" />
-        <Path d="M 40 8 L 40 45" stroke="#CCCCCC" strokeWidth="1" opacity="0.5" />
-        <Path d="M 60 8 L 60 45" stroke="#CCCCCC" strokeWidth="1" opacity="0.5" />
-        <Path d="M 5 25 L 75 25" stroke="#CCCCCC" strokeWidth="1" opacity="0.5" />
+        {/* Fondo translúcido de la red */}
+        <Path 
+          d="M 10 23 L 15 10 L 65 10 L 70 23 L 70 28 L 65 17 L 15 17 L 10 28 Z" 
+          fill="rgba(0,0,0,0.06)" 
+        />
+
+        {/* Patrón de red de diamantes */}
+        <Path d={netD} stroke="#cccccc" strokeWidth="0.75" fill="none" opacity="0.65" />
+
+        {/* Estructura de soporte posterior (metal naranja fino) */}
+        <Path d="M 15 10 L 65 10" stroke="#FF6B00" strokeWidth="2" fill="none" />
+        <Path d="M 15 17 L 65 17" stroke="#FF6B00" strokeWidth="2" fill="none" />
+        <Path d="M 15 10 L 15 17" stroke="#FF6B00" strokeWidth="1.5" fill="none" />
+        <Path d="M 65 10 L 65 17" stroke="#FF6B00" strokeWidth="1.5" fill="none" />
+
+        {/* Profundidad lateral */}
+        <Path d="M 10 23 L 15 10" stroke="#FF6B00" strokeWidth="2" fill="none" />
+        <Path d="M 70 23 L 65 10" stroke="#FF6B00" strokeWidth="2" fill="none" />
+        <Path d="M 10 28 L 15 17" stroke="#FF6B00" strokeWidth="2" fill="none" />
+        <Path d="M 70 28 L 65 17" stroke="#FF6B00" strokeWidth="2" fill="none" />
+
+        {/* Marco principal frontal (Postes y travesaño naranja grueso) */}
+        <Path d="M 10 28 L 10 23 L 70 23 L 70 28" stroke="#FF6B00" strokeWidth="3.5" fill="none" strokeLinecap="square" />
       </Svg>
     </View>
   );
@@ -1223,11 +1286,11 @@ function ControlButton({ onPress, color, position, scale = 1 }) {
   // Definir posiciones para cada tipo de bot�n
   let positionStyle;
   if (position === 'delete') {
-    positionStyle = { top: -buttonSize/4, right: -buttonSize/4 };
+    positionStyle = { top: -buttonSize / 4, right: -buttonSize / 4 };
   } else if (position === 'duplicate') {
-    positionStyle = { top: -buttonSize/4, right: buttonSize }; // Posicionado a la izquierda del bot�n de eliminar
+    positionStyle = { top: -buttonSize / 4, right: buttonSize }; // Posicionado a la izquierda del bot�n de eliminar
   } else {
-    positionStyle = { top: -buttonSize/4, left: -buttonSize/4 }; // Bot�n de rotaci�n
+    positionStyle = { top: -buttonSize / 4, left: -buttonSize / 4 }; // Bot�n de rotaci�n
   }
 
   return (
@@ -1237,7 +1300,7 @@ function ControlButton({ onPress, color, position, scale = 1 }) {
         position: 'absolute',
         width: buttonSize,
         height: buttonSize,
-        borderRadius: buttonSize/2,
+        borderRadius: buttonSize / 2,
         backgroundColor: '#ffffff',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1329,7 +1392,7 @@ const FreeTextTool = React.memo(({
   const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
 
   return (
-<PanGestureHandler
+    <PanGestureHandler
       key={dragKey}
       enabled={!eraserMode && !textObj.locked && (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isMultiSelected))}
       shouldCancelWhenOutside={false}
@@ -1479,139 +1542,139 @@ const FreeTextTool = React.memo(({
         }
       }}
     >
-    <View
-      key={textObj.id}
-      style={{
-        position: 'absolute',
-        left: textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth,
-        top: textObj.y !== undefined ? textObj.y : (textObj.yRatio || 0.5) * imageHeight,
-        zIndex: textObj.calculatedZIndex || (textObj.locked === true ? 1 : (textObj.zIndex || ZINDEX_BASE_ICONS)),
-        minWidth: 40,
-        minHeight: 30,
-        opacity: showDeleteIndicator ? 0.5 : 1,
-        transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
-      }}
-    >
-          {/* Indicador visual de zona de eliminaci�n */}
-          {showDeleteIndicator && (
+      <View
+        key={textObj.id}
+        style={{
+          position: 'absolute',
+          left: textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth,
+          top: textObj.y !== undefined ? textObj.y : (textObj.yRatio || 0.5) * imageHeight,
+          zIndex: textObj.calculatedZIndex || (textObj.locked === true ? 1 : (textObj.zIndex || ZINDEX_BASE_ICONS)),
+          minWidth: 40,
+          minHeight: 30,
+          opacity: showDeleteIndicator ? 0.5 : 1,
+          transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
+        }}
+      >
+        {/* Indicador visual de zona de eliminaci�n */}
+        {showDeleteIndicator && (
+          <View style={{
+            position: 'absolute',
+            top: -6,
+            left: -6,
+            right: -6,
+            bottom: -6,
+            borderRadius: 8,
+            borderWidth: 3,
+            borderColor: '#e74c3c',
+            borderStyle: 'dashed',
+            backgroundColor: 'rgba(231, 76, 60, 0.15)',
+            pointerEvents: 'none',
+            zIndex: -1
+          }} />
+        )}
+        <Pressable
+          onPress={() => {
+            // Si est� en modo borrador, borrar el elemento
+            if (eraserMode) {
+              if (onEraseElement) {
+                onEraseElement(textObj.id);
+              }
+              return;
+            }
+            // No togglear selecci�n individual en modo multi-select
+            if (!multiSelectMode) {
+              setSelectedCloneId(textObj.id);
+            }
+          }}
+          style={{
+            minWidth: 40,
+            minHeight: 30,
+            padding: 4,
+            userSelect: 'none',
+            backgroundColor: selectedCloneId === textObj.id
+              ? 'rgba(255, 255, 224, 0.7)'
+              : (textObj.backgroundColor || 'transparent'),
+            borderRadius: 6,
+            borderWidth: selectedCloneId === textObj.id ? 1 : 0,
+            borderColor: '#888',
+            transform: [{ rotate: `${textObj.rotation || 0}deg` }],
+          }}
+        >
+          <Text
+            style={{
+              fontSize: textObj.size || 18,
+              color: textObj.color || "#000",
+              fontWeight: "bold",
+              userSelect: 'none',
+            }}
+          >
+            {textObj.value}
+          </Text>
+          {/* Indicador visual para selecci�n m�ltiple en textos */}
+          {multiSelectMode && isMultiSelected && (
             <View style={{
               position: 'absolute',
               top: -6,
-              left: -6,
               right: -6,
-              bottom: -6,
-              borderRadius: 8,
-              borderWidth: 3,
-              borderColor: '#e74c3c',
-              borderStyle: 'dashed',
-              backgroundColor: 'rgba(231, 76, 60, 0.15)',
-              pointerEvents: 'none',
-              zIndex: -1
-            }} />
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              backgroundColor: '#3498db',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 101,
+              borderWidth: 2,
+              borderColor: '#fff'
+            }}>
+              <Feather name="check" size={10} color="#fff" />
+            </View>
           )}
-          <Pressable
-            onPress={() => {
-              // Si est� en modo borrador, borrar el elemento
-              if (eraserMode) {
-                if (onEraseElement) {
-                  onEraseElement(textObj.id);
-                }
-                return;
-              }
-              // No togglear selecci�n individual en modo multi-select
-              if (!multiSelectMode) {
-                setSelectedCloneId(textObj.id);
-              }
-            }}
-            style={{
-              minWidth: 40,
-              minHeight: 30,
-              padding: 4,
-              userSelect: 'none',
-              backgroundColor: selectedCloneId === textObj.id
-                ? 'rgba(255, 255, 224, 0.7)'
-                : (textObj.backgroundColor || 'transparent'),
-              borderRadius: 6,
-              borderWidth: selectedCloneId === textObj.id ? 1 : 0,
-              borderColor: '#888',
-              transform: [{ rotate: `${textObj.rotation || 0}deg` }],
-            }}
-          >
-            <Text
-              style={{
-                fontSize: textObj.size || 18,
-                color: textObj.color || "#000",
-                fontWeight: "bold",
-                userSelect: 'none',
+
+          {selectedCloneId === textObj.id && !multiSelectMode && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                // Usar measure para obtener la posici�n absoluta en pantalla
+                e.target.measure((x, y, width, height, pageX, pageY) => {
+                  setOptionsMenu({
+                    visible: true,
+                    position: {
+                      x: pageX + width, // Posici�n a la derecha del elemento
+                      y: pageY + (height / 2) // Centrado verticalmente
+                    },
+                    iconId: textObj.id,
+                    canRotate: false,
+                    hideEdit: false
+                  });
+                });
               }}
-            >
-              {textObj.value}
-            </Text>
-            {/* Indicador visual para selecci�n m�ltiple en textos */}
-            {multiSelectMode && isMultiSelected && (
-              <View style={{
+              style={{
                 position: 'absolute',
-                top: -6,
-                right: -6,
-                width: 18,
-                height: 18,
-                borderRadius: 9,
-                backgroundColor: '#3498db',
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: '#ffffff',
                 justifyContent: 'center',
                 alignItems: 'center',
-                zIndex: 101,
-                borderWidth: 2,
-                borderColor: '#fff'
-              }}>
-                <Feather name="check" size={10} color="#fff" />
-              </View>
-            )}
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 1.5,
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: '#dddddd',
+                zIndex: 100,
+                top: -7,
+                right: -7
+              }}
+            >
+              <Feather name="more-vertical" size={16} color="#444444" />
+            </TouchableOpacity>
+          )}
 
-            {selectedCloneId === textObj.id && !multiSelectMode && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  // Usar measure para obtener la posici�n absoluta en pantalla
-                  e.target.measure((x, y, width, height, pageX, pageY) => {
-                    setOptionsMenu({
-                      visible: true,
-                      position: {
-                        x: pageX + width, // Posici�n a la derecha del elemento
-                        y: pageY + (height / 2) // Centrado verticalmente
-                      },
-                      iconId: textObj.id,
-                      canRotate: false,
-                      hideEdit: false
-                    });
-                  });
-                }}
-                style={{
-                  position: 'absolute',
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: '#ffffff',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 1.5,
-                  elevation: 3,
-                  borderWidth: 1,
-                  borderColor: '#dddddd',
-                  zIndex: 100,
-                  top: -7,
-                  right: -7
-                }}
-              >
-                <Feather name="more-vertical" size={16} color="#444444" />
-              </TouchableOpacity>
-            )}
-
-            </Pressable>
-          </View>
-        </PanGestureHandler>
+        </Pressable>
+      </View>
+    </PanGestureHandler>
   );
 }, (prevProps, nextProps) => {
   const textObj = prevProps.textObj;
@@ -1619,7 +1682,7 @@ const FreeTextTool = React.memo(({
 
   // Comparaci�n optimizada solo de propiedades cr�ticas
   if (prevProps.imageWidth !== nextProps.imageWidth ||
-      prevProps.imageHeight !== nextProps.imageHeight) {
+    prevProps.imageHeight !== nextProps.imageHeight) {
     return false;
   }
 
@@ -1646,14 +1709,14 @@ const FreeTextTool = React.memo(({
 
   // Solo verificar propiedades visuales si est� seleccionado o cambi�
   if (isSelected || wasSelected ||
-      textObj.value !== nextTextObj.value ||
-      textObj.color !== nextTextObj.color ||
-      textObj.size !== nextTextObj.size) {
+    textObj.value !== nextTextObj.value ||
+    textObj.color !== nextTextObj.color ||
+    textObj.size !== nextTextObj.size) {
     if (textObj.value !== nextTextObj.value ||
-        textObj.color !== nextTextObj.color ||
-        textObj.size !== nextTextObj.size ||
-        textObj.backgroundColor !== nextTextObj.backgroundColor ||
-        textObj.rotation !== nextTextObj.rotation) return false;
+      textObj.color !== nextTextObj.color ||
+      textObj.size !== nextTextObj.size ||
+      textObj.backgroundColor !== nextTextObj.backgroundColor ||
+      textObj.rotation !== nextTextObj.rotation) return false;
   }
 
   return true;
@@ -1754,7 +1817,7 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={styles.proModalOverlay}>
             <TouchableWithoutFeedback>
-<View style={[styles.proModalContainer, isMobile && { width: Math.min(SCREEN_WIDTH * 0.70, 320), maxHeight: SCREEN_HEIGHT * 0.85 }]}>
+              <View style={[styles.proModalContainer, isMobile && { width: Math.min(SCREEN_WIDTH * 0.70, 320), maxHeight: SCREEN_HEIGHT * 0.85 }]}>
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
@@ -1921,9 +1984,9 @@ function TextEditPanel({ visible, icon, onClose, onApply, onPreviewChange, onDel
                   </TouchableOpacity>
                 </View>
               </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </SafeAreaView>
     </Modal>
   );
@@ -2053,211 +2116,211 @@ function ConnectorsModal({
       <View style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
-                width: SCREEN_WIDTH * 0.80,
-                maxWidth: 340,
-              }]}>
-                {/* Header */}
-                <View style={styles.proModalHeader}>
-                  <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>🔗</Text>
+          <View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
+            width: SCREEN_WIDTH * 0.80,
+            maxWidth: 340,
+          }]}>
+            {/* Header */}
+            <View style={styles.proModalHeader}>
+              <View style={styles.proModalHeaderIcon}>
+                <Text style={{ fontSize: 14 }}>🔗</Text>
+              </View>
+              <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                {t('tacticalBoard.connectors.title')}
+              </Text>
+              <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+              {/* Crear nuevo conector */}
+              <View style={styles.proModalSection}>
+                <Text style={styles.proModalSectionTitle}>
+                  {editingConnector ? t('tacticalBoard.connectors.editConnector') : t('tacticalBoard.connectors.createConnector')}
+                </Text>
+
+                {!editingConnector && (
+                  <>
+                    {/* Selector de primer elemento */}
+                    <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.fromElement')}</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {connectableElements.map(element => (
+                          <TouchableOpacity
+                            key={element.id}
+                            style={[
+                              styles.connectorElementBtn,
+                              selectedIcon1 === element.id && styles.connectorElementBtnSelected
+                            ]}
+                            onPress={() => setSelectedIcon1(element.id)}
+                          >
+                            <Text style={[
+                              styles.connectorElementText,
+                              selectedIcon1 === element.id && styles.connectorElementTextSelected
+                            ]} numberOfLines={1}>
+                              {getElementLabel(element.id)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+
+                    {/* Selector de segundo elemento */}
+                    <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.toElement')}</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {connectableElements.filter(e => e.id !== selectedIcon1).map(element => (
+                          <TouchableOpacity
+                            key={element.id}
+                            style={[
+                              styles.connectorElementBtn,
+                              selectedIcon2 === element.id && styles.connectorElementBtnSelected
+                            ]}
+                            onPress={() => setSelectedIcon2(element.id)}
+                          >
+                            <Text style={[
+                              styles.connectorElementText,
+                              selectedIcon2 === element.id && styles.connectorElementTextSelected
+                            ]} numberOfLines={1}>
+                              {getElementLabel(element.id)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </>
+                )}
+
+                {/* Color y grosor */}
+                <View style={styles.proModalRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.lineColor')}</Text>
+                    <TouchableOpacity
+                      style={[styles.proModalColorBtn, { backgroundColor: lineColor, width: '100%', height: 40 }]}
+                      onPress={() => setColorPickerVisible(true)}
+                    />
                   </View>
-                  <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                    {t('tacticalBoard.connectors.title')}
-                  </Text>
-                  <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
-                  </TouchableOpacity>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.lineThickness')}</Text>
+                    <TextInput
+                      style={[styles.proModalInputMobile, { height: 40 }]}
+                      keyboardType="number-pad"
+                      autoComplete="off"
+                      value={lineThickness}
+                      onChangeText={setLineThickness}
+                      placeholder="2"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
                 </View>
 
-                <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
-                  {/* Crear nuevo conector */}
-                  <View style={styles.proModalSection}>
-                    <Text style={styles.proModalSectionTitle}>
-                      {editingConnector ? t('tacticalBoard.connectors.editConnector') : t('tacticalBoard.connectors.createConnector')}
-                    </Text>
+                {/* Bot�n de crear/actualizar */}
+                <TouchableOpacity
+                  style={[
+                    styles.proModalBtn,
+                    styles.proModalBtnPrimary,
+                    { marginTop: 12 },
+                    (!editingConnector && (!selectedIcon1 || !selectedIcon2)) && { opacity: 0.5 }
+                  ]}
+                  onPress={editingConnector ? handleUpdateConnector : handleAddConnector}
+                  disabled={!editingConnector && (!selectedIcon1 || !selectedIcon2)}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                    {editingConnector ? t('tacticalBoard.connectors.update') : t('tacticalBoard.connectors.add')}
+                  </Text>
+                </TouchableOpacity>
 
-                    {!editingConnector && (
-                      <>
-                        {/* Selector de primer elemento */}
-                        <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.fromElement')}</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          style={{ marginBottom: 12 }}
-                        >
-                          <View style={{ flexDirection: 'row', gap: 8 }}>
-                            {connectableElements.map(element => (
-                              <TouchableOpacity
-                                key={element.id}
-                                style={[
-                                  styles.connectorElementBtn,
-                                  selectedIcon1 === element.id && styles.connectorElementBtnSelected
-                                ]}
-                                onPress={() => setSelectedIcon1(element.id)}
-                              >
-                                <Text style={[
-                                  styles.connectorElementText,
-                                  selectedIcon1 === element.id && styles.connectorElementTextSelected
-                                ]} numberOfLines={1}>
-                                  {getElementLabel(element.id)}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        </ScrollView>
-
-                        {/* Selector de segundo elemento */}
-                        <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.toElement')}</Text>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          style={{ marginBottom: 12 }}
-                        >
-                          <View style={{ flexDirection: 'row', gap: 8 }}>
-                            {connectableElements.filter(e => e.id !== selectedIcon1).map(element => (
-                              <TouchableOpacity
-                                key={element.id}
-                                style={[
-                                  styles.connectorElementBtn,
-                                  selectedIcon2 === element.id && styles.connectorElementBtnSelected
-                                ]}
-                                onPress={() => setSelectedIcon2(element.id)}
-                              >
-                                <Text style={[
-                                  styles.connectorElementText,
-                                  selectedIcon2 === element.id && styles.connectorElementTextSelected
-                                ]} numberOfLines={1}>
-                                  {getElementLabel(element.id)}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        </ScrollView>
-                      </>
-                    )}
-
-                    {/* Color y grosor */}
-                    <View style={styles.proModalRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.lineColor')}</Text>
-                        <TouchableOpacity
-                          style={[styles.proModalColorBtn, { backgroundColor: lineColor, width: '100%', height: 40 }]}
-                          onPress={() => setColorPickerVisible(true)}
-                        />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.proModalLabel}>{t('tacticalBoard.connectors.lineThickness')}</Text>
-                        <TextInput
-                          style={[styles.proModalInputMobile, { height: 40 }]}
-                          keyboardType="number-pad"
-                          autoComplete="off"
-                          value={lineThickness}
-                          onChangeText={setLineThickness}
-                          placeholder="2"
-                          placeholderTextColor="#999"
-                        />
-                      </View>
-                    </View>
-
-                    {/* Bot�n de crear/actualizar */}
-                    <TouchableOpacity
-                      style={[
-                        styles.proModalBtn,
-                        styles.proModalBtnPrimary,
-                        { marginTop: 12 },
-                        (!editingConnector && (!selectedIcon1 || !selectedIcon2)) && { opacity: 0.5 }
-                      ]}
-                      onPress={editingConnector ? handleUpdateConnector : handleAddConnector}
-                      disabled={!editingConnector && (!selectedIcon1 || !selectedIcon2)}
-                    >
-                      <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                        {editingConnector ? t('tacticalBoard.connectors.update') : t('tacticalBoard.connectors.add')}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {editingConnector && (
-                      <TouchableOpacity
-                        style={[styles.proModalBtn, styles.proModalBtnSecondary, { marginTop: 8 }]}
-                        onPress={() => {
-                          setEditingConnector(null);
-                          setLineColor('#000000');
-                          setLineThickness('2');
-                        }}
-                      >
-                        <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                          {t('tacticalBoard.connectors.cancelEdit')}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  <View style={styles.proModalDivider} />
-
-                  {/* Lista de conectores existentes */}
-                  <View style={styles.proModalSection}>
-                    <Text style={styles.proModalSectionTitle}>
-                      {t('tacticalBoard.connectors.existingConnectors')} ({connectors.length})
-                    </Text>
-
-                    {connectors.length === 0 ? (
-                      <Text style={styles.proModalHint}>
-                        {t('tacticalBoard.connectors.noConnectors')}
-                      </Text>
-                    ) : (
-                      connectors.map(connector => (
-                        <View key={connector.id} style={styles.connectorItem}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.connectorItemText} numberOfLines={1}>
-                              {getElementLabel(connector.fromId)} → {getElementLabel(connector.toId)}
-                            </Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                              <View style={[styles.connectorColorPreview, { backgroundColor: connector.color }]} />
-                              <Text style={styles.connectorItemSubtext}>
-                                {t('tacticalBoard.connectors.thickness')}: {connector.thickness}px
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={{ flexDirection: 'row', gap: 8 }}>
-                            <TouchableOpacity
-                              style={styles.connectorActionBtn}
-                              onPress={() => handleEditConnector(connector)}
-                            >
-                              <Ionicons name="pencil" size={18} color="#2176ff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.connectorActionBtn}
-                              onPress={() => handleDeleteConnector(connector.id)}
-                            >
-                              <Ionicons name="trash" size={18} color="#ff3838" />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      ))
-                    )}
-                  </View>
-                </KeyboardAwareScrollView>
-
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
+                {editingConnector && (
                   <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                    onPress={onClose}
+                    style={[styles.proModalBtn, styles.proModalBtnSecondary, { marginTop: 8 }]}
+                    onPress={() => {
+                      setEditingConnector(null);
+                      setLineColor('#000000');
+                      setLineThickness('2');
+                    }}
                   >
                     <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                      {t('tacticalBoard.connectors.close')}
+                      {t('tacticalBoard.connectors.cancelEdit')}
                     </Text>
                   </TouchableOpacity>
-                </View>
-
-                {/* Color Picker */}
-                <MiniColorPickerModal
-                  visible={colorPickerVisible}
-                  initialColor={lineColor}
-                  onClose={() => setColorPickerVisible(false)}
-                  onSelect={(c) => setLineColor(c)}
-                />
+                )}
               </View>
+
+              <View style={styles.proModalDivider} />
+
+              {/* Lista de conectores existentes */}
+              <View style={styles.proModalSection}>
+                <Text style={styles.proModalSectionTitle}>
+                  {t('tacticalBoard.connectors.existingConnectors')} ({connectors.length})
+                </Text>
+
+                {connectors.length === 0 ? (
+                  <Text style={styles.proModalHint}>
+                    {t('tacticalBoard.connectors.noConnectors')}
+                  </Text>
+                ) : (
+                  connectors.map(connector => (
+                    <View key={connector.id} style={styles.connectorItem}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.connectorItemText} numberOfLines={1}>
+                          {getElementLabel(connector.fromId)} → {getElementLabel(connector.toId)}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                          <View style={[styles.connectorColorPreview, { backgroundColor: connector.color }]} />
+                          <Text style={styles.connectorItemSubtext}>
+                            {t('tacticalBoard.connectors.thickness')}: {connector.thickness}px
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          style={styles.connectorActionBtn}
+                          onPress={() => handleEditConnector(connector)}
+                        >
+                          <Ionicons name="pencil" size={18} color="#2176ff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.connectorActionBtn}
+                          onPress={() => handleDeleteConnector(connector.id)}
+                        >
+                          <Ionicons name="trash" size={18} color="#ff3838" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+            </KeyboardAwareScrollView>
+
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                onPress={onClose}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.connectors.close')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Color Picker */}
+            <MiniColorPickerModal
+              visible={colorPickerVisible}
+              initialColor={lineColor}
+              onClose={() => setColorPickerVisible(false)}
+              onSelect={(c) => setLineColor(c)}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -2469,279 +2532,279 @@ function SettingsPanel({
       <View style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
-                width: SCREEN_WIDTH * 0.75,
-                maxWidth: 320,
-              }]}>
-                {/* Header */}
-                <View style={styles.proModalHeader}>
-                  <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>⚙️</Text>
-                  </View>
-                  <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                    {t('tacticalBoard.settings.title')}
-                  </Text>
-                  <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+          <View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && {
+            width: SCREEN_WIDTH * 0.75,
+            maxWidth: 320,
+          }]}>
+            {/* Header */}
+            <View style={styles.proModalHeader}>
+              <View style={styles.proModalHeaderIcon}>
+                <Text style={{ fontSize: 14 }}>⚙️</Text>
+              </View>
+              <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                {t('tacticalBoard.settings.title')}
+              </Text>
+              <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                <Text style={{ fontSize: 18, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-                <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
-                  {/* Tama�o de �conos */}
-                  <View style={styles.proModalSection}>
-                    <Text style={styles.proModalSectionTitle}>{t('tacticalBoard.settings.iconSizeLabel')}</Text>
-                    <TextInput
-                      style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={size}
-                      onChangeText={setSize}
-                      placeholder={`M�nimo ${MIN_SIZE}`}
-                      placeholderTextColor="#999"
-                    />
-                    <Text style={styles.proModalHint}>
-                      Tama�o m�nimo: {MIN_SIZE} p�xeles
-                    </Text>
-                  </View>
-
-                  {/* Switch n�meros */}
-                  <View style={styles.proModalSwitch}>
-                    <Text style={styles.proModalSwitchLabel}>
-                      {t('tacticalBoard.settings.showPlayerNumbers')}
-                    </Text>
-                    <Switch
-                      value={playersWithNumber}
-                      onValueChange={setPlayersWithNumber}
-                      trackColor={{ false: "#ddd", true: "#81b0ff" }}
-                      thumbColor={playersWithNumber ? "#2176ff" : "#f4f3f4"}
-                    />
-                  </View>
-
-                  {/* Bot�n de Conectores */}
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnPrimary, { marginTop: 12, marginBottom: 12 }]}
-                    onPress={() => {
-                      onClose();
-                      if (onOpenConnectors) onOpenConnectors();
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 16, marginRight: 8 }}>🔗</Text>
-                      <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                        {t('tacticalBoard.connectors.title')}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <View style={styles.proModalDivider} />
-
-                  {/* Colores de jugadores */}
-                  <View style={styles.proModalSection}>
-                    <Text style={styles.proModalSectionTitle}>
-                      {t('tacticalBoard.settings.playerColors')}
-                    </Text>
-
-                    {/* Jugador 1 */}
-                    <View style={styles.proModalCard}>
-                      <View style={styles.proModalCardHeader}>
-                        <View style={[
-                          styles.proModalColorBtn,
-                          {
-                            backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff',
-                            width: 32, height: 32, borderRadius: 16
-                          }
-                        ]} />
-                        <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer1')}</Text>
-                      </View>
-                      <View style={styles.proModalRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.proModalColorBtn,
-                            { backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff' }
-                          ]}
-                          onPress={() => setColorPicker1Visible(true)}
-                        />
-                        <TextInput
-                          style={[styles.proModalInputMobile, { flex: 1 }]}
-                          keyboardType="number-pad"
-                          autoComplete="off"
-                          value={size1}
-                          onChangeText={setSize1}
-                          placeholder="Tama�o"
-                          placeholderTextColor="#999"
-                        />
-                      </View>
-                    </View>
-
-                    {/* Jugador 2 */}
-                    <View style={styles.proModalCard}>
-                      <View style={styles.proModalCardHeader}>
-                        <View style={[
-                          styles.proModalColorBtn,
-                          {
-                            backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838',
-                            width: 32, height: 32, borderRadius: 16
-                          }
-                        ]} />
-                        <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer2')}</Text>
-                      </View>
-                      <View style={styles.proModalRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.proModalColorBtn,
-                            { backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838' }
-                          ]}
-                          onPress={() => setColorPicker2Visible(true)}
-                        />
-                        <TextInput
-                          style={[styles.proModalInputMobile, { flex: 1 }]}
-                          keyboardType="number-pad"
-                          autoComplete="off"
-                          value={size2}
-                          onChangeText={setSize2}
-                          placeholder="Tama�o"
-                          placeholderTextColor="#999"
-                        />
-                      </View>
-                    </View>
-
-                    {/* Jugador 3 */}
-                    <View style={styles.proModalCard}>
-                      <View style={styles.proModalCardHeader}>
-                        <View style={[
-                          styles.proModalColorBtn,
-                          {
-                            backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600',
-                            width: 32, height: 32, borderRadius: 16
-                          }
-                        ]} />
-                        <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer3')}</Text>
-                      </View>
-                      <View style={styles.proModalRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.proModalColorBtn,
-                            { backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600' }
-                          ]}
-                          onPress={() => setColorPicker3Visible(true)}
-                        />
-                        <TextInput
-                          style={[styles.proModalInputMobile, { flex: 1 }]}
-                          keyboardType="number-pad"
-                          autoComplete="off"
-                          value={size3}
-                          onChangeText={setSize3}
-                          placeholder="Tama�o"
-                          placeholderTextColor="#999"
-                        />
-                      </View>
-                    </View>
-
-                    {/* Jugadores del equipo */}
-                    <View style={styles.proModalCard}>
-                      <View style={styles.proModalCardHeader}>
-                        <View style={[
-                          styles.proModalColorBtn,
-                          {
-                            backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff',
-                            width: 32, height: 32, borderRadius: 16
-                          }
-                        ]} />
-                        <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.teamPlayers')}</Text>
-                      </View>
-                      <View style={styles.proModalRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.proModalColorBtn,
-                            { backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff' }
-                          ]}
-                          onPress={() => setColorPickerTeamVisible(true)}
-                        />
-                        <TextInput
-                          style={[styles.proModalInputMobile, { flex: 1 }]}
-                          keyboardType="number-pad"
-                          autoComplete="off"
-                          value={sizeTeam}
-                          onChangeText={setSizeTeam}
-                          placeholder="Tama�o"
-                          placeholderTextColor="#999"
-                        />
-                      </View>
-                    </View>
-                  </View>
-                </KeyboardAwareScrollView>
-
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                    onPress={onClose}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                      {t('tacticalBoard.settings.close')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSuccess]}
-                    onPress={handleApply}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                      {t('tacticalBoard.settings.apply')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleSave}
-                    disabled={savingSettings}
-                    style={[
-                      styles.proModalBtn,
-                      styles.proModalBtnPrimary,
-                      savingSettings && { opacity: 0.6 }
-                    ]}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                      {savingSettings ? t('tacticalBoard.settings.saving') : t('tacticalBoard.settings.save')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Color Pickers */}
-                <MiniColorPickerModal
-                  visible={colorPicker1Visible}
-                  initialColor={boardSettings?.playerIcon1?.color || '#2176ff'}
-                  onClose={() => setColorPicker1Visible(false)}
-                  onSelect={(c) => setBoardSettings(prev => ({
-                    ...prev,
-                    playerIcon1: { ...prev.playerIcon1, color: c }
-                  }))}
+            <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+              {/* Tama�o de �conos */}
+              <View style={styles.proModalSection}>
+                <Text style={styles.proModalSectionTitle}>{t('tacticalBoard.settings.iconSizeLabel')}</Text>
+                <TextInput
+                  style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
+                  keyboardType="number-pad"
+                  autoComplete="off"
+                  value={size}
+                  onChangeText={setSize}
+                  placeholder={`M�nimo ${MIN_SIZE}`}
+                  placeholderTextColor="#999"
                 />
-                <MiniColorPickerModal
-                  visible={colorPicker2Visible}
-                  initialColor={boardSettings?.playerIcon2?.color || '#ff3838'}
-                  onClose={() => setColorPicker2Visible(false)}
-                  onSelect={(c) => setBoardSettings(prev => ({
-                    ...prev,
-                    playerIcon2: { ...prev.playerIcon2, color: c }
-                  }))}
-                />
-                <MiniColorPickerModal
-                  visible={colorPicker3Visible}
-                  initialColor={boardSettings?.playerIcon3?.color || '#ffa600'}
-                  onClose={() => setColorPicker3Visible(false)}
-                  onSelect={(c) => setBoardSettings(prev => ({
-                    ...prev,
-                    playerIcon3: { ...prev.playerIcon3, color: c }
-                  }))}
-                />
-                <MiniColorPickerModal
-                  visible={colorPickerTeamVisible}
-                  initialColor={boardSettings?.teamPlayers?.color || '#2176ff'}
-                  onClose={() => setColorPickerTeamVisible(false)}
-                  onSelect={(c) => setBoardSettings(prev => ({
-                    ...prev,
-                    teamPlayers: { ...prev.teamPlayers, color: c }
-                  }))}
+                <Text style={styles.proModalHint}>
+                  Tama�o m�nimo: {MIN_SIZE} p�xeles
+                </Text>
+              </View>
+
+              {/* Switch n�meros */}
+              <View style={styles.proModalSwitch}>
+                <Text style={styles.proModalSwitchLabel}>
+                  {t('tacticalBoard.settings.showPlayerNumbers')}
+                </Text>
+                <Switch
+                  value={playersWithNumber}
+                  onValueChange={setPlayersWithNumber}
+                  trackColor={{ false: "#ddd", true: "#81b0ff" }}
+                  thumbColor={playersWithNumber ? "#2176ff" : "#f4f3f4"}
                 />
               </View>
+
+              {/* Bot�n de Conectores */}
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnPrimary, { marginTop: 12, marginBottom: 12 }]}
+                onPress={() => {
+                  onClose();
+                  if (onOpenConnectors) onOpenConnectors();
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 16, marginRight: 8 }}>🔗</Text>
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                    {t('tacticalBoard.connectors.title')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.proModalDivider} />
+
+              {/* Colores de jugadores */}
+              <View style={styles.proModalSection}>
+                <Text style={styles.proModalSectionTitle}>
+                  {t('tacticalBoard.settings.playerColors')}
+                </Text>
+
+                {/* Jugador 1 */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View style={[
+                      styles.proModalColorBtn,
+                      {
+                        backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff',
+                        width: 32, height: 32, borderRadius: 16
+                      }
+                    ]} />
+                    <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer1')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        { backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff' }
+                      ]}
+                      onPress={() => setColorPicker1Visible(true)}
+                    />
+                    <TextInput
+                      style={[styles.proModalInputMobile, { flex: 1 }]}
+                      keyboardType="number-pad"
+                      autoComplete="off"
+                      value={size1}
+                      onChangeText={setSize1}
+                      placeholder="Tama�o"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+
+                {/* Jugador 2 */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View style={[
+                      styles.proModalColorBtn,
+                      {
+                        backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838',
+                        width: 32, height: 32, borderRadius: 16
+                      }
+                    ]} />
+                    <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer2')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        { backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838' }
+                      ]}
+                      onPress={() => setColorPicker2Visible(true)}
+                    />
+                    <TextInput
+                      style={[styles.proModalInputMobile, { flex: 1 }]}
+                      keyboardType="number-pad"
+                      autoComplete="off"
+                      value={size2}
+                      onChangeText={setSize2}
+                      placeholder="Tama�o"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+
+                {/* Jugador 3 */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View style={[
+                      styles.proModalColorBtn,
+                      {
+                        backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600',
+                        width: 32, height: 32, borderRadius: 16
+                      }
+                    ]} />
+                    <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.unnamedPlayer3')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        { backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600' }
+                      ]}
+                      onPress={() => setColorPicker3Visible(true)}
+                    />
+                    <TextInput
+                      style={[styles.proModalInputMobile, { flex: 1 }]}
+                      keyboardType="number-pad"
+                      autoComplete="off"
+                      value={size3}
+                      onChangeText={setSize3}
+                      placeholder="Tama�o"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+
+                {/* Jugadores del equipo */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View style={[
+                      styles.proModalColorBtn,
+                      {
+                        backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff',
+                        width: 32, height: 32, borderRadius: 16
+                      }
+                    ]} />
+                    <Text style={styles.proModalCardTitle}>{t('tacticalBoard.settings.teamPlayers')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        { backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff' }
+                      ]}
+                      onPress={() => setColorPickerTeamVisible(true)}
+                    />
+                    <TextInput
+                      style={[styles.proModalInputMobile, { flex: 1 }]}
+                      keyboardType="number-pad"
+                      autoComplete="off"
+                      value={sizeTeam}
+                      onChangeText={setSizeTeam}
+                      placeholder="Tama�o"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+              </View>
+            </KeyboardAwareScrollView>
+
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                onPress={onClose}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.settings.close')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSuccess]}
+                onPress={handleApply}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                  {t('tacticalBoard.settings.apply')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={savingSettings}
+                style={[
+                  styles.proModalBtn,
+                  styles.proModalBtnPrimary,
+                  savingSettings && { opacity: 0.6 }
+                ]}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                  {savingSettings ? t('tacticalBoard.settings.saving') : t('tacticalBoard.settings.save')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Color Pickers */}
+            <MiniColorPickerModal
+              visible={colorPicker1Visible}
+              initialColor={boardSettings?.playerIcon1?.color || '#2176ff'}
+              onClose={() => setColorPicker1Visible(false)}
+              onSelect={(c) => setBoardSettings(prev => ({
+                ...prev,
+                playerIcon1: { ...prev.playerIcon1, color: c }
+              }))}
+            />
+            <MiniColorPickerModal
+              visible={colorPicker2Visible}
+              initialColor={boardSettings?.playerIcon2?.color || '#ff3838'}
+              onClose={() => setColorPicker2Visible(false)}
+              onSelect={(c) => setBoardSettings(prev => ({
+                ...prev,
+                playerIcon2: { ...prev.playerIcon2, color: c }
+              }))}
+            />
+            <MiniColorPickerModal
+              visible={colorPicker3Visible}
+              initialColor={boardSettings?.playerIcon3?.color || '#ffa600'}
+              onClose={() => setColorPicker3Visible(false)}
+              onSelect={(c) => setBoardSettings(prev => ({
+                ...prev,
+                playerIcon3: { ...prev.playerIcon3, color: c }
+              }))}
+            />
+            <MiniColorPickerModal
+              visible={colorPickerTeamVisible}
+              initialColor={boardSettings?.teamPlayers?.color || '#2176ff'}
+              onClose={() => setColorPickerTeamVisible(false)}
+              onSelect={(c) => setBoardSettings(prev => ({
+                ...prev,
+                teamPlayers: { ...prev.teamPlayers, color: c }
+              }))}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -2773,21 +2836,21 @@ function LeftEditPanel({
 
   // Determinar si el elemento puede tener color
   const canHaveColor = icon?.type === 'player' ||
-                       icon?.type === 'cone' ||
-                       icon?.type === 'cone-pro' ||
-                       icon?.type === 'cone-flat' ||
-                       icon?.type === 'ring' ||
-                       icon?.type === 'dummy' ||
-                       icon?.type === 'barrier' ||
-                       icon?.type === 'pole' ||
-                       icon?.type === 'ladder' ||
-                       isArrowType ||
-                       isCurveType ||
-                       icon?.type === 'circle' ||
-                       icon?.type === 'rectangle' ||
-                       icon?.type === 'custom-shape' ||
-                       icon?.type === 'custom-shape-button' ||
-                       icon?.type === 'goal';
+    icon?.type === 'cone' ||
+    icon?.type === 'cone-pro' ||
+    icon?.type === 'cone-flat' ||
+    icon?.type === 'ring' ||
+    icon?.type === 'dummy' ||
+    icon?.type === 'barrier' ||
+    icon?.type === 'pole' ||
+    icon?.type === 'ladder' ||
+    isArrowType ||
+    isCurveType ||
+    icon?.type === 'circle' ||
+    icon?.type === 'rectangle' ||
+    icon?.type === 'custom-shape' ||
+    icon?.type === 'custom-shape-button' ||
+    icon?.type === 'goal';
 
   const [size, setSize] = useState(
     isNaN(Number(icon?.size)) ? (standardSize?.toString() || '24') : icon.size?.toString()
@@ -2867,12 +2930,12 @@ function LeftEditPanel({
   // Para otros elementos, si ya tienen paletteIndex o son del tipo correcto
   const canApplyToPalette = isPalettePlayer || isPaletteIcon || isMaterialType ||
     (icon.type === 'straight-arrow' ||
-    icon.type === 'straight-line' ||
-    icon.type === 'curve-arrow' ||
-    icon.type === 'curve-line' ||
-    icon.type === 'circle' ||
-    icon.type === 'rectangle' ||
-    icon.type === 'custom-shape') && (!icon.playerData || isPalettePlayer); // No mostrar para jugadores ya pintados en el campo, excepto si son de la paleta
+      icon.type === 'straight-line' ||
+      icon.type === 'curve-arrow' ||
+      icon.type === 'curve-line' ||
+      icon.type === 'circle' ||
+      icon.type === 'rectangle' ||
+      icon.type === 'custom-shape') && (!icon.playerData || isPalettePlayer); // No mostrar para jugadores ya pintados en el campo, excepto si son de la paleta
 
   return (
     <Modal
@@ -2885,51 +2948,51 @@ function LeftEditPanel({
       <View style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && { width: Math.min(240, SCREEN_WIDTH * 0.50) }]}>
-                {/* Header */}
-                <View style={[styles.proModalHeader, { paddingVertical: 8, paddingHorizontal: 10 }]}>
-                  <Text style={[isMobile ? styles.proModalTitleMobile : styles.proModalTitle, { fontSize: isMobile ? 12 : 14 }]}>
-                    {t('tacticalBoard.editPanel.editTitle')} {
-                      icon.type === 'straight-arrow' ? t('tacticalBoard.elements.straightArrow') :
-                      icon.type === 'straight-line' ? t('tacticalBoard.elements.straightLine') :
+          <View style={[styles.proModalContainerSide, { top: insets.top, bottom: 0, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom }, isMobile && { width: Math.min(240, SCREEN_WIDTH * 0.50) }]}>
+            {/* Header */}
+            <View style={[styles.proModalHeader, { paddingVertical: 8, paddingHorizontal: 10 }]}>
+              <Text style={[isMobile ? styles.proModalTitleMobile : styles.proModalTitle, { fontSize: isMobile ? 12 : 14 }]}>
+                {t('tacticalBoard.editPanel.editTitle')} {
+                  icon.type === 'straight-arrow' ? t('tacticalBoard.elements.straightArrow') :
+                    icon.type === 'straight-line' ? t('tacticalBoard.elements.straightLine') :
                       icon.type === 'curve-arrow' ? t('tacticalBoard.elements.curveArrow') :
-                      icon.type === 'curve-line' ? t('tacticalBoard.elements.curveLine') :
-                      icon.type === 'circle' ? t('tacticalBoard.elements.circle') :
-                      icon.type === 'rectangle' ? t('tacticalBoard.elements.rectangle') :
-                      icon.type === 'custom-shape' ? t('tacticalBoard.elements.customShape') :
-                      icon.type === 'goal' ? t('tacticalBoard.elements.barrier') :
-                      icon.type === 'goal-large' ? t('tacticalBoard.elements.goalLarge') :
-                      icon.type === 'goal-small' ? t('tacticalBoard.elements.goalSmall') :
-                      icon.type === 'barrier' ? t('tacticalBoard.elements.barrier') :
-                      icon.type === 'dummy' ? t('tacticalBoard.elements.dummy') :
-                      icon.type === 'pole' ? t('tacticalBoard.elements.pole') :
-                      icon.type === 'cone-pro' ? t('tacticalBoard.elements.cone') :
-                      icon.type === 'cone-flat' ? t('tacticalBoard.elements.coneFlat') :
-                      icon.type === 'ring' ? t('tacticalBoard.elements.ring') :
-                      icon.type === 'ladder' ? t('tacticalBoard.elements.ladder') :
-                      icon.type === 'weights' ? t('tacticalBoard.elements.weights') :
-                      icon.type === 'ball' ? t('tacticalBoard.elements.ball') :
-                      icon.type
-                    }
-                  </Text>
-                  <TouchableOpacity style={[styles.proModalCloseBtn, { width: 28, height: 28 }]} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+                        icon.type === 'curve-line' ? t('tacticalBoard.elements.curveLine') :
+                          icon.type === 'circle' ? t('tacticalBoard.elements.circle') :
+                            icon.type === 'rectangle' ? t('tacticalBoard.elements.rectangle') :
+                              icon.type === 'custom-shape' ? t('tacticalBoard.elements.customShape') :
+                                icon.type === 'goal' ? t('tacticalBoard.elements.barrier') :
+                                  icon.type === 'goal-large' ? t('tacticalBoard.elements.goalLarge') :
+                                    icon.type === 'goal-small' ? t('tacticalBoard.elements.goalSmall') :
+                                      icon.type === 'barrier' ? t('tacticalBoard.elements.barrier') :
+                                        icon.type === 'dummy' ? t('tacticalBoard.elements.dummy') :
+                                          icon.type === 'pole' ? t('tacticalBoard.elements.pole') :
+                                            icon.type === 'cone-pro' ? t('tacticalBoard.elements.cone') :
+                                              icon.type === 'cone-flat' ? t('tacticalBoard.elements.coneFlat') :
+                                                icon.type === 'ring' ? t('tacticalBoard.elements.ring') :
+                                                  icon.type === 'ladder' ? t('tacticalBoard.elements.ladder') :
+                                                    icon.type === 'weights' ? t('tacticalBoard.elements.weights') :
+                                                      icon.type === 'ball' ? t('tacticalBoard.elements.ball') :
+                                                        icon.type
+                }
+              </Text>
+              <TouchableOpacity style={[styles.proModalCloseBtn, { width: 28, height: 28 }]} onPress={onClose}>
+                <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-                {(hideApplyToPalette || icon?.isMaterialPalette) && (
-                  <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-                    <Text style={[styles.proModalHint, { color: '#2176ff', fontStyle: 'normal', fontWeight: '500' }]}>
-                      {t('tacticalBoard.editPanel.editingPalette')}
-                    </Text>
-                  </View>
-                )}
+            {(hideApplyToPalette || icon?.isMaterialPalette) && (
+              <View style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
+                <Text style={[styles.proModalHint, { color: '#2176ff', fontStyle: 'normal', fontWeight: '500' }]}>
+                  {t('tacticalBoard.editPanel.editingPalette')}
+                </Text>
+              </View>
+            )}
 
-                <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 14 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+            <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 14 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
 
-                {/* Color para todos los tipos que lo soporten */}
-                {canHaveColor && (
-                  <>
+              {/* Color para todos los tipos que lo soporten */}
+              {canHaveColor && (
+                <>
                   <View style={styles.proModalRow}>
                     <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.colorLabel')}</Text>
                     <TouchableOpacity
@@ -2940,48 +3003,48 @@ function LeftEditPanel({
                       onPress={() => setPickerVisible(true)}
                     />
                   </View>
-                    <MiniColorPickerModal
-                      visible={pickerVisible}
-                      initialColor={color}
-                      onClose={() => setPickerVisible(false)}
-                      onSelect={c => setColor(c)}
-                    />
-                  </>
-                )}
+                  <MiniColorPickerModal
+                    visible={pickerVisible}
+                    initialColor={color}
+                    onClose={() => setPickerVisible(false)}
+                    onSelect={c => setColor(c)}
+                  />
+                </>
+              )}
 
-                {/* N�mero para jugadores */}
-                {(icon.type === 'player' && playersWithNumber) && (
-                  <>
-                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.numberLabel')}</Text>
-                    <TextInput
-                      style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={number}
-                      onChangeText={setNumber}
-                      placeholder="N�mero"
-                      placeholderTextColor="#888"
-                    />
+              {/* N�mero para jugadores */}
+              {(icon.type === 'player' && playersWithNumber) && (
+                <>
+                  <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.numberLabel')}</Text>
+                  <TextInput
+                    style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
+                    keyboardType="number-pad"
+                    autoComplete="off"
+                    value={number}
+                    onChangeText={setNumber}
+                    placeholder="N�mero"
+                    placeholderTextColor="#888"
+                  />
 
-                    {/* Color del n�mero */}
-                    <View style={[styles.proModalRow, { marginTop: 10 }]}>
-                      <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.textColorLabel')}</Text>
-                      <TouchableOpacity
-                        style={[
-                          isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                          { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
-                        ]}
-                        onPress={() => setNumberColorPickerVisible(true)}
-                      />
-                    </View>
-                    <MiniColorPickerModal
-                      visible={numberColorPickerVisible}
-                      initialColor={numberColor}
-                      onClose={() => setNumberColorPickerVisible(false)}
-                      onSelect={setNumberColor}
+                  {/* Color del n�mero */}
+                  <View style={[styles.proModalRow, { marginTop: 10 }]}>
+                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>{t('tacticalBoard.editPanel.textColorLabel')}</Text>
+                    <TouchableOpacity
+                      style={[
+                        isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                        { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
+                      ]}
+                      onPress={() => setNumberColorPickerVisible(true)}
                     />
-                  </>
-                )}
+                  </View>
+                  <MiniColorPickerModal
+                    visible={numberColorPickerVisible}
+                    initialColor={numberColor}
+                    onClose={() => setNumberColorPickerVisible(false)}
+                    onSelect={setNumberColor}
+                  />
+                </>
+              )}
 
               {/* Color del texto para jugadores con nombre o de paleta */}
               {icon.type === 'player' && (icon.playerData || isPalettePlayer) && (
@@ -3480,131 +3543,131 @@ function LeftEditPanel({
                 </View>
               )}
 
-                </KeyboardAwareScrollView>
+            </KeyboardAwareScrollView>
 
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                    onPress={onClose}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                      {t('tacticalBoard.editPanel.close')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnPrimary]}
-                    onPress={() => {
-                    const updatedIcon = {
-                      ...icon,
-                      // No actualizar size para custom-shape (su tama�o viene de los puntos dibujados)
-                      size: (icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
-                        ? icon.size
-                        : parseInt(size),
-                      color: canHaveColor && isValidHexColor(color) ? color : icon.color,
-                      number: icon.type === 'player' ? number : undefined,
-                      numberColor: icon.type === 'player' ? numberColor : icon.numberColor,
-                      thickness: (isArrowType || isCurveType || icon.type === 'circle' || icon.type === 'rectangle' || icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
-                        ? parseInt(thickness) || 5
-                        : icon.thickness,
-                      textColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textColor : icon.textColor,
-                      textBackgroundColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textBackgroundColor : icon.textBackgroundColor,
-                      // Propiedades de portero
-                      goalkeeperStripeColor: isGoalkeeper ? goalkeeperStripeColor : icon.goalkeeperStripeColor,
-                      // Nuevas propiedades para tipo de l�nea y relleno
-                      lineType: canHaveLineType ? localLineType : icon.lineType,
-                      fillColor: canHaveFill ? fillColor : icon.fillColor,
-                      // Propiedades de espaciado para l�neas punteadas
-                      dotSize: canHaveLineType ? localDotSize : icon.dotSize,
-                      dotSpacing: canHaveLineType ? localDotSpacing : icon.dotSpacing,
-                    };
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                onPress={onClose}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.editPanel.close')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                onPress={() => {
+                  const updatedIcon = {
+                    ...icon,
+                    // No actualizar size para custom-shape (su tama�o viene de los puntos dibujados)
+                    size: (icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
+                      ? icon.size
+                      : parseInt(size),
+                    color: canHaveColor && isValidHexColor(color) ? color : icon.color,
+                    number: icon.type === 'player' ? number : undefined,
+                    numberColor: icon.type === 'player' ? numberColor : icon.numberColor,
+                    thickness: (isArrowType || isCurveType || icon.type === 'circle' || icon.type === 'rectangle' || icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
+                      ? parseInt(thickness) || 5
+                      : icon.thickness,
+                    textColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textColor : icon.textColor,
+                    textBackgroundColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textBackgroundColor : icon.textBackgroundColor,
+                    // Propiedades de portero
+                    goalkeeperStripeColor: isGoalkeeper ? goalkeeperStripeColor : icon.goalkeeperStripeColor,
+                    // Nuevas propiedades para tipo de l�nea y relleno
+                    lineType: canHaveLineType ? localLineType : icon.lineType,
+                    fillColor: canHaveFill ? fillColor : icon.fillColor,
+                    // Propiedades de espaciado para l�neas punteadas
+                    dotSize: canHaveLineType ? localDotSize : icon.dotSize,
+                    dotSpacing: canHaveLineType ? localDotSpacing : icon.dotSpacing,
+                  };
 
-                    // Si es un material de la paleta (isMaterialPalette)
-                    if (icon.isMaterialPalette) {
-                      // Actualizar la Configuraci�n de materiales
-                      if (onMaterialsConfigUpdate) {
-                        onMaterialsConfigUpdate(icon.materialType || icon.type, {
-                          color: updatedIcon.color,
-                          size: updatedIcon.size,
-                        });
-                      }
-                      onClose();
-                      return;
+                  // Si es un material de la paleta (isMaterialPalette)
+                  if (icon.isMaterialPalette) {
+                    // Actualizar la Configuraci�n de materiales
+                    if (onMaterialsConfigUpdate) {
+                      onMaterialsConfigUpdate(icon.materialType || icon.type, {
+                        color: updatedIcon.color,
+                        size: updatedIcon.size,
+                      });
                     }
+                    onClose();
+                    return;
+                  }
 
-                    // Si es un jugador de la paleta (isPalettePlayer)
-                    if (isPalettePlayer) {
-                      // Solo cerrar el panel, no hay nada que aplicar en el campo
-                      // Si se marc� aplicar a paleta, actualizar teamPlayerStyle
-                      if (applyToPalette && setTeamPlayerStyle) {
-                        setTeamPlayerStyle(prev => ({
-                          ...prev,
-                          color: updatedIcon.color,
-                          size: updatedIcon.size,
-                          numberColor: updatedIcon.numberColor || prev.numberColor || '#ffffff',
-                          textColor: updatedIcon.textColor || prev.textColor || '#000000',
-                          textBackgroundColor: updatedIcon.textBackgroundColor || prev.textBackgroundColor || '#ffffff'
-                        }));
-                      }
-                      onClose();
-                    } else {
-                      // Aplicar cambios al elemento pintado
-                      onApply(updatedIcon, applyToAll);
+                  // Si es un jugador de la paleta (isPalettePlayer)
+                  if (isPalettePlayer) {
+                    // Solo cerrar el panel, no hay nada que aplicar en el campo
+                    // Si se marc� aplicar a paleta, actualizar teamPlayerStyle
+                    if (applyToPalette && setTeamPlayerStyle) {
+                      setTeamPlayerStyle(prev => ({
+                        ...prev,
+                        color: updatedIcon.color,
+                        size: updatedIcon.size,
+                        numberColor: updatedIcon.numberColor || prev.numberColor || '#ffffff',
+                        textColor: updatedIcon.textColor || prev.textColor || '#000000',
+                        textBackgroundColor: updatedIcon.textBackgroundColor || prev.textBackgroundColor || '#ffffff'
+                      }));
+                    }
+                    onClose();
+                  } else {
+                    // Aplicar cambios al elemento pintado
+                    onApply(updatedIcon, applyToAll);
 
-                      // Si se marc� aplicar a paleta
-                      if (applyToPalette && canApplyToPalette) {
-                        // Tipos de materiales
-                        const materialTypes = ['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights'];
-                        const isMaterial = materialTypes.includes(icon.type);
+                    // Si se marc� aplicar a paleta
+                    if (applyToPalette && canApplyToPalette) {
+                      // Tipos de materiales
+                      const materialTypes = ['ball', 'cone-pro', 'cone-flat', 'ring', 'goal-large', 'goal-small', 'barrier', 'dummy', 'pole', 'ladder', 'weights'];
+                      const isMaterial = materialTypes.includes(icon.type);
 
-                        if (isMaterial) {
-                          // Para materiales, usar onMaterialsConfigUpdate
-                          if (onMaterialsConfigUpdate) {
-                            onMaterialsConfigUpdate(icon.type, {
+                      if (isMaterial) {
+                        // Para materiales, usar onMaterialsConfigUpdate
+                        if (onMaterialsConfigUpdate) {
+                          onMaterialsConfigUpdate(icon.type, {
+                            color: updatedIcon.color,
+                            size: updatedIcon.size,
+                          });
+                        }
+                      } else {
+                        // Si no tiene paletteIndex, buscarlo por tipo
+                        let paletteIdx = icon.paletteIndex;
+                        if (typeof paletteIdx !== "number") {
+                          // Buscar el �ndice en la paleta seg�n el tipo
+                          const searchType = icon.type === 'custom-shape' ? 'custom-shape-button' : icon.type;
+                          paletteIdx = paletteIcons.findIndex(ic => ic.type === searchType);
+                        }
+
+                        if (typeof paletteIdx === "number" && paletteIdx >= 0) {
+                          // Para jugadores sin nombre, solo aplicar color y tama�o
+                          const paletteUpdate = icon.type === 'player' && !icon.playerData
+                            ? {
+                              ...updatedIcon,
+                              paletteIndex: paletteIdx,
                               color: updatedIcon.color,
                               size: updatedIcon.size,
-                            });
-                          }
-                        } else {
-                          // Si no tiene paletteIndex, buscarlo por tipo
-                          let paletteIdx = icon.paletteIndex;
-                          if (typeof paletteIdx !== "number") {
-                            // Buscar el �ndice en la paleta seg�n el tipo
-                            const searchType = icon.type === 'custom-shape' ? 'custom-shape-button' : icon.type;
-                            paletteIdx = paletteIcons.findIndex(ic => ic.type === searchType);
-                          }
+                              numberColor: updatedIcon.numberColor, // incluir color del n�mero
+                              textColor: updatedIcon.textColor, // incluir color del texto
+                              textBackgroundColor: updatedIcon.textBackgroundColor, // incluir fondo del texto
+                              // No incluir number ni thickness
+                            }
+                            : {
+                              ...updatedIcon,
+                              paletteIndex: paletteIdx,
+                            };
 
-                          if (typeof paletteIdx === "number" && paletteIdx >= 0) {
-                            // Para jugadores sin nombre, solo aplicar color y tama�o
-                            const paletteUpdate = icon.type === 'player' && !icon.playerData
-                              ? {
-                                  ...updatedIcon,
-                                  paletteIndex: paletteIdx,
-                                  color: updatedIcon.color,
-                                  size: updatedIcon.size,
-                                  numberColor: updatedIcon.numberColor, // incluir color del n�mero
-                                  textColor: updatedIcon.textColor, // incluir color del texto
-                                  textBackgroundColor: updatedIcon.textBackgroundColor, // incluir fondo del texto
-                                  // No incluir number ni thickness
-                                }
-                              : {
-                                  ...updatedIcon,
-                                  paletteIndex: paletteIdx,
-                                };
-
-                            onPaletteUpdate && onPaletteUpdate(paletteUpdate);
-                          }
+                          onPaletteUpdate && onPaletteUpdate(paletteUpdate);
                         }
                       }
                     }
-                  }}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                      {t('tacticalBoard.editPanel.apply')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                  }
+                }}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                  {t('tacticalBoard.editPanel.apply')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     </Modal>
@@ -3637,231 +3700,231 @@ function LockedElementsPanel({
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.proModalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer,
-                isMobile && {
-                  width: SCREEN_WIDTH * 0.80,
-                  maxWidth: 320,
-                  maxHeight: SCREEN_HEIGHT * 0.80
-                },
-                !isMobile && { width: Math.min(300 * scale, 340), maxHeight: '75%' }
-              ]}>
-                {/* Header */}
-                <View style={styles.proModalHeader}>
-                  <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>🔒</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                      {t('tacticalBoard.lockedPanel.title')}
-                    </Text>
-                  </View>
-                  <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+          <View style={[styles.proModalContainer,
+          isMobile && {
+            width: SCREEN_WIDTH * 0.80,
+            maxWidth: 320,
+            maxHeight: SCREEN_HEIGHT * 0.80
+          },
+          !isMobile && { width: Math.min(300 * scale, 340), maxHeight: '75%' }
+          ]}>
+            {/* Header */}
+            <View style={styles.proModalHeader}>
+              <View style={styles.proModalHeaderIcon}>
+                <Text style={{ fontSize: 14 }}>🔒</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                  {t('tacticalBoard.lockedPanel.title')}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-              {lockedElements.length === 0 ? (
-                <View style={[styles.proModalBody, { alignItems: 'center', paddingVertical: 40 }]}>
-                  <Text style={{ fontSize: 14, color: '#666', fontStyle: 'italic' }}>
-                    {t('tacticalBoard.lockedPanel.noLockedElements')}
-                  </Text>
-                </View>
-              ) : (
-                <ScrollView
-                  style={{ maxHeight: SCREEN_HEIGHT * 0.6, width: '100%', minHeight: 80 }}
-                  contentContainerStyle={styles.proModalBody}
-                  nestedScrollEnabled={true}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                >
-                  {lockedElements.map((element) => (
-                    <View key={element.id} style={[styles.proModalCard, { padding: 12 }]}>
-                      <View style={styles.lockedElementInfo}>
-                        <View style={styles.lockedElementIcon}>
-                          {element.type === 'player' && (
-                            <View style={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: 9,
-                              backgroundColor: element.color || '#2176ff',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }}>
-                              {element.number && (
-                                <Text style={{
-                                  color: '#fff',
-                                  fontSize: 10,
-                                  fontWeight: 'bold',
-                                }}>
-                                  {element.number}
-                                </Text>
-                              )}
-                            </View>
-                          )}
-                          {element.type === 'ball' && (
-                            <View style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: 8,
-                              backgroundColor: '#fff',
-                              borderWidth: 2,
-                              borderColor: '#000',
-                            }} />
-                          )}
-                          {(element.type === 'cone' || element.type === 'cone-pro') && (
-                            <View style={{
-                              width: 0,
-                              height: 0,
-                              borderLeftWidth: 7,
-                              borderRightWidth: 7,
-                              borderBottomWidth: 14,
-                              borderStyle: 'solid',
-                              borderLeftColor: 'transparent',
-                              borderRightColor: 'transparent',
-                              borderBottomColor: element.color || '#FF6B00',
-                            }} />
-                          )}
-                          {element.type === 'cone-flat' && (
-                            <View style={{
-                              width: 16,
-                              height: 6,
-                              backgroundColor: element.color || '#FF6B00',
-                              borderRadius: 2,
-                            }} />
-                          )}
-                          {element.type === 'ring' && (
-                            <View style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: 8,
-                              borderWidth: 3,
-                              borderColor: element.color || '#FFD700',
-                              backgroundColor: 'transparent',
-                            }} />
-                          )}
-                          {(element.type === 'text' || element.type === 'free-text') && (
-                            <Feather name="type" size={18} color={element.color || '#000'} />
-                          )}
-                          {(element.type === 'straight-arrow' || element.type === 'curve-arrow') && (
-                            <Feather name="arrow-right" size={18} color={element.color || '#141414'} />
-                          )}
-                          {(element.type === 'straight-line' || element.type === 'curve-line') && (
-                            <Feather name="minus" size={18} color={element.color || '#444'} />
-                          )}
-                          {element.type === 'circle' && (
-                            <Feather name="circle" size={18} color={element.color || '#000'} />
-                          )}
-                          {element.type === 'rectangle' && (
-                            <Feather name="square" size={18} color={element.color || '#000'} />
-                          )}
-                          {element.type === 'custom-shape' && (
-                            <Feather name="edit-3" size={18} color={element.color || '#000'} />
-                          )}
-                          {(element.type === 'goal-large' || element.type === 'goal-small') && (
-                            <MaterialIcons name="sports-soccer" size={18} color={element.color || '#888'} />
-                          )}
-                          {element.type === 'barrier' && (
-                            <MaterialIcons name="fence" size={18} color={element.color || '#888'} />
-                          )}
-                          {element.type === 'dummy' && (
-                            <MaterialIcons name="accessibility" size={18} color={element.color || '#2196F3'} />
-                          )}
-                          {element.type === 'pole' && (
-                            <View style={{
-                              width: 4,
-                              height: 18,
-                              backgroundColor: element.color || '#FFD700',
-                              borderRadius: 2,
-                            }} />
-                          )}
-                          {element.type === 'ladder' && (
-                            <MaterialIcons name="view-headline" size={18} color={element.color || '#000'} />
-                          )}
-                          {element.type === 'weights' && (
-                            <MaterialCommunityIcons name="dumbbell" size={18} color={element.color || '#333'} />
-                          )}
-                        </View>
-                        <View style={styles.lockedElementDetails}>
-                          <Text style={styles.lockedElementName}>
-                            {element.type === 'player' && `Jugador ${element.number ? `#${element.number}` : ''}${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'ball' && 'Bal�n'}
-                            {(element.type === 'cone' || element.type === 'cone-pro') && `Cono${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'cone-flat' && `Cono plano${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'ring' && `Aro${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'text' && `Texto: "${element.value?.substring(0, 20) || 'Sin contenido'}${element.value?.length > 20 ? '...' : ''}"`}
-                            {element.type === 'free-text' && `Texto libre: "${element.value?.substring(0, 15) || 'Sin contenido'}${element.value?.length > 15 ? '...' : ''}"`}
-                            {element.type === 'straight-arrow' && `Flecha recta${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'curve-arrow' && `Flecha curva${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'straight-line' && `L�nea recta${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'curve-line' && `L�nea curva${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'circle' && `C�rculo${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'rectangle' && `Rect�ngulo${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'custom-shape' && `Forma personalizada${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'goal-large' && 'Porter�a grande'}
-                            {element.type === 'goal-small' && 'Porter�a peque�a'}
-                            {element.type === 'barrier' && `Valla${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'dummy' && `Maniqu�${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'pole' && `Pica${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'ladder' && `Escalera${element.color ? ` (${element.color})` : ''}`}
-                            {element.type === 'weights' && `Pesas${element.color ? ` (${element.color})` : ''}`}
-                          </Text>
-                          <Text style={styles.lockedElementType}>
-                            Tipo: {
-                              element.type === 'player' ? 'Jugador' :
-                              element.type === 'ball' ? 'Bal�n' :
-                              element.type === 'cone' || element.type === 'cone-pro' ? 'Cono' :
-                              element.type === 'cone-flat' ? 'Cono plano' :
-                              element.type === 'ring' ? 'Aro' :
-                              element.type === 'text' || element.type === 'free-text' ? 'Texto' :
-                              element.type === 'straight-arrow' ? 'Flecha recta' :
-                              element.type === 'curve-arrow' ? 'Flecha curva' :
-                              element.type === 'straight-line' ? 'L�nea recta' :
-                              element.type === 'curve-line' ? 'L�nea curva' :
-                              element.type === 'circle' ? 'C�rculo' :
-                              element.type === 'rectangle' ? 'Rect�ngulo' :
-                              element.type === 'custom-shape' ? 'Forma personalizada' :
-                              element.type === 'goal-large' ? 'Porter�a grande' :
-                              element.type === 'goal-small' ? 'Porter�a peque�a' :
-                              element.type === 'barrier' ? 'Valla' :
-                              element.type === 'dummy' ? 'Maniqu�' :
-                              element.type === 'pole' ? 'Pica' :
-                              element.type === 'ladder' ? 'Escalera' :
-                              element.type === 'weights' ? 'Pesas' :
-                              'Desconocido'
-                            }
-                            {element.size && ` "� Tama�o: ${element.size}`}
-                            {element.thickness && ` "� Grosor: ${element.thickness}`}
-                          </Text>
-                          <View style={styles.lockedElementBadge}>
-                            <Feather name="lock" size={12} color="#f39c12" />
-                            <Text style={styles.lockedBadgeText}>{t('tacticalBoard.lockedPanel.locked')}</Text>
+            {lockedElements.length === 0 ? (
+              <View style={[styles.proModalBody, { alignItems: 'center', paddingVertical: 40 }]}>
+                <Text style={{ fontSize: 14, color: '#666', fontStyle: 'italic' }}>
+                  {t('tacticalBoard.lockedPanel.noLockedElements')}
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={{ maxHeight: SCREEN_HEIGHT * 0.6, width: '100%', minHeight: 80 }}
+                contentContainerStyle={styles.proModalBody}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
+              >
+                {lockedElements.map((element) => (
+                  <View key={element.id} style={[styles.proModalCard, { padding: 12 }]}>
+                    <View style={styles.lockedElementInfo}>
+                      <View style={styles.lockedElementIcon}>
+                        {element.type === 'player' && (
+                          <View style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            backgroundColor: element.color || '#2176ff',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                            {element.number && (
+                              <Text style={{
+                                color: '#fff',
+                                fontSize: 10,
+                                fontWeight: 'bold',
+                              }}>
+                                {element.number}
+                              </Text>
+                            )}
                           </View>
+                        )}
+                        {element.type === 'ball' && (
+                          <View style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            backgroundColor: '#fff',
+                            borderWidth: 2,
+                            borderColor: '#000',
+                          }} />
+                        )}
+                        {(element.type === 'cone' || element.type === 'cone-pro') && (
+                          <View style={{
+                            width: 0,
+                            height: 0,
+                            borderLeftWidth: 7,
+                            borderRightWidth: 7,
+                            borderBottomWidth: 14,
+                            borderStyle: 'solid',
+                            borderLeftColor: 'transparent',
+                            borderRightColor: 'transparent',
+                            borderBottomColor: element.color || '#FF6B00',
+                          }} />
+                        )}
+                        {element.type === 'cone-flat' && (
+                          <View style={{
+                            width: 16,
+                            height: 6,
+                            backgroundColor: element.color || '#FF6B00',
+                            borderRadius: 2,
+                          }} />
+                        )}
+                        {element.type === 'ring' && (
+                          <View style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            borderWidth: 3,
+                            borderColor: element.color || '#FFD700',
+                            backgroundColor: 'transparent',
+                          }} />
+                        )}
+                        {(element.type === 'text' || element.type === 'free-text') && (
+                          <Feather name="type" size={18} color={element.color || '#000'} />
+                        )}
+                        {(element.type === 'straight-arrow' || element.type === 'curve-arrow') && (
+                          <Feather name="arrow-right" size={18} color={element.color || '#141414'} />
+                        )}
+                        {(element.type === 'straight-line' || element.type === 'curve-line') && (
+                          <Feather name="minus" size={18} color={element.color || '#444'} />
+                        )}
+                        {element.type === 'circle' && (
+                          <Feather name="circle" size={18} color={element.color || '#000'} />
+                        )}
+                        {element.type === 'rectangle' && (
+                          <Feather name="square" size={18} color={element.color || '#000'} />
+                        )}
+                        {element.type === 'custom-shape' && (
+                          <Feather name="edit-3" size={18} color={element.color || '#000'} />
+                        )}
+                        {(element.type === 'goal-large' || element.type === 'goal-small') && (
+                          <MaterialIcons name="sports-soccer" size={18} color={element.color || '#888'} />
+                        )}
+                        {element.type === 'barrier' && (
+                          <MaterialIcons name="fence" size={18} color={element.color || '#888'} />
+                        )}
+                        {element.type === 'dummy' && (
+                          <MaterialIcons name="accessibility" size={18} color={element.color || '#2196F3'} />
+                        )}
+                        {element.type === 'pole' && (
+                          <View style={{
+                            width: 4,
+                            height: 18,
+                            backgroundColor: element.color || '#FFD700',
+                            borderRadius: 2,
+                          }} />
+                        )}
+                        {element.type === 'ladder' && (
+                          <MaterialIcons name="view-headline" size={18} color={element.color || '#000'} />
+                        )}
+                        {element.type === 'weights' && (
+                          <MaterialCommunityIcons name="dumbbell" size={18} color={element.color || '#333'} />
+                        )}
+                      </View>
+                      <View style={styles.lockedElementDetails}>
+                        <Text style={styles.lockedElementName}>
+                          {element.type === 'player' && `Jugador ${element.number ? `#${element.number}` : ''}${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'ball' && 'Bal�n'}
+                          {(element.type === 'cone' || element.type === 'cone-pro') && `Cono${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'cone-flat' && `Cono plano${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'ring' && `Aro${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'text' && `Texto: "${element.value?.substring(0, 20) || 'Sin contenido'}${element.value?.length > 20 ? '...' : ''}"`}
+                          {element.type === 'free-text' && `Texto libre: "${element.value?.substring(0, 15) || 'Sin contenido'}${element.value?.length > 15 ? '...' : ''}"`}
+                          {element.type === 'straight-arrow' && `Flecha recta${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'curve-arrow' && `Flecha curva${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'straight-line' && `L�nea recta${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'curve-line' && `L�nea curva${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'circle' && `C�rculo${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'rectangle' && `Rect�ngulo${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'custom-shape' && `Forma personalizada${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'goal-large' && 'Porter�a grande'}
+                          {element.type === 'goal-small' && 'Porter�a peque�a'}
+                          {element.type === 'barrier' && `Valla${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'dummy' && `Maniqu�${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'pole' && `Pica${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'ladder' && `Escalera${element.color ? ` (${element.color})` : ''}`}
+                          {element.type === 'weights' && `Pesas${element.color ? ` (${element.color})` : ''}`}
+                        </Text>
+                        <Text style={styles.lockedElementType}>
+                          Tipo: {
+                            element.type === 'player' ? 'Jugador' :
+                              element.type === 'ball' ? 'Bal�n' :
+                                element.type === 'cone' || element.type === 'cone-pro' ? 'Cono' :
+                                  element.type === 'cone-flat' ? 'Cono plano' :
+                                    element.type === 'ring' ? 'Aro' :
+                                      element.type === 'text' || element.type === 'free-text' ? 'Texto' :
+                                        element.type === 'straight-arrow' ? 'Flecha recta' :
+                                          element.type === 'curve-arrow' ? 'Flecha curva' :
+                                            element.type === 'straight-line' ? 'L�nea recta' :
+                                              element.type === 'curve-line' ? 'L�nea curva' :
+                                                element.type === 'circle' ? 'C�rculo' :
+                                                  element.type === 'rectangle' ? 'Rect�ngulo' :
+                                                    element.type === 'custom-shape' ? 'Forma personalizada' :
+                                                      element.type === 'goal-large' ? 'Porter�a grande' :
+                                                        element.type === 'goal-small' ? 'Porter�a peque�a' :
+                                                          element.type === 'barrier' ? 'Valla' :
+                                                            element.type === 'dummy' ? 'Maniqu�' :
+                                                              element.type === 'pole' ? 'Pica' :
+                                                                element.type === 'ladder' ? 'Escalera' :
+                                                                  element.type === 'weights' ? 'Pesas' :
+                                                                    'Desconocido'
+                          }
+                          {element.size && ` "� Tama�o: ${element.size}`}
+                          {element.thickness && ` "� Grosor: ${element.thickness}`}
+                        </Text>
+                        <View style={styles.lockedElementBadge}>
+                          <Feather name="lock" size={12} color="#f39c12" />
+                          <Text style={styles.lockedBadgeText}>{t('tacticalBoard.lockedPanel.locked')}</Text>
                         </View>
                       </View>
-                      <TouchableOpacity
-                        style={styles.unlockButton}
-                        onPress={() => onUnlock(element.id)}
-                      >
-                        <Feather name="unlock" size={16} color="#27ae60" />
-                        <Text style={styles.unlockButtonText}>{t('tacticalBoard.lockedPanel.unlock')}</Text>
-                      </TouchableOpacity>
                     </View>
-                  ))}
-                </ScrollView>
-              )}
+                    <TouchableOpacity
+                      style={styles.unlockButton}
+                      onPress={() => onUnlock(element.id)}
+                    >
+                      <Feather name="unlock" size={16} color="#27ae60" />
+                      <Text style={styles.unlockButtonText}>{t('tacticalBoard.lockedPanel.unlock')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
 
-              {/* Footer */}
-              <View style={styles.proModalFooter}>
-                <TouchableOpacity
-                  style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
-                  onPress={onClose}
-                >
-                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                    {t('tacticalBoard.lockedPanel.close')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
+                onPress={onClose}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.lockedPanel.close')}
+                </Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </View>
       </SafeAreaView>
     </Modal>
@@ -3934,20 +3997,20 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
   const mobileModalMargin = Math.max(10, Math.min(16, SCREEN_WIDTH * 0.035));
   const formationModalPanelStyle = isMobile
     ? {
-        width: Math.min(520, Math.max(280, SCREEN_WIDTH - mobileModalMargin * 2)),
-        maxWidth: SCREEN_WIDTH - mobileModalMargin * 2,
-        maxHeight: SCREEN_HEIGHT - insets.top - insets.bottom - mobileModalMargin * 2,
-        borderRadius: 16,
-      }
+      width: Math.min(520, Math.max(280, SCREEN_WIDTH - mobileModalMargin * 2)),
+      maxWidth: SCREEN_WIDTH - mobileModalMargin * 2,
+      maxHeight: SCREEN_HEIGHT - insets.top - insets.bottom - mobileModalMargin * 2,
+      borderRadius: 16,
+    }
     : {
-        top: insets.top,
-        bottom: 0,
-        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
-        width: 380,
-        borderRadius: 0,
-        borderTopLeftRadius: 12,
-        borderBottomLeftRadius: 12,
-      };
+      top: insets.top,
+      bottom: 0,
+      paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
+      width: 380,
+      borderRadius: 0,
+      borderTopLeftRadius: 12,
+      borderBottomLeftRadius: 12,
+    };
 
   // Funci�n para asignar jugadores a posiciones seg�n la formaci�n
   const assignPlayersToPositions = (formation, selectedPlayersList) => {
@@ -4054,7 +4117,7 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       numberColor,
       textColor,
       textBackgroundColor,
-realPlayers: assignedPlayers.map((player, idx) => {
+      realPlayers: assignedPlayers.map((player, idx) => {
         if (player) {
           return {
             name: player.nombre?.substring(0, 3).toUpperCase() || player.apellido?.substring(0, 3).toUpperCase() || `J${idx + 1}`,
@@ -4123,715 +4186,715 @@ realPlayers: assignedPlayers.map((player, idx) => {
       <View style={{ flex: 1 }}>
         <View style={[styles.proModalOverlay, isMobile ? { padding: mobileModalMargin } : { alignItems: 'flex-end' }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-            <View style={[isMobile ? styles.proModalContainer : styles.proModalContainerSide, formationModalPanelStyle]}>
-                {/* Header */}
-                <View style={styles.proModalHeader}>
-                  <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>⚽</Text>
-                  </View>
-                  <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                    {t('formations.title')}
-                  </Text>
+          <View style={[isMobile ? styles.proModalContainer : styles.proModalContainerSide, formationModalPanelStyle]}>
+            {/* Header */}
+            <View style={styles.proModalHeader}>
+              <View style={styles.proModalHeaderIcon}>
+                <Text style={{ fontSize: 14 }}>⚽</Text>
+              </View>
+              <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                {t('formations.title')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowSettings(!showSettings)}
+                style={[styles.proModalCloseBtn, {
+                  backgroundColor: showSettings ? '#2176ff' : '#f5f5f5',
+                  marginRight: 6
+                }]}
+              >
+                <Feather name="settings" size={14} color={showSettings ? '#fff' : '#666'} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Contenido con scroll */}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingHorizontal: isMobile ? 12 : 0, paddingBottom: isMobile ? 8 : 0 }}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+
+              {/* Selector de cantidad de jugadores (7, 8, 11) */}
+              <View style={{ flexDirection: 'row', marginHorizontal: isMobile ? 0 : 12, marginTop: 10, marginBottom: 4, borderRadius: 8, backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
+                {[7, 8, 11].map(count => (
                   <TouchableOpacity
-                    onPress={() => setShowSettings(!showSettings)}
-                    style={[styles.proModalCloseBtn, {
-                      backgroundColor: showSettings ? '#2176ff' : '#f5f5f5',
-                      marginRight: 6
-                    }]}
+                    key={count}
+                    onPress={() => setSelectedPlayerCount(count)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: isMobile ? 8 : 10,
+                      backgroundColor: selectedPlayerCount === count ? '#2176ff' : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 8,
+                    }}
                   >
-                    <Feather name="settings" size={14} color={showSettings ? '#fff' : '#666'} />
+                    <Text style={{
+                      fontSize: isMobile ? 12 : 14,
+                      fontWeight: '700',
+                      color: selectedPlayerCount === count ? '#fff' : '#666',
+                    }}>
+                      {isMobile ? count : t('formations.playerCountLabel', { count })}
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                    <Text style={{ fontSize: 16, color: '#666' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+                ))}
+              </View>
 
-                {/* Contenido con scroll */}
-                <ScrollView
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ paddingHorizontal: isMobile ? 12 : 0, paddingBottom: isMobile ? 8 : 0 }}
-                  showsVerticalScrollIndicator={true}
-                  nestedScrollEnabled
-                  keyboardShouldPersistTaps="handled"
-                >
+              {/* Panel de Configuraci�n */}
+              {showSettings && (
+                <View style={[styles.proModalCard, { margin: isMobile ? 0 : 12, marginTop: isMobile ? 10 : 12, marginBottom: 8 }]}>
+                  <Text style={styles.proModalSectionTitle}>
+                    {t('formations.displaySettings')}
+                  </Text>
 
-                {/* Selector de cantidad de jugadores (7, 8, 11) */}
-                <View style={{ flexDirection: 'row', marginHorizontal: isMobile ? 0 : 12, marginTop: 10, marginBottom: 4, borderRadius: 8, backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
-                  {[7, 8, 11].map(count => (
+                  {/* Selector de modo: N�mero o Posici�n */}
+                  <View style={[styles.proModalGrid, { marginBottom: 12 }]}>
                     <TouchableOpacity
-                      key={count}
-                      onPress={() => setSelectedPlayerCount(count)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: isMobile ? 8 : 10,
-                        backgroundColor: selectedPlayerCount === count ? '#2176ff' : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 8,
-                      }}
+                      onPress={() => setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode: 'number' }))}
+                      style={[
+                        styles.proModalGridItem,
+                        { flex: 1 },
+                        displayMode === 'number' && styles.proModalGridItemSelected
+                      ]}
                     >
-                      <Text style={{
-                        fontSize: isMobile ? 12 : 14,
-                        fontWeight: '700',
-                        color: selectedPlayerCount === count ? '#fff' : '#666',
-                      }}>
-                        {isMobile ? count : t('formations.playerCountLabel', { count })}
+                      <Text style={[
+                        styles.proModalChipText,
+                        displayMode === 'number' && styles.proModalChipTextSelected
+                      ]}>
+                        {t('formations.byNumber')}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
+                    <TouchableOpacity
+                      onPress={() => setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode: 'position' }))}
+                      style={[
+                        styles.proModalGridItem,
+                        { flex: 1 },
+                        displayMode === 'position' && styles.proModalGridItemSelected
+                      ]}
+                    >
+                      <Text style={[
+                        styles.proModalChipText,
+                        displayMode === 'position' && styles.proModalChipTextSelected
+                      ]}>
+                        {t('formations.byPosition')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-                {/* Panel de Configuraci�n */}
-                {showSettings && (
-                  <View style={[styles.proModalCard, { margin: isMobile ? 0 : 12, marginTop: isMobile ? 10 : 12, marginBottom: 8 }]}>
-                    <Text style={styles.proModalSectionTitle}>
-                      {t('formations.displaySettings')}
+                  {/* Color del n�mero/texto */}
+                  <View style={[styles.proModalRow, { marginBottom: 10 }]}>
+                    <Text style={styles.proModalHint}>
+                      {t('formations.textColor')}:
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => setNumberColorPickerVisible(true)}
+                      style={[
+                        styles.proModalColorBtnMobile,
+                        { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
+                      ]}
+                    />
+                  </View>
 
-                    {/* Selector de modo: N�mero o Posici�n */}
-                    <View style={[styles.proModalGrid, { marginBottom: 12 }]}>
-                      <TouchableOpacity
-                        onPress={() => setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode: 'number' }))}
-                        style={[
-                          styles.proModalGridItem,
-                          { flex: 1 },
-                          displayMode === 'number' && styles.proModalGridItemSelected
-                        ]}
-                      >
-                        <Text style={[
-                          styles.proModalChipText,
-                          displayMode === 'number' && styles.proModalChipTextSelected
-                        ]}>
-                          {t('formations.byNumber')}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => setFormationSettings && setFormationSettings(prev => ({ ...prev, displayMode: 'position' }))}
-                        style={[
-                          styles.proModalGridItem,
-                          { flex: 1 },
-                          displayMode === 'position' && styles.proModalGridItemSelected
-                        ]}
-                      >
-                        <Text style={[
-                          styles.proModalChipText,
-                          displayMode === 'position' && styles.proModalChipTextSelected
-                        ]}>
-                          {t('formations.byPosition')}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                  {/* Color del texto del nombre (debajo del icono) */}
+                  <View style={[styles.proModalRow, { marginBottom: 10 }]}>
+                    <Text style={styles.proModalHint}>
+                      {t('formations.nameTextColor')}:
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setTextColorPickerVisible(true)}
+                      style={[
+                        styles.proModalColorBtnMobile,
+                        { backgroundColor: textColor, borderColor: textColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
+                      ]}
+                    />
+                  </View>
 
-                    {/* Color del n�mero/texto */}
-                    <View style={[styles.proModalRow, { marginBottom: 10 }]}>
-                      <Text style={styles.proModalHint}>
-                        {t('formations.textColor')}:
+                  {/* Color del fondo del texto del nombre */}
+                  <View style={styles.proModalRow}>
+                    <Text style={styles.proModalHint}>
+                      {t('formations.nameBgColor')}:
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setTextBgColorPickerVisible(true)}
+                      style={[
+                        styles.proModalColorBtnMobile,
+                        {
+                          backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
+                          opacity: textBackgroundColor === 'transparent' ? 0.5 : 1
+                        }
+                      ]}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textBackgroundColor: 'transparent' }))}
+                      style={[
+                        styles.proModalChip,
+                        textBackgroundColor === 'transparent' && styles.proModalChipSelected
+                      ]}
+                    >
+                      <Text style={[
+                        styles.proModalChipText,
+                        { fontSize: 10 },
+                        textBackgroundColor === 'transparent' && styles.proModalChipTextSelected
+                      ]}>
+                        {t('common.transparent') || 'Transparente'}
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => setNumberColorPickerVisible(true)}
-                        style={[
-                          styles.proModalColorBtnMobile,
-                          { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
-                        ]}
-                      />
-                    </View>
+                    </TouchableOpacity>
+                  </View>
 
-                    {/* Color del texto del nombre (debajo del icono) */}
-                    <View style={[styles.proModalRow, { marginBottom: 10 }]}>
-                      <Text style={styles.proModalHint}>
-                        {t('formations.nameTextColor')}:
+                  {/* Configuraci�n de etiquetas de posiciones (solo si est� en modo posici�n) */}
+                  {displayMode === 'position' && (
+                    <View>
+                      <Text style={{ fontSize: isMobile ? 11 : 12, color: '#666', marginBottom: 6 }}>
+                        {t('formations.customLabels')} ({t('formations.max2chars')}):
                       </Text>
-                      <TouchableOpacity
-                        onPress={() => setTextColorPickerVisible(true)}
-                        style={[
-                          styles.proModalColorBtnMobile,
-                          { backgroundColor: textColor, borderColor: textColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
-                        ]}
-                      />
+                      <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                          {POSITION_TYPES.map(pos => (
+                            <View key={pos} style={{ width: '33%', paddingHorizontal: 2, marginBottom: 6 }}>
+                              <Text style={{ fontSize: isMobile ? 9 : 10, color: '#888' }}>{t(`formations.positions.${pos}`)}</Text>
+                              <TextInput
+                                value={customLabels[pos] || getDefaultPositionLabels()[pos]}
+                                onChangeText={(v) => handleLabelChange(pos, v)}
+                                maxLength={2}
+                                style={{
+                                  backgroundColor: '#fff',
+                                  borderRadius: 4,
+                                  paddingHorizontal: 6,
+                                  paddingVertical: 4,
+                                  fontSize: isMobile ? 11 : 12,
+                                  textAlign: 'center',
+                                  borderWidth: 1,
+                                  borderColor: '#ddd'
+                                }}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                      </ScrollView>
                     </View>
+                  )}
 
-                    {/* Color del fondo del texto del nombre */}
-                    <View style={styles.proModalRow}>
-                      <Text style={styles.proModalHint}>
-                        {t('formations.nameBgColor')}:
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setTextBgColorPickerVisible(true)}
-                        style={[
-                          styles.proModalColorBtnMobile,
-                          {
-                            backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
-                            opacity: textBackgroundColor === 'transparent' ? 0.5 : 1
-                          }
-                        ]}
-                      />
-                      <TouchableOpacity
-                        onPress={() => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textBackgroundColor: 'transparent' }))}
-                        style={[
-                          styles.proModalChip,
-                          textBackgroundColor === 'transparent' && styles.proModalChipSelected
-                        ]}
-                      >
-                        <Text style={[
-                          styles.proModalChipText,
-                          { fontSize: 10 },
-                          textBackgroundColor === 'transparent' && styles.proModalChipTextSelected
-                        ]}>
-                          {t('common.transparent') || 'Transparente'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                  {/* Bot�n para guardar la Configuraci�n en la base de datos */}
+                  <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (!onSaveFormationSettings) return;
+                        try {
+                          setSavingSettings(true);
+                          await onSaveFormationSettings();
+                        } finally {
+                          setSavingSettings(false);
+                        }
+                      }}
+                      style={{
+                        backgroundColor: '#2176ff',
+                        paddingVertical: isMobile ? 8 : 10,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        alignItems: 'center'
+                      }}
+                      disabled={savingSettings}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '600' }}>{savingSettings ? t('formations.saving') : t('formations.saveSettings')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
-                    {/* Configuraci�n de etiquetas de posiciones (solo si est� en modo posici�n) */}
-                    {displayMode === 'position' && (
-                      <View>
-                        <Text style={{ fontSize: isMobile ? 11 : 12, color: '#666', marginBottom: 6 }}>
-                          {t('formations.customLabels')} ({t('formations.max2chars')}):
-                        </Text>
-                        <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
-                          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                            {POSITION_TYPES.map(pos => (
-                              <View key={pos} style={{ width: '33%', paddingHorizontal: 2, marginBottom: 6 }}>
-                                <Text style={{ fontSize: isMobile ? 9 : 10, color: '#888' }}>{t(`formations.positions.${pos}`)}</Text>
-                                <TextInput
-                                  value={customLabels[pos] || getDefaultPositionLabels()[pos]}
-                                  onChangeText={(v) => handleLabelChange(pos, v)}
-                                  maxLength={2}
-                                  style={{
-                                    backgroundColor: '#fff',
-                                    borderRadius: 4,
-                                    paddingHorizontal: 6,
-                                    paddingVertical: 4,
-                                    fontSize: isMobile ? 11 : 12,
-                                    textAlign: 'center',
-                                    borderWidth: 1,
-                                    borderColor: '#ddd'
-                                  }}
-                                />
-                              </View>
-                            ))}
-                          </View>
-                        </ScrollView>
-                      </View>
+              {/* Target (Team / Opponent) - Mejorado */}
+              <View style={[styles.proModalCard, { flexDirection: 'row', padding: 4, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
+                <TouchableOpacity
+                  onPress={() => setIsOpponent(false)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: isMobile ? 10 : 12,
+                    paddingHorizontal: isMobile ? 12 : 16,
+                    borderRadius: 10,
+                    backgroundColor: !isOpponent ? '#2176ff' : 'transparent',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Feather name="users" size={isMobile ? 14 : 16} color={!isOpponent ? '#fff' : '#666'} style={{ marginRight: 6 }} />
+                  <Text style={{ color: !isOpponent ? '#fff' : '#666', fontWeight: '600', fontSize: isMobile ? 13 : 15 }}>{t('formations.team')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setIsOpponent(true)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: isMobile ? 10 : 12,
+                    paddingHorizontal: isMobile ? 12 : 16,
+                    borderRadius: 10,
+                    backgroundColor: isOpponent ? '#ff3b30' : 'transparent',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Feather name="shield" size={isMobile ? 14 : 16} color={isOpponent ? '#fff' : '#666'} style={{ marginRight: 6 }} />
+                  <Text style={{ color: isOpponent ? '#fff' : '#666', fontWeight: '600', fontSize: isMobile ? 13 : 15 }}>{t('formations.opponent')}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Checkbox jugadores reales - solo visible cuando no es rival */}
+              {!isOpponent && players.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setUseRealPlayers(!useRealPlayers)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                    padding: 12,
+                    backgroundColor: useRealPlayers ? '#e8f5e9' : '#f8f9fa',
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: useRealPlayers ? '#4caf50' : 'transparent'
+                  }}
+                >
+                  <View style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 6,
+                    borderWidth: 2,
+                    borderColor: useRealPlayers ? '#4caf50' : '#ccc',
+                    backgroundColor: useRealPlayers ? '#4caf50' : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12
+                  }}>
+                    {useRealPlayers && (
+                      <Feather name="check" size={16} color="#fff" />
                     )}
-
-                    {/* Bot�n para guardar la Configuraci�n en la base de datos */}
-                    <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                      <TouchableOpacity
-                        onPress={async () => {
-                          if (!onSaveFormationSettings) return;
-                          try {
-                            setSavingSettings(true);
-                            await onSaveFormationSettings();
-                          } finally {
-                            setSavingSettings(false);
-                          }
-                        }}
-                        style={{
-                          backgroundColor: '#2176ff',
-                          paddingVertical: isMobile ? 8 : 10,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          alignItems: 'center'
-                        }}
-                        disabled={savingSettings}
-                      >
-                        <Text style={{ color: '#fff', fontWeight: '600' }}>{savingSettings ? t('formations.saving') : t('formations.saveSettings')}</Text>
-                      </TouchableOpacity>
-                    </View>
                   </View>
-                )}
-
-                {/* Target (Team / Opponent) - Mejorado */}
-                <View style={[styles.proModalCard, { flexDirection: 'row', padding: 4, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
-                  <TouchableOpacity
-                    onPress={() => setIsOpponent(false)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: isMobile ? 10 : 12,
-                      paddingHorizontal: isMobile ? 12 : 16,
-                      borderRadius: 10,
-                      backgroundColor: !isOpponent ? '#2176ff' : 'transparent',
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Feather name="users" size={isMobile ? 14 : 16} color={!isOpponent ? '#fff' : '#666'} style={{ marginRight: 6 }} />
-                    <Text style={{ color: !isOpponent ? '#fff' : '#666', fontWeight: '600', fontSize: isMobile ? 13 : 15 }}>{t('formations.team')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setIsOpponent(true)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: isMobile ? 10 : 12,
-                      paddingHorizontal: isMobile ? 12 : 16,
-                      borderRadius: 10,
-                      backgroundColor: isOpponent ? '#ff3b30' : 'transparent',
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Feather name="shield" size={isMobile ? 14 : 16} color={isOpponent ? '#fff' : '#666'} style={{ marginRight: 6 }} />
-                    <Text style={{ color: isOpponent ? '#fff' : '#666', fontWeight: '600', fontSize: isMobile ? 13 : 15 }}>{t('formations.opponent')}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Checkbox jugadores reales - solo visible cuando no es rival */}
-                {!isOpponent && players.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => setUseRealPlayers(!useRealPlayers)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom: 10,
-                      padding: 12,
-                      backgroundColor: useRealPlayers ? '#e8f5e9' : '#f8f9fa',
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: useRealPlayers ? '#4caf50' : 'transparent'
-                    }}
-                  >
-                    <View style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 6,
-                      borderWidth: 2,
-                      borderColor: useRealPlayers ? '#4caf50' : '#ccc',
-                      backgroundColor: useRealPlayers ? '#4caf50' : 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12
-                    }}>
-                      {useRealPlayers && (
-                        <Feather name="check" size={16} color="#fff" />
-                      )}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: isMobile ? 13 : 14, color: useRealPlayers ? '#2e7d32' : '#333', fontWeight: '600' }}>
-                        {t('formations.realPlayers')}
-                      </Text>
-                      <Text style={{ fontSize: isMobile ? 10 : 11, color: '#999', marginTop: 2 }}>
-                        {t('formations.realPlayersHint')}
-                      </Text>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={useRealPlayers ? '#4caf50' : '#ccc'} />
-                  </TouchableOpacity>
-                )}
-
-                {/* Compact Color & Size controls */}
-                <View style={[styles.proModalCard, { flexDirection: 'row', alignItems: 'center', padding: isMobile ? 10 : 12, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
-                  <TouchableOpacity
-                    onPress={() => setColorPickerVisible(true)}
-                    style={{
-                      width: isMobile ? 40 : 48,
-                      height: isMobile ? 40 : 48,
-                      borderRadius: 10,
-                      backgroundColor: selectedColor,
-                      borderWidth: 3,
-                      borderColor: '#fff',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 4,
-                      elevation: 3
-                    }}
-                  />
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={{ fontSize: isMobile ? 11 : 12, color: '#888', marginBottom: 4, fontWeight: '500' }}>
-                      {t('formations.playerSize')}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: isMobile ? 13 : 14, color: useRealPlayers ? '#2e7d32' : '#333', fontWeight: '600' }}>
+                      {t('formations.realPlayers')}
                     </Text>
-                    <View style={styles.proModalStepperRow}>
-                      <TouchableOpacity
-                        style={styles.proModalStepperBtn}
-                        onPress={() => {
-                          setSelectedSize(s => {
-                            const newSize = String(Math.max(8, parseInt(s) - 1 || 23));
-                            setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, size: parseInt(newSize) }));
-                            return newSize;
-                          });
-                        }}
-                      >
-                        <Feather name="minus" size={18} color="#666" />
-                      </TouchableOpacity>
-                      <View style={styles.proModalStepperValue}>
-                        <Text style={styles.proModalStepperValueText}>{selectedSize}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.proModalStepperBtn}
-                        onPress={() => {
-                          setSelectedSize(s => {
-                            const newSize = String(Math.min(96, parseInt(s) + 1 || 25));
-                            setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, size: parseInt(newSize) }));
-                            return newSize;
-                          });
-                        }}
-                      >
-                        <Feather name="plus" size={18} color="#666" />
-                      </TouchableOpacity>
-                    </View>
+                    <Text style={{ fontSize: isMobile ? 10 : 11, color: '#999', marginTop: 2 }}>
+                      {t('formations.realPlayersHint')}
+                    </Text>
                   </View>
-                </View>
+                  <Feather name="chevron-right" size={18} color={useRealPlayers ? '#4caf50' : '#ccc'} />
+                </TouchableOpacity>
+              )}
 
-                {/* Grid de formaciones */}
-                <View style={{ flex: 1, marginTop: 4, minHeight: isMobile ? 160 : 200 }}>
-                  <Text style={{ fontSize: isMobile ? 11 : 12, color: '#888', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {t('formations.selectFormation')}
-                  </Text>
-                  <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                      {formationKeys.map((key, index) => (
-                        <TouchableOpacity
-                          key={key}
-                          style={{
-                            width: '48%',
-                            minHeight: isMobile ? 96 : 112,
-                            paddingVertical: isMobile ? 12 : 18,
-                            paddingHorizontal: isMobile ? 8 : 14,
-                            marginBottom: isMobile ? 8 : 12,
-                            backgroundColor: '#fff',
-                            borderRadius: 12,
-                            borderWidth: 2,
-                            borderColor: isOpponent ? '#ff3b30' : '#2176ff',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.08,
-                            shadowRadius: 4,
-                            elevation: 2,
-                          }}
-                          onPress={() => {
-                            handleSelectFormation(key);
-                            // Solo cerrar si NO usamos jugadores reales (porque abrir� el selector)
-                            if (!useRealPlayers || isOpponent) {
-                              onClose();
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          {/* Icono de formaci�n mini */}
-                          <View style={{
-                            width: isMobile ? 44 : 50,
-                            height: isMobile ? 30 : 32,
-                            backgroundColor: isOpponent ? 'rgba(255,59,48,0.1)' : 'rgba(33,118,255,0.1)',
-                            borderRadius: 6,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 6
-                          }}>
-                            <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>⚽</Text>
-                          </View>
-                          <Text style={{
-                            fontSize: isMobile ? 15 : 20,
-                            fontWeight: '700',
-                            color: isOpponent ? '#ff3b30' : '#2176ff',
-                            letterSpacing: 0.5,
-                          }}>
-                            {currentFormations[key].name}
-                          </Text>
-                          <Text style={{
-                            fontSize: isMobile ? 10 : 11,
-                            color: '#999',
-                            marginTop: 2,
-                          }}>
-                            {currentFormations[key].positions.length} {t('formations.players').toLowerCase()}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-                </ScrollView>
-
-                {/* Footer con botones */}
-                <View style={styles.proModalFooter}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Alert.alert(
-                        t('formations.delete'),
-                        t('formations.deleteConfirm', { side: isOpponent ? t('formations.opponent') : t('formations.team') }),
-                        [
-                          { text: t('common.cancel'), style: 'cancel' },
-                          { text: t('formations.delete'), style: 'destructive', onPress: () => { onDeleteFormation && onDeleteFormation(isOpponent ? 'opponent' : 'team'); onClose(); } }
-                        ]
-                      );
-                    }}
-                    style={[styles.proModalBtn, { backgroundColor: '#dc3545', flex: 1, marginRight: 8 }]}
-                  >
-                    <Feather name="trash-2" size={14} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>{t('formations.delete')}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={onClose}
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.close')}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <MiniColorPickerModal
-                  visible={colorPickerVisible}
-                  initialColor={selectedColor}
-                  onClose={() => setColorPickerVisible(false)}
-                  onSelect={(c) => {
-                    setSelectedColor(c);
-                    if (!isOpponent) {
-                      setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, color: c }));
-                    }
+              {/* Compact Color & Size controls */}
+              <View style={[styles.proModalCard, { flexDirection: 'row', alignItems: 'center', padding: isMobile ? 10 : 12, marginHorizontal: 0, marginTop: 8, marginBottom: 10 }]}>
+                <TouchableOpacity
+                  onPress={() => setColorPickerVisible(true)}
+                  style={{
+                    width: isMobile ? 40 : 48,
+                    height: isMobile ? 40 : 48,
+                    borderRadius: 10,
+                    backgroundColor: selectedColor,
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    elevation: 3
                   }}
                 />
+                <View style={{ flex: 1, marginLeft: 14 }}>
+                  <Text style={{ fontSize: isMobile ? 11 : 12, color: '#888', marginBottom: 4, fontWeight: '500' }}>
+                    {t('formations.playerSize')}
+                  </Text>
+                  <View style={styles.proModalStepperRow}>
+                    <TouchableOpacity
+                      style={styles.proModalStepperBtn}
+                      onPress={() => {
+                        setSelectedSize(s => {
+                          const newSize = String(Math.max(8, parseInt(s) - 1 || 23));
+                          setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, size: parseInt(newSize) }));
+                          return newSize;
+                        });
+                      }}
+                    >
+                      <Feather name="minus" size={18} color="#666" />
+                    </TouchableOpacity>
+                    <View style={styles.proModalStepperValue}>
+                      <Text style={styles.proModalStepperValueText}>{selectedSize}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.proModalStepperBtn}
+                      onPress={() => {
+                        setSelectedSize(s => {
+                          const newSize = String(Math.min(96, parseInt(s) + 1 || 25));
+                          setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, size: parseInt(newSize) }));
+                          return newSize;
+                        });
+                      }}
+                    >
+                      <Feather name="plus" size={18} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
 
-                <MiniColorPickerModal
-                  visible={numberColorPickerVisible}
-                  initialColor={numberColor}
-                  onClose={() => setNumberColorPickerVisible(false)}
-                  onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, numberColor: c }))}
-                />
-
-                <MiniColorPickerModal
-                  visible={textColorPickerVisible}
-                  initialColor={textColor}
-                  onClose={() => setTextColorPickerVisible(false)}
-                  onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textColor: c }))}
-                />
-
-                <MiniColorPickerModal
-                  visible={textBgColorPickerVisible}
-                  initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
-                  onClose={() => setTextBgColorPickerVisible(false)}
-                  onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textBackgroundColor: c }))}
-                />
-
-                {/* Modal de selecci�n de jugadores */}
-                <Modal
-                  animationType="slide"
-                  transparent={true}
-                  visible={playerSelectorVisible}
-                  onRequestClose={() => setPlayerSelectorVisible(false)}
-                  statusBarTranslucent={true}
-                >
-                  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-                    <View style={{
-                      width: isMobile ? SCREEN_WIDTH * 0.9 : 450,
-                      maxHeight: SCREEN_HEIGHT * 0.8,
-                      backgroundColor: '#fff',
-                      borderRadius: 16,
-                      overflow: 'hidden'
-                    }}>
-                      {/* Header */}
-                      <View style={{
-                        backgroundColor: '#2176ff',
-                        padding: 16,
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <View>
-                          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
-                            {t('formations.selectPlayers')}
-                          </Text>
-                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2 }}>
-                            {t('formations.selectedCount', { count: selectedPlayers.length })}/{selectedPlayerCount}
-                          </Text>
+              {/* Grid de formaciones */}
+              <View style={{ flex: 1, marginTop: 4, minHeight: isMobile ? 160 : 200 }}>
+                <Text style={{ fontSize: isMobile ? 11 : 12, color: '#888', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {t('formations.selectFormation')}
+                </Text>
+                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                    {formationKeys.map((key, index) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={{
+                          width: '48%',
+                          minHeight: isMobile ? 96 : 112,
+                          paddingVertical: isMobile ? 12 : 18,
+                          paddingHorizontal: isMobile ? 8 : 14,
+                          marginBottom: isMobile ? 8 : 12,
+                          backgroundColor: '#fff',
+                          borderRadius: 12,
+                          borderWidth: 2,
+                          borderColor: isOpponent ? '#ff3b30' : '#2176ff',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        }}
+                        onPress={() => {
+                          handleSelectFormation(key);
+                          // Solo cerrar si NO usamos jugadores reales (porque abrir� el selector)
+                          if (!useRealPlayers || isOpponent) {
+                            onClose();
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        {/* Icono de formaci�n mini */}
+                        <View style={{
+                          width: isMobile ? 44 : 50,
+                          height: isMobile ? 30 : 32,
+                          backgroundColor: isOpponent ? 'rgba(255,59,48,0.1)' : 'rgba(33,118,255,0.1)',
+                          borderRadius: 6,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: 6
+                        }}>
+                          <Text style={{ fontSize: isMobile ? 11 : 12, color: isOpponent ? '#ff3b30' : '#2176ff' }}>⚽</Text>
                         </View>
-                        <TouchableOpacity onPress={() => setPlayerSelectorVisible(false)}>
-                          <Feather name="x" size={24} color="#fff" />
-                        </TouchableOpacity>
-                      </View>
+                        <Text style={{
+                          fontSize: isMobile ? 15 : 20,
+                          fontWeight: '700',
+                          color: isOpponent ? '#ff3b30' : '#2176ff',
+                          letterSpacing: 0.5,
+                        }}>
+                          {currentFormations[key].name}
+                        </Text>
+                        <Text style={{
+                          fontSize: isMobile ? 10 : 11,
+                          color: '#999',
+                          marginTop: 2,
+                        }}>
+                          {currentFormations[key].positions.length} {t('formations.players').toLowerCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            </ScrollView>
 
-                      {/* Toggle mostrar fotos */}
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: 12,
-                        backgroundColor: '#f8f9fa',
-                        borderBottomWidth: 1,
-                        borderBottomColor: '#eee'
-                      }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          <Feather name="camera" size={18} color="#666" style={{ marginRight: 10 }} />
-                          <View>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#333' }}>
-                              {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
-                            </Text>
-                            <Text style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                              {t('formations.showPhotosInFormation') || 'Mostrar foto en lugar de n�mero'}
-                            </Text>
-                          </View>
-                        </View>
-                        <Switch
-                          value={teamPlayerStyle?.showPhotos || false}
-                          onValueChange={(val) => {
-                            setTeamPlayerStyle && setTeamPlayerStyle(prev => ({
-                              ...prev,
-                              showPhotos: val,
-                              // Si se activan fotos, desactivar mostrar posici�n
-                              showPosition: val ? false : prev.showPosition
-                            }));
-                          }}
-                          trackColor={{ false: "#ddd", true: "#81b0ff" }}
-                          thumbColor={teamPlayerStyle?.showPhotos ? "#2176ff" : "#f4f3f4"}
-                        />
-                      </View>
+            {/* Footer con botones */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    t('formations.delete'),
+                    t('formations.deleteConfirm', { side: isOpponent ? t('formations.opponent') : t('formations.team') }),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      { text: t('formations.delete'), style: 'destructive', onPress: () => { onDeleteFormation && onDeleteFormation(isOpponent ? 'opponent' : 'team'); onClose(); } }
+                    ]
+                  );
+                }}
+                style={[styles.proModalBtn, { backgroundColor: '#dc3545', flex: 1, marginRight: 8 }]}
+              >
+                <Feather name="trash-2" size={14} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>{t('formations.delete')}</Text>
+              </TouchableOpacity>
 
-                      {/* Lista de jugadores */}
-                      <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5, padding: 12 }}>
-                        {sortedPlayers.length === 0 ? (
-                          <View style={{ padding: 20, alignItems: 'center' }}>
-                            <Feather name="users" size={48} color="#ccc" />
-                            <Text style={{ color: '#999', marginTop: 12, textAlign: 'center' }}>
-                              {t('formations.noPlayersAvailable')}
-                            </Text>
-                          </View>
-                        ) : (
-                          sortedPlayers.map((player) => {
-                            const isSelected = selectedPlayers.some(p => p._id === player._id);
-                            const positionLabels = {
-                              'portero': 'POR',
-                              'central': 'DEF',
-                              'lateral': 'LAT',
-                              'centrocampista': 'MED',
-                              'extremo': 'EXT',
-                              'delantero': 'DEL'
-                            };
-                            return (
-                              <TouchableOpacity
-                                key={player._id}
-                                onPress={() => togglePlayerSelection(player)}
-                                style={{
-                                  flexDirection: 'row',
-                                  alignItems: 'center',
-                                  padding: 12,
-                                  marginBottom: 8,
-                                  backgroundColor: isSelected ? '#e3f2fd' : '#f5f5f5',
-                                  borderRadius: 10,
-                                  borderWidth: 2,
-                                  borderColor: isSelected ? '#2176ff' : 'transparent'
-                                }}
-                              >
-                                {/* Checkbox */}
-                                <View style={{
-                                  width: 24,
-                                  height: 24,
-                                  borderRadius: 12,
-                                  borderWidth: 2,
-                                  borderColor: isSelected ? '#2176ff' : '#ccc',
-                                  backgroundColor: isSelected ? '#2176ff' : 'transparent',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  marginRight: 12
-                                }}>
-                                  {isSelected && <Feather name="check" size={14} color="#fff" />}
-                                </View>
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.close')}</Text>
+              </TouchableOpacity>
+            </View>
 
-                                {/* Dorsal o Foto */}
-                                <View style={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 18,
-                                  backgroundColor: teamPlayerStyle?.showPhotos && player.foto ? 'transparent' : selectedColor,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  marginRight: 12,
-                                  borderWidth: teamPlayerStyle?.showPhotos && player.foto ? 2 : 0,
-                                  borderColor: selectedColor,
-                                  overflow: 'hidden',
-                                }}>
-                                  {teamPlayerStyle?.showPhotos && player.foto ? (
-                                    <Image
-                                      source={{ uri: cdnUrl(player.foto) }}
-                                      style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 16,
-                                      }}
-                                      resizeMode="cover"
-                                    />
-                                  ) : (
-                                    <Text style={{ color: numberColor, fontWeight: 'bold', fontSize: 14 }}>
-                                      {player.dorsal || '?'}
-                                    </Text>
-                                  )}
-                                </View>
+            <MiniColorPickerModal
+              visible={colorPickerVisible}
+              initialColor={selectedColor}
+              onClose={() => setColorPickerVisible(false)}
+              onSelect={(c) => {
+                setSelectedColor(c);
+                if (!isOpponent) {
+                  setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, color: c }));
+                }
+              }}
+            />
 
-                                {/* Info del jugador */}
-                                <View style={{ flex: 1 }}>
-<Text style={{ fontWeight: '600', fontSize: 14, color: '#333' }}>
-                                    {getPlayerFullName(player)}
-                                  </Text>
-                                  <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
-                                    {positionLabels[player.posicion] || player.posicion || '-'}
-                                  </Text>
-                                </View>
+            <MiniColorPickerModal
+              visible={numberColorPickerVisible}
+              initialColor={numberColor}
+              onClose={() => setNumberColorPickerVisible(false)}
+              onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, numberColor: c }))}
+            />
 
-                                {/* Badge de posici�n */}
-                                <View style={{
-                                  paddingHorizontal: 8,
-                                  paddingVertical: 4,
-                                  borderRadius: 4,
-                                  backgroundColor: player.posicion === 'portero' ? '#ff9800' :
-                                                   player.posicion === 'central' || player.posicion === 'lateral' ? '#4caf50' :
-                                                   player.posicion === 'centrocampista' ? '#2196f3' :
-                                                   player.posicion === 'extremo' || player.posicion === 'delantero' ? '#f44336' : '#9e9e9e'
-                                }}>
-                                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                                    {positionLabels[player.posicion] || '?'}
-                                  </Text>
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })
-                        )}
-                      </ScrollView>
+            <MiniColorPickerModal
+              visible={textColorPickerVisible}
+              initialColor={textColor}
+              onClose={() => setTextColorPickerVisible(false)}
+              onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textColor: c }))}
+            />
 
-                      {/* Footer con botones */}
-                      <View style={{
-                        flexDirection: 'row',
-                        padding: 12,
-                        borderTopWidth: 1,
-                        borderTopColor: '#eee'
-                      }}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setPlayerSelectorVisible(false);
-                            setSelectedPlayers([]);
-                          }}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 12,
-                            borderRadius: 8,
-                            backgroundColor: '#f5f5f5',
-                            alignItems: 'center',
-                            marginRight: 8
-                          }}
-                        >
-                          <Text style={{ color: '#666', fontWeight: '600' }}>{t('common.cancel')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={handleConfirmPlayers}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 12,
-                            borderRadius: 8,
-                            backgroundColor: selectedPlayers.length > 0 ? '#2176ff' : '#ccc',
-                            alignItems: 'center'
-                          }}
-                          disabled={selectedPlayers.length === 0}
-                        >
-                          <Text style={{ color: '#fff', fontWeight: '600' }}>
-                            {t('formations.confirm')} ({selectedPlayers.length})
-                          </Text>
-                        </TouchableOpacity>
+            <MiniColorPickerModal
+              visible={textBgColorPickerVisible}
+              initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
+              onClose={() => setTextBgColorPickerVisible(false)}
+              onSelect={(c) => setTeamPlayerStyle && setTeamPlayerStyle(prev => ({ ...prev, textBackgroundColor: c }))}
+            />
+
+            {/* Modal de selecci�n de jugadores */}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={playerSelectorVisible}
+              onRequestClose={() => setPlayerSelectorVisible(false)}
+              statusBarTranslucent={true}
+            >
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{
+                  width: isMobile ? SCREEN_WIDTH * 0.9 : 450,
+                  maxHeight: SCREEN_HEIGHT * 0.8,
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  overflow: 'hidden'
+                }}>
+                  {/* Header */}
+                  <View style={{
+                    backgroundColor: '#2176ff',
+                    padding: 16,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <View>
+                      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
+                        {t('formations.selectPlayers')}
+                      </Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2 }}>
+                        {t('formations.selectedCount', { count: selectedPlayers.length })}/{selectedPlayerCount}
+                      </Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setPlayerSelectorVisible(false)}>
+                      <Feather name="x" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Toggle mostrar fotos */}
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 12,
+                    backgroundColor: '#f8f9fa',
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#eee'
+                  }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <Feather name="camera" size={18} color="#666" style={{ marginRight: 10 }} />
+                      <View>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#333' }}>
+                          {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                          {t('formations.showPhotosInFormation') || 'Mostrar foto en lugar de n�mero'}
+                        </Text>
                       </View>
                     </View>
+                    <Switch
+                      value={teamPlayerStyle?.showPhotos || false}
+                      onValueChange={(val) => {
+                        setTeamPlayerStyle && setTeamPlayerStyle(prev => ({
+                          ...prev,
+                          showPhotos: val,
+                          // Si se activan fotos, desactivar mostrar posici�n
+                          showPosition: val ? false : prev.showPosition
+                        }));
+                      }}
+                      trackColor={{ false: "#ddd", true: "#81b0ff" }}
+                      thumbColor={teamPlayerStyle?.showPhotos ? "#2176ff" : "#f4f3f4"}
+                    />
                   </View>
-                </Modal>
 
+                  {/* Lista de jugadores */}
+                  <ScrollView style={{ maxHeight: SCREEN_HEIGHT * 0.5, padding: 12 }}>
+                    {sortedPlayers.length === 0 ? (
+                      <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Feather name="users" size={48} color="#ccc" />
+                        <Text style={{ color: '#999', marginTop: 12, textAlign: 'center' }}>
+                          {t('formations.noPlayersAvailable')}
+                        </Text>
+                      </View>
+                    ) : (
+                      sortedPlayers.map((player) => {
+                        const isSelected = selectedPlayers.some(p => p._id === player._id);
+                        const positionLabels = {
+                          'portero': 'POR',
+                          'central': 'DEF',
+                          'lateral': 'LAT',
+                          'centrocampista': 'MED',
+                          'extremo': 'EXT',
+                          'delantero': 'DEL'
+                        };
+                        return (
+                          <TouchableOpacity
+                            key={player._id}
+                            onPress={() => togglePlayerSelection(player)}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              padding: 12,
+                              marginBottom: 8,
+                              backgroundColor: isSelected ? '#e3f2fd' : '#f5f5f5',
+                              borderRadius: 10,
+                              borderWidth: 2,
+                              borderColor: isSelected ? '#2176ff' : 'transparent'
+                            }}
+                          >
+                            {/* Checkbox */}
+                            <View style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: 12,
+                              borderWidth: 2,
+                              borderColor: isSelected ? '#2176ff' : '#ccc',
+                              backgroundColor: isSelected ? '#2176ff' : 'transparent',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 12
+                            }}>
+                              {isSelected && <Feather name="check" size={14} color="#fff" />}
+                            </View>
+
+                            {/* Dorsal o Foto */}
+                            <View style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
+                              backgroundColor: teamPlayerStyle?.showPhotos && player.foto ? 'transparent' : selectedColor,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 12,
+                              borderWidth: teamPlayerStyle?.showPhotos && player.foto ? 2 : 0,
+                              borderColor: selectedColor,
+                              overflow: 'hidden',
+                            }}>
+                              {teamPlayerStyle?.showPhotos && player.foto ? (
+                                <Image
+                                  source={{ uri: cdnUrl(player.foto) }}
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                  }}
+                                  resizeMode="cover"
+                                />
+                              ) : (
+                                <Text style={{ color: numberColor, fontWeight: 'bold', fontSize: 14 }}>
+                                  {player.dorsal || '?'}
+                                </Text>
+                              )}
+                            </View>
+
+                            {/* Info del jugador */}
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontWeight: '600', fontSize: 14, color: '#333' }}>
+                                {getPlayerFullName(player)}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                                {positionLabels[player.posicion] || player.posicion || '-'}
+                              </Text>
+                            </View>
+
+                            {/* Badge de posici�n */}
+                            <View style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 4,
+                              borderRadius: 4,
+                              backgroundColor: player.posicion === 'portero' ? '#ff9800' :
+                                player.posicion === 'central' || player.posicion === 'lateral' ? '#4caf50' :
+                                  player.posicion === 'centrocampista' ? '#2196f3' :
+                                    player.posicion === 'extremo' || player.posicion === 'delantero' ? '#f44336' : '#9e9e9e'
+                            }}>
+                              <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
+                                {positionLabels[player.posicion] || '?'}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </ScrollView>
+
+                  {/* Footer con botones */}
+                  <View style={{
+                    flexDirection: 'row',
+                    padding: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: '#eee'
+                  }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setPlayerSelectorVisible(false);
+                        setSelectedPlayers([]);
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        backgroundColor: '#f5f5f5',
+                        alignItems: 'center',
+                        marginRight: 8
+                      }}
+                    >
+                      <Text style={{ color: '#666', fontWeight: '600' }}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleConfirmPlayers}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        backgroundColor: selectedPlayers.length > 0 ? '#2176ff' : '#ccc',
+                        alignItems: 'center'
+                      }}
+                      disabled={selectedPlayers.length === 0}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '600' }}>
+                        {t('formations.confirm')} ({selectedPlayers.length})
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
+            </Modal>
+
+          </View>
         </View>
       </View>
     </Modal>
@@ -4882,52 +4945,52 @@ function FieldCarouselModal({
               </TouchableOpacity>
             </View>
 
-          <ScrollView contentContainerStyle={styles.proModalBody}>
-            {FIELD_IMAGES.map((field, idx) => (
+            <ScrollView contentContainerStyle={styles.proModalBody}>
+              {FIELD_IMAGES.map((field, idx) => (
+                <TouchableOpacity
+                  key={field.id}
+                  style={[
+                    styles.proModalCard,
+                    { padding: 14, marginBottom: 8 },
+                    carouselIndex === idx && {
+                      backgroundColor: '#e8f4ff',
+                      borderColor: '#2176ff',
+                      borderWidth: 2
+                    }
+                  ]}
+                  onPress={() => setCarouselIndex(idx)}
+                >
+                  <Text style={[
+                    { fontSize: 15, color: '#333' },
+                    carouselIndex === idx && { fontWeight: '600', color: '#2176ff' }
+                  ]}>
+                    {t(`field.images.${field.id}`) || field.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
               <TouchableOpacity
-                key={field.id}
-                style={[
-                  styles.proModalCard,
-                  { padding: 14, marginBottom: 8 },
-                  carouselIndex === idx && {
-                    backgroundColor: '#e8f4ff',
-                    borderColor: '#2176ff',
-                    borderWidth: 2
-                  }
-                ]}
-                onPress={() => setCarouselIndex(idx)}
+                style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                onPress={closeCarouselModal}
               >
-                <Text style={[
-                  { fontSize: 15, color: '#333' },
-                  carouselIndex === idx && { fontWeight: '600', color: '#2176ff' }
-                ]}>
-                  {t(`field.images.${field.id}`) || field.label}
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.formationModal.cancel')}
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.proModalFooter}>
-            <TouchableOpacity
-              style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-              onPress={closeCarouselModal}
-            >
-              <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                {t('tacticalBoard.formationModal.cancel')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.proModalBtn, styles.proModalBtnPrimary]}
-              onPress={() => handleFieldChangeFromCarousel(carouselIndex)}
-            >
-              <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                {t('tacticalBoard.formationModal.select')}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                onPress={() => handleFieldChangeFromCarousel(carouselIndex)}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                  {t('tacticalBoard.formationModal.select')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
       </SafeAreaView>
     </Modal>
   );
@@ -5047,7 +5110,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         </View>
       );
     case 'ball':
-      return <BallImage size={size} />;
+      return <BallImage size={size} rotation={rotation} />;
     case 'ball-shadow': {
       const shadowScale = typeof icon.shadowScale === 'number' ? icon.shadowScale : 0.8;
       const shadowOpacity = typeof icon.opacity === 'number' ? icon.opacity : 0.35;
@@ -5206,7 +5269,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
           <Svg width={size} height={size}>
             <Path
-              d={`M${size*0.2},${size*0.5} Q${size*0.5},${size*0.2} ${size*0.8},${size*0.5}`}
+              d={`M${size * 0.2},${size * 0.5} Q${size * 0.5},${size * 0.2} ${size * 0.8},${size * 0.5}`}
               stroke={color}
               strokeWidth={icon.thickness || 1.2}
               strokeDasharray={curveDashArray}
@@ -5223,7 +5286,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
           <Svg width={size} height={size}>
             <Path
-              d={`M${size*0.2},${size*0.5} Q${size*0.5},${size*0.2} ${size*0.8},${size*0.5}`}
+              d={`M${size * 0.2},${size * 0.5} Q${size * 0.5},${size * 0.2} ${size * 0.8},${size * 0.5}`}
               stroke={color}
               strokeWidth={icon.thickness || 1.2}
               strokeDasharray={curveArrowDashArray}
@@ -5231,7 +5294,7 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
               strokeLinecap="round"
             />
             <Polygon
-              points={`${size*0.9},${size*0.55} ${size*0.7},${size*0.25} ${size*0.65},${size*0.55}`}
+              points={`${size * 0.9},${size * 0.55} ${size * 0.7},${size * 0.25} ${size * 0.65},${size * 0.55}`}
               fill={color}
             />
           </Svg>
@@ -5275,25 +5338,25 @@ function renderIconCanvas(icon, size = 24, rotation = 0, number = undefined, pla
         </View>
       );
     case 'custom-shape-button':
-    // IMPORTANTE: Este case solo debe usarse en la paleta, NUNCA en el canvas
-    if (!icon.inPalette) {
-      return null; // No renderizar si no est� expl�citamente marcado como de paleta
-    }
+      // IMPORTANTE: Este case solo debe usarse en la paleta, NUNCA en el canvas
+      if (!icon.inPalette) {
+        return null; // No renderizar si no est� expl�citamente marcado como de paleta
+      }
 
-    return (
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={size} height={size}>
-          {/* Icono de l�piz/estrella para representar dibujo libre */}
-          <Path
-            d={`M${size*0.5},${size*0.1} L${size*0.7},${size*0.4} L${size*0.9},${size*0.45} L${size*0.7},${size*0.6} L${size*0.8},${size*0.9} L${size*0.5},${size*0.7} L${size*0.2},${size*0.9} L${size*0.3},${size*0.6} L${size*0.1},${size*0.45} L${size*0.3},${size*0.4} Z`}
-            stroke={color}
-            strokeWidth={1.2}
-            fill="none"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </View>
-    );
+      return (
+        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={size} height={size}>
+            {/* Icono de l�piz/estrella para representar dibujo libre */}
+            <Path
+              d={`M${size * 0.5},${size * 0.1} L${size * 0.7},${size * 0.4} L${size * 0.9},${size * 0.45} L${size * 0.7},${size * 0.6} L${size * 0.8},${size * 0.9} L${size * 0.5},${size * 0.7} L${size * 0.2},${size * 0.9} L${size * 0.3},${size * 0.6} L${size * 0.1},${size * 0.45} L${size * 0.3},${size * 0.4} Z`}
+              stroke={color}
+              strokeWidth={1.2}
+              fill="none"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </View>
+      );
 
     case 'team-players':
       return (
@@ -5339,25 +5402,25 @@ const MemoizedIcon = React.memo(({ icon, size, rotation, number, playersWithNumb
 }, (prevProps, nextProps) => {
   // Solo re-renderizar si cambian las props relevantes
   return prevProps.size === nextProps.size &&
-         prevProps.rotation === nextProps.rotation &&
-         prevProps.number === nextProps.number &&
-         prevProps.icon.color === nextProps.icon.color &&
-         prevProps.icon.type === nextProps.icon.type &&
-         prevProps.icon.lineType === nextProps.icon.lineType &&
-         prevProps.icon.fillColor === nextProps.icon.fillColor &&
-         prevProps.icon.thickness === nextProps.icon.thickness &&
-         prevProps.icon.dotSize === nextProps.icon.dotSize &&
-         prevProps.icon.dotSpacing === nextProps.icon.dotSpacing &&
-         prevProps.icon._lastUpdate === nextProps.icon._lastUpdate &&
-         prevProps.playersWithNumber === nextProps.playersWithNumber &&
-         prevProps.displayLabel === nextProps.displayLabel &&
-         prevProps.numberColor === nextProps.numberColor &&
-         prevProps.icon.numberColor === nextProps.icon.numberColor &&
-         prevProps.isGoalkeeper === nextProps.isGoalkeeper &&
-         prevProps.differentiateGoalkeeper === nextProps.differentiateGoalkeeper &&
-         prevProps.goalkeeperStripeColor === nextProps.goalkeeperStripeColor &&
-         prevProps.showPhotos === nextProps.showPhotos &&
-         prevProps.photoUrl === nextProps.photoUrl;
+    prevProps.rotation === nextProps.rotation &&
+    prevProps.number === nextProps.number &&
+    prevProps.icon.color === nextProps.icon.color &&
+    prevProps.icon.type === nextProps.icon.type &&
+    prevProps.icon.lineType === nextProps.icon.lineType &&
+    prevProps.icon.fillColor === nextProps.icon.fillColor &&
+    prevProps.icon.thickness === nextProps.icon.thickness &&
+    prevProps.icon.dotSize === nextProps.icon.dotSize &&
+    prevProps.icon.dotSpacing === nextProps.icon.dotSpacing &&
+    prevProps.icon._lastUpdate === nextProps.icon._lastUpdate &&
+    prevProps.playersWithNumber === nextProps.playersWithNumber &&
+    prevProps.displayLabel === nextProps.displayLabel &&
+    prevProps.numberColor === nextProps.numberColor &&
+    prevProps.icon.numberColor === nextProps.icon.numberColor &&
+    prevProps.isGoalkeeper === nextProps.isGoalkeeper &&
+    prevProps.differentiateGoalkeeper === nextProps.differentiateGoalkeeper &&
+    prevProps.goalkeeperStripeColor === nextProps.goalkeeperStripeColor &&
+    prevProps.showPhotos === nextProps.showPhotos &&
+    prevProps.photoUrl === nextProps.photoUrl;
 });
 
 // Componente memoizado completo para cada icono individual
@@ -5423,14 +5486,14 @@ const DraggableIcon = React.memo(({
   const tapRef = useRef(null);
 
   const isDrawingMode = drawingStates?.drawingStraightArrow || drawingStates?.drawingStraightLine ||
-                        drawingStates?.drawingCurveArrow || drawingStates?.drawingCurveLine ||
-                        drawingStates?.drawingCircle || drawingStates?.drawingRectangle ||
-                        drawingStates?.drawingCustomShape || drawingStates?.eraserMode;
+    drawingStates?.drawingCurveArrow || drawingStates?.drawingCurveLine ||
+    drawingStates?.drawingCircle || drawingStates?.drawingRectangle ||
+    drawingStates?.drawingCustomShape || drawingStates?.eraserMode;
 
   // OPTIMIZACIÓN: Usar Set para b�squeda O(1) si est� disponible
   const isSelected = selectedCloneIdsSet ? selectedCloneIdsSet.has(icon.id) : selectedCloneIds.includes(icon.id);
   const canDrag = !icon.locked && !isDrawingMode &&
-                  (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
+    (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
 
   // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
   const isOutsideInMultiDrag = ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && selectionInteractionMode === 'move' && isSelected &&
@@ -5464,7 +5527,7 @@ const DraggableIcon = React.memo(({
     };
   }, []);
 
-return (
+  return (
     <View
       pointerEvents="box-none"
       style={{
@@ -5476,423 +5539,423 @@ return (
         zIndex: icon.calculatedZIndex || (icon.locked === true ? 1 : (icon.zIndex || 200)),
       }}
     >
-    {/* Indicador visual de zona de eliminacion - se renderiza FUERA del wrapper
+      {/* Indicador visual de zona de eliminacion - se renderiza FUERA del wrapper
         escalado/opacado para que sea nitido y completamente visible (mismo
         comportamiento que ahora tiene el texto al sacarse de la pizarra). */}
-    {showDeleteIndicator && (
-      <View pointerEvents="none" style={{
-        position: 'absolute',
-        top: -12,
-        left: -12,
-        right: -12,
-        bottom: -12,
-        borderRadius: (size + 24) / 2,
-        borderWidth: 3,
-        borderColor: '#e74c3c',
-        borderStyle: 'dashed',
-        backgroundColor: 'rgba(231, 76, 60, 0.22)',
-        zIndex: 99,
-      }}>
-        <View style={{
+      {showDeleteIndicator && (
+        <View pointerEvents="none" style={{
           position: 'absolute',
-          top: -10,
-          right: -10,
-          width: 22,
-          height: 22,
-          borderRadius: 11,
-          backgroundColor: '#e74c3c',
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.3,
-          shadowRadius: 2,
-          elevation: 4,
+          top: -12,
+          left: -12,
+          right: -12,
+          bottom: -12,
+          borderRadius: (size + 24) / 2,
+          borderWidth: 3,
+          borderColor: '#e74c3c',
+          borderStyle: 'dashed',
+          backgroundColor: 'rgba(231, 76, 60, 0.22)',
+          zIndex: 99,
         }}>
-          <Feather name="trash-2" size={12} color="#fff" />
+          <View style={{
+            position: 'absolute',
+            top: -10,
+            right: -10,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: '#e74c3c',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.3,
+            shadowRadius: 2,
+            elevation: 4,
+          }}>
+            <Feather name="trash-2" size={12} color="#fff" />
+          </View>
         </View>
-      </View>
-    )}
-    <View style={{
-      flex: 1,
-      opacity: showDeleteIndicator ? 0.5 : 1,
-      transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
-    }} pointerEvents="box-none">
-    <TapGestureHandler
-      ref={tapRef}
-      waitFor={panRef}
-      enabled={!isDrawingMode && !icon.locked}
-      onHandlerStateChange={handleTap}
-    >
-      <View style={{ flex: 1 }} pointerEvents="box-none">
-    <PanGestureHandler
-      ref={panRef}
-      key={dragKey}
-      enabled={canDrag}
-      shouldCancelWhenOutside={false}
-      avgTouches={Platform.OS === 'android'}
-      activeOffsetX={[-5, 5]}
-      activeOffsetY={[-5, 5]}
-      onHandlerStateChange={(e) => {
-        // ACTIVE: El gesto de pan fue reconocido (el dedo se movi� lo suficiente)
-        // Inicializar el arrastre aqu�
-        if (e.nativeEvent.state === State.ACTIVE && !icon.locked && !isDragging.current) {
-          setDraggingOutside?.(false);
-          if (!acquireBoardDrag(dragStart, dragKey)) return;
-          isDragging.current = true;
-
-          // Si estamos en modo multi-select, cancelar el rect�ngulo de selecci�n
-          if (multiSelectMode && cancelSelection) {
-            cancelSelection();
-          }
-
-          // Si hay selecci�n m�ltiple y este icono est� en la selecci�n
-          if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && isSelected && clones && Array.isArray(clones)) {
-            // Guardar posiciones iniciales de TODOS los elementos seleccionados
-            // Incluyendo iconos (xRatio/yRatio) y l�neas/figuras (points)
-            const initialPositions = {};
-            selectedCloneIds.forEach(id => {
-              const clone = clones.find(c => c.id === id);
-              if (clone) {
-                // Para l�neas y figuras, guardar los puntos
-                if (clone.points && Array.isArray(clone.points)) {
-                  initialPositions[id] = {
-                    points: clone.points.map(p => ({ x: p.x, y: p.y }))
-                  };
-                } else {
-                  // Para iconos normales
-                  initialPositions[id] = {
-                    xRatio: clone.xRatio,
-                    yRatio: clone.yRatio
-                  };
-                }
-              }
-            });
-
-            dragStart.current[dragKey] = {
-              xRatio: icon.xRatio,
-              yRatio: icon.yRatio,
-              id: icon.id,
-              multiSelect: true,
-              selectedIds: [...selectedCloneIds],
-              initialPositions: initialPositions
-            };
-          } else {
-            dragStart.current[dragKey] = {
-              xRatio: icon.xRatio,
-              yRatio: icon.yRatio,
-              id: icon.id
-            };
-          }
-          lastUpdateRef.current = { x: icon.xRatio, y: icon.yRatio };
-        }
-
-        if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
-          isDragging.current = false;
-          setDraggingOutside?.(false);
-          setIsNearDeleteZone(false); // Resetear indicador visual
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-          }
-          if (pendingDragUpdateRef.current) {
-            setClones(pendingDragUpdateRef.current);
-            pendingDragUpdateRef.current = null;
-          }
-
-          // Verificar si elementos est�n fuera del campo y eliminarlos
-          if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
-            const start = dragStart.current[dragKey];
-            if (start.multiSelect && start.selectedIds) {
-              // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
-              setClones((prev) => {
-                const toDelete = [];
-                const remaining = prev.filter(c => {
-                  if (!start.selectedIds.includes(c.id) || c.locked) return true;
-                  let outside = false;
-                  if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
-                    outside = areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
-                  } else if (c.xRatio !== undefined) {
-                    outside = isOutsideVisibleField(c.xRatio, c.yRatio, viewMode, imageWidth, imageHeight);
-                  }
-                  if (outside) { toDelete.push(c); return false; }
-                  return true;
-                });
-                if (toDelete.length > 0 && onDeleteClone) {
-                  setTimeout(() => toDelete.forEach(c => onDeleteClone(c)), 0);
-                }
-                return toDelete.length > 0 ? remaining : prev;
-              });
-            } else {
-              // Single drag: solo eliminar este elemento
-              setClones((prev) => {
-                const currentClone = prev.find(c => c.id === icon.id);
-                if (currentClone && !currentClone.locked) {
-                  const { xRatio, yRatio } = currentClone;
-                  if (isOutsideVisibleField(xRatio, yRatio, viewMode, imageWidth, imageHeight)) {
-                    if (onDeleteClone) {
-                      setTimeout(() => onDeleteClone(currentClone), 0);
-                    }
-                    return prev.filter(c => c.id !== icon.id);
-                  }
-                }
-                return prev;
-              });
-            }
-          }
-
-          delete dragStart.current[dragKey];
-          releaseBoardDrag(dragStart, dragKey);
-          // Guardar en historial al finalizar el drag
-          if (saveClonesHistory) saveClonesHistory();
-        }
-      }}
-      onGestureEvent={(e) => {
-        if (e.nativeEvent.state === State.ACTIVE && !icon.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
-          const start = dragStart.current[dragKey];
-          // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
-          const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
-
-          // Si es arrastre de m�ltiples elementos
-          if (start.multiSelect && start.selectedIds && start.initialPositions) {
-            const anyOutside = start.selectedIds.some(selectedId => {
-              const initialPos = start.initialPositions[selectedId];
-              if (!initialPos) return false;
-              const candidate = initialPos.points && Array.isArray(initialPos.points)
-                ? { points: initialPos.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) }
-                : { xRatio: initialPos.xRatio + dx, yRatio: initialPos.yRatio + dy };
-              return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
-            });
-            setDraggingOutside?.(anyOutside);
-            // Actualizar inmediatamente para mejor respuesta
-            scheduleDragUpdate((prev) => {
-              const next = [...prev];
-              start.selectedIds.forEach(selectedId => {
-                const cloneIndex = next.findIndex(c => c.id === selectedId);
-                if (cloneIndex !== -1 && !next[cloneIndex].locked) {
-                  const initialPos = start.initialPositions[selectedId];
-                  if (initialPos) {
-                    // Si tiene puntos (l�neas/figuras), mover los puntos
-                    if (initialPos.points && Array.isArray(initialPos.points)) {
-                      next[cloneIndex] = {
-                        ...next[cloneIndex],
-                        points: initialPos.points.map(pt => ({
-                          x: pt.x + dx,
-                          y: pt.y + dy
-                        }))
-                      };
-                    } else {
-                      // Iconos normales: permitir valores fuera de 0-1 para que el elemento pueda salir del campo
-                      const newXRatio = initialPos.xRatio + dx;
-                      const newYRatio = initialPos.yRatio + dy;
-                      next[cloneIndex] = {
-                        ...next[cloneIndex],
-                        xRatio: newXRatio,
-                        yRatio: newYRatio
-                      };
-                    }
-                  }
-                }
-              });
-              return next;
-            });
-          } else {
-            // Arrastre de un solo elemento - permitir valores fuera de 0-1
-            const newXRatio = start.xRatio + dx;
-            const newYRatio = start.yRatio + dy;
-
-            // Actualizar indicador visual de zona de eliminaci�n
-            const inDeleteZone = checkDeleteZone(newXRatio, newYRatio);
-            setDraggingOutside?.(inDeleteZone);
-            if (inDeleteZone !== isNearDeleteZone) {
-              setIsNearDeleteZone(inDeleteZone);
-            }
-
-            if (Platform.OS === 'android') {
-              scheduleDragUpdate((prev) => {
-                const correctIndex = idx;
-                if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
-                  const fallbackIndex = prev.findIndex(c => c.id === icon.id);
-                  if (fallbackIndex === -1) return prev;
-
-                  const next = [...prev];
-                  next[fallbackIndex] = {
-                    ...next[fallbackIndex],
-                    xRatio: newXRatio,
-                    yRatio: newYRatio
-                  };
-                  return next;
-                }
-
-                const next = [...prev];
-                next[correctIndex] = {
-                  ...next[correctIndex],
-                  xRatio: newXRatio,
-                  yRatio: newYRatio
-                };
-                return next;
-              });
-            } else {
-              const deltaX = Math.abs(newXRatio - lastUpdateRef.current.x);
-              const deltaY = Math.abs(newYRatio - lastUpdateRef.current.y);
-
-              if (deltaX < 0.002 && deltaY < 0.002) {
-                return;
-              }
-
-              lastUpdateRef.current = { x: newXRatio, y: newYRatio };
-              scheduleDragUpdate((prev) => {
-                const correctIndex = idx;
-                if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
-                  const fallbackIndex = prev.findIndex(c => c.id === icon.id);
-                  if (fallbackIndex === -1) return prev;
-
-                  const next = [...prev];
-                  next[fallbackIndex] = {
-                    ...next[fallbackIndex],
-                    xRatio: newXRatio,
-                    yRatio: newYRatio
-                  };
-                  return next;
-                }
-
-                const next = [...prev];
-                next[correctIndex] = {
-                  ...next[correctIndex],
-                  xRatio: newXRatio,
-                  yRatio: newYRatio
-                };
-                return next;
-              });
-            }
-          }
-        }
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <View
-          pointerEvents={isDrawingMode ? "none" : "box-none"}
-          style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+      )}
+      <View style={{
+        flex: 1,
+        opacity: showDeleteIndicator ? 0.5 : 1,
+        transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
+      }} pointerEvents="box-none">
+        <TapGestureHandler
+          ref={tapRef}
+          waitFor={panRef}
+          enabled={!isDrawingMode && !icon.locked}
+          onHandlerStateChange={handleTap}
         >
-          {/* Indicador visual de selecci�n m�ltiple */}
-          {multiSelectMode && isSelected && (
-            <View style={{
-              position: 'absolute',
-              top: -5,
-              right: -5,
-              width: 20,
-              height: 20,
-              borderRadius: 10,
-              backgroundColor: '#3498db',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 101,
-              borderWidth: 2,
-              borderColor: '#fff'
-            }}>
-              <Feather name="check" size={12} color="#fff" />
-            </View>
-          )}
+          <View style={{ flex: 1 }} pointerEvents="box-none">
+            <PanGestureHandler
+              ref={panRef}
+              key={dragKey}
+              enabled={canDrag}
+              shouldCancelWhenOutside={false}
+              avgTouches={Platform.OS === 'android'}
+              activeOffsetX={[-5, 5]}
+              activeOffsetY={[-5, 5]}
+              onHandlerStateChange={(e) => {
+                // ACTIVE: El gesto de pan fue reconocido (el dedo se movi� lo suficiente)
+                // Inicializar el arrastre aqu�
+                if (e.nativeEvent.state === State.ACTIVE && !icon.locked && !isDragging.current) {
+                  setDraggingOutside?.(false);
+                  if (!acquireBoardDrag(dragStart, dragKey)) return;
+                  isDragging.current = true;
 
-          {/* Borde para elementos seleccionados en modo multi-selecci�n */}
-          {multiSelectMode && isSelected && (
-            <View style={{
-              position: 'absolute',
-              top: -2,
-              left: -2,
-              right: -2,
-              bottom: -2,
-              borderRadius: size / 2,
-              borderWidth: 2,
-              borderColor: '#3498db',
-              pointerEvents: 'none'
-            }} />
-          )}
+                  // Si estamos en modo multi-select, cancelar el rect�ngulo de selecci�n
+                  if (multiSelectMode && cancelSelection) {
+                    cancelSelection();
+                  }
 
-          {/* Bot�n de opciones - solo para selecci�n individual o primer elemento de multi-selecci�n */}
-          {selectedCloneId === icon.id && !multiSelectMode && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                e.target.measure((x, y, width, height, pageX, pageY) => {
-                  setOptionsMenu({
-                    visible: true,
-                    position: {
-                      x: pageX + width,
-                      y: pageY + 40 + (height / 2)
-                    },
-                    iconId: icon.id,
-                    canRotate: !!icon.rotatable,
-                    hideEdit: icon.type === 'goal'
-                  });
-                });
+                  // Si hay selecci�n m�ltiple y este icono est� en la selecci�n
+                  if (ALLOW_MULTI_ELEMENT_DRAG && multiSelectMode && isSelected && clones && Array.isArray(clones)) {
+                    // Guardar posiciones iniciales de TODOS los elementos seleccionados
+                    // Incluyendo iconos (xRatio/yRatio) y l�neas/figuras (points)
+                    const initialPositions = {};
+                    selectedCloneIds.forEach(id => {
+                      const clone = clones.find(c => c.id === id);
+                      if (clone) {
+                        // Para l�neas y figuras, guardar los puntos
+                        if (clone.points && Array.isArray(clone.points)) {
+                          initialPositions[id] = {
+                            points: clone.points.map(p => ({ x: p.x, y: p.y }))
+                          };
+                        } else {
+                          // Para iconos normales
+                          initialPositions[id] = {
+                            xRatio: clone.xRatio,
+                            yRatio: clone.yRatio
+                          };
+                        }
+                      }
+                    });
+
+                    dragStart.current[dragKey] = {
+                      xRatio: icon.xRatio,
+                      yRatio: icon.yRatio,
+                      id: icon.id,
+                      multiSelect: true,
+                      selectedIds: [...selectedCloneIds],
+                      initialPositions: initialPositions
+                    };
+                  } else {
+                    dragStart.current[dragKey] = {
+                      xRatio: icon.xRatio,
+                      yRatio: icon.yRatio,
+                      id: icon.id
+                    };
+                  }
+                  lastUpdateRef.current = { x: icon.xRatio, y: icon.yRatio };
+                }
+
+                if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
+                  isDragging.current = false;
+                  setDraggingOutside?.(false);
+                  setIsNearDeleteZone(false); // Resetear indicador visual
+                  if (rafRef.current) {
+                    cancelAnimationFrame(rafRef.current);
+                    rafRef.current = null;
+                  }
+                  if (pendingDragUpdateRef.current) {
+                    setClones(pendingDragUpdateRef.current);
+                    pendingDragUpdateRef.current = null;
+                  }
+
+                  // Verificar si elementos est�n fuera del campo y eliminarlos
+                  if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
+                    const start = dragStart.current[dragKey];
+                    if (start.multiSelect && start.selectedIds) {
+                      // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
+                      setClones((prev) => {
+                        const toDelete = [];
+                        const remaining = prev.filter(c => {
+                          if (!start.selectedIds.includes(c.id) || c.locked) return true;
+                          let outside = false;
+                          if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
+                            outside = areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
+                          } else if (c.xRatio !== undefined) {
+                            outside = isOutsideVisibleField(c.xRatio, c.yRatio, viewMode, imageWidth, imageHeight);
+                          }
+                          if (outside) { toDelete.push(c); return false; }
+                          return true;
+                        });
+                        if (toDelete.length > 0 && onDeleteClone) {
+                          setTimeout(() => toDelete.forEach(c => onDeleteClone(c)), 0);
+                        }
+                        return toDelete.length > 0 ? remaining : prev;
+                      });
+                    } else {
+                      // Single drag: solo eliminar este elemento
+                      setClones((prev) => {
+                        const currentClone = prev.find(c => c.id === icon.id);
+                        if (currentClone && !currentClone.locked) {
+                          const { xRatio, yRatio } = currentClone;
+                          if (isOutsideVisibleField(xRatio, yRatio, viewMode, imageWidth, imageHeight)) {
+                            if (onDeleteClone) {
+                              setTimeout(() => onDeleteClone(currentClone), 0);
+                            }
+                            return prev.filter(c => c.id !== icon.id);
+                          }
+                        }
+                        return prev;
+                      });
+                    }
+                  }
+
+                  delete dragStart.current[dragKey];
+                  releaseBoardDrag(dragStart, dragKey);
+                  // Guardar en historial al finalizar el drag
+                  if (saveClonesHistory) saveClonesHistory();
+                }
               }}
-              style={{
-                position: 'absolute',
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: '#ffffff',
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.2,
-                shadowRadius: 1.5,
-                elevation: 3,
-                borderWidth: 1,
-                borderColor: '#dddddd',
-                zIndex: 100,
-                top: -7,
-                right: -7
+              onGestureEvent={(e) => {
+                if (e.nativeEvent.state === State.ACTIVE && !icon.locked && dragStart.current[dragKey] && isBoardDragOwner(dragStart, dragKey)) {
+                  const start = dragStart.current[dragKey];
+                  // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
+                  const { dxRatio: dx, dyRatio: dy } = deltaToRatio(e.nativeEvent.translationX / zoomLevel, e.nativeEvent.translationY / zoomLevel, viewMode, imageWidth, imageHeight);
+
+                  // Si es arrastre de m�ltiples elementos
+                  if (start.multiSelect && start.selectedIds && start.initialPositions) {
+                    const anyOutside = start.selectedIds.some(selectedId => {
+                      const initialPos = start.initialPositions[selectedId];
+                      if (!initialPos) return false;
+                      const candidate = initialPos.points && Array.isArray(initialPos.points)
+                        ? { points: initialPos.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy })) }
+                        : { xRatio: initialPos.xRatio + dx, yRatio: initialPos.yRatio + dy };
+                      return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
+                    });
+                    setDraggingOutside?.(anyOutside);
+                    // Actualizar inmediatamente para mejor respuesta
+                    scheduleDragUpdate((prev) => {
+                      const next = [...prev];
+                      start.selectedIds.forEach(selectedId => {
+                        const cloneIndex = next.findIndex(c => c.id === selectedId);
+                        if (cloneIndex !== -1 && !next[cloneIndex].locked) {
+                          const initialPos = start.initialPositions[selectedId];
+                          if (initialPos) {
+                            // Si tiene puntos (l�neas/figuras), mover los puntos
+                            if (initialPos.points && Array.isArray(initialPos.points)) {
+                              next[cloneIndex] = {
+                                ...next[cloneIndex],
+                                points: initialPos.points.map(pt => ({
+                                  x: pt.x + dx,
+                                  y: pt.y + dy
+                                }))
+                              };
+                            } else {
+                              // Iconos normales: permitir valores fuera de 0-1 para que el elemento pueda salir del campo
+                              const newXRatio = initialPos.xRatio + dx;
+                              const newYRatio = initialPos.yRatio + dy;
+                              next[cloneIndex] = {
+                                ...next[cloneIndex],
+                                xRatio: newXRatio,
+                                yRatio: newYRatio
+                              };
+                            }
+                          }
+                        }
+                      });
+                      return next;
+                    });
+                  } else {
+                    // Arrastre de un solo elemento - permitir valores fuera de 0-1
+                    const newXRatio = start.xRatio + dx;
+                    const newYRatio = start.yRatio + dy;
+
+                    // Actualizar indicador visual de zona de eliminaci�n
+                    const inDeleteZone = checkDeleteZone(newXRatio, newYRatio);
+                    setDraggingOutside?.(inDeleteZone);
+                    if (inDeleteZone !== isNearDeleteZone) {
+                      setIsNearDeleteZone(inDeleteZone);
+                    }
+
+                    if (Platform.OS === 'android') {
+                      scheduleDragUpdate((prev) => {
+                        const correctIndex = idx;
+                        if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
+                          const fallbackIndex = prev.findIndex(c => c.id === icon.id);
+                          if (fallbackIndex === -1) return prev;
+
+                          const next = [...prev];
+                          next[fallbackIndex] = {
+                            ...next[fallbackIndex],
+                            xRatio: newXRatio,
+                            yRatio: newYRatio
+                          };
+                          return next;
+                        }
+
+                        const next = [...prev];
+                        next[correctIndex] = {
+                          ...next[correctIndex],
+                          xRatio: newXRatio,
+                          yRatio: newYRatio
+                        };
+                        return next;
+                      });
+                    } else {
+                      const deltaX = Math.abs(newXRatio - lastUpdateRef.current.x);
+                      const deltaY = Math.abs(newYRatio - lastUpdateRef.current.y);
+
+                      if (deltaX < 0.002 && deltaY < 0.002) {
+                        return;
+                      }
+
+                      lastUpdateRef.current = { x: newXRatio, y: newYRatio };
+                      scheduleDragUpdate((prev) => {
+                        const correctIndex = idx;
+                        if (correctIndex >= prev.length || prev[correctIndex].id !== icon.id) {
+                          const fallbackIndex = prev.findIndex(c => c.id === icon.id);
+                          if (fallbackIndex === -1) return prev;
+
+                          const next = [...prev];
+                          next[fallbackIndex] = {
+                            ...next[fallbackIndex],
+                            xRatio: newXRatio,
+                            yRatio: newYRatio
+                          };
+                          return next;
+                        }
+
+                        const next = [...prev];
+                        next[correctIndex] = {
+                          ...next[correctIndex],
+                          xRatio: newXRatio,
+                          yRatio: newYRatio
+                        };
+                        return next;
+                      });
+                    }
+                  }
+                }
               }}
             >
-              <Feather name="more-vertical" size={16} color="#444444" />
-            </TouchableOpacity>
-          )}
+              <View style={{ flex: 1 }}>
+                <View
+                  pointerEvents={isDrawingMode ? "none" : "box-none"}
+                  style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {/* Indicador visual de selecci�n m�ltiple */}
+                  {multiSelectMode && isSelected && (
+                    <View style={{
+                      position: 'absolute',
+                      top: -5,
+                      right: -5,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: '#3498db',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      zIndex: 101,
+                      borderWidth: 2,
+                      borderColor: '#fff'
+                    }}>
+                      <Feather name="check" size={12} color="#fff" />
+                    </View>
+                  )}
 
-          <MemoizedIcon
-            icon={icon}
-            size={size}
-            rotation={icon.rotation || 0}
-            number={icon.type === 'player' ? icon.number : undefined}
-            playersWithNumber={playersWithNumber}
-            displayLabel={icon.displayLabel}
-            numberColor={icon.numberColor}
-            isGoalkeeper={icon.playerData?.posicion === 'portero' || icon.playerData?.posicion === 'goalkeeper'}
-            differentiateGoalkeeper={differentiateGoalkeeper}
-            goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
-            showPhotos={showPhotos && icon.playerData}
-            photoUrl={cdnUrl(icon.playerData?.foto || '')}
-          />
+                  {/* Borde para elementos seleccionados en modo multi-selecci�n */}
+                  {multiSelectMode && isSelected && (
+                    <View style={{
+                      position: 'absolute',
+                      top: -2,
+                      left: -2,
+                      right: -2,
+                      bottom: -2,
+                      borderRadius: size / 2,
+                      borderWidth: 2,
+                      borderColor: '#3498db',
+                      pointerEvents: 'none'
+                    }} />
+                  )}
 
-          {icon.playerData && (
-            <Text
-              style={{
-                position: 'absolute',
-                bottom: -22,
-                left: -20,
-                right: -20,
-                textAlign: 'center',
-                fontSize: isMobile ? 8 : 10,
-                color: icon.textColor || '#000',
-                backgroundColor: icon.textBackgroundColor === 'transparent' ? 'transparent' : (icon.textBackgroundColor || '#fff'),
-                paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
-                paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : 1,
-                borderRadius: 4,
-                borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
-                borderColor: '#ccc',
-              }}
-            >
-              {icon.playerData.nombre || icon.playerData.name}
-            </Text>
-          )}
-        </View>
+                  {/* Bot�n de opciones - solo para selecci�n individual o primer elemento de multi-selecci�n */}
+                  {selectedCloneId === icon.id && !multiSelectMode && (
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        e.target.measure((x, y, width, height, pageX, pageY) => {
+                          setOptionsMenu({
+                            visible: true,
+                            position: {
+                              x: pageX + width,
+                              y: pageY + 40 + (height / 2)
+                            },
+                            iconId: icon.id,
+                            canRotate: !!icon.rotatable,
+                            hideEdit: icon.type === 'goal'
+                          });
+                        });
+                      }}
+                      style={{
+                        position: 'absolute',
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: '#ffffff',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 1.5,
+                        elevation: 3,
+                        borderWidth: 1,
+                        borderColor: '#dddddd',
+                        zIndex: 100,
+                        top: -7,
+                        right: -7
+                      }}
+                    >
+                      <Feather name="more-vertical" size={16} color="#444444" />
+                    </TouchableOpacity>
+                  )}
+
+                  <MemoizedIcon
+                    icon={icon}
+                    size={size}
+                    rotation={icon.rotation || 0}
+                    number={icon.type === 'player' ? icon.number : undefined}
+                    playersWithNumber={playersWithNumber}
+                    displayLabel={icon.displayLabel}
+                    numberColor={icon.numberColor}
+                    isGoalkeeper={icon.playerData?.posicion === 'portero' || icon.playerData?.posicion === 'goalkeeper'}
+                    differentiateGoalkeeper={differentiateGoalkeeper}
+                    goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
+                    showPhotos={showPhotos && icon.playerData}
+                    photoUrl={cdnUrl(icon.playerData?.foto || '')}
+                  />
+
+                  {icon.playerData && (
+                    <Text
+                      style={{
+                        position: 'absolute',
+                        bottom: -22,
+                        left: -20,
+                        right: -20,
+                        textAlign: 'center',
+                        fontSize: isMobile ? 8 : 10,
+                        color: icon.textColor || '#000',
+                        backgroundColor: icon.textBackgroundColor === 'transparent' ? 'transparent' : (icon.textBackgroundColor || '#fff'),
+                        paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
+                        paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : 1,
+                        borderRadius: 4,
+                        borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
+                        borderColor: '#ccc',
+                      }}
+                    >
+                      {icon.playerData.nombre || icon.playerData.name}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </PanGestureHandler>
+          </View>
+        </TapGestureHandler>
       </View>
-    </PanGestureHandler>
-      </View>
-    </TapGestureHandler>
-    </View>
     </View>
   );
 }, (prevProps, nextProps) => {
@@ -5904,8 +5967,8 @@ return (
 
   // Comparaci�n ultra-r�pida: solo verificar cambios relevantes
   if (prevProps.imageWidth !== nextProps.imageWidth ||
-      prevProps.imageHeight !== nextProps.imageHeight ||
-      prevProps.scale !== nextProps.scale) {
+    prevProps.imageHeight !== nextProps.imageHeight ||
+    prevProps.scale !== nextProps.scale) {
     return false;
   }
 
@@ -5938,25 +6001,25 @@ return (
   const prevDrawing = prevProps.drawingStates;
   const nextDrawing = nextProps.drawingStates;
   const wasDrawingMode = prevDrawing?.drawingStraightArrow || prevDrawing?.drawingStraightLine ||
-                         prevDrawing?.drawingCurveArrow || prevDrawing?.drawingCurveLine ||
-                         prevDrawing?.drawingCircle || prevDrawing?.drawingRectangle ||
-                         prevDrawing?.drawingCustomShape || prevDrawing?.eraserMode;
+    prevDrawing?.drawingCurveArrow || prevDrawing?.drawingCurveLine ||
+    prevDrawing?.drawingCircle || prevDrawing?.drawingRectangle ||
+    prevDrawing?.drawingCustomShape || prevDrawing?.eraserMode;
   const isDrawingMode = nextDrawing?.drawingStraightArrow || nextDrawing?.drawingStraightLine ||
-                        nextDrawing?.drawingCurveArrow || nextDrawing?.drawingCurveLine ||
-                        nextDrawing?.drawingCircle || nextDrawing?.drawingRectangle ||
-                        nextDrawing?.drawingCustomShape || nextDrawing?.eraserMode;
+    nextDrawing?.drawingCurveArrow || nextDrawing?.drawingCurveLine ||
+    nextDrawing?.drawingCircle || nextDrawing?.drawingRectangle ||
+    nextDrawing?.drawingCustomShape || nextDrawing?.eraserMode;
   if (wasDrawingMode !== isDrawingMode) return false;
 
   // Visual props - SIEMPRE verificar para detectar cambios de "Aplicar a todos"
   if (icon.size !== nextIcon.size ||
-      icon.color !== nextIcon.color ||
-      icon.rotation !== nextIcon.rotation ||
-      icon.number !== nextIcon.number ||
-      icon.displayLabel !== nextIcon.displayLabel ||
-      icon.numberColor !== nextIcon.numberColor ||
-      icon.textColor !== nextIcon.textColor ||
-      icon.textBackgroundColor !== nextIcon.textBackgroundColor ||
-      icon._lastUpdate !== nextIcon._lastUpdate) return false;
+    icon.color !== nextIcon.color ||
+    icon.rotation !== nextIcon.rotation ||
+    icon.number !== nextIcon.number ||
+    icon.displayLabel !== nextIcon.displayLabel ||
+    icon.numberColor !== nextIcon.numberColor ||
+    icon.textColor !== nextIcon.textColor ||
+    icon.textBackgroundColor !== nextIcon.textBackgroundColor ||
+    icon._lastUpdate !== nextIcon._lastUpdate) return false;
 
   // Goalkeeper differentiation setting
   if (prevProps.differentiateGoalkeeper !== nextProps.differentiateGoalkeeper) return false;
@@ -6598,12 +6661,12 @@ const BatchLinesRenderer = React.memo(({
     const prev = prevProps.straightLines[i];
     const next = nextProps.straightLines[i];
     if (prev.id !== next.id ||
-        prev.color !== next.color ||
-        prev.thickness !== next.thickness ||
-        prev.lineType !== next.lineType ||
-        prev.dotSize !== next.dotSize ||
-        prev.dotSpacing !== next.dotSpacing ||
-        !arraysEqual(prev.points, next.points)) {
+      prev.color !== next.color ||
+      prev.thickness !== next.thickness ||
+      prev.lineType !== next.lineType ||
+      prev.dotSize !== next.dotSize ||
+      prev.dotSpacing !== next.dotSpacing ||
+      !arraysEqual(prev.points, next.points)) {
       return false;
     }
   }
@@ -6612,12 +6675,12 @@ const BatchLinesRenderer = React.memo(({
     const prev = prevProps.curveLines[i];
     const next = nextProps.curveLines[i];
     if (prev.id !== next.id ||
-        prev.color !== next.color ||
-        prev.thickness !== next.thickness ||
-        prev.lineType !== next.lineType ||
-        prev.dotSize !== next.dotSize ||
-        prev.dotSpacing !== next.dotSpacing ||
-        !arraysEqual(prev.points, next.points)) {
+      prev.color !== next.color ||
+      prev.thickness !== next.thickness ||
+      prev.lineType !== next.lineType ||
+      prev.dotSize !== next.dotSize ||
+      prev.dotSpacing !== next.dotSpacing ||
+      !arraysEqual(prev.points, next.points)) {
       return false;
     }
   }
@@ -7510,10 +7573,10 @@ const BatchShapesRenderer = React.memo(({
     const prev = prevProps.circles[i];
     const next = nextProps.circles[i];
     if (prev.id !== next.id || prev.color !== next.color || prev.thickness !== next.thickness ||
-        prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
-        prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
-        prev.zIndex !== next.zIndex ||
-        !arraysEqual(prev.points, next.points)) return false;
+      prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
+      prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
+      prev.zIndex !== next.zIndex ||
+      !arraysEqual(prev.points, next.points)) return false;
   }
 
   // Comparar rect�ngulos
@@ -7521,10 +7584,10 @@ const BatchShapesRenderer = React.memo(({
     const prev = prevProps.rectangles[i];
     const next = nextProps.rectangles[i];
     if (prev.id !== next.id || prev.color !== next.color || prev.thickness !== next.thickness ||
-        prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
-        prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
-        prev.zIndex !== next.zIndex ||
-        !arraysEqual(prev.points, next.points)) return false;
+      prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
+      prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
+      prev.zIndex !== next.zIndex ||
+      !arraysEqual(prev.points, next.points)) return false;
   }
 
   // Comparar custom shapes
@@ -7532,10 +7595,10 @@ const BatchShapesRenderer = React.memo(({
     const prev = prevProps.customShapes[i];
     const next = nextProps.customShapes[i];
     if (prev.id !== next.id || prev.color !== next.color || prev.thickness !== next.thickness ||
-        prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
-        prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
-        prev.zIndex !== next.zIndex ||
-        !arraysEqual(prev.points, next.points)) return false;
+      prev.fillColor !== next.fillColor || prev.lineType !== next.lineType ||
+      prev.dotSize !== next.dotSize || prev.dotSpacing !== next.dotSpacing ||
+      prev.zIndex !== next.zIndex ||
+      !arraysEqual(prev.points, next.points)) return false;
   }
 
   return true;
@@ -7720,9 +7783,9 @@ const MemoizedCircleDetector = React.memo(({
     const dragDyPx = dyRatio * imageHeight;
 
     switch (base.handle) {
-      case 'right':  radiusChangePx = dragDxPx; break;
-      case 'left':   radiusChangePx = -dragDxPx; break;
-      case 'top':    radiusChangePx = -dragDyPx; break;
+      case 'right': radiusChangePx = dragDxPx; break;
+      case 'left': radiusChangePx = -dragDxPx; break;
+      case 'top': radiusChangePx = -dragDyPx; break;
       case 'bottom': radiusChangePx = dragDyPx; break;
     }
 
@@ -7842,10 +7905,10 @@ const MemoizedCircleDetector = React.memo(({
       {selectedCloneId === icon.id && !multiSelectMode && (
         <>
           {[
-            { handle: 'top',    cx: touchMargin + radius, cy: touchMargin },
-            { handle: 'right',  cx: touchMargin + radius * 2, cy: touchMargin + radius },
+            { handle: 'top', cx: touchMargin + radius, cy: touchMargin },
+            { handle: 'right', cx: touchMargin + radius * 2, cy: touchMargin + radius },
             { handle: 'bottom', cx: touchMargin + radius, cy: touchMargin + radius * 2 },
-            { handle: 'left',   cx: touchMargin, cy: touchMargin + radius },
+            { handle: 'left', cx: touchMargin, cy: touchMargin + radius },
           ].map(({ handle, cx, cy }) => (
             <View
               key={`resize-${handle}`}
@@ -8825,12 +8888,12 @@ export default function Field(props = {}) {
           subscription = ScreenOrientation.addOrientationChangeListener((event) => {
             if (!isMounted) return;
             const orientation = event.orientationInfo.orientation;
-          // Si detectamos orientaci�n vertical, forzar landscape de nuevo
-          if (orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
+            // Si detectamos orientaci�n vertical, forzar landscape de nuevo
+            if (orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
               orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN) {
-            lockToLandscape();
-          }
-        });
+              lockToLandscape();
+            }
+          });
         }
       } catch (error) {
         console.warn('Error configurando listener de orientaci�n:', error);
@@ -8868,10 +8931,10 @@ export default function Field(props = {}) {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
         .then(() => {
           setTimeout(() => {
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => { });
           }, 300);
         })
-        .catch(() => {});
+        .catch(() => { });
     };
   }, []);
 
@@ -9399,7 +9462,7 @@ export default function Field(props = {}) {
     const pxToRatioX = (x) => (sourceWidth > 0 ? x / sourceWidth : 0);
     const pxToRatioY = (y) => (sourceHeight > 0 ? y / sourceHeight : 0);
 
-    const id = snap.id || `${snap.type || 'elem'}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const id = snap.id || `${snap.type || 'elem'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const clone = { id, type: snap.type || 'unknown' };
 
     // Posici�n puntual - PRIORIZAR ratios originales si est�n disponibles
@@ -9521,7 +9584,7 @@ export default function Field(props = {}) {
       // Representar c�rculo con dos puntos (izquierda/derecha)
       const p1 = { x: cx - r, y: cy };
       const p2 = { x: cx + r, y: cy };
-      clone.points = [ { x: pxToRatioX(p1.x), y: pxToRatioY(p1.y) }, { x: pxToRatioX(p2.x), y: pxToRatioY(p2.y) } ];
+      clone.points = [{ x: pxToRatioX(p1.x), y: pxToRatioY(p1.y) }, { x: pxToRatioX(p2.x), y: pxToRatioY(p2.y) }];
       clone.thickness = snap.baseThickness !== undefined ? snap.baseThickness : (snap.thickness !== undefined ? snap.thickness : clone.thickness);
       if (snap.fillColor) clone.fillColor = snap.fillColor;
       if (snap.color) clone.color = snap.color;
@@ -9537,7 +9600,7 @@ export default function Field(props = {}) {
       const y1 = snap.y;
       const x2 = snap.x + snap.width;
       const y2 = snap.y + snap.height;
-      clone.points = [ { x: pxToRatioX(x1), y: pxToRatioY(y1) }, { x: pxToRatioX(x2), y: pxToRatioY(y2) } ];
+      clone.points = [{ x: pxToRatioX(x1), y: pxToRatioY(y1) }, { x: pxToRatioX(x2), y: pxToRatioY(y2) }];
       clone.thickness = snap.baseThickness !== undefined ? snap.baseThickness : (snap.thickness !== undefined ? snap.thickness : clone.thickness);
       if (snap.fillColor) clone.fillColor = snap.fillColor;
       if (snap.color) clone.color = snap.color;
@@ -10309,11 +10372,11 @@ export default function Field(props = {}) {
 
       // Para custom-shapes y l�neas, rotar los puntos alrededor del centro
       if (clone.type === 'custom-shape' ||
-          clone.type === 'straight-line' ||
-          clone.type === 'straight-arrow' ||
-          clone.type === 'curve-line' ||
-          clone.type === 'curve-arrow' ||
-          clone.type === 'circle') {
+        clone.type === 'straight-line' ||
+        clone.type === 'straight-arrow' ||
+        clone.type === 'curve-line' ||
+        clone.type === 'curve-arrow' ||
+        clone.type === 'circle') {
 
         if (!clone.points || clone.points.length < 2) return clone;
 
@@ -10506,8 +10569,8 @@ export default function Field(props = {}) {
 
     // Iniciar modo de dibujo directamente desde la paleta para l�neas, flechas y formas (no abrir modal de estilo)
     if (icon.type === 'straight-arrow' || icon.type === 'straight-line' ||
-        icon.type === 'curve-arrow' || icon.type === 'curve-line' ||
-        icon.type === 'circle' || icon.type === 'rectangle') {
+      icon.type === 'curve-arrow' || icon.type === 'curve-line' ||
+      icon.type === 'circle' || icon.type === 'rectangle') {
       setPendingLineAction({
         type: icon.type,
         paletteIndex: paletteIndex,
@@ -10761,7 +10824,7 @@ export default function Field(props = {}) {
     const { type, icon, paletteIndex } = pendingLineAction;
 
     // Actualizar solo el estilo global si el tipo de elemento es uno que utiliza la Configuraci�n global
-    const GLOBAL_STYLE_TYPES = ['straight-arrow','straight-line','curve-arrow','curve-line','circle','rectangle'];
+    const GLOBAL_STYLE_TYPES = ['straight-arrow', 'straight-line', 'curve-arrow', 'curve-line', 'circle', 'rectangle'];
     if (GLOBAL_STYLE_TYPES.includes(type)) {
       setLineType(lineType);
       setDotSize(dotSize);
@@ -10971,12 +11034,12 @@ export default function Field(props = {}) {
   function renderCustomShape({ icon, imageWidth, imageHeight }) {
     // VALIDACIÓN ESTRICTA con la bandera de completado
     if (!icon.isCustomShapeComplete ||
-        !icon.points ||
-        icon.points.length < 3 ||
-        !icon.imageWidth ||
-        !icon.imageHeight ||
-        icon.imageWidth === 0 ||
-        icon.imageHeight === 0) {
+      !icon.points ||
+      icon.points.length < 3 ||
+      !icon.imageWidth ||
+      !icon.imageHeight ||
+      icon.imageWidth === 0 ||
+      icon.imageHeight === 0) {
       return null;
     }
 
@@ -11039,7 +11102,7 @@ export default function Field(props = {}) {
     return customShapeElements;
   }
 
-const handleGuardarGrafico = async () => {
+  const handleGuardarGrafico = async () => {
     setSelectedCloneId(null);
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -11062,7 +11125,7 @@ const handleGuardarGrafico = async () => {
         try {
           await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
           setTimeout(() => {
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => { });
           }, 300);
         } catch (e) {
           // Device may not support orientation lock
@@ -11074,7 +11137,7 @@ const handleGuardarGrafico = async () => {
     }
   };
 
-const handleCancelar = useCallback(async () => {
+  const handleCancelar = useCallback(async () => {
     // Verificar si hay cambios sin guardar
     const hasUnsavedChanges = clones.length > 0 || videoKeyframes.length > 0;
 
@@ -11147,7 +11210,7 @@ const handleCancelar = useCallback(async () => {
     try {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       setTimeout(() => {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => { });
       }, 300);
     } catch (e) {
       // Device may not support orientation lock
@@ -11215,7 +11278,7 @@ const handleCancelar = useCallback(async () => {
     }, [handleCancelar])
   );
 
-// Ensure we clear board state when the screen is being removed (navigation away)
+  // Ensure we clear board state when the screen is being removed (navigation away)
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', async () => {
       clearBoardState();
@@ -11223,7 +11286,7 @@ const handleCancelar = useCallback(async () => {
       try {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
         setTimeout(() => {
-          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => { });
         }, 300);
       } catch (e) {
         // Device may not support orientation lock
@@ -11421,7 +11484,7 @@ const handleCancelar = useCallback(async () => {
     const rectBottom = selectionRect.y + selectionRect.height;
 
     // helper: segment intersection
-    function segmentsIntersect(x1,y1,x2,y2,x3,y3,x4,y4) {
+    function segmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
       const det = (x2 - x1) * (y4 - y3) - (y2 - y1) * (x4 - x3);
       if (det === 0) return false; // parallel
       const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
@@ -11611,14 +11674,14 @@ const handleCancelar = useCallback(async () => {
     }
     function segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
       return ccw(ax, ay, cx, cy, dx, dy) !== ccw(bx, by, cx, cy, dx, dy)
-          && ccw(ax, ay, bx, by, cx, cy) !== ccw(ax, ay, bx, by, dx, dy);
+        && ccw(ax, ay, bx, by, cx, cy) !== ccw(ax, ay, bx, by, dx, dy);
     }
     function segmentIntersectsRect(x1, y1, x2, y2, l, t, r, b) {
       if (pointInRect(x1, y1, l, t, r, b) || pointInRect(x2, y2, l, t, r, b)) return true;
       return segmentsIntersect(x1, y1, x2, y2, l, t, r, t)
-          || segmentsIntersect(x1, y1, x2, y2, r, t, r, b)
-          || segmentsIntersect(x1, y1, x2, y2, r, b, l, b)
-          || segmentsIntersect(x1, y1, x2, y2, l, b, l, t);
+        || segmentsIntersect(x1, y1, x2, y2, r, t, r, b)
+        || segmentsIntersect(x1, y1, x2, y2, r, b, l, b)
+        || segmentsIntersect(x1, y1, x2, y2, l, b, l, t);
     }
     function circleIn(cx, cy, rad, l, t, r, b) {
       const closestX = Math.max(l, Math.min(cx, r));
@@ -11769,7 +11832,7 @@ const handleCancelar = useCallback(async () => {
     const isInsideOverlay = (clientX, clientY) => {
       const r = overlayRect();
       return clientX >= r.left && clientX <= r.right
-          && clientY >= r.top && clientY <= r.bottom;
+        && clientY >= r.top && clientY <= r.bottom;
     };
 
     const onDown = (ev) => {
@@ -11985,12 +12048,12 @@ const handleCancelar = useCallback(async () => {
       if (clone.points && clone.points.length > 0) {
         // Para lneas (rectas o curvas)
         if (clone.type === 'straight-line' || clone.type === 'straight-arrow' ||
-            clone.type === 'curve-line' || clone.type === 'curve-arrow') {
+          clone.type === 'curve-line' || clone.type === 'curve-arrow') {
           const pts = clone.points.map(p => ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight));
 
           // Verificar proximidad a cada segmento de la lnea
           for (let j = 0; j < pts.length - 1; j++) {
-            const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[j+1].x, pts[j+1].y);
+            const dist = distanceToSegment(touchX, touchY, pts[j].x, pts[j].y, pts[j + 1].x, pts[j + 1].y);
             // Solo borrar si est MUY cerca de la lnea
             if (dist <= LINE_TOLERANCE) {
               return clone.id;
@@ -12057,8 +12120,8 @@ const handleCancelar = useCallback(async () => {
           const textWidth = Math.max(textLength * fontSize * 0.6, 40);
           const textHeight = fontSize + 10;
 
-          if (touchX >= elemX - textWidth/2 - ICON_TOLERANCE && touchX <= elemX + textWidth/2 + ICON_TOLERANCE &&
-              touchY >= elemY - textHeight/2 - ICON_TOLERANCE && touchY <= elemY + textHeight/2 + ICON_TOLERANCE) {
+          if (touchX >= elemX - textWidth / 2 - ICON_TOLERANCE && touchX <= elemX + textWidth / 2 + ICON_TOLERANCE &&
+            touchY >= elemY - textHeight / 2 - ICON_TOLERANCE && touchY <= elemY + textHeight / 2 + ICON_TOLERANCE) {
             return clone.id;
           }
         } else {
@@ -12068,7 +12131,7 @@ const handleCancelar = useCallback(async () => {
 
           // Solo borrar si el dedo est DENTRO del rea del elemento
           if (touchX >= elemX - halfSize - ICON_TOLERANCE && touchX <= elemX + halfSize + ICON_TOLERANCE &&
-              touchY >= elemY - halfSize - ICON_TOLERANCE && touchY <= elemY + halfSize + ICON_TOLERANCE) {
+            touchY >= elemY - halfSize - ICON_TOLERANCE && touchY <= elemY + halfSize + ICON_TOLERANCE) {
             return clone.id;
           }
         }
@@ -12250,7 +12313,7 @@ const handleCancelar = useCallback(async () => {
   // Funciones para dibujar lneas rectas
   const handleStraightLineDrawStart = useCallback((e) => {
     if (!drawingStraightArrow && !drawingStraightLine &&
-        !drawingCircle && !drawingRectangle) return;
+      !drawingCircle && !drawingRectangle) return;
 
     const { locationX, locationY } = e.nativeEvent;
     setStraightLineStart(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
@@ -12259,7 +12322,7 @@ const handleCancelar = useCallback(async () => {
 
   const handleStraightLineDrawMove = useCallback((e) => {
     if ((!drawingStraightArrow && !drawingStraightLine &&
-        !drawingCircle && !drawingRectangle) || !straightLineStart) return;
+      !drawingCircle && !drawingRectangle) || !straightLineStart) return;
 
     const { locationX, locationY } = e.nativeEvent;
     setStraightLineEnd(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
@@ -12272,8 +12335,8 @@ const handleCancelar = useCallback(async () => {
   // 5. Reemplazar la funcin handleStraightLineDrawEnd
   const handleStraightLineDrawEnd = () => {
     if ((!drawingStraightArrow && !drawingStraightLine &&
-        !drawingCircle && !drawingRectangle) ||
-        !straightLineStart || !straightLineEnd) {
+      !drawingCircle && !drawingRectangle) ||
+      !straightLineStart || !straightLineEnd) {
       setStraightLineStart(null);
       setStraightLineEnd(null);
       setTemporaryLinePoints([]);
@@ -12852,11 +12915,11 @@ const handleCancelar = useCallback(async () => {
     setClones(prev => prev.map(clone =>
       clone.id === iconId
         ? {
-            ...clone,
-            locked: false,
-            // Restaurar zIndex original o usar valor por defecto segn tipo
-            zIndex: clone.originalZIndex || getZIndexBaseForType(clone.type)
-          }
+          ...clone,
+          locked: false,
+          // Restaurar zIndex original o usar valor por defecto segn tipo
+          zIndex: clone.originalZIndex || getZIndexBaseForType(clone.type)
+        }
         : clone
     ));
   }, []);
@@ -13112,16 +13175,16 @@ const handleCancelar = useCallback(async () => {
             const newClone = clones[i];
             // Si cambiaron propiedades visuales (no solo posicin), forzar reclculo completo
             if (oldClone.color !== newClone.color ||
-                oldClone.size !== newClone.size ||
-                oldClone.thickness !== newClone.thickness ||
-                oldClone.lineType !== newClone.lineType ||
-                oldClone.fillColor !== newClone.fillColor ||
-                oldClone.dotSize !== newClone.dotSize ||
-                oldClone.dotSpacing !== newClone.dotSpacing ||
-                oldClone.numberColor !== newClone.numberColor ||
-                oldClone.textColor !== newClone.textColor ||
-                oldClone.textBackgroundColor !== newClone.textBackgroundColor ||
-                oldClone._lastUpdate !== newClone._lastUpdate) {
+              oldClone.size !== newClone.size ||
+              oldClone.thickness !== newClone.thickness ||
+              oldClone.lineType !== newClone.lineType ||
+              oldClone.fillColor !== newClone.fillColor ||
+              oldClone.dotSize !== newClone.dotSize ||
+              oldClone.dotSpacing !== newClone.dotSpacing ||
+              oldClone.numberColor !== newClone.numberColor ||
+              oldClone.textColor !== newClone.textColor ||
+              oldClone.textBackgroundColor !== newClone.textBackgroundColor ||
+              oldClone._lastUpdate !== newClone._lastUpdate) {
               onlyPositionChanged = false;
             }
           }
@@ -13313,10 +13376,10 @@ const handleCancelar = useCallback(async () => {
   const lineElements = useMemo(() => {
     return positionedClones.filter(clone => {
       return (clone.type === 'straight-line' ||
-             clone.type === 'straight-arrow' ||
-             clone.type === 'curve-line' ||
-             clone.type === 'curve-arrow' ||
-             (clone.type === 'custom-shape' && clone.isCustomShapeComplete)) && isCloneVisible(clone);
+        clone.type === 'straight-arrow' ||
+        clone.type === 'curve-line' ||
+        clone.type === 'curve-arrow' ||
+        (clone.type === 'custom-shape' && clone.isCustomShapeComplete)) && isCloneVisible(clone);
     }).map(clone => {
       // Preparar datos para BatchSvgRenderer
       if (clone.type === 'straight-line' || clone.type === 'straight-arrow') {
@@ -13345,8 +13408,8 @@ const handleCancelar = useCallback(async () => {
   // OPTIMIZACIÓN: Verificar si hay alg�n modo de dibujo activo (incluye eraserMode)
   const isAnyDrawingMode = useMemo(() => {
     return drawingStraightArrow || drawingStraightLine ||
-           drawingCurveArrow || drawingCurveLine ||
-           drawingCircle || drawingRectangle || drawingCustomShape || eraserMode;
+      drawingCurveArrow || drawingCurveLine ||
+      drawingCircle || drawingRectangle || drawingCustomShape || eraserMode;
   }, [drawingStraightArrow, drawingStraightLine, drawingCurveArrow, drawingCurveLine, drawingCircle, drawingRectangle, drawingCustomShape, eraserMode]);
 
   const handleApplyEdit = (iconEdited, applyToAll = false) => {
@@ -13537,7 +13600,7 @@ const handleCancelar = useCallback(async () => {
 
       // Sincronizar estados globales usados al crear shapes SOLO si el tipo pendiente corresponde
       // a un tipo que debe afectar los estilos globales (no aplicar a custom-shape)
-      const GLOBAL_STYLE_TYPES = ['straight-arrow','straight-line','curve-arrow','curve-line','circle','rectangle'];
+      const GLOBAL_STYLE_TYPES = ['straight-arrow', 'straight-line', 'curve-arrow', 'curve-line', 'circle', 'rectangle'];
       if (GLOBAL_STYLE_TYPES.includes(pendingLineAction?.type)) {
         if (iconEdited.lineType !== undefined) setLineType(iconEdited.lineType);
         if (iconEdited.dotSize !== undefined) setDotSize(iconEdited.dotSize);
@@ -13611,25 +13674,25 @@ const handleCancelar = useCallback(async () => {
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.proModalOverlay}>
             <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer, isMobile && {
-                  width: SCREEN_WIDTH * 0.80,
-                  maxWidth: 340,
-                  maxHeight: SCREEN_HEIGHT * 0.85
-                }]}>
-                  {/* Header */}
-                  <View style={styles.proModalHeader}>
-                    <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>{canHaveFill ? '◼' : '━'}</Text>
-                    </View>
-                    <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                      {canHaveFill ? t('tacticalBoard.lineConfig.titleShape') : t('tacticalBoard.lineConfig.titleLine')}
-                    </Text>
-                    <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
+            <View style={[styles.proModalContainer, isMobile && {
+              width: SCREEN_WIDTH * 0.80,
+              maxWidth: 340,
+              maxHeight: SCREEN_HEIGHT * 0.85
+            }]}>
+              {/* Header */}
+              <View style={styles.proModalHeader}>
+                <View style={styles.proModalHeaderIcon}>
+                  <Text style={{ fontSize: 12 }}>{canHaveFill ? '◼' : '━'}</Text>
+                </View>
+                <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                  {canHaveFill ? t('tacticalBoard.lineConfig.titleShape') : t('tacticalBoard.lineConfig.titleLine')}
+                </Text>
+                <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                  <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-                  <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+              <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
 
                 {/* Color del trazado */}
                 <View style={styles.proModalSection}>
@@ -13806,33 +13869,12 @@ const handleCancelar = useCallback(async () => {
                 <View style={styles.proModalSection}>
                   <Text style={styles.proModalLabel}>{t('tacticalBoard.editPanel.preview')}</Text>
                   <View style={styles.proModalPreview}>
-                  <Svg width="200" height="80" key={`modal-preview-${selectedType}-${selectedDotSize}-${selectedDotSpacing}-${selectedColor}-${selectedThickness}-${selectedFillColor}`}>
-                    {/* Vista previa seg�n el tipo de forma */}
-                    {(shapeType === 'line' || shapeType === 'straight-line') && (
-                      selectedType === 'dotted' ? (
-                        <Path
-                          d="M20,40 L180,40"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
-                          fill="none"
-                          strokeLinecap="round"
-                        />
-                      ) : (
-                        <Path
-                          d="M20,40 L180,40"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill="none"
-                          strokeLinecap="round"
-                        />
-                      )
-                    )}
-                    {(shapeType === 'arrow' || shapeType === 'straight-arrow') && (
-                      <>
-                        {selectedType === 'dotted' ? (
+                    <Svg width="200" height="80" key={`modal-preview-${selectedType}-${selectedDotSize}-${selectedDotSpacing}-${selectedColor}-${selectedThickness}-${selectedFillColor}`}>
+                      {/* Vista previa seg�n el tipo de forma */}
+                      {(shapeType === 'line' || shapeType === 'straight-line') && (
+                        selectedType === 'dotted' ? (
                           <Path
-                            d="M20,40 L160,40"
+                            d="M20,40 L180,40"
                             stroke={selectedColor}
                             strokeWidth={parseInt(selectedThickness) || 2}
                             strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
@@ -13841,48 +13883,48 @@ const handleCancelar = useCallback(async () => {
                           />
                         ) : (
                           <Path
-                            d="M20,40 L160,40"
+                            d="M20,40 L180,40"
                             stroke={selectedColor}
                             strokeWidth={parseInt(selectedThickness) || 2}
                             fill="none"
                             strokeLinecap="round"
                           />
-                        )}
-                        <Path
-                          d="M160,40 L145,30 M160,40 L145,50"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </>
-                    )}
-                    {(shapeType === 'curve-line') && (
-                      selectedType === 'dotted' ? (
-                        <Path
-                          d="M20,60 Q100,10 180,60"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
-                          fill="none"
-                          strokeLinecap="round"
-                        />
-                      ) : (
-                        <Path
-                          d="M20,60 Q100,10 180,60"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill="none"
-                          strokeLinecap="round"
-                        />
-                      )
-                    )}
-                    {(shapeType === 'curve-arrow') && (
-                      <>
-                        {selectedType === 'dotted' ? (
+                        )
+                      )}
+                      {(shapeType === 'arrow' || shapeType === 'straight-arrow') && (
+                        <>
+                          {selectedType === 'dotted' ? (
+                            <Path
+                              d="M20,40 L160,40"
+                              stroke={selectedColor}
+                              strokeWidth={parseInt(selectedThickness) || 2}
+                              strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
+                              fill="none"
+                              strokeLinecap="round"
+                            />
+                          ) : (
+                            <Path
+                              d="M20,40 L160,40"
+                              stroke={selectedColor}
+                              strokeWidth={parseInt(selectedThickness) || 2}
+                              fill="none"
+                              strokeLinecap="round"
+                            />
+                          )}
                           <Path
-                            d="M20,60 Q100,10 160,60"
+                            d="M160,40 L145,30 M160,40 L145,50"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </>
+                      )}
+                      {(shapeType === 'curve-line') && (
+                        selectedType === 'dotted' ? (
+                          <Path
+                            d="M20,60 Q100,10 180,60"
                             stroke={selectedColor}
                             strokeWidth={parseInt(selectedThickness) || 2}
                             strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
@@ -13891,142 +13933,163 @@ const handleCancelar = useCallback(async () => {
                           />
                         ) : (
                           <Path
-                            d="M20,60 Q100,10 160,60"
+                            d="M20,60 Q100,10 180,60"
                             stroke={selectedColor}
                             strokeWidth={parseInt(selectedThickness) || 2}
                             fill="none"
                             strokeLinecap="round"
                           />
-                        )}
-                        <Path
-                          d="M160,60 L150,45 M160,60 L145,65"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </>
-                    )}
-                    {shapeType === 'circle' && (
-                      selectedType === 'dotted' ? (
-                        <Circle
-                          cx="100"
-                          cy="40"
-                          r="30"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                        />
-                      ) : (
-                        <Circle
-                          cx="100"
-                          cy="40"
-                          r="30"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                        />
-                      )
-                    )}
-                    {shapeType === 'rectangle' && (
-                      selectedType === 'dotted' ? (
-                        <Rect
-                          x="40"
-                          y="15"
-                          width="120"
-                          height="50"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                        />
-                      ) : (
-                        <Rect
-                          x="40"
-                          y="15"
-                          width="120"
-                          height="50"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                        />
-                      )
-                    )}
-                    {shapeType === 'custom-shape' && (
-                      selectedType === 'dotted' ? (
-                        <Path
-                          d="M100,15 L140,65 L60,65 Z"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      ) : (
-                        <Path
-                          d="M100,15 L140,65 L60,65 Z"
-                          stroke={selectedColor}
-                          strokeWidth={parseInt(selectedThickness) || 2}
-                          fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
-                          fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      )
-                    )}
-                  </Svg>
+                        )
+                      )}
+                      {(shapeType === 'curve-arrow') && (
+                        <>
+                          {selectedType === 'dotted' ? (
+                            <Path
+                              d="M20,60 Q100,10 160,60"
+                              stroke={selectedColor}
+                              strokeWidth={parseInt(selectedThickness) || 2}
+                              strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
+                              fill="none"
+                              strokeLinecap="round"
+                            />
+                          ) : (
+                            <Path
+                              d="M20,60 Q100,10 160,60"
+                              stroke={selectedColor}
+                              strokeWidth={parseInt(selectedThickness) || 2}
+                              fill="none"
+                              strokeLinecap="round"
+                            />
+                          )}
+                          <Path
+                            d="M160,60 L150,45 M160,60 L145,65"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </>
+                      )}
+                      {shapeType === 'circle' && (
+                        selectedType === 'dotted' ? (
+                          <Circle
+                            cx="100"
+                            cy="40"
+                            r="30"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                          />
+                        ) : (
+                          <Circle
+                            cx="100"
+                            cy="40"
+                            r="30"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                          />
+                        )
+                      )}
+                      {shapeType === 'rectangle' && (
+                        selectedType === 'dotted' ? (
+                          <Rect
+                            x="40"
+                            y="15"
+                            width="120"
+                            height="50"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                          />
+                        ) : (
+                          <Rect
+                            x="40"
+                            y="15"
+                            width="120"
+                            height="50"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                          />
+                        )
+                      )}
+                      {shapeType === 'custom-shape' && (
+                        selectedType === 'dotted' ? (
+                          <Path
+                            d="M100,15 L140,65 L60,65 Z"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            strokeDasharray={`${selectedDotSize},${selectedDotSpacing}`}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        ) : (
+                          <Path
+                            d="M100,15 L140,65 L60,65 Z"
+                            stroke={selectedColor}
+                            strokeWidth={parseInt(selectedThickness) || 2}
+                            fill={selectedFillColor === 'transparent' ? 'none' : selectedFillColor}
+                            fillOpacity={selectedFillColor === 'transparent' ? 0 : 0.6}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        )
+                      )}
+                    </Svg>
                   </View>
                 </View>
-                </ScrollView>
+              </ScrollView>
 
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                    onPress={onClose}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnPrimary]}
-                    onPress={() => {
-                      onSelect({
-                        lineType: selectedType,
-                        dotSize: selectedDotSize,
-                        dotSpacing: selectedDotSpacing,
-                        color: selectedColor,
-                        thickness: parseInt(selectedThickness) || 2,
-                        fillColor: selectedFillColor
-                      });
-                      onClose();
-                    }}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>{t('tacticalBoard.lineConfig.draw')}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Color Picker Modals */}
-                <MiniColorPickerModal
-                  visible={colorPickerVisible}
-                  initialColor={selectedColor}
-                  onClose={() => setColorPickerVisible(false)}
-                  onSelect={setSelectedColor}
-                />
-                <MiniColorPickerModal
-                  visible={fillColorPickerVisible}
-                  initialColor={selectedFillColor === 'transparent' ? '#ffffff' : selectedFillColor}
-                  onClose={() => setFillColorPickerVisible(false)}
-                  onSelect={setSelectedFillColor}
-                />
+              {/* Footer */}
+              <View style={styles.proModalFooter}>
+                <TouchableOpacity
+                  style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                  onPress={onClose}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                  onPress={() => {
+                    onSelect({
+                      lineType: selectedType,
+                      dotSize: selectedDotSize,
+                      dotSpacing: selectedDotSpacing,
+                      color: selectedColor,
+                      thickness: parseInt(selectedThickness) || 2,
+                      fillColor: selectedFillColor
+                    });
+                    onClose();
+                  }}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>{t('tacticalBoard.lineConfig.draw')}</Text>
+                </TouchableOpacity>
               </View>
+
+              {/* Color Picker Modals */}
+              <MiniColorPickerModal
+                visible={colorPickerVisible}
+                initialColor={selectedColor}
+                onClose={() => setColorPickerVisible(false)}
+                onSelect={setSelectedColor}
+              />
+              <MiniColorPickerModal
+                visible={fillColorPickerVisible}
+                initialColor={selectedFillColor === 'transparent' ? '#ffffff' : selectedFillColor}
+                onClose={() => setFillColorPickerVisible(false)}
+                onSelect={setSelectedFillColor}
+              />
+            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -14104,328 +14167,328 @@ const handleCancelar = useCallback(async () => {
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.proModalOverlay}>
             <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer, isMobile && { width: SCREEN_WIDTH * 0.80, maxWidth: 340, maxHeight: SCREEN_HEIGHT * 0.88 }]}>
-                  {/* Header */}
-                  <View style={styles.proModalHeader}>
-                    <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>👥</Text>
-                    </View>
-                    <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                      {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
-                    </Text>
-                    <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
+            <View style={[styles.proModalContainer, isMobile && { width: SCREEN_WIDTH * 0.80, maxWidth: 340, maxHeight: SCREEN_HEIGHT * 0.88 }]}>
+              {/* Header */}
+              <View style={styles.proModalHeader}>
+                <View style={styles.proModalHeaderIcon}>
+                  <Text style={{ fontSize: 12 }}>👥</Text>
+                </View>
+                <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                  {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
+                </Text>
+                <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                  <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
-                  <ScrollView
-                    contentContainerStyle={styles.proModalBody}
-                    showsVerticalScrollIndicator={true}
-                    nestedScrollEnabled={true}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    {/* Vista previa */}
-                    <View style={[styles.proModalPreview, { marginBottom: 12, alignItems: 'center' }]}>
+              <ScrollView
+                contentContainerStyle={styles.proModalBody}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Vista previa */}
+                <View style={[styles.proModalPreview, { marginBottom: 12, alignItems: 'center' }]}>
+                  <View style={{
+                    width: iconPreviewSize,
+                    height: iconPreviewSize,
+                    borderRadius: iconPreviewSize / 2,
+                    backgroundColor: showPhotos ? 'transparent' : color,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: showPhotos ? 2 : 1,
+                    borderColor: showPhotos ? color : '#222',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Icono de foto si est� activo */}
+                    {showPhotos ? (
                       <View style={{
                         width: iconPreviewSize,
                         height: iconPreviewSize,
                         borderRadius: iconPreviewSize / 2,
-                        backgroundColor: showPhotos ? 'transparent' : color,
+                        backgroundColor: '#e0e0e0',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        borderWidth: showPhotos ? 2 : 1,
-                        borderColor: showPhotos ? color : '#222',
-                        overflow: 'hidden',
                       }}>
-                        {/* Icono de foto si est� activo */}
-                        {showPhotos ? (
-                          <View style={{
-                            width: iconPreviewSize,
-                            height: iconPreviewSize,
-                            borderRadius: iconPreviewSize / 2,
-                            backgroundColor: '#e0e0e0',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}>
-                            <Ionicons name="person" size={iconPreviewSize * 0.6} color="#888" />
-                          </View>
-                        ) : (
+                        <Ionicons name="person" size={iconPreviewSize * 0.6} color="#888" />
+                      </View>
+                    ) : (
+                      <>
+                        {/* Rayas de portero si est� activo */}
+                        {differentiateGoalkeeper && (
                           <>
-                            {/* Rayas de portero si est� activo */}
-                            {differentiateGoalkeeper && (
-                              <>
-                                <View style={{ position: 'absolute', top: iconPreviewSize * 0.1, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                                <View style={{ position: 'absolute', top: iconPreviewSize * 0.35, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                                <View style={{ position: 'absolute', top: iconPreviewSize * 0.6, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                                <View style={{ position: 'absolute', top: iconPreviewSize * 0.85, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                              </>
-                            )}
-                            <Text style={{
-                              color: numberColor,
-                              fontSize: iconPreviewSize * 0.5,
-                              fontWeight: 'bold',
-                            }}>
-                              {showPosition ? 'PT' : '1'}
-                            </Text>
+                            <View style={{ position: 'absolute', top: iconPreviewSize * 0.1, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                            <View style={{ position: 'absolute', top: iconPreviewSize * 0.35, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                            <View style={{ position: 'absolute', top: iconPreviewSize * 0.6, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                            <View style={{ position: 'absolute', top: iconPreviewSize * 0.85, left: 0, right: 0, height: 2, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
                           </>
                         )}
-                      </View>
-                      <View style={{
-                        backgroundColor: textBackgroundColor === 'transparent' ? 'transparent' : textBackgroundColor,
-                        paddingHorizontal: 4,
-                        paddingVertical: 2,
-                        borderRadius: 4,
-                        marginTop: 4,
-                      }}>
-                        <Text style={{ color: textColor, fontSize: 11, fontWeight: '500' }}>{t('tacticalBoard.teamSettings.nameLabel')}</Text>
-                      </View>
-                      <Text style={{ fontSize: 10, color: '#888', marginTop: 4 }}>
-                        {t('tacticalBoard.teamSettings.goalkeeperPreview') || '(Vista previa de portero)'}
-                      </Text>
-                    </View>
-
-                    {/* Color del icono */}
-                    <View style={styles.proModalSection}>
-                      <View style={styles.proModalRow}>
-                        <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          {t('tacticalBoard.teamSettings.iconColor') || 'Color del icono:'}
+                        <Text style={{
+                          color: numberColor,
+                          fontSize: iconPreviewSize * 0.5,
+                          fontWeight: 'bold',
+                        }}>
+                          {showPosition ? 'PT' : '1'}
                         </Text>
-                        <TouchableOpacity
-                          style={[
-                            isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                            { backgroundColor: color }
-                          ]}
-                          onPress={() => setColorPickerVisible(true)}
-                        />
-                      </View>
-                    </View>
-
-                    <MiniColorPickerModal
-                      visible={colorPickerVisible}
-                      initialColor={color}
-                      onClose={() => setColorPickerVisible(false)}
-                      onSelect={setColor}
-                    />
-
-                    {/* Color del n�mero/texto */}
-                    <View style={styles.proModalSection}>
-                      <View style={styles.proModalRow}>
-                        <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          {t('tacticalBoard.teamSettings.numberColor') || 'Color del n�mero:'}
-                        </Text>
-                        <TouchableOpacity
-                          style={[
-                            isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                            { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
-                          ]}
-                          onPress={() => setNumberColorPickerVisible(true)}
-                        />
-                      </View>
-                    </View>
-
-                    <MiniColorPickerModal
-                      visible={numberColorPickerVisible}
-                      initialColor={numberColor}
-                      onClose={() => setNumberColorPickerVisible(false)}
-                      onSelect={setNumberColor}
-                    />
-
-                    {/* Color del texto del nombre */}
-                    <View style={styles.proModalSection}>
-                      <View style={styles.proModalRow}>
-                        <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          {t('tacticalBoard.teamSettings.nameTextColor') || 'Color del nombre:'}
-                        </Text>
-                        <TouchableOpacity
-                          style={[
-                            isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                            { backgroundColor: textColor }
-                          ]}
-                          onPress={() => setTextColorPickerVisible(true)}
-                        />
-                      </View>
-                    </View>
-
-                    <MiniColorPickerModal
-                      visible={textColorPickerVisible}
-                      initialColor={textColor}
-                      onClose={() => setTextColorPickerVisible(false)}
-                      onSelect={setTextColor}
-                    />
-
-                    {/* Color de fondo del nombre */}
-                    <View style={styles.proModalSection}>
-                      <View style={styles.proModalRow}>
-                        <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          {t('tacticalBoard.teamSettings.nameBgColor') || 'Fondo del nombre:'}
-                        </Text>
-                        <TouchableOpacity
-                          style={[
-                            isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                            {
-                              backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
-                              opacity: textBackgroundColor === 'transparent' ? 0.4 : 1
-                            }
-                          ]}
-                          onPress={() => setTextBgColorPickerVisible(true)}
-                        />
-                        <TouchableOpacity
-                          onPress={() => setTextBackgroundColor('transparent')}
-                          style={[
-                            styles.proModalChip,
-                            textBackgroundColor === 'transparent' && styles.proModalChipSelected
-                          ]}
-                        >
-                          <Text style={[
-                            styles.proModalChipText,
-                            { fontSize: 10 },
-                            textBackgroundColor === 'transparent' && styles.proModalChipTextSelected
-                          ]}>
-                            {t('tacticalBoard.editPanel.noBackground') || 'Sin fondo'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <MiniColorPickerModal
-                      visible={textBgColorPickerVisible}
-                      initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
-                      onClose={() => setTextBgColorPickerVisible(false)}
-                      onSelect={setTextBackgroundColor}
-                    />
-
-                    {/* Tama�o */}
-                    <View style={styles.proModalSection}>
-                      <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginBottom: 8 }]}>
-                        {t('tacticalBoard.editPanel.sizeLabel') || 'Tama�o:'}
-                      </Text>
-                      <View style={styles.proModalStepperRow}>
-                        <TouchableOpacity
-                          style={styles.proModalStepperBtn}
-                          onPress={() => {
-                            const current = parseInt(size) || 24;
-                            if (current > 12) setSize(String(current - 2));
-                          }}
-                        >
-                          <Feather name="minus" size={18} color="#666" />
-                        </TouchableOpacity>
-                        <View style={styles.proModalStepperValue}>
-                          <Text style={styles.proModalStepperValueText}>{size}</Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.proModalStepperBtn}
-                          onPress={() => {
-                            const current = parseInt(size) || 24;
-                            if (current < 80) setSize(String(current + 2));
-                          }}
-                        >
-                          <Feather name="plus" size={18} color="#666" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Mostrar posici�n en lugar de n�mero */}
-                    <View style={[styles.proModalSwitch, { marginTop: 12 }]}>
-                      <Text style={styles.proModalSwitchLabel}>
-                        {t('tacticalBoard.teamSettings.showPosition') || 'Mostrar posici�n'}
-                      </Text>
-                      <Switch
-                        value={showPosition}
-                        onValueChange={setShowPosition}
-                        trackColor={{ false: "#ddd", true: "#81b0ff" }}
-                        thumbColor={showPosition ? "#2176ff" : "#f4f3f4"}
-                        disabled={showPhotos}
-                      />
-                    </View>
-
-                    {/* Mostrar fotos de los jugadores */}
-                    <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
-                      <Text style={styles.proModalSwitchLabel}>
-                        {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
-                      </Text>
-                      <Switch
-                        value={showPhotos}
-                        onValueChange={(val) => {
-                          setShowPhotos(val);
-                          // Si se activan fotos, desactivar mostrar posici�n
-                          if (val) {
-                            setShowPosition(false);
-                          }
-                        }}
-                        trackColor={{ false: "#ddd", true: "#81b0ff" }}
-                        thumbColor={showPhotos ? "#2176ff" : "#f4f3f4"}
-                      />
-                    </View>
-                    {showPhotos && (
-                      <Text style={{ fontSize: 10, color: '#888', marginTop: 2, marginLeft: 4, fontStyle: 'italic' }}>
-                        {t('tacticalBoard.teamSettings.showPhotosHint') || 'Se mostrar� la foto del jugador en lugar del n�mero y color'}
-                      </Text>
+                      </>
                     )}
+                  </View>
+                  <View style={{
+                    backgroundColor: textBackgroundColor === 'transparent' ? 'transparent' : textBackgroundColor,
+                    paddingHorizontal: 4,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    marginTop: 4,
+                  }}>
+                    <Text style={{ color: textColor, fontSize: 11, fontWeight: '500' }}>{t('tacticalBoard.teamSettings.nameLabel')}</Text>
+                  </View>
+                  <Text style={{ fontSize: 10, color: '#888', marginTop: 4 }}>
+                    {t('tacticalBoard.teamSettings.goalkeeperPreview') || '(Vista previa de portero)'}
+                  </Text>
+                </View>
 
-                    {/* Diferenciar portero con rayas */}
-                    <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
-                      <Text style={styles.proModalSwitchLabel}>
-                        {t('tacticalBoard.teamSettings.differentiateGoalkeeper') || 'Diferenciar portero'}
-                      </Text>
-                      <Switch
-                        value={differentiateGoalkeeper}
-                        onValueChange={setDifferentiateGoalkeeper}
-                        trackColor={{ false: "#ddd", true: "#81b0ff" }}
-                        thumbColor={differentiateGoalkeeper ? "#2176ff" : "#f4f3f4"}
-                        disabled={showPhotos}
-                      />
-                    </View>
-
-                    {/* Color de las rayas del portero - solo si differentiateGoalkeeper est� activo */}
-                    {differentiateGoalkeeper && (
-                      <View style={[styles.proModalSection, { marginTop: 8 }]}>
-                        <View style={styles.proModalRow}>
-                          <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                            {t('tacticalBoard.teamSettings.stripeColor') || 'Color de las rayas:'}
-                          </Text>
-                          <TouchableOpacity
-                            style={[
-                              isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                              { backgroundColor: goalkeeperStripeColor, borderWidth: 1, borderColor: goalkeeperStripeColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
-                            ]}
-                            onPress={() => setStripeColorPickerVisible(true)}
-                          />
-                        </View>
-                      </View>
-                    )}
-
-                    <MiniColorPickerModal
-                      visible={stripeColorPickerVisible}
-                      initialColor={goalkeeperStripeColor}
-                      onClose={() => setStripeColorPickerVisible(false)}
-                      onSelect={setGoalkeeperStripeColor}
-                    />
-
-                    <Text style={{ fontSize: 11, color: '#888', marginTop: 8, fontStyle: 'italic' }}>
-                      {t('tacticalBoard.teamSettings.goalkeeperHint') || 'Los porteros tendr�n rayas horizontales'}
+                {/* Color del icono */}
+                <View style={styles.proModalSection}>
+                  <View style={styles.proModalRow}>
+                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                      {t('tacticalBoard.teamSettings.iconColor') || 'Color del icono:'}
                     </Text>
-                  </ScrollView>
+                    <TouchableOpacity
+                      style={[
+                        isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                        { backgroundColor: color }
+                      ]}
+                      onPress={() => setColorPickerVisible(true)}
+                    />
+                  </View>
+                </View>
 
-                  {/* Footer */}
-                  <View style={styles.proModalFooter}>
+                <MiniColorPickerModal
+                  visible={colorPickerVisible}
+                  initialColor={color}
+                  onClose={() => setColorPickerVisible(false)}
+                  onSelect={setColor}
+                />
+
+                {/* Color del n�mero/texto */}
+                <View style={styles.proModalSection}>
+                  <View style={styles.proModalRow}>
+                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                      {t('tacticalBoard.teamSettings.numberColor') || 'Color del n�mero:'}
+                    </Text>
                     <TouchableOpacity
-                      style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                      onPress={onClose}
-                    >
-                      <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                        {t('tacticalBoard.editPanel.close') || 'Cerrar'}
-                      </Text>
-                    </TouchableOpacity>
+                      style={[
+                        isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                        { backgroundColor: numberColor, borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
+                      ]}
+                      onPress={() => setNumberColorPickerVisible(true)}
+                    />
+                  </View>
+                </View>
+
+                <MiniColorPickerModal
+                  visible={numberColorPickerVisible}
+                  initialColor={numberColor}
+                  onClose={() => setNumberColorPickerVisible(false)}
+                  onSelect={setNumberColor}
+                />
+
+                {/* Color del texto del nombre */}
+                <View style={styles.proModalSection}>
+                  <View style={styles.proModalRow}>
+                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                      {t('tacticalBoard.teamSettings.nameTextColor') || 'Color del nombre:'}
+                    </Text>
                     <TouchableOpacity
-                      style={[styles.proModalBtn, styles.proModalBtnPrimary]}
-                      onPress={handleApply}
+                      style={[
+                        isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                        { backgroundColor: textColor }
+                      ]}
+                      onPress={() => setTextColorPickerVisible(true)}
+                    />
+                  </View>
+                </View>
+
+                <MiniColorPickerModal
+                  visible={textColorPickerVisible}
+                  initialColor={textColor}
+                  onClose={() => setTextColorPickerVisible(false)}
+                  onSelect={setTextColor}
+                />
+
+                {/* Color de fondo del nombre */}
+                <View style={styles.proModalSection}>
+                  <View style={styles.proModalRow}>
+                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                      {t('tacticalBoard.teamSettings.nameBgColor') || 'Fondo del nombre:'}
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                        {
+                          backgroundColor: textBackgroundColor === 'transparent' ? '#fff' : textBackgroundColor,
+                          opacity: textBackgroundColor === 'transparent' ? 0.4 : 1
+                        }
+                      ]}
+                      onPress={() => setTextBgColorPickerVisible(true)}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setTextBackgroundColor('transparent')}
+                      style={[
+                        styles.proModalChip,
+                        textBackgroundColor === 'transparent' && styles.proModalChipSelected
+                      ]}
                     >
-                      <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                        {t('tacticalBoard.editPanel.apply') || 'Aplicar'}
+                      <Text style={[
+                        styles.proModalChipText,
+                        { fontSize: 10 },
+                        textBackgroundColor === 'transparent' && styles.proModalChipTextSelected
+                      ]}>
+                        {t('tacticalBoard.editPanel.noBackground') || 'Sin fondo'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                <MiniColorPickerModal
+                  visible={textBgColorPickerVisible}
+                  initialColor={textBackgroundColor === 'transparent' ? '#ffffff' : textBackgroundColor}
+                  onClose={() => setTextBgColorPickerVisible(false)}
+                  onSelect={setTextBackgroundColor}
+                />
+
+                {/* Tama�o */}
+                <View style={styles.proModalSection}>
+                  <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginBottom: 8 }]}>
+                    {t('tacticalBoard.editPanel.sizeLabel') || 'Tama�o:'}
+                  </Text>
+                  <View style={styles.proModalStepperRow}>
+                    <TouchableOpacity
+                      style={styles.proModalStepperBtn}
+                      onPress={() => {
+                        const current = parseInt(size) || 24;
+                        if (current > 12) setSize(String(current - 2));
+                      }}
+                    >
+                      <Feather name="minus" size={18} color="#666" />
+                    </TouchableOpacity>
+                    <View style={styles.proModalStepperValue}>
+                      <Text style={styles.proModalStepperValueText}>{size}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.proModalStepperBtn}
+                      onPress={() => {
+                        const current = parseInt(size) || 24;
+                        if (current < 80) setSize(String(current + 2));
+                      }}
+                    >
+                      <Feather name="plus" size={18} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Mostrar posici�n en lugar de n�mero */}
+                <View style={[styles.proModalSwitch, { marginTop: 12 }]}>
+                  <Text style={styles.proModalSwitchLabel}>
+                    {t('tacticalBoard.teamSettings.showPosition') || 'Mostrar posici�n'}
+                  </Text>
+                  <Switch
+                    value={showPosition}
+                    onValueChange={setShowPosition}
+                    trackColor={{ false: "#ddd", true: "#81b0ff" }}
+                    thumbColor={showPosition ? "#2176ff" : "#f4f3f4"}
+                    disabled={showPhotos}
+                  />
+                </View>
+
+                {/* Mostrar fotos de los jugadores */}
+                <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
+                  <Text style={styles.proModalSwitchLabel}>
+                    {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
+                  </Text>
+                  <Switch
+                    value={showPhotos}
+                    onValueChange={(val) => {
+                      setShowPhotos(val);
+                      // Si se activan fotos, desactivar mostrar posici�n
+                      if (val) {
+                        setShowPosition(false);
+                      }
+                    }}
+                    trackColor={{ false: "#ddd", true: "#81b0ff" }}
+                    thumbColor={showPhotos ? "#2176ff" : "#f4f3f4"}
+                  />
+                </View>
+                {showPhotos && (
+                  <Text style={{ fontSize: 10, color: '#888', marginTop: 2, marginLeft: 4, fontStyle: 'italic' }}>
+                    {t('tacticalBoard.teamSettings.showPhotosHint') || 'Se mostrar� la foto del jugador en lugar del n�mero y color'}
+                  </Text>
+                )}
+
+                {/* Diferenciar portero con rayas */}
+                <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
+                  <Text style={styles.proModalSwitchLabel}>
+                    {t('tacticalBoard.teamSettings.differentiateGoalkeeper') || 'Diferenciar portero'}
+                  </Text>
+                  <Switch
+                    value={differentiateGoalkeeper}
+                    onValueChange={setDifferentiateGoalkeeper}
+                    trackColor={{ false: "#ddd", true: "#81b0ff" }}
+                    thumbColor={differentiateGoalkeeper ? "#2176ff" : "#f4f3f4"}
+                    disabled={showPhotos}
+                  />
+                </View>
+
+                {/* Color de las rayas del portero - solo si differentiateGoalkeeper est� activo */}
+                {differentiateGoalkeeper && (
+                  <View style={[styles.proModalSection, { marginTop: 8 }]}>
+                    <View style={styles.proModalRow}>
+                      <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                        {t('tacticalBoard.teamSettings.stripeColor') || 'Color de las rayas:'}
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                          { backgroundColor: goalkeeperStripeColor, borderWidth: 1, borderColor: goalkeeperStripeColor === '#ffffff' ? '#ccc' : '#e0e0e0' }
+                        ]}
+                        onPress={() => setStripeColorPickerVisible(true)}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <MiniColorPickerModal
+                  visible={stripeColorPickerVisible}
+                  initialColor={goalkeeperStripeColor}
+                  onClose={() => setStripeColorPickerVisible(false)}
+                  onSelect={setGoalkeeperStripeColor}
+                />
+
+                <Text style={{ fontSize: 11, color: '#888', marginTop: 8, fontStyle: 'italic' }}>
+                  {t('tacticalBoard.teamSettings.goalkeeperHint') || 'Los porteros tendr�n rayas horizontales'}
+                </Text>
+              </ScrollView>
+
+              {/* Footer */}
+              <View style={styles.proModalFooter}>
+                <TouchableOpacity
+                  style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                  onPress={onClose}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                    {t('tacticalBoard.editPanel.close') || 'Cerrar'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                  onPress={handleApply}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                    {t('tacticalBoard.editPanel.apply') || 'Aplicar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -14451,96 +14514,96 @@ const handleCancelar = useCallback(async () => {
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.proModalOverlay}>
             <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-<View style={[styles.proModalContainer, isMobile && { width: SCREEN_WIDTH * 0.80, maxWidth: 340, maxHeight: SCREEN_HEIGHT * 0.80 }]}>
-                  {/* Header */}
-                  <View style={styles.proModalHeader}>
-                    <View style={styles.proModalHeaderIcon}>
-                      <Text style={{ fontSize: 12 }}>👥</Text>
-                    </View>
-                    <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                      {t('tacticalBoard.teamPlayersModal.title')}
-                    </Text>
-                    <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
-                      <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
-                  {availablePlayers.length === 0 ? (
-                    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                      <Text style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>{t('tacticalBoard.teamPlayersModal.noPlayers')}</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.playersGrid}>
-                      {availablePlayers.map((player, index) => (
-                        <TouchableOpacity
-                          key={player.uniqueId}
-                          style={[styles.playerGridItem, {
-                            backgroundColor: '#f8f9fa',
-                            borderRadius: 8,
-                            padding: 8,
-                            borderWidth: 1,
-                            borderColor: '#e8e8e8'
-                          }]}
-                          onPress={() => onSelectPlayer(player)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={{
-                            width: iconSize,
-                            height: iconSize,
-                            borderRadius: iconSize / 2,
-                            backgroundColor: showPhotos && player.foto ? 'transparent' : playerColor,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginBottom: 4,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 2,
-                            elevation: 2,
-                            borderWidth: showPhotos && player.foto ? 2 : 0,
-                            borderColor: playerColor,
-                            overflow: 'hidden',
-                          }}>
-                            {showPhotos && player.foto ? (
-                              <Image
-                                source={{ uri: cdnUrl(player.foto) }}
-                                style={{
-                                  width: iconSize - 4,
-                                  height: iconSize - 4,
-                                  borderRadius: (iconSize - 4) / 2,
-                                }}
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <Text style={{
-                                color: numberColor,
-                                fontSize: dorsalFontSize,
-                                fontWeight: 'bold',
-                              }}>
-                                {player.dorsal || player.number || '?'}
-                              </Text>
-                            )}
-                          </View>
-                          <Text style={[styles.playerGridName, { fontSize: nameFontSize }]} numberOfLines={2} ellipsizeMode="tail">
-                            {getPlayerFullName(player) || player.name || t('tacticalBoard.teamPlayersModal.noName')}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </ScrollView>
-
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
-                    onPress={onClose}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.close')}</Text>
-                  </TouchableOpacity>
+            <View style={[styles.proModalContainer, isMobile && { width: SCREEN_WIDTH * 0.80, maxWidth: 340, maxHeight: SCREEN_HEIGHT * 0.80 }]}>
+              {/* Header */}
+              <View style={styles.proModalHeader}>
+                <View style={styles.proModalHeaderIcon}>
+                  <Text style={{ fontSize: 12 }}>👥</Text>
                 </View>
+                <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                  {t('tacticalBoard.teamPlayersModal.title')}
+                </Text>
+                <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
+                  <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                </TouchableOpacity>
               </View>
+
+              <ScrollView contentContainerStyle={styles.proModalBody} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+                {availablePlayers.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                    <Text style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>{t('tacticalBoard.teamPlayersModal.noPlayers')}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.playersGrid}>
+                    {availablePlayers.map((player, index) => (
+                      <TouchableOpacity
+                        key={player.uniqueId}
+                        style={[styles.playerGridItem, {
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: 8,
+                          padding: 8,
+                          borderWidth: 1,
+                          borderColor: '#e8e8e8'
+                        }]}
+                        onPress={() => onSelectPlayer(player)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{
+                          width: iconSize,
+                          height: iconSize,
+                          borderRadius: iconSize / 2,
+                          backgroundColor: showPhotos && player.foto ? 'transparent' : playerColor,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginBottom: 4,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 2,
+                          elevation: 2,
+                          borderWidth: showPhotos && player.foto ? 2 : 0,
+                          borderColor: playerColor,
+                          overflow: 'hidden',
+                        }}>
+                          {showPhotos && player.foto ? (
+                            <Image
+                              source={{ uri: cdnUrl(player.foto) }}
+                              style={{
+                                width: iconSize - 4,
+                                height: iconSize - 4,
+                                borderRadius: (iconSize - 4) / 2,
+                              }}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <Text style={{
+                              color: numberColor,
+                              fontSize: dorsalFontSize,
+                              fontWeight: 'bold',
+                            }}>
+                              {player.dorsal || player.number || '?'}
+                            </Text>
+                          )}
+                        </View>
+                        <Text style={[styles.playerGridName, { fontSize: nameFontSize }]} numberOfLines={2} ellipsizeMode="tail">
+                          {getPlayerFullName(player) || player.name || t('tacticalBoard.teamPlayersModal.noName')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Footer */}
+              <View style={styles.proModalFooter}>
+                <TouchableOpacity
+                  style={[styles.proModalBtn, styles.proModalBtnSecondary, { flex: 1 }]}
+                  onPress={onClose}
+                >
+                  <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>{t('common.close')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -14610,27 +14673,27 @@ const handleCancelar = useCallback(async () => {
               height: buttonSize,
               borderRadius: buttonRadius
             }]}
-          onPress={onToggleZoom}
-        >
-          <MaterialCommunityIcons name="magnify-plus-outline" size={iconSize} color="#fff" />
-        </TouchableOpacity>
+            onPress={onToggleZoom}
+          >
+            <MaterialCommunityIcons name="magnify-plus-outline" size={iconSize} color="#fff" />
+          </TouchableOpacity>
         )}
 
         {/* Bot�n de formaciones */}
         {!hideBottomButtons && (
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            bottom: isMobile ? 10 : 20,
-            left: isMobile ? 94 : 160,
-            backgroundColor: '#2176ff',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onFormations}
-        >
-          <MaterialCommunityIcons name="soccer-field" size={iconSize} color="#fff" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
+              left: isMobile ? 94 : 160,
+              backgroundColor: '#2176ff',
+              width: buttonSize,
+              height: buttonSize,
+              borderRadius: buttonRadius
+            }]}
+            onPress={onFormations}
+          >
+            <MaterialCommunityIcons name="soccer-field" size={iconSize} color="#fff" />
+          </TouchableOpacity>
         )}
 
         {/* Botones UNDO/REDO */}
@@ -14684,62 +14747,62 @@ const handleCancelar = useCallback(async () => {
 
         {/* Bot�n central - Cambiar campo */}
         {!hideBottomButtons && (
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            bottom: isMobile ? 10 : 20,
-            left: '50%',
-            marginLeft: isMobile ? -18 : -28,
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onChangeField}
-        >
-          {/* Campo con flechas de cambio */}
-          <View style={{ width: iconSize, height: iconSize, justifyContent: 'center', alignItems: 'center', position: 'relative', top: -4 }}>
-            <MaterialCommunityIcons name="soccer-field" size={iconSize} color="#fff" />
-            {/* Flechas de cambio superpuestas */}
-            <View style={{ position: 'absolute', bottom: -10, right: 5 }}>
-              <MaterialCommunityIcons name="swap-horizontal-bold" size={iconSize * 0.55} color="#fff" />
+          <TouchableOpacity
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
+              left: '50%',
+              marginLeft: isMobile ? -18 : -28,
+              width: buttonSize,
+              height: buttonSize,
+              borderRadius: buttonRadius
+            }]}
+            onPress={onChangeField}
+          >
+            {/* Campo con flechas de cambio */}
+            <View style={{ width: iconSize, height: iconSize, justifyContent: 'center', alignItems: 'center', position: 'relative', top: -4 }}>
+              <MaterialCommunityIcons name="soccer-field" size={iconSize} color="#fff" />
+              {/* Flechas de cambio superpuestas */}
+              <View style={{ position: 'absolute', bottom: -10, right: 5 }}>
+                <MaterialCommunityIcons name="swap-horizontal-bold" size={iconSize * 0.55} color="#fff" />
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
         )}
 
         {/* Botones inferiores derecha */}
         {!hideBottomButtons && (
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            bottom: isMobile ? 10 : 20,
-            right: isMobile ? 48 : 90,
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onSettings}
-        >
-          <Ionicons name="settings" size={iconSize} color="#fff" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
+              right: isMobile ? 48 : 90,
+              width: buttonSize,
+              height: buttonSize,
+              borderRadius: buttonRadius
+            }]}
+            onPress={onSettings}
+          >
+            <Ionicons name="settings" size={iconSize} color="#fff" />
+          </TouchableOpacity>
         )}
 
         {!hideBottomButtons && (
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            bottom: isMobile ? 10 : 20,
-            right: isMobile ? 10 : 20,
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onLocked}
-        >
-          <Feather name="lock" size={iconSize} color="#fff" />
-          {lockedCount > 0 && (
-            <View style={[styles.floatingButtonBadge, isMobile && { width: 16, height: 16, borderRadius: 8, top: -2, right: -2 }]}>
-              <Text style={[styles.floatingButtonBadgeText, isMobile && { fontSize: 8 }]}>{lockedCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.floatingButton, {
+              bottom: isMobile ? 10 : 20,
+              right: isMobile ? 10 : 20,
+              width: buttonSize,
+              height: buttonSize,
+              borderRadius: buttonRadius
+            }]}
+            onPress={onLocked}
+          >
+            <Feather name="lock" size={iconSize} color="#fff" />
+            {lockedCount > 0 && (
+              <View style={[styles.floatingButtonBadge, isMobile && { width: 16, height: 16, borderRadius: 8, top: -2, right: -2 }]}>
+                <Text style={[styles.floatingButtonBadgeText, isMobile && { fontSize: 8 }]}>{lockedCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Bot�n de selecci�n m�ltiple ahora centrado */}
@@ -14891,509 +14954,509 @@ const handleCancelar = useCallback(async () => {
     );
   }
 
-const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
-  visible,
-  onClose,
-  availablePlayers,
-  onSelectPlayer,
-  onLongPressPlayer,
-  onOpenSettings,
-  isMobile = false,
-  teamPlayerColor = '#2176ff',
-  numberColor = '#ffffff',
-  textColor = '#000000',
-  textBackgroundColor = '#ffffff',
-  showPosition = false,
-  differentiateGoalkeeper = true,
-  goalkeeperStripeColor = '#ffffff',
-  showPhotos = false
-}) {
-  const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
-  const [isVisible, setIsVisible] = useState(visible);
-  const iconSize = isMobile ? 28 : 44; // M�s peque�o en m�vil
-  const nameFontSize = isMobile ? 8 : 10; // M�s peque�o en m�vil
-  const dorsalFontSize = isMobile ? 12 : 16; // M�s peque�o en m�vil
+  const SlidingPlayersPalette = React.memo(function SlidingPlayersPalette({
+    visible,
+    onClose,
+    availablePlayers,
+    onSelectPlayer,
+    onLongPressPlayer,
+    onOpenSettings,
+    isMobile = false,
+    teamPlayerColor = '#2176ff',
+    numberColor = '#ffffff',
+    textColor = '#000000',
+    textBackgroundColor = '#ffffff',
+    showPosition = false,
+    differentiateGoalkeeper = true,
+    goalkeeperStripeColor = '#ffffff',
+    showPhotos = false
+  }) {
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
+    const [isVisible, setIsVisible] = useState(visible);
+    const iconSize = isMobile ? 28 : 44; // M�s peque�o en m�vil
+    const nameFontSize = isMobile ? 8 : 10; // M�s peque�o en m�vil
+    const dorsalFontSize = isMobile ? 12 : 16; // M�s peque�o en m�vil
 
-  useEffect(() => {
-    if (visible) {
-      setIsVisible(true);
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start();
-    } else {
-      Animated.spring(slideAnim, {
-        toValue: 300,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start(() => setIsVisible(false));
-    }
-  }, [visible]);
+    useEffect(() => {
+      if (visible) {
+        setIsVisible(true);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start();
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 300,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start(() => setIsVisible(false));
+      }
+    }, [visible]);
 
-  if (!isVisible) return null;
+    if (!isVisible) return null;
 
-  // Ordenar jugadores por n�mero de dorsal
-  const sortedPlayers = [...availablePlayers].sort((a, b) => {
-    const dorsalA = parseInt(a.dorsal || a.number || 999);
-    const dorsalB = parseInt(b.dorsal || b.number || 999);
-    return dorsalA - dorsalB;
+    // Ordenar jugadores por n�mero de dorsal
+    const sortedPlayers = [...availablePlayers].sort((a, b) => {
+      const dorsalA = parseInt(a.dorsal || a.number || 999);
+      const dorsalB = parseInt(b.dorsal || b.number || 999);
+      return dorsalA - dorsalB;
+    });
+
+    // Funci�n para verificar si es portero
+    const isGoalkeeper = (player) => {
+      const pos = (player.posicion || '').toLowerCase();
+      return pos === 'portero' || pos === 'goalkeeper' || pos === 'gk' || pos === 'pt';
+    };
+
+    // Funci�n para obtener la etiqueta de posici�n
+    const getPositionLabel = (player) => {
+      const pos = (player.posicion || '').toLowerCase();
+      const posMap = {
+        'portero': 'PT',
+        'goalkeeper': 'PT',
+        'gk': 'PT',
+        'central': 'DC',
+        'lateral': 'LT',
+        'centrocampista': 'MC',
+        'extremo': 'EX',
+        'delantero': 'DC'
+      };
+      return posMap[pos] || pos.substring(0, 2).toUpperCase() || '?';
+    };
+
+    return (
+      <Animated.View
+        style={[
+          styles.slidingPalette,
+          {
+            transform: [{ translateY: slideAnim }],
+            paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
+            marginBottom: -insets.bottom,
+            paddingRight: isMobile ? 60 : 80,
+          },
+          isMobile && {
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+            backgroundColor: 'rgba(40, 60, 80, 0.95)',
+          }
+        ]}
+        pointerEvents="box-none"
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 4 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
+        >
+          {sortedPlayers.length === 0 ? (
+            <View style={{ padding: 20 }}>
+              <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.noPlayersAvailable') || 'No hay jugadores disponibles'}</Text>
+            </View>
+          ) : (
+            sortedPlayers.map((player) => {
+              const isGK = isGoalkeeper(player);
+              const showStripes = differentiateGoalkeeper && isGK;
+
+              return (
+                <LongPressGestureHandler
+                  key={player.uniqueId}
+                  onHandlerStateChange={({ nativeEvent }) => {
+                    if (nativeEvent.state === State.ACTIVE) {
+                      onLongPressPlayer && onLongPressPlayer(player);
+                    }
+                  }}
+                  minDurationMs={500}
+                >
+                  <Pressable
+                    onPress={() => onSelectPlayer(player)}
+                    style={[styles.paletteIconButton, { width: iconSize + 20, height: iconSize + 36, flexDirection: 'column' }]}
+                  >
+                    <View style={{
+                      width: iconSize,
+                      height: iconSize,
+                      borderRadius: iconSize / 2,
+                      backgroundColor: teamPlayerColor,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginBottom: 2,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 2,
+                      elevation: 2,
+                      overflow: 'hidden',
+                    }}>
+                      {/* Rayas horizontales para portero */}
+                      {showStripes && (
+                        <>
+                          <View style={{ position: 'absolute', top: iconSize * 0.1, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                          <View style={{ position: 'absolute', top: iconSize * 0.35, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                          <View style={{ position: 'absolute', top: iconSize * 0.6, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                          <View style={{ position: 'absolute', top: iconSize * 0.85, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
+                        </>
+                      )}
+                      {showPhotos && player.foto ? (
+                        <Image
+                          source={{ uri: cdnUrl(player.foto) }}
+                          style={{
+                            width: iconSize - 4,
+                            height: iconSize - 4,
+                            borderRadius: (iconSize - 4) / 2
+                          }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Text style={{
+                          color: numberColor,
+                          fontSize: dorsalFontSize,
+                          fontWeight: 'bold',
+                        }}>
+                          {showPosition ? getPositionLabel(player) : (player.dorsal || player.number || '?')}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{
+                      backgroundColor: textBackgroundColor === 'transparent' ? 'transparent' : textBackgroundColor,
+                      paddingHorizontal: 3,
+                      paddingVertical: 1,
+                      borderRadius: 3,
+                      minWidth: iconSize,
+                    }}>
+                      <Text
+                        style={{
+                          fontSize: nameFontSize,
+                          color: textColor,
+                          textAlign: 'center',
+                          fontWeight: '500'
+                        }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {(getPlayerFullName(player) || player.name || 'Sin nombre').substring(0, 12)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </LongPressGestureHandler>
+              );
+            })
+          )}
+        </ScrollView>
+        {/* Bot�n de ajustes */}
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: isMobile ? 35 : 45,
+            width: isMobile ? 28 : 32,
+            height: isMobile ? 28 : 32,
+            borderRadius: isMobile ? 14 : 16,
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={onOpenSettings}
+        >
+          <Feather name="settings" size={isMobile ? 16 : 18} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={onClose}>
+          <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }, (prevProps, nextProps) => {
+    if (prevProps.visible !== nextProps.visible) return false;
+    if (prevProps.isMobile !== nextProps.isMobile) return false;
+    if (prevProps.availablePlayers.length !== nextProps.availablePlayers.length) return false;
+    if (prevProps.teamPlayerColor !== nextProps.teamPlayerColor) return false;
+    if (prevProps.numberColor !== nextProps.numberColor) return false;
+    if (prevProps.textColor !== nextProps.textColor) return false;
+    if (prevProps.textBackgroundColor !== nextProps.textBackgroundColor) return false;
+    if (prevProps.showPosition !== nextProps.showPosition) return false;
+    if (prevProps.differentiateGoalkeeper !== nextProps.differentiateGoalkeeper) return false;
+    if (prevProps.goalkeeperStripeColor !== nextProps.goalkeeperStripeColor) return false;
+    return true;
   });
 
-  // Funci�n para verificar si es portero
-  const isGoalkeeper = (player) => {
-    const pos = (player.posicion || '').toLowerCase();
-    return pos === 'portero' || pos === 'goalkeeper' || pos === 'gk' || pos === 'pt';
-  };
+  // Paleta de materiales de entrenamiento
+  const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
+    visible,
+    onClose,
+    onSelectMaterial,
+    onLongPressMaterial,
+    materialsConfig,
+    isMobile = false
+  }) {
+    const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
+    const insets = useSafeAreaInsets();
+    const [isVisible, setIsVisible] = useState(visible);
+    const iconSize = isMobile ? 28 : 50;
+    const labelFontSize = isMobile ? 7 : 10;
+    const MATERIALS_ICONS = useMemo(() => getMaterialsIcons(), []);
 
-  // Funci�n para obtener la etiqueta de posici�n
-  const getPositionLabel = (player) => {
-    const pos = (player.posicion || '').toLowerCase();
-    const posMap = {
-      'portero': 'PT',
-      'goalkeeper': 'PT',
-      'gk': 'PT',
-      'central': 'DC',
-      'lateral': 'LT',
-      'centrocampista': 'MC',
-      'extremo': 'EX',
-      'delantero': 'DC'
-    };
-    return posMap[pos] || pos.substring(0, 2).toUpperCase() || '?';
-  };
+    useEffect(() => {
+      if (visible) {
+        setIsVisible(true);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start();
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 300,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start(() => setIsVisible(false));
+      }
+    }, [visible]);
 
-  return (
-    <Animated.View
-      style={[
-        styles.slidingPalette,
-        {
-          transform: [{ translateY: slideAnim }],
-          paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
-          marginBottom: -insets.bottom,
-          paddingRight: isMobile ? 60 : 80,
-        },
-        isMobile && {
-          borderTopLeftRadius: 14,
-          borderTopRightRadius: 14,
-          backgroundColor: 'rgba(40, 60, 80, 0.95)',
-        }
-      ]}
-      pointerEvents="box-none"
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 4 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
+    if (!isVisible) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.slidingPalette,
+          {
+            transform: [{ translateY: slideAnim }],
+            paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
+            marginBottom: -insets.bottom,
+            paddingRight: isMobile ? 34 : 40,
+          },
+          isMobile && {
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+            backgroundColor: 'rgba(40, 60, 80, 0.95)',
+          }
+        ]}
+        pointerEvents="box-none"
       >
-        {sortedPlayers.length === 0 ? (
-          <View style={{ padding: 20 }}>
-            <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.noPlayersAvailable') || 'No hay jugadores disponibles'}</Text>
-          </View>
-        ) : (
-          sortedPlayers.map((player) => {
-            const isGK = isGoalkeeper(player);
-            const showStripes = differentiateGoalkeeper && isGK;
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 3 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
+        >
+          {MATERIALS_ICONS.map((material, idx) => {
+            // Obtener Configuraci�n personalizada si existe
+            const customConfig = materialsConfig?.[material.type] || {};
+            const displayMaterial = {
+              ...material,
+              color: customConfig.color || material.color,
+              size: customConfig.size || material.size,
+            };
 
             return (
-              <LongPressGestureHandler
-                key={player.uniqueId}
-                onHandlerStateChange={({ nativeEvent }) => {
-                  if (nativeEvent.state === State.ACTIVE) {
-                    onLongPressPlayer && onLongPressPlayer(player);
+              <Pressable
+                key={material.id}
+                onPress={() => onSelectMaterial(displayMaterial)}
+                onLongPress={() => {
+                  if (material.editable && onLongPressMaterial) {
+                    onLongPressMaterial(displayMaterial, idx);
                   }
                 }}
-                minDurationMs={500}
+                delayLongPress={400}
+                style={[
+                  styles.paletteIconButton,
+                  { width: iconSize + (isMobile ? 4 : 10), height: iconSize + (isMobile ? 16 : 25), flexDirection: 'column' },
+                  isMobile && {
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    marginHorizontal: 3,
+                  }
+                ]}
               >
-                <Pressable
-                  onPress={() => onSelectPlayer(player)}
-                  style={[styles.paletteIconButton, { width: iconSize + 20, height: iconSize + 36, flexDirection: 'column' }]}
-                >
-                  <View style={{
-                    width: iconSize,
-                    height: iconSize,
-                    borderRadius: iconSize / 2,
-                    backgroundColor: teamPlayerColor,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 2,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 2,
-                    elevation: 2,
-                    overflow: 'hidden',
-                  }}>
-                    {/* Rayas horizontales para portero */}
-                    {showStripes && (
-                      <>
-                        <View style={{ position: 'absolute', top: iconSize * 0.1, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                        <View style={{ position: 'absolute', top: iconSize * 0.35, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                        <View style={{ position: 'absolute', top: iconSize * 0.6, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                        <View style={{ position: 'absolute', top: iconSize * 0.85, left: 0, right: 0, height: 3, backgroundColor: goalkeeperStripeColor, opacity: 0.85 }} />
-                      </>
-                    )}
-                    {showPhotos && player.foto ? (
-                      <Image
-                        source={{ uri: cdnUrl(player.foto) }}
-                        style={{
-                          width: iconSize - 4,
-                          height: iconSize - 4,
-                          borderRadius: (iconSize - 4) / 2
-                        }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <Text style={{
-                        color: numberColor,
-                        fontSize: dorsalFontSize,
-                        fontWeight: 'bold',
-                      }}>
-                        {showPosition ? getPositionLabel(player) : (player.dorsal || player.number || '?')}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{
-                    backgroundColor: textBackgroundColor === 'transparent' ? 'transparent' : textBackgroundColor,
-                    paddingHorizontal: 3,
-                    paddingVertical: 1,
-                    borderRadius: 3,
-                    minWidth: iconSize,
-                  }}>
-                    <Text
-                      style={{
-                        fontSize: nameFontSize,
-                        color: textColor,
-                        textAlign: 'center',
-                        fontWeight: '500'
-                      }}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {(getPlayerFullName(player) || player.name || 'Sin nombre').substring(0, 12)}
-                    </Text>
-                  </View>
-                </Pressable>
-              </LongPressGestureHandler>
-            );
-          })
-        )}
-      </ScrollView>
-      {/* Bot�n de ajustes */}
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: isMobile ? 35 : 45,
-          width: isMobile ? 28 : 32,
-          height: isMobile ? 28 : 32,
-          borderRadius: isMobile ? 14 : 16,
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        onPress={onOpenSettings}
-      >
-        <Feather name="settings" size={isMobile ? 16 : 18} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity style={{position: 'absolute', top: 10, right: 10}} onPress={onClose}>
-        <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}, (prevProps, nextProps) => {
-  if (prevProps.visible !== nextProps.visible) return false;
-  if (prevProps.isMobile !== nextProps.isMobile) return false;
-  if (prevProps.availablePlayers.length !== nextProps.availablePlayers.length) return false;
-  if (prevProps.teamPlayerColor !== nextProps.teamPlayerColor) return false;
-  if (prevProps.numberColor !== nextProps.numberColor) return false;
-  if (prevProps.textColor !== nextProps.textColor) return false;
-  if (prevProps.textBackgroundColor !== nextProps.textBackgroundColor) return false;
-  if (prevProps.showPosition !== nextProps.showPosition) return false;
-  if (prevProps.differentiateGoalkeeper !== nextProps.differentiateGoalkeeper) return false;
-  if (prevProps.goalkeeperStripeColor !== nextProps.goalkeeperStripeColor) return false;
-  return true;
-});
-
-// Paleta de materiales de entrenamiento
-const SlidingMaterialsPalette = React.memo(function SlidingMaterialsPalette({
-  visible,
-  onClose,
-  onSelectMaterial,
-  onLongPressMaterial,
-  materialsConfig,
-  isMobile = false
-}) {
-  const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
-  const insets = useSafeAreaInsets();
-  const [isVisible, setIsVisible] = useState(visible);
-  const iconSize = isMobile ? 28 : 50;
-  const labelFontSize = isMobile ? 7 : 10;
-  const MATERIALS_ICONS = useMemo(() => getMaterialsIcons(), []);
-
-  useEffect(() => {
-    if (visible) {
-      setIsVisible(true);
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start();
-    } else {
-      Animated.spring(slideAnim, {
-        toValue: 300,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start(() => setIsVisible(false));
-    }
-  }, [visible]);
-
-  if (!isVisible) return null;
-
-  return (
-    <Animated.View
-      style={[
-        styles.slidingPalette,
-        {
-          transform: [{ translateY: slideAnim }],
-          paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
-          marginBottom: -insets.bottom,
-          paddingRight: isMobile ? 34 : 40,
-        },
-        isMobile && {
-          borderTopLeftRadius: 14,
-          borderTopRightRadius: 14,
-          backgroundColor: 'rgba(40, 60, 80, 0.95)',
-        }
-      ]}
-      pointerEvents="box-none"
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 3 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
-      >
-        {MATERIALS_ICONS.map((material, idx) => {
-          // Obtener Configuraci�n personalizada si existe
-          const customConfig = materialsConfig?.[material.type] || {};
-          const displayMaterial = {
-            ...material,
-            color: customConfig.color || material.color,
-            size: customConfig.size || material.size,
-          };
-
-          return (
-            <Pressable
-              key={material.id}
-              onPress={() => onSelectMaterial(displayMaterial)}
-              onLongPress={() => {
-                if (material.editable && onLongPressMaterial) {
-                  onLongPressMaterial(displayMaterial, idx);
-                }
-              }}
-              delayLongPress={400}
-              style={[
-                styles.paletteIconButton,
-                { width: iconSize + (isMobile ? 4 : 10), height: iconSize + (isMobile ? 16 : 25), flexDirection: 'column' },
-                isMobile && {
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  marginHorizontal: 3,
-                }
-              ]}
-            >
-              <View style={{
-                width: iconSize,
-                height: iconSize,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: isMobile ? 2 : 4,
-              }}>
-                <MemoizedIcon
-                  icon={displayMaterial}
-                  size={iconSize * 0.8}
-                  rotation={0}
-                />
-              </View>
-              <Text
-                style={{
-                  fontSize: labelFontSize,
-                  color: '#fff',
-                  textAlign: 'center',
-                  width: iconSize + (isMobile ? 4 : 10),
-                  fontWeight: '500'
-                }}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {material.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-      <TouchableOpacity style={{position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10}} onPress={onClose}>
-        <Feather name="x" size={isMobile ? 18 : 24} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}, (prevProps, nextProps) => {
-  if (prevProps.visible !== nextProps.visible) return false;
-  if (prevProps.isMobile !== nextProps.isMobile) return false;
-  if (prevProps.materialsConfig !== nextProps.materialsConfig) return false;
-  return true;
-});
-
-// Paleta de cuerpo t�cnico
-const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
-  visible,
-  onClose,
-  onSelectStaff,
-  isMobile = false,
-  staffColor = '#333333',
-  selectedStaffIds = [] // IDs de los staff ya en el campo
-}) {
-  const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
-  const [isVisible, setIsVisible] = useState(visible);
-  const iconSize = isMobile ? 36 : 50;
-  const labelFontSize = isMobile ? 7 : 9;
-
-  // Definir los roles del cuerpo t�cnico
-  const allStaffRoles = useMemo(() => [
-    { id: 'head-coach', code: t('tacticalBoard.staff.E1'), label: t('tacticalBoard.staff.headCoach') },
-    { id: 'assistant-coach', code: t('tacticalBoard.staff.E2'), label: t('tacticalBoard.staff.assistantCoach') },
-    { id: 'fitness-coach', code: t('tacticalBoard.staff.PF'), label: t('tacticalBoard.staff.fitnessCoach') },
-    { id: 'physio', code: t('tacticalBoard.staff.F'), label: t('tacticalBoard.staff.physio') },
-    { id: 'goalkeeper-coach', code: t('tacticalBoard.staff.EP'), label: t('tacticalBoard.staff.goalkeeperCoach') },
-    { id: 'delegate', code: t('tacticalBoard.staff.D'), label: t('tacticalBoard.staff.delegate') },
-    { id: 'kit-manager', code: t('tacticalBoard.staff.U'), label: t('tacticalBoard.staff.kitManager') },
-  ], [t]);
-
-  // Filtrar los roles que no est�n en el campo
-  const availableStaffRoles = useMemo(() => {
-    return allStaffRoles.filter(role => !selectedStaffIds.includes(role.id));
-  }, [allStaffRoles, selectedStaffIds]);
-
-  useEffect(() => {
-    if (visible) {
-      setIsVisible(true);
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start();
-    } else {
-      Animated.spring(slideAnim, {
-        toValue: 300,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start(() => setIsVisible(false));
-    }
-  }, [visible]);
-
-  if (!isVisible) return null;
-
-  return (
-    <Animated.View
-      style={[
-        styles.slidingPalette,
-        {
-          transform: [{ translateY: slideAnim }],
-          paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
-          marginBottom: -insets.bottom,
-          paddingRight: isMobile ? 34 : 40,
-        },
-        isMobile && {
-          borderTopLeftRadius: 14,
-          borderTopRightRadius: 14,
-          backgroundColor: 'rgba(40, 60, 80, 0.95)',
-        }
-      ]}
-      pointerEvents="box-none"
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 4 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
-      >
-        {availableStaffRoles.length === 0 ? (
-          <View style={{ padding: 20 }}>
-            <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.staff.allStaffOnField') || 'Todo el cuerpo t�cnico est� en el campo'}</Text>
-          </View>
-        ) : (
-          availableStaffRoles.map((role) => (
-            <Pressable
-              key={role.id}
-              onPress={() => onSelectStaff(role)}
-              style={[styles.paletteIconButton, {
-                width: iconSize + 20,
-                height: iconSize + 50,
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                paddingTop: 6,
-              }]}
-            >
-              <View style={{
-                width: iconSize,
-                height: iconSize,
-                borderRadius: iconSize / 2,
-                backgroundColor: staffColor,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 4,
-                borderWidth: 2,
-                borderColor: '#666',
-              }}>
-                <Text style={{
-                  color: '#ffffff',
-                  fontSize: isMobile ? 12 : 16,
-                  fontWeight: 'bold',
+                <View style={{
+                  width: iconSize,
+                  height: iconSize,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: isMobile ? 2 : 4,
                 }}>
-                  {role.code}
-                </Text>
-              </View>
-              <View style={{ height: 28, justifyContent: 'flex-start' }}>
+                  <MemoizedIcon
+                    icon={displayMaterial}
+                    size={iconSize * 0.8}
+                    rotation={0}
+                  />
+                </View>
                 <Text
                   style={{
                     fontSize: labelFontSize,
                     color: '#fff',
                     textAlign: 'center',
-                    width: iconSize + 20,
+                    width: iconSize + (isMobile ? 4 : 10),
                     fontWeight: '500'
                   }}
-                  numberOfLines={2}
+                  numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {role.label}
+                  {material.label}
                 </Text>
-              </View>
-            </Pressable>
-          ))
-        )}
-      </ScrollView>
-      <TouchableOpacity style={{position: 'absolute', top: 10, right: 10}} onPress={onClose}>
-        <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}, (prevProps, nextProps) => {
-  if (prevProps.visible !== nextProps.visible) return false;
-  if (prevProps.isMobile !== nextProps.isMobile) return false;
-  if (prevProps.staffColor !== nextProps.staffColor) return false;
-  if (prevProps.selectedStaffIds?.length !== nextProps.selectedStaffIds?.length) return false;
-  return true;
-});
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <TouchableOpacity style={{ position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10 }} onPress={onClose}>
+          <Feather name="x" size={isMobile ? 18 : 24} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }, (prevProps, nextProps) => {
+    if (prevProps.visible !== nextProps.visible) return false;
+    if (prevProps.isMobile !== nextProps.isMobile) return false;
+    if (prevProps.materialsConfig !== nextProps.materialsConfig) return false;
+    return true;
+  });
 
-const SlidingPalette = React.memo(function SlidingPalette({
+  // Paleta de cuerpo t�cnico
+  const SlidingStaffPalette = React.memo(function SlidingStaffPalette({
+    visible,
+    onClose,
+    onSelectStaff,
+    isMobile = false,
+    staffColor = '#333333',
+    selectedStaffIds = [] // IDs de los staff ya en el campo
+  }) {
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
+    const [isVisible, setIsVisible] = useState(visible);
+    const iconSize = isMobile ? 36 : 50;
+    const labelFontSize = isMobile ? 7 : 9;
+
+    // Definir los roles del cuerpo t�cnico
+    const allStaffRoles = useMemo(() => [
+      { id: 'head-coach', code: t('tacticalBoard.staff.E1'), label: t('tacticalBoard.staff.headCoach') },
+      { id: 'assistant-coach', code: t('tacticalBoard.staff.E2'), label: t('tacticalBoard.staff.assistantCoach') },
+      { id: 'fitness-coach', code: t('tacticalBoard.staff.PF'), label: t('tacticalBoard.staff.fitnessCoach') },
+      { id: 'physio', code: t('tacticalBoard.staff.F'), label: t('tacticalBoard.staff.physio') },
+      { id: 'goalkeeper-coach', code: t('tacticalBoard.staff.EP'), label: t('tacticalBoard.staff.goalkeeperCoach') },
+      { id: 'delegate', code: t('tacticalBoard.staff.D'), label: t('tacticalBoard.staff.delegate') },
+      { id: 'kit-manager', code: t('tacticalBoard.staff.U'), label: t('tacticalBoard.staff.kitManager') },
+    ], [t]);
+
+    // Filtrar los roles que no est�n en el campo
+    const availableStaffRoles = useMemo(() => {
+      return allStaffRoles.filter(role => !selectedStaffIds.includes(role.id));
+    }, [allStaffRoles, selectedStaffIds]);
+
+    useEffect(() => {
+      if (visible) {
+        setIsVisible(true);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start();
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 300,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start(() => setIsVisible(false));
+      }
+    }, [visible]);
+
+    if (!isVisible) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.slidingPalette,
+          {
+            transform: [{ translateY: slideAnim }],
+            paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
+            marginBottom: -insets.bottom,
+            paddingRight: isMobile ? 34 : 40,
+          },
+          isMobile && {
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+            backgroundColor: 'rgba(40, 60, 80, 0.95)',
+          }
+        ]}
+        pointerEvents="box-none"
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.slidingPaletteContent, { paddingVertical: isMobile ? 4 : 12, paddingHorizontal: isMobile ? 8 : 20 }]}
+        >
+          {availableStaffRoles.length === 0 ? (
+            <View style={{ padding: 20 }}>
+              <Text style={{ color: '#fff', fontSize: 14 }}>{t('tacticalBoard.staff.allStaffOnField') || 'Todo el cuerpo t�cnico est� en el campo'}</Text>
+            </View>
+          ) : (
+            availableStaffRoles.map((role) => (
+              <Pressable
+                key={role.id}
+                onPress={() => onSelectStaff(role)}
+                style={[styles.paletteIconButton, {
+                  width: iconSize + 20,
+                  height: iconSize + 50,
+                  flexDirection: 'column',
+                  justifyContent: 'flex-start',
+                  paddingTop: 6,
+                }]}
+              >
+                <View style={{
+                  width: iconSize,
+                  height: iconSize,
+                  borderRadius: iconSize / 2,
+                  backgroundColor: staffColor,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 4,
+                  borderWidth: 2,
+                  borderColor: '#666',
+                }}>
+                  <Text style={{
+                    color: '#ffffff',
+                    fontSize: isMobile ? 12 : 16,
+                    fontWeight: 'bold',
+                  }}>
+                    {role.code}
+                  </Text>
+                </View>
+                <View style={{ height: 28, justifyContent: 'flex-start' }}>
+                  <Text
+                    style={{
+                      fontSize: labelFontSize,
+                      color: '#fff',
+                      textAlign: 'center',
+                      width: iconSize + 20,
+                      fontWeight: '500'
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {role.label}
+                  </Text>
+                </View>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
+        <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={onClose}>
+          <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }, (prevProps, nextProps) => {
+    if (prevProps.visible !== nextProps.visible) return false;
+    if (prevProps.isMobile !== nextProps.isMobile) return false;
+    if (prevProps.staffColor !== nextProps.staffColor) return false;
+    if (prevProps.selectedStaffIds?.length !== nextProps.selectedStaffIds?.length) return false;
+    return true;
+  });
+
+  const SlidingPalette = React.memo(function SlidingPalette({
     visible,
     onClose,
     paletteIcons,
@@ -15514,7 +15577,7 @@ const SlidingPalette = React.memo(function SlidingPalette({
             <MaterialCommunityIcons name="eraser" size={isMobile ? 18 : 26} color={drawingStates.eraserMode ? '#ffffffff' : (isMobile ? '#ffffff' : 'black')} />
           </Pressable>
         </ScrollView>
-        <TouchableOpacity style={{position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10}} onPress={onClose}>
+        <TouchableOpacity style={{ position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10 }} onPress={onClose}>
           <Feather name="x" size={isMobile ? 18 : 24} color="#fff" />
         </TouchableOpacity>
       </Animated.View>
@@ -15530,13 +15593,13 @@ const SlidingPalette = React.memo(function SlidingPalette({
     const prevDS = prevProps.drawingStates;
     const nextDS = nextProps.drawingStates;
     if (prevDS.drawingStraightArrow !== nextDS.drawingStraightArrow ||
-        prevDS.drawingStraightLine !== nextDS.drawingStraightLine ||
-        prevDS.drawingCurveLine !== nextDS.drawingCurveLine ||
-        prevDS.drawingCurveArrow !== nextDS.drawingCurveArrow ||
-        prevDS.drawingCircle !== nextDS.drawingCircle ||
-        prevDS.drawingRectangle !== nextDS.drawingRectangle ||
-        prevDS.drawingCustomShape !== nextDS.drawingCustomShape ||
-        prevDS.eraserMode !== nextDS.eraserMode) {
+      prevDS.drawingStraightLine !== nextDS.drawingStraightLine ||
+      prevDS.drawingCurveLine !== nextDS.drawingCurveLine ||
+      prevDS.drawingCurveArrow !== nextDS.drawingCurveArrow ||
+      prevDS.drawingCircle !== nextDS.drawingCircle ||
+      prevDS.drawingRectangle !== nextDS.drawingRectangle ||
+      prevDS.drawingCustomShape !== nextDS.drawingCustomShape ||
+      prevDS.eraserMode !== nextDS.eraserMode) {
       return false;
     }
 
@@ -15545,12 +15608,12 @@ const SlidingPalette = React.memo(function SlidingPalette({
       const prev = prevProps.paletteIcons[i];
       const next = nextProps.paletteIcons[i];
       if (prev.id !== next.id ||
-          prev.color !== next.color ||
-          prev.size !== next.size ||
-          prev.type !== next.type ||
-          prev.lineType !== next.lineType ||
-          prev.fillColor !== next.fillColor ||
-          prev.thickness !== next.thickness) {
+        prev.color !== next.color ||
+        prev.size !== next.size ||
+        prev.type !== next.type ||
+        prev.lineType !== next.lineType ||
+        prev.fillColor !== next.fillColor ||
+        prev.thickness !== next.thickness) {
         return false;
       }
     }
@@ -15558,108 +15621,108 @@ const SlidingPalette = React.memo(function SlidingPalette({
     return true;
   });
 
-// Componente memoizado para cada bot�n de icono en la paleta
-const PaletteIconButton = React.memo(({
-  icon,
-  idx,
-  iconSize,
-  isSelected,
-  isMobile,
-  onPress,
-  onLongPress,
-  playersWithNumber = true
-}) => {
-  return (
-    <Pressable
-      onPress={() => onPress(icon, idx)}
-      onLongPress={() => onLongPress(icon, idx)}
-      style={[
-        styles.paletteIconButton,
-        { width: iconSize, height: iconSize },
-        isSelected && styles.paletteIconButtonSelected,
-        isMobile && !isSelected && {
-          borderRadius: 8,
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          marginHorizontal: 3,
-        }
-      ]}
-    >
-      <MemoizedIcon
-        icon={icon}
-        size={isMobile ? 22 : 32}
-        rotation={0}
-        number={icon.type === 'player' ? icon.number : undefined}
-        playersWithNumber={playersWithNumber}
-        displayLabel={icon.displayLabel}
-        numberColor={icon.displayLabel ? (formationSettings?.numberColor || icon.numberColor) : (icon.number !== undefined ? (icon.numberColor || '#ffffff') : undefined)}
-      />
-    </Pressable>
-  );
-}, (prevProps, nextProps) => {
-  return prevProps.isSelected === nextProps.isSelected &&
-         prevProps.iconSize === nextProps.iconSize &&
-         prevProps.isMobile === nextProps.isMobile &&
-         prevProps.playersWithNumber === nextProps.playersWithNumber &&
-         prevProps.icon.color === nextProps.icon.color &&
-         prevProps.icon.size === nextProps.icon.size &&
-         prevProps.icon.thickness === nextProps.icon.thickness &&
-         prevProps.icon.number === nextProps.icon.number &&
-         prevProps.icon.type === nextProps.icon.type &&
-         prevProps.icon.lineType === nextProps.icon.lineType &&
-         prevProps.icon.fillColor === nextProps.icon.fillColor;
-});
+  // Componente memoizado para cada bot�n de icono en la paleta
+  const PaletteIconButton = React.memo(({
+    icon,
+    idx,
+    iconSize,
+    isSelected,
+    isMobile,
+    onPress,
+    onLongPress,
+    playersWithNumber = true
+  }) => {
+    return (
+      <Pressable
+        onPress={() => onPress(icon, idx)}
+        onLongPress={() => onLongPress(icon, idx)}
+        style={[
+          styles.paletteIconButton,
+          { width: iconSize, height: iconSize },
+          isSelected && styles.paletteIconButtonSelected,
+          isMobile && !isSelected && {
+            borderRadius: 8,
+            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+            marginHorizontal: 3,
+          }
+        ]}
+      >
+        <MemoizedIcon
+          icon={icon}
+          size={isMobile ? 22 : 32}
+          rotation={0}
+          number={icon.type === 'player' ? icon.number : undefined}
+          playersWithNumber={playersWithNumber}
+          displayLabel={icon.displayLabel}
+          numberColor={icon.displayLabel ? (formationSettings?.numberColor || icon.numberColor) : (icon.number !== undefined ? (icon.numberColor || '#ffffff') : undefined)}
+        />
+      </Pressable>
+    );
+  }, (prevProps, nextProps) => {
+    return prevProps.isSelected === nextProps.isSelected &&
+      prevProps.iconSize === nextProps.iconSize &&
+      prevProps.isMobile === nextProps.isMobile &&
+      prevProps.playersWithNumber === nextProps.playersWithNumber &&
+      prevProps.icon.color === nextProps.icon.color &&
+      prevProps.icon.size === nextProps.icon.size &&
+      prevProps.icon.thickness === nextProps.icon.thickness &&
+      prevProps.icon.number === nextProps.icon.number &&
+      prevProps.icon.type === nextProps.icon.type &&
+      prevProps.icon.lineType === nextProps.icon.lineType &&
+      prevProps.icon.fillColor === nextProps.icon.fillColor;
+  });
 
-const SlidingZoomControls = React.memo(function SlidingZoomControls({
-  visible,
-  onClose,
-  zoomLevel,
-  onZoomIn,
-  onZoomOut,
-  onPanLeft,
-  onPanRight,
-  onPanUp,
-  onPanDown,
-  onReset
-}) {
-  const dimensions = useScreenDimensions();
-  const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
-  const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
-  const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
-  const slideAnim = useRef(new Animated.Value(visible ? 0 : -200)).current;
-  const [isVisible, setIsVisible] = useState(visible);
+  const SlidingZoomControls = React.memo(function SlidingZoomControls({
+    visible,
+    onClose,
+    zoomLevel,
+    onZoomIn,
+    onZoomOut,
+    onPanLeft,
+    onPanRight,
+    onPanUp,
+    onPanDown,
+    onReset
+  }) {
+    const dimensions = useScreenDimensions();
+    const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
+    const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
+    const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
+    const slideAnim = useRef(new Animated.Value(visible ? 0 : -200)).current;
+    const [isVisible, setIsVisible] = useState(visible);
 
-  useEffect(() => {
-    if (visible) {
-      setIsVisible(true);
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start();
-    } else {
-      Animated.spring(slideAnim, {
-        toValue: -200,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11
-      }).start(() => setIsVisible(false));
-    }
-  }, [visible]);
+    useEffect(() => {
+      if (visible) {
+        setIsVisible(true);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start();
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: -200,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11
+        }).start(() => setIsVisible(false));
+      }
+    }, [visible]);
 
-  if (!isVisible) return null;
+    if (!isVisible) return null;
 
-  return (
-    <Animated.View
-      style={[
-        styles.slidingZoomControls,
-        {
-          transform: [{ translateX: slideAnim }],
-        },
-        isMobile && styles.slidingZoomControlsMobile
-      ]}
-      pointerEvents="auto"
-    >
+    return (
+      <Animated.View
+        style={[
+          styles.slidingZoomControls,
+          {
+            transform: [{ translateX: slideAnim }],
+          },
+          isMobile && styles.slidingZoomControlsMobile
+        ]}
+        pointerEvents="auto"
+      >
         {/* Header */}
         <View style={[styles.slidingZoomHeader, isMobile && styles.slidingZoomHeaderMobile]}>
           <Text style={[styles.slidingZoomTitle, isMobile && styles.slidingZoomTitleMobile]}>{t('tacticalBoard.zoom')}</Text>
@@ -15740,21 +15803,21 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           <Text style={[styles.zoomLevelText, isMobile && styles.zoomLevelTextMobile]}>{Math.round(zoomLevel * 100)}%</Text>
         </View>
       </Animated.View>
-  );
-}, (prevProps, nextProps) => {
-  // Solo re-renderizar si cambia visible o zoomLevel (para actualizar el porcentaje)
-  return prevProps.visible === nextProps.visible &&
-         prevProps.zoomLevel === nextProps.zoomLevel;
-});
+    );
+  }, (prevProps, nextProps) => {
+    // Solo re-renderizar si cambia visible o zoomLevel (para actualizar el porcentaje)
+    return prevProps.visible === nextProps.visible &&
+      prevProps.zoomLevel === nextProps.zoomLevel;
+  });
 
   // Solo ocultar TODOS los botones cuando hay modales que realmente lo requieren
   const shouldHideFloatingButtons = settingsPanelVisible ||
-                                  lockedElementsVisible ||
-                                  leftPanelVisible ||
-                                  textEditPanel.visible ||
-                                  paletteEdit.visible ||
-                                  carouselModalVisible ||
-                                  lineStyleModalVisible;
+    lockedElementsVisible ||
+    leftPanelVisible ||
+    textEditPanel.visible ||
+    paletteEdit.visible ||
+    carouselModalVisible ||
+    lineStyleModalVisible;
 
 
   // Ocultar solo botones inferiores cuando la paleta o zoom est� visible
@@ -15825,29 +15888,29 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
           drawingStates.drawingCircle ||
           drawingStates.drawingRectangle ||
           drawingStates.drawingCustomShape) && (
-          <TouchableOpacity
-            onPress={handleDeselectDrawingTool}
-            style={{
-              position: 'absolute',
-              top: isMobile ? 55 : 90,
-              right: isMobile ? 10 : 20,
-              width: isMobile ? 36 : 50,
-              height: isMobile ? 36 : 50,
-              borderRadius: isMobile ? 18 : 25,
-              backgroundColor: '#ff0000',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 3,
-              elevation: 5,
-            }}
-          >
-            <Ionicons name="move" size={isMobile ? 16 : 24} color="#ffffff" />
-          </TouchableOpacity>
-        )}
+            <TouchableOpacity
+              onPress={handleDeselectDrawingTool}
+              style={{
+                position: 'absolute',
+                top: isMobile ? 55 : 90,
+                right: isMobile ? 10 : 20,
+                width: isMobile ? 36 : 50,
+                height: isMobile ? 36 : 50,
+                borderRadius: isMobile ? 18 : 25,
+                backgroundColor: '#ff0000',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 5,
+              }}
+            >
+              <Ionicons name="move" size={isMobile ? 16 : 24} color="#ffffff" />
+            </TouchableOpacity>
+          )}
 
         <View style={{
           position: 'absolute',
@@ -15933,13 +15996,13 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         userSelect: 'none',
                         touchAction: 'none',
                         zIndex: multiSelectMode ? 9999 :
-                               (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
-                                 drawingCurveLine || drawingCurveArrow || drawingCustomShape || eraserMode) ? 9999 : 0
+                          (drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
+                            drawingCurveLine || drawingCurveArrow || drawingCustomShape || eraserMode) ? 9999 : 0
                       }}
                       onStartShouldSetResponder={() => true}
                       onMoveShouldSetResponder={() => {
                         return eraserMode || drawingStraightArrow || drawingStraightLine || drawingCircle ||
-                               drawingRectangle || drawingCurveLine || drawingCurveArrow || drawingCustomShape;
+                          drawingRectangle || drawingCurveLine || drawingCurveArrow || drawingCustomShape;
                       }}
                       onResponderGrant={(e) => {
                         const { locationX, locationY } = e.nativeEvent;
@@ -16083,12 +16146,12 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                         viewMode={viewMode}
                       />
 
-                        {/* Contenedor para �reas de detecci�n - deshabilitado cuando se est� dibujando */}
-                        <View
-                          style={{ position: 'absolute', width: imageWidth, height: imageHeight, zIndex: 200 }}
-                          pointerEvents={(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
-                                         drawingCurveLine || drawingCurveArrow || drawingCustomShape) ? "none" : "box-none"}
-                        >
+                      {/* Contenedor para �reas de detecci�n - deshabilitado cuando se est� dibujando */}
+                      <View
+                        style={{ position: 'absolute', width: imageWidth, height: imageHeight, zIndex: 200 }}
+                        pointerEvents={(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle ||
+                          drawingCurveLine || drawingCurveArrow || drawingCustomShape) ? "none" : "box-none"}
+                      >
                         {/* OPTIMIZACIÓN: Detectores de c�rculos memoizados */}
                         {circleElements.map((icon) => (
                           <MemoizedCircleDetector
@@ -16220,8 +16283,8 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
                           // Excluir las l�neas ya que se renderizan por separado
                           if (icon.type === 'straight-line' || icon.type === 'straight-arrow' ||
-                              icon.type === 'curve-line' || icon.type === 'curve-arrow' ||
-                              icon.type === 'circle' || icon.type === 'rectangle') {
+                            icon.type === 'curve-line' || icon.type === 'curve-arrow' ||
+                            icon.type === 'circle' || icon.type === 'rectangle') {
                             return null;
                           }
 
@@ -16339,217 +16402,217 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             saveClonesHistory={saveClonesHistory}
                           />
                         ))}
-                        </View>
-                        {/* Fin del contenedor de �reas de detecci�n */}
+                      </View>
+                      {/* Fin del contenedor de �reas de detecci�n */}
 
-                        {/* Vista previa de l�neas y flechas rectas */}
-                        {(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle) && temporaryLinePoints.length === 2 && (() => {
-                          // Obtener el icono ACTUAL de la paleta buscando por type
-                          const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
+                      {/* Vista previa de l�neas y flechas rectas */}
+                      {(drawingStraightArrow || drawingStraightLine || drawingCircle || drawingRectangle) && temporaryLinePoints.length === 2 && (() => {
+                        // Obtener el icono ACTUAL de la paleta buscando por type
+                        const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
 
-                          // Calcular el grosor EXACTAMENTE como en el renderizado final
-                          const scale = 1; // No hay redimensionamiento al dibujar
-                          const baseThickness = currentPaletteIcon?.thickness || 1;
-                          const previewThickness = baseThickness * scale * 0.7;
-                          const previewColor = currentPaletteIcon?.color || "#000000";
+                        // Calcular el grosor EXACTAMENTE como en el renderizado final
+                        const scale = 1; // No hay redimensionamiento al dibujar
+                        const baseThickness = currentPaletteIcon?.thickness || 1;
+                        const previewThickness = baseThickness * scale * 0.7;
+                        const previewColor = currentPaletteIcon?.color || "#000000";
 
-                          // Convert ratio coords to display coords
-                          const dp0 = ratioToDisplay(temporaryLinePoints[0].x, temporaryLinePoints[0].y, viewMode, imageWidth, imageHeight);
-                          const dp1 = ratioToDisplay(temporaryLinePoints[1].x, temporaryLinePoints[1].y, viewMode, imageWidth, imageHeight);
+                        // Convert ratio coords to display coords
+                        const dp0 = ratioToDisplay(temporaryLinePoints[0].x, temporaryLinePoints[0].y, viewMode, imageWidth, imageHeight);
+                        const dp1 = ratioToDisplay(temporaryLinePoints[1].x, temporaryLinePoints[1].y, viewMode, imageWidth, imageHeight);
 
-                          // Calcular punto final de l�nea si es flecha
-                          let lineEndX = dp1.x;
-                          let lineEndY = dp1.y;
-                          let arrowPoints = '';
+                        // Calcular punto final de l�nea si es flecha
+                        let lineEndX = dp1.x;
+                        let lineEndY = dp1.y;
+                        let arrowPoints = '';
 
-                          if (drawingStraightArrow) {
-                            const arrowData = getArrowHeadForStraightLine(
-                              dp0,
-                              dp1,
-                              standardSize,
-                              0.5,
-                              previewThickness
-                            );
-                            arrowPoints = arrowData.arrowPoints;
-                            lineEndX = arrowData.lineEnd.x;
-                            lineEndY = arrowData.lineEnd.y;
-                          }
+                        if (drawingStraightArrow) {
+                          const arrowData = getArrowHeadForStraightLine(
+                            dp0,
+                            dp1,
+                            standardSize,
+                            0.5,
+                            previewThickness
+                          );
+                          arrowPoints = arrowData.arrowPoints;
+                          lineEndX = arrowData.lineEnd.x;
+                          lineEndY = arrowData.lineEnd.y;
+                        }
 
-                          return (
-                            <Svg
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: imageWidth,
-                                height: imageHeight,
-                                zIndex: 100
-                              }}
-                            >
-                              {/* L�nea normal */}
-                              {(drawingStraightArrow || drawingStraightLine) && lineType === 'solid' && (
-                                <Path
-                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  fill="none"
-                                  strokeLinecap="round"
-                                />
-                              )}
+                        return (
+                          <Svg
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: imageWidth,
+                              height: imageHeight,
+                              zIndex: 100
+                            }}
+                          >
+                            {/* L�nea normal */}
+                            {(drawingStraightArrow || drawingStraightLine) && lineType === 'solid' && (
+                              <Path
+                                d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                fill="none"
+                                strokeLinecap="round"
+                              />
+                            )}
 
-                              {/* L�nea punteada */}
-                              {(drawingStraightArrow || drawingStraightLine) && lineType === 'dotted' && (
-                                <Path
-                                  d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  strokeDasharray={`${dotSize},${dotSpacing}`}
-                                  fill="none"
-                                  strokeLinecap="round"
-                                />
-                              )}
+                            {/* L�nea punteada */}
+                            {(drawingStraightArrow || drawingStraightLine) && lineType === 'dotted' && (
+                              <Path
+                                d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                strokeDasharray={`${dotSize},${dotSpacing}`}
+                                fill="none"
+                                strokeLinecap="round"
+                              />
+                            )}
 
-                              {drawingStraightArrow && (
+                            {drawingStraightArrow && (
+                              <Polygon
+                                points={arrowPoints}
+                                fill={previewColor}
+                                strokeLinejoin="round"
+                              />
+                            )}
+
+                            {/* C�rculo */}
+                            {drawingCircle && (
+                              <Circle
+                                cx={(dp0.x + dp1.x) / 2}
+                                cy={(dp0.y + dp1.y) / 2}
+                                r={Math.sqrt(
+                                  Math.pow(dp1.x - dp0.x, 2) +
+                                  Math.pow(dp1.y - dp0.y, 2)
+                                ) / 2 - 1}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                fill="none"
+                                strokeDasharray={lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined}
+                                strokeLinecap="round"
+                                vectorEffect="non-scaling-stroke"
+                              />
+                            )}
+
+                            {/* Rect�ngulo */}
+                            {drawingRectangle && (
+                              <Rect
+                                x={Math.min(dp0.x, dp1.x)}
+                                y={Math.min(dp0.y, dp1.y)}
+                                width={Math.abs(dp1.x - dp0.x)}
+                                height={Math.abs(dp1.y - dp0.y)}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                fill="none"
+                                strokeDasharray={lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined}
+                                strokeLinecap="round"
+                                vectorEffect="non-scaling-stroke"
+                              />
+                            )}
+                          </Svg>
+                        );
+                      })()}
+
+                      {/* Vista previa de l�neas y flechas curvas */}
+                      {(drawingCurveArrow || drawingCurveLine) && curvePoints.length >= 1 && (() => {
+                        // Obtener el icono ACTUAL de la paleta buscando por type
+                        const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
+
+                        // Calcular el grosor EXACTAMENTE como en el renderizado final
+                        const scale = 1;
+                        const baseThickness = currentPaletteIcon?.thickness || 1;
+                        const previewThickness = baseThickness * scale * 0.7;
+                        const previewColor = currentPaletteIcon?.color || "#000000";
+                        const displayCurvePoints = curvePoints.map(pt => ratioToDisplay(pt.x, pt.y, viewMode, imageWidth, imageHeight));
+
+                        return (
+                          <Svg
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: imageWidth,
+                              height: imageHeight,
+                              zIndex: 100
+                            }}
+                          >
+                            {/* L�nea s�lida */}
+                            {lineType === 'solid' && (
+                              <Path
+                                key="curve-preview-solid"
+                                d={displayCurvePoints.map((pt, i) =>
+                                  i === 0
+                                    ? `M${pt.x},${pt.y}`
+                                    : `L${pt.x},${pt.y}`
+                                ).join(' ')}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            )}
+
+                            {/* L�nea punteada */}
+                            {lineType === 'dotted' && (
+                              <Path
+                                key="curve-preview-dotted"
+                                d={displayCurvePoints.map((pt, i) =>
+                                  i === 0
+                                    ? `M${pt.x},${pt.y}`
+                                    : `L${pt.x},${pt.y}`
+                                ).join(' ')}
+                                stroke={previewColor}
+                                strokeWidth={previewThickness}
+                                strokeDasharray={`${dotSize},${dotSpacing}`}
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            )}
+
+                            {/* Flecha curva mejorada - usar los �ltimos 2 puntos para mejor direcci�n */}
+                            {drawingCurveArrow && curvePoints.length >= 2 && (() => {
+                              // Buscar los dos �ltimos puntos diferentes para calcular la direcci�n correcta
+                              let lastIdx = curvePoints.length - 1;
+                              let secondLastIdx = lastIdx - 1;
+
+                              // Si los �ltimos puntos est�n muy cerca, buscar uno m�s alejado
+                              while (secondLastIdx >= 0) {
+                                const dist = Math.sqrt(
+                                  Math.pow(displayCurvePoints[lastIdx].x - displayCurvePoints[secondLastIdx].x, 2) +
+                                  Math.pow(displayCurvePoints[lastIdx].y - displayCurvePoints[secondLastIdx].y, 2)
+                                );
+                                if (dist > 5) break; // Al menos 5 p�xeles de diferencia
+                                secondLastIdx--;
+                              }
+
+                              if (secondLastIdx < 0) secondLastIdx = 0;
+
+                              const arrowData = getArrowHeadForStraightLine(
+                                displayCurvePoints[secondLastIdx],
+                                displayCurvePoints[lastIdx],
+                                standardSize || 24,
+                                0.5,
+                                previewThickness
+                              );
+
+                              return (
                                 <Polygon
-                                  points={arrowPoints}
+                                  key="curve-arrow-preview"
+                                  points={arrowData.arrowPoints}
                                   fill={previewColor}
                                   strokeLinejoin="round"
                                 />
-                              )}
-
-                              {/* C�rculo */}
-                              {drawingCircle && (
-                                <Circle
-                                  cx={(dp0.x + dp1.x) / 2}
-                                  cy={(dp0.y + dp1.y) / 2}
-                                  r={Math.sqrt(
-                                    Math.pow(dp1.x - dp0.x, 2) +
-                                    Math.pow(dp1.y - dp0.y, 2)
-                                  ) / 2 - 1}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  fill="none"
-                                  strokeDasharray={lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined}
-                                  strokeLinecap="round"
-                                  vectorEffect="non-scaling-stroke"
-                                />
-                              )}
-
-                              {/* Rect�ngulo */}
-                              {drawingRectangle && (
-                                <Rect
-                                  x={Math.min(dp0.x, dp1.x)}
-                                  y={Math.min(dp0.y, dp1.y)}
-                                  width={Math.abs(dp1.x - dp0.x)}
-                                  height={Math.abs(dp1.y - dp0.y)}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  fill="none"
-                                  strokeDasharray={lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined}
-                                  strokeLinecap="round"
-                                  vectorEffect="non-scaling-stroke"
-                                />
-                              )}
-                            </Svg>
-                          );
-                        })()}
-
-                        {/* Vista previa de l�neas y flechas curvas */}
-                        {(drawingCurveArrow || drawingCurveLine) && curvePoints.length >= 1 && (() => {
-                          // Obtener el icono ACTUAL de la paleta buscando por type
-                          const currentPaletteIcon = paletteIcons.find(icon => icon.type === pendingLineAction?.type);
-
-                          // Calcular el grosor EXACTAMENTE como en el renderizado final
-                          const scale = 1;
-                          const baseThickness = currentPaletteIcon?.thickness || 1;
-                          const previewThickness = baseThickness * scale * 0.7;
-                          const previewColor = currentPaletteIcon?.color || "#000000";
-                          const displayCurvePoints = curvePoints.map(pt => ratioToDisplay(pt.x, pt.y, viewMode, imageWidth, imageHeight));
-
-                          return (
-                            <Svg
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: imageWidth,
-                                height: imageHeight,
-                                zIndex: 100
-                              }}
-                            >
-                              {/* L�nea s�lida */}
-                              {lineType === 'solid' && (
-                                <Path
-                                  key="curve-preview-solid"
-                                  d={displayCurvePoints.map((pt, i) =>
-                                    i === 0
-                                      ? `M${pt.x},${pt.y}`
-                                      : `L${pt.x},${pt.y}`
-                                  ).join(' ')}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  fill="none"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              )}
-
-                              {/* L�nea punteada */}
-                              {lineType === 'dotted' && (
-                                <Path
-                                  key="curve-preview-dotted"
-                                  d={displayCurvePoints.map((pt, i) =>
-                                    i === 0
-                                      ? `M${pt.x},${pt.y}`
-                                      : `L${pt.x},${pt.y}`
-                                  ).join(' ')}
-                                  stroke={previewColor}
-                                  strokeWidth={previewThickness}
-                                  strokeDasharray={`${dotSize},${dotSpacing}`}
-                                  fill="none"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              )}
-
-                              {/* Flecha curva mejorada - usar los �ltimos 2 puntos para mejor direcci�n */}
-                              {drawingCurveArrow && curvePoints.length >= 2 && (() => {
-                                // Buscar los dos �ltimos puntos diferentes para calcular la direcci�n correcta
-                                let lastIdx = curvePoints.length - 1;
-                                let secondLastIdx = lastIdx - 1;
-
-                                // Si los �ltimos puntos est�n muy cerca, buscar uno m�s alejado
-                                while (secondLastIdx >= 0) {
-                                  const dist = Math.sqrt(
-                                    Math.pow(displayCurvePoints[lastIdx].x - displayCurvePoints[secondLastIdx].x, 2) +
-                                    Math.pow(displayCurvePoints[lastIdx].y - displayCurvePoints[secondLastIdx].y, 2)
-                                  );
-                                  if (dist > 5) break; // Al menos 5 p�xeles de diferencia
-                                  secondLastIdx--;
-                                }
-
-                                if (secondLastIdx < 0) secondLastIdx = 0;
-
-                                const arrowData = getArrowHeadForStraightLine(
-                                  displayCurvePoints[secondLastIdx],
-                                  displayCurvePoints[lastIdx],
-                                  standardSize || 24,
-                                  0.5,
-                                  previewThickness
-                                );
-
-                                return (
-                                  <Polygon
-                                    key="curve-arrow-preview"
-                                    points={arrowData.arrowPoints}
-                                    fill={previewColor}
-                                    strokeLinejoin="round"
-                                  />
-                                );
-                              })()}
-                            </Svg>
-                          );
-                        })()}
+                              );
+                            })()}
+                          </Svg>
+                        );
+                      })()}
                       {drawingCustomShape && (customShapePoints.length > 0 || previewPoint) && (() => {
                         // Obtener el icono ACTUAL de la paleta buscando por type
                         const currentPaletteIcon = paletteIcons.find(icon => icon.type === 'custom-shape-button');
@@ -16577,28 +16640,28 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                             {customShapePoints.map((pt, i) => {
                               if (i === 0) return null;
                               return (
-                                  <G key={`custom-confirmed-${i}`}>
-                                    {(!lineType || lineType === 'solid') && (
-                                      <Path
-                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
-                                        stroke={previewColor}
-                                        strokeWidth={previewThickness}
-                                        fill="none"
-                                        strokeLinecap="round"
-                                      />
-                                    )}
+                                <G key={`custom-confirmed-${i}`}>
+                                  {(!lineType || lineType === 'solid') && (
+                                    <Path
+                                      d={`M${displayShapePoints[i - 1].x},${displayShapePoints[i - 1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
+                                      stroke={previewColor}
+                                      strokeWidth={previewThickness}
+                                      fill="none"
+                                      strokeLinecap="round"
+                                    />
+                                  )}
 
-                                    {lineType === 'dotted' && (
-                                      <Path
-                                        d={`M${displayShapePoints[i-1].x},${displayShapePoints[i-1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
-                                        stroke={previewColor}
-                                        strokeWidth={previewThickness}
-                                        strokeDasharray={`${dotSize},${dotSpacing}`}
-                                        fill="none"
-                                        strokeLinecap="round"
-                                      />
-                                    )}
-                                  </G>
+                                  {lineType === 'dotted' && (
+                                    <Path
+                                      d={`M${displayShapePoints[i - 1].x},${displayShapePoints[i - 1].y} L${displayShapePoints[i].x},${displayShapePoints[i].y}`}
+                                      stroke={previewColor}
+                                      strokeWidth={previewThickness}
+                                      strokeDasharray={`${dotSize},${dotSpacing}`}
+                                      fill="none"
+                                      strokeLinecap="round"
+                                    />
+                                  )}
+                                </G>
                               );
                             })}
 
@@ -16656,56 +16719,56 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
                                     strokeLinecap="round"
                                     opacity={0.3}
                                   />
-                              )}
+                                )}
                               </G>
-                          )}
+                            )}
 
-                        {/* C�rculo de cierre en el primer punto */}
-                        {showCloseCircle && customShapePoints.length >= 3 && (
-                          <>
-                            <Circle
-                              cx={displayShapePoints[0].x}
-                              cy={displayShapePoints[0].y}
-                              r={15}
-                              fill="rgba(33, 118, 255, 0.3)"
-                              stroke="#2176ff"
-                              strokeWidth={2}
-                            />
-                            <Circle
-                              cx={displayShapePoints[0].x}
-                              cy={displayShapePoints[0].y}
-                              r={5}
-                              fill="#2176ff"
-                            />
-                          </>
-                        )}
+                            {/* C�rculo de cierre en el primer punto */}
+                            {showCloseCircle && customShapePoints.length >= 3 && (
+                              <>
+                                <Circle
+                                  cx={displayShapePoints[0].x}
+                                  cy={displayShapePoints[0].y}
+                                  r={15}
+                                  fill="rgba(33, 118, 255, 0.3)"
+                                  stroke="#2176ff"
+                                  strokeWidth={2}
+                                />
+                                <Circle
+                                  cx={displayShapePoints[0].x}
+                                  cy={displayShapePoints[0].y}
+                                  r={5}
+                                  fill="#2176ff"
+                                />
+                              </>
+                            )}
 
-                        {/* Puntos confirmados */}
-                        {displayShapePoints.map((pt, i) => (
-                          <Circle
-                            key={`confirmed-point-${i}`}
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={4}
-                            fill={pendingLineAction?.icon?.color || "#000000"}
-                          />
-                        ))}
+                            {/* Puntos confirmados */}
+                            {displayShapePoints.map((pt, i) => (
+                              <Circle
+                                key={`confirmed-point-${i}`}
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={4}
+                                fill={pendingLineAction?.icon?.color || "#000000"}
+                              />
+                            ))}
 
-                        {/* Punto de previsualizaci�n */}
-                        {previewPoint && (
-                          <Circle
-                            cx={displayPreviewPt.x}
-                            cy={displayPreviewPt.y}
-                            r={4}
-                            fill={pendingLineAction?.icon?.color || "#000000"}
-                            opacity={0.7}
-                            stroke="#fff"
-                            strokeWidth={1}
-                          />
-                        )}
-                      </Svg>
-                    );
-                  })()}
+                            {/* Punto de previsualizaci�n */}
+                            {previewPoint && (
+                              <Circle
+                                cx={displayPreviewPt.x}
+                                cy={displayPreviewPt.y}
+                                r={4}
+                                fill={pendingLineAction?.icon?.color || "#000000"}
+                                opacity={0.7}
+                                stroke="#fff"
+                                strokeWidth={1}
+                              />
+                            )}
+                          </Svg>
+                        );
+                      })()}
                     </View>
 
                     {/* Rect�ngulo de selecci�n: pintado por DOM nativo dentro
@@ -16737,82 +16800,82 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
 
                 </ViewShot>
 
-              {draggingOutside && (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: imageWidth,
-                    height: imageHeight,
-                    borderWidth: 4,
-                    borderColor: '#ef4444',
-                    borderStyle: 'dashed',
-                    borderRadius: 8,
-                    backgroundColor: 'rgba(239,68,68,0.08)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 20000,
-                  }}
-                >
+                {draggingOutside && (
                   <View
+                    pointerEvents="none"
                     style={{
-                      backgroundColor: 'rgba(239,68,68,0.92)',
-                      paddingHorizontal: 18,
-                      paddingVertical: 8,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: imageWidth,
+                      height: imageHeight,
+                      borderWidth: 4,
+                      borderColor: '#ef4444',
+                      borderStyle: 'dashed',
                       borderRadius: 8,
-                      shadowColor: '#ef4444',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 12,
-                      elevation: 8,
+                      backgroundColor: 'rgba(239,68,68,0.08)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 20000,
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        color: '#ffffff',
-                        fontSize: 14,
-                        fontWeight: '800',
+                        backgroundColor: 'rgba(239,68,68,0.92)',
+                        paddingHorizontal: 18,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        shadowColor: '#ef4444',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 12,
+                        elevation: 8,
                       }}
                     >
-                      Suelta para eliminar
-                    </Text>
+                      <Text
+                        style={{
+                          color: '#ffffff',
+                          fontSize: 14,
+                          fontWeight: '800',
+                        }}
+                      >
+                        Suelta para eliminar
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
 
-              {/* Capa de overlay para multi-select dentro de las mismas transformaciones.
+                {/* Capa de overlay para multi-select dentro de las mismas transformaciones.
                   En web usamos un <div> nativo en lugar de <View> para tener
                   control total sobre los eventos de mouse/touch "� el sistema
                   de responder de RN no se dispara de forma fiable con mouse
                   sobre overlays transparentes en react-native-web. */}
-              {multiSelectMode && selectionInteractionMode === 'select' && (
-                <div
-                  ref={(node) => { selectionOverlayRef.current = node; }}
-                  data-multiselect-overlay="true"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: imageWidth,
-                    height: imageHeight,
-                    zIndex: 10000,
-                    backgroundColor: 'transparent',
-                    cursor: 'crosshair',
-                    touchAction: 'none',
-                    userSelect: 'none',
-                  }}
-                >
-                  {/* Rect�ngulo de selecci�n: en web se dibuja por DOM nativo
+                {multiSelectMode && selectionInteractionMode === 'select' && (
+                  <div
+                    ref={(node) => { selectionOverlayRef.current = node; }}
+                    data-multiselect-overlay="true"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: imageWidth,
+                      height: imageHeight,
+                      zIndex: 10000,
+                      backgroundColor: 'transparent',
+                      cursor: 'crosshair',
+                      touchAction: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {/* Rect�ngulo de selecci�n: en web se dibuja por DOM nativo
                       desde el useEffect (ver bloque multi-select). El SVG fallback
                       solo aparece si por alg�n motivo isSelecting llega a estar true
                       sin que el div DOM est� pint�ndolo. */}
-                </div>
-              )}
+                  </div>
+                )}
+              </View>
             </View>
           </View>
-        </View>
         </View>
 
         {showingPlayersPalette ? (
@@ -17002,7 +17065,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
         <OptionsMenu
           visible={optionsMenu.visible}
           position={optionsMenu.position}
-          onClose={() => setOptionsMenu({...optionsMenu, visible: false})}
+          onClose={() => setOptionsMenu({ ...optionsMenu, visible: false })}
           onDelete={() => handleDeleteClone(optionsMenu.iconId)}
           onDuplicate={() => handleDuplicateClone(optionsMenu.iconId)}
           onRotate={optionsMenu.canRotate ? () => handleRotateIcon(optionsMenu.iconId) : null}
@@ -17027,7 +17090,7 @@ const SlidingZoomControls = React.memo(function SlidingZoomControls({
               }
             }
             // Cerrar el men� de opciones
-            setOptionsMenu({...optionsMenu, visible: false});
+            setOptionsMenu({ ...optionsMenu, visible: false });
           }}
           hideEdit={optionsMenu.hideEdit}
           scale={renderScale}
@@ -17277,7 +17340,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
-   carouselModalBackdrop: {
+  carouselModalBackdrop: {
     display: "flex",
     flex: 1,
     alignItems: 'center',
@@ -17610,7 +17673,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#27ae60',
   },
-   unlockButtonText: {
+  unlockButtonText: {
     fontSize: 12,
     color: '#27ae60',
     marginLeft: 4,
@@ -17776,90 +17839,90 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   floatingButton: {
-  position: 'absolute',
-  width: 56,
-  height: 56,
-  borderRadius: 28,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 5,
-  zIndex: 100,
-},
-floatingButtonPrimary: {
-  backgroundColor: '#27ae60',
-},
-floatingButtonDanger: {
-  backgroundColor: '#e74c3c',
-},
-floatingButtonGroup: {
-  position: 'absolute',
-  flexDirection: 'row',
-  zIndex: 100,
-},
-floatingButtonBadge: {
-  position: 'absolute',
-  top: -4,
-  right: -4,
-  width: 20,
-  height: 20,
-  borderRadius: 10,
-  backgroundColor: '#f39c12',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-floatingButtonBadgeText: {
-  fontSize: 10,
-  color: '#fff',
-  fontWeight: 'bold',
-},
-slidingPalette: {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: '#3F718C',
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  zIndex: 90,
-},
-slidingPaletteHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-  paddingVertical: 15,
-  borderBottomWidth: 1,
-  borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-},
-slidingPaletteTitle: {
-  color: '#fff',
-  fontSize: 18,
-  fontWeight: 'bold',
-},
-slidingPaletteContent: {
-  paddingHorizontal: 20,
-  paddingVertical: 15,
-  alignItems: 'center',
-},
-paletteIconButton: {
-  width: 50,
-  height: 50,
-  borderRadius: 10,
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginHorizontal: 5,
-},
-paletteIconButtonSelected: {
-  backgroundColor: '#2176ff',
-  borderWidth: 2,
-  borderColor: '#fff',
-},
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
+  },
+  floatingButtonPrimary: {
+    backgroundColor: '#27ae60',
+  },
+  floatingButtonDanger: {
+    backgroundColor: '#e74c3c',
+  },
+  floatingButtonGroup: {
+    position: 'absolute',
+    flexDirection: 'row',
+    zIndex: 100,
+  },
+  floatingButtonBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#f39c12',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingButtonBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  slidingPalette: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#3F718C',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    zIndex: 90,
+  },
+  slidingPaletteHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  slidingPaletteTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  slidingPaletteContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  paletteIconButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  paletteIconButtonSelected: {
+    backgroundColor: '#2176ff',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   slidingZoomControls: {
     position: 'absolute',
     left: 0,
@@ -17925,465 +17988,465 @@ paletteIconButtonSelected: {
     borderRadius: 18,
     marginVertical: 2,
   },
-teamPlayersModal: {
-  position: 'absolute',
-  right: 0,
-  top: 0,
-  width: 340,
-  height: '100%',
-  backgroundColor: '#ffffff',
-  shadowColor: '#000',
-  shadowOffset: { width: -2, height: 0 },
-  shadowOpacity: 0.25,
-  shadowRadius: 8,
-  elevation: 8,
-  padding: 16,
-},
-teamPlayersTitle: {
-  fontSize: 18,
-  fontWeight: '600',
-  marginBottom: 12,
-  textAlign: 'center',
-  color: '#1a1a1a',
-},
-playersGrid: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  justifyContent: 'flex-start',
-  paddingHorizontal: 4,
-},
-playerGridItem: {
-  width: '31%',
-  marginHorizontal: '1%',
-  marginBottom: 12,
-  alignItems: 'center',
-  paddingVertical: 8,
-  paddingHorizontal: 4,
-  backgroundColor: '#f8f9fa',
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-playerGridName: {
-  fontSize: 11,
-  fontWeight: '500',
-  color: '#333',
-  textAlign: 'center',
-  lineHeight: 14,
-  height: 28,
-},
-playerItem: {
-  flexDirection: 'column',
-  alignItems: 'center',
-  paddingVertical: 12,
-  paddingHorizontal: 8,
-  borderBottomWidth: 1,
-  borderBottomColor: '#f0f0f0',
-  marginBottom: 4,
-},
-playerIcon: {
-  marginBottom: 8,
-},
-playerInfo: {
-  flex: 1,
-},
-playerName: {
-  fontSize: 16,
-  fontWeight: '500',
-  color: '#000',
-  backgroundColor: '#fff',
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 4,
-  textAlign: 'center',
-},
-noPlayersText: {
-  fontSize: 14,
-  color: '#666',
-  textAlign: 'center',
-  fontStyle: 'italic',
-  marginVertical: 20,
-},
+  teamPlayersModal: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 340,
+    height: '100%',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    padding: 16,
+  },
+  teamPlayersTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+    color: '#1a1a1a',
+  },
+  playersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 4,
+  },
+  playerGridItem: {
+    width: '31%',
+    marginHorizontal: '1%',
+    marginBottom: 12,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  playerGridName: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 14,
+    height: 28,
+  },
+  playerItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    marginBottom: 4,
+  },
+  playerIcon: {
+    marginBottom: 8,
+  },
+  playerInfo: {
+    flex: 1,
+  },
+  playerName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    textAlign: 'center',
+  },
+  noPlayersText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginVertical: 20,
+  },
 
-// ============================================================================
-// ESTILOS DE MODALES PROFESIONALES
-// ============================================================================
-proModalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-proModalContainer: {
-  backgroundColor: '#ffffff',
-  borderRadius: 16,
-  maxWidth: 400,
-  width: '90%',
-  maxHeight: '80%',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.25,
-  shadowRadius: 16,
-  elevation: 10,
-  overflow: 'hidden',
-},
-proModalContainerSide: {
-  position: 'absolute',
-  right: 0,
-  top: 0,
-  bottom: 0,
-  backgroundColor: '#ffffff',
-  borderTopLeftRadius: 16,
-  borderBottomLeftRadius: 16,
-  width: 280,
-  maxWidth: '70%',
-  shadowColor: '#000',
-  shadowOffset: { width: -4, height: 0 },
-  shadowOpacity: 0.15,
-  shadowRadius: 12,
-  elevation: 10,
-},
-proModalHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: '#f0f0f0',
-  backgroundColor: '#fafafa',
-},
-proModalHeaderIcon: {
-  width: 28,
-  height: 28,
-  borderRadius: 8,
-  backgroundColor: '#e8f4ff',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: 8,
-},
-proModalTitle: {
-  fontSize: 15,
-  fontWeight: '700',
-  color: '#1a1a1a',
-  flex: 1,
-},
-proModalTitleMobile: {
-  fontSize: 13,
-  fontWeight: '700',
-  color: '#1a1a1a',
-  flex: 1,
-},
-proModalSubtitle: {
-  fontSize: 10,
-  color: '#666',
-  marginTop: 2,
-},
-proModalCloseBtn: {
-  width: 28,
-  height: 28,
-  borderRadius: 14,
-  backgroundColor: '#f5f5f5',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-proModalBody: {
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-},
-proModalSection: {
-  marginBottom: 12,
-},
-proModalSectionTitle: {
-  fontSize: 11,
-  fontWeight: '600',
-  color: '#666',
-  textTransform: 'uppercase',
-  letterSpacing: 0.5,
-  marginBottom: 8,
-},
-proModalLabel: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: '#333',
-  marginBottom: 6,
-},
-proModalLabelMobile: {
-  fontSize: 11,
-  fontWeight: '600',
-  color: '#333',
-  marginBottom: 4,
-},
-proModalInput: {
-  backgroundColor: '#f8f9fa',
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-  borderRadius: 8,
-  paddingHorizontal: 10,
-  paddingVertical: 8,
-  fontSize: 13,
-  color: '#333',
-},
-proModalInputMobile: {
-  backgroundColor: '#f8f9fa',
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-  borderRadius: 6,
-  paddingHorizontal: 8,
-  paddingVertical: 6,
-  fontSize: 12,
-  color: '#333',
-},
-proModalRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-},
-proModalColorBtn: {
-  width: 32,
-  height: 32,
-  borderRadius: 8,
-  borderWidth: 2,
-  borderColor: '#e0e0e0',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
-  shadowRadius: 2,
-  elevation: 2,
-},
-proModalColorBtnMobile: {
-  width: 26,
-  height: 26,
-  borderRadius: 6,
-  borderWidth: 2,
-  borderColor: '#e0e0e0',
-},
-proModalSwitch: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  backgroundColor: '#f8f9fa',
-  borderRadius: 8,
-  padding: 10,
-  marginBottom: 8,
-},
-proModalSwitchLabel: {
-  fontSize: 12,
-  fontWeight: '500',
-  color: '#333',
-  flex: 1,
-},
-proModalFooter: {
-  flexDirection: 'row',
-  gap: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  borderTopWidth: 1,
-  borderTopColor: '#f0f0f0',
-  backgroundColor: '#fafafa',
-},
-proModalBtn: {
-  flex: 1,
-  paddingVertical: 10,
-  borderRadius: 8,
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexDirection: 'row',
-  gap: 4,
-},
-proModalBtnPrimary: {
-  backgroundColor: '#2176ff',
-},
-proModalBtnSuccess: {
-  backgroundColor: '#28a745',
-},
-proModalBtnSecondary: {
-  backgroundColor: '#f0f0f0',
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-proModalBtnDanger: {
-  backgroundColor: '#dc3545',
-},
-proModalBtnText: {
-  fontSize: 12,
-  fontWeight: '600',
-},
-proModalBtnTextPrimary: {
-  color: '#ffffff',
-},
-proModalBtnTextSecondary: {
-  color: '#666',
-},
-proModalPreview: {
-  backgroundColor: '#f8f9fa',
-  borderRadius: 10,
-  padding: 12,
-  alignItems: 'center',
-  borderWidth: 1,
-  borderColor: '#e8e8e8',
-  marginTop: 6,
-},
-proModalChip: {
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 12,
-  backgroundColor: '#f0f0f0',
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-proModalChipSelected: {
-  backgroundColor: '#e8f4ff',
-  borderColor: '#2176ff',
-},
-proModalChipText: {
-  fontSize: 11,
-  fontWeight: '500',
-  color: '#666',
-},
-proModalChipTextSelected: {
-  color: '#2176ff',
-},
-proModalGrid: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  gap: 6,
-},
-proModalGridItem: {
-  paddingVertical: 8,
-  paddingHorizontal: 10,
-  borderRadius: 6,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-  backgroundColor: '#fff',
-  alignItems: 'center',
-},
-proModalGridItemSelected: {
-  backgroundColor: '#e8f4ff',
-  borderColor: '#2176ff',
-},
-proModalDivider: {
-  height: 1,
-  backgroundColor: '#f0f0f0',
-  marginVertical: 10,
-},
-proModalCard: {
-  backgroundColor: '#f8f9fa',
-  borderRadius: 10,
-  padding: 10,
-  marginBottom: 8,
-  borderWidth: 1,
-  borderColor: '#e8e8e8',
-},
-proModalCardHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 8,
-},
-proModalCardTitle: {
-  fontSize: 12,
-  fontWeight: '600',
-  color: '#333',
-  marginLeft: 8,
-},
-proModalHint: {
-  fontSize: 10,
-  color: '#999',
-  marginTop: 2,
-  fontStyle: 'italic',
-},
-// Stepper (botones +/-)
-proModalStepperRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#f8f9fa',
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-  overflow: 'hidden',
-  alignSelf: 'flex-start',
-  marginTop: 4,
-},
-proModalStepperBtn: {
-  width: 36,
-  height: 36,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#fff',
-},
-proModalStepperValue: {
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-  backgroundColor: '#f8f9fa',
-  borderLeftWidth: 1,
-  borderRightWidth: 1,
-  borderColor: '#e0e0e0',
-  minWidth: 50,
-  alignItems: 'center',
-},
-proModalStepperValueText: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#333',
-},
+  // ============================================================================
+  // ESTILOS DE MODALES PROFESIONALES
+  // ============================================================================
+  proModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  proModalContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    maxWidth: 400,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  proModalContainerSide: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    width: 280,
+    maxWidth: '70%',
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  proModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
+  },
+  proModalHeaderIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#e8f4ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  proModalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  proModalTitleMobile: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  proModalSubtitle: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
+  proModalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  proModalBody: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  proModalSection: {
+    marginBottom: 12,
+  },
+  proModalSectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  proModalLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  proModalLabelMobile: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  proModalInput: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#333',
+  },
+  proModalInputMobile: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 12,
+    color: '#333',
+  },
+  proModalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  proModalColorBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  proModalColorBtnMobile: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
+  proModalSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  proModalSwitchLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+    flex: 1,
+  },
+  proModalFooter: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
+  },
+  proModalBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  proModalBtnPrimary: {
+    backgroundColor: '#2176ff',
+  },
+  proModalBtnSuccess: {
+    backgroundColor: '#28a745',
+  },
+  proModalBtnSecondary: {
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  proModalBtnDanger: {
+    backgroundColor: '#dc3545',
+  },
+  proModalBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  proModalBtnTextPrimary: {
+    color: '#ffffff',
+  },
+  proModalBtnTextSecondary: {
+    color: '#666',
+  },
+  proModalPreview: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+    marginTop: 6,
+  },
+  proModalChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  proModalChipSelected: {
+    backgroundColor: '#e8f4ff',
+    borderColor: '#2176ff',
+  },
+  proModalChipText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#666',
+  },
+  proModalChipTextSelected: {
+    color: '#2176ff',
+  },
+  proModalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  proModalGridItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  proModalGridItemSelected: {
+    backgroundColor: '#e8f4ff',
+    borderColor: '#2176ff',
+  },
+  proModalDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 10,
+  },
+  proModalCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  proModalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  proModalCardTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 8,
+  },
+  proModalHint: {
+    fontSize: 10,
+    color: '#999',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  // Stepper (botones +/-)
+  proModalStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  proModalStepperBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  proModalStepperValue: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#f8f9fa',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#e0e0e0',
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  proModalStepperValueText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
 
-// Estilos para conectores
-connectorElementBtn: {
-  paddingVertical: 6,
-  paddingHorizontal: 10,
-  borderRadius: 6,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-  backgroundColor: '#fff',
-  minWidth: 70,
-  alignItems: 'center',
-},
-connectorElementBtnSelected: {
-  backgroundColor: '#e8f4ff',
-  borderColor: '#2176ff',
-},
-connectorElementText: {
-  fontSize: 12,
-  color: '#333',
-  fontWeight: '500',
-},
-connectorElementTextSelected: {
-  color: '#2176ff',
-},
-connectorItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#f8f9fa',
-  borderRadius: 10,
-  padding: 12,
-  marginBottom: 8,
-  borderWidth: 1,
-  borderColor: '#e8e8e8',
-},
-connectorItemText: {
-  fontSize: 13,
-  color: '#333',
-  fontWeight: '500',
-},
-connectorItemSubtext: {
-  fontSize: 11,
-  color: '#666',
-  marginLeft: 8,
-},
-connectorColorPreview: {
-  width: 16,
-  height: 16,
-  borderRadius: 4,
-  borderWidth: 1,
-  borderColor: '#ccc',
-},
-connectorActionBtn: {
-  width: 32,
-  height: 32,
-  borderRadius: 6,
-  backgroundColor: '#f0f0f0',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+  // Estilos para conectores
+  connectorElementBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  connectorElementBtnSelected: {
+    backgroundColor: '#e8f4ff',
+    borderColor: '#2176ff',
+  },
+  connectorElementText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+  connectorElementTextSelected: {
+    color: '#2176ff',
+  },
+  connectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  connectorItemText: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+  },
+  connectorItemSubtext: {
+    fontSize: 11,
+    color: '#666',
+    marginLeft: 8,
+  },
+  connectorColorPreview: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  connectorActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
 });
