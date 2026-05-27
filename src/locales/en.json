@@ -1533,9 +1533,9 @@
     },
     "videoRecorder": {
         "title": "Video",
-        "capture": "📸 Capture",
+        "capture": "Capture",
         "captures": "Captures:",
-        "deleteLast": "🗑️ last",
+        "deleteLast": "Last",
         "generating": "Generating video",
         "generationPreparing": "Preparing board",
         "generationCapturing": "Capturing frames",
@@ -3596,7 +3596,7 @@
             }
         }
     },
-"methodology": {
+    "methodology": {
         "title": "Methodology",
         "myMethodologies": "My Methodologies",
         "new": "New",
@@ -3695,7 +3695,7 @@
             "alevines": "Under-12 Talents",
             "infantiles": "Under-14 Formation",
             "cadetes": "Under-16 Formation",
-"juveniles": "Under-18 Formation (High Performance)"
+            "juveniles": "Under-18 Formation (High Performance)"
         },
         "data": {
             "description": "Complete planning with detailed Main Part structure and selection rules",

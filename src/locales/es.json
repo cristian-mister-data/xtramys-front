@@ -315,7 +315,6 @@
         "createMatchSheet": "Crea ficha de partido",
         "rivalToBeDetermined": "Rival por definir"
     },
-
     "weekdays": {
         "sunday": "Domingo",
         "monday": "Lunes",
@@ -875,7 +874,7 @@
         "positionDeleted": "Posición eliminada",
         "eraserMode": "Borrar"
     },
-"video": {
+    "video": {
         "savedToGallery": "Descarga iniciada",
         "saveFailed": "No se pudo guardar el vídeo",
         "deleteTitle": "Eliminar video",
@@ -1083,7 +1082,7 @@
         "latestMeasurementDate": "Fecha última medición",
         "latestMeasurement": "Última medición",
         "tapToViewHistory": "Toca para ver historial completo",
-"folds": {
+        "folds": {
             "tricipital": "Tríceps",
             "subescapular": "Subescapular",
             "suprailiaco": "Suprailíaco",
@@ -1534,9 +1533,9 @@
     },
     "videoRecorder": {
         "title": "Video",
-        "capture": "📸 Capturar",
+        "capture": "Capturar",
         "captures": "Capturas:",
-        "deleteLast": "🗑️ última",
+        "deleteLast": "Última",
         "generating": "Generando video",
         "generationPreparing": "Preparando tablero",
         "generationCapturing": "Capturando frames",
@@ -3606,7 +3605,7 @@
             }
         }
     },
-"methodology": {
+    "methodology": {
         "title": "Metodología",
         "myMethodologies": "Mis Metodologías",
         "new": "Nueva",
@@ -3705,7 +3704,7 @@
             "alevines": "Talentos Alevines",
             "infantiles": "Formación Infantiles",
             "cadetes": "Formación Cadetes",
-"juveniles": "Formación Juveniles (Alto Rendimiento)"
+            "juveniles": "Formación Juveniles (Alto Rendimiento)"
         },
         "data": {
             "description": "Planificación completa con estructura detallada de Parte Principal y reglas de selección",
