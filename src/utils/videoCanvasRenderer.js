@@ -161,21 +161,86 @@ function drawBall(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
+  // 1. Recortar al área circular del balón
   ctx.beginPath();
   ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  // 2. Pintar el fondo blanco del balón
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1;
-  ctx.stroke();
 
-  const inner = r * 0.65;
+  // 3. Pintar los pentágonos negros
+  ctx.fillStyle = '#1e1e1e';
+  const f = r / 48;
+
+  const drawPolygon = (points) => {
+    ctx.beginPath();
+    ctx.moveTo(p.x + points[0][0] * f, p.y + points[0][1] * f);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(p.x + points[i][0] * f, p.y + points[i][1] * f);
+    }
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  // Pentágono central
+  drawPolygon([[0, -15], [14.3, -4.6], [8.8, 12.1], [-8.8, 12.1], [-14.3, -4.6]]);
+
+  // Pentágonos exteriores
+  drawPolygon([[0, -32], [-12, -41], [-20, -55], [20, -55], [12, -41]]);
+  drawPolygon([[28.3, -9.2], [37.2, -29], [55, -25], [55, -5], [38.6, 0]]);
+  drawPolygon([[17.6, 24.2], [40.5, 22], [50, 40], [27.2, 55], [12.1, 38.6]]);
+  drawPolygon([[-17.6, 24.2], [-12.1, 38.6], [-27.2, 55], [-50, 40], [-40.5, 22]]);
+  drawPolygon([[-28.3, -9.2], [-38.6, 0], [-55, -5], [-55, -25], [-37.2, -29]]);
+
+  // 4. Dibujar las costuras (líneas conectoras)
+  ctx.strokeStyle = '#1e1e1e';
+  ctx.lineWidth = Math.max(0.5, 0.75 * scale);
+  
+  const drawLine = (x1, y1, x2, y2) => {
+    ctx.beginPath();
+    ctx.moveTo(p.x + x1 * f, p.y + y1 * f);
+    ctx.lineTo(p.x + x2 * f, p.y + y2 * f);
+    ctx.stroke();
+  };
+
+  // Conexiones del pentágono central
+  drawLine(0, -15, 0, -32);
+  drawLine(14.3, -4.6, 28.3, -9.2);
+  drawLine(8.8, 12.1, 17.6, 24.2);
+  drawLine(-8.8, 12.1, -17.6, 24.2);
+  drawLine(-14.3, -4.6, -28.3, -9.2);
+
+  // Conexiones de pentágonos exteriores
+  drawLine(0, -32, -12, -41);
+  drawLine(0, -32, 12, -41);
+  drawLine(28.3, -9.2, 37.2, -29);
+  drawLine(28.3, -9.2, 38.6, 0);
+  drawLine(17.6, 24.2, 40.5, 22);
+  drawLine(17.6, 24.2, 12.1, 38.6);
+  drawLine(-17.6, 24.2, -12.1, 38.6);
+  drawLine(-17.6, 24.2, -40.5, 22);
+  drawLine(-28.3, -9.2, -37.2, -29);
+  drawLine(-28.3, -9.2, -38.6, 0);
+
+  // Líneas conectoras exteriores perimetrales
+  drawLine(-12, -41, -37.2, -29);
+  drawLine(12, -41, 37.2, -29);
+  drawLine(38.6, 0, 40.5, 22);
+  drawLine(12.1, 38.6, -12.1, 38.6);
+  drawLine(-40.5, 22, -38.6, 0);
+
+  ctx.restore();
+
+  // 5. Dibujar el borde circular exterior del balón sobre el recorte para evitar dientes de sierra
+  ctx.save();
+  applyRotation(ctx, p.x, p.y, elem.rotation);
   ctx.beginPath();
-  ctx.arc(p.x, p.y, inner, 0, Math.PI * 2);
-  ctx.strokeStyle = '#ccc';
-  ctx.lineWidth = 0.5;
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#1e1e1e';
+  ctx.lineWidth = Math.max(1, 1.25 * scale);
   ctx.stroke();
-
   ctx.restore();
 }
 

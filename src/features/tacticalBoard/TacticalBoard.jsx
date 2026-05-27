@@ -411,15 +411,29 @@ export default function TacticalBoard({
   const onElementDragEnd = (id) => (e) => {
     const node = getDraggableGroup(e.target);
     if (!node) return;
+    
     const outside = isDraggedNodeOutside(node, size.w, size.h);
     const r = p2r(node.x(), node.y());
+
+    const el = elements.find((it) => it.id === id);
+    if (el) {
+      const pt = r2p(el.x, el.y);
+      node.position({ x: pt.x, y: pt.y });
+    }
+
     node.opacity(1); node.scaleX(1); node.scaleY(1);
     setDeleteIndicatorVisible(node, false);
     node.getLayer()?.batchDraw();
     setDraggingOutside(false);
 
-    if (outside) { applyChange((prev) => prev.filter((el) => el.id !== id)); setSelectedId(null); }
-    else { const x = Math.max(0, Math.min(1, r.x)); const y = Math.max(0, Math.min(1, r.y)); applyChange((prev) => prev.map((el) => (el.id === id ? { ...el, x, y } : el))); }
+    if (outside) { 
+      applyChange((prev) => prev.filter((it) => it.id !== id)); 
+      setSelectedId(null); 
+    } else { 
+      const x = Math.max(0, Math.min(1, r.x)); 
+      const y = Math.max(0, Math.min(1, r.y)); 
+      applyChange((prev) => prev.map((it) => (it.id === id ? { ...it, x, y } : it))); 
+    }
   };
 
   const onSelect = (id) => (e) => {

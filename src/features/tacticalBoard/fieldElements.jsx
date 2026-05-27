@@ -36,17 +36,18 @@ export const GrassBackground = memo(function GrassBackground({ w, h, grassColor 
 });
 
 // 2. Field outline + center line
-export const FieldOutline = memo(function FieldOutline({ w, h, margin, hMargin, showCenterLine = true, lineColor = '#ffffff', strokeWidth = 2 }) {
+export const FieldOutline = memo(function FieldOutline({ w, h, margin, hMargin, vMargin, showCenterLine = true, lineColor = '#ffffff', strokeWidth = 2 }) {
   const m = margin;
   const hm = hMargin ?? margin;
+  const vm = vMargin ?? margin;
   const fw = w - 2 * hm;
-  const fh = h - 2 * m;
+  const fh = h - 2 * vm;
   const midX = hm + fw / 2;
   return (
     <g>
-      <rect x={hm} y={m} width={fw} height={fh} stroke={lineColor} strokeWidth={strokeWidth} fill="none" />
+      <rect x={hm} y={vm} width={fw} height={fh} stroke={lineColor} strokeWidth={strokeWidth} fill="none" />
       {showCenterLine && (
-        <line x1={midX} y1={m} x2={midX} y2={m + fh} stroke={lineColor} strokeWidth={strokeWidth} />
+        <line x1={midX} y1={vm} x2={midX} y2={vm + fh} stroke={lineColor} strokeWidth={strokeWidth} />
       )}
     </g>
   );
@@ -165,30 +166,32 @@ export const GoalNet = memo(function GoalNet({ w, h, margin, side = 'left', line
 });
 
 // 7. Zone dividers
-export const ZoneDividers = memo(function ZoneDividers({ w, h, margin, zones = 1, lineColor = '#ffffff', strokeWidth = 2 }) {
-  const fw = w - 2 * margin;
-  const fh = h - 2 * margin;
+export const ZoneDividers = memo(function ZoneDividers({ w, h, margin, hMargin, vMargin, zones = 1, lineColor = '#ffffff', strokeWidth = 2 }) {
+  const hm = hMargin ?? margin;
+  const vm = vMargin ?? margin;
+  const fw = w - 2 * hm;
+  const fh = h - 2 * vm;
   const lines = [];
 
   if (zones === 2) {
-    const midX = margin + fw / 2;
+    const midX = hm + fw / 2;
     lines.push(
-      <line key="v-center" x1={midX} y1={margin} x2={midX} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
+      <line key="v-center" x1={midX} y1={vm} x2={midX} y2={vm + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
   }
   if (zones === 3) {
     const third = fw / 3;
     lines.push(
-      <line key="v1" x1={margin + third} y1={margin} x2={margin + third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />,
-      <line key="v2" x1={margin + 2 * third} y1={margin} x2={margin + 2 * third} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />
+      <line key="v1" x1={hm + third} y1={vm} x2={hm + third} y2={vm + fh} stroke={lineColor} strokeWidth={strokeWidth} />,
+      <line key="v2" x1={hm + 2 * third} y1={vm} x2={hm + 2 * third} y2={vm + fh} stroke={lineColor} strokeWidth={strokeWidth} />
     );
   }
   if (zones === 4) {
-    const midX = margin + fw / 2;
-    const midY = margin + fh / 2;
+    const midX = hm + fw / 2;
+    const midY = vm + fh / 2;
     lines.push(
-      <line key="v-center" x1={midX} y1={margin} x2={midX} y2={margin + fh} stroke={lineColor} strokeWidth={strokeWidth} />,
-      <line key="h-center" x1={margin} y1={midY} x2={margin + fw} y2={midY} stroke={lineColor} strokeWidth={strokeWidth} />
+      <line key="v-center" x1={midX} y1={vm} x2={midX} y2={vm + fh} stroke={lineColor} strokeWidth={strokeWidth} />,
+      <line key="h-center" x1={hm} y1={midY} x2={hm + fw} y2={midY} stroke={lineColor} strokeWidth={strokeWidth} />
     );
   }
 

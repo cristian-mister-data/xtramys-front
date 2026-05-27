@@ -209,6 +209,10 @@ export function isVisibleInView(xR, yR, viewModeId, margin = 0) {
  * @returns {boolean}
  */
 export function isOutsideVisibleField(xR, yR, viewModeId, W, H) {
+  // Si está fuera de los límites de las líneas de juego con un 4% de margen de tolerancia, se considera fuera
+  if (xR < 0.04 || xR > 0.96 || yR < 0.04 || yR > 0.96) {
+    return true;
+  }
   const { x, y } = ratioToDisplay(xR, yR, viewModeId, W, H);
   return x < 0 || x > W || y < 0 || y > H;
 }

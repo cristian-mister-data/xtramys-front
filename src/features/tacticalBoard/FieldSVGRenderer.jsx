@@ -63,7 +63,9 @@ const FieldSVGRenderer = memo(function FieldSVGRenderer({
   }
 
   const margin = Math.min(virtualW, virtualH) * MARGIN_RATIO;
-  const hMargin = lineConfig.id === 'zones1' ? Math.max(margin, virtualW * 0.22) : margin;
+  const isZoneType = lineConfig.id.startsWith('zones');
+  const hMargin = isZoneType ? Math.max(margin, virtualW * 0.15) : margin;
+  const vMargin = isZoneType ? Math.max(margin, virtualH * 0.15) : margin;
 
   return (
     <svg
@@ -78,7 +80,7 @@ const FieldSVGRenderer = memo(function FieldSVGRenderer({
 
         {lineConfig.id !== 'empty' && (
           <FieldOutline
-            w={virtualW} h={virtualH} margin={margin} hMargin={hMargin}
+            w={virtualW} h={virtualH} margin={margin} hMargin={hMargin} vMargin={vMargin}
             showCenterLine={lineConfig.showHalfwayLine}
             lineColor={lineColor} strokeWidth={strokeWidth}
           />
@@ -101,7 +103,7 @@ const FieldSVGRenderer = memo(function FieldSVGRenderer({
         ))}
 
         {lineConfig.zones > 0 && (
-          <ZoneDividers w={virtualW} h={virtualH} margin={margin} zones={lineConfig.zones} lineColor={lineColor} strokeWidth={strokeWidth} />
+          <ZoneDividers w={virtualW} h={virtualH} margin={margin} hMargin={hMargin} vMargin={vMargin} zones={lineConfig.zones} lineColor={lineColor} strokeWidth={strokeWidth} />
         )}
       </g>
     </svg>

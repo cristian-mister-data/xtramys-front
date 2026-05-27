@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import Svg, { Path, Polygon, Rect, Circle, G } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath } from 'react-native-svg';
 import ViewShot from "react-native-view-shot";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy'; // Usar la API legacy
@@ -100,13 +100,57 @@ const BallImage = React.memo(({ size }) => {
       justifyContent: 'center',
       alignItems: 'center',
     }}>
-      <Text style={{
-        fontSize: size * 0.9,
-        lineHeight: size,
-        textAlign: 'center',
-      }}>
-        ⚽
-      </Text>
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        <Defs>
+          <ClipPath id="ball-clip">
+            <Circle cx="50" cy="50" r="48" />
+          </ClipPath>
+        </Defs>
+        {/* Fondo blanco del balón */}
+        <Circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#1e1e1e" strokeWidth="3" />
+        
+        {/* Elementos recortados por la forma circular del balón */}
+        <G clipPath="url(#ball-clip)">
+          {/* Pentágono central */}
+          <Polygon points="50,35 64.3,45.4 58.8,62.1 41.2,62.1 35.7,45.4" fill="#1e1e1e" />
+          
+          {/* Pentágonos exteriores */}
+          <Polygon points="50,18 38,9 30,-5 70,-5 62,9" fill="#1e1e1e" />
+          <Polygon points="78.3,40.8 87.2,21 105,25 105,45 88.6,50" fill="#1e1e1e" />
+          <Polygon points="67.6,74.2 90.5,72 100,90 77.2,105 62.1,88.6" fill="#1e1e1e" />
+          <Polygon points="32.4,74.2 37.9,88.6 22.8,105 0,90 9.5,72" fill="#1e1e1e" />
+          <Polygon points="21.7,40.8 11.4,50 -5,45 -5,25 12.8,21" fill="#1e1e1e" />
+          
+          {/* Líneas de costura (seams) */}
+          <Path
+            d="M 50 35 L 50 18
+               M 64.3 45.4 L 78.3 40.8
+               M 58.8 62.1 L 67.6 74.2
+               M 41.2 62.1 L 32.4 74.2
+               M 35.7 45.4 L 21.7 40.8
+               
+               M 50 18 L 38 9
+               M 50 18 L 62 9
+               M 78.3 40.8 L 87.2 21
+               M 78.3 40.8 L 88.6 50
+               M 67.6 74.2 L 90.5 72
+               M 67.6 74.2 L 62.1 88.6
+               M 32.4 74.2 L 37.9 88.6
+               M 32.4 74.2 L 9.5 72
+               M 21.7 40.8 L 12.8 21
+               M 21.7 40.8 L 11.4 50
+               
+               M 38 9 L 12.8 21
+               M 62 9 L 87.2 21
+               M 88.6 50 L 90.5 72
+               M 62.1 88.6 L 37.9 88.6
+               M 9.5 72 L 11.4 50"
+            stroke="#1e1e1e"
+            strokeWidth="2"
+            fill="none"
+          />
+        </G>
+      </Svg>
     </View>
   );
 }, (prevProps, nextProps) => prevProps.size === nextProps.size);
@@ -9978,9 +10022,9 @@ export default function Field(props = {}) {
   const DEBOUNCE_DELAY = 300; // ms - tiempo para agrupar cambios de drag
   const connectorsRef = useRef([]); // Referencia actual de conectores para undo/redo
 
-  // Funci�n para guardar estado en el historial
+  // Función para guardar estado en el historial (guarda de forma síncrona/inmediata)
   const commitToHistory = useCallback((stateStr) => {
-    // No guardar si es id�ntico al �ltimo estado guardado
+    // No guardar si es idéntico al último estado guardado
     if (stateStr === lastSavedStateRef.current) return;
 
     // Eliminar estados futuros si estamos en medio del historial
@@ -9988,10 +10032,10 @@ export default function Field(props = {}) {
       historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
     }
 
-    // A�adir nuevo estado
+    // Añadir nuevo estado
     historyRef.current.push(stateStr);
 
-    // Limitar tama�o del historial
+    // Limitar tamaño del historial
     if (historyRef.current.length > MAX_HISTORY_SIZE) {
       historyRef.current.shift();
     } else {
@@ -9999,8 +10043,8 @@ export default function Field(props = {}) {
     }
 
     lastSavedStateRef.current = stateStr;
-    // Usar updater funcional para que React haga bail-out si el valor no cambi�
-    // Esto evita re-renders innecesarios que podr�an acumular "nested updates"
+    // Usar updater funcional para que React haga bail-out si el valor no cambió
+    // Esto evita re-renders innecesarios que podrían acumular "nested updates"
     setCanUndo(prev => {
       const next = historyIndexRef.current > 0;
       return prev === next ? prev : next;
@@ -10008,31 +10052,17 @@ export default function Field(props = {}) {
     setCanRedo(prev => prev === false ? prev : false);
   }, []);
 
-  // Funci�n con debounce para guardar estado (agrupa cambios r�pidos de drag)
   const saveToHistoryDebounced = useCallback((newClones, newConnectors) => {
     const stateObj = { clones: newClones, connectors: newConnectors || connectorsRef.current };
     const newStateStr = JSON.stringify(stateObj);
-    pendingStateRef.current = newStateStr;
-
-    // Cancelar timer anterior
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Programar guardado despu�s del debounce
-    debounceTimerRef.current = setTimeout(() => {
-      if (pendingStateRef.current) {
-        commitToHistory(pendingStateRef.current);
-        pendingStateRef.current = null;
-      }
-      debounceTimerRef.current = null;
-    }, DEBOUNCE_DELAY);
+    commitToHistory(newStateStr);
   }, [commitToHistory]);
 
-  // Ref para skip de guardado en historial durante undo/redo
+  // Ref para skip de guardado en historial durante undo/redo (mantenido por compatibilidad de referencias)
   const skipHistoryRef = useRef(false);
   // Ref para acceso estable a actualClones (evita dependencias inestables en callbacks)
   const actualClonesRef = useRef(actualClones);
+  actualClonesRef.current = actualClones;
   useEffect(() => {
     actualClonesRef.current = actualClones;
   }, [actualClones]);
@@ -10055,30 +10085,30 @@ export default function Field(props = {}) {
 
   // =====================================================
   // SISTEMA IMPERATIVO DE GUARDADO DE HISTORIAL
-  // No usa useEffect sobre actualClones "� evita "Maximum update depth exceeded"
-  // El historial se guarda expl�citamente:
-  //   1) Desde setClones (diferido, solo si no hay drag activo)
-  //   2) Desde saveClonesHistory (llamado expl�citamente al finalizar cualquier drag)
+  // No usa useEffect sobre actualClones — evita "Maximum update depth exceeded"
+  // El historial se guarda explícitamente al finalizar cualquier drag
   // =====================================================
 
   // Guarda el estado actual en historial de forma imperativa
-  const saveClonesHistory = useCallback(() => {
-    if (skipHistoryRef.current) {
-      skipHistoryRef.current = false;
-      return;
+  const saveClonesHistory = useCallback((customClones) => {
+    if (customClones !== undefined) {
+      saveToHistoryDebounced(customClones, connectorsRef.current);
+    } else {
+      setTimeout(() => {
+        saveToHistoryDebounced(actualClonesRef.current, connectorsRef.current);
+      }, 0);
     }
-    saveToHistoryDebounced(actualClonesRef.current, connectorsRef.current);
   }, [saveToHistoryDebounced]);
 
-  // Ref estable para saveClonesHistory "� permite que setClones no dependa de saveClonesHistory
-  // y as� setClones tenga identidad estable (evita que todos los hijos re-rendericen por cambio de callback)
+  // Ref estable para saveClonesHistory — permite que setClones no dependa de saveClonesHistory
+  // y así setClones tenga identidad estable (evita que todos los hijos re-rendericen por cambio de callback)
   const saveClonesHistoryRef = useRef(saveClonesHistory);
   saveClonesHistoryRef.current = saveClonesHistory;
 
   // Timer para guardado diferido (se programa desde setClones cuando no hay drag)
   const historyIdleTimerRef = useRef(null);
 
-  // Wrapper de setClones PURO "� sin side effects en el state updater.
+  // Wrapper de setClones PURO — sin side effects en el state updater.
   // Programa guardado de historial solo cuando NO hay drag activo.
   // Durante drag, el guardado se delega al handler de fin de drag (saveClonesHistory).
   const setClones = useCallback((updater) => {
@@ -10091,20 +10121,10 @@ export default function Field(props = {}) {
         saveClonesHistoryRef.current();
       }, 0);
     }
-  }, []); // SIN dependencias "� identidad 100% estable
+  }, []); // SIN dependencias — identidad 100% estable
 
-  // Funci�n UNDO optimizada (restaura clones y conectores)
+  // Función UNDO optimizada (restaura clones y conectores)
   const undo = useCallback(() => {
-    // Primero, forzar guardado de cualquier cambio pendiente
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-      if (pendingStateRef.current && pendingStateRef.current !== lastSavedStateRef.current) {
-        commitToHistory(pendingStateRef.current);
-        pendingStateRef.current = null;
-      }
-    }
-
     if (historyIndexRef.current > 0) {
       historyIndexRef.current--;
       const stateStr = historyRef.current[historyIndexRef.current];
@@ -10112,8 +10132,6 @@ export default function Field(props = {}) {
 
       try {
         const parsedState = JSON.parse(stateStr);
-        // Marcar como skip para que el useEffect de historial no re-guarde el estado restaurado
-        skipHistoryRef.current = true;
         // Compatibilidad: si es array (formato antiguo), solo tiene clones
         if (Array.isArray(parsedState)) {
           setActualClones(parsedState);
@@ -10132,9 +10150,9 @@ export default function Field(props = {}) {
       setCanUndo(prev => { const n = historyIndexRef.current > 0; return prev === n ? prev : n; });
       setCanRedo(prev => prev === true ? prev : true);
     }
-  }, [commitToHistory]);
+  }, []);
 
-  // Funci�n REDO optimizada (restaura clones y conectores)
+  // Función REDO optimizada (restaura clones y conectores)
   const redo = useCallback(() => {
     if (historyIndexRef.current < historyRef.current.length - 1) {
       historyIndexRef.current++;
