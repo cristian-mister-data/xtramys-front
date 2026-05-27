@@ -4222,7 +4222,8 @@
         "folderNameLabel": "Folder name",
         "folderColorLabel": "Folder color",
         "selectDestination": "Select destination folder",
-        "cannotDeleteGlobal": "You cannot delete app folders"
+        "cannotDeleteGlobal": "You cannot delete app folders",
+        "rootDescription": "Home folder"
     },
     "tournaments": {
         "title": "Tournaments",

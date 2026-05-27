@@ -4231,7 +4231,8 @@
         "folderNameLabel": "Nombre de la carpeta",
         "folderColorLabel": "Color de la carpeta",
         "selectDestination": "Selecciona la carpeta de destino",
-        "cannotDeleteGlobal": "No puedes eliminar carpetas de la app"
+        "cannotDeleteGlobal": "No puedes eliminar carpetas de la app",
+        "rootDescription": "Carpeta raíz"
     },
     "tournaments": {
         "title": "Torneos",
