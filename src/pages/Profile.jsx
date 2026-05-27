@@ -786,7 +786,7 @@ export default function Profile() {
   const handleReactivateSubscription = async () => {
     setPortalLoading(true);
     try {
-      const data = await reactivateSubscription();
+      const data = await reactivateSubscription(user.paymentProvider);
       if (data) {
         dispatch(setUser({ ...user, subscriptionCancelAtPeriodEnd: false, subscriptionStatus: data.subscriptionStatus }));
         toast.success(data.mensaje || 'Suscripción reactivada correctamente');

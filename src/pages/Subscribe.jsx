@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
@@ -146,11 +146,60 @@ const CheckCircle = styled.div`
 `;
 
 const PaymentSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  margin-top: 24px;
 `;
+
+function PayPalButtonWrapper({ planId, locale, onApprove, onError, createSubscription }) {
+  const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (isResolved && window.paypal) {
+      setReady(true);
+    } else if (isResolved && !window.paypal) {
+      const timer = setTimeout(() => setReady(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isResolved]);
+
+  if (isPending || !ready) {
+    return (
+      <PayPalWrapper>
+        <div style={{ padding: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+          Cargando PayPal...
+        </div>
+      </PayPalWrapper>
+    );
+  }
+
+  if (isRejected) {
+    return (
+      <PayPalWrapper>
+        <div style={{ padding: '20px', color: '#ef4444', fontSize: '14px' }}>
+          Error al cargar PayPal. Recarga la página.
+        </div>
+      </PayPalWrapper>
+    );
+  }
+
+  return (
+    <PayPalWrapper>
+      <PayPalLabel>
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.473z" />
+        </svg>
+        {locale === 'es_ES' ? 'Pagar con PayPal' : 'Pay with PayPal'}
+      </PayPalLabel>
+      <PayPalButtons
+        forceReRender={[planId, locale]}
+        style={{ layout: 'vertical', shape: 'pill', label: 'subscribe', height: 45, color: 'gold' }}
+        createSubscription={createSubscription}
+        onApprove={onApprove}
+        onError={onError}
+      />
+    </PayPalWrapper>
+  );
+}
 
 const PayPalWrapper = styled.div`
   width: 100%;
@@ -347,6 +396,7 @@ export default function Subscribe() {
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const paypalMountKey = useRef(Date.now()).current;
 
   const isCancelling = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled' || subscriptionStatus === 'cancelled')
     && user?.subscriptionCurrentPeriodEnd
@@ -423,10 +473,10 @@ export default function Subscribe() {
             </Subtitle>
 
             <PriceRow>
-              <Amount>{isEs ? '72€' : '€72'}</Amount>
+              <Amount>{isEs ? '59€' : '€59'}</Amount>
               <Period>/{t('subscription.year', 'año')}</Period>
             </PriceRow>
-            <PriceSub>{isEs ? '6€' : '€6'}/{t('subscription.month', 'mes')} · {t('subscription.annual', 'Facturación anual')}</PriceSub>
+            <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
 
             <FeatureList>
               {features.map((f) => (
@@ -441,42 +491,34 @@ export default function Subscribe() {
 
             <PaymentSection>
               {PAYPAL_CLIENT_ID ? (
-                <PayPalScriptProvider key={`${PAYPAL_CLIENT_ID}-${locale}`} options={{
+                <PayPalScriptProvider key={`paypal-${locale}-${paypalMountKey}`} options={{
                   clientId: PAYPAL_CLIENT_ID,
                   vault: true,
                   intent: 'subscription',
                   locale: isEs ? 'es_ES' : 'en_US',
                   components: 'buttons',
                 }}>
-                  <PayPalWrapper>
-                    <PayPalLabel>
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.473z"/>
-                      </svg>
-                      {t('subscription.payWithPaypal', 'Pagar con PayPal')}
-                    </PayPalLabel>
-                    <PayPalButtons
-                      forceReRender={[PAYPAL_PLAN_ID, locale]}
-                      style={{ layout: 'vertical', shape: 'pill', label: 'subscribe', height: 45, color: 'gold' }}
-                      createSubscription={(data, actions) =>
-                        actions.subscription.create({ plan_id: PAYPAL_PLAN_ID })
+                  <PayPalButtonWrapper
+                    planId={PAYPAL_PLAN_ID}
+                    locale={isEs ? 'es_ES' : 'en_US'}
+                    createSubscription={(data, actions) =>
+                      actions.subscription.create({ plan_id: PAYPAL_PLAN_ID })
+                    }
+                    onApprove={async (data) => {
+                      setError(null);
+                      try {
+                        await verifyPayPalSubscription(data.subscriptionID);
+                        await dispatch(checkSubscription()).unwrap();
+                        setTimeout(() => navigate('/season/create', { replace: true }), 100);
+                      } catch (err) {
+                        setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
                       }
-                      onApprove={async (data) => {
-                        setError(null);
-                        try {
-                          await verifyPayPalSubscription(data.subscriptionID);
-                          await dispatch(checkSubscription()).unwrap();
-                          setTimeout(() => navigate('/season/create', { replace: true }), 100);
-                        } catch (err) {
-                          setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
-                        }
-                      }}
-                      onError={() => setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'))}
-                    />
-                  </PayPalWrapper>
+                    }}
+                    onError={() => setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'))}
+                  />
                   <Divider>{t('common.or', 'o')}</Divider>
                   <StripeButton onClick={handleStripeSubscribe} disabled={loading}>
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.873 4.56 3.127 3.754 4.946 3.754 7.005c0 3.898 3.18 5.39 5.708 6.175 2.507.773 3.434 1.441 3.434 2.482 0 .948-.734 1.529-2.019 1.529-2.522 0-4.899-1.173-6.428-2.001l-.899 5.506c1.752.965 4.304 1.578 6.813 1.577 2.717 0 5.003-.718 6.572-2.062 1.584-1.346 2.437-3.337 2.437-5.724 0-3.816-2.957-5.347-6.258-6.336z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.873 4.56 3.127 3.754 4.946 3.754 7.005c0 3.898 3.18 5.39 5.708 6.175 2.507.773 3.434 1.441 3.434 2.482 0 .948-.734 1.529-2.019 1.529-2.522 0-4.899-1.173-6.428-2.001l-.899 5.506c1.752.965 4.304 1.578 6.813 1.577 2.717 0 5.003-.718 6.572-2.062 1.584-1.346 2.437-3.337 2.437-5.724 0-3.816-2.957-5.347-6.258-6.336z" /></svg>
                     {loading ? t('subscription.loading', 'Procesando...') : t('subscription.payWithCard', 'Pagar con tarjeta')}
                   </StripeButton>
                   <PaymentNote>
