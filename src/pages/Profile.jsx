@@ -1022,7 +1022,7 @@ export default function Profile() {
       <Modal
         open={cancellingModal}
         onClose={() => { if (!cancelling) setCancellingModal(false); }}
-        title={t('subscription.cancelTitle', 'Cancelar suscripciÃ³n')}
+        title={t('subscription.cancelTitle', 'Cancelar suscripción')}
         footer={
           <>
             <Button
@@ -1039,14 +1039,14 @@ export default function Profile() {
               disabled={cancelling}
               style={{ background: '#ef4444', borderColor: '#ef4444' }}
             >
-              {cancelling ? t('common.saving', 'Cancelando...') : t('subscription.confirmCancel', 'SÃ­, cancelar')}
+              {cancelling ? t('common.saving', 'Cancelando...') : t('subscription.confirmCancel', 'Sí, cancelar')}
             </Button>
           </>
         }
       >
         <Stack style={{ gap: 14 }}>
           <Muted>
-            {t('subscription.cancelMessage', 'Â¿EstÃ¡s seguro de que quieres cancelar tu suscripciÃ³n? SeguirÃ¡s teniendo acceso hasta el final del perÃ­odo actual.')}
+            {t('subscription.cancelMessage', '¿Estás seguro de que quieres cancelar tu suscripción? Seguirás teniendo acceso hasta el final del período actual.')}
           </Muted>
           {user.subscriptionCurrentPeriodEnd && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', fontSize: 13 }}>
