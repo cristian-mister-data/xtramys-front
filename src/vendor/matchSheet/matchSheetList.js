@@ -565,11 +565,23 @@ export default function MatchSheetList() {
       if (selectedTeam?._id) {
         dispatch(fetchMatchSheetsByTeam(selectedTeam._id));
         dispatch(fetchRivalsByTeam(selectedTeam._id));
-        dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id })); // Para validaci�n
+        dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id })); // Para validacin
         dispatch(fetchInjuriesByTeam({ team: selectedTeam._id })); // Para mostrar lesionados
       }
     }
   }, [teams, dispatch]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleCreateEvent = () => {
+        openCreateModal();
+      };
+      window.addEventListener('matchsheets:create', handleCreateEvent);
+      return () => {
+        window.removeEventListener('matchsheets:create', handleCreateEvent);
+      };
+    }
+  }, []);
   
   const selectedTeam = teams.find(e => e.seleccionado === true);
   
@@ -581,7 +593,7 @@ export default function MatchSheetList() {
     onComplete: () => setOptionsModalVisible(false),
   });
 
-  // Funci�n para filtrar solo n�meros
+  // Funcin para filtrar solo nmeros
   const filterNumericInput = (text) => text.replace(/[^0-9]/g, '');
 
   // --- Handlers para el modal compartido (EditMatchSheetModal) ---
@@ -680,7 +692,7 @@ export default function MatchSheetList() {
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {/* Bot�n de filtros */}
+              {/* Botn de filtros */}
               <TouchableOpacity
                 onPress={() => setFiltersVisible(!filtersVisible)}
                 style={[styles.headerActionBtn, filtersVisible && styles.headerActionBtnActive]}
@@ -692,14 +704,16 @@ export default function MatchSheetList() {
                   </View>
                 )}
               </TouchableOpacity>
-              {/* Bot�n crear ficha */}
-              <TouchableOpacity
-                onPress={openCreateModal}
-                style={styles.headerCreateBtn}
-              >
-                <Ionicons name="add" size={20} color="#fff" />
-                {!IS_MOBILE && <Text style={styles.headerCreateBtnText}>{t('matchSheet.actions.createMatchSheet')}</Text>}
-              </TouchableOpacity>
+              {/* Botn crear ficha */}
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  onPress={openCreateModal}
+                  style={styles.headerCreateBtn}
+                >
+                  <Ionicons name="add" size={20} color="#fff" />
+                  {!IS_MOBILE && <Text style={styles.headerCreateBtnText}>{t('matchSheet.actions.createMatchSheet')}</Text>}
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -3833,4 +3847,37 @@ const makeStyles = (theme) => StyleSheet.create({
     textAlign: 'center',
     maxWidth: 60,
   },
+  createButton: Platform.select({
+    web: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      gap: 6,
+    },
+    default: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 22,
+      gap: 4,
+    }
+  }),
+  createButtonText: Platform.select({
+    web: {
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    default: {
+      color: theme.colors.onPrimary,
+      fontWeight: 'bold',
+      fontSize: 16,
+      letterSpacing: 0.25,
+    }
+  }),
 });

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  Platform,
 } from 'react-native';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
@@ -152,6 +153,18 @@ export default function InjuriesManagement({ navigation }) {
       }
     }
   }, [equipos, dispatch]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleCreateEvent = () => {
+        openCreateModal();
+      };
+      window.addEventListener('injuries:create', handleCreateEvent);
+      return () => {
+        window.removeEventListener('injuries:create', handleCreateEvent);
+      };
+    }
+  }, [openCreateModal]);
 
   const openCreateModal = () => {
     const selectedTeam = equipos?.find(team => team.seleccionado === true);
@@ -485,11 +498,13 @@ export default function InjuriesManagement({ navigation }) {
                   </Text>
                 </View>
               </View>
-              <View style={styles.headerButtons}>
-                <TouchableOpacity style={styles.addButton} onPress={openCreateModal} activeOpacity={0.7}>
-                  <Ionicons name="add" size={24} color={theme.colors.primary} />
-                </TouchableOpacity>
-              </View>
+              {Platform.OS !== 'web' && (
+                <View style={styles.headerButtons}>
+                  <TouchableOpacity style={styles.addButton} onPress={openCreateModal} activeOpacity={0.7}>
+                    <Ionicons name="add" size={24} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -1305,26 +1320,46 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
-  emptyStateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  emptyStateButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-    marginLeft: 8,
-  },
+  emptyStateButton: Platform.select({
+    web: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginTop: 20,
+      gap: 6,
+    },
+    default: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 14,
+      marginTop: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 2,
+    }
+  }),
+  emptyStateButtonText: Platform.select({
+    web: {
+      color: '#ffffff',
+      fontWeight: '600',
+      fontSize: 14,
+      marginLeft: 0,
+    },
+    default: {
+      color: '#ffffff',
+      fontWeight: '600',
+      fontSize: 14,
+      marginLeft: 8,
+    }
+  }),
   injuriesList: {
     paddingHorizontal: 16,
   },

@@ -265,6 +265,18 @@ const Anthropometry = ({ navigation }) => {
     }
   }, [filterPlayer]);
 
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleCreateEvent = () => {
+        openCreateModal();
+      };
+      window.addEventListener('anthropometry:create', handleCreateEvent);
+      return () => {
+        window.removeEventListener('anthropometry:create', handleCreateEvent);
+      };
+    }
+  }, [openCreateModal]);
+
   const clearDateFilter = () => {
     setDateFilter(null);
   };
@@ -484,16 +496,18 @@ const Anthropometry = ({ navigation }) => {
               </TouchableOpacity>
 
               {/* Botón primario: Nueva medición */}
-              <TouchableOpacity
-                onPress={openCreateModal}
-                style={[styles.headerPrimaryBtn, IS_MOBILE && styles.headerPrimaryBtnMobile]}
-                accessibilityLabel={t('anthropometry.newMeasurement')}
-              >
-                <MaterialIcons name="add" size={20} color="#fff" />
-                  <Text numberOfLines={1} style={[styles.headerPrimaryBtnText, IS_MOBILE && styles.headerPrimaryBtnTextMobile]}>
-                    {IS_MOBILE ? t('anthropometry.newMeasurementShort', 'Nueva') : t('anthropometry.newMeasurement')}
-                  </Text>
-              </TouchableOpacity>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  onPress={openCreateModal}
+                  style={[styles.headerPrimaryBtn, IS_MOBILE && styles.headerPrimaryBtnMobile]}
+                  accessibilityLabel={t('anthropometry.newMeasurement')}
+                >
+                  <MaterialIcons name="add" size={20} color="#fff" />
+                    <Text numberOfLines={1} style={[styles.headerPrimaryBtnText, IS_MOBILE && styles.headerPrimaryBtnTextMobile]}>
+                      {IS_MOBILE ? t('anthropometry.newMeasurementShort', 'Nueva') : t('anthropometry.newMeasurement')}
+                    </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -1516,26 +1530,44 @@ const makeStyles = (theme) => StyleSheet.create({
   clearFilterBtn: {
     marginLeft: 4,
   },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 7,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    shadowColor: '#2856a2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 3,
-    gap: 4,
-  },
-  createButtonText: {
-    color: theme.colors.onPrimary,
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.25,
-  },
+  createButton: Platform.select({
+    web: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      gap: 6,
+    },
+    default: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: Platform.OS === 'ios' ? 8 : 7,
+      paddingHorizontal: 16,
+      borderRadius: 22,
+      shadowColor: '#2856a2',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.16,
+      shadowRadius: 8,
+      elevation: 3,
+      gap: 4,
+    }
+  }),
+  createButtonText: Platform.select({
+    web: {
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    default: {
+      color: theme.colors.onPrimary,
+      fontWeight: 'bold',
+      fontSize: 16,
+      letterSpacing: 0.25,
+    }
+  }),
   mobileMenuButton: {
     width: 40,
     height: 40,
