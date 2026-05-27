@@ -32,9 +32,9 @@ const Bar = styled.header`
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     background: ${({ theme }) =>
-      theme.mode === 'dark'
-        ? `${theme.colors.headerBg}d8`
-        : `${theme.colors.headerBg}f0`};
+    theme.mode === 'dark'
+      ? `${theme.colors.headerBg}d8`
+      : `${theme.colors.headerBg}f0`};
     box-shadow: 0 1px 0 ${({ theme }) => theme.colors.headerBorder},
                 0 2px 12px rgba(0, 0, 0, 0.07);
   }
@@ -62,13 +62,13 @@ const IconBtn = styled.button`
 
 const Burger = styled(IconBtn)`
   display: none;
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     display: inline-flex;
   }
 `;
 
 const ThemeToggle = styled(IconBtn)`
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     display: none;
   }
 `;
@@ -80,7 +80,7 @@ const Brand = styled(Link)`
   color: ${({ theme }) => theme.colors.primary};
   letter-spacing: 0.3px;
 
-  @media (max-width: 900px) and (min-width: 701px) {
+  @media (max-width: 1280px) and (min-width: 701px) {
     display: inline-flex;
   }
 `;

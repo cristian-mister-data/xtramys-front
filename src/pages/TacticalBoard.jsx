@@ -12,7 +12,7 @@ const MobileSafeWrap = styled.div`
   display: flex;
   flex-direction: column;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     /* Asegura que el área inferior sea visible en móvil con notch/home indicator */
     padding-bottom: env(safe-area-inset-bottom, 0px);
     min-height: -webkit-fill-available;

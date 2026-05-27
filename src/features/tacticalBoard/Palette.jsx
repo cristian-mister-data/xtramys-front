@@ -36,7 +36,7 @@ const Bar = styled.div`
   min-height: 52px;
   box-sizing: border-box;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     padding-left: 8px;
     padding-right: 8px;
     min-height: 48px;

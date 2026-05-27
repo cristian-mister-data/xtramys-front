@@ -38,7 +38,7 @@ const shared = {
   },
   breakpoints: {
     mobile: '600px',
-    tablet: '900px',
+    tablet: '1280px',
     desktop: '1280px',
   },
   fonts: {

@@ -118,7 +118,7 @@ const ExerciseCard = ({ exercise, isSelected, onToggle, onView, t, cardWidth, st
         </View>
         {/* Botón de video - solo si hay video disponible */}
         {hasVideo && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.videoBtn}
             onPress={() => onView(exercise)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -162,7 +162,7 @@ export default function StrengthExerciseSelectorModal({
 
   // Layout responsive: calcular número de columnas y ancho de tarjeta
   const isMobile = screenWidth < 768;
-  const numColumns = isMobile ? 2 : screenWidth < 1024 ? 3 : 4;
+  const numColumns = isMobile ? 2 : screenWidth < 1280 ? 3 : 4;
   const gridPadding = 12;
   const cardGap = 10;
   const cardWidth = (screenWidth - gridPadding * 2 - cardGap * (numColumns - 1)) / numColumns;

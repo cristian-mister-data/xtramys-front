@@ -55,8 +55,8 @@ async function webmToMp4(webmBlob) {
     outputName,
   ]);
   const data = await ff.readFile(outputName);
-  await ff.deleteFile(inputName).catch(() => {});
-  await ff.deleteFile(outputName).catch(() => {});
+  await ff.deleteFile(inputName).catch(() => { });
+  await ff.deleteFile(outputName).catch(() => { });
   return new Blob([data], { type: 'video/mp4' });
 }
 
@@ -79,7 +79,7 @@ export async function ensureMp4Blob(blob) {
 
 export const warmUpFFmpeg = () => {
   if (isMobileBrowser()) return;
-  const run = () => getFFmpeg().catch(() => {});
+  const run = () => getFFmpeg().catch(() => { });
   if (typeof window !== 'undefined' && window.requestIdleCallback) {
     window.requestIdleCallback(run, { timeout: 3000 });
     return;
@@ -132,14 +132,14 @@ async function loadFrameImage(source) {
       try {
         const image = await createImageBitmap(source);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) {}
+      } catch (_) { }
     }
     if (typeof source === 'string' && source.startsWith('data:')) {
       try {
         const blob = await (await fetch(source)).blob();
         const image = await createImageBitmap(blob);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -165,7 +165,7 @@ async function loadFrameImage(source) {
     image,
     width: image.naturalWidth || image.width,
     height: image.naturalHeight || image.height,
-    close: () => {},
+    close: () => { },
   };
 }
 
@@ -547,9 +547,9 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
     };
   } finally {
     for (const fileName of writtenFiles) {
-      await ff.deleteFile(fileName).catch(() => {});
+      await ff.deleteFile(fileName).catch(() => { });
     }
-    await ff.deleteFile(outputName).catch(() => {});
+    await ff.deleteFile(outputName).catch(() => { });
   }
 }
 
@@ -664,7 +664,7 @@ async function generateVideoWithMediaRecorder(framesDir, frameCount, speed = 1, 
 
 const isMobileBrowser = () =>
   /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-  ('ontouchstart' in window && window.innerWidth < 1024);
+  ('ontouchstart' in window && window.innerWidth < 1280);
 
 export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress) => {
   try {

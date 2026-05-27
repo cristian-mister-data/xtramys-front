@@ -28,7 +28,7 @@ const Bar = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     padding: 8px 8px;
   }
 `;

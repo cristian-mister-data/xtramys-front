@@ -192,7 +192,11 @@ const AccountBtn = styled.button`
 
 const DangerBtn = styled(AccountBtn)`
   color: #ef4444;
-  &:hover { background: #fef2f2; }
+  border-color: rgba(239, 68, 68, 0.3);
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2'};
+    border-color: #ef4444;
+  }
 `;
 
 const PendingBadge = styled.div`
@@ -893,7 +897,9 @@ export default function Profile() {
                   <SubHeader>
                     <div>
                       <SubBadge $status={isCancelledActive ? 'cancelled' : 'active'}>
-                        {isCancelledActive ? '⚠️ Cancelada' : '✓ Activa'}
+                        {isCancelledActive
+                          ? '⚠️ ' + t('subscription.cancelledBadge', 'Cancelada')
+                          : '✓ ' + t('subscription.activeBadge', 'Activa')}
                       </SubBadge>
                     </div>
                     <SubIcon $plan="pro">👑</SubIcon>
@@ -952,7 +958,7 @@ export default function Profile() {
                         {t('subscription.cancel', 'Cancelar suscripción')}
                       </SubBtn>
                     )}
-                    {user.subscriptionCancelAtPeriodEnd && (
+                    {isCancelledActive && (
                       <SubBtn
                         type="button"
                         $variant="primary"

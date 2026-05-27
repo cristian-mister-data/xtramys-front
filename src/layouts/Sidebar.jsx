@@ -22,7 +22,7 @@ const Aside = styled.aside`
   z-index: ${({ theme }) => theme.zIndex.drawer};
   transition: background-color 200ms ease, border-color 200ms ease;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     position: fixed;
     inset: 0 auto 0 0;
     width: 280px;
@@ -34,7 +34,7 @@ const Aside = styled.aside`
 
 const Backdrop = styled.div`
   display: none;
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     display: ${({ $open }) => ($open ? 'block' : 'none')};
     position: fixed;
     inset: 0;

@@ -18,7 +18,7 @@ const Shell = styled.div`
     'sidebar content';
   background: ${({ theme }) => theme.colors.background};
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     grid-template-columns: 1fr;
     grid-template-areas:
       'header'
@@ -35,7 +35,7 @@ const Main = styled.main`
   display: flex;
   flex-direction: column;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1280px) {
     padding: 16px;
   }
 

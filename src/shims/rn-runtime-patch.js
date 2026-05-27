@@ -4,6 +4,7 @@
  * lo antes posible (en main.jsx, antes de cargar componentes).
  */
 import { Alert, BackHandler } from 'react-native';
+import i18n from '../i18n';
 
 const TOAST_ROOT_ID = 'xtramys-toast-root';
 const TOAST_CENTER_ROOT_ID = 'xtramys-toast-center-root';
@@ -332,7 +333,7 @@ function showToast({ title, message, tone = 'info', buttons = [], duration, onCl
   const closeButton = document.createElement('button');
   closeButton.className = 'xtramys-toast__close';
   closeButton.type = 'button';
-  closeButton.setAttribute('aria-label', 'Cerrar notificacion');
+  closeButton.setAttribute('aria-label', i18n.t('message.closeNotification', 'Cerrar notificación'));
   closeButton.textContent = 'x';
   closeButton.addEventListener('click', () => {
     dismissToast(toast);
@@ -412,14 +413,18 @@ function showConfirmToast(message, options = {}) {
       resolve(value);
     };
 
+    const titleText = options.title || i18n.t('message.confirmAction', 'Confirmar acción');
+    const cancelBtnText = options.cancelText || i18n.t('message.cancel', 'Cancelar');
+    const confirmBtnText = options.confirmText || i18n.t('message.accept', 'Aceptar');
+
     showToast({
-      title: normalizeAlertText(options.title || 'Confirmar accion').trim(),
+      title: normalizeAlertText(titleText).trim(),
       message: normalizeAlertText(message).trim(),
       tone: options.tone || 'warning',
       duration: null,
       buttons: [
-        { text: options.cancelText || 'Cancelar', style: 'cancel', onPress: () => settle(false) },
-        { text: options.confirmText || 'Aceptar', style: options.destructive ? 'destructive' : 'default', onPress: () => settle(true) },
+        { text: cancelBtnText, style: 'cancel', onPress: () => settle(false) },
+        { text: confirmBtnText, style: options.destructive ? 'destructive' : 'default', onPress: () => settle(true) },
       ],
       onClose: () => settle(false),
     });
