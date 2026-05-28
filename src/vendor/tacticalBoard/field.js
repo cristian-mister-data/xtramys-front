@@ -120,7 +120,7 @@ const BallImage = React.memo(({ size, rotation }) => {
 // Portería grande profesional (11 jugadores) - 3D con perspectiva profesional y red
 const GoalLargeImage = React.memo(({ size, rotation }) => {
   const width = size;
-  const height = size * 0.65;
+  const height = size * 0.25;
 
   const netD = React.useMemo(() => {
     const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
@@ -169,7 +169,7 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
       ]}
     >
-      <Svg width={width} height={height} viewBox="0 0 120 70">
+      <Svg width={width} height={height} viewBox="0 10 120 30">
         {/* Fondo translúcido de la red */}
         <Path
           d="M 15 32 L 22 12 L 98 12 L 105 32 L 105 38 L 98 22 L 22 22 L 15 38 Z"
@@ -203,7 +203,7 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
 // Portería pequeña (fútbol 7 / mini) - 3D con perspectiva profesional y red
 const GoalSmallImage = React.memo(({ size, rotation }) => {
   const width = size * 0.75;
-  const height = size * 0.55;
+  const height = size * 0.21;
 
   const netD = React.useMemo(() => {
     const getQuadNetPath = (p0, p1, p2, p3, uDivs = 8, vDivs = 6) => {
@@ -252,7 +252,7 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
         rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined,
       ]}
     >
-      <Svg width={width} height={height} viewBox="0 0 80 50">
+      <Svg width={width} height={height} viewBox="0 8 80 22">
         {/* Fondo translúcido de la red */}
         <Path
           d="M 10 23 L 15 10 L 65 10 L 70 23 L 70 28 L 65 17 L 15 17 L 10 28 Z"
@@ -5460,6 +5460,26 @@ const DraggableIcon = React.memo(({
 }) => {
   const size = icon.size * scale;
   const dragKey = `icon-${icon.id}`;
+
+  let elementW = size;
+  let elementH = size;
+
+  if (icon.type === 'goal-large' || icon.type === 'goal') {
+    elementH = size * 0.25;
+  } else if (icon.type === 'goal-small') {
+    elementW = size * 0.75;
+    elementH = size * 0.21;
+  } else if (icon.type === 'barrier' || icon.type === 'ladder') {
+    elementH = size * 0.4;
+  } else if (icon.type === 'dummy') {
+    elementW = size * 0.5;
+  } else if (icon.type === 'pole') {
+    elementW = size * 0.3;
+  } else if (icon.type === 'weights') {
+    elementH = size * 0.5;
+  } else if (icon.type === 'cone-flat') {
+    elementH = size * 0.5;
+  }
   const rafRef = useRef(null);
   const pendingDragUpdateRef = useRef(null);
   const lastUpdateRef = useRef({ x: 0, y: 0 });
@@ -5536,10 +5556,10 @@ const DraggableIcon = React.memo(({
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        left: icon.x - size / 2,
-        top: icon.y - size / 2,
-        width: size,
-        height: size,
+        left: icon.x - elementW / 2,
+        top: icon.y - elementH / 2,
+        width: elementW,
+        height: elementH,
         zIndex: icon.calculatedZIndex || (icon.locked === true ? 1 : (icon.zIndex || 200)),
       }}
     >
@@ -5553,7 +5573,7 @@ const DraggableIcon = React.memo(({
           left: -12,
           right: -12,
           bottom: -12,
-          borderRadius: (size + 24) / 2,
+          borderRadius: 8,
           borderWidth: 3,
           borderColor: '#e74c3c',
           borderStyle: 'dashed',
@@ -5839,9 +5859,10 @@ const DraggableIcon = React.memo(({
               <View style={{ flex: 1 }}>
                 <View
                   pointerEvents={isDrawingMode ? "none" : "box-none"}
-                  style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: elementW, height: elementH, alignItems: 'center', justifyContent: 'center' }}
                 >
                   {/* Indicador visual de selecci�n m�ltiple */}
+                  {/* Indicador visual de seleccin mltiple */}
                   {multiSelectMode && isSelected && (
                     <View style={{
                       position: 'absolute',
@@ -5861,7 +5882,7 @@ const DraggableIcon = React.memo(({
                     </View>
                   )}
 
-                  {/* Borde para elementos seleccionados en modo multi-selecci�n */}
+                  {/* Borde para elementos seleccionados en modo multi-seleccin */}
                   {multiSelectMode && isSelected && (
                     <View style={{
                       position: 'absolute',
@@ -6055,8 +6076,8 @@ function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
   return baseSize * scaleFactor;
 }
 
-const BOARD_OBJECT_HIT_TOLERANCE = 24;
-const SHAPE_BORDER_HIT_TOLERANCE = 10;
+const BOARD_OBJECT_HIT_TOLERANCE = 8;
+const SHAPE_BORDER_HIT_TOLERANCE = 6;
 const ALLOW_MULTI_ELEMENT_DRAG = true;
 
 function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
@@ -6143,7 +6164,7 @@ function getCloneHitTolerance(clone, imageWidth, imageHeight) {
   const originalHeight = clone.imageHeight || imageHeight;
   const renderScale = ((imageWidth / originalWidth) + (imageHeight / originalHeight)) / 2;
   const strokeWidth = (clone.thickness || 2) * renderScale * 0.7;
-  return Math.max(strokeWidth / 2 + 16, BOARD_OBJECT_HIT_TOLERANCE);
+  return Math.max(strokeWidth / 2 + 6, BOARD_OBJECT_HIT_TOLERANCE);
 }
 
 function isPointNearPointList(pointX, pointY, points, tolerance, closed = false) {
@@ -6203,12 +6224,55 @@ function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageH
       const fontSize = clone.size || 18;
       const textWidth = Math.max(40, String(clone.value || '').length * fontSize * 0.6 + 8);
       const textHeight = Math.max(30, fontSize * 1.4 + 8);
-      return pointX >= center.x - tolerance && pointX <= center.x + textWidth + tolerance
-        && pointY >= center.y - tolerance && pointY <= center.y + textHeight + tolerance;
+      return pointX >= center.x - 4 && pointX <= center.x + textWidth + 4
+        && pointY >= center.y - 4 && pointY <= center.y + textHeight + 4;
     }
     const iconSize = getProportionalIconSize(clone, imageWidth, standardSize);
-    const hitRadius = Math.max(iconSize / 2 + tolerance, BOARD_OBJECT_HIT_TOLERANCE);
-    return Math.abs(pointX - center.x) <= hitRadius && Math.abs(pointY - center.y) <= hitRadius;
+
+    // Bounding box specific to each tool type, accounting for rotation
+    const rotation = clone.rotation || 0;
+    let localPt = { x: pointX, y: pointY };
+    if (rotation) {
+      const rad = (-rotation * Math.PI) / 180;
+      const dx = pointX - center.x;
+      const dy = pointY - center.y;
+      localPt = {
+        x: center.x + (dx * Math.cos(rad) - dy * Math.sin(rad)),
+        y: center.y + (dx * Math.sin(rad) + dy * Math.cos(rad)),
+      };
+    }
+
+    let w = iconSize;
+    let h = iconSize;
+    let isCircular = false;
+
+    if (clone.type === 'ball' || clone.type === 'ring' || clone.type === 'cone' || clone.type === 'cone-pro') {
+      isCircular = true;
+    } else if (clone.type === 'goal-large' || clone.type === 'goal') {
+      h = iconSize * 0.25;
+    } else if (clone.type === 'goal-small') {
+      w = iconSize * 0.75;
+      h = iconSize * 0.21;
+    } else if (clone.type === 'barrier' || clone.type === 'ladder') {
+      h = iconSize * 0.4;
+    } else if (clone.type === 'dummy') {
+      w = iconSize * 0.5;
+    } else if (clone.type === 'pole') {
+      w = iconSize * 0.3;
+    } else if (clone.type === 'weights') {
+      h = iconSize * 0.5;
+    } else if (clone.type === 'cone-flat') {
+      h = iconSize * 0.5;
+    }
+
+    if (isCircular) {
+      const hitRadius = w / 2 + 4;
+      return Math.hypot(pointX - center.x, pointY - center.y) <= hitRadius;
+    } else {
+      const pad = 4;
+      return localPt.x >= center.x - w / 2 - pad && localPt.x <= center.x + w / 2 + pad &&
+             localPt.y >= center.y - h / 2 - pad && localPt.y <= center.y + h / 2 + pad;
+    }
   }
 
   return false;
