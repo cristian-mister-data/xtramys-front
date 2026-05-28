@@ -122,8 +122,8 @@ export const updateExerciseFolder = createAsyncThunk(
 
 export const deleteExerciseFolder = createAsyncThunk(
   'ejercicio/deleteExerciseFolder',
-  async ({ id, moveExercisesTo }) => {
-    await api.delete(`/exercise-folder/${id}`, { data: { moveExercisesTo } });
+  async ({ id, moveExercisesTo, deleteContents }) => {
+    await api.delete(`/exercise-folder/${id}`, { data: { moveExercisesTo, deleteContents } });
     return id;
   }
 );

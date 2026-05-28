@@ -129,8 +129,8 @@ export const updateStrategyFolder = createAsyncThunk(
 
 export const deleteStrategyFolder = createAsyncThunk(
   'strategy/deleteStrategyFolder',
-  async ({ id, moveStrategiesTo }) => {
-    await api.delete(`/strategy-folder/${id}`, { data: { moveStrategiesTo } });
+  async ({ id, moveStrategiesTo, deleteContents }) => {
+    await api.delete(`/strategy-folder/${id}`, { data: { moveStrategiesTo, deleteContents } });
     return id;
   }
 );
