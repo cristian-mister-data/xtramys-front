@@ -29,7 +29,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
   const tableHeaders = days
     .map(
       (day, index) => `
-    <th style="background-color: ${grayscalePrimaryColor}; color: white; padding: 8px 6px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${grayscalePrimaryColor}; line-height: 1;">
+    <th style="background-color: ${grayscalePrimaryColor}; color: white; padding: 8px 6px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${grayscalePrimaryColor}; line-height: 1.2;">
       ${tt('methodology.dayNumber', ({ number }) => `Día ${number}`, { number: day.day_number || index + 1 })}
     </th>
   `,
@@ -130,7 +130,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
       <table>
         <thead>
           <tr>
-            <th style="background-color: #333; color: white; padding: 8px 6px; font-size: 10px; border: 1px solid #333; width: 100px; line-height: 1;"></th>
+            <th style="background-color: #333; color: white; padding: 8px 6px; font-size: 10px; border: 1px solid #333; width: 100px; line-height: 1.2;"></th>
             ${tableHeaders}
           </tr>
         </thead>

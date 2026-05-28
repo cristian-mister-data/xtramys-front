@@ -158,8 +158,17 @@ export const generateSessionPDFHTML = ({
   }).filter(Boolean);
 
   // ── Horario / duracion ──
-  const horaInicio = session.horaInicio || '--:--';
-  const horaFin = session.horaFin || '--:--';
+  const formatTimeStr = (t) => {
+    if (t === null || t === undefined) return '--:--';
+    const s = String(t).trim();
+    if (!s) return '--:--';
+    if (s.includes(':')) return s;
+    if (s.length === 3) return `0${s[0]}:${s.slice(1)}`;
+    if (s.length === 4) return `${s.slice(0, 2)}:${s.slice(2)}`;
+    return s;
+  };
+  const horaInicio = formatTimeStr(session.horaInicio);
+  const horaFin = formatTimeStr(session.horaFin);
   const lugar = session.lugar || '';
 
   const parseClock = (value) => {
@@ -168,8 +177,8 @@ export const generateSessionPDFHTML = ({
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
     return (h * 60) + m;
   };
-  const startMinutes = parseClock(session.horaInicio);
-  const endMinutes = parseClock(session.horaFin);
+  const startMinutes = parseClock(horaInicio);
+  const endMinutes = parseClock(horaFin);
   const computedDurationMinutes = (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes)
     ? (endMinutes - startMinutes) : null;
   const rawDuration = Number(session.duracion);
@@ -216,7 +225,7 @@ export const generateSessionPDFHTML = ({
     if (!isLastExercise && tiempoDescanso > 0) pills.push(`Descanso: ${tiempoDescanso}min`);
 
     const pillsHTML = pills.length > 0
-      ? `<div class="ex-pills">${pills.map(p => `<span class="ex-pill">${p}</span>`).join('')}</div>`
+      ? `<div class="ex-pills">${pills.join(' &bull; ')}</div>`
       : '';
 
     // Secciones de texto
@@ -257,8 +266,8 @@ export const generateSessionPDFHTML = ({
         });
         return `
           <div class="team-row">
-            <span class="team-tag" style="background:${color};">Equipo ${ta.teamNumber}</span>
-            <span class="team-names">${names.join(' - ')}</span>
+            <span class="team-tag" style="color:${color};">Equipo ${ta.teamNumber}:</span>
+            <span class="team-names">${names.join(' &bull; ')}</span>
           </div>
         `;
       }).join('');
@@ -283,8 +292,8 @@ export const generateSessionPDFHTML = ({
         <div class="ex-body">
           <div class="ex-img-col">
             ${imagenSrc
-              ? `<img src="${imagenSrc}" class="ex-img" onerror="this.style.display='none'" />`
-              : `<div class="ex-img-placeholder">Sin imagen</div>`}
+        ? `<img src="${imagenSrc}" class="ex-img" onerror="this.style.display='none'" />`
+        : `<div class="ex-img-placeholder">Sin imagen</div>`}
           </div>
           <div class="ex-info-col">
             ${sectionsHTML || '<div class="ex-empty">Sin descripcion</div>'}
@@ -347,7 +356,7 @@ export const generateSessionPDFHTML = ({
             </div>
             <div class="st-body">
               <div class="st-header">
-                <div class="st-num" style="background:${sectionColor};">${globalIdx + 1}</div>
+                <div class="st-num">${globalIdx + 1}.</div>
                 <div class="st-name">${exerciseName}</div>
               </div>
               <div class="st-footer">
@@ -527,17 +536,10 @@ export const generateSessionPDFHTML = ({
       color: #1e293b;
     }
     .panel-badge {
-      font-size: 8.5px;
-      font-weight: 800;
-      color: #334155;
-      background: #e2e8f0;
-      padding: 0 9px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 18px;
-      line-height: 1;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #64748b;
+      line-height: 1.2;
     }
     .roster-text-list {
       font-size: 8.5px;
@@ -564,18 +566,10 @@ export const generateSessionPDFHTML = ({
       color: #475569;
       line-height: 1.5;
       white-space: pre-wrap;
-      background: #f8fafc;
-      padding: 10px;
-      border-left: 3px solid #475569;
-      border-radius: 0 8px 8px 0;
+      padding: 2px 0;
     }
     .obs-ex-item {
-      padding: 8px 12px;
-      background: #f8fafc;
-      border-radius: 8px;
-      border-left: 3.5px solid #475569;
-      margin-bottom: 6px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      margin-bottom: 8px;
     }
     .obs-ex-name {
       font-weight: 800;
@@ -674,18 +668,9 @@ export const generateSessionPDFHTML = ({
     .ex-num {
       position: absolute;
       left: 14px;
-      width: 26px;
-      height: 26px;
-      background: #475569;
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 12px;
-      text-align: center;
-      line-height: 1;
-      box-shadow: 0 2px 5px rgba(71, 85, 105, 0.3);
+      font-weight: 800;
+      font-size: 14px;
+      color: #94a3b8;
     }
     .ex-header-content {
       display: flex;
@@ -709,23 +694,15 @@ export const generateSessionPDFHTML = ({
       gap: 5px;
       flex-wrap: wrap;
       justify-content: center;
-    }
-    .ex-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 16px;
-      line-height: 1;
-      padding: 0 7px;
-      border-radius: 4px;
-      font-size: 7.5px;
-      font-weight: 700;
-      background: rgba(255,255,255,0.15);
-      color: #e2e8f0;
-      white-space: nowrap;
+      font-size: 8.5px;
+      font-weight: 600;
+      color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      border: 1px solid rgba(255,255,255,0.1);
+      margin-top: 4px;
+    }
+    .ex-pill {
+      display: inline;
     }
 
     /* Exercise body */
@@ -817,20 +794,13 @@ export const generateSessionPDFHTML = ({
       margin-bottom: 4px;
     }
     .team-tag {
-      padding: 0 8px;
-      border-radius: 20px;
-      color: #fff;
-      font-size: 7px;
+      font-size: 8px;
       font-weight: 800;
       white-space: nowrap;
       flex-shrink: 0;
       text-transform: uppercase;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 15px;
-      line-height: 1;
+      letter-spacing: 0.5px;
+      margin-right: 4px;
     }
     .team-names {
       font-size: 8px;
@@ -882,22 +852,15 @@ export const generateSessionPDFHTML = ({
     .st-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
     .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 6px; }
     .st-num {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      color: #fff;
-      font-size: 8px;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      text-align: center;
+      color: #64748b;
+      font-size: 9.5px;
+      font-weight: 800;
+      margin-right: 2px;
     }
     .st-name { font-size: 8.5px; font-weight: 700; color: #0f172a; line-height: 1.25; }
     .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; border-top: 1px solid #f1f5f9; }
     .st-section { font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase; }
-    .st-level { font-size: 7px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0 5px; border-radius: 4px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; height: 14px; line-height: 1; }
+    .st-level { font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -939,18 +902,16 @@ export const generateSessionPDFHTML = ({
     <div class="panels-row">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Jugadores disponibles</div>
-          <div class="panel-badge">${jugadoresNombres.length + jugadoresExtrasNombres.length}</div>
+          <div class="panel-title">Jugadores disponibles (${jugadoresNombres.length + jugadoresExtrasNombres.length})</div>
         </div>
         <div class="roster-text-list">
           ${jugadoresNombres.length > 0
-            ? jugadoresNombres.map(n => `<span class="roster-name">${n}</span>`).join(', ')
-            : `<span class="panel-empty">Sin jugadores cargados</span>`}
+      ? jugadoresNombres.map(n => `<span class="roster-name">${n}</span>`).join(', ')
+      : `<span class="panel-empty">Sin jugadores cargados</span>`}
         </div>
         ${jugadoresExtrasNombres.length > 0 ? `
           <div class="panel-head" style="margin-top:12px; border-color:#e2e8f0; padding-top:6px;">
-            <div class="panel-title" style="color:#334155;">Jugadores extras</div>
-            <div class="panel-badge" style="color:#334155; background:#f1f5f9;">${jugadoresExtrasNombres.length}</div>
+            <div class="panel-title" style="color:#334155;">Jugadores extras (${jugadoresExtrasNombres.length})</div>
           </div>
           <div class="roster-text-list extra">
             ${jugadoresExtrasNombres.map(n => `<span class="roster-name extra">${n}</span>`).join(', ')}
@@ -963,8 +924,8 @@ export const generateSessionPDFHTML = ({
           <div class="panel-title">Observaciones</div>
         </div>
         ${generalObservationsPreview
-          ? `<div class="obs-text">${generalObservationsPreview}</div>`
-          : `<div class="panel-empty">Sin observaciones generales</div>`}
+      ? `<div class="obs-text">${generalObservationsPreview}</div>`
+      : `<div class="panel-empty">Sin observaciones generales</div>`}
         ${exerciseObservationsPreview.length > 0 ? `
           <div style="margin-top:6px;">
             ${exerciseObservationsPreview.map(item => `

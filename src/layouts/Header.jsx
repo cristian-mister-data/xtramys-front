@@ -41,6 +41,12 @@ const Bar = styled.header`
 `;
 
 const IconBtn = styled.button`
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -275,6 +281,9 @@ const HintBar = styled.div`
 /* ---------- Profile ---------- */
 
 const Profile = styled.button`
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 10px;

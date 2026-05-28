@@ -275,7 +275,7 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
           ${drawJerseySVG(pos.pos)}
         `}
         ${showNames ? `
-          <div style="display: flex; align-items: center; justify-content: center; height: 16px; background: #0e1726; color: #ffffff; padding: 0 6px; border-radius: 5px; font-size: 7.5px; font-weight: 800; text-align: center; margin-top: 5px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1;">
+          <div style="display: flex; align-items: center; justify-content: center; padding: 3px 6px; background: #0e1726; color: #ffffff; border-radius: 5px; font-size: 7.5px; font-weight: 800; text-align: center; margin-top: 5px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.2;">
             ${player ? getPlayerFirstName(player) : translatedPos}
           </div>
         ` : ''}
@@ -379,20 +379,19 @@ const generateSuplentesBanquilloCompact = (playerIds, players, showPhotos, showN
     return `
       <div style="display: flex; flex-direction: column; align-items: center; width: 68px; margin: 4px;">
         ${showPhotos && player.foto ? `
-          <img src="${player.foto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid ${color}; object-fit: cover; box-shadow: 0 0 0 1px #fff, 0 2px 5px rgba(0,0,0,0.15);" />
+          <img src="${player.foto}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />
         ` : `
-          <div style="width: 34px; height: 34px; border-radius: 50%; background: ${color}15; border: 2px solid ${color}; display: flex; align-items: center; justify-content: center; color: ${color}; font-weight: 800; font-size: 11px; font-family: 'Inter', sans-serif; line-height: 1;">${player.dorsal || '?'}</div>
+          <div style="font-size: 11px; color: ${color}; font-weight: 800; font-family: 'Inter', sans-serif; text-align: center;">#${player.dorsal || '?'}</div>
         `}
         ${showNames ? `<div style="font-size: 8px; font-weight: 700; margin-top: 5px; text-align: center; color: #334155; text-transform: uppercase; font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis;">${getPlayerFirstName(player)}</div>` : ''}
-        <div style="font-size: 8px; color: ${color}; margin-top: 1px; font-weight: 800; font-family: 'Inter', sans-serif;">#${player.dorsal || '?'}</div>
+        ${showPhotos && player.foto ? `<div style="font-size: 8px; color: ${color}; margin-top: 1px; font-weight: 800; font-family: 'Inter', sans-serif;">#${player.dorsal || '?'}</div>` : ''}
       </div>
     `;
   }).join('');
   
   return `
-    <div style="margin-top: 14px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+    <div style="margin-top: 14px; padding: 6px 0;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-        <div style="width: 3px; height: 14px; background: #475569; border-radius: 2px;"></div>
         <span style="font-size: 9px; font-weight: 900; color: #334155; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Inter', sans-serif;">${substitutesLabel} (${playerIds.length})</span>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">${playerItems}</div>
@@ -510,21 +509,13 @@ export const generateLineupPDF = async ({
         }
         
         .chip {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 18px;
-          background: rgba(255,255,255,0.06);
-          border: 1.5px solid rgba(255,255,255,0.12);
+          font-size: 9px;
           color: #ffffff;
-          padding: 0 10px;
-          border-radius: 20px;
-          font-size: 8px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           font-family: 'Inter', sans-serif;
-          line-height: 1;
+          margin-bottom: 2px;
         }
       </style>
     </head>
@@ -551,7 +542,7 @@ export const generateLineupPDF = async ({
 
           <!-- Bottom bar: Formation Pill and Footer -->
           <div style="width: 100%; margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 22px; background: #0f172a; color: #ffffff; padding: 0 18px; border-radius: 20px; font-size: 9px; font-weight: 800; border: 1.5px solid rgba(255,255,255,0.15); box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
+            <div style="font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">
               Formación: ${formation}
             </div>
             <div style="color: #94a3b8; font-size: 8px; letter-spacing: 0.5px; border-top: 1px solid rgba(15,23,42,0.05); padding-top: 10px; width: 100%; text-align: center;">
@@ -599,7 +590,7 @@ export const generateLineupPDF = async ({
 
           <!-- Substitutions Section -->
           <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; align-items: center; justify-content: center; height: 22px; background: #cbd5e1; color: #0f172a; padding: 0 14px; border-radius: 20px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; align-self: flex-start; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Inter', sans-serif; line-height: 1;">
+            <div style="font-size: 10px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; font-family: 'Inter', sans-serif;">
               ${substitutesLabel} (${suplentes.length})
             </div>
             
@@ -623,8 +614,8 @@ export const generateLineupPDF = async ({
                         </svg>
                       </div>
                     `}
-                    <div style="display: flex; align-items: center; justify-content: center; height: 22px; background: #0f172a; color: #ffffff; padding: 0 12px; border-radius: 6px; font-size: 8.5px; font-weight: 700; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 2px 4px rgba(0,0,0,0.25); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1;">
-                      ${player.dorsal ? `#${player.dorsal} ` : ''}${getPlayerFullName(player)}
+                    <div style="color: #ffffff; font-size: 9px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; display: flex; align-items: center;">
+                      ${player.dorsal ? `<span style="color: #94a3b8; font-weight: 800; margin-right: 6px;">#${player.dorsal}</span>` : ''}${getPlayerFullName(player)}
                     </div>
                   </div>
                 `;
@@ -716,24 +707,24 @@ export const generateCallUpPDF = async ({
     positionGroups[group.order].players.push(player);
   });
 
-  // Tarjeta de jugador para convocatoria clara
-  const playerCardHTML = (player) => {
-    const color = getPositionColor(player.posicion);
-    return `
-      <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
-        <div style="min-width: 26px; width: 26px; height: 26px; border-radius: 6px; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 11px; flex-shrink: 0; box-shadow: 0 2px 4px ${color}40; font-family: 'Inter', sans-serif;">${player.dorsal || '?'}</div>
-        ${showPhotos && player.foto ? `
-          <img src="${player.foto}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1.5px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" />
-        ` : `
-          <div style="width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0;">👤</div>
-        `}
-        <div style="flex: 1; min-width: 0;">
-          <div style="color: #0f172a; font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif;">${getPlayerFullName(player)}</div>
-          <div style="color: ${color}; font-size: 9px; font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${player.posicion || ''}</div>
-        </div>
-      </div>
-    `;
-  };
+      // Fila de jugador para convocatoria clara (sin recuadros)
+      const playerCardHTML = (player) => {
+        const color = getPositionColor(player.posicion);
+        return `
+          <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+            <div style="min-width: 20px; font-weight: 800; font-size: 11px; color: ${color}; font-family: 'Inter', sans-serif; text-align: right;">${player.dorsal || ''}</div>
+            ${showPhotos && player.foto ? `
+              <img src="${player.foto}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1; flex-shrink: 0;" />
+            ` : `
+              <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0;">👤</div>
+            `}
+            <div style="flex: 1; min-width: 0;">
+              <div style="color: #0f172a; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif;">${getPlayerFullName(player)}</div>
+              <div style="color: #64748b; font-size: 8.5px; font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${player.posicion || ''}</div>
+            </div>
+          </div>
+        `;
+      };
 
   // HTML de grupos de convocados
   const groupsHTML = Object.keys(positionGroups)
@@ -771,21 +762,21 @@ export const generateCallUpPDF = async ({
 
   // No convocados diseño claro (Grayscale)
   const noConvocadosHTML = noConvocados && noConvocados.length > 0 ? `
-    <div style="margin-top: 14px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; page-break-inside: avoid;">
+    <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
       <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 8px; font-family: 'Inter', sans-serif; text-transform: uppercase;">${notCalledLabel.toUpperCase()} (${noConvocados.length})</div>
-      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; color: #334155; font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif;">
         ${noConvocados.map(id => {
           const p = resolvedPlayers.find(pl => pl._id === id || pl._id === id._id);
           if (!p) return '';
-          return `<span style="background: #ffffff; border: 1px solid #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">${p.dorsal ? '#' + p.dorsal + ' ' : ''}${getPlayerFullName(p)}</span>`;
-        }).join('')}
+          return `<span style="display: inline-block;">${p.dorsal ? '#' + p.dorsal + ' ' : ''}${getPlayerFullName(p)}</span>`;
+        }).join('<span style="color: #cbd5e1;">&bull;</span>')}
       </div>
     </div>
   ` : '';
 
   // Observaciones diseño claro (Grayscale)
   const observacionesHTML = observaciones ? `
-    <div style="margin-top: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; page-break-inside: avoid;">
+    <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
       <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 6px; font-family: 'Inter', sans-serif; text-transform: uppercase;">📝 ${observationsLabel.toUpperCase()}</div>
       <div style="font-size: 10.5px; color: #334155; line-height: 1.6; white-space: pre-wrap; font-family: 'Inter', sans-serif;">${observaciones}</div>
     </div>
@@ -850,11 +841,8 @@ export const generateCallUpPDF = async ({
           margin-bottom: 18px;
         }
         .meeting-card {
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 10px 12px;
           text-align: center;
+          padding: 4px 0;
         }
         .meeting-label {
           font-size: 7.5px;
@@ -1062,10 +1050,10 @@ export const generateMatchSheetPDF = async ({
   };
   const resultado = translateResultado(resultadoRaw);
   const resultadoStyle = resultadoRaw === 'Victoria'
-    ? 'background: #18181b; border: 1px solid #18181b; color: #ffffff;'
+    ? 'color: #0f172a; font-weight: 900;'
     : resultadoRaw === 'Derrota'
-      ? 'background: #f4f4f5; border: 1px solid #d4d4d8; color: #52525b;'
-      : 'background: #e4e4e7; border: 1px solid #d4d4d8; color: #27272a;';
+      ? 'color: #64748b; font-weight: 800;'
+      : 'color: #475569; font-weight: 800;';
   
   // Ubicación traducida
   const getUbicacionLabel = (ubi) => {
@@ -1106,7 +1094,7 @@ export const generateMatchSheetPDF = async ({
   const amarillasSorted = [...tarjetasAmarillas].sort((a, b) => parseMinutoPDF(a.minuto) - parseMinutoPDF(b.minuto));
   const amarillasHTML = amarillasSorted.length > 0 ? amarillasSorted.map(t => `
     <div class="event-row">
-      <span class="card-icon yellow"></span>
+      <span class="event-icon">🟨</span>
       <div class="event-details">
         <span class="event-player">${getPlayerNameById(t.jugador)}</span>
         ${t.motivo ? `<span class="event-subtext">(${t.motivo})</span>` : ''}
@@ -1119,7 +1107,7 @@ export const generateMatchSheetPDF = async ({
   const rojasSorted = [...tarjetasRojas].sort((a, b) => parseMinutoPDF(a.minuto) - parseMinutoPDF(b.minuto));
   const rojasHTML = rojasSorted.length > 0 ? rojasSorted.map(t => `
     <div class="event-row">
-      <span class="card-icon red"></span>
+      <span class="event-icon">🟥</span>
       <div class="event-details">
         <span class="event-player">${getPlayerNameById(t.jugador)}</span>
         ${t.motivo ? `<span class="event-subtext">(${t.motivo})</span>` : ''}
@@ -1224,10 +1212,10 @@ export const generateMatchSheetPDF = async ({
         .score-container { display: flex; align-items: center; gap: 12px; }
         .score { font-size: 32px; font-weight: 900; color: #0f172a; min-width: 40px; text-align: center; letter-spacing: -1px; }
         .score-divider { font-size: 24px; color: #94a3b8; font-weight: 300; }
-        .result-badge { display: inline-flex; align-items: center; justify-content: center; height: 18px; padding: 0 14px; border-radius: 20px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); line-height: 1; }
+        .result-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }
         
         .meta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
-        .meta-badge { background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 20px; font-size: 9px; color: #475569; font-weight: 600; }
+        .meta-badge { font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .section-title { font-size: 11px; font-weight: 900; color: #0f172a; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #0f172a; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1px; }
@@ -1249,10 +1237,10 @@ export const generateMatchSheetPDF = async ({
         .event-player { font-weight: 700; color: #334155; font-size: 10px; }
         .event-subtext { color: #64748b; font-size: 8.5px; font-weight: 500; }
         .event-time { font-size: 9.5px; font-weight: 800; color: #94a3b8; }
-        .event-badge { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 8px; color: #475569; font-weight: 700; text-transform: uppercase; }
+        .event-badge { font-size: 8.5px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-left: 4px; }
         .event-empty { color: #94a3b8; font-size: 10px; padding: 12px 0; text-align: center; font-style: italic; }
         
-        .notes-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 10px; color: #334155; white-space: pre-wrap; line-height: 1.5; font-weight: 500; }
+        .notes-box { font-size: 10px; color: #334155; white-space: pre-wrap; line-height: 1.5; font-weight: 500; padding: 4px 0; }
         .footer { text-align: center; color: #94a3b8; font-size: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid #e2e8f0; letter-spacing: 0.5px; }
       </style>
     </head>
@@ -1282,28 +1270,30 @@ export const generateMatchSheetPDF = async ({
           </div>
           ${resultado ? `<div style="text-align: center;"><span class="result-badge" style="${resultadoStyle}">${resultado}</span></div>` : ''}
           <div class="meta-row">
-            ${(() => {
-              const roundLabels = translations.roundLabels || {};
-              const legFirstLabel = translations.legFirst || 'Ida';
-              const legSecondLabel = translations.legSecond || 'Vuelta';
-              const groupLabel = translations.group || 'Grupo';
-              if (matchSheet.fase === 'eliminatoria' && matchSheet.ronda) {
-                const roundLabel = roundLabels[matchSheet.ronda] || matchSheet.ronda;
-                const legSuffix = matchSheet.pierna && matchSheet.pierna !== 'unico' ? ` (${matchSheet.pierna === 'ida' ? legFirstLabel : legSecondLabel})` : '';
-                return `<span class="meta-badge"><strong>${roundLabel}${legSuffix}</strong></span>`;
-              } else if (matchSheet.fase === 'grupos') {
-                const groupPart = matchSheet.grupo ? `${groupLabel} ${matchSheet.grupo}` : '';
-                const jornadaPart = matchSheet.jornada ? `${matchDayLabel} ${matchSheet.jornada}` : '';
-                const combined = [groupPart, jornadaPart].filter(Boolean).join(' - ');
-                return `<span class="meta-badge"><strong>${combined}</strong></span>`;
-              } else {
-                return matchSheet.jornada ? `<span class="meta-badge"><strong>${matchDayLabel} ${matchSheet.jornada}</strong></span>` : '';
-              }
-            })()}
-            ${matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre ? `<span class="meta-badge">🏆 ${matchSheet.torneoId.nombre}</span>` : ''}
-            ${matchSheet.ubicacion ? `<span class="meta-badge">📍 ${getUbicacionLabel(matchSheet.ubicacion)}</span>` : ''}
-            ${formation ? `<span class="meta-badge">⚽ ${formation}</span>` : ''}
-            ${matchSheet.alineacionRival ? `<span class="meta-badge">🆚 ${matchSheet.alineacionRival}</span>` : ''}
+            ${[
+              (() => {
+                const roundLabels = translations.roundLabels || {};
+                const legFirstLabel = translations.legFirst || 'Ida';
+                const legSecondLabel = translations.legSecond || 'Vuelta';
+                const groupLabel = translations.group || 'Grupo';
+                if (matchSheet.fase === 'eliminatoria' && matchSheet.ronda) {
+                  const roundLabel = roundLabels[matchSheet.ronda] || matchSheet.ronda;
+                  const legSuffix = matchSheet.pierna && matchSheet.pierna !== 'unico' ? ` (${matchSheet.pierna === 'ida' ? legFirstLabel : legSecondLabel})` : '';
+                  return `<span class="meta-badge">${roundLabel}${legSuffix}</span>`;
+                } else if (matchSheet.fase === 'grupos') {
+                  const groupPart = matchSheet.grupo ? `${groupLabel} ${matchSheet.grupo}` : '';
+                  const jornadaPart = matchSheet.jornada ? `${matchDayLabel} ${matchSheet.jornada}` : '';
+                  const combined = [groupPart, jornadaPart].filter(Boolean).join(' - ');
+                  return `<span class="meta-badge">${combined}</span>`;
+                } else {
+                  return matchSheet.jornada ? `<span class="meta-badge">${matchDayLabel} ${matchSheet.jornada}</span>` : '';
+                }
+              })(),
+              matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre ? `<span class="meta-badge">🏆 ${matchSheet.torneoId.nombre}</span>` : '',
+              matchSheet.ubicacion ? `<span class="meta-badge">📍 ${getUbicacionLabel(matchSheet.ubicacion)}</span>` : '',
+              formation ? `<span class="meta-badge">⚽ ${formation}</span>` : '',
+              matchSheet.alineacionRival ? `<span class="meta-badge">🆚 ${matchSheet.alineacionRival}</span>` : ''
+            ].filter(Boolean).join('<span style="color: #cbd5e1; margin: 0 4px;">&bull;</span>')}
           </div>
         </div>
         

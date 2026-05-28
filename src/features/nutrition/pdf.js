@@ -146,12 +146,7 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         
         .meal-section {
           margin: 6px 0;
-          padding: 8px 12px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-left: 3px solid #475569;
-          border-radius: 8px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+          padding: 4px 0;
         }
         .meal-title {
           font-weight: 700;
@@ -172,11 +167,8 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         }
         
         .protocol-step {
-          margin: 5px 0;
-          padding: 5px 10px;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
+          margin: 4px 0;
+          padding: 2px 0;
           display: flex;
           align-items: center;
           gap: 10px;
@@ -184,16 +176,9 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         .protocol-time {
           font-weight: 800;
           color: #334155;
-          background: #f1f5f9;
-          border: 1px solid #cbd5e1;
-          padding: 0 6px;
-          border-radius: 4px;
-          font-size: 8px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          height: 16px;
-          line-height: 1;
+          font-size: 8.5px;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
         
         .two-columns {
@@ -294,7 +279,7 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
               ${(preseasonData.weekly_menu || []).map(day => `
                 <tr>
                   <td><strong>${esc(day.day)}</strong></td>
-                  <td><span style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0 6px; border-radius: 4px; font-weight: 600; font-size: 8px; color: #475569; display: inline-flex; align-items: center; justify-content: center; height: 16px; line-height: 1;">${esc(day.tag)}</span></td>
+                  <td><span style="font-weight: 700; font-size: 8.5px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">${esc(day.tag)}</span></td>
                   <td>${esc(day.lunch)}</td>
                   <td>${esc(day.dinner)}</td>
                 </tr>
@@ -397,9 +382,9 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         </div>
 
         <h3>💊 ${esc(t('nutrition.reference.supplements'))}</h3>
-        <ul style="list-style-type: none; margin-left: 0;">
+        <ul style="margin: 4px 0 4px 14px;">
           ${(referenceData.supplements || []).map(s => `
-            <li style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; margin-bottom: 4px;">
+            <li style="margin-bottom: 4px;">
               <strong style="color: #1e293b; font-size: 8.5px;">${esc(s.name)}:</strong> <span style="color:#475569; font-size: 8.5px;">${esc(s.description)}</span>
             </li>
           `).join('')}
@@ -416,9 +401,9 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         </div>
 
         <h3>💧 ${esc(t('nutrition.reference.hydration'))}</h3>
-        <ul style="list-style-type: none; margin-left: 0;">
+        <ul style="margin: 4px 0 4px 14px;">
           ${(referenceData.hydration_tips || []).map(tip => `
-            <li style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #475569; padding: 5px 10px; border-radius: 0 6px 6px 0; margin-bottom: 3px; font-weight: 500; font-size: 8.5px; color: #334155;">
+            <li style="margin-bottom: 4px; font-weight: 500; font-size: 8.5px; color: #334155;">
               ${esc(tip)}
             </li>
           `).join('')}

@@ -238,10 +238,7 @@ export async function generateProtocolPdf(protocol, lang, t) {
     }
     .intro-block {
       flex: 1;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 8px 12px;
+      padding: 4px 0;
     }
     .intro-block h3 {
       font-size: 8.5pt;
@@ -287,13 +284,8 @@ export async function generateProtocolPdf(protocol, lang, t) {
       padding-left: 0;
     }
     .exercise {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-left: 4px solid #475569;
-      border-radius: 8px;
-      padding: 8px 10px;
-      margin-bottom: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      margin-bottom: 12px;
+      padding: 4px 0;
     }
     .exercise:last-child {
       margin-bottom: 0;
@@ -318,10 +310,6 @@ export async function generateProtocolPdf(protocol, lang, t) {
       margin-right: 4px;
     }
     .detail.tips {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 4px 8px;
       margin-top: 4px;
       color: #334155;
       font-size: 8pt;
