@@ -139,7 +139,7 @@ export const generateSessionPDFHTML = ({
   };
 
   const getTeamColor = (teamNumber) => {
-    const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+    const colors = ['#1e293b', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#0f172a', '#334155', '#475569'];
     return colors[(teamNumber - 1) % colors.length];
   };
 
@@ -338,7 +338,7 @@ export const generateSessionPDFHTML = ({
         const imagenSrc = imageDataUris[exercise.image] || '';
         const exerciseName = i18n ? i18n.t(exercise.i18nKey) : exercise.id;
         const sectionResult = getSectionForExercise(exercise.id || exercise);
-        const sectionColor = sectionResult?.section?.color || '#8b5cf6';
+        const sectionColor = '#475569';
         const sectionName = sectionResult ? (i18n ? i18n.t(sectionResult.section.i18nKey) : sectionResult.section.id) : '';
         return `
           <div class="st-card">
@@ -362,8 +362,8 @@ export const generateSessionPDFHTML = ({
         <div class="strength-page" ${!isLastPage ? 'style="page-break-after:always;"' : ''}>
           <div class="sheet-header">
             <div class="sheet-header-left">
-              <div class="sheet-dot" style="background:#7c3aed;"></div>
-              <div class="sheet-title" style="color:#7c3aed;">Ejercicios de Fuerza</div>
+              <div class="sheet-dot" style="background:#475569;"></div>
+              <div class="sheet-title" style="color:#0f172a;">Ejercicios de Fuerza</div>
             </div>
             <div class="sheet-count">Pag ${pageIdx + 1} / ${pages.length}</div>
           </div>
@@ -381,13 +381,14 @@ export const generateSessionPDFHTML = ({
 <head>
   <meta charset="UTF-8">
   <title>Sesion de Entrenamiento - ${fechaFormateada}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4; margin: 0; }
     body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-size: 10px;
-      color: #0f172a;
+      color: #334155;
       background: #fff;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -396,48 +397,63 @@ export const generateSessionPDFHTML = ({
     /* ── PORTADA ── */
     .cover-page {
       width: 210mm;
-      min-height: 297mm;
+      height: 297mm;
       padding: 12mm 14mm 10mm;
       page-break-after: always;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      overflow: hidden;
     }
     .banner {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1d4ed8 100%);
-      border-radius: 14px;
-      padding: 22px 26px;
-      color: #fff;
-      margin-bottom: 4px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #475569 100%);
+      border-radius: 12px;
+      padding: 24px 28px;
+      color: #ffffff;
+      margin-bottom: 6px;
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+      position: relative;
+    }
+    .banner::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 150px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
     }
     .banner-team {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 2.5px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.55);
-      margin-bottom: 10px;
+      color: #60a5fa;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .team-logo {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       object-fit: contain;
-      background: rgba(255,255,255,0.15);
-      border-radius: 6px;
-      padding: 3px;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      padding: 2px;
     }
     .banner-title {
       font-size: 24px;
       font-weight: 900;
       letter-spacing: -0.5px;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
     }
     .banner-date {
       font-size: 11px;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.85);
       font-weight: 400;
     }
 
@@ -445,26 +461,31 @@ export const generateSessionPDFHTML = ({
     .stats-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
     .stat-card {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 10px 12px;
+      border-top: 3px solid #475569;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     }
     .stat-label {
       font-size: 8px;
-      color: #94a3b8;
+      color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.7px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 4px;
     }
     .stat-value {
       font-size: 14px;
-      font-weight: 800;
-      color: #2563eb;
+      font-weight: 900;
+      color: #0f172a;
       line-height: 1.2;
       word-break: break-word;
     }
@@ -478,57 +499,59 @@ export const generateSessionPDFHTML = ({
     .panels-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
       flex: 1;
     }
     .panel {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 14px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding-bottom: 8px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 2px solid #f1f5f9;
     }
     .panel-title {
-      font-size: 9px;
+      font-size: 9.5px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: #0f172a;
+      letter-spacing: 1px;
+      color: #1e293b;
     }
     .panel-badge {
       font-size: 8.5px;
-      font-weight: 700;
-      color: #2563eb;
-      background: #eff6ff;
-      padding: 2px 8px;
-      border-radius: 20px;
+      font-weight: 800;
+      color: #334155;
+      background: #e2e8f0;
+      padding: 0 9px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 18px;
+      line-height: 1;
     }
-    .chip-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-    .chip {
-      padding: 3px 9px;
-      border-radius: 6px;
-      font-size: 9px;
-      font-weight: 600;
-      background: #f8fafc;
+    .roster-text-list {
+      font-size: 8.5px;
+      line-height: 1.6;
       color: #475569;
-      border: 1px solid #e2e8f0;
+      font-weight: 500;
+      white-space: normal;
+      word-break: break-word;
     }
-    .chip.extra {
-      background: #fffbeb;
-      border-color: #fde68a;
+    .roster-name {
+      display: inline-block;
+      color: #334155;
+    }
+    .roster-name.extra {
       color: #b45309;
     }
     .panel-empty {
@@ -537,36 +560,47 @@ export const generateSessionPDFHTML = ({
       font-style: italic;
     }
     .obs-text {
-      font-size: 9.5px;
+      font-size: 9px;
       color: #475569;
-      line-height: 1.6;
+      line-height: 1.5;
       white-space: pre-wrap;
+      background: #f8fafc;
+      padding: 10px;
+      border-left: 3px solid #475569;
+      border-radius: 0 8px 8px 0;
     }
     .obs-ex-item {
-      padding: 5px 8px;
+      padding: 8px 12px;
       background: #f8fafc;
-      border-radius: 6px;
-      border-left: 3px solid #2563eb;
-      margin-bottom: 4px;
+      border-radius: 8px;
+      border-left: 3.5px solid #475569;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
     .obs-ex-name {
-      font-weight: 700;
+      font-weight: 800;
       color: #0f172a;
       font-size: 8.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
     }
     .obs-ex-text {
-      font-size: 8.5px;
+      font-size: 8px;
       color: #475569;
+      line-height: 1.4;
     }
 
     /* ── EXERCISE SHEETS ── */
     .exercise-sheet {
       width: 210mm;
-      min-height: 297mm;
-      padding: 9mm 13mm;
+      height: 297mm;
+      padding: 12mm 14mm;
       page-break-after: always;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      background: #fff;
     }
     .exercise-sheet:last-of-type { page-break-after: auto; }
 
@@ -575,8 +609,8 @@ export const generateSessionPDFHTML = ({
       align-items: center;
       justify-content: space-between;
       padding-bottom: 8px;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #0f172a;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
     }
     .sheet-header-left {
       display: flex;
@@ -584,10 +618,10 @@ export const generateSessionPDFHTML = ({
       gap: 8px;
     }
     .sheet-dot {
-      width: 10px;
-      height: 10px;
-      background: #2563eb;
-      border-radius: 3px;
+      width: 8px;
+      height: 8px;
+      background: #475569;
+      border-radius: 50%;
       flex-shrink: 0;
     }
     .sheet-title {
@@ -595,20 +629,21 @@ export const generateSessionPDFHTML = ({
       font-weight: 800;
       color: #0f172a;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: 1.5px;
     }
     .sheet-count {
-      font-size: 9px;
-      color: #94a3b8;
-      font-weight: 600;
+      font-size: 8.5px;
+      color: #64748b;
+      font-weight: 700;
     }
 
     /* Exercise grid */
     .ex-grid {
       display: grid;
       grid-template-rows: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
       flex: 1;
+      min-height: 0;
     }
     .ex-grid.single {
       grid-template-rows: 1fr;
@@ -616,17 +651,18 @@ export const generateSessionPDFHTML = ({
 
     /* Exercise card */
     .ex-card {
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 14px;
+      border-radius: 12px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       min-height: 0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .ex-header {
-      background: #0f172a;
-      color: #fff;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
       padding: 10px 14px;
       display: flex;
       align-items: center;
@@ -640,27 +676,28 @@ export const generateSessionPDFHTML = ({
       left: 14px;
       width: 26px;
       height: 26px;
-      background: #2563eb;
+      background: #475569;
       border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 13px;
+      font-size: 12px;
       text-align: center;
-      line-height: 26px;
+      line-height: 1;
+      box-shadow: 0 2px 5px rgba(71, 85, 105, 0.3);
     }
     .ex-header-content {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       width: 100%;
       padding: 0 40px;
     }
     .ex-name {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.5px;
       text-align: center;
@@ -669,21 +706,26 @@ export const generateSessionPDFHTML = ({
     }
     .ex-pills {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
       justify-content: center;
     }
     .ex-pill {
-      padding: 3px 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 16px;
+      line-height: 1;
+      padding: 0 7px;
       border-radius: 4px;
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 700;
-      background: #334155;
+      background: rgba(255,255,255,0.15);
       color: #e2e8f0;
       white-space: nowrap;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      border: 1px solid #475569;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     /* Exercise body */
@@ -693,13 +735,13 @@ export const generateSessionPDFHTML = ({
       min-height: 0;
     }
     .ex-img-col {
-      flex: 0 0 52%;
+      flex: 0 0 50%;
       background: #f8fafc;
       border-right: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
+      padding: 12px;
       overflow: hidden;
     }
     .ex-img {
@@ -708,20 +750,22 @@ export const generateSessionPDFHTML = ({
       width: auto;
       height: auto;
       object-fit: contain;
-      border-radius: 6px;
+      border-radius: 8px;
       display: block;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .ex-img-placeholder {
       font-size: 9px;
       color: #94a3b8;
       text-align: center;
+      font-weight: 600;
     }
     .ex-info-col {
-      flex: 0 0 48%;
-      padding: 12px 13px;
+      flex: 0 0 50%;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 8px;
       overflow: hidden;
     }
     .ex-section {
@@ -733,13 +777,13 @@ export const generateSessionPDFHTML = ({
       font-size: 7.5px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      font-weight: 800;
-      color: #2563eb;
+      font-weight: 900;
+      color: #475569;
     }
     .ex-section-text {
-      font-size: 9px;
-      color: #475569;
-      line-height: 1.5;
+      font-size: 8.5px;
+      color: #334155;
+      line-height: 1.45;
       white-space: pre-wrap;
     }
     .ex-divider {
@@ -760,7 +804,7 @@ export const generateSessionPDFHTML = ({
     }
     .teams-title {
       font-size: 7.5px;
-      font-weight: 800;
+      font-weight: 900;
       text-transform: uppercase;
       color: #94a3b8;
       letter-spacing: 0.8px;
@@ -768,43 +812,60 @@ export const generateSessionPDFHTML = ({
     }
     .team-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 6px;
       margin-bottom: 4px;
     }
     .team-tag {
-      padding: 1px 6px;
-      border-radius: 4px;
+      padding: 0 8px;
+      border-radius: 20px;
       color: #fff;
-      font-size: 7.5px;
+      font-size: 7px;
       font-weight: 800;
       white-space: nowrap;
       flex-shrink: 0;
+      text-transform: uppercase;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 15px;
+      line-height: 1;
     }
     .team-names {
-      font-size: 8.5px;
+      font-size: 8px;
       color: #475569;
       line-height: 1.4;
+      font-weight: 600;
     }
 
     /* ── STRENGTH PAGES ── */
     .strength-page {
       width: 210mm;
-      min-height: 297mm;
-      padding: 9mm 13mm;
+      height: 297mm;
+      padding: 12mm 14mm;
       page-break-before: always;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #fff;
     }
     .st-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 4px;
+      flex: 1;
+      align-content: start;
     }
     .st-card {
       background: #fff;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
     }
     .st-img {
       width: 100%;
@@ -814,32 +875,29 @@ export const generateSessionPDFHTML = ({
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      border-bottom: 1px solid #f1f5f9;
     }
     .st-img img { width: 100%; height: 100%; object-fit: cover; }
-    .st-placeholder { font-size: 24px; opacity: 0.2; }
-    .st-body { padding: 7px 8px; }
-    .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 5px; }
+    .st-placeholder { font-size: 20px; opacity: 0.25; }
+    .st-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 6px; }
     .st-num {
-      width: 17px;
-      height: 17px;
+      width: 16px;
+      height: 16px;
       border-radius: 4px;
       color: #fff;
-      font-size: 8.5px;
-      font-weight: 800;
+      font-size: 8px;
+      font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       text-align: center;
     }
-    .st-name { font-size: 8.5px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-    .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid #f1f5f9; }
-    .st-section { font-size: 7px; font-weight: 700; color: #7c3aed; }
-    .st-level { font-size: 7px; font-weight: 700; color: #94a3b8; background: #f8fafc; padding: 1px 4px; border-radius: 6px; }
-
-    @media print {
-      body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    }
+    .st-name { font-size: 8.5px; font-weight: 700; color: #0f172a; line-height: 1.25; }
+    .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; border-top: 1px solid #f1f5f9; }
+    .st-section { font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase; }
+    .st-level { font-size: 7px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0 5px; border-radius: 4px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; height: 14px; line-height: 1; }
   </style>
 </head>
 <body>
@@ -884,18 +942,18 @@ export const generateSessionPDFHTML = ({
           <div class="panel-title">Jugadores disponibles</div>
           <div class="panel-badge">${jugadoresNombres.length + jugadoresExtrasNombres.length}</div>
         </div>
-        <div class="chip-list">
+        <div class="roster-text-list">
           ${jugadoresNombres.length > 0
-            ? jugadoresNombres.map(n => `<span class="chip">${n}</span>`).join('')
+            ? jugadoresNombres.map(n => `<span class="roster-name">${n}</span>`).join(', ')
             : `<span class="panel-empty">Sin jugadores cargados</span>`}
         </div>
         ${jugadoresExtrasNombres.length > 0 ? `
-          <div class="panel-head" style="margin-top:6px; border-color:#fde68a;">
-            <div class="panel-title" style="color:#b45309;">Jugadores extras</div>
-            <div class="panel-badge" style="color:#b45309; background:#fffbeb;">${jugadoresExtrasNombres.length}</div>
+          <div class="panel-head" style="margin-top:12px; border-color:#e2e8f0; padding-top:6px;">
+            <div class="panel-title" style="color:#334155;">Jugadores extras</div>
+            <div class="panel-badge" style="color:#334155; background:#f1f5f9;">${jugadoresExtrasNombres.length}</div>
           </div>
-          <div class="chip-list">
-            ${jugadoresExtrasNombres.map(n => `<span class="chip extra">${n}</span>`).join('')}
+          <div class="roster-text-list extra">
+            ${jugadoresExtrasNombres.map(n => `<span class="roster-name extra">${n}</span>`).join(', ')}
           </div>
         ` : ''}
       </div>
@@ -908,7 +966,7 @@ export const generateSessionPDFHTML = ({
           ? `<div class="obs-text">${generalObservationsPreview}</div>`
           : `<div class="panel-empty">Sin observaciones generales</div>`}
         ${exerciseObservationsPreview.length > 0 ? `
-          <div>
+          <div style="margin-top:6px;">
             ${exerciseObservationsPreview.map(item => `
               <div class="obs-ex-item">
                 <div class="obs-ex-name">${item.title}</div>
@@ -1001,7 +1059,7 @@ export const generateSessionPDF = async ({
 
     const html = generateSessionPDFHTML({ session, exercises, strengthExercises, team, players, i18n, imageDataUris });
 
-    const { uri } = await Print.printToFileAsync({ html, base64: false });
+    const { uri } = await Print.printToFileAsync({ html });
 
     const fecha = new Date(session.fecha);
     const diasKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];

@@ -7,6 +7,7 @@ import { savePdfToDownloads } from '../../utils/pdfDownload';
 import { getDaysLabel } from './methodologyData';
 
 export async function generateMethodologyPdf(categoryName, planKey, days, primaryColor, t) {
+  const grayscalePrimaryColor = '#1e293b';
   const daysLabel = getDaysLabel(planKey, t);
   const cleanName = String(categoryName || '')
     .replace(/\(.*?\)/g, '')
@@ -28,7 +29,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
   const tableHeaders = days
     .map(
       (day, index) => `
-    <th style="background-color: ${primaryColor}; color: white; padding: 8px 6px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${primaryColor};">
+    <th style="background-color: ${grayscalePrimaryColor}; color: white; padding: 8px 6px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${grayscalePrimaryColor}; line-height: 1;">
       ${tt('methodology.dayNumber', ({ number }) => `Día ${number}`, { number: day.day_number || index + 1 })}
     </th>
   `,
@@ -58,7 +59,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
   const instructionCells = days
     .map((day) => {
       const instruction = day.main_part?.instruction || '';
-      return `<td style="padding: 6px 8px; font-size: 9px; border: 1px solid #ddd; vertical-align: top; background-color: #FFF8E1; font-weight: bold; color: ${primaryColor};">
+      return `<td style="padding: 6px 8px; font-size: 9px; border: 1px solid #ddd; vertical-align: top; background-color: #f1f5f9; font-weight: bold; color: ${grayscalePrimaryColor};">
       ${instruction || '-'}
     </td>`;
     })
@@ -79,7 +80,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
         if (option) {
           const tasksText = option.tasks?.join(' / ') || '';
           return `<td style="padding: 6px 8px; font-size: 9px; border: 1px solid #ddd; vertical-align: top;">
-          <strong style="color: ${primaryColor};">${tasksText}</strong><br/>
+          <strong style="color: ${grayscalePrimaryColor};">${tasksText}</strong><br/>
           <span style="color: #666; font-size: 8px;">${option.constraint || ''}</span>
         </td>`;
         }
@@ -105,7 +106,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 10px; background: white; }
         .header {
-          background: linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc);
+          background: linear-gradient(135deg, ${grayscalePrimaryColor}, #334155);
           color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 12px;
           display: flex; justify-content: space-between; align-items: center;
         }
@@ -129,7 +130,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
       <table>
         <thead>
           <tr>
-            <th style="background-color: #333; color: white; padding: 8px 6px; font-size: 10px; border: 1px solid #333; width: 100px;"></th>
+            <th style="background-color: #333; color: white; padding: 8px 6px; font-size: 10px; border: 1px solid #333; width: 100px; line-height: 1;"></th>
             ${tableHeaders}
           </tr>
         </thead>

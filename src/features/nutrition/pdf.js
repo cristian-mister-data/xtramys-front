@@ -21,161 +21,412 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
     <head>
       <meta charset="utf-8">
       <title>${esc(pdfTitle)}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; line-height: 1.4; color: #333; padding: 20px; }
-        h1 { font-size: 22px; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        h2 { font-size: 16px; margin: 20px 0 10px 0; background: #f5f5f5; padding: 8px; border-left: 4px solid #333; }
-        h3 { font-size: 13px; margin: 15px 0 8px 0; color: #444; }
-        h4 { font-size: 11px; margin: 10px 0 5px 0; color: #666; font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 10px; }
-        th { background: #f0f0f0; font-weight: 600; }
-        .meal-section { margin: 15px 0; padding: 10px; background: #fafafa; border-radius: 4px; }
-        .meal-title { font-weight: 600; margin-bottom: 8px; }
-        .meal-item { margin: 4px 0; padding-left: 15px; }
-        .day-card { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .day-header { font-weight: 600; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
-        .day-tag { font-size: 9px; color: #666; margin-left: 10px; }
-        .protocol-step { margin: 8px 0; padding-left: 20px; }
-        .protocol-time { font-weight: 600; }
-        ul { margin: 5px 0 5px 20px; }
-        li { margin: 3px 0; }
-        .page-break { page-break-before: always; }
-        .two-columns { display: flex; gap: 20px; }
-        .column { flex: 1; }
-        .note { font-size: 9px; color: #666; font-style: italic; }
-        @media print { @page { size: A4; margin: 14mm; } }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+          font-size: 10px;
+          line-height: 1.5;
+          color: #334155;
+          padding: 0;
+          background: #ffffff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        .pdf-page {
+          width: 210mm;
+          height: 297mm;
+          padding: 12mm 14mm;
+          box-sizing: border-box;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          background: #ffffff;
+          page-break-after: always;
+        }
+        .pdf-page:last-child {
+          page-break-after: avoid;
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+          border-radius: 12px;
+          padding: 18px 22px;
+          color: #ffffff;
+          margin-bottom: 14px;
+          text-align: center;
+          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+        }
+        .header-title {
+          font-size: 18px;
+          font-weight: 900;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+        }
+        
+        .page-header {
+          border-bottom: 1.5px dashed #475569;
+          padding-bottom: 6px;
+          margin-bottom: 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .page-header-title {
+          font-size: 8.5px;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: #334155;
+          letter-spacing: 1px;
+        }
+        .page-header-subtitle {
+          font-size: 8px;
+          color: #94a3b8;
+          font-weight: 500;
+        }
+        
+        h2 {
+          font-size: 11px;
+          margin: 12px 0 10px 0;
+          color: #0f172a;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1.2px;
+          padding-bottom: 4px;
+          border-bottom: 2.5px solid #475569;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        h3 {
+          font-size: 10px;
+          margin: 12px 0 6px 0;
+          color: #0f172a;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+        }
+        
+        h4 {
+          font-size: 9px;
+          margin: 8px 0 4px 0;
+          color: #475569;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 8px 0;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e2e8f0;
+        }
+        th, td {
+          padding: 6px 9px;
+          text-align: left;
+          font-size: 8.5px;
+        }
+        th {
+          background: #334155;
+          color: #ffffff;
+          font-weight: 700;
+          text-transform: uppercase;
+          font-size: 8px;
+          letter-spacing: 0.8px;
+        }
+        tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        
+        .meal-section {
+          margin: 6px 0;
+          padding: 8px 12px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-left: 3px solid #475569;
+          border-radius: 8px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+        }
+        .meal-title {
+          font-weight: 700;
+          color: #0f172a;
+          font-size: 9px;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        ul {
+          margin: 2px 0 2px 14px;
+        }
+        li {
+          margin: 1px 0;
+          font-size: 8.5px;
+          color: #475569;
+        }
+        
+        .protocol-step {
+          margin: 5px 0;
+          padding: 5px 10px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .protocol-time {
+          font-weight: 800;
+          color: #334155;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          padding: 0 6px;
+          border-radius: 4px;
+          font-size: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 16px;
+          line-height: 1;
+        }
+        
+        .two-columns {
+          display: flex;
+          gap: 16px;
+        }
+        .column {
+          flex: 1;
+          min-width: 0;
+        }
+        .note {
+          font-size: 7.5px;
+          color: #94a3b8;
+          font-style: italic;
+        }
+        
+        .footer {
+          margin-top: auto;
+          text-align: center;
+          color: #94a3b8;
+          font-size: 8px;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 10px;
+          font-family: 'Inter', sans-serif;
+        }
       </style>
     </head>
     <body>
-      <h1>${esc(pdfTitle)}</h1>
-
-      <!-- PRETEMPORADA -->
-      <h2>🏋️ ${esc(t('nutrition.tabs.preseason').toUpperCase())} - ${esc(preseasonData.title)}</h2>
-
-      <h3>${esc(t('nutrition.meals.breakfast'))}</h3>
-      ${(preseasonData.meals?.breakfast || []).map(item => `
-        <div class="meal-section">
-          <div class="meal-title">${esc(item.type || item.condition)}</div>
-          <ul>
-            ${(item.items || item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
-          </ul>
+      <!-- PAGINA 1: PRETEMPORADA - COMIDAS -->
+      <div class="pdf-page">
+        <div class="header">
+          <h1 class="header-title">${esc(pdfTitle)}</h1>
         </div>
-      `).join('')}
 
-      <h3>${esc(t('nutrition.meals.midMorning'))}</h3>
-      ${(preseasonData.meals?.mid_morning || []).map(item => `
-        <div class="meal-section">
-          <div class="meal-title">${esc(item.condition)}</div>
-          <ul>
-            ${(item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
-          </ul>
-        </div>
-      `).join('')}
+        <h2>🏋️ ${esc(t('nutrition.tabs.preseason').toUpperCase())} - ${esc(preseasonData.title)}</h2>
 
-      <h3>${esc(t('nutrition.meals.snacks'))}</h3>
-      ${(preseasonData.meals?.snacks || []).map(item => `
-        <div class="meal-section">
-          <div class="meal-title">${esc(item.condition)}</div>
-          <ul>
-            ${(item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
-          </ul>
-        </div>
-      `).join('')}
-
-      <h3>${esc(t('nutrition.sections.weeklyMenu'))}</h3>
-      <table>
-        <tr>
-          <th>${esc(t('nutrition.days.monday').split(' ')[0])}</th>
-          <th>Tipo</th>
-          <th>${esc(t('nutrition.meals.lunch'))}</th>
-          <th>${esc(t('nutrition.meals.dinner'))}</th>
-        </tr>
-        ${(preseasonData.weekly_menu || []).map(day => `
-          <tr>
-            <td><strong>${esc(day.day)}</strong></td>
-            <td>${esc(day.tag)}</td>
-            <td>${esc(day.lunch)}</td>
-            <td>${esc(day.dinner)}</td>
-          </tr>
-        `).join('')}
-      </table>
-
-      <div class="page-break"></div>
-
-      <!-- TEMPORADA -->
-      <h2>⚽ ${esc(t('nutrition.tabs.season').toUpperCase())} - ${esc(seasonData.title)}</h2>
-
-      <h3>${esc(t('nutrition.sections.contextMenus'))}</h3>
-      ${(seasonData.menu_options || []).map(ctx => `
-        <div class="meal-section">
-          <div class="meal-title">${esc(ctx.context)}</div>
-          <h4>${esc(t('nutrition.meals.lunch'))}:</h4>
-          <ul>
-            ${(ctx.lunches || []).map(l => `<li>${esc(l)}</li>`).join('')}
-          </ul>
-          <h4>${esc(t('nutrition.meals.dinner'))}:</h4>
-          <ul>
-            ${(ctx.dinners || []).map(d => `<li>${esc(d)}</li>`).join('')}
-          </ul>
-        </div>
-      `).join('')}
-
-      <div class="page-break"></div>
-
-      <!-- REFERENCIA -->
-      <h2>📊 ${esc(t('nutrition.tabs.reference').toUpperCase())}</h2>
-
-      <h3>${esc(t('nutrition.reference.quantitiesTitle'))}</h3>
-      <div class="two-columns">
-        <div class="column">
-          <h4>${esc(t('nutrition.reference.carbohydrates'))}</h4>
-          <table>
-            <tr><th>${esc(t('nutrition.reference.food'))}</th><th>${esc(t('nutrition.meals.lunch'))}</th><th>${esc(t('nutrition.meals.dinner'))}</th></tr>
-            ${(referenceData.quantities_gr?.carbohydrates || []).map(item => `
-              <tr>
-                <td>${esc(item.name)}${item.note ? ` <span class="note">(${esc(item.note)})</span>` : ''}</td>
-                <td>${esc(item.lunch)}g</td>
-                <td>${item.dinner === 0 ? '-' : esc(item.dinner) + 'g'}</td>
-              </tr>
+        <div class="two-columns" style="flex: 1; min-height: 0; margin-top: 10px;">
+          <div class="column">
+            <h3 style="margin-top: 0;">${esc(t('nutrition.meals.breakfast'))}</h3>
+            ${(preseasonData.meals?.breakfast || []).map(item => `
+              <div class="meal-section">
+                <div class="meal-title">${esc(item.type || item.condition)}</div>
+                <ul>
+                  ${(item.items || item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
+                </ul>
+              </div>
             `).join('')}
-          </table>
-        </div>
-        <div class="column">
-          <h4>${esc(t('nutrition.reference.proteins'))}</h4>
-          <table>
-            <tr><th>${esc(t('nutrition.reference.food'))}</th><th>${esc(t('nutrition.meals.lunch'))}</th><th>${esc(t('nutrition.meals.dinner'))}</th></tr>
-            ${(referenceData.quantities_gr?.proteins || []).map(item => `
-              <tr>
-                <td>${esc(item.name)}</td>
-                <td>${esc(item.lunch)}${esc(item.unit || 'g')}</td>
-                <td>${esc(item.dinner)}${esc(item.unit || 'g')}</td>
-              </tr>
+          </div>
+          
+          <div class="column">
+            <h3 style="margin-top: 0;">${esc(t('nutrition.meals.midMorning'))}</h3>
+            ${(preseasonData.meals?.mid_morning || []).map(item => `
+              <div class="meal-section">
+                <div class="meal-title">${esc(item.condition)}</div>
+                <ul>
+                  ${(item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
+                </ul>
+              </div>
             `).join('')}
-          </table>
+
+            <h3>${esc(t('nutrition.meals.snacks'))}</h3>
+            ${(preseasonData.meals?.snacks || []).map(item => `
+              <div class="meal-section">
+                <div class="meal-title">${esc(item.condition)}</div>
+                <ul>
+                  ${(item.options || []).map(i => `<li>${esc(i)}</li>`).join('')}
+                </ul>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="footer">
+          ${esc(t('nutrition.pdf.generatedBy'))} Xtramys · Pág 1 / 4
         </div>
       </div>
 
-      <h3>${esc(t('nutrition.reference.supplements'))}</h3>
-      <ul>
-        ${(referenceData.supplements || []).map(s => `<li><strong>${esc(s.name)}:</strong> ${esc(s.description)}</li>`).join('')}
-      </ul>
-
-      <h3>${esc(t('nutrition.reference.matchProtocol'))}</h3>
-      ${((referenceData.match_day_protocol?.steps) || []).map(step => `
-        <div class="protocol-step">
-          <span class="protocol-time">${esc(step.time)}:</span> ${esc(step.description)}
+      <!-- PAGINA 2: PRETEMPORADA - MENU SEMANAL -->
+      <div class="pdf-page">
+        <div class="page-header">
+          <span class="page-header-title">${esc(pdfTitle)}</span>
+          <span class="page-header-subtitle">Pág 2 / 4</span>
         </div>
-      `).join('')}
 
-      <h3>${esc(t('nutrition.reference.hydration'))}</h3>
-      <ul>
-        ${(referenceData.hydration_tips || []).map(tip => `<li>${esc(tip)}</li>`).join('')}
-      </ul>
+        <h2>🏋️ ${esc(t('nutrition.tabs.preseason').toUpperCase())} — ${esc(t('nutrition.sections.weeklyMenu'))}</h2>
 
-      <div style="margin-top: 30px; text-align: center; color: #999; font-size: 9px;">
-        ${esc(t('nutrition.pdf.generatedBy'))} - ${new Date().toLocaleDateString()}
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:start; margin-top: 10px;">
+          <table>
+            <thead>
+              <tr>
+                <th>${esc(t('nutrition.days.monday').split(' ')[0])}</th>
+                <th>Tipo</th>
+                <th>${esc(t('nutrition.meals.lunch'))}</th>
+                <th>${esc(t('nutrition.meals.dinner'))}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(preseasonData.weekly_menu || []).map(day => `
+                <tr>
+                  <td><strong>${esc(day.day)}</strong></td>
+                  <td><span style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0 6px; border-radius: 4px; font-weight: 600; font-size: 8px; color: #475569; display: inline-flex; align-items: center; justify-content: center; height: 16px; line-height: 1;">${esc(day.tag)}</span></td>
+                  <td>${esc(day.lunch)}</td>
+                  <td>${esc(day.dinner)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="footer">
+          ${esc(t('nutrition.pdf.generatedBy'))} Xtramys · Pág 2 / 4
+        </div>
+      </div>
+
+      <!-- PAGINA 3: TEMPORADA -->
+      <div class="pdf-page">
+        <div class="page-header">
+          <span class="page-header-title">${esc(pdfTitle)}</span>
+          <span class="page-header-subtitle">Pág 3 / 4</span>
+        </div>
+
+        <h2>⚽ ${esc(t('nutrition.tabs.season').toUpperCase())} - ${esc(seasonData.title)}</h2>
+
+        <h3>${esc(t('nutrition.sections.contextMenus'))}</h3>
+        <div class="two-columns" style="flex: 1; min-height: 0; margin-top: 10px;">
+          ${(seasonData.menu_options || []).map(ctx => `
+            <div class="column">
+              <div class="meal-section" style="border-left-color: #475569; height: 100%; margin: 0;">
+                <div class="meal-title" style="color:#1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 8px; font-size: 10px; font-weight:800;">${esc(ctx.context)}</div>
+                <h4>${esc(t('nutrition.meals.lunch'))}:</h4>
+                <ul style="margin-bottom: 8px;">
+                  ${(ctx.lunches || []).map(l => `<li>${esc(l)}</li>`).join('')}
+                </ul>
+                <h4>${esc(t('nutrition.meals.dinner'))}:</h4>
+                <ul>
+                  ${(ctx.dinners || []).map(d => `<li>${esc(d)}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="footer">
+          ${esc(t('nutrition.pdf.generatedBy'))} Xtramys · Pág 3 / 4
+        </div>
+      </div>
+
+      <!-- PAGINA 4: REFERENCIA -->
+      <div class="pdf-page">
+        <div class="page-header">
+          <span class="page-header-title">${esc(pdfTitle)}</span>
+          <span class="page-header-subtitle">Pág 4 / 4</span>
+        </div>
+
+        <h2>📊 ${esc(t('nutrition.tabs.reference').toUpperCase())}</h2>
+
+        <h3>${esc(t('nutrition.reference.quantitiesTitle'))}</h3>
+        <div class="two-columns">
+          <div class="column">
+            <h4>🍞 ${esc(t('nutrition.reference.carbohydrates'))}</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>${esc(t('nutrition.reference.food'))}</th>
+                  <th>${esc(t('nutrition.meals.lunch'))}</th>
+                  <th>${esc(t('nutrition.meals.dinner'))}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(referenceData.quantities_gr?.carbohydrates || []).map(item => `
+                  <tr>
+                    <td><strong>${esc(item.name)}</strong>${item.note ? ` <span class="note">(${esc(item.note)})</span>` : ''}</td>
+                    <td style="font-weight:600; color:#1e293b;">${esc(item.lunch)}g</td>
+                    <td style="font-weight:600; color:#64748b;">${item.dinner === 0 ? '-' : esc(item.dinner) + 'g'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="column">
+            <h4>🥩 ${esc(t('nutrition.reference.proteins'))}</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>${esc(t('nutrition.reference.food'))}</th>
+                  <th>${esc(t('nutrition.meals.lunch'))}</th>
+                  <th>${esc(t('nutrition.meals.dinner'))}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(referenceData.quantities_gr?.proteins || []).map(item => `
+                  <tr>
+                    <td><strong>${esc(item.name)}</strong></td>
+                    <td style="font-weight:600; color:#1e293b;">${esc(item.lunch)}${esc(item.unit || 'g')}</td>
+                    <td style="font-weight:600; color:#64748b;">${esc(item.dinner)}${esc(item.unit || 'g')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>💊 ${esc(t('nutrition.reference.supplements'))}</h3>
+        <ul style="list-style-type: none; margin-left: 0;">
+          ${(referenceData.supplements || []).map(s => `
+            <li style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; margin-bottom: 4px;">
+              <strong style="color: #1e293b; font-size: 8.5px;">${esc(s.name)}:</strong> <span style="color:#475569; font-size: 8.5px;">${esc(s.description)}</span>
+            </li>
+          `).join('')}
+        </ul>
+
+        <h3>⏱️ ${esc(t('nutrition.reference.matchProtocol'))}</h3>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          ${((referenceData.match_day_protocol?.steps) || []).map(step => `
+            <div class="protocol-step">
+              <span class="protocol-time">${esc(step.time)}</span>
+              <span style="font-weight: 500; color: #334155; font-size: 8.5px;">${esc(step.description)}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <h3>💧 ${esc(t('nutrition.reference.hydration'))}</h3>
+        <ul style="list-style-type: none; margin-left: 0;">
+          ${(referenceData.hydration_tips || []).map(tip => `
+            <li style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #475569; padding: 5px 10px; border-radius: 0 6px 6px 0; margin-bottom: 3px; font-weight: 500; font-size: 8.5px; color: #334155;">
+              ${esc(tip)}
+            </li>
+          `).join('')}
+        </ul>
+
+        <div class="footer">
+          ${esc(t('nutrition.pdf.generatedBy'))} Xtramys · Pág 4 / 4
+        </div>
       </div>
     </body>
     </html>

@@ -99,7 +99,7 @@ ${players.map(player => `
             <div class="question-row">
               <div class="question-label">${t('rivalAnalysis.actions.video')}</div>
               <div class="question-value">
-                <span class="formation-badge-inline" style="background: #f0f9ff; border-color: #bae6fd; color: #0369a1;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
+                <span class="formation-badge-inline" style="background: #f1f5f9; border-color: #cbd5e1; color: #334155;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
               </div>
             </div>
           `;
@@ -149,7 +149,7 @@ ${players.map(player => `
             <h4>${questionText} (${answer.length})</h4>
             <div class="players-list">
 ${answer.map(player => `
-                <div class="player-item" style="border-left-color: ${iconColor}">
+                <div class="player-item" style="border-left-color: #475569;">
                   <span class="player-name">${getPlayerFullName(player) || t('player.player')}</span>
                   ${player.observacion ? `<span class="player-note">${player.observacion}</span>` : ''}
                 </div>
@@ -226,7 +226,7 @@ ${answer.map(player => `
           <div class="question-row">
             <div class="question-label">${questionText}</div>
             <div class="question-value">
-              <span class="formation-badge-inline" style="background: #f0f9ff; border-color: #bae6fd; color: #0369a1;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
+              <span class="formation-badge-inline" style="background: #f1f5f9; border-color: #cbd5e1; color: #334155;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
             </div>
           </div>
         `;
@@ -342,13 +342,18 @@ ${answer.map(player => `
           color: #475569;
         }
         .formation-badge-inline {
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          padding: 2px 8px;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          padding: 0 8px;
           border-radius: 12px;
           font-weight: 600;
           font-size: 11px;
-          color: #166534;
+          color: #334155;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 18px;
+          line-height: 1;
         }
         .players-section { margin-top: 12px; }
         .players-section h4 {
@@ -368,7 +373,7 @@ ${answer.map(player => `
           padding: 8px 12px;
           background: #f8fafc;
           border-radius: 6px;
-          border-left: 3px solid #3b82f6;
+          border-left: 3px solid #475569;
         }
         .player-name {
           font-weight: 600;
@@ -384,7 +389,7 @@ ${answer.map(player => `
           background: #f8fafc;
           padding: 12px;
           border-radius: 8px;
-          border-left: 3px solid #3b82f6;
+          border-left: 3px solid #475569;
           margin-top: 8px;
         }
         .observations-text {
