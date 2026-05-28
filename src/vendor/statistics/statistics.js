@@ -745,6 +745,14 @@ playerStatsMap[p._id] = {
                         color: #1e293b;
                         background: #ffffff;
                         padding: 0;
+                        margin: 0;
+                    }
+                    
+                    .pdf-wrapper {
+                        border-left: 8px solid #1a237e;
+                        border-right: 8px solid #1a237e;
+                        padding: 0 24px;
+                        min-height: 100%;
                     }
                     
                     /* Header del documento */
@@ -912,62 +920,57 @@ playerStatsMap[p._id] = {
                     
                     /* Footer */
                     .pdf-footer {
-                        margin-top: 24px;
-                        padding-top: 16px;
+                        margin-top: 32px;
+                        padding-top: 20px;
+                        padding-bottom: 20px;
                         border-top: 1px solid #e2e8f0;
                         text-align: center;
-                        color: #94a3b8;
-                        font-size: 10px;
                         page-break-inside: avoid;
-                    }
-                    
-                    .pdf-footer-logo {
-                        font-weight: 600;
-                        color: #1a237e;
-                        margin-bottom: 4px;
                     }
                 </style>
             </head>
             <body>
-                <div class="pdf-header">
-                    <h1>${t('statistics.weeklyAttendance.pdfTitle')}</h1>
-                    <p>${t('statistics.weeklyAttendance.team')}: ${teamName}</p>
-                    <p>${t('statistics.weeklyAttendance.weekOf')}: ${weekLabel}</p>
-                    <div class="header-stats">
-                        <div class="stat-item">
-                            <div class="stat-value">${week.totalSessions}</div>
-                            <div class="stat-label">${week.totalSessions === 1 ? t('statistics.weeklyAttendance.training') : t('statistics.weeklyAttendance.trainings')}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${sortedPlayers.length}</div>
-                            <div class="stat-label">${t('statistics.playersCount')}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${Math.round(sortedPlayers.reduce((acc, p) => acc + p.percentage, 0) / sortedPlayers.length)}%</div>
-                            <div class="stat-label">${t('statistics.weeklyAttendance.avgAttendance')}</div>
+                <div class="pdf-wrapper">
+                    <div class="pdf-header">
+                        <h1>${t('statistics.weeklyAttendance.pdfTitle')}</h1>
+                        <p>${t('statistics.weeklyAttendance.team')}: ${teamName}</p>
+                        <p>${t('statistics.weeklyAttendance.weekOf')}: ${weekLabel}</p>
+                        <div class="header-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">${week.totalSessions}</div>
+                                <div class="stat-label">${week.totalSessions === 1 ? t('statistics.weeklyAttendance.training') : t('statistics.weeklyAttendance.trainings')}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${sortedPlayers.length}</div>
+                                <div class="stat-label">${t('statistics.playersCount')}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${Math.round(sortedPlayers.reduce((acc, p) => acc + p.percentage, 0) / sortedPlayers.length)}%</div>
+                                <div class="stat-label">${t('statistics.weeklyAttendance.avgAttendance')}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 35%;">${t('statistics.weeklyAttendance.player')}</th>
-                                <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.attended')}</th>
-                                <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.percentage')}</th>
-                                <th style="width: 35%;">${t('statistics.weeklyAttendance.missedDays')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="pdf-footer">
-                    <div class="pdf-footer-logo">Xtramys</div>
-                    ${t('statistics.weeklyAttendance.generatedAt')}: ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">${t('statistics.weeklyAttendance.player')}</th>
+                                    <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.attended')}</th>
+                                    <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.percentage')}</th>
+                                    <th style="width: 35%;">${t('statistics.weeklyAttendance.missedDays')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="pdf-footer">
+                        <div style="font-weight: 700; color: #1a237e; font-size: 14px; margin-bottom: 6px; letter-spacing: 0.5px;">Xtramys</div>
+                        <div style="color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">${t('statistics.weeklyAttendance.generatedAt', 'Generado')} - ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
                 </div>
             </body>
             </html>

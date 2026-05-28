@@ -965,7 +965,7 @@ export default function InjuriesManagement({ navigation }) {
                 <Text style={styles.inputLabel}>{t('injury.startDateRequired')}</Text>
                 <View style={styles.datePickerContainer}>
                   <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 0.8 }]}
+                    style={[styles.datePickerButton, { flex: 1 }]}
                     onPress={() => setDatePickerVisibleStart(true)}
                   >
                     <View style={styles.datePickerContent}>
@@ -996,7 +996,7 @@ export default function InjuriesManagement({ navigation }) {
                 <Text style={styles.inputLabel}>{t('injury.endDateOptional')}</Text>
                 <View style={styles.datePickerContainer}>
                   <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 0.8 }]}
+                    style={[styles.datePickerButton, { flex: 1 }]}
                     onPress={() => setDatePickerVisibleEnd(true)}
                   >
                     <View style={styles.datePickerContent}>
@@ -1026,9 +1026,8 @@ export default function InjuriesManagement({ navigation }) {
                 {/* Estimated End Date */}
                 <Text style={styles.inputLabel}>{t('injury.estimatedEndDateOptional')}</Text>
                 <View style={styles.datePickerContainer}>
-                <View style={styles.datePickerContainer}>
                   <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 0.8 }]}
+                    style={[styles.datePickerButton, { flex: 1 }]}
                     onPress={() => setDatePickerVisibleEndPrevista(true)}
                   >
                     <View style={styles.datePickerContent}>
@@ -1053,7 +1052,6 @@ export default function InjuriesManagement({ navigation }) {
                       <Ionicons name="close-circle" size={20} color={theme.colors.error} />
                     </TouchableOpacity>
                   )}
-                </View>
                 </View>
 
                 {/* Relapse Checkbox */}
@@ -1666,7 +1664,6 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   datePickerContent: {
     flexDirection: 'row',
@@ -1689,9 +1686,10 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 12,
   },
   clearDateButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    marginLeft: 12,
     backgroundColor: theme.colors.errorSoft,
     borderWidth: 1,
     borderColor: theme.colors.errorSoft,

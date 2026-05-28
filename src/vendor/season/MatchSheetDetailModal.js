@@ -341,25 +341,25 @@ export default function MatchSheetDetailModal({
               <View style={styles.statsRow}>
                 {matchSheet.ubicacion && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.infoSoft }]}>
+                    <View style={[styles.statIconBg, IS_MOBILE && styles.statIconBgMobile, { backgroundColor: theme.colors.infoSoft }]}>
                       <Ionicons name="location" size={18} color={theme.colors.info} />
                     </View>
-                    <View style={styles.statContent}>
-                      <Text style={styles.statLabel}>{t('matchSheet.fields.location')}</Text>
-                      <Text style={styles.statValue} numberOfLines={IS_MOBILE ? 2 : 1}>{translateUbicacion(matchSheet.ubicacion)}</Text>
+                    <View style={[styles.statContent, IS_MOBILE && styles.statContentMobile]}>
+                      <Text style={[styles.statLabel, IS_MOBILE && styles.statLabelMobile]}>{t('matchSheet.fields.location')}</Text>
+                      <Text style={[styles.statValue, IS_MOBILE && styles.statValueMobile]} numberOfLines={IS_MOBILE ? 2 : 1}>{translateUbicacion(matchSheet.ubicacion)}</Text>
                     </View>
                   </View>
                 )}
                 {(matchSheet.fase === 'eliminatoria' || matchSheet.fase === 'grupos' || matchSheet.jornada != null) && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.purpleSoft }]}>
+                    <View style={[styles.statIconBg, IS_MOBILE && styles.statIconBgMobile, { backgroundColor: theme.colors.purpleSoft }]}>
                       <Ionicons name="calendar" size={18} color={theme.colors.purple} />
                     </View>
-                    <View style={styles.statContent}>
-                      <Text style={styles.statLabel}>
+                    <View style={[styles.statContent, IS_MOBILE && styles.statContentMobile]}>
+                      <Text style={[styles.statLabel, IS_MOBILE && styles.statLabelMobile]}>
                         {matchSheet.fase === 'eliminatoria' ? t('matchSheet.fields.round') : matchSheet.fase === 'grupos' ? t('matchSheet.fields.phase') : t('matchSheet.fields.matchday')}
                       </Text>
-                      <Text style={styles.statValue} numberOfLines={IS_MOBILE ? 2 : 1}>
+                      <Text style={[styles.statValue, IS_MOBILE && styles.statValueMobile]} numberOfLines={IS_MOBILE ? 2 : 1}>
                         {matchSheet.fase === 'eliminatoria'
                           ? `${t(ROUND_I18N_KEYS[matchSheet.ronda] || 'matchSheet.fields.round')}${matchSheet.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : matchSheet.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : matchSheet.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}`
                           : matchSheet.fase === 'grupos'
@@ -371,23 +371,23 @@ export default function MatchSheetDetailModal({
                 )}
                 {matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: matchSheet.torneoId.color ? matchSheet.torneoId.color + '28' : theme.colors.warningSoft }]}>
+                    <View style={[styles.statIconBg, IS_MOBILE && styles.statIconBgMobile, { backgroundColor: matchSheet.torneoId.color ? matchSheet.torneoId.color + '28' : theme.colors.warningSoft }]}>
                       <Ionicons name="trophy" size={18} color={matchSheet.torneoId.color || theme.colors.warning} />
                     </View>
-                    <View style={styles.statContent}>
-                      <Text style={styles.statLabel}>{t('matchSheet.fields.tournament')}</Text>
-                      <Text style={styles.statValue} numberOfLines={IS_MOBILE ? 2 : 1}>{matchSheet.torneoId.nombre}</Text>
+                    <View style={[styles.statContent, IS_MOBILE && styles.statContentMobile]}>
+                      <Text style={[styles.statLabel, IS_MOBILE && styles.statLabelMobile]}>{t('matchSheet.fields.tournament')}</Text>
+                      <Text style={[styles.statValue, IS_MOBILE && styles.statValueMobile]} numberOfLines={IS_MOBILE ? 2 : 1}>{matchSheet.torneoId.nombre}</Text>
                     </View>
                   </View>
                 )}
                 {matchSheet.golesFavor != null && matchSheet.golesContra != null && (
                   <View style={[styles.statCard, IS_MOBILE && styles.statCardMobile]}>
-                    <View style={[styles.statIconBg, { backgroundColor: theme.colors.errorSoft }]}>
+                    <View style={[styles.statIconBg, IS_MOBILE && styles.statIconBgMobile, { backgroundColor: theme.colors.errorSoft }]}>
                       <Ionicons name="football" size={18} color={theme.colors.error} />
                     </View>
-                    <View style={styles.statContent}>
-                      <Text style={styles.statLabel}>{t('matchSheet.fields.result')}</Text>
-                      <Text style={styles.statValue} numberOfLines={1}>
+                    <View style={[styles.statContent, IS_MOBILE && styles.statContentMobile]}>
+                      <Text style={[styles.statLabel, IS_MOBILE && styles.statLabelMobile]}>{t('matchSheet.fields.result')}</Text>
+                      <Text style={[styles.statValue, IS_MOBILE && styles.statValueMobile]} numberOfLines={1}>
                         {(['casa','local'].includes((matchSheet.ubicacion || '').toLowerCase())) ? `${matchSheet.golesFavor} - ${matchSheet.golesContra}` : `${matchSheet.golesContra} - ${matchSheet.golesFavor}`}
                       </Text>
                     </View>
@@ -787,8 +787,10 @@ const makeStyles = (theme) => StyleSheet.create({
   statCardMobile: {
     flex: 0,
     width: '47%',
-    minWidth: 0,
-    padding: 10,
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 12,
+    marginBottom: 8,
   },
   statIconBg: {
     width: 38,
@@ -799,9 +801,17 @@ const makeStyles = (theme) => StyleSheet.create({
     marginRight: 10,
     flexShrink: 0,
   },
+  statIconBgMobile: {
+    marginRight: 0,
+    marginBottom: 8,
+  },
   statContent: {
     flex: 1,
     minWidth: 0,
+  },
+  statContentMobile: {
+    alignItems: 'center',
+    width: '100%',
   },
   statLabel: {
     fontSize: 10,
@@ -811,10 +821,16 @@ const makeStyles = (theme) => StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 2,
   },
+  statLabelMobile: {
+    textAlign: 'center',
+  },
   statValue: {
     fontSize: 14,
     fontWeight: '700',
     color: theme.colors.text,
+  },
+  statValueMobile: {
+    textAlign: 'center',
   },
 
   // Detail Cards
