@@ -115,6 +115,7 @@
         "tournaments": "Tournaments"
     },
     "profile": {
+        "appearance": "Appearance",
         "personalInfo": "Personal Information",
         "language": "Language",
         "wellnessTemplates": "Wellness Templates",
@@ -1148,6 +1149,8 @@
         }
     },
     "common": {
+        "lightMode": "Light mode",
+        "darkMode": "Dark mode",
         "cancel": "Cancel",
         "create": "Create",
         "save": "Save",

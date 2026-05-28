@@ -115,6 +115,7 @@
         "tournaments": "Torneos"
     },
     "profile": {
+        "appearance": "Apariencia",
         "personalInfo": "Información Personal",
         "language": "Idioma",
         "wellnessTemplates": "Plantillas de Wellness",
@@ -1148,6 +1149,8 @@
         }
     },
     "common": {
+        "lightMode": "Modo claro",
+        "darkMode": "Modo oscuro",
         "cancel": "Cancelar",
         "create": "Crear",
         "save": "Guardar",

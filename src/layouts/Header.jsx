@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MdMenu, MdLightMode, MdDarkMode, MdSearch, MdArrowForward } from 'react-icons/md';
+import { MdMenu, MdSearch, MdArrowForward } from 'react-icons/md';
 import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { preloadRoute } from '@/router/preload';
 import { getFlatNavItems, searchNav, normalize } from './navItems';
@@ -70,12 +70,6 @@ const Burger = styled(IconBtn)`
   display: none;
   @media (max-width: 1280px) {
     display: inline-flex;
-  }
-`;
-
-const ThemeToggle = styled(IconBtn)`
-  @media (max-width: 1280px) {
-    display: none;
   }
 `;
 
@@ -504,14 +498,6 @@ export default function Header({ onMenu }) {
       </SearchWrap>
 
       <RightActions>
-        <ThemeToggle
-          onClick={toggleTheme}
-          aria-label={mode === 'dark' ? t('common.lightMode', 'Modo claro') : t('common.darkMode', 'Modo oscuro')}
-          title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
-        >
-          {mode === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
-        </ThemeToggle>
-
         <Profile onClick={() => navigate('/profile')} aria-label={t('menu.profile', 'Perfil')}>
           <Avatar src={user?.imagen}>{!user?.imagen && initials(user?.nombre)}</Avatar>
           <span>{user?.nombre || ''}</span>

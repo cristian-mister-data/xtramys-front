@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { MdPlayCircleOutline } from 'react-icons/md';
+import { MdPlayCircleOutline, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
@@ -525,6 +526,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { openTutorial } = useTutorial();
   const user = useSelector((s) => s.usuario?.user);
+  const { mode, toggleTheme } = useThemeMode();
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -902,6 +904,40 @@ export default function Profile() {
                 <Muted style={{ fontSize: 12 }}>Inglés</Muted>
               </div>
               {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+            </LangBtn>
+          </LangRow>
+        </FormCard>
+
+        <FormCard>
+          <CardHeader>
+            <CardTitle>🎨 {t('profile.appearance', 'Apariencia')}</CardTitle>
+          </CardHeader>
+          <LangRow>
+            <LangBtn
+              type="button"
+              $active={mode === 'light'}
+              onClick={() => { if (mode !== 'light') toggleTheme(); }}
+            >
+              <Flag>
+                <MdLightMode size={24} color="#f59e0b" />
+              </Flag>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{t('common.lightMode', 'Modo claro')}</div>
+              </div>
+              {mode === 'light' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+            </LangBtn>
+            <LangBtn
+              type="button"
+              $active={mode === 'dark'}
+              onClick={() => { if (mode !== 'dark') toggleTheme(); }}
+            >
+              <Flag>
+                <MdDarkMode size={24} color="#60a5fa" />
+              </Flag>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{t('common.darkMode', 'Modo oscuro')}</div>
+              </div>
+              {mode === 'dark' ? <span style={{ color: '#10b981' }}>✓</span> : null}
             </LangBtn>
           </LangRow>
         </FormCard>
