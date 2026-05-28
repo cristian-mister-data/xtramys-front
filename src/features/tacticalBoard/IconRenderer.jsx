@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { Group, Circle, Rect, Path, Text, Image as KonvaImage } from 'react-konva';
 import { cdnUrl } from '@/config';
+import ballPng from '@/images/ball.png';
+
+let globalBallImage = null;
+let isBallImageLoaded = false;
+const ballImageListeners = new Set();
+
+if (typeof window !== 'undefined') {
+  globalBallImage = new window.Image();
+  globalBallImage.src = ballPng;
+  globalBallImage.onload = () => {
+    isBallImageLoaded = true;
+    ballImageListeners.forEach(listener => listener());
+  };
+}
+
 
 const SIZE_FACTOR = 1.4;
 
@@ -36,6 +51,17 @@ function PlayerPhoto({ fotoUrl, size }) {
 }
 
 export default function IconRenderer({ el, scale, x, y, selected, onDragStart, onDragEnd, onDragMove, onClick, onTap }) {
+  const [ballLoaded, setBallLoaded] = useState(isBallImageLoaded);
+
+  useEffect(() => {
+    if (isBallImageLoaded) return;
+    const listener = () => setBallLoaded(true);
+    ballImageListeners.add(listener);
+    return () => {
+      ballImageListeners.delete(listener);
+    };
+  }, []);
+
   const size = pixelSize(el, scale);
   const half = size / 2;
   const color = el.color || '#2176ff';
@@ -126,7 +152,17 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
     return (
       <Group {...groupProps}>
         {deleteIndicator()}
-        <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} />
+        {ballLoaded && globalBallImage ? (
+          <KonvaImage
+            image={globalBallImage}
+            x={-half}
+            y={-half}
+            width={size}
+            height={size}
+          />
+        ) : (
+          <Text text="⚽" fontSize={size * 0.95} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} />
+        )}
         {isAir && !selected && (
           <Group x={half * 0.6} y={-half * 0.6} listening={false}>
             <Circle radius={size * 0.16} fill="#f59e0b" />

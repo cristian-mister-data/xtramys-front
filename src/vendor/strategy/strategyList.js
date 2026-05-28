@@ -201,7 +201,8 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
       if (field && field.image) {
         try {
           const asset = field.image;
-          const assetUri = Image.resolveAssetSource(asset).uri;
+          const assetUri = normalizeImageSource(asset, { cacheBust: false });
+          if (!assetUri) throw new Error('No asset URI');
           const response = await fetch(assetUri);
           const blob = await response.blob();
           const reader = new FileReader();
@@ -841,7 +842,7 @@ Alert.alert(
                 style={styles.videoModalCloseBtn}
                 onPress={closeVideoModal}
               >
-                <MaterialIcons name="close" size={24} color="#fff" />
+                <MaterialIcons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
             
@@ -3462,7 +3463,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceAlt,
   },
   videoModalTitle: {
-    color: theme.colors.onPrimary,
+    color: theme.colors.text,
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
@@ -3471,7 +3472,7 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: theme.colors.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3481,7 +3482,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
   },
   videoLoadingText: {
-    color: theme.colors.onPrimary,
+    color: theme.colors.textSecondary,
     marginTop: 12,
     fontSize: 14,
   },

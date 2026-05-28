@@ -1,8 +1,4 @@
-/**
- * PaletteIcon — render HTML SVG de un icono (botón de paleta).
- * Mismo dispatcher que IconRenderer pero con SVG nativo (sin Konva)
- * para usar dentro de los botones HTML de la paleta inferior.
- */
+import ballPng from '@/images/ball.png';
 
 export default function PaletteIcon({ icon, size = 32 }) {
   const s = size;
@@ -50,9 +46,7 @@ export default function PaletteIcon({ icon, size = 32 }) {
   }
   if (icon.type === 'ball') {
     return (
-      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-        <text x={half} y={half + 1} textAnchor="middle" dominantBaseline="central" fontSize={s * 0.85}>⚽</text>
-      </svg>
+      <img src={ballPng} style={{ width: s, height: s, objectFit: 'contain' }} alt="Ball" />
     );
   }
   if (icon.type === 'cone-pro') {

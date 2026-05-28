@@ -1,5 +1,13 @@
+import ballImgSrc from '@/images/ball.png';
+
 const VIDEO_WIDTH = 1920;
 const FIELD_BG = '#4a8c3f';
+
+let ballImage = null;
+if (typeof Image !== 'undefined') {
+  ballImage = new Image();
+  ballImage.src = ballImgSrc;
+}
 
 function ensureEven(n) { return n % 2 === 0 ? n : n + 1; }
 
@@ -160,13 +168,18 @@ function drawBall(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  // Escribir el emoji ⚽ como texto en el canvas sin comillas en el font-family
-  ctx.font = `${size * 0.95}px Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
-  // Dejamos que el navegador renderice el emoji nativo a color.
-  ctx.fillText('⚽', p.x, p.y);
+  if (ballImage && ballImage.complete && ballImage.naturalWidth !== 0) {
+    const r = size / 2;
+    ctx.drawImage(ballImage, p.x - r, p.y - r, size, size);
+  } else {
+    // Escribir el emoji ⚽ como texto en el canvas sin comillas en el font-family
+    ctx.font = `${size * 0.95}px Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Dejamos que el navegador renderice el emoji nativo a color.
+    ctx.fillText('⚽', p.x, p.y);
+  }
 
   ctx.restore();
 }
@@ -393,10 +406,10 @@ function drawGoalLarge(ctx, cw, ch, elem, scale) {
   };
 
   // Panels for Large Goal
-  getQuadNetPath({x: 15, y: 32}, {x: 105, y: 32}, {x: 98, y: 12}, {x: 22, y: 12}, 10, 4);
-  getQuadNetPath({x: 22, y: 12}, {x: 98, y: 12}, {x: 98, y: 22}, {x: 22, y: 22}, 10, 4);
-  getQuadNetPath({x: 15, y: 32}, {x: 22, y: 12}, {x: 22, y: 22}, {x: 15, y: 38}, 4, 4);
-  getQuadNetPath({x: 105, y: 32}, {x: 105, y: 38}, {x: 98, y: 22}, {x: 98, y: 12}, 4, 4);
+  getQuadNetPath({ x: 15, y: 32 }, { x: 105, y: 32 }, { x: 98, y: 12 }, { x: 22, y: 12 }, 10, 4);
+  getQuadNetPath({ x: 22, y: 12 }, { x: 98, y: 12 }, { x: 98, y: 22 }, { x: 22, y: 22 }, 10, 4);
+  getQuadNetPath({ x: 15, y: 32 }, { x: 22, y: 12 }, { x: 22, y: 22 }, { x: 15, y: 38 }, 4, 4);
+  getQuadNetPath({ x: 105, y: 32 }, { x: 105, y: 38 }, { x: 98, y: 22 }, { x: 98, y: 12 }, 4, 4);
   ctx.stroke();
 
   // Estructura de soporte posterior (metal blanco fino)
@@ -507,10 +520,10 @@ function drawGoalSmall(ctx, cw, ch, elem, scale) {
   };
 
   // Panels for Small Goal
-  getQuadNetPath({x: 10, y: 23}, {x: 70, y: 23}, {x: 65, y: 10}, {x: 15, y: 10}, 8, 4);
-  getQuadNetPath({x: 15, y: 10}, {x: 65, y: 10}, {x: 65, y: 17}, {x: 15, y: 17}, 8, 4);
-  getQuadNetPath({x: 10, y: 23}, {x: 15, y: 10}, {x: 15, y: 17}, {x: 10, y: 28}, 4, 4);
-  getQuadNetPath({x: 70, y: 23}, {x: 70, y: 28}, {x: 65, y: 17}, {x: 65, y: 10}, 4, 4);
+  getQuadNetPath({ x: 10, y: 23 }, { x: 70, y: 23 }, { x: 65, y: 10 }, { x: 15, y: 10 }, 8, 4);
+  getQuadNetPath({ x: 15, y: 10 }, { x: 65, y: 10 }, { x: 65, y: 17 }, { x: 15, y: 17 }, 8, 4);
+  getQuadNetPath({ x: 10, y: 23 }, { x: 15, y: 10 }, { x: 15, y: 17 }, { x: 10, y: 28 }, 4, 4);
+  getQuadNetPath({ x: 70, y: 23 }, { x: 70, y: 28 }, { x: 65, y: 17 }, { x: 65, y: 10 }, 4, 4);
   ctx.stroke();
 
   // Estructura de soporte posterior

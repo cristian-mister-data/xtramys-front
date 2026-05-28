@@ -28,6 +28,7 @@ import {
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import KeyboardAwareScrollView from './KeyboardAwareScrollView';
+import { useTheme } from 'styled-components';
 
 const FOLDER_COLORS = [
   '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E',
@@ -48,6 +49,8 @@ export default function FolderPickerModal({
   defaultIsGlobal = false,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
 
@@ -222,10 +225,10 @@ export default function FolderPickerModal({
               </View>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Feather name="x" size={22} color="#64748b" />
+              <Feather name="x" size={22} color={theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
-
+ 
           {/* Breadcrumb Navigation */}
           <View style={styles.breadcrumbBar}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.breadcrumbScroll}>
@@ -233,14 +236,14 @@ export default function FolderPickerModal({
                 onPress={() => navigateToBreadcrumb(-1)}
                 style={[styles.breadcrumbItem, navPath.length === 0 && styles.breadcrumbItemActive]}
               >
-                <Feather name="home" size={14} color={navPath.length === 0 ? accentColor : '#64748B'} />
+                <Feather name="home" size={14} color={navPath.length === 0 ? accentColor : theme.colors.textMuted} />
                 <Text style={[styles.breadcrumbText, navPath.length === 0 && { color: accentColor, fontWeight: '700' }]}>
                   {t('folders.root') || 'Raíz'}
                 </Text>
               </TouchableOpacity>
               {navPath.map((crumb, index) => (
                 <React.Fragment key={crumb._id}>
-                  <Feather name="chevron-right" size={14} color="#CBD5E1" style={{ marginHorizontal: 2 }} />
+                  <Feather name="chevron-right" size={14} color={theme.colors.textDisabled} style={{ marginHorizontal: 2 }} />
                   <TouchableOpacity
                     onPress={() => navigateToBreadcrumb(index)}
                     style={[styles.breadcrumbItem, index === navPath.length - 1 && styles.breadcrumbItemActive]}
@@ -249,7 +252,7 @@ export default function FolderPickerModal({
                     <Text
                       style={[
                         styles.breadcrumbText,
-                        index === navPath.length - 1 && { color: '#1E293B', fontWeight: '700' }
+                        index === navPath.length - 1 && { color: theme.colors.text, fontWeight: '700' }
                       ]}
                       numberOfLines={1}
                     >
@@ -260,20 +263,20 @@ export default function FolderPickerModal({
               ))}
             </ScrollView>
           </View>
-
+ 
           {/* Search */}
           <View style={styles.searchBar}>
-            <Feather name="search" size={16} color="#94A3B8" />
+            <Feather name="search" size={16} color={theme.colors.textDisabled} />
             <TextInput
               style={styles.searchInput}
               placeholder={t('myVideos.searchPlaceholder') || 'Buscar...'}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={theme.colors.textDisabled}
               value={searchFilter}
               onChangeText={setSearchFilter}
             />
             {searchFilter.length > 0 && (
               <TouchableOpacity onPress={() => setSearchFilter('')}>
-                <Feather name="x" size={16} color="#94A3B8" />
+                <Feather name="x" size={16} color={theme.colors.textDisabled} />
               </TouchableOpacity>
             )}
           </View>
@@ -292,8 +295,8 @@ export default function FolderPickerModal({
                   onClose();
                 }}
               >
-                <View style={[styles.folderRowIcon, { backgroundColor: '#F1F5F9' }]}>
-                  <Feather name="inbox" size={18} color="#64748B" />
+                <View style={[styles.folderRowIcon, { backgroundColor: theme.colors.backgroundAlt }]}>
+                  <Feather name="inbox" size={18} color={theme.colors.textMuted} />
                 </View>
                 <View style={styles.folderRowContent}>
                   <Text style={styles.folderRowName}>{t('folders.noFolder') || 'Sin carpeta'}</Text>
@@ -319,18 +322,18 @@ export default function FolderPickerModal({
                 {isAdmin && (
                   <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
                     <TouchableOpacity
-                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 8, backgroundColor: !newFolderIsGlobal ? '#1e40af' : '#f1f5f9', borderWidth: 1.5, borderColor: !newFolderIsGlobal ? '#1e40af' : '#e2e8f0' }}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 8, backgroundColor: !newFolderIsGlobal ? '#1e40af' : theme.colors.backgroundAlt, borderWidth: 1.5, borderColor: !newFolderIsGlobal ? '#1e40af' : theme.colors.border }}
                       onPress={() => setNewFolderIsGlobal(false)}
                     >
-                      <Ionicons name="person-outline" size={14} color={!newFolderIsGlobal ? '#fff' : '#64748b'} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: !newFolderIsGlobal ? '#fff' : '#64748b' }}>{t('exercise.myExercises')}</Text>
+                      <Ionicons name="person-outline" size={14} color={!newFolderIsGlobal ? '#fff' : theme.colors.textMuted} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: !newFolderIsGlobal ? '#fff' : theme.colors.textMuted }}>{t('exercise.myExercises')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 8, backgroundColor: newFolderIsGlobal ? '#16a34a' : '#f1f5f9', borderWidth: 1.5, borderColor: newFolderIsGlobal ? '#16a34a' : '#e2e8f0' }}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 8, backgroundColor: newFolderIsGlobal ? '#16a34a' : theme.colors.backgroundAlt, borderWidth: 1.5, borderColor: newFolderIsGlobal ? '#16a34a' : theme.colors.border }}
                       onPress={() => setNewFolderIsGlobal(true)}
                     >
-                      <Ionicons name="globe-outline" size={14} color={newFolderIsGlobal ? '#fff' : '#64748b'} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: newFolderIsGlobal ? '#fff' : '#64748b' }}>{t('exercise.appExercises')}</Text>
+                      <Ionicons name="globe-outline" size={14} color={newFolderIsGlobal ? '#fff' : theme.colors.textMuted} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: newFolderIsGlobal ? '#fff' : theme.colors.textMuted }}>{t('exercise.appExercises')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -338,12 +341,12 @@ export default function FolderPickerModal({
                 <TextInput
                   style={styles.createFormInput}
                   placeholder={t('folders.folderNamePlaceholder') || 'Nombre de la carpeta'}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={theme.colors.textDisabled}
                   value={newFolderName}
                   onChangeText={setNewFolderName}
                   autoFocus
                 />
-
+ 
                 {/* Traducción inglés (solo admin + global) */}
                 {isAdmin && newFolderIsGlobal && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
@@ -351,7 +354,7 @@ export default function FolderPickerModal({
                     <TextInput
                       style={[styles.createFormInput, { flex: 1, marginTop: 0 }]}
                       placeholder="Name (English)"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={theme.colors.textDisabled}
                       value={newFolderNameEn}
                       onChangeText={setNewFolderNameEn}
                     />
@@ -433,7 +436,7 @@ export default function FolderPickerModal({
                       onPress={() => navigateToFolder(folder)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Feather name="chevron-right" size={20} color="#94A3B8" />
+                      <Feather name="chevron-right" size={20} color={theme.colors.textDisabled} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -442,7 +445,7 @@ export default function FolderPickerModal({
 
             {currentFolders.length === 0 && !showCreateForm && (
               <View style={styles.emptyState}>
-                <Feather name="folder" size={40} color="#CBD5E1" />
+                <Feather name="folder" size={40} color={theme.colors.textDisabled} />
                 <Text style={styles.emptyText}>
                   {searchFilter
                     ? t('myVideos.noResults') || 'Sin resultados'
@@ -477,15 +480,15 @@ export default function FolderPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -514,7 +517,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: theme.colors.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -532,11 +535,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     marginTop: 2,
     maxWidth: 200,
   },
@@ -544,7 +547,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -552,8 +555,8 @@ const styles = StyleSheet.create({
   // Breadcrumb
   breadcrumbBar: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FAFBFC',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   breadcrumbScroll: {
     flexDirection: 'row',
@@ -570,11 +573,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   breadcrumbItemActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: theme.colors.primarySoft,
   },
   breadcrumbText: {
     fontSize: 13,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     fontWeight: '500',
     maxWidth: 100,
   },
@@ -583,20 +586,20 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 10,
     marginHorizontal: 16,
     marginVertical: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#1E293B',
+    color: theme.colors.text,
     paddingVertical: 0,
   },
 
@@ -610,15 +613,15 @@ const styles = StyleSheet.create({
   folderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
     marginBottom: 8,
     paddingRight: 8,
   },
   folderRowSelected: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: theme.colors.primary,
   },
   folderRowMain: {
     flex: 1,
@@ -641,18 +644,18 @@ const styles = StyleSheet.create({
   folderRowName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   folderRowMeta: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   folderExpandBtn: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -665,18 +668,18 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     textAlign: 'center',
   },
 
   // Create form
   createFormCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
     borderLeftWidth: 4,
     borderLeftColor: '#22C55E',
   },
@@ -689,17 +692,17 @@ const styles = StyleSheet.create({
   createFormTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   createFormInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.inputBg,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#1E293B',
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.inputBorder,
     marginBottom: 12,
   },
   colorRow: {
@@ -717,7 +720,7 @@ const styles = StyleSheet.create({
   },
   colorDotSelected: {
     borderWidth: 2,
-    borderColor: '#1E293B',
+    borderColor: theme.colors.text,
   },
   createFormActions: {
     flexDirection: 'row',
@@ -728,12 +731,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
   },
   createFormCancelText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   createFormConfirm: {
     flexDirection: 'row',
@@ -757,7 +760,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: theme.colors.border,
     gap: 12,
   },
   createBtn: {
@@ -778,11 +781,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
   },
   cancelBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
 });

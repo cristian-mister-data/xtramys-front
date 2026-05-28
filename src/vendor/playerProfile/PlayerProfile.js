@@ -12,6 +12,7 @@ import { getPlayerWellnessHistory, getPlayerAnthropometry, getPlayerAnthropometr
 import { getPlayerFullName } from '../../utils/playerHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/vendor/shared/ProfessionalHeader';
+import { useTheme } from 'styled-components';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -23,12 +24,12 @@ const isMobileDevice = () => {
 const getLocale = () => i18n.language === 'en' ? 'en-US' : 'es-ES';
 
 // Helper para color según nivel de wellness
-const getWellnessColor = (value) => {
+const getWellnessColor = (value, isDark = false) => {
   if (!value) return '#64748b';
-  if (value >= 8) return '#00521493'; // Verde
-  if (value >= 6) return '#f59e0b'; // Naranja
-  if (value >= 4) return '#f97316'; // Naranja oscuro
-  return '#ef4444'; // Rojo
+  if (value >= 8) return isDark ? '#4ade80' : '#00521493'; // Verde
+  if (value >= 6) return isDark ? '#fbbf24' : '#f59e0b'; // Naranja
+  if (value >= 4) return isDark ? '#fb923c' : '#f97316'; // Naranja oscuro
+  return isDark ? '#f87171' : '#ef4444'; // Rojo
 };
 
 // Helper para convertir URL de imagen a base64
@@ -65,6 +66,9 @@ const imageToBase64 = async (url) => {
 
 const PlayerProfile = ({ visible, player, team, onClose }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const isDark = theme.mode === 'dark';
   const insets = useSafeAreaInsets();
   const [wellnessData, setWellnessData] = useState(null);
   const [loadingWellness, setLoadingWellness] = useState(false);
@@ -1840,7 +1844,7 @@ const generatePDFHTML = (t, fotoBase64) => {
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={onClose} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#1e293b" />
+              <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <View>
               <Text style={styles.headerTitle}>{t('player.profile.title')}</Text>
@@ -1969,7 +1973,7 @@ const generatePDFHTML = (t, fotoBase64) => {
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>{t('player.profile.trainingsMissed')}</Text>
-                <Text style={[styles.statValue, { color: (stats?.trainings?.missed || 0) > 0 ? '#ef4444' : '#00521493' }]}>
+                <Text style={[styles.statValue, { color: (stats?.trainings?.missed || 0) > 0 ? (isDark ? '#f87171' : '#ef4444') : (isDark ? '#4ade80' : '#00521493') }]}>
                   {stats?.trainings?.missed || 0}
                 </Text>
               </View>
@@ -1981,13 +1985,13 @@ const generatePDFHTML = (t, fotoBase64) => {
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>{t('player.profile.currentStreak')}</Text>
-                <Text style={[styles.statValue, { color: '#00521493' }]}>
+                <Text style={[styles.statValue, { color: isDark ? '#4ade80' : '#00521493' }]}>
                   {stats?.trainings?.currentStreak || 0} {t('player.profile.consecutiveTrainings')}
                 </Text>
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>{t('player.profile.bestStreak')}</Text>
-                <Text style={[styles.statValue, { color: '#3b82f6' }]}>
+                <Text style={[styles.statValue, { color: isDark ? '#60a5fa' : '#3b82f6' }]}>
                   {stats?.trainings?.bestStreak || 0} {t('player.profile.consecutiveTrainings')}
                 </Text>
               </View>
@@ -2254,7 +2258,7 @@ const generatePDFHTML = (t, fotoBase64) => {
               <View style={styles.sectionHeader}>
                 <MaterialIcons name="favorite" size={20} color="#8b5cf6" />
                 <Text style={styles.sectionTitle}>{t('player.profile.wellnessHistory')}</Text>
-                <View style={[styles.preWellnessBadge, { backgroundColor: '#00521493' }]}>
+                <View style={[styles.preWellnessBadge, { backgroundColor: isDark ? '#166534' : '#00521493' }]}>
                   <Text style={styles.preWellnessBadgeText}>POST</Text>
                 </View>
                 {wellnessData && wellnessData.totalResponses > 0 && (
@@ -2271,7 +2275,7 @@ const generatePDFHTML = (t, fotoBase64) => {
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>{t('player.profile.averageWellness')}</Text>
-                    <Text style={[styles.statValue, { color: getWellnessColor(wellnessData.averageWellness) }]}>
+                    <Text style={[styles.statValue, { color: getWellnessColor(wellnessData.averageWellness, isDark) }]}>
                       {wellnessData.averageWellness ? wellnessData.averageWellness.toFixed(1) : '-'} / 10
                     </Text>
                   </View>
@@ -2323,7 +2327,7 @@ const generatePDFHTML = (t, fotoBase64) => {
                     </View>
                     <View style={styles.statRow}>
                       <Text style={styles.statLabel}>{t('anthropometry.latestFatPercentage')}</Text>
-                      <Text style={[styles.statValue, { color: '#22c55e' }]}>
+                      <Text style={[styles.statValue, { color: isDark ? '#4ade80' : '#22c55e' }]}>
                         {anthropometryData[0].porcentajeGrasa ? anthropometryData[0].porcentajeGrasa.toFixed(1) : '-'}%
                       </Text>
                     </View>
@@ -2354,7 +2358,7 @@ const generatePDFHTML = (t, fotoBase64) => {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
               <View style={styles.headerLeft}>
                 <TouchableOpacity onPress={() => setShowWellnessDetail(false)} style={styles.backButton}>
-                  <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                  <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
                 <View>
 <Text style={styles.headerTitle}>{t('player.profile.wellnessHistory')}</Text>
@@ -2381,7 +2385,7 @@ const generatePDFHTML = (t, fotoBase64) => {
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.totalReports')}</Text>
                   </View>
                   <View style={styles.wellnessSummaryCard}>
-                    <Text style={[styles.wellnessSummaryValue, { color: getWellnessColor(wellnessData?.averageWellness) }]}>
+                    <Text style={[styles.wellnessSummaryValue, { color: getWellnessColor(wellnessData?.averageWellness, isDark) }]}>
                       {wellnessData?.averageWellness ? wellnessData.averageWellness.toFixed(1) : '-'}
                     </Text>
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.averageScore')}</Text>
@@ -2414,7 +2418,7 @@ const generatePDFHTML = (t, fotoBase64) => {
                             <Text style={styles.wellnessDetailTime}>{item.sessionTime || item.session?.horaInicio}</Text>
                           )}
                         </View>
-                        <View style={[styles.wellnessDetailBadge, { backgroundColor: getWellnessColor(item.wellness) }]}>
+                        <View style={[styles.wellnessDetailBadge, { backgroundColor: getWellnessColor(item.wellness, isDark) }]}>
                           <Text style={styles.wellnessDetailBadgeText}>{item.wellness}/10</Text>
                         </View>
                       </View>
@@ -2470,7 +2474,7 @@ const generatePDFHTML = (t, fotoBase64) => {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
               <View style={styles.headerLeft}>
                 <TouchableOpacity onPress={() => setShowPreWellnessDetail(false)} style={styles.backButton}>
-                  <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                  <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
                 <View>
                   <Text style={styles.headerTitle}>{t('player.profile.preWellnessHistory') || 'Pre-Wellness History'}</Text>
@@ -2577,7 +2581,7 @@ const generatePDFHTML = (t, fotoBase64) => {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
               <View style={styles.headerLeft}>
                 <TouchableOpacity onPress={() => setShowAttendanceDetail(false)} style={styles.backButton}>
-                  <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                  <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
                 <View>
                   <Text style={styles.headerTitle}>{t('player.profile.attendanceHistory')}</Text>
@@ -2604,19 +2608,19 @@ const generatePDFHTML = (t, fotoBase64) => {
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.totalTrainings')}</Text>
                   </View>
                   <View style={styles.wellnessSummaryCard}>
-                    <Text style={[styles.wellnessSummaryValue, { color: '#00521493' }]}>
+                    <Text style={[styles.wellnessSummaryValue, { color: isDark ? '#4ade80' : '#00521493' }]}>
                       {stats?.trainings?.attended || 0}
                     </Text>
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.attended')}</Text>
                   </View>
                   <View style={styles.wellnessSummaryCard}>
-                    <Text style={[styles.wellnessSummaryValue, { color: '#ef4444' }]}>
+                    <Text style={[styles.wellnessSummaryValue, { color: isDark ? '#f87171' : '#ef4444' }]}>
                       {stats?.trainings?.missed || 0}
                     </Text>
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.missed')}</Text>
                   </View>
                   <View style={styles.wellnessSummaryCard}>
-                    <Text style={[styles.wellnessSummaryValue, { color: '#f59e0b' }]}>
+                    <Text style={[styles.wellnessSummaryValue, { color: isDark ? '#fbbf24' : '#f59e0b' }]}>
                       {stats?.trainings?.percentage || 0}%
                     </Text>
                     <Text style={styles.wellnessSummaryLabel}>{t('player.profile.attendancePercentage')}</Text>
@@ -2631,13 +2635,13 @@ const generatePDFHTML = (t, fotoBase64) => {
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>{t('player.profile.currentStreak')}</Text>
-                    <Text style={[styles.statValue, { color: '#00521493' }]}>
+                    <Text style={[styles.statValue, { color: isDark ? '#4ade80' : '#00521493' }]}>
                       {stats?.trainings?.currentStreak || 0} {t('player.profile.consecutiveTrainings')}
                     </Text>
                   </View>
                   <View style={styles.statRow}>
                     <Text style={styles.statLabel}>{t('player.profile.bestStreak')}</Text>
-                    <Text style={[styles.statValue, { color: '#3b82f6' }]}>
+                    <Text style={[styles.statValue, { color: isDark ? '#60a5fa' : '#3b82f6' }]}>
                       {stats?.trainings?.bestStreak || 0} {t('player.profile.consecutiveTrainings')}
                     </Text>
                   </View>
@@ -2705,7 +2709,7 @@ const generatePDFHTML = (t, fotoBase64) => {
             <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6 }]}>
               <View style={styles.headerLeft}>
                 <TouchableOpacity onPress={() => setShowAnthropometryDetail(false)} style={styles.backButton}>
-                  <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                  <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
                 <View>
 <Text style={styles.headerTitle}>{t('anthropometry.title')}</Text>
@@ -2739,29 +2743,29 @@ const generatePDFHTML = (t, fotoBase64) => {
                   
                   {/* Composición Corporal */}
                   <View style={styles.anthropometryCompositionGrid}>
-                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}>
-                      <Text style={[styles.anthropometryCompositionValue, { color: '#166534' }]}>
+                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: isDark ? 'rgba(74, 222, 128, 0.15)' : '#f0fdf4', borderColor: isDark ? 'rgba(74, 222, 128, 0.3)' : '#bbf7d0' }]}>
+                      <Text style={[styles.anthropometryCompositionValue, { color: isDark ? '#86efac' : '#166534' }]}>
                         {anthropometryData[0].peso || '-'}
                       </Text>
                       <Text style={styles.anthropometryCompositionUnit}>kg</Text>
                       <Text style={styles.anthropometryCompositionLabel}>{t('anthropometry.weight')}</Text>
                     </View>
-                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
-                      <Text style={[styles.anthropometryCompositionValue, { color: '#1e40af' }]}>
+                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: isDark ? 'rgba(96, 165, 250, 0.15)' : '#eff6ff', borderColor: isDark ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe' }]}>
+                      <Text style={[styles.anthropometryCompositionValue, { color: isDark ? '#93c5fd' : '#1e40af' }]}>
                         {anthropometryData[0].porcentajeGrasa ? anthropometryData[0].porcentajeGrasa.toFixed(1) : '-'}
                       </Text>
                       <Text style={styles.anthropometryCompositionUnit}>%</Text>
                       <Text style={styles.anthropometryCompositionLabel}>{t('anthropometry.fatPercentage')}</Text>
                     </View>
-                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
-                      <Text style={[styles.anthropometryCompositionValue, { color: '#92400e' }]}>
+                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#fef3c7', borderColor: isDark ? 'rgba(251, 191, 36, 0.3)' : '#fde68a' }]}>
+                      <Text style={[styles.anthropometryCompositionValue, { color: isDark ? '#fcd34d' : '#92400e' }]}>
                         {anthropometryData[0].masa_grasa ? anthropometryData[0].masa_grasa.toFixed(1) : '-'}
                       </Text>
                       <Text style={styles.anthropometryCompositionUnit}>kg</Text>
                       <Text style={styles.anthropometryCompositionLabel}>{t('anthropometry.fatMass')}</Text>
                     </View>
-                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: '#f3e8ff', borderColor: '#d8b4fe' }]}>
-                      <Text style={[styles.anthropometryCompositionValue, { color: '#7c3aed' }]}>
+                    <View style={[styles.anthropometryCompositionCard, { backgroundColor: isDark ? 'rgba(167, 139, 250, 0.18)' : '#f3e8ff', borderColor: isDark ? 'rgba(167, 139, 250, 0.3)' : '#d8b4fe' }]}>
+                      <Text style={[styles.anthropometryCompositionValue, { color: isDark ? '#c084fc' : '#7c3aed' }]}>
                         {anthropometryData[0].masa_magra ? anthropometryData[0].masa_magra.toFixed(1) : '-'}
                       </Text>
                       <Text style={styles.anthropometryCompositionUnit}>kg</Text>
@@ -2870,30 +2874,30 @@ const generatePDFHTML = (t, fotoBase64) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: THEME.background,
+    backgroundColor: theme.colors.background,
   },
   loadingText: {
     marginTop: 12,
     fontSize: isMobileDevice() ? 14 : 16,
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   header: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     padding: isMobileDevice() ? 12 : 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
+    borderBottomColor: theme.colors.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -2907,11 +2911,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   headerSubtitle: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   pdfButton: {
@@ -2942,7 +2946,7 @@ const styles = StyleSheet.create({
     padding: isMobileDevice() ? 10 : 16,
   },
   section: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: isMobileDevice() ? 12 : 16,
@@ -2958,13 +2962,13 @@ const styles = StyleSheet.create({
     marginBottom: isMobileDevice() ? 12 : 16,
     paddingBottom: isMobileDevice() ? 10 : 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
     gap: 8,
   },
   sectionTitle: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   preWellnessBadge: {
     backgroundColor: '#f59e0b',
@@ -2986,22 +2990,22 @@ const styles = StyleSheet.create({
   infoCard: {
     flex: 1,
     minWidth: isMobileDevice() ? '45%' : '30%',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     padding: isMobileDevice() ? 10 : 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   infoLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     textTransform: 'uppercase',
     fontWeight: '600',
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '600',
   },
   statsContainer: {
@@ -3013,20 +3017,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   statLabel: {
     fontSize: 14,
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   statValue: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '600',
   },
   noDataText: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: theme.colors.textDisabled,
     textAlign: 'center',
     paddingVertical: 20,
   },
@@ -3034,12 +3038,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: theme.colors.border,
   },
   wellnessHistoryTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 10,
   },
   wellnessHistoryItem: {
@@ -3048,19 +3052,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   wellnessHistoryDate: {
     flexDirection: 'column',
   },
   wellnessDateText: {
     fontSize: 13,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   wellnessTimeText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
   },
   wellnessValueBadge: {
     paddingHorizontal: 12,
@@ -3100,31 +3104,31 @@ const styles = StyleSheet.create({
   },
   wellnessSummaryCard: {
     flex: 1,
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     padding: isMobileDevice() ? 12 : 16,
     borderRadius: isMobileDevice() ? 8 : 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   wellnessSummaryValue: {
     fontSize: isMobileDevice() ? 24 : 28,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   wellnessSummaryLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 4,
     textAlign: 'center',
   },
   wellnessDetailCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   wellnessDetailHeader: {
     flexDirection: 'row',
@@ -3140,12 +3144,12 @@ const styles = StyleSheet.create({
   },
   wellnessDetailDate: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   wellnessDetailTime: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   wellnessTeamRow: {
@@ -3155,11 +3159,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   wellnessTeamName: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontWeight: '500',
   },
   wellnessDetailBadge: {
@@ -3174,7 +3178,7 @@ const styles = StyleSheet.create({
   },
   wellnessQuestionsContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
     paddingTop: 12,
   },
   wellnessQuestionItem: {
@@ -3182,27 +3186,27 @@ const styles = StyleSheet.create({
   },
   wellnessQuestionText: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 2,
   },
   wellnessAnswerText: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   wellnessSubmittedAt: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
     marginTop: 8,
     textAlign: 'right',
     fontStyle: 'italic',
   },
   injuryCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -3241,30 +3245,30 @@ const styles = StyleSheet.create({
   injuryLocationText: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   injurySpecificText: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     lineHeight: 20,
   },
   injuryDatesText: {
     fontSize: 13,
-    color: '#475569',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   injuryDurationText: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
   },
   injuryDetailsContainer: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
   },
   injuryListContainer: {
     marginTop: 8,
@@ -3272,7 +3276,7 @@ const styles = StyleSheet.create({
   injuryListTitle: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 12,
   },
   injuryTypeContainer: {
@@ -3283,7 +3287,7 @@ const styles = StyleSheet.create({
   injuryType: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   recaidaBadge: {
     backgroundColor: '#f59e0b',
@@ -3309,13 +3313,13 @@ const styles = StyleSheet.create({
   },
   injuryDetailLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginLeft: 8,
     fontWeight: '500',
   },
   injuryDetailValue: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 4,
     flex: 1,
   },
@@ -3323,7 +3327,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
   },
   injuryDateItem: {
     flexDirection: 'row',
@@ -3332,20 +3336,20 @@ const styles = StyleSheet.create({
   },
   injuryDateLabel: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginLeft: 6,
     fontWeight: '500',
   },
   injuryDateValue: {
     fontSize: 13,
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 4,
     fontWeight: '600',
   },
   // Estilos de Antropometría
   measurementDateText: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 16,
     fontStyle: 'italic',
   },
@@ -3368,26 +3372,26 @@ const styles = StyleSheet.create({
   },
   anthropometryCompositionUnit: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: -4,
   },
   anthropometryCompositionLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 4,
     textAlign: 'center',
   },
   anthropometryFoldsContainer: {
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     padding: isMobileDevice() ? 12 : 16,
     borderRadius: isMobileDevice() ? 8 : 12,
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   anthropometryFoldsTitle: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   anthropometrySumText: {
@@ -3403,31 +3407,31 @@ const styles = StyleSheet.create({
   },
   anthropometryFoldItem: {
     width: '31%',
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.border,
+    borderColor: theme.colors.border,
   },
   anthropometryFoldValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   anthropometryFoldLabel: {
     fontSize: 10,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
     textAlign: 'center',
   },
   anthropometryHistoryCard: {
-    backgroundColor: THEME.surface,
+    backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 8 : 12,
     padding: isMobileDevice() ? 12 : 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   anthropometryHistoryHeader: {
     flexDirection: 'row',
@@ -3442,7 +3446,7 @@ const styles = StyleSheet.create({
   },
   anthropometryHistoryDate: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   anthropometryHistoryBadge: {
@@ -3463,7 +3467,7 @@ const styles = StyleSheet.create({
   },
   anthropometryHistoryStat: {
     width: '48%',
-    backgroundColor: THEME.backgroundAlt,
+    backgroundColor: theme.colors.backgroundAlt,
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -3471,28 +3475,28 @@ const styles = StyleSheet.create({
   anthropometryHistoryStatValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   anthropometryHistoryStatLabel: {
     fontSize: 11,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   viewDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fef2f2',
+    backgroundColor: theme.colors.errorSoft,
     padding: isMobileDevice() ? 10 : 12,
     borderRadius: 8,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: theme.colors.error,
   },
   viewDetailsText: {
     flex: 1,
     fontSize: 13,
-    color: '#ef4444',
+    color: theme.colors.error,
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -3500,11 +3504,11 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft,
   },
   missedSessionName: {
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '500',
     marginTop: 6,
   },
@@ -3512,14 +3516,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: isMobileDevice() ? 20 : 30,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: theme.colors.successSoft,
     borderRadius: isMobileDevice() ? 8 : 12,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: theme.colors.success,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#00521493',
+    color: theme.colors.successSoftText,
     fontWeight: '500',
     marginTop: 12,
     textAlign: 'center',

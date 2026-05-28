@@ -1950,7 +1950,7 @@ const makeStyles = (theme) => StyleSheet.create({
   
   // Action Sheet
   actionSheet: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 34,
@@ -1960,18 +1960,18 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: theme.colors.border,
   },
   actionSheetTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
     maxWidth: '80%',
   },
   actionSheetSubtitle: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   actionSheetBody: {
     paddingVertical: 8,
@@ -1996,16 +1996,16 @@ const makeStyles = (theme) => StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 2,
   },
   actionSubtitle: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   actionDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.border,
     marginVertical: 8,
     marginHorizontal: 20,
   },
@@ -2014,18 +2014,18 @@ const makeStyles = (theme) => StyleSheet.create({
     marginHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : '#F1F5F9',
     alignItems: 'center',
   },
   actionSheetCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   
   // Form Modal
   formModal: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
@@ -2040,7 +2040,7 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -2048,12 +2048,12 @@ const makeStyles = (theme) => StyleSheet.create({
   formModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   formModalSubtitle: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
   },
   formModalBody: {
     paddingHorizontal: 24,
@@ -2062,21 +2062,21 @@ const makeStyles = (theme) => StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.inputBg : '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.inputBorder,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -2092,7 +2092,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   colorCircleSelected: {
     borderWidth: 3,
-    borderColor: '#1E293B',
+    borderColor: theme.colors.text,
   },
   formModalFooter: {
     flexDirection: 'row',
@@ -2100,20 +2100,20 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: theme.colors.border,
   },
   secondaryButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   primaryButton: {
     flex: 1,
@@ -2154,12 +2154,12 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : '#eaf2ff',
   },
   folderSelectItemActive: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
+    borderColor: theme.colors.primary,
   },
   folderSelectIcon: {
     width: 36,
@@ -2172,7 +2172,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   
   // Preview Modal
@@ -2255,7 +2255,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
   },
   loadingCard: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
@@ -2271,24 +2271,24 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 20,
     fontSize: 17,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
   },
   loadingSubtitle: {
     marginTop: 8,
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textMuted,
     textAlign: 'center',
   },
   
   // Create Folder Modal - Estilo similar a crear ficha de partido
   createModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   createModalContainer: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderRadius: 20,
     width: '96%',
     maxWidth: 500,
@@ -2302,7 +2302,7 @@ const makeStyles = (theme) => StyleSheet.create({
     overflow: 'hidden',
   },
   createModalContainerMobile: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderRadius: 20,
     width: '92%',
     maxWidth: 400,
@@ -2316,7 +2316,7 @@ const makeStyles = (theme) => StyleSheet.create({
     overflow: 'hidden',
   },
   createModalContainerTablet: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface : '#eaf2ff',
     borderRadius: 20,
     width: '94%',
     maxWidth: 900,
@@ -2336,7 +2336,7 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: theme.colors.border,
   },
   createModalHeaderLeft: {
     flexDirection: 'row',
@@ -2352,35 +2352,35 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   createModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   createModalTitleMobile: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   createModalSubtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalSubtitleMobile: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   createModalCloseBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : '#eaf2ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2397,20 +2397,20 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingBottom: 10,
   },
   createCard: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : '#eaf2ff',
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardMobile: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : '#eaf2ff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCardHeader: {
     flexDirection: 'row',
@@ -2421,7 +2421,7 @@ const makeStyles = (theme) => StyleSheet.create({
   createCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   createCardContent: {
@@ -2430,18 +2430,18 @@ const makeStyles = (theme) => StyleSheet.create({
   createInputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
     marginBottom: 8,
   },
   createInput: {
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.inputBg : '#eaf2ff',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1E293B',
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.inputBorder,
   },
   colorGridNew: {
     flexDirection: 'row',
@@ -2458,7 +2458,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   colorCircleSelectedNew: {
     borderWidth: 3,
-    borderColor: '#1E293B',
+    borderColor: theme.colors.text,
   },
   createModalFooter: {
     flexDirection: 'row',
@@ -2466,7 +2466,7 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.border,
     gap: 12,
   },
   createCancelButton: {
@@ -2474,17 +2474,17 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eaf2ff',
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : '#eaf2ff',
     borderRadius: 12,
     paddingVertical: 14,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   createCancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textMuted,
   },
   createSaveButton: {
     flex: 1,
@@ -2603,13 +2603,13 @@ const makeStyles = (theme) => StyleSheet.create({
   // Delete Modal Styles
   deleteModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   deleteModalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
@@ -2637,13 +2637,13 @@ const makeStyles = (theme) => StyleSheet.create({
   deleteModalTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1E293B',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 8,
   },
   deleteModalSubtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -2656,9 +2656,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.backgroundAlt,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
   },
   deleteOptionHover: {
     // Web hover will be handled via CSS, but React Native uses activeOpacity
@@ -2677,12 +2677,12 @@ const makeStyles = (theme) => StyleSheet.create({
   deleteOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   deleteOptionSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     lineHeight: 18,
   },
   deleteOptionDivider: {
@@ -2694,33 +2694,33 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: theme.colors.border,
   },
   deleteCancelButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteCancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   deleteSecondaryButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteSecondaryButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   deleteDangerButton: {
     flex: 1,

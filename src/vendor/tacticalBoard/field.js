@@ -29,6 +29,8 @@ import { getPlayerFullName } from '@/components/player/playerHelpers';
 import { FieldSVGRenderer, decomposeFieldId, composeFieldId, getAspectForView, ratioToDisplay, displayToRatio, deltaToRatio, isVisibleInView, isOutsideVisibleField, areAllPointsOutside } from './fields';
 import FieldSelectorModal from './FieldSelectorModal';
 import { cdnUrl } from '@/config';
+import ballImage from '@/images/ball.png';
+
 
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
@@ -103,12 +105,14 @@ const BallImage = React.memo(({ size, rotation }) => {
       },
       rotation ? { transform: [{ rotate: `${rotation}deg` }] } : undefined
     ]}>
-      <Text style={{ 
-        fontSize: size * 0.95, 
-        lineHeight: size, 
-        textAlign: 'center',
-        fontFamily: Platform.OS === 'web' ? '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' : undefined
-      }}>⚽</Text>
+      <Image
+        source={ballImage}
+        style={{
+          width: size,
+          height: size,
+          resizeMode: 'contain',
+        }}
+      />
     </View>
   );
 }, (prevProps, nextProps) => prevProps.size === nextProps.size && prevProps.rotation === nextProps.rotation);
@@ -150,10 +154,10 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
     };
 
     // Panels for Large Goal
-    const topPanel = getQuadNetPath({x: 15, y: 32}, {x: 105, y: 32}, {x: 98, y: 12}, {x: 22, y: 12}, 10, 4);
-    const backPanel = getQuadNetPath({x: 22, y: 12}, {x: 98, y: 12}, {x: 98, y: 22}, {x: 22, y: 22}, 10, 4);
-    const leftPanel = getQuadNetPath({x: 15, y: 32}, {x: 22, y: 12}, {x: 22, y: 22}, {x: 15, y: 38}, 4, 4);
-    const rightPanel = getQuadNetPath({x: 105, y: 32}, {x: 105, y: 38}, {x: 98, y: 22}, {x: 98, y: 12}, 4, 4);
+    const topPanel = getQuadNetPath({ x: 15, y: 32 }, { x: 105, y: 32 }, { x: 98, y: 12 }, { x: 22, y: 12 }, 10, 4);
+    const backPanel = getQuadNetPath({ x: 22, y: 12 }, { x: 98, y: 12 }, { x: 98, y: 22 }, { x: 22, y: 22 }, 10, 4);
+    const leftPanel = getQuadNetPath({ x: 15, y: 32 }, { x: 22, y: 12 }, { x: 22, y: 22 }, { x: 15, y: 38 }, 4, 4);
+    const rightPanel = getQuadNetPath({ x: 105, y: 32 }, { x: 105, y: 38 }, { x: 98, y: 22 }, { x: 98, y: 12 }, 4, 4);
 
     return `${topPanel}${backPanel}${leftPanel}${rightPanel}`;
   }, []);
@@ -167,9 +171,9 @@ const GoalLargeImage = React.memo(({ size, rotation }) => {
     >
       <Svg width={width} height={height} viewBox="0 0 120 70">
         {/* Fondo translúcido de la red */}
-        <Path 
-          d="M 15 32 L 22 12 L 98 12 L 105 32 L 105 38 L 98 22 L 22 22 L 15 38 Z" 
-          fill="rgba(0,0,0,0.06)" 
+        <Path
+          d="M 15 32 L 22 12 L 98 12 L 105 32 L 105 38 L 98 22 L 22 22 L 15 38 Z"
+          fill="rgba(0,0,0,0.06)"
         />
 
         {/* Patrón de red de diamantes */}
@@ -233,10 +237,10 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
     };
 
     // Panels for Small Goal
-    const topPanel = getQuadNetPath({x: 10, y: 23}, {x: 70, y: 23}, {x: 65, y: 10}, {x: 15, y: 10}, 8, 4);
-    const backPanel = getQuadNetPath({x: 15, y: 10}, {x: 65, y: 10}, {x: 65, y: 17}, {x: 15, y: 17}, 8, 4);
-    const leftPanel = getQuadNetPath({x: 10, y: 23}, {x: 15, y: 10}, {x: 15, y: 17}, {x: 10, y: 28}, 4, 4);
-    const rightPanel = getQuadNetPath({x: 70, y: 23}, {x: 70, y: 28}, {x: 65, y: 17}, {x: 65, y: 10}, 4, 4);
+    const topPanel = getQuadNetPath({ x: 10, y: 23 }, { x: 70, y: 23 }, { x: 65, y: 10 }, { x: 15, y: 10 }, 8, 4);
+    const backPanel = getQuadNetPath({ x: 15, y: 10 }, { x: 65, y: 10 }, { x: 65, y: 17 }, { x: 15, y: 17 }, 8, 4);
+    const leftPanel = getQuadNetPath({ x: 10, y: 23 }, { x: 15, y: 10 }, { x: 15, y: 17 }, { x: 10, y: 28 }, 4, 4);
+    const rightPanel = getQuadNetPath({ x: 70, y: 23 }, { x: 70, y: 28 }, { x: 65, y: 17 }, { x: 65, y: 10 }, 4, 4);
 
     return `${topPanel}${backPanel}${leftPanel}${rightPanel}`;
   }, []);
@@ -250,9 +254,9 @@ const GoalSmallImage = React.memo(({ size, rotation }) => {
     >
       <Svg width={width} height={height} viewBox="0 0 80 50">
         {/* Fondo translúcido de la red */}
-        <Path 
-          d="M 10 23 L 15 10 L 65 10 L 70 23 L 70 28 L 65 17 L 15 17 L 10 28 Z" 
-          fill="rgba(0,0,0,0.06)" 
+        <Path
+          d="M 10 23 L 15 10 L 65 10 L 70 23 L 70 28 L 65 17 L 15 17 L 10 28 Z"
+          fill="rgba(0,0,0,0.06)"
         />
 
         {/* Patrón de red de diamantes */}

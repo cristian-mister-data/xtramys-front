@@ -18,7 +18,10 @@ export function normalizeImageSource(imageSource, { cacheBust = true } = {}) {
     normalizedSource.startsWith('data:') ||
     normalizedSource.startsWith('blob:') ||
     normalizedSource.startsWith('file:') ||
-    normalizedSource.startsWith('content:')
+    normalizedSource.startsWith('content:') ||
+    normalizedSource.startsWith('/') ||
+    normalizedSource.startsWith('./') ||
+    normalizedSource.startsWith('../')
   );
 
   if (isHttpUrl) {

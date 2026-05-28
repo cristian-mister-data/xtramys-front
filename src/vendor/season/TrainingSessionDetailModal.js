@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { generateSessionPDF } from '@/vendor/training/SessionPDF';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
@@ -298,7 +299,8 @@ export default function TrainingSessionDetailModal({
         if (field && field.image) {
           try {
             const asset = field.image;
-            const assetUri = Image.resolveAssetSource(asset).uri;
+            const assetUri = normalizeImageSource(asset, { cacheBust: false });
+            if (!assetUri) throw new Error('No asset URI');
             const response = await fetch(assetUri);
             const blob = await response.blob();
             const reader = new FileReader();
