@@ -14,6 +14,8 @@ export const getMyVideos = () => api.get('/video/list');
 export const getGlobalVideos = () => api.get('/video/global');
 export const linkVideoToExercise = (payload) => api.post('/video/link-exercise', payload);
 export const linkVideoToStrategy = (payload) => api.post('/video/link-strategy', payload);
+export const unlinkVideoFromExercise = (videoId, exerciseId) => api.post('/video/unlink-exercise', { videoId, exerciseId });
+export const unlinkVideoFromStrategy = (videoId, strategyId) => api.post('/video/unlink-strategy', { videoId, strategyId });
 export const getVideosByExercise = async (exerciseId) => {
   const response = await api.get(`/video/exercise/${exerciseId}`);
   return response.data?.videos || [];

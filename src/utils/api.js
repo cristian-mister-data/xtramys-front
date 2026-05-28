@@ -12,6 +12,8 @@ export {
   proxyUploadVideo,
   linkVideoToExercise,
   linkVideoToStrategy,
+  unlinkVideoFromExercise,
+  unlinkVideoFromStrategy,
   getVideosByExercise,
   getVideosByStrategy,
   presignTacticalVideo,
@@ -300,8 +302,6 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
   }
 };
 
-export const unlinkVideoFromExercise = stub('unlinkVideoFromExercise');
-export const unlinkVideoFromStrategy = stub('unlinkVideoFromStrategy');
 
 export const getAllExercises = async () => {
   try {
