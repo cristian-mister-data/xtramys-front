@@ -1832,6 +1832,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
       
       dispatch(fetchExerciseFolders({ lang }));
       dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
       if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
       

@@ -1744,6 +1744,7 @@ const handleDelete = (strategy) => {
       
       dispatch(fetchStrategyFolders({ lang }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
       if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
       
