@@ -529,6 +529,7 @@ export default function VideoRecorder({
   isEditingVideo = false, // Si estamos editando un video existente
   editingVideoId = null, // ID del video que estamos editando
   editingVideoName = '', // Nombre del video en edición
+  editingVideoEnName = '', // Nombre en inglés del video en edición
   editingVideoDescription = '', // Descripción del video en edición
   editingVideoFolderId = null, // Carpeta del video en edición
   hideFolderPicker = false, // Ocultar selector de carpeta
@@ -557,13 +558,17 @@ export default function VideoRecorder({
   }, [showPreviewScreen]);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [videoNombre, setVideoNombre] = useState(editingVideoName || '');
+  const [videoNombreEn, setVideoNombreEn] = useState(editingVideoEnName || '');
   const [videoDescripcion, setVideoDescripcion] = useState(editingVideoDescription || '');
 
   useEffect(() => {
     if (editingVideoName) {
       setVideoNombre((current) => current || editingVideoName);
     }
-  }, [editingVideoName]);
+    if (editingVideoEnName) {
+      setVideoNombreEn((current) => current || editingVideoEnName);
+    }
+  }, [editingVideoName, editingVideoEnName]);
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
   const notificationAnim = useRef(new Animated.Value(0)).current;
   const [currentVideoId, setCurrentVideoId] = useState(null);
@@ -1341,6 +1346,7 @@ export default function VideoRecorder({
         },
         nombre: videoNombre,
         descripcion: videoDescripcion,
+        ...(shouldBeGlobal && videoNombreEn.trim() && { translations: { en: { nombre: videoNombreEn.trim() } } }),
       };
       const thumbnailToSave = videoThumbnailRef.current || videoThumbnail;
       if (thumbnailToSave) videoData.thumbnail = thumbnailToSave;
@@ -1962,6 +1968,24 @@ export default function VideoRecorder({
                   maxLength={100}
                 />
               </View>
+
+              {/* Nombre en Inglés (admin/global) */}
+              {shouldBeGlobal && (
+                <View style={styles.inputGroup}>
+                  <View style={styles.inputLabelRow}>
+                    <Feather name="globe" size={14} color="#1e40af" />
+                    <Text style={[styles.inputLabel, { color: '#1e40af' }]}>English Name</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Video name (English)"
+                    placeholderTextColor="#999"
+                    value={videoNombreEn}
+                    onChangeText={setVideoNombreEn}
+                    maxLength={100}
+                  />
+                </View>
+              )}
 
               {/* Campo de descripción */}
               <View style={styles.inputGroup}>

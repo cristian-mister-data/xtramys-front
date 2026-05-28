@@ -162,6 +162,13 @@ export default function MyVideos() {
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth >= 700;
 
+  const getLocalizedVideoName = (video) => {
+    if (lang === 'en' && video.translations?.en?.nombre) {
+      return video.translations.en.nombre;
+    }
+    return video.nombre || t('myVideos.video');
+  };
+
   const folderColors = [
     '#1d4ed8', '#8B5CF6', '#EC4899', '#F43F5E', 
     '#F97316', '#EAB308', '#22C55E', '#14B8A6',
@@ -433,7 +440,7 @@ export default function MyVideos() {
         // Duplicar video antes de editar (igual que ejercicios)
         const lang = i18n.language;
         const duplicateSuffix = lang === 'en' ? 'duplicate' : 'duplicado';
-        const duplicateName = `${(video.nombre || 'video').trim()}_${duplicateSuffix}`;
+        const duplicateName = `${getLocalizedVideoName(video).trim()}_${duplicateSuffix}`;
         const duplicated = await duplicateVideoForEdit(videoId, {
           lang,
           nombre: duplicateName,
@@ -504,7 +511,7 @@ export default function MyVideos() {
       const video = typeof videoOrId === 'object' && videoOrId
         ? videoOrId
         : { id: videoOrId, videoUrl };
-      await downloadResolvedVideo(video, video.nombre || 'video');
+      await downloadResolvedVideo(video, getLocalizedVideoName(video));
       showNotification(t('myVideos.downloadStarted'), 'success');
     } catch (error) {
       console.error('Error descargando video:', error);
@@ -615,12 +622,12 @@ export default function MyVideos() {
           poster={video.thumbnailUrl || video.thumbnail}
           fallback={<Feather name="play-circle" size={32} color="#fff" />}
           playSize={34}
-          alt={video.nombre || 'Video'}
+          alt={getLocalizedVideoName(video)}
         />
       </View>
       <View style={styles.videoContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text style={styles.videoTitle} numberOfLines={1}>{video.nombre}</Text>
+          <Text style={styles.videoTitle} numberOfLines={1}>{getLocalizedVideoName(video)}</Text>
           {video.isGlobal && <Ionicons name="globe-outline" size={13} color={theme.colors.primary} />}
         </View>
         {video.descripcion && (
@@ -812,7 +819,9 @@ export default function MyVideos() {
         >
           <View style={styles.actionSheet}>
             <View style={styles.actionSheetHeader}>
-              <Text style={styles.actionSheetTitle} numberOfLines={1}>{menuVideo?.nombre}</Text>
+              <Text style={styles.actionSheetTitle} numberOfLines={1}>
+                {menuVideo ? getLocalizedVideoName(menuVideo) : ''}
+              </Text>
               <Text style={styles.actionSheetSubtitle}>{t('myVideos.videoOptions')}</Text>
             </View>
             
@@ -1398,7 +1407,9 @@ export default function MyVideos() {
           
           <View style={styles.previewModal}>
             <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle} numberOfLines={1}>{selectedVideo?.nombre}</Text>
+              <Text style={styles.videoModalTitle} numberOfLines={1}>
+                {selectedVideo ? getLocalizedVideoName(selectedVideo) : t('myVideos.video')}
+              </Text>
               <TouchableOpacity
                 style={styles.previewCloseButton}
                 onPress={() => {

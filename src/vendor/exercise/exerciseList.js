@@ -72,6 +72,13 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     return exercise.objetivo;
   };
 
+  const getLocalizedVideoName = (video) => {
+    if (i18n.language === 'en' && video?.translations?.en?.nombre) {
+      return video.translations.en.nombre;
+    }
+    return video?.nombre || t('exercise.video');
+  };
+
   // Zoom modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -195,12 +202,12 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       
       if (result.success && result.videoId) {
         if (Platform.OS === 'web') {
-          await downloadResolvedVideo(result.videoId, video.nombre || t('exercise.video'));
+          await downloadResolvedVideo(result.videoId, getLocalizedVideoName(video));
           return;
         }
 
         const downloadUrl = getVideoDownloadUrl(result.videoId);
-        const fileName = `${video.nombre || t('exercise.video')}.mp4`;
+        const fileName = `${getLocalizedVideoName(video)}.mp4`;
         const fileUri = FileSystem.documentDirectory + fileName;
         
         const downloadResumable = FileSystem.createDownloadResumable(
@@ -741,7 +748,7 @@ Alert.alert(
                           <View style={styles.videoCardContent}>
                             <Feather name="film" size={28} color="#E91E63" />
                             <Text style={styles.videoCardTitle} numberOfLines={1}>
-                              {video.nombre}
+                              {getLocalizedVideoName(video)}
                             </Text>
                             {video.descripcion && (
                               <Text style={styles.videoCardDescription} numberOfLines={2}>
@@ -805,7 +812,7 @@ Alert.alert(
           <View style={styles.videoModalContent}>
             <View style={styles.videoModalHeader}>
               <Text style={styles.videoModalTitle} numberOfLines={1}>
-                {selectedVideo?.nombre || t('exercise.video')}
+                {selectedVideo ? getLocalizedVideoName(selectedVideo) : t('exercise.video')}
               </Text>
               <TouchableOpacity
                 style={styles.videoModalCloseBtn}
