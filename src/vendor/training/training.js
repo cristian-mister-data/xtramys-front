@@ -1086,8 +1086,9 @@ export default function Training() {
       }
 
       // Obtener los ejercicios completos de la sesión
+      const sessionExerciseIds = (sesion.ejercicios || []).map(e => typeof e === 'string' ? e : e._id);
       const ejerciciosSesion = (ejerciciosDisponibles || []).filter(e =>
-        (sesion.ejercicios || []).includes(typeof e === 'string' ? e : e._id)
+        sessionExerciseIds.includes(e._id)
       );
 
       // Obtener información del equipo
