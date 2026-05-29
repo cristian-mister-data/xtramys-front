@@ -8,6 +8,8 @@ import {
 } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
+import { cdnUrl } from '@/config';
+import { getPlayerInitials } from '@/utils/playerHelpers';
 
 const HeroCard = styled.div`
   background: ${({ $color, theme }) =>
@@ -158,6 +160,32 @@ const Notes = styled.div`
   color: ${({ theme }) => theme.colors.text};
   white-space: pre-wrap;
   line-height: 1.5;
+`;
+
+const PlayerAvatar = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const CambioRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 function getResultBadge(resultado, t, theme) {
@@ -375,19 +403,43 @@ export default function MatchSheetDetailModal({
               {t('matchSheet.fields.changes', 'Cambios')} ({data.cambios.length})
             </SectionTitle>
             <Card>
-              {data.cambios.map((c, i) => (
-                <EventItem key={i}>
-                  <Minute>{c.minuto}&apos;</Minute>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <PlayerName style={{ color: theme.colors.error }}>
-                      ↓ {getPlayerName(players, c.sale)}
-                    </PlayerName>
-                    <PlayerName style={{ color: theme.colors.success }}>
-                      ↑ {getPlayerName(players, c.entra)}
-                    </PlayerName>
-                  </div>
-                </EventItem>
-              ))}
+              {data.cambios.map((c, i) => {
+                const salePlayer = players.find((x) => x._id === (typeof c.sale === 'object' ? c.sale?._id : c.sale));
+                const entraPlayer = players.find((x) => x._id === (typeof c.entra === 'object' ? c.entra?._id : c.entra));
+                return (
+                  <EventItem key={i}>
+                    <Minute>{c.minuto}&apos;</Minute>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <CambioRow>
+                        <span style={{ color: theme.colors.error, fontWeight: 'bold', fontSize: '13px' }}>↓</span>
+                        <PlayerAvatar>
+                          {salePlayer?.foto ? (
+                            <img src={cdnUrl(salePlayer.foto)} alt="" />
+                          ) : (
+                            getPlayerInitials(salePlayer) || '?'
+                          )}
+                        </PlayerAvatar>
+                        <PlayerName style={{ color: theme.colors.error }}>
+                          {getPlayerName(players, c.sale)}
+                        </PlayerName>
+                      </CambioRow>
+                      <CambioRow>
+                        <span style={{ color: theme.colors.success, fontWeight: 'bold', fontSize: '13px' }}>↑</span>
+                        <PlayerAvatar>
+                          {entraPlayer?.foto ? (
+                            <img src={cdnUrl(entraPlayer.foto)} alt="" />
+                          ) : (
+                            getPlayerInitials(entraPlayer) || '?'
+                          )}
+                        </PlayerAvatar>
+                        <PlayerName style={{ color: theme.colors.success }}>
+                          {getPlayerName(players, c.entra)}
+                        </PlayerName>
+                      </CambioRow>
+                    </div>
+                  </EventItem>
+                );
+              })}
             </Card>
           </Section>
         )}

@@ -21,6 +21,8 @@ import { useTheme } from 'styled-components';
 import RivalSelector from '@/vendor/shared/RivalSelector';
 import LineupEditor from './LineupEditor';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { cdnUrl } from '@/config';
 
 const { width: WINDOW_WIDTH } = Dimensions.get('window');
 const IS_MOBILE = WINDOW_WIDTH < 768;
@@ -789,10 +791,36 @@ const MatchSheetFormContent = ({
                 const originalIndex = cambios.indexOf(cambio);
                 return (
                   <View key={originalIndex} style={styles.eventChip}>
-                    <Text style={styles.eventChipText}>
-                      {cambio.minuto}' - {jugadorSale ? (getPlayerFullName ? getPlayerFullName(jugadorSale) : jugadorSale.nombre) : t('matchSheet.events.out')} 
-                      {' → '}{jugadorEntra ? (getPlayerFullName ? getPlayerFullName(jugadorEntra) : jugadorEntra.nombre) : t('matchSheet.events.in')}
-                    </Text>
+                    <Text style={styles.eventMinuteText}>{cambio.minuto}'</Text>
+                    <View style={styles.cambioPlayerContainer}>
+                      {jugadorSale?.foto ? (
+                        <Image source={{ uri: cdnUrl(jugadorSale.foto) }} style={styles.cambioAvatar} />
+                      ) : (
+                        <View style={styles.cambioAvatarPlaceholder}>
+                          <Text style={styles.cambioAvatarPlaceholderText}>
+                            {getPlayerInitials ? getPlayerInitials(jugadorSale) : '?'}
+                          </Text>
+                        </View>
+                      )}
+                      <Text style={[styles.eventChipText, { color: theme.colors.error }]} numberOfLines={1}>
+                        {jugadorSale ? (getPlayerFullName ? getPlayerFullName(jugadorSale) : jugadorSale.nombre) : t('matchSheet.events.out')}
+                      </Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={14} color={theme.colors.textMuted} />
+                    <View style={styles.cambioPlayerContainer}>
+                      {jugadorEntra?.foto ? (
+                        <Image source={{ uri: cdnUrl(jugadorEntra.foto) }} style={styles.cambioAvatar} />
+                      ) : (
+                        <View style={styles.cambioAvatarPlaceholder}>
+                          <Text style={styles.cambioAvatarPlaceholderText}>
+                            {getPlayerInitials ? getPlayerInitials(jugadorEntra) : '?'}
+                          </Text>
+                        </View>
+                      )}
+                      <Text style={[styles.eventChipText, { color: theme.colors.success }]} numberOfLines={1}>
+                        {jugadorEntra ? (getPlayerFullName ? getPlayerFullName(jugadorEntra) : jugadorEntra.nombre) : t('matchSheet.events.in')}
+                      </Text>
+                    </View>
                     <TouchableOpacity onPress={() => setCambios(cambios.filter((_, i) => i !== originalIndex))}>
                       <Ionicons name="close-circle" size={16} color={theme.colors.textMuted} />
                     </TouchableOpacity>
@@ -1195,6 +1223,36 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 12,
     height: 16,
     borderRadius: 2,
+  },
+  cambioPlayerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  cambioAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  cambioAvatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cambioAvatarPlaceholderText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: theme.colors.textSecondary,
+  },
+  eventMinuteText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    marginRight: 4,
   },
 });
 

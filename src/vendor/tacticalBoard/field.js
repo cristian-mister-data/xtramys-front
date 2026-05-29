@@ -9784,6 +9784,20 @@ export default function Field(props = {}) {
       setSelectedCloneId(null);
       clearMultiSelect();
     },
+    getSelected: () => {
+      return {
+        selectedCloneId,
+        selectedCloneIds: [...selectedCloneIds],
+        multiSelectMode,
+      };
+    },
+    setSelected: (sel) => {
+      if (sel) {
+        setSelectedCloneId(sel.selectedCloneId);
+        setSelectedCloneIds(sel.selectedCloneIds);
+        setMultiSelectMode(sel.multiSelectMode);
+      }
+    },
   };
 
   // Restaurar al estado original (antes de abrir el video recorder)
@@ -16926,7 +16940,7 @@ export default function Field(props = {}) {
                           fontWeight: '800',
                         }}
                       >
-                        Suelta para eliminar
+                        {t('tacticalBoard.dragToDelete', 'Suelta para eliminar')}
                       </Text>
                     </View>
                   </View>

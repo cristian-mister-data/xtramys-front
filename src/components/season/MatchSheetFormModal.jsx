@@ -11,14 +11,37 @@ import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
+import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
 import { ALINEACIONES_BY_PLAYER_COUNT, getDefaultFormation } from '@/features/matchSheet/formations';
 import LineupEditor from '@/features/matchSheet/LineupEditor';
 import RivalSelector from '@/features/matchSheet/RivalSelector';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import JornadaModal from '@/features/matchSheet/modals/JornadaModal';
 import { generateMatchSheetPDF, generateLineupPDF, generateCallUpPDF } from '@/features/matchSheet/pdf';
+import { cdnUrl } from '@/config';
+import { getPlayerInitials } from '@/utils/playerHelpers';
 
 const EMPTY = [];
+
+const PlayerAvatar = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
 
 const Section = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -206,8 +229,21 @@ export default function MatchSheetFormModal({
   const dispatch = useDispatch();
   const tournaments = useSelector((s) => s.tournament?.tournaments ?? EMPTY);
   const players = useSelector((s) => s.player?.players ?? EMPTY);
+  const sanctions = useSelector((s) => s.tournament?.sanctions ?? EMPTY);
   const team = useSelector((s) => s.team?.teams?.find((e) => e.seleccionado) || null);
   const teamId = team?._id;
+
+  // Fetch tournament sanctions
+  useEffect(() => {
+    if (form.torneoId && form.competicion === 'torneo') {
+      dispatch(fetchTournamentSanctions(form.torneoId));
+    }
+  }, [form.torneoId, form.competicion, dispatch]);
+
+  const sanctionedPlayerIds = useMemo(() => 
+    sanctions.filter(s => s.sancionado).map(s => s.playerId),
+    [sanctions]
+  );
 
   const [form, setForm] = useState(buildEmpty());
   const [error, setError] = useState('');
@@ -258,15 +294,19 @@ export default function MatchSheetFormModal({
 
   // Auto-update suplentes when convocados changes
   const handleConvocadosChange = (ids) => {
-    const noCallups = form.noConvocados.filter((id) => !ids.includes(id));
+    const allPlayerIds = players.map(p => p._id);
+    const noCallups = allPlayerIds.filter((id) => !ids.includes(id));
     const titulares = form.alineacionTitulares.filter((id) => ids.includes(id));
     const suplentes = ids.filter((id) => !titulares.includes(id));
     update({ convocados: ids, noConvocados: noCallups, alineacionTitulares: titulares, alineacionSuplentes: suplentes });
   };
 
   const handleNoCallupsChange = (ids) => {
-    const callups = form.convocados.filter((id) => !ids.includes(id));
-    update({ noConvocados: ids, convocados: callups });
+    const allPlayerIds = players.map(p => p._id);
+    const callups = allPlayerIds.filter((id) => !ids.includes(id));
+    const titulares = form.alineacionTitulares.filter((id) => callups.includes(id));
+    const suplentes = form.alineacionSuplentes.filter((id) => callups.includes(id));
+    update({ noConvocados: ids, convocados: callups, alineacionTitulares: titulares, alineacionSuplentes: suplentes });
   };
 
   const handleLineupChange = ({ titulares, suplentes }) => {
@@ -603,18 +643,42 @@ export default function MatchSheetFormModal({
             </Row>
             <Stack $gap={6}>
               {form.cambios.length === 0 ? <ListEmpty>{t('common.empty', 'Sin datos')}</ListEmpty> : null}
-              {form.cambios.map((c, i) => (
-                <EventRow key={i}>
-                  <SmallInput type="number" min="0" max="120" value={c.minuto} onChange={(e) => updateChange(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
-                  <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'changeOut', index: i })}>
-                    ↓ {playerLabel(c.sale)}
-                  </Button>
-                  <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'changeIn', index: i })}>
-                    ↑ {playerLabel(c.entra)}
-                  </Button>
-                  <Button type="button" $variant="danger" onClick={() => removeChange(i)}><MdDelete /></Button>
-                </EventRow>
-              ))}
+              {form.cambios.map((c, i) => {
+                const salePlayer = players.find((x) => x._id === c.sale);
+                const entraPlayer = players.find((x) => x._id === c.entra);
+                return (
+                  <EventRow key={i}>
+                    <SmallInput type="number" min="0" max="120" value={c.minuto} onChange={(e) => updateChange(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
+                    <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setScorerModal({ type: 'changeOut', index: i })}>
+                      <span style={{ color: 'red', fontWeight: 'bold' }}>↓</span>
+                      {salePlayer ? (
+                        <PlayerAvatar>
+                          {salePlayer.foto ? (
+                            <img src={cdnUrl(salePlayer.foto)} alt="" />
+                          ) : (
+                            getPlayerInitials(salePlayer) || '?'
+                          )}
+                        </PlayerAvatar>
+                      ) : null}
+                      <span>{playerLabel(c.sale)}</span>
+                    </Button>
+                    <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setScorerModal({ type: 'changeIn', index: i })}>
+                      <span style={{ color: 'green', fontWeight: 'bold' }}>↑</span>
+                      {entraPlayer ? (
+                        <PlayerAvatar>
+                          {entraPlayer.foto ? (
+                            <img src={cdnUrl(entraPlayer.foto)} alt="" />
+                          ) : (
+                            getPlayerInitials(entraPlayer) || '?'
+                          )}
+                        </PlayerAvatar>
+                      ) : null}
+                      <span>{playerLabel(c.entra)}</span>
+                    </Button>
+                    <Button type="button" $variant="danger" onClick={() => removeChange(i)}><MdDelete /></Button>
+                  </EventRow>
+                );
+              })}
             </Stack>
           </div>
         </Section>
@@ -639,18 +703,20 @@ export default function MatchSheetFormModal({
         onClose={() => setCallupModal(false)}
         players={players}
         selectedIds={form.convocados}
-        excludeIds={form.noConvocados}
+        excludeIds={EMPTY}
         onConfirm={handleConvocadosChange}
         title={t('matchSheet.callups', 'Convocados')}
+        sanctionedPlayerIds={sanctionedPlayerIds}
       />
       <PlayerSelectionModal
         open={noCallupModal}
         onClose={() => setNoCallupModal(false)}
         players={players}
         selectedIds={form.noConvocados}
-        excludeIds={form.convocados}
+        excludeIds={EMPTY}
         onConfirm={handleNoCallupsChange}
         title={t('matchSheet.notCalledUp', 'No convocados')}
+        sanctionedPlayerIds={sanctionedPlayerIds}
       />
       <JornadaModal
         open={jornadaModal}

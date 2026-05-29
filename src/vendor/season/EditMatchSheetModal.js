@@ -29,6 +29,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
+import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
+import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
@@ -498,13 +500,17 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                         ]}
                         onPress={() => setJugadorSale(p._id)}
                       >
-                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.error : posColors[0] }]}>
-                          {sel ? (
-                            <Ionicons name="arrow-down" size={18} color="#fff" />
-                          ) : (
-                            <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
-                          )}
-                        </View>
+                        {p.foto ? (
+                          <Image source={{ uri: p.foto }} style={modalStyles.playerGridAvatar} />
+                        ) : (
+                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.error : posColors[0] }]}>
+                            {sel ? (
+                              <Ionicons name="arrow-down" size={18} color="#fff" />
+                            ) : (
+                              <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
+                            )}
+                          </View>
+                        )}
                         <View style={modalStyles.playerGridInfo}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {p.dorsal != null && (
@@ -545,13 +551,17 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
                         ]}
                         onPress={() => setJugadorEntra(p._id)}
                       >
-                        <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.success : posColors[0] }]}>
-                          {sel ? (
-                            <Ionicons name="arrow-up" size={18} color="#fff" />
-                          ) : (
-                            <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
-                          )}
-                        </View>
+                        {p.foto ? (
+                          <Image source={{ uri: p.foto }} style={modalStyles.playerGridAvatar} />
+                        ) : (
+                          <View style={[modalStyles.playerGridAvatar, { backgroundColor: sel ? theme.colors.success : posColors[0] }]}>
+                            {sel ? (
+                              <Ionicons name="arrow-up" size={18} color="#fff" />
+                            ) : (
+                              <Text style={modalStyles.playerGridAvatarText}>{getPlayerInitials(p)}</Text>
+                            )}
+                          </View>
+                        )}
                         <View style={modalStyles.playerGridInfo}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {p.dorsal != null && (
@@ -1109,7 +1119,21 @@ export default function EditMatchSheetModal({
   const [savingRival, setSavingRival] = useState(false);
   const [searchRivalText, setSearchRivalText] = useState('');
   const tournaments = useSelector(state => state.tournament?.tournaments) || [];
+  const sanctions = useSelector(state => state.tournament?.sanctions) || [];
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (torneoId && competicion !== 'amistoso') {
+      dispatch(fetchTournamentSanctions(torneoId));
+    } else {
+      dispatch(clearSanctions());
+    }
+  }, [torneoId, competicion, dispatch]);
+
+  const localSanctionedPlayerIds = useMemo(() => 
+    sanctions.filter(s => s.sancionado).map(s => s.playerId),
+    [sanctions]
+  );
 
   // ─── Torneo seleccionado y lógica de formato ───
   const selectedTournament = useMemo(() => tournaments.find(t => t._id === torneoId), [tournaments, torneoId]);
@@ -3133,11 +3157,14 @@ export default function EditMatchSheetModal({
             title={t('schedule.selectCalled')}
             players={players}
             selectedIds={convocados}
-            excludeIds={noConvocados}
+            excludeIds={[]}
             injuries={injuries}
-            sanctionedPlayerIds={sanctionedPlayerIds}
+            sanctionedPlayerIds={localSanctionedPlayerIds}
             onConfirm={(ids) => {
               setConvocados(ids);
+              const allPlayerIds = players.map(p => p._id);
+              const leftover = allPlayerIds.filter(id => !ids.includes(id));
+              setNoConvocados(leftover);
               // Limpiar titulares y suplentes que ya no están convocados
               setAlineacionTitulares(prev => prev.filter(id => ids.includes(id)));
               setAlineacionSuplentes(prev => prev.filter(id => ids.includes(id)));
@@ -3152,11 +3179,16 @@ export default function EditMatchSheetModal({
             title={t('schedule.selectNotCalled')}
             players={players}
             selectedIds={noConvocados}
-            excludeIds={convocados}
+            excludeIds={[]}
             injuries={injuries}
-            sanctionedPlayerIds={sanctionedPlayerIds}
+            sanctionedPlayerIds={localSanctionedPlayerIds}
             onConfirm={(ids) => {
               setNoConvocados(ids);
+              const allPlayerIds = players.map(p => p._id);
+              const leftover = allPlayerIds.filter(id => !ids.includes(id));
+              setConvocados(leftover);
+              setAlineacionTitulares(prev => prev.filter(id => leftover.includes(id)));
+              setAlineacionSuplentes(prev => prev.filter(id => leftover.includes(id)));
               setShowNoConvocadosModal(false);
             }}
           />

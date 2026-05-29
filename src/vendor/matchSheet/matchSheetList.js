@@ -124,9 +124,8 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
 
   const getScore = () => {
     if (matchSheet.golesFavor == null || matchSheet.golesContra == null) return null;
-    if (matchSheet.ubicacion === 'Casa') {
-      return `${matchSheet.golesFavor} - ${matchSheet.golesContra}`;
-    } else if (matchSheet.ubicacion === 'Fuera') {
+    const ubi = String(matchSheet.ubicacion || '').toLowerCase();
+    if (ubi === 'fuera' || ubi === 'visitante') {
       return `${matchSheet.golesContra} - ${matchSheet.golesFavor}`;
     }
     return `${matchSheet.golesFavor} - ${matchSheet.golesContra}`;

@@ -108,6 +108,17 @@ const Position = styled.span`
   letter-spacing: 0.3px;
 `;
 
+const SanctionBadge = styled.span`
+  font-size: 10px;
+  font-weight: 700;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+`;
+
 const CheckBadge = styled.div`
   width: 22px; height: 22px;
   border-radius: 50%;
@@ -134,6 +145,7 @@ export default function PlayerSelectionModal({
   multi = true,
   excludeIds = [],
   maxSelection = null,
+  sanctionedPlayerIds = [],
 }) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
@@ -248,6 +260,11 @@ export default function PlayerSelectionModal({
                   <PlayerMeta>
                     {p.dorsal != null && <Dorsal>#{p.dorsal}</Dorsal>}
                     {pos && <Position $pos={pos}>{translatePosition(pos, t)}</Position>}
+                    {sanctionedPlayerIds.includes(p._id) && (
+                      <SanctionBadge>
+                        {t('tournaments.sanctioned', 'Sancionado')}
+                      </SanctionBadge>
+                    )}
                   </PlayerMeta>
                 </Info>
                 {sel && <CheckBadge><MdCheck /></CheckBadge>}

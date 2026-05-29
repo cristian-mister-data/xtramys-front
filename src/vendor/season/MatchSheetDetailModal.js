@@ -12,7 +12,9 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   TextInput,
+  Image,
 } from 'react-native';
+import { cdnUrl } from '@/config';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -567,10 +569,28 @@ export default function MatchSheetDetailModal({
                           <View style={styles.cambioDetails}>
                             <View style={styles.cambioRow}>
                               <Ionicons name="arrow-down" size={14} color={theme.colors.error} />
+                              {salePlayer?.foto ? (
+                                <Image source={{ uri: cdnUrl(salePlayer.foto) }} style={styles.cambioAvatar} />
+                              ) : (
+                                <View style={styles.cambioAvatarPlaceholder}>
+                                  <Text style={styles.cambioAvatarPlaceholderText}>
+                                    {getPlayerInitials ? getPlayerInitials(salePlayer) : '?'}
+                                  </Text>
+                                </View>
+                              )}
                               <Text style={[styles.eventPlayer, { color: theme.colors.error }]}>{salePlayer ? getPlayerFullName(salePlayer) : t('common.player')}</Text>
                             </View>
                             <View style={styles.cambioRow}>
                               <Ionicons name="arrow-up" size={14} color={theme.colors.success} />
+                              {entraPlayer?.foto ? (
+                                <Image source={{ uri: cdnUrl(entraPlayer.foto) }} style={styles.cambioAvatar} />
+                              ) : (
+                                <View style={styles.cambioAvatarPlaceholder}>
+                                  <Text style={styles.cambioAvatarPlaceholderText}>
+                                    {getPlayerInitials ? getPlayerInitials(entraPlayer) : '?'}
+                                  </Text>
+                                </View>
+                              )}
                               <Text style={[styles.eventPlayer, { color: theme.colors.success }]}>{entraPlayer ? getPlayerFullName(entraPlayer) : t('common.player')}</Text>
                             </View>
                           </View>
@@ -1134,5 +1154,25 @@ const makePlayerStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 13,
     paddingVertical: 12,
+  },
+  cambioAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginHorizontal: 4,
+  },
+  cambioAvatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  cambioAvatarPlaceholderText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: theme.colors.textSecondary,
   },
 });

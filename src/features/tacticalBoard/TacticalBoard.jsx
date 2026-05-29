@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Stage, Layer, Line, Text, Group, Rect, Ellipse } from 'react-konva';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import FieldSVGRenderer from './FieldSVGRenderer';
 import {
   getAspectForView,
@@ -135,6 +136,7 @@ export default function TacticalBoard({
   onCancel,
   saveLabel = 'Guardar',
 }) {
+  const { t } = useTranslation();
   const wrapRef = useRef(null);
   const stageRef = useRef(null);
 
@@ -764,7 +766,7 @@ export default function TacticalBoard({
                   boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
                 }}
               >
-                Suelta para eliminar
+                {t('tacticalBoard.dragToDelete', 'Suelta para eliminar')}
               </div>
             </div>
           )}

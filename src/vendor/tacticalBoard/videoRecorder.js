@@ -689,6 +689,7 @@ export default function VideoRecorder({
 
   // Capturar un keyframe
   const captureKeyframe = async () => {
+    const savedSelection = videoFrameControl?.current?.getSelected ? videoFrameControl.current.getSelected() : null;
     try {
       // Deseleccionar todo para captura limpia (sin handles de selección)
       if (videoFrameControl?.current?.deselectAll) {
@@ -701,12 +702,18 @@ export default function VideoRecorder({
       if (!fieldImage) {
         if (!fieldBaseRef?.current) {
           showNotification(t('videoRecorder.cannotAccessField'), 'error');
+          if (videoFrameControl?.current?.setSelected) {
+            videoFrameControl.current.setSelected(savedSelection);
+          }
           return;
         }
 
         // Verificar que la imagen del campo esté completamente cargada
         if (!fieldImageReady) {
           showNotification(t('videoRecorder.waitingFieldImage'), 'success');
+          if (videoFrameControl?.current?.setSelected) {
+            videoFrameControl.current.setSelected(savedSelection);
+          }
           // Esperar un poco y reintentar
           setTimeout(() => captureKeyframe(), 500);
           return;
@@ -722,8 +729,16 @@ export default function VideoRecorder({
         } catch (captureError) {
           console.error('Error capturando imagen del campo:', captureError);
           showNotification(t('videoRecorder.errorCapturingField'), 'error');
+          if (videoFrameControl?.current?.setSelected) {
+            videoFrameControl.current.setSelected(savedSelection);
+          }
           return;
         }
+      }
+
+      // Restaurar selección después de capturar la imagen
+      if (videoFrameControl?.current?.setSelected) {
+        videoFrameControl.current.setSelected(savedSelection);
       }
 
       // Capturar datos de elementos para interpolación - ULTRA OPTIMIZADO
@@ -1016,6 +1031,9 @@ export default function VideoRecorder({
     } catch (error) {
       console.error('Error capturando keyframe:', error);
       showNotification(t('videoRecorder.errorCapturingPosition'), 'error');
+      if (videoFrameControl?.current?.setSelected) {
+        videoFrameControl.current.setSelected(savedSelection);
+      }
     }
   };
 
@@ -1190,7 +1208,7 @@ export default function VideoRecorder({
 
         // Yield to the browser every 4 frames to prevent throttling
         if (i % 4 === 0) {
-          await new Promise((resolve) => requestAnimationFrame(resolve));
+          await new Promise((resolve) => setTimeout(resolve, 0));
         }
 
         const frame = allFrames[i];
@@ -1228,7 +1246,7 @@ export default function VideoRecorder({
       }
 
       // 5. Finalizar/codificar el vídeo
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       setGenerationPhase('generationEncoding');
       let outputPath;
       let encodedMime;
@@ -2276,6 +2294,7 @@ export default function VideoRecorder({
       {/* Notificación flotante */}
       {notification.visible && (
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.notification,
             notification.type === 'success' ? styles.notificationSuccess : styles.notificationError,
