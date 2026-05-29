@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTemporadasUsuario } from '@/store/slices/season/seasonThunks';
+import { fetchTemporadasUsuario, fetchTemporadaUsuarioSeleccionada } from '@/store/slices/season/seasonThunks';
 
 const SetupFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
@@ -72,6 +72,10 @@ export default function RequireSeason({ children }) {
       .unwrap()
       .then((data) => {
         if (latestRequestRef.current !== requestId) return;
+        // Fetch selected season after getting all seasons
+        if (data && data.length > 0) {
+          dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: userId }));
+        }
         setStatus(data && data.length > 0 ? 'ok' : 'empty');
       })
       .catch((error) => {

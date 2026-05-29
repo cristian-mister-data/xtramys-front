@@ -164,7 +164,8 @@
         "injuries": "Registra lesiones, evolución clínica y disponibilidad de jugadores.",
         "training": "Planifica sesiones, controla el historial y prepara el trabajo semanal.",
         "wellness": "Consulta cuestionarios, sesiones y reportes de bienestar del equipo.",
-        "methodology": "Estructura modelos, categorías y planes de trabajo del club."
+        "methodology": "Estructura modelos, categorías y planes de trabajo del club.",
+        "strategiesTitle": "Estrategia / Táctica"
     },
     "wellnessTemplates": {
         "title": "Plantillas de Wellness",
@@ -1037,7 +1038,8 @@
         "filterByStatus": "Estado",
         "filterByDate": "Fecha inicio",
         "sortByDurationShort": "Duración",
-        "filterCount": "{{count}} lesión"
+        "filterCount": "{{count}} lesión",
+        "add": "Registrar lesión"
     },
     "anthropometry": {
         "anthropometry": "Pliegues y Pesos",
@@ -1204,7 +1206,8 @@
         "unlink": "Desasociar",
         "year": "Año",
         "ok": "OK",
-        "none": "Ninguno"
+        "none": "Ninguno",
+        "open": "Abrir"
     },
     "rivals": {
         "title": "Rivales",
@@ -1902,7 +1905,36 @@
             "locked": "Bloqueado",
             "unlock": "Desbloquear",
             "close": "Cerrar",
-            "noContent": "Sin contenido"
+            "noContent": "Sin contenido",
+            "types": {
+                "player": "Jugador",
+                "ball": "Balón",
+                "cone": "Cono",
+                "coneFlat": "Cono plano",
+                "ring": "Aro",
+                "textPrefix": "Texto:",
+                "freeTextPrefix": "Texto libre:",
+                "noContent": "Sin contenido",
+                "text": "Texto",
+                "straightArrow": "Flecha recta",
+                "curveArrow": "Flecha curva",
+                "straightLine": "Línea recta",
+                "curveLine": "Línea curva",
+                "circle": "Círculo",
+                "rectangle": "Rectángulo",
+                "customShape": "Forma personalizada",
+                "goalLarge": "Portería grande",
+                "goalSmall": "Portería pequeña",
+                "barrier": "Valla",
+                "dummy": "Maniquí",
+                "pole": "Pica",
+                "ladder": "Escalera",
+                "weights": "Pesas",
+                "unknown": "Desconocido"
+            },
+            "typeLabel": "Tipo:",
+            "sizeLabel": "Tamaño:",
+            "thicknessLabel": "Grosor:"
         },
         "formationModal": {
             "select": "Seleccionar",
@@ -1977,6 +2009,20 @@
             "D": "D",
             "U": "U",
             "allStaffOnField": "Todo el cuerpo técnico está en el campo"
+        },
+        "multiSelect": {
+            "duplicate": "Duplicar",
+            "rotate": "Rotar",
+            "unlock": "Desbloq.",
+            "lock": "Bloquear",
+            "bringToFront": "Traer",
+            "sendToBack": "Fondo",
+            "delete": "Eliminar"
+        },
+        "rotateDevice": {
+            "title": "Gira tu dispositivo",
+            "subtitle": "La pizarra táctica se ve mejor en horizontal",
+            "hint": "Activa la rotación automática si está desactivada"
         }
     },
     "statistics": {
@@ -2841,7 +2887,8 @@
             "preparingRecorder": "Preparando carpeta de vídeo...",
             "videoSavedSuccess": "Vídeo guardado correctamente",
             "videoSaveError": "Error al guardar el vídeo",
-            "videoLoadError": "No se pudo cargar el vídeo"
+            "videoLoadError": "No se pudo cargar el vídeo",
+            "template": "Plantilla"
         },
         "video": {
             "tooLarge": "El vídeo es demasiado grande (máx 50MB)"
@@ -3123,7 +3170,10 @@
             "description": "Descripción",
             "generatedWith": "Generado con",
             "downloadPDF": "Descargar PDF"
-        }
+        },
+        "choosePhoto": "Elegir foto",
+        "create": "Crear",
+        "extraDescription": "Jugador extra (no de plantilla)"
     },
     "nutrition": {
         "title": "Plan Nutricional",

@@ -894,7 +894,7 @@ export default function WellnessManagement({ navigation }) {
                     <View style={[styles.typeBadge, { backgroundColor: THEME.warning }]}>
                       <Text style={styles.typeBadgeText}>{t('wellness.preBadge')}</Text>
                     </View>
-                    <Text style={[styles.sessionActionText, { color: THEME.warningSoftText }]}>
+                    <Text style={[styles.sessionActionText, { color: THEME.warningSoftText }]} numberOfLines={1}>
                       {t('preWellness.title')}
                     </Text>
                   </View>
@@ -909,7 +909,7 @@ export default function WellnessManagement({ navigation }) {
                     <View style={[styles.typeBadge, { backgroundColor: THEME.success }]}>
                       <Text style={styles.typeBadgeText}>{t('wellness.postBadge')}</Text>
                     </View>
-                    <Text style={[styles.sessionActionText, { color: THEME.successSoftText }]}>
+                    <Text style={[styles.sessionActionText, { color: THEME.successSoftText }]} numberOfLines={1}>
                       {t('session.wellness')}
                     </Text>
                   </View>
@@ -1897,10 +1897,12 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
   },
   sessionActionText: {
     fontSize: 13,
     fontWeight: '600',
+    flexShrink: 1,
   },
   typeBadge: {
     paddingHorizontal: 8,

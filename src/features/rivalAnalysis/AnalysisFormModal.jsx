@@ -939,11 +939,11 @@ export default function AnalysisFormModal({
                 <option value="">{t('rivalAnalysis.form.noTemplateOption', 'Sin plantillas')}</option>
               )}
               {activeTemplate && !userTemplates.some((tpl) => tpl._id === activeTemplate._id) && (
-                <option value={activeTemplate._id}>{activeTemplate.name || activeTemplate.nombre || t('rivalAnalysis.form.activeTemplate', 'Plantilla activa')}</option>
+                <option value={activeTemplate._id}>{activeTemplate.isRecommended ? t('rivalAnalysis.template.recommendedTemplate', 'Plantilla Recomendada') : (activeTemplate.name || activeTemplate.nombre || t('rivalAnalysis.form.activeTemplate', 'Plantilla activa'))}</option>
               )}
               {userTemplates.map((tpl) => (
                 <option key={tpl._id} value={tpl._id}>
-                  {tpl.name || tpl.nombre || t('rivalAnalysis.form.unnamedTemplate', 'Plantilla sin nombre')}
+                  {tpl.isRecommended ? t('rivalAnalysis.template.recommendedTemplate', 'Plantilla Recomendada') : (tpl.name || tpl.nombre || t('rivalAnalysis.form.unnamedTemplate', 'Plantilla sin nombre'))}
                 </option>
               ))}
             </NativeSelect>

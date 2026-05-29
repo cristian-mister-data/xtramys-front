@@ -164,7 +164,8 @@
         "injuries": "Record injuries, clinical evolution, and player availability.",
         "training": "Plan sessions, track history, and prepare weekly work.",
         "wellness": "View questionnaires, sessions, and team wellness reports.",
-        "methodology": "Structure models, categories, and club work plans."
+        "methodology": "Structure models, categories, and club work plans.",
+        "strategiesTitle": "Strategy / Tactics"
     },
     "wellnessTemplates": {
         "title": "Wellness Templates",
@@ -1037,7 +1038,8 @@
         "filterByStatus": "Status",
         "filterByDate": "Start date",
         "sortByDurationShort": "Duration",
-        "filterCount": "{{count}} injury"
+        "filterCount": "{{count}} injury",
+        "add": "Register injury"
     },
     "anthropometry": {
         "anthropometry": "Skinfolds & Weights",
@@ -1204,7 +1206,8 @@
         "unlink": "Unlink",
         "year": "Year",
         "ok": "OK",
-        "none": "None"
+        "none": "None",
+        "open": "Open"
     },
     "rivals": {
         "title": "Rivals",
@@ -1902,7 +1905,36 @@
             "locked": "Locked",
             "unlock": "Unlock",
             "close": "Close",
-            "noContent": "No content"
+            "noContent": "No content",
+            "types": {
+                "player": "Player",
+                "ball": "Ball",
+                "cone": "Cone",
+                "coneFlat": "Flat Cone",
+                "ring": "Ring",
+                "textPrefix": "Text:",
+                "freeTextPrefix": "Free Text:",
+                "noContent": "No content",
+                "text": "Text",
+                "straightArrow": "Straight Arrow",
+                "curveArrow": "Curve Arrow",
+                "straightLine": "Straight Line",
+                "curveLine": "Curve Line",
+                "circle": "Circle",
+                "rectangle": "Rectangle",
+                "customShape": "Custom Shape",
+                "goalLarge": "Large Goal",
+                "goalSmall": "Small Goal",
+                "barrier": "Barrier",
+                "dummy": "Dummy",
+                "pole": "Pole",
+                "ladder": "Ladder",
+                "weights": "Weights",
+                "unknown": "Unknown"
+            },
+            "typeLabel": "Type:",
+            "sizeLabel": "Size:",
+            "thicknessLabel": "Thickness:"
         },
         "formationModal": {
             "select": "Select",
@@ -1977,6 +2009,20 @@
             "D": "D",
             "U": "KM",
             "allStaffOnField": "All coaching staff is on the field"
+        },
+        "multiSelect": {
+            "duplicate": "Duplicate",
+            "rotate": "Rotate",
+            "unlock": "Unlock",
+            "lock": "Lock",
+            "bringToFront": "To Front",
+            "sendToBack": "To Back",
+            "delete": "Delete"
+        },
+        "rotateDevice": {
+            "title": "Rotate your device",
+            "subtitle": "The tactical board works best in landscape mode",
+            "hint": "Turn on auto-rotate if needed"
         }
     },
     "statistics": {
@@ -2832,7 +2878,8 @@
             "preparingRecorder": "Preparing video folder...",
             "videoSavedSuccess": "Video saved successfully",
             "videoSaveError": "Error saving video",
-            "videoLoadError": "Could not load video"
+            "videoLoadError": "Could not load video",
+            "template": "Template"
         },
         "video": {
             "tooLarge": "Video is too large (max 50MB)"
@@ -3114,7 +3161,10 @@
             "description": "Description",
             "generatedWith": "Generated with",
             "downloadPDF": "Download PDF"
-        }
+        },
+        "choosePhoto": "Choose photo",
+        "create": "Create",
+        "extraDescription": "Extra player (not from roster)"
     },
     "nutrition": {
         "title": "Nutritional Plan",

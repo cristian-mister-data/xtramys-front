@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 
 const isMobileDevice = () =>
@@ -61,6 +62,7 @@ const Hint = styled.p`
 `;
 
 export default function RotatePrompt() {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -96,9 +98,9 @@ export default function RotatePrompt() {
           <line x1="9" y1="12" x2="15" y2="12" />
         </svg>
       </IconWrap>
-      <Title>Gira tu dispositivo</Title>
-      <Subtitle>La pizarra táctica se ve mejor en horizontal</Subtitle>
-      <Hint>Activa la rotación automática si está desactivada</Hint>
+      <Title>{t('tacticalBoard.rotateDevice.title', 'Gira tu dispositivo')}</Title>
+      <Subtitle>{t('tacticalBoard.rotateDevice.subtitle', 'La pizarra táctica se ve mejor en horizontal')}</Subtitle>
+      <Hint>{t('tacticalBoard.rotateDevice.hint', 'Activa la rotación automática si está desactivada')}</Hint>
     </Overlay>
   );
 }

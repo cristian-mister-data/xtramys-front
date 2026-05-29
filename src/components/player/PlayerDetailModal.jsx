@@ -143,7 +143,7 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
       </Stats>
 
       <Muted style={{ display: 'block', marginTop: 16, fontSize: 12 }}>
-        {t('player.profileFutureNote', 'Próximamente: estadísticas, lesiones y minutos jugados desde el perfil.')}
+
       </Muted>
     </Modal>
   );

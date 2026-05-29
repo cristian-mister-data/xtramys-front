@@ -1050,13 +1050,13 @@ function OptionsMenu({
   const isTablet = width >= 768;
 
   // Tama�os fijos del men� (sin escalar seg�n la imagen)
-  const menuWidth = isTablet ? 160 : 145;
-  const menuItemHeight = isTablet ? 42 : 38;
-  const fontSize = isTablet ? 14 : 13;
-  const iconSize = isTablet ? 18 : 16;
-  const horizontalPadding = isTablet ? 14 : 12;
-  const verticalPadding = isTablet ? 10 : 9;
-  const iconTextGap = isTablet ? 12 : 10;
+  const menuWidth = isTablet ? 160 : (isMobile ? 120 : 145);
+  const menuItemHeight = isTablet ? 42 : (isMobile ? 32 : 38);
+  const fontSize = isTablet ? 14 : (isMobile ? 11 : 13);
+  const iconSize = isTablet ? 18 : (isMobile ? 14 : 16);
+  const horizontalPadding = isTablet ? 14 : (isMobile ? 8 : 12);
+  const verticalPadding = isTablet ? 10 : (isMobile ? 6 : 9);
+  const iconTextGap = isTablet ? 12 : (isMobile ? 6 : 10);
 
   if (!visible) return null;
 
@@ -2464,10 +2464,11 @@ function SettingsPanel({
   // Sincronizar estados locales cuando cambia boardSettings
   useEffect(() => {
     if (boardSettings) {
-      setSize1((boardSettings.playerIcon1?.size || 24).toString());
-      setSize2((boardSettings.playerIcon2?.size || 24).toString());
-      setSize3((boardSettings.playerIcon3?.size || 24).toString());
-      setSizeTeam((boardSettings.teamPlayers?.size || 24).toString());
+      const defaultVal = isMobile ? 24 : 18;
+      setSize1((boardSettings.playerIcon1?.size || defaultVal).toString());
+      setSize2((boardSettings.playerIcon2?.size || defaultVal).toString());
+      setSize3((boardSettings.playerIcon3?.size || defaultVal).toString());
+      setSizeTeam((boardSettings.teamPlayers?.size || defaultVal).toString());
     }
   }, [boardSettings]);
 
@@ -3149,7 +3150,7 @@ function LeftEditPanel({
                     <TouchableOpacity
                       style={styles.proModalStepperBtn}
                       onPress={() => {
-                        const current = parseInt(size) || 24;
+                        const current = parseInt(size) || (isMobile ? 24 : 18);
                         if (current > 1) setSize(String(current - 1));
                       }}
                     >
@@ -3161,7 +3162,7 @@ function LeftEditPanel({
                     <TouchableOpacity
                       style={styles.proModalStepperBtn}
                       onPress={() => {
-                        const current = parseInt(size) || 24;
+                        const current = parseInt(size) || (isMobile ? 24 : 18);
                         if (current < 200) setSize(String(current + 1));
                       }}
                     >
@@ -6271,7 +6272,7 @@ function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageH
     } else {
       const pad = 4;
       return localPt.x >= center.x - w / 2 - pad && localPt.x <= center.x + w / 2 + pad &&
-             localPt.y >= center.y - h / 2 - pad && localPt.y <= center.y + h / 2 + pad;
+        localPt.y >= center.y - h / 2 - pad && localPt.y <= center.y + h / 2 + pad;
     }
   }
 
@@ -9098,11 +9099,11 @@ export default function Field(props = {}) {
   const [showingMaterialsPalette, setShowingMaterialsPalette] = useState(false);
   const [showingStaffPalette, setShowingStaffPalette] = useState(false);
   const [teamPlayerSettingsVisible, setTeamPlayerSettingsVisible] = useState(false);
-  const [standardSize, setStandardSize] = useState(24);
+  const [standardSize, setStandardSize] = useState(isMobile ? 24 : 18);
   // Estado para el estilo por defecto de jugadores del equipo
   const [teamPlayerStyle, setTeamPlayerStyle] = useState({
     color: '#2176ff',
-    size: 24,
+    size: isMobile ? 24 : 18,
     numberColor: '#ffffff',
     textColor: '#000000',
     textBackgroundColor: '#ffffff',
@@ -10545,7 +10546,7 @@ export default function Field(props = {}) {
   const { imageWidth, imageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
-      const topButtonsSpace = 44;
+      const topButtonsSpace = 34;
       const bottomButtonsSpace = 44;
       const videoPanelW = videoRecorderVisible ? 112 : 0;
       const sideMargin = 6;
@@ -11675,7 +11676,7 @@ export default function Field(props = {}) {
       const elementScale = (widthRatio + heightRatio) / 2;
 
       // Calcular el tama�o visual real del elemento (size * scale) - sin padding extra
-      const baseSize = clone.size || 24;
+      const baseSize = clone.size || standardSize;
       const visualSize = baseSize * elementScale;
 
       // Usar exactamente el tama�o visual del icono (mitad del tama�o a cada lado del centro)
@@ -11820,7 +11821,7 @@ export default function Field(props = {}) {
       const origW = clone.imageWidth || imgW;
       const origH = clone.imageHeight || imgH;
       const scale = ((imgW / origW) + (imgH / origH)) / 2;
-      const half = ((clone.size || 24) * scale) / 2;
+      const half = ((clone.size || standardSize) * scale) / 2;
       return rectsOverlap(elemX - half, elemY - half, elemX + half, elemY + half, rectLeft, rectTop, rectRight, rectBottom);
     }).map(c => c.id);
   }, []);
@@ -14713,6 +14714,9 @@ export default function Field(props = {}) {
     const buttonSize = isMobile ? 36 : 56;
     const buttonRadius = isMobile ? 18 : 28;
     const iconSize = isMobile ? 16 : 24;
+    const topBtnSize = isMobile ? 28 : 56;
+    const topBtnRadius = isMobile ? 14 : 28;
+    const topIconSize = isMobile ? 14 : 24;
 
     return (
       <>
@@ -14767,49 +14771,49 @@ export default function Field(props = {}) {
         {/* Botones UNDO/REDO */}
         <TouchableOpacity
           style={[styles.floatingButton, {
-            top: isMobile ? 10 : 20,
+            top: isMobile ? 6 : 20,
             left: isMobile ? 10 : 20,
             backgroundColor: canUndo ? '#3498db' : '#7f8c8d',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius,
+            width: topBtnSize,
+            height: topBtnSize,
+            borderRadius: topBtnRadius,
             opacity: canUndo ? 1 : 0.5
           }]}
           onPress={onUndo}
           disabled={!canUndo}
         >
-          <Feather name="corner-up-left" size={iconSize} color="#fff" />
+          <Feather name="corner-up-left" size={topIconSize} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.floatingButton, {
-            top: isMobile ? 10 : 20,
-            left: isMobile ? 52 : 90,
+            top: isMobile ? 6 : 20,
+            left: isMobile ? 44 : 90,
             backgroundColor: canRedo ? '#3498db' : '#7f8c8d',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius,
+            width: topBtnSize,
+            height: topBtnSize,
+            borderRadius: topBtnRadius,
             opacity: canRedo ? 1 : 0.5
           }]}
           onPress={onRedo}
           disabled={!canRedo}
         >
-          <Feather name="corner-up-right" size={iconSize} color="#fff" />
+          <Feather name="corner-up-right" size={topIconSize} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.floatingButton, {
-            top: isMobile ? 10 : 20,
-            left: isMobile ? 94 : 160,
+            top: isMobile ? 6 : 20,
+            left: isMobile ? 78 : 160,
             backgroundColor: '#9b59b6',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius,
+            width: topBtnSize,
+            height: topBtnSize,
+            borderRadius: topBtnRadius,
             zIndex: 110,
           }]}
           onPress={onVideoRecorder}
         >
-          <Ionicons name="videocam" size={iconSize} color="#fff" />
+          <Ionicons name="videocam" size={topIconSize} color="#fff" />
         </TouchableOpacity>
 
 
@@ -14874,26 +14878,34 @@ export default function Field(props = {}) {
         )}
 
         {/* Bot�n de selecci�n m�ltiple ahora centrado */}
-        <TouchableOpacity
-          style={[styles.floatingButton, {
-            top: isMobile ? 10 : 20,
-            left: '50%',
-            marginLeft: isMobile ? -18 : -28,
-            backgroundColor: multiSelectMode ? '#3498db' : '#2c3e50',
-            width: buttonSize,
-            height: buttonSize,
-            borderRadius: buttonRadius
-          }]}
-          onPress={onToggleMultiSelect}
-        >
-          <Feather name="check-square" size={iconSize} color="#fff" />
-        </TouchableOpacity>
+        {/* Botón de selección múltiple ahora centrado */}
+        {(!isMobile || !hideBottomButtons) && (
+          <TouchableOpacity
+            style={[styles.floatingButton, {
+              ...(isMobile ? {
+                bottom: 10,
+                left: 136,
+              } : {
+                top: 20,
+                left: '50%',
+                marginLeft: -28,
+              }),
+              backgroundColor: multiSelectMode ? '#3498db' : '#2c3e50',
+              width: buttonSize,
+              height: buttonSize,
+              borderRadius: buttonRadius
+            }]}
+            onPress={onToggleMultiSelect}
+          >
+            <Feather name="check-square" size={iconSize} color="#fff" />
+          </TouchableOpacity>
+        )}
 
         {/* Bot�n para cambiar entre modo seleccionar y modo mover (solo visible cuando hay elementos seleccionados) */}
         {multiSelectMode && selectedCloneIds.length > 0 && (
           <TouchableOpacity
             style={[styles.floatingButton, {
-              top: isMobile ? 10 : 20,
+              top: isMobile ? 6 : 20,
               right: isMobile ? 150 : 230,
               backgroundColor: selectionInteractionMode === 'move' ? '#27ae60' : '#f39c12',
               width: buttonSize,
@@ -14913,7 +14925,7 @@ export default function Field(props = {}) {
         {!sandbox && !isEditingVideo && (
           <TouchableOpacity
             style={[styles.floatingButton, styles.floatingButtonPrimary, {
-              top: isMobile ? 10 : 20,
+              top: isMobile ? 6 : 20,
               right: isMobile ? 48 : 90,
               width: buttonSize,
               height: buttonSize,
@@ -14928,7 +14940,7 @@ export default function Field(props = {}) {
         {!sandbox && !isEditingVideo && (
           <TouchableOpacity
             style={[styles.floatingButton, styles.floatingButtonDanger, {
-              top: isMobile ? 10 : 20,
+              top: isMobile ? 6 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14944,7 +14956,7 @@ export default function Field(props = {}) {
         {isEditingVideo && (
           <TouchableOpacity
             style={[styles.floatingButton, styles.floatingButtonDanger, {
-              top: isMobile ? 10 : 20,
+              top: isMobile ? 6 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14960,7 +14972,7 @@ export default function Field(props = {}) {
         {sandbox && !isEditingVideo && (
           <TouchableOpacity
             style={[styles.floatingButton, styles.floatingButtonDanger, {
-              top: isMobile ? 10 : 20,
+              top: isMobile ? 6 : 20,
               right: isMobile ? 10 : 20,
               width: buttonSize,
               height: buttonSize,
@@ -14972,47 +14984,54 @@ export default function Field(props = {}) {
           </TouchableOpacity>
         )}
 
-        {/* Panel de selecci�n m�ltiple (fuera del campo, a la derecha debajo de guardar/cerrar) */}
+        {/* Panel de selección múltiple (fuera del campo, centrado en movil) */}
         {multiSelectMode && selectedCloneIds.length > 0 && (
           <View style={{
             position: 'absolute',
-            top: isMobile ? 80 : 250,
-            right: isMobile ? 35 : 20,
+            right: isMobile ? 10 : 20,
+            ...(isMobile ? {
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+            } : {
+              top: 250,
+            }),
             zIndex: 10002,
             alignItems: 'center'
           }}>
             <View style={{
               backgroundColor: 'rgba(0,0,0,0.85)',
-              padding: isMobile ? 8 : 10,
-              borderRadius: 8,
+              padding: isMobile ? 6 : 10,
+              borderRadius: isMobile ? 10 : 8,
               alignItems: 'center',
               justifyContent: 'center',
+              flexDirection: 'column',
             }}>
-              <TouchableOpacity onPress={duplicateSelectedElements} style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Feather name="copy" size={isMobile ? 12 : 18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>Duplicar</Text>
+              <TouchableOpacity onPress={duplicateSelectedElements} style={{ alignItems: 'center', marginBottom: isMobile ? 6 : 8 }}>
+                <Feather name="copy" size={isMobile ? 14 : 18} color="#fff" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{t('tacticalBoard.multiSelect.duplicate', 'Duplicar')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => rotateSelectedElements(15)} style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Feather name="rotate-cw" size={isMobile ? 12 : 18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>Rotar</Text>
+              <TouchableOpacity onPress={() => rotateSelectedElements(15)} style={{ alignItems: 'center', marginBottom: isMobile ? 6 : 8 }}>
+                <Feather name="rotate-cw" size={isMobile ? 14 : 18} color="#fff" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{t('tacticalBoard.multiSelect.rotate', 'Rotar')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={toggleLockSelected} style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Feather name={selectedCloneIds.every(id => (clones.find(c => c.id === id) || {}).locked) ? 'unlock' : 'lock'} size={isMobile ? 12 : 18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>{selectedCloneIds.every(id => (clones.find(c => c.id === id) || {}).locked) ? 'Desbloq.' : 'Bloquear'}</Text>
+              <TouchableOpacity onPress={toggleLockSelected} style={{ alignItems: 'center', marginBottom: isMobile ? 6 : 8 }}>
+                <Feather name={selectedCloneIds.every(id => (clones.find(c => c.id === id) || {}).locked) ? 'unlock' : 'lock'} size={isMobile ? 14 : 18} color="#fff" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{selectedCloneIds.every(id => (clones.find(c => c.id === id) || {}).locked) ? t('tacticalBoard.multiSelect.unlock', 'Desbloq.') : t('tacticalBoard.multiSelect.lock', 'Bloquear')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={bringSelectedToFront} style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Feather name="arrow-up-circle" size={isMobile ? 12 : 18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>Traer</Text>
+              <TouchableOpacity onPress={bringSelectedToFront} style={{ alignItems: 'center', marginBottom: isMobile ? 6 : 8 }}>
+                <Feather name="arrow-up-circle" size={isMobile ? 14 : 18} color="#fff" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{t('tacticalBoard.multiSelect.bringToFront', 'Traer')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={sendSelectedToBack} style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Feather name="arrow-down-circle" size={isMobile ? 12 : 18} color="#fff" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>Fondo</Text>
+              <TouchableOpacity onPress={sendSelectedToBack} style={{ alignItems: 'center', marginBottom: isMobile ? 6 : 8 }}>
+                <Feather name="arrow-down-circle" size={isMobile ? 14 : 18} color="#fff" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{t('tacticalBoard.multiSelect.sendToBack', 'Fondo')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={deleteSelectedElements} style={{ alignItems: 'center', marginBottom: 6 }}>
-                <Feather name="trash-2" size={isMobile ? 12 : 18} color="#ff3b30" />
-                <Text style={{ color: '#fff', fontSize: isMobile ? 8 : 11, marginTop: 4 }}>Eliminar</Text>
+              <TouchableOpacity onPress={deleteSelectedElements} style={{ alignItems: 'center', marginBottom: isMobile ? 4 : 6 }}>
+                <Feather name="trash-2" size={isMobile ? 14 : 18} color="#ff3b30" />
+                {!isMobile && <Text style={{ color: '#fff', fontSize: 11, marginTop: 4 }}>{t('tacticalBoard.multiSelect.delete', 'Eliminar')}</Text>}
               </TouchableOpacity>
-              <TouchableOpacity onPress={clearSelection} style={{ backgroundColor: '#95a5a6', padding: 8, borderRadius: 20, marginTop: 6 }}>
+              <TouchableOpacity onPress={clearSelection} style={{ backgroundColor: '#95a5a6', padding: isMobile ? 4 : 8, borderRadius: 20, marginTop: isMobile ? 4 : 6 }}>
                 <Feather name="x" size={isMobile ? 12 : 18} color="#fff" />
               </TouchableOpacity>
             </View>

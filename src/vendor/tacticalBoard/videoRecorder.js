@@ -204,7 +204,7 @@ function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
   const dx = (toBall.x || 0) - (fromBall.x || 0);
   const dy = (toBall.y || 0) - (fromBall.y || 0);
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const ballSize = ballElement.size || 24;
+  const ballSize = ballElement.size || (IS_MOBILE ? 24 : 18);
   const arcHeight = Math.max(ballSize * 0.9, Math.min(distance * 0.32, ballSize * 3.2));
   const heightProgress = 4 * linearProgress * (1 - linearProgress);
   const airborne = heightProgress > 0.025 && linearProgress > 0.015 && linearProgress < 0.985;
@@ -347,8 +347,8 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
                 ...interpEl,
                 y: newY,
                 yRatio: newYRatio,
-                size: (interpEl.size || 24) * airEffect.ballScale,
-                baseSize: (interpEl.baseSize || interpEl.size || 24) * airEffect.ballScale,
+                size: (interpEl.size || (IS_MOBILE ? 24 : 18)) * airEffect.ballScale,
+                baseSize: (interpEl.baseSize || interpEl.size || (IS_MOBILE ? 24 : 18)) * airEffect.ballScale,
                 zIndex: (interpEl.zIndex || 200) + 50,
                 isAirborne: true,
               };
@@ -747,7 +747,7 @@ export default function VideoRecorder({
           snapshot.y = Math.round(elem.yRatio * fieldHeight * 100) / 100;
 
           // Calcular tamaño escalado
-          const baseSize = elem.size || 24;
+          const baseSize = elem.size || (IS_MOBILE ? 24 : 18);
           snapshot.size = Math.round(baseSize * scaleFactor * 100) / 100;
           snapshot.baseSize = baseSize;
 
