@@ -2957,7 +2957,7 @@ export default function AddEventModal({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color={theme.colors.text} />
+              <Ionicons name="add-circle" size={20} color="#ffffff" />
               <Text style={styles.footerSaveBtnText}>{t('schedule.createMatchSheet')}</Text>
             </>
           )}
@@ -4274,7 +4274,7 @@ export default function AddEventModal({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color={theme.colors.text} />
+              <Ionicons name="add-circle" size={20} color="#ffffff" />
               <Text style={styles.footerSaveBtnText}>{t('schedule.createSessionBtn')}</Text>
             </>
           )}
@@ -5210,7 +5210,7 @@ const makeStyles = (theme) => StyleSheet.create({
   footerSaveBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.text,
+    color: '#ffffff',
   },
   
   // Info Note

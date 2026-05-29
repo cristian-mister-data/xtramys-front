@@ -763,31 +763,25 @@ export default function AnalysisDetailModal({
       title={t('rivalAnalysis.title', 'Análisis del Rival')}
       width={820}
       footer={
-        <Row $gap={8}>
-          <Button $variant="secondary" onClick={onClose}>
-            <Row $gap={6}>
+        <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+          <Button $variant="danger" onClick={handleDelete}>
+            <MdDelete size={16} />
+            {t('common.delete', 'Eliminar')}
+          </Button>
+          <Row $gap={8}>
+            <Button $variant="ghost" onClick={onClose}>
               <MdClose size={16} />
               {t('common.close', 'Cerrar')}
-            </Row>
-          </Button>
-          <Button $variant="ghost" onClick={handlePdf}>
-            <Row $gap={6}>
+            </Button>
+            <Button $variant="secondary" onClick={handlePdf}>
               <MdPictureAsPdf size={16} />
               {t('common.pdf', 'PDF')}
-            </Row>
-          </Button>
-          <Button $variant="danger" onClick={handleDelete}>
-            <Row $gap={6}>
-              <MdDelete size={16} />
-              {t('common.delete', 'Eliminar')}
-            </Row>
-          </Button>
-          <Button $variant="primary" onClick={() => onEdit?.(analysis)}>
-            <Row $gap={6}>
+            </Button>
+            <Button $variant="primary" onClick={() => onEdit?.(analysis)}>
               <MdEdit size={16} />
               {t('common.edit', 'Editar')}
-            </Row>
-          </Button>
+            </Button>
+          </Row>
         </Row>
       }
     >

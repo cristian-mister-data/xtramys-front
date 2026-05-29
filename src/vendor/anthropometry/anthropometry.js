@@ -561,7 +561,7 @@ const Anthropometry = ({ navigation }) => {
           onRequestClose={() => setOptionsModalVisible(false)}
         >
           <Pressable 
-            style={[styles.modalOverlay, { justifyContent: 'flex-end' }]}
+            style={styles.optionsModalOverlay}
             onPress={() => setOptionsModalVisible(false)}
           >
             <View style={[styles.optionsModalContent, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]}>
@@ -577,8 +577,8 @@ const Anthropometry = ({ navigation }) => {
                   openEditModal(selectedAnthropometryForOptions);
                 }}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#eff6ff' }]}>
-                  <MaterialIcons name="edit" size={20} color="#2563eb" />
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
+                  <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
               </TouchableOpacity>
@@ -587,8 +587,8 @@ const Anthropometry = ({ navigation }) => {
                 style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
                 onPress={() => handleDelete(selectedAnthropometryForOptions)}
               >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: '#fef2f2' }]}>
-                  <MaterialIcons name="delete" size={20} color="#dc2626" />
+                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}>
+                  <MaterialIcons name="delete" size={20} color={theme.colors.error} />
                 </View>
                 <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
                   {t('common.delete')}
@@ -1958,6 +1958,12 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  optionsModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
   },
   optionsModalContent: {
     backgroundColor: theme.colors.surface,

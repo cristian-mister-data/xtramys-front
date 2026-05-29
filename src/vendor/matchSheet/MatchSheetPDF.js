@@ -283,7 +283,7 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
     `;
   });
   
-  // Dibujar franjas del césped en perspectiva (Grayscale)
+  // Dibujar franjas del césped en perspectiva (Professional Green)
   const stripes = 10;
   let stripesHTML = '';
   for (let i = 0; i < stripes; i++) {
@@ -293,10 +293,12 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
     const pTR = project(100, y1);
     const pBR = project(100, y2);
     const pBL = project(0, y2);
-    stripesHTML += `<polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="${i % 2 === 0 ? '#f1f5f9' : '#e2e8f0'}" />`;
+    // Alternating shades of premium green
+    const greenColor = i % 2 === 0 ? '#2e7d32' : '#1b5e20';
+    stripesHTML += `<polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="${greenColor}" />`;
   }
   
-  // Proyectar líneas del campo (Grayscale)
+  // Proyectar líneas del campo (Grayscale -> White)
   const pTL = project(0, 0);
   const pTR = project(100, 0);
   const pBR = project(100, 100);
@@ -338,30 +340,30 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
   const pSpotBot = project(50, 88.5);
  
   return `
-    <div style="position: relative; width: ${fieldWidth}px; height: ${fieldHeight}px; border-radius: 16px; overflow: hidden; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); background: radial-gradient(circle, #f8fafc 0%, #cbd5e1 100%); padding: 0;">
+    <div style="position: relative; width: ${fieldWidth}px; height: ${fieldHeight}px; border-radius: 16px; overflow: hidden; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); background: radial-gradient(circle, #388e3c 0%, #1b5e20 100%); padding: 0;">
       <svg width="${fieldWidth}" height="${fieldHeight}" style="position: absolute; top: 0; left: 0;">
         <!-- Césped -->
         ${stripesHTML}
         
         <!-- Líneas exteriores -->
-        <polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="none" stroke="#475569" stroke-width="2"/>
+        <polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2"/>
         
         <!-- Línea media -->
-        <line x1="${pML.x}" y1="${pML.y}" x2="${pMR.x}" y2="${pMR.y}" stroke="#475569" stroke-width="2" />
+        <line x1="${pML.x}" y1="${pML.y}" x2="${pMR.x}" y2="${pMR.y}" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
         
         <!-- Círculo central (Elipse proyectada) -->
-        <ellipse cx="${pCenter.x}" cy="${pCenter.y}" rx="${rxCenter}" ry="${ryCenter}" fill="none" stroke="#475569" stroke-width="2" />
-        <circle cx="${pCenter.x}" cy="${pCenter.y}" r="3" fill="#475569" />
+        <ellipse cx="${pCenter.x}" cy="${pCenter.y}" rx="${rxCenter}" ry="${ryCenter}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <circle cx="${pCenter.x}" cy="${pCenter.y}" r="3" fill="#ffffff" />
         
         <!-- Área superior -->
-        <polygon points="${pP_TL.x},${pP_TL.y} ${pP_TR.x},${pP_TR.y} ${pP_BR.x},${pP_BR.y} ${pP_BL.x},${pP_BL.y}" fill="none" stroke="#475569" stroke-width="2" />
-        <polygon points="${pG_TL.x},${pG_TL.y} ${pG_TR.x},${pG_TR.y} ${pG_BR.x},${pG_BR.y} ${pG_BL.x},${pG_BL.y}" fill="none" stroke="#475569" stroke-width="2" />
-        <circle cx="${pSpotTop.x}" cy="${pSpotTop.y}" r="2" fill="#475569" />
+        <polygon points="${pP_TL.x},${pP_TL.y} ${pP_TR.x},${pP_TR.y} ${pP_BR.x},${pP_BR.y} ${pP_BL.x},${pP_BL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <polygon points="${pG_TL.x},${pG_TL.y} ${pG_TR.x},${pG_TR.y} ${pG_BR.x},${pG_BR.y} ${pG_BL.x},${pG_BL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <circle cx="${pSpotTop.x}" cy="${pSpotTop.y}" r="2" fill="#ffffff" />
         
         <!-- Área inferior -->
-        <polygon points="${pP_BL_top.x},${pP_BL_top.y} ${pP_BR_top.x},${pP_BR_top.y} ${pP_BR_bot.x},${pP_BR_bot.y} ${pP_BL_bot.x},${pP_BL_bot.y}" fill="none" stroke="#475569" stroke-width="2" />
-        <polygon points="${pG_BL_top.x},${pG_BL_top.y} ${pG_BR_top.x},${pG_BR_top.y} ${pG_BR_bot.x},${pG_BR_bot.y} ${pG_BL_bot.x},${pG_BL_bot.y}" fill="none" stroke="#475569" stroke-width="2" />
-        <circle cx="${pSpotBot.x}" cy="${pSpotBot.y}" r="2" fill="#475569" />
+        <polygon points="${pP_BL_top.x},${pP_BL_top.y} ${pP_BR_top.x},${pP_BR_top.y} ${pP_BR_bot.x},${pP_BR_bot.y} ${pP_BL_bot.x},${pP_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <polygon points="${pG_BL_top.x},${pG_BL_top.y} ${pG_BR_top.x},${pG_BR_top.y} ${pG_BR_bot.x},${pG_BR_bot.y} ${pG_BL_bot.x},${pG_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <circle cx="${pSpotBot.x}" cy="${pSpotBot.y}" r="2" fill="#ffffff" />
       </svg>
       ${playersHTML}
     </div>
@@ -614,7 +616,7 @@ export const generateLineupPDF = async ({
                         </svg>
                       </div>
                     `}
-                    <div style="color: #ffffff; font-size: 9px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; display: flex; align-items: center;">
+                    <div style="color: #ffffff; font-size: 10px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.4; padding: 2px 0;">
                       ${player.dorsal ? `<span style="color: #94a3b8; font-weight: 800; margin-right: 6px;">#${player.dorsal}</span>` : ''}${getPlayerFullName(player)}
                     </div>
                   </div>
@@ -760,19 +762,50 @@ export const generateCallUpPDF = async ({
   const observationsLabel = translations.observations || 'Observaciones';
   const notCalledLabel = translations.notCalled || 'No Convocados';
 
-  // No convocados diseño claro (Grayscale)
-  const noConvocadosHTML = noConvocados && noConvocados.length > 0 ? `
-    <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
-      <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 8px; font-family: 'Inter', sans-serif; text-transform: uppercase;">${notCalledLabel.toUpperCase()} (${noConvocados.length})</div>
-      <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; color: #334155; font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif;">
-        ${noConvocados.map(id => {
-          const p = resolvedPlayers.find(pl => pl._id === id || pl._id === id._id);
-          if (!p) return '';
-          return `<span style="display: inline-block;">${p.dorsal ? '#' + p.dorsal + ' ' : ''}${getPlayerFullName(p)}</span>`;
-        }).join('<span style="color: #cbd5e1;">&bull;</span>')}
+  // Fila de jugador sin convocar para diseño con foto (Grayscale)
+  const noConvocadoCardHTML = (player) => {
+    const color = getPositionColor(player.posicion);
+    return `
+      <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">
+        <div style="min-width: 18px; font-weight: 800; font-size: 10px; color: ${color}; font-family: 'Inter', sans-serif; text-align: right;">${player.dorsal || ''}</div>
+        ${showPhotos && player.foto ? `
+          <img src="${player.foto}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1; flex-shrink: 0;" />
+        ` : `
+          <div style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 10px; font-weight: bold; flex-shrink: 0; background: #e2e8f0;">👤</div>
+        `}
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: #475569; font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif;">${getPlayerFullName(player)}</div>
+        </div>
       </div>
-    </div>
-  ` : '';
+    `;
+  };
+
+  // No convocados diseño claro (Grayscale)
+  let noConvocadosHTML = '';
+  if (noConvocados && noConvocados.length > 0) {
+    const list = [];
+    for (let i = 0; i < noConvocados.length; i += 3) {
+      const p1 = resolvedPlayers.find(pl => pl._id === noConvocados[i] || pl._id === noConvocados[i]._id);
+      const p2 = resolvedPlayers.find(pl => pl._id === noConvocados[i+1] || pl._id === noConvocados[i+1]?._id);
+      const p3 = resolvedPlayers.find(pl => pl._id === noConvocados[i+2] || pl._id === noConvocados[i+2]?._id);
+      
+      list.push(`
+        <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+          ${p1 ? noConvocadoCardHTML(p1) : '<div style="flex: 1; visibility: hidden;"></div>'}
+          ${p2 ? noConvocadoCardHTML(p2) : '<div style="flex: 1; visibility: hidden;"></div>'}
+          ${p3 ? noConvocadoCardHTML(p3) : '<div style="flex: 1; visibility: hidden;"></div>'}
+        </div>
+      `);
+    }
+    noConvocadosHTML = `
+      <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
+        <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 8px; font-family: 'Inter', sans-serif; text-transform: uppercase;">${notCalledLabel.toUpperCase()} (${noConvocados.length})</div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          ${list.join('')}
+        </div>
+      </div>
+    `;
+  }
 
   // Observaciones diseño claro (Grayscale)
   const observacionesHTML = observaciones ? `
@@ -798,94 +831,141 @@ export const generateCallUpPDF = async ({
         .banner {
           background: linear-gradient(135deg, #0f172a 0%, #334155 60%, #475569 100%);
           border-radius: 14px;
-          padding: 22px 26px;
+          padding: 14px 20px;
           color: #fff;
-          margin-bottom: 14px;
-          text-align: center;
-          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.15);
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.1);
+        }
+        .banner-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
         .banner-logo {
-          width: 48px;
-          height: 48px;
+          width: 44px;
+          height: 44px;
           object-fit: contain;
-          background: rgba(255,255,255,0.15);
-          border-radius: 10px;
+          background: #ffffff;
+          border-radius: 8px;
           padding: 4px;
-          margin-bottom: 8px;
-          display: inline-block;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .banner-title-group {
+          display: flex;
+          flex-direction: column;
         }
         .banner-title {
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 900;
-          letter-spacing: 1.5px;
+          letter-spacing: 1px;
           text-transform: uppercase;
-          margin-bottom: 3px;
+        }
+        .banner-subtitle {
+          font-size: 10px;
+          opacity: 0.85;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+        .banner-right {
+          text-align: right;
         }
         .banner-vs {
-          font-size: 11px;
-          font-weight: 700;
+          font-size: 9px;
+          font-weight: 800;
           color: rgba(255,255,255,0.6);
-          margin-bottom: 2px;
-          letter-spacing: 2px;
+          letter-spacing: 1px;
         }
         .banner-rival {
-          font-size: 18px;
+          font-size: 15px;
           font-weight: 800;
-          margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         
         .meeting-strip {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
-          margin-bottom: 18px;
+          display: flex;
+          justify-content: space-between;
+          background: #f8fafc;
+          border-radius: 12px;
+          padding: 10px 16px;
+          border: 1px solid #e2e8f0;
+          margin-bottom: 14px;
+          gap: 12px;
         }
         .meeting-card {
-          text-align: center;
-          padding: 4px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+        }
+        .meeting-icon {
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .meeting-info-group {
+          display: flex;
+          flex-direction: column;
         }
         .meeting-label {
-          font-size: 7.5px;
+          font-size: 7px;
           color: #94a3b8;
           text-transform: uppercase;
           letter-spacing: 0.8px;
           font-weight: 800;
-          margin-bottom: 4px;
+          margin-bottom: 1px;
         }
         .meeting-value {
-          font-size: 11px;
+          font-size: 9.5px;
           font-weight: 700;
           color: #1e293b;
-          line-height: 1.3;
-          word-break: break-word;
+          line-height: 1.25;
         }
       </style>
     </head>
     <body>
       <div class="pdf-page">
         <div class="banner">
-          ${resolvedTeam?.escudo ? `<img src="${resolvedTeam.escudo}" class="banner-logo" />` : ''}
-          <div class="banner-title">${callupHeader}</div>
-          <div class="banner-vs">VS</div>
-          <div class="banner-rival">${matchSheet.rival}</div>
+          <div class="banner-left">
+            ${resolvedTeam?.escudo ? `<img src="${resolvedTeam.escudo}" class="banner-logo" />` : '<div style="width:44px; height:44px; background:rgba(255,255,255,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🛡️</div>'}
+            <div class="banner-title-group">
+              <div class="banner-title">${callupHeader}</div>
+              <div class="banner-subtitle">${resolvedTeam?.nombre || 'Mi Club'}</div>
+            </div>
+          </div>
+          <div class="banner-right">
+            <div class="banner-vs">VS</div>
+            <div class="banner-rival">${matchSheet.rival}</div>
+          </div>
         </div>
 
         <div class="meeting-strip">
           <div class="meeting-card">
-            <div class="meeting-label">Fecha</div>
-            <div class="meeting-value">${formatDate(matchSheet.fechaHora)}</div>
+            <span class="meeting-icon">📅</span>
+            <div class="meeting-info-group">
+              <div class="meeting-label">Fecha y Hora</div>
+              <div class="meeting-value">${formatDate(matchSheet.fechaHora)} - ${formatTime(matchSheet.fechaHora) || '--:--'}</div>
+            </div>
           </div>
           <div class="meeting-card">
-            <div class="meeting-label">Hora Partido</div>
-            <div class="meeting-value">${formatTime(matchSheet.fechaHora) || '--:--'}</div>
+            <span class="meeting-icon">📍</span>
+            <div class="meeting-info-group">
+              <div class="meeting-label">Lugar Quedada</div>
+              <div class="meeting-value">${lugarQuedada || '---'}</div>
+            </div>
           </div>
           <div class="meeting-card">
-            <div class="meeting-label">Lugar Quedada</div>
-            <div class="meeting-value">${lugarQuedada || '---'}</div>
-          </div>
-          <div class="meeting-card">
-            <div class="meeting-label">Hora Quedada</div>
-            <div class="meeting-value">${horaQuedada || '---'}</div>
+            <span class="meeting-icon">⏰</span>
+            <div class="meeting-info-group">
+              <div class="meeting-label">Hora Quedada</div>
+              <div class="meeting-value">${horaQuedada || '---'}</div>
+            </div>
           </div>
         </div>
 
@@ -1203,13 +1283,13 @@ export const generateMatchSheetPDF = async ({
         }
         
         .match-info { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .escudos-row { display: flex; align-items: center; justify-content: center; gap: 30px; margin-bottom: 12px; }
-        .escudo-container { text-align: center; display: flex; flex-direction: column; align-items: center; width: 110px; }
+        .escudos-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+        .escudo-container { text-align: center; display: flex; flex-direction: column; align-items: center; width: 150px; flex-shrink: 1; }
         .escudo-img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 3px; border: 1px solid #e2e8f0; }
         .escudo-placeholder { width: 44px; height: 44px; border-radius: 8px; background: linear-gradient(135deg, #0f172a, #1e3a5f); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .team-name { font-size: 11px; font-weight: 700; color: #1e293b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+        .team-name { font-size: 10px; font-weight: 800; color: #1e293b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.2px; white-space: normal; line-height: 1.25; word-wrap: break-word; }
         
-        .score-container { display: flex; align-items: center; gap: 12px; }
+        .score-container { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
         .score { font-size: 32px; font-weight: 900; color: #0f172a; min-width: 40px; text-align: center; letter-spacing: -1px; }
         .score-divider { font-size: 24px; color: #94a3b8; font-weight: 300; }
         .result-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }

@@ -716,7 +716,7 @@ const generateAnthropometryPDFHTML = (t) => {
         </div>
         
         <div class="section">
-          <div class="section-header">${t('anthropometry.folds')} (${t('anthropometry.sixFoldsSystem')})</div>
+          <div class="section-header">${t('anthropometry.skinfolds')} (${t('anthropometry.sixFoldsSystem')})</div>
           <div class="stats-row">
             <span class="stats-label">${t('anthropometry.folds.tricipital')}</span>
             <span class="stats-value">${latestMeasurement.pliegues?.tricipital || '-'} mm</span>
@@ -1684,7 +1684,7 @@ const generatePDFHTML = (t, fotoBase64) => {
             </div>
           </div>
           <div style="margin-top: 8px;">
-            <div style="font-size: 10px; font-weight: 600; margin-bottom: 4px;">${t('anthropometry.folds')} (${t('anthropometry.sixFoldsSystem')})</div>
+            <div style="font-size: 10px; font-weight: 600; margin-bottom: 4px;">${t('anthropometry.skinfolds')} (${t('anthropometry.sixFoldsSystem')})</div>
             <div class="stats-row">
               <span class="stats-label">${t('anthropometry.folds.tricipital')}</span>
               <span class="stats-value">${anthropometryData[0].pliegues?.tricipital || '-'} mm</span>
@@ -2775,7 +2775,7 @@ const generatePDFHTML = (t, fotoBase64) => {
                   
                   {/* Pliegues */}
                   <View style={styles.anthropometryFoldsContainer}>
-                    <Text style={styles.anthropometryFoldsTitle}>{t('anthropometry.folds')} ({t('anthropometry.sixFoldsSystem')})</Text>
+                    <Text style={styles.anthropometryFoldsTitle}>{t('anthropometry.skinfolds')} ({t('anthropometry.sixFoldsSystem')})</Text>
                     <Text style={styles.anthropometrySumText}>
                       {t('anthropometry.sumOfFolds')}: {anthropometryData[0].sumaPliegues ? anthropometryData[0].sumaPliegues.toFixed(1) : '-'} mm
                     </Text>

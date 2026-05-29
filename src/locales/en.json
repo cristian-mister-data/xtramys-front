@@ -1151,6 +1151,7 @@
         }
     },
     "common": {
+        "options": "Options",
         "lightMode": "Light mode",
         "darkMode": "Dark mode",
         "cancel": "Cancel",
@@ -1718,6 +1719,7 @@
         "searchStrategy": "Search strategy..."
     },
     "tacticalBoard": {
+        "dragToDelete": "Drop to delete",
         "fieldTypes": {
             "full": "Full Field",
             "half": "Half Field",

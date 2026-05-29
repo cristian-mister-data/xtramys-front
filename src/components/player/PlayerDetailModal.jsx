@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
+import { MdDelete, MdClose, MdBarChart, MdEdit } from 'react-icons/md';
 import { Button, Row, Muted } from '@/ui/primitives';
 import {
   getPositionColor,
@@ -92,19 +93,23 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
       footer={
         <Row style={{ justifyContent: 'space-between', width: '100%' }}>
           <Button type="button" $variant="danger" onClick={() => onDelete?.(player)}>
-            🗑 {t('edition.delete', 'Eliminar')}
+            <MdDelete size={16} />
+            {t('edition.delete', 'Eliminar')}
           </Button>
           <Row style={{ gap: 8 }}>
             <Button type="button" $variant="ghost" onClick={onClose}>
+              <MdClose size={16} />
               {t('common.close', 'Cerrar')}
             </Button>
             {onViewProfile ? (
               <Button type="button" $variant="secondary" onClick={() => onViewProfile(player)}>
-                📊 {t('player.viewProfile', 'Ver perfil')}
+                <MdBarChart size={16} />
+                {t('player.viewProfile', 'Ver perfil')}
               </Button>
             ) : null}
             <Button type="button" onClick={() => onEdit?.(player)}>
-              ✏️ {t('edition.edit', 'Editar')}
+              <MdEdit size={16} />
+              {t('edition.edit', 'Editar')}
             </Button>
           </Row>
         </Row>

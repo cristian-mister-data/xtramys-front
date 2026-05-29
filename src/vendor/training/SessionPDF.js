@@ -390,7 +390,7 @@ export const generateSessionPDFHTML = ({
 <head>
   <meta charset="UTF-8">
   <title>Sesion de Entrenamiento - ${fechaFormateada}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4; margin: 0; }
@@ -454,9 +454,10 @@ export const generateSessionPDFHTML = ({
       padding: 2px;
     }
     .banner-title {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: -0.5px;
+      font-family: 'Outfit', 'Inter', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       margin-bottom: 4px;
       text-transform: uppercase;
     }
@@ -872,14 +873,14 @@ export const generateSessionPDFHTML = ({
         ${team?.escudo ? `<img src="${team.escudo}" class="team-logo" />` : ''}
         ${team?.nombre || 'Equipo'}
       </div>
-      <div class="banner-title">Sesion de Entrenamiento</div>
+      <div class="banner-title">${t('session.pdfTitle', 'Sesión de Entrenamiento')}</div>
       <div class="banner-date">${fechaFormateada}</div>
     </div>
 
     <div class="stats-strip">
       <div class="stat-card">
         <div class="stat-label">Horario</div>
-        <div class="stat-value" style="font-size:12px;">${horaInicio} - ${horaFin}</div>
+        <div class="stat-value" style="font-size: 11px; white-space: nowrap; letter-spacing: -0.2px;">${horaInicio} - ${horaFin}</div>
         <div class="stat-sub">${duracionLabel}</div>
       </div>
       <div class="stat-card">
