@@ -74,11 +74,11 @@ export default function Statistics({ navigation: navigationProp }) {
     const [playerSearch, setPlayerSearch] = useState(''); // Búsqueda de jugadores
     const [competitionFilter, setCompetitionFilter] = useState('total'); // 'total' | tournamentId
     const [selectedTournamentId, setSelectedTournamentId] = useState(null); // kept for backward compat
-    
+
     // Estado para el perfil del jugador
     const [showPlayerProfile, setShowPlayerProfile] = useState(false);
     const [selectedPlayerForProfile, setSelectedPlayerForProfile] = useState(null);
-    
+
     // Manejar navegación de vuelta a la pestaña de jugadores
     useEffect(() => {
         if (route.params?.initialTab) {
@@ -154,22 +154,22 @@ export default function Statistics({ navigation: navigationProp }) {
             cleanSheets: 0,
             totalInjuries: injuries.length,
             activeInjuries: (() => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return injuries.filter(i => {
-                // Si tiene fechaFin y está en el futuro = activa
-                if (i.fechaFin) {
-                  const endDate = new Date(i.fechaFin);
-                  return endDate >= today;
-                }
-                // Si no tiene fechaFin pero tiene fechaFinPrevista en el futuro = activa
-                if (i.fechaFinPrevista) {
-                  const estimatedEndDate = new Date(i.fechaFinPrevista);
-                  return estimatedEndDate >= today;
-                }
-                // Sin fechas definidas = activa
-                return true;
-              }).length;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return injuries.filter(i => {
+                    // Si tiene fechaFin y está en el futuro = activa
+                    if (i.fechaFin) {
+                        const endDate = new Date(i.fechaFin);
+                        return endDate >= today;
+                    }
+                    // Si no tiene fechaFin pero tiene fechaFinPrevista en el futuro = activa
+                    if (i.fechaFinPrevista) {
+                        const estimatedEndDate = new Date(i.fechaFinPrevista);
+                        return estimatedEndDate >= today;
+                    }
+                    // Sin fechas definidas = activa
+                    return true;
+                }).length;
             })(),
         };
 
@@ -192,7 +192,7 @@ export default function Statistics({ navigation: navigationProp }) {
                 return jugadoresIds.includes(p._id);
             }).length;
 
-playerStatsMap[p._id] = {
+            playerStatsMap[p._id] = {
                 id: p._id,
                 name: getPlayerFullName(p),
                 position: p.posicion || t('statistics.players.noPosition'),
@@ -234,14 +234,14 @@ playerStatsMap[p._id] = {
             let matchResult = match.resultado;
             const golesFavor = match.golesFavor;
             const golesContra = match.golesContra;
-            
+
             // Si no hay resultado pero hay goles definidos (incluyendo 0), calcular resultado
             if (!matchResult && golesFavor !== null && golesFavor !== undefined && golesContra !== null && golesContra !== undefined) {
                 if (golesFavor > golesContra) matchResult = 'Victoria';
                 else if (golesFavor < golesContra) matchResult = 'Derrota';
                 else matchResult = 'Empate';
             }
-            
+
             if (matchResult === 'Victoria') teamStats.wins++;
             else if (matchResult === 'Empate') teamStats.draws++;
             else if (matchResult === 'Derrota') teamStats.losses++;
@@ -416,7 +416,7 @@ playerStatsMap[p._id] = {
                 (match.goles || []).forEach(gol => {
                     const pid = typeof gol.jugador === 'object' ? gol.jugador._id : gol.jugador;
                     if (playerStatsMap[pid]) playerStatsMap[pid].goals++;
-                    
+
                     // Contar asistencias
                     if (gol.asistente) {
                         const assistId = typeof gol.asistente === 'object' ? gol.asistente._id : gol.asistente;
@@ -448,7 +448,7 @@ playerStatsMap[p._id] = {
                     if (playerStatsMap[pid]) playerStatsMap[pid].redCards++;
                 });
             }
-            
+
             // También contar asistencias de match.goles incluso si hay eventos (los eventos no tienen asistencias)
             (match.goles || []).forEach(gol => {
                 if (gol.asistente) {
@@ -684,36 +684,36 @@ playerStatsMap[p._id] = {
         const weekDate = new Date(week.weekStart);
         const weekEnd = new Date(weekDate);
         weekEnd.setDate(weekEnd.getDate() + 6);
-        
+
         const teamName = selectedTeam?.nombre || t('statistics.yourTeam');
         const locale = getLocale();
         const weekLabel = `${weekDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
         // Ordenar jugadores por porcentaje
         const sortedPlayers = [...week.playerAttendance].sort((a, b) => b.percentage - a.percentage);
-        
+
         // Generar filas de la tabla con control de saltos de página
         const rowsPerPage = 18;
         const tableRows = sortedPlayers.map((pa, index) => {
             const isLastOfPage = (index + 1) % rowsPerPage === 0 && index < sortedPlayers.length - 1;
             const isFirstOfPage = index % rowsPerPage === 0 && index > 0;
             const isLastRow = index === sortedPlayers.length - 1;
-            
+
             let rowClasses = [];
             if (isFirstOfPage) rowClasses.push('first-of-page');
             if (isLastOfPage) rowClasses.push('last-of-page');
             if (isLastRow) rowClasses.push('last-row');
-            
+
             const percentageClass = pa.percentage >= 80 ? 'percentage-high' : pa.percentage >= 60 ? 'percentage-medium' : 'percentage-low';
-            
+
             return `
                 <tr class="${rowClasses.join(' ')}">
                     <td><strong>${pa.playerName}</strong></td>
                     <td>${pa.attended}/${week.totalSessions}</td>
                     <td class="${percentageClass}">${pa.percentage}%</td>
-                    <td>${pa.missedDates.length > 0 
-                        ? `<span class="missed-days-badge">${pa.missedDates.join(', ')}</span>` 
-                        : `<span class="no-missed-badge">${t('statistics.weeklyAttendance.noDays')}</span>`}</td>
+                    <td>${pa.missedDates.length > 0
+                    ? `<span class="missed-days-badge">${pa.missedDates.join(', ')}</span>`
+                    : `<span class="no-missed-badge">${t('statistics.weeklyAttendance.noDays')}</span>`}</td>
                 </tr>
             `;
         }).join('');
@@ -739,7 +739,7 @@ playerStatsMap[p._id] = {
                     }
                     
                     body {
-                        font-family: 'Helvetica Neue', Arial, sans-serif;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                         font-size: 12px;
                         line-height: 1.4;
                         color: #1e293b;
@@ -977,17 +977,18 @@ playerStatsMap[p._id] = {
         `;
 
         try {
-            const { uri } = await Print.printToFileAsync({ html: htmlContent });
-            const fileName = `${t('statistics.weeklyAttendance.pdfFileName')}_${week.weekStart}.pdf`;
+            const { uri } = await Print.printToFileAsync({ html: htmlContent, margins: { top: 40, bottom: 40, left: 40, right: 40 } });
+            const prefix = t('statistics.weeklyAttendance.pdfPrefix', 'Asistencia_Semanal');
+            const fileName = `${prefix}_${week.weekStart}.pdf`;
             await savePdfToDownloads(uri, fileName);
         } catch (error) {
             console.error('Error generating PDF:', error);
-            Alert.alert(t('common.error'), t('statistics.weeklyAttendance.pdfError'));
+            Alert.alert(t('common.error'), t('statistics.weeklyAttendance.pdfError', 'Error al generar el PDF'));
         }
     };
 
     const sharedPDFStyles = `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
         * {
             margin: 0;
@@ -997,51 +998,70 @@ playerStatsMap[p._id] = {
         
         @page {
             size: A4;
-            margin: 20mm 20mm 20mm 20mm;
+            margin: 15mm 12mm 20mm 12mm;
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            color: #334155;
+            font-family: 'Inter', Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #0f172a;
             background-color: #ffffff;
-            font-size: 11px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.55;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 0;
+            padding: 10mm 12mm 18mm 12mm;
         }
-        
+
         .page {
+            background-color: transparent;
+            position: relative;
+            page-break-before: always;
+            break-before: always;
             padding: 0;
             box-sizing: border-box;
-            position: relative;
+        }
+        
+        .page:first-of-type {
+            page-break-before: avoid;
+            break-before: avoid;
         }
         
         .page-break {
-            page-break-after: always;
+            page-break-before: always;
+            break-before: always;
+            clear: both;
         }
         
+        /* Main Header Banner */
         .header-container {
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 20px 24px;
             margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: center;
             page-break-inside: avoid;
         }
         
         .header-left h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0;
-            letter-spacing: -0.5px;
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .header-left p {
-            font-size: 12px;
-            color: #64748b;
-            margin: 4px 0 0 0;
+            font-size: 11px;
+            color: #cbd5e1;
+            margin: 0;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .header-right {
@@ -1055,79 +1075,83 @@ playerStatsMap[p._id] = {
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
+        .section-title, h1, h2, h3, h4, h5, h6 {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
         .section-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 800;
             color: #0f172a;
             margin-top: 0;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             letter-spacing: -0.2px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 6px;
-            page-break-inside: avoid;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 8px;
+            text-transform: uppercase;
         }
         
         /* Grid Layouts */
         .grid-2 {
             display: flex;
-            gap: 24px;
-            margin-bottom: 24px;
+            gap: 20px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
         
-        .grid-2 > div {
-            flex: 1;
-        }
+        .grid-2 > div { flex: 1; min-width: 0; }
         
         .grid-3 {
             display: flex;
-            gap: 18px;
-            margin-bottom: 24px;
+            gap: 16px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
         
-        .grid-3 > div {
-            flex: 1;
-        }
+        .grid-3 > div { flex: 1; min-width: 0; }
         
         .grid-4 {
             display: flex;
-            gap: 14px;
-            margin-bottom: 24px;
+            gap: 12px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
         
-        .grid-4 > div {
-            flex: 1;
-        }
+        .grid-4 > div { flex: 1; min-width: 0; }
         
         /* Cards */
         .card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
-            padding: 16px 20px;
+            padding: 18px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            page-break-inside: avoid;
         }
         
         .card-primary {
             background: #0f172a;
             color: #ffffff;
             border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         
         /* Metric Items */
         .metric-box {
             text-align: center;
-            padding: 6px 0;
+            padding: 10px 0;
+            page-break-inside: avoid;
         }
         
         .metric-val {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 26px;
+            font-weight: 800;
             color: #0f172a;
-            line-height: 1.2;
+            line-height: 1.1;
         }
         
         .card-primary .metric-val {
@@ -1135,11 +1159,11 @@ playerStatsMap[p._id] = {
         }
         
         .metric-lbl {
-            font-size: 9px;
-            font-weight: 500;
-            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
             text-transform: uppercase;
-            margin-top: 4px;
+            margin-top: 6px;
             letter-spacing: 0.5px;
         }
         
@@ -1151,7 +1175,11 @@ playerStatsMap[p._id] = {
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 12px;
             margin-bottom: 24px;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            page-break-inside: auto;
         }
         
         thead {
@@ -1160,59 +1188,65 @@ playerStatsMap[p._id] = {
         
         tr {
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         
+        tbody { display: table-row-group; }
+        
         th {
-            background-color: #f8fafc;
-            color: #475569;
-            font-weight: 600;
+            background-color: #1e293b;
+            color: #ffffff;
+            font-weight: 700;
             text-align: left;
             padding: 10px 12px;
-            font-size: 9px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
+            border: 1px solid #334155;
+            border-bottom: 2px solid #0f172a;
         }
         
         td {
             padding: 10px 12px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 10px;
-            color: #334155;
+            border: 1px solid #cbd5e1;
+            font-size: 11px;
+            color: #0f172a;
+            vertical-align: middle;
         }
         
         tr:nth-child(even) td {
-            background-color: #fafafa;
+            background-color: #f8fafc;
         }
         
         .badge {
             display: inline-block;
-            padding: 3px 6px;
-            font-size: 8px;
-            font-weight: 600;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-weight: 700;
             border-radius: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            text-align: center;
         }
         
-        .badge-primary { background-color: #f1f5f9; color: #475569; }
-        .badge-success { background-color: #ecfdf5; color: #047857; }
-        .badge-warning { background-color: #fffbeb; color: #d97706; }
-        .badge-danger { background-color: #fef2f2; color: #b91c1c; }
+        .badge-primary { background-color: #e2e8f0; color: #334155; }
+        .badge-success { background-color: #dcfce7; color: #166534; font-weight: 800; }
+        .badge-warning { background-color: #fef3c7; color: #854d0e; font-weight: 800; }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; font-weight: 800; }
         
         /* Custom bars for lists */
         .bar-list-item {
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             page-break-inside: avoid;
         }
         
         .bar-list-label {
-            width: 130px;
-            font-weight: 500;
-            font-size: 10px;
-            color: #475569;
+            width: 140px;
+            font-weight: 600;
+            font-size: 11px;
+            color: #334155;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1221,7 +1255,7 @@ playerStatsMap[p._id] = {
         .bar-list-track {
             flex: 1;
             height: 8px;
-            background-color: #f1f5f9;
+            background-color: #e2e8f0;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
@@ -1233,12 +1267,12 @@ playerStatsMap[p._id] = {
         }
         
         .bar-list-val {
-            width: 30px;
+            width: 35px;
             text-align: right;
-            font-weight: 600;
-            font-size: 10px;
-            color: #334155;
-            margin-left: 12px;
+            font-weight: 800;
+            font-size: 11px;
+            color: #0f172a;
+            margin-left: 10px;
         }
         
         /* Ring chart representation */
@@ -1250,8 +1284,8 @@ playerStatsMap[p._id] = {
         }
         
         .ring-outer {
-            width: 84px;
-            height: 84px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -1265,39 +1299,63 @@ playerStatsMap[p._id] = {
         
         .ring-value {
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 800;
             color: #0f172a;
         }
         
         .ring-label {
-            font-size: 8px;
-            font-weight: 600;
-            color: #64748b;
+            font-size: 9px;
+            font-weight: 700;
+            color: #475569;
             text-transform: uppercase;
             margin-top: 2px;
         }
-
+        
+        /* Footer logo (Fixed on every printed page) */
         .footer-logo {
-            margin-top: 30px;
-            padding-top: 12px;
-            border-top: 1px solid #e2e8f0;
+            position: fixed;
+            bottom: 2mm;
+            left: 12mm;
+            right: 12mm;
+            height: 12mm;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 9px;
-            color: #94a3b8;
-            font-weight: 500;
-            page-break-inside: avoid;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #ffffff;
+            font-family: 'Inter', sans-serif;
         }
-
+        
         .footer-logo strong {
             color: #0f172a;
             font-size: 11px;
-            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+        }
+        
+        .page-number::after {
+            content: counter(page);
+        }
+        
+        /* Icons via text */
+        .icon-text {
+            display: inline-block;
+            font-size: 12px;
+            margin-right: 4px;
+            vertical-align: middle;
         }
     `;
 
-    const wrapHTMLDocument = (title, bodyContent) => `
+    const wrapHTMLDocument = (title, bodyContent) => {
+        const generatedLabel = t('statistics.weeklyAttendance.generatedAt') || 'Generado';
+        const dateStr = new Date().toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        return `
         <!DOCTYPE html>
         <html>
         <head>
@@ -1310,16 +1368,25 @@ playerStatsMap[p._id] = {
         </head>
         <body>
             ${bodyContent}
+            <div class="footer-logo">
+                <div><strong>Xtramys</strong> | ${t('statistics.premiumReport', 'Informe de Rendimiento Premium')}</div>
+                <div>${generatedLabel}: ${dateStr} | Página <span class="page-number"></span></div>
+            </div>
         </body>
         </html>
     `;
+    };
 
-    const getReportHeaderHTML = (reportTitle) => {
+    const getReportHeaderHTML = (reportTitle, isSubPage = false) => {
         const teamName = selectedTeam?.nombre || t('statistics.yourTeam');
         const seasonName = temporada?.nombre || '';
         const generatedLabel = t('statistics.weeklyAttendance.generatedAt') || 'Generado';
         const dateStr = new Date().toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
-        
+
+        if (isSubPage) {
+            return `<!-- Sin cabecera en subpáginas para evitar repeticiones -->`;
+        }
+
         return `
             <div class="header-container">
                 <div class="header-left">
@@ -1333,25 +1400,12 @@ playerStatsMap[p._id] = {
         `;
     };
 
-    const getReportFooterHTML = () => {
-        const generatedLabel = t('statistics.weeklyAttendance.generatedAt') || 'Generado';
-        const dateStr = new Date().toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        return `
-            <div class="footer-logo">
-                <div><strong>Xtramys</strong> | ${t('statistics.premiumReport', 'Informe de Rendimiento Premium')}</div>
-                <div>${generatedLabel}: ${dateStr}</div>
-            </div>
-        `;
-    };
-
-    const generateTeamStatsHTML = () => {
+    const generateTeamStatsHTML = (hideHeader = false, isSubPage = false) => {
         if (!stats) return '';
-        
-        // Formations list
         const formationsList = Object.entries(stats.team.formations || {})
             .sort((a, b) => b[1] - a[1]);
         const maxFormationCount = formationsList.length > 0 ? Math.max(...formationsList.map(f => f[1]), 1) : 1;
-        
+
         const formationsHTML = formationsList.length > 0
             ? formationsList.map(([formation, count]) => {
                 const pct = (count / maxFormationCount) * 100;
@@ -1359,13 +1413,13 @@ playerStatsMap[p._id] = {
                     <div class="bar-list-item">
                         <div class="bar-list-label">${formation}</div>
                         <div class="bar-list-track">
-                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #475569;"></div>
+                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #3b82f6;"></div>
                         </div>
                         <div class="bar-list-val">${count}</div>
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #64748b; font-style: italic;">${t('statistics.noData')}</p>`;
+            : `<p style="color: #475569; font-style: italic;">${t('statistics.noData')}</p>`;
 
         // Rival goal histogram
         let rivalHistogramHTML = '';
@@ -1373,11 +1427,11 @@ playerStatsMap[p._id] = {
         if (stats.team.rivalGoalStats && stats.team.rivalGoalStats.hasData) {
             const buckets = stats.team.rivalGoalStats.buckets || {};
             const maxBucketCount = Object.keys(buckets).length > 0 ? Math.max(...Object.values(buckets), 1) : 1;
-            
+
             rivalHistogramHTML = Object.entries(buckets).map(([period, count]) => {
                 const pct = (count / maxBucketCount) * 100;
                 const isDangerous = period === stats.team.rivalGoalStats.mostDangerousPeriod;
-                const color = isDangerous ? '#ef4444' : '#64748b';
+                const color = isDangerous ? '#ef4444' : '#94a3b8';
                 return `
                     <div class="bar-list-item">
                         <div class="bar-list-label">${period}'</div>
@@ -1390,28 +1444,30 @@ playerStatsMap[p._id] = {
             }).join('');
 
             rivalStatsHTML = `
-                <div class="card" style="margin-top: 15px;">
-                    <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">${t('statistics.team.rivalGoalStats', 'Goles del Rival por Periodos')}</h3>
-                    <div class="grid-3" style="margin-bottom: 15px; gap: 10px;">
-                        <div class="metric-box" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 0;">
-                            <div class="metric-val" style="font-size: 16px; color: #ef4444;">${stats.team.rivalGoalStats.avgFirstGoal}'</div>
-                            <div class="metric-lbl" style="font-size: 8px;">${t('statistics.team.avgFirstGoalAgainst', 'Min. 1º Gol Contra')}</div>
+                <div class="card" style="margin-top: 0px;">
+                    <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                        <span class="icon-text">🛡️</span> ${t('statistics.team.rivalGoalStats', 'Goles del Rival por Periodos')}
+                    </h3>
+                    <div class="grid-3" style="margin-bottom: 12px; gap: 8px;">
+                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
+                            <div class="metric-val" style="font-size: 18px; color: #ef4444;">${stats.team.rivalGoalStats.avgFirstGoal}'</div>
+                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.avgFirstGoalAgainst', 'Min. 1º Gol Contra')}</div>
                         </div>
-                        <div class="metric-box" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 0;">
-                            <div class="metric-val" style="font-size: 16px;">${stats.team.rivalGoalStats.avgPerMatch}</div>
-                            <div class="metric-lbl" style="font-size: 8px;">${t('statistics.team.avgRivalGoalsPerMatch', 'Goles Recibidos / P')}</div>
+                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
+                            <div class="metric-val" style="font-size: 18px; color: #0f172a;">${stats.team.rivalGoalStats.avgPerMatch}</div>
+                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.avgRivalGoalsPerMatch', 'Goles / P')}</div>
                         </div>
-                        <div class="metric-box" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 0;">
-                            <div class="metric-val" style="font-size: 16px; color: #f59e0b;">${stats.team.rivalGoalStats.mostDangerousPeriod}'</div>
-                            <div class="metric-lbl" style="font-size: 8px;">${t('statistics.team.mostCommonRivalGoalMinutes', 'Periodo Crítico')}</div>
+                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
+                            <div class="metric-val" style="font-size: 18px; color: #d97706;">${stats.team.rivalGoalStats.mostDangerousPeriod}'</div>
+                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.mostCommonRivalGoalMinutes', 'Periodo Crítico')}</div>
                         </div>
                     </div>
                     ${rivalHistogramHTML}
-                    <div style="display: flex; justify-content: space-between; font-size: 9px; color: #64748b; margin-top: 12px; font-weight: 600; border-top: 1px solid #f1f5f9; padding-top: 8px;">
-                        <div>${t('statistics.team.firstHalf', '1ª Parte')}: <strong>${stats.team.rivalGoalStats.firstHalfGoals}</strong></div>
-                        <div>${t('statistics.team.secondHalf', '2ª Parte')}: <strong>${stats.team.rivalGoalStats.secondHalfGoals}</strong></div>
-                        <div>${t('statistics.team.earliestRivalGoal', 'Más tempranero')}: <strong>${stats.team.rivalGoalStats.earliest}'</strong></div>
-                        <div>${t('statistics.team.latestRivalGoal', 'Más tardío')}: <strong>${stats.team.rivalGoalStats.latest}'</strong></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #475569; margin-top: 10px; font-weight: 700; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+                        <div>${t('statistics.team.firstHalf', '1ª Parte')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.firstHalfGoals}</strong></div>
+                        <div>${t('statistics.team.secondHalf', '2ª Parte')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.secondHalfGoals}</strong></div>
+                        <div>${t('statistics.team.earliestRivalGoal', 'Tempranero')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.earliest}'</strong></div>
+                        <div>${t('statistics.team.latestRivalGoal', 'Tardío')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.latest}'</strong></div>
                     </div>
                 </div>
             `;
@@ -1421,76 +1477,80 @@ playerStatsMap[p._id] = {
 
         return `
             <div class="page">
-                ${getReportHeaderHTML(t('statistics.tabs.team'))}
+                ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.team'), isSubPage)}
                 
-                <div class="section-title">${t('statistics.teamPerformance', 'Rendimiento del Equipo')}</div>
+                <div class="section-title"><span class="icon-text">📊</span> ${t('statistics.teamPerformance', 'Rendimiento del Equipo')}</div>
                 
                 <div class="grid-2">
-                    <div class="card card-primary" style="display: flex; align-items: center; justify-content: space-around; padding: 20px 24px;">
+                    <div class="card card-primary" style="display: flex; align-items: center; justify-content: space-around; padding: 20px;">
                         <div class="ring-container">
-                            <div class="ring-outer" style="background: conic-gradient(#10b981 ${winRate * 3.6}deg, #334155 0deg); border: none;">
-                                <div style="width: 72px; height: 72px; border-radius: 50%; background: #0f172a; display: flex; align-items: center; justify-content: center;">
+                            <div class="ring-outer" style="background: conic-gradient(#10b981 ${winRate * 3.6}deg, #1e293b 0deg); border: 2px solid #334155;">
+                                <div style="width: 76px; height: 76px; border-radius: 50%; background: #0f172a; display: flex; align-items: center; justify-content: center;">
                                     <div class="ring-inner">
-                                        <div class="ring-value" style="color: #ffffff; font-size: 16px;">${winRate}%</div>
-                                        <div class="ring-label" style="color: #cbd5e1; font-size: 7px;">${t('statistics.wins')}</div>
+                                        <div class="ring-value" style="color: #ffffff; font-size: 18px;">${winRate}%</div>
+                                        <div class="ring-label" style="color: #cbd5e1; font-size: 9px;">${t('statistics.wins')}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div style="flex: 1; padding-left: 24px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px;">
-                                <span>${t('statistics.matchesPlayed', 'Partidos Jugados')}:</span>
-                                <strong>${stats.team.matches}</strong>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+                                <span style="color: #cbd5e1;">${t('statistics.matchesPlayed', 'Partidos Jugados')}:</span>
+                                <strong style="font-size: 14px; color: #ffffff;">${stats.team.matches}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px;">
-                                <span style="color: #10b981;">● ${t('statistics.wins', 'Victorias')}:</span>
-                                <strong>${stats.team.wins}</strong>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                                <span style="color: #34d399; font-weight: 600;">● ${t('statistics.wins', 'Victorias')}:</span>
+                                <strong style="color: #ffffff;">${stats.team.wins}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px;">
-                                <span style="color: #f59e0b;">● ${t('statistics.draws', 'Empates')}:</span>
-                                <strong>${stats.team.draws}</strong>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                                <span style="color: #fbbf24; font-weight: 600;">● ${t('statistics.draws', 'Empates')}:</span>
+                                <strong style="color: #ffffff;">${stats.team.draws}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                                <span style="color: #ef4444;">● ${t('statistics.losses', 'Derrotas')}:</span>
-                                <strong>${stats.team.losses}</strong>
+                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                <span style="color: #f87171; font-weight: 600;">● ${t('statistics.losses', 'Derrotas')}:</span>
+                                <strong style="color: #ffffff;">${stats.team.losses}</strong>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card" style="display: flex; flex-direction: column; justify-content: center; padding: 20px 24px;">
-                        <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">${t('statistics.goalsBalance', 'Balance de Goles')}</div>
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
+                        <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                            <span class="icon-text">⚽</span> ${t('statistics.goalsBalance', 'Balance de Goles')}
+                        </div>
                         <div class="grid-2" style="margin-bottom: 12px;">
-                            <div>
-                                <div style="font-size: 9px; color: #64748b; font-weight: 600; text-transform: uppercase;">${t('statistics.goalsFor')}</div>
-                                <div style="font-size: 20px; font-weight: 700; color: #10b981;">${stats.team.goalsFor}</div>
-                                <div style="font-size: 9px; color: #94a3b8; font-weight: 500;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsFor / stats.team.matches : 0).toFixed(1)} / p</div>
+                            <div style="text-align: center; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 10px; color: #166534; font-weight: 700; text-transform: uppercase;">${t('statistics.goalsFor')}</div>
+                                <div style="font-size: 26px; font-weight: 800; color: #15803d; margin: 4px 0;">${stats.team.goalsFor}</div>
+                                <div style="font-size: 10px; color: #166534; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsFor / stats.team.matches : 0).toFixed(1)} / p</div>
                             </div>
-                            <div>
-                                <div style="font-size: 9px; color: #64748b; font-weight: 600; text-transform: uppercase;">${t('statistics.goalsAgainst')}</div>
-                                <div style="font-size: 20px; font-weight: 700; color: #ef4444;">${stats.team.goalsAgainst}</div>
-                                <div style="font-size: 9px; color: #94a3b8; font-weight: 500;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsAgainst / stats.team.matches : 0).toFixed(1)} / p</div>
+                            <div style="text-align: center; background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fecaca;">
+                                <div style="font-size: 10px; color: #991b1b; font-weight: 700; text-transform: uppercase;">${t('statistics.goalsAgainst')}</div>
+                                <div style="font-size: 26px; font-weight: 800; color: #b91c1c; margin: 4px 0;">${stats.team.goalsAgainst}</div>
+                                <div style="font-size: 10px; color: #991b1b; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsAgainst / stats.team.matches : 0).toFixed(1)} / p</div>
                             </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; font-weight: 600; color: #334155;">
-                            <div>Diferencia de Goles: <strong style="color: ${stats.team.goalsFor >= stats.team.goalsAgainst ? '#10b981' : '#ef4444'}; font-size: 11px;">${stats.team.goalsFor - stats.team.goalsAgainst > 0 ? '+' : ''}${stats.team.goalsFor - stats.team.goalsAgainst}</strong></div>
-                            <div style="width: 1px; height: 12px; background-color: #cbd5e1;"></div>
-                            <div>Porterías a Cero: <strong style="color: #1d4ed8; font-size: 11px;">${stats.team.cleanSheets}</strong></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; font-weight: 700; color: #334155;">
+                            <div>Diferencia: <strong style="font-size: 13px; color: ${stats.team.goalsFor >= stats.team.goalsAgainst ? '#15803d' : '#b91c1c'};">${stats.team.goalsFor - stats.team.goalsAgainst > 0 ? '+' : ''}${stats.team.goalsFor - stats.team.goalsAgainst}</strong></div>
+                            <div style="width: 1px; height: 14px; background-color: #cbd5e1;"></div>
+                            <div>Porterías a Cero: <strong style="font-size: 13px; color: #2563eb;">${stats.team.cleanSheets}</strong></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="grid-2">
-                    <div class="card" style="padding: 20px 24px;">
-                        <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">${t('statistics.preferredFormation', 'Formaciones Utilizadas')}</h3>
-                        <div style="display: flex; gap: 20px; margin-bottom: 16px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div class="card">
+                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                            <span class="icon-text">📋</span> ${t('statistics.preferredFormation', 'Formaciones Utilizadas')}
+                        </h3>
+                        <div style="display: flex; gap: 15px; margin-bottom: 16px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1;">
                             <div>
-                                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; display: block; font-weight: 600;">Más Usada</span>
-                                <strong style="font-size: 14px; color: #1d4ed8;">${stats.team.mostUsedFormation || '-'}</strong>
+                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Más Usada</span>
+                                <strong style="font-size: 16px; color: #2563eb;">${stats.team.mostUsedFormation || '-'}</strong>
                             </div>
                             <div style="width: 1px; background: #cbd5e1;"></div>
                             <div>
-                                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; display: block; font-weight: 600;">Avg Cambios / P.</span>
-                                <strong style="font-size: 14px; color: #8b5cf6;">${stats.team.avgSubs || '-'}</strong>
+                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Avg Cambios / P.</span>
+                                <strong style="font-size: 16px; color: #7c3aed;">${stats.team.avgSubs || '-'}</strong>
                             </div>
                         </div>
                         ${formationsHTML}
@@ -1500,92 +1560,101 @@ playerStatsMap[p._id] = {
                         ${rivalStatsHTML}
                     </div>
                 </div>
-                
-                <div style="flex-grow: 1;"></div>
-                ${getReportFooterHTML()}
             </div>
         `;
     };
 
-    const generatePlayersStatsHTML = () => {
+    const generatePlayersStatsHTML = (hideHeader = false, isSubPage = false) => {
         if (!stats || !stats.players) return '';
-        
+
         // Sort players by minutes played (descending) as default for PDF
         const sortedPlayers = [...stats.players].sort((a, b) => b.minutes - a.minutes);
-        
+
         const totalGoals = stats.players.reduce((acc, p) => acc + p.goals, 0);
         const totalAssists = stats.players.reduce((acc, p) => acc + p.assists, 0);
         const totalPlayers = stats.players.length;
 
         const tableRows = sortedPlayers.map((player) => {
-            const attendanceColor = player.attendancePercentage >= 80 ? '#10b981' : player.attendancePercentage >= 60 ? '#f59e0b' : '#ef4444';
+            const attendanceColor = player.attendancePercentage >= 80 ? '#15803d' : player.attendancePercentage >= 60 ? '#b45309' : '#b91c1c';
+
+            const yellowCardIcon = player.yellowCards > 0
+                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                     <span style="display: inline-block; width: 8px; height: 11px; background-color: #fbbf24; border-radius: 2px;"></span>
+                     <strong style="font-weight: 800; color: #0f172a;">${player.yellowCards}</strong>
+                   </div>`
+                : `<span style="color: #475569; font-weight: 600;">0</span>`;
+
+            const redCardIcon = player.redCards > 0
+                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                     <span style="display: inline-block; width: 8px; height: 11px; background-color: #ef4444; border-radius: 2px;"></span>
+                     <strong style="font-weight: 800; color: #0f172a;">${player.redCards}</strong>
+                   </div>`
+                : `<span style="color: #475569; font-weight: 600;">0</span>`;
+
             return `
                 <tr>
-                    <td style="text-align: center; font-weight: bold; color: #475569;">#${player.number}</td>
-                    <td><strong>${player.name}</strong></td>
-                    <td style="color: #64748b; font-size: 9px; font-weight: 600;">${player.position}</td>
-                    <td style="text-align: center;">${player.matches}</td>
-                    <td style="text-align: center; font-weight: 600; color: #1d4ed8;">${player.minutes}'</td>
-                    <td style="text-align: center; font-weight: bold; ${player.goals > 0 ? 'color: #10b981;' : ''}">${player.goals}</td>
-                    <td style="text-align: center; font-weight: bold; ${player.assists > 0 ? 'color: #8b5cf6;' : ''}">${player.assists}</td>
-                    <td style="text-align: center; color: #b45309; font-weight: 600;">${player.yellowCards}</td>
-                    <td style="text-align: center; color: #b91c1c; font-weight: 600;">${player.redCards}</td>
-                    <td style="text-align: center; font-weight: 700; color: ${attendanceColor};">${player.attendancePercentage}%</td>
+                    <td style="text-align: center; font-weight: 800; color: #475569;">${player.number}</td>
+                    <td><strong style="font-size: 12px; color: #0f172a;">${player.name}</strong></td>
+                    <td style="color: #475569; font-size: 10px; font-weight: 700; text-transform: uppercase;">${player.position}</td>
+                    <td style="text-align: center; font-weight: 700;">${player.matches}</td>
+                    <td style="text-align: center; font-weight: 800; color: #2563eb;">${player.minutes}'</td>
+                    <td style="text-align: center; font-weight: 800; ${player.goals > 0 ? 'color: #16a34a;' : 'color: #475569;'}">${player.goals}</td>
+                    <td style="text-align: center; font-weight: 800; ${player.assists > 0 ? 'color: #7c3aed;' : 'color: #475569;'}">${player.assists}</td>
+                    <td style="text-align: center;">${yellowCardIcon}</td>
+                    <td style="text-align: center;">${redCardIcon}</td>
+                    <td style="text-align: center; font-weight: 800; color: ${attendanceColor};">${player.attendancePercentage}%</td>
                 </tr>
             `;
         }).join('');
 
         return `
             <div class="page">
-                ${getReportHeaderHTML(t('statistics.tabs.players'))}
+                ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.players'), isSubPage)}
                 
-                <div class="section-title">${t('statistics.playersPerformance', 'Estadísticas Individuales')}</div>
+                <div class="section-title"><span class="icon-text">🏃‍♂️</span> ${t('statistics.playersPerformance', 'Estadísticas Individuales')}</div>
                 
-                <div class="grid-3" style="margin-bottom: 20px;">
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val">${totalPlayers}</div>
+                <div class="grid-3" style="margin-bottom: 16px;">
+                    <div class="card" style="text-align: center; padding: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">
+                        <div class="metric-val" style="color: #0f172a;">${totalPlayers}</div>
                         <div class="metric-lbl">${t('statistics.playersCount', 'Plantilla')}</div>
                     </div>
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #10b981;">${totalGoals}</div>
+                    <div class="card" style="text-align: center; padding: 14px; background: #f0fdf4; border-color: #bbf7d0; border-style: solid; border-width: 1px;">
+                        <div class="metric-val" style="color: #15803d;">${totalGoals} <span class="icon-text">⚽</span></div>
                         <div class="metric-lbl">${t('statistics.goals', 'Goles Totales')}</div>
                     </div>
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #8b5cf6;">${totalAssists}</div>
+                    <div class="card" style="text-align: center; padding: 14px; background: #faf5ff; border-color: #e9d5ff; border-style: solid; border-width: 1px;">
+                        <div class="metric-val" style="color: #7c3aed;">${totalAssists} <span class="icon-text">👟</span></div>
                         <div class="metric-lbl">${t('statistics.assists', 'Asistencias Totales')}</div>
                     </div>
                 </div>
                 
-                <table style="margin-bottom: 20px;">
+                <table>
                     <thead>
                         <tr>
-                            <th style="width: 6%; text-align: center;">Dorsal</th>
-                            <th style="width: 22%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
-                            <th style="width: 12%;">${t('statistics.sortLabels.position', 'Posición')}</th>
-                            <th style="width: 10%; text-align: center;">${t('statistics.fullTable.matchesPlayed', 'Partidos Jugados')}</th>
-                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.minutes', 'Minutos')}</th>
-                            <th style="width: 7%; text-align: center;">${t('statistics.fullTable.goals', 'Goles')}</th>
-                            <th style="width: 9%; text-align: center;">${t('statistics.fullTable.assists', 'Asistencias')}</th>
-                            <th style="width: 10%; text-align: center;">${t('statistics.fullTable.yellowCards', 'Tarjetas Amarillas')}</th>
-                            <th style="width: 10%; text-align: center;">${t('statistics.fullTable.redCards', 'Tarjetas Rojas')}</th>
-                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.attendance', '% Asistencia')}</th>
+                            <th style="width: 7%; text-align: center;">Dorsal</th>
+                            <th style="width: 25%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
+                            <th style="width: 15%;">${t('statistics.sortLabels.position', 'Posición')}</th>
+                            <th style="width: 8%; text-align: center;">PJ</th>
+                            <th style="width: 9%; text-align: center;">${t('statistics.fullTable.minutes', 'Minutos')}</th>
+                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.goals', 'Goles')}</th>
+                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.assists', 'Asist.')}</th>
+                            <th style="width: 8%; text-align: center;">TA</th>
+                            <th style="width: 8%; text-align: center;">TR</th>
+                            <th style="width: 11%; text-align: center;">% Asist.</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${tableRows}
                     </tbody>
                 </table>
-                
-                <div style="flex-grow: 1;"></div>
-                ${getReportFooterHTML()}
             </div>
         `;
     };
 
-    const generateInjuriesStatsHTML = () => {
+    const generateInjuriesStatsHTML = (hideHeader = false, isSubPage = false) => {
         const today = new Date();
-        today.setHours(0,0,0,0);
-        
+        today.setHours(0, 0, 0, 0);
+
         // Calculate status counts
         const activas = injuries.filter(inj => !inj.fechaFin).length;
         const enRecuperacion = injuries.filter(inj => {
@@ -1623,7 +1692,7 @@ playerStatsMap[p._id] = {
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #64748b; font-style: italic; font-size: 10px;">${t('common.noData', 'No hay datos')}</p>`;
+            : `<p style="color: #475569; font-style: italic; font-size: 11px;">${t('common.noData', 'No hay datos')}</p>`;
 
         // Injuries by Type
         const typeCounts = {};
@@ -1640,13 +1709,13 @@ playerStatsMap[p._id] = {
                     <div class="bar-list-item">
                         <div class="bar-list-label" title="${name}">${name}</div>
                         <div class="bar-list-track">
-                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #f59e0b;"></div>
+                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #3b82f6;"></div>
                         </div>
                         <div class="bar-list-val">${count}</div>
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #64748b; font-style: italic; font-size: 10px;">${t('common.noData', 'No hay datos')}</p>`;
+            : `<p style="color: #475569; font-style: italic; font-size: 11px;">${t('common.noData', 'No hay datos')}</p>`;
 
         // Duration Breakdown
         const durationCounts = { corta: 0, media: 0, larga: 0 };
@@ -1693,14 +1762,14 @@ playerStatsMap[p._id] = {
                 const playerId = inj.jugador?._id || inj.jugador;
                 const player = players.find(p => p._id === playerId);
                 const playerName = player ? getPlayerFullName(player) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
-                
+
                 const type = inj.tipo?.value ? t('injury.types.' + inj.tipo.value, inj.tipo.label) : t('common.unknown', 'Desconocido');
                 const zone = inj.zona?.value ? t('injury.zones.' + inj.zona.value, inj.zona.label) : t('common.unknown', 'Desconocido');
                 const startDateStr = inj.fechaInicio ? new Date(inj.fechaInicio).toLocaleDateString(getLocale()) : '-';
-                const endDateStr = inj.fechaFin 
-                    ? new Date(inj.fechaFin).toLocaleDateString(getLocale()) 
+                const endDateStr = inj.fechaFin
+                    ? new Date(inj.fechaFin).toLocaleDateString(getLocale())
                     : (inj.fechaFinPrevista ? new Date(inj.fechaFinPrevista).toLocaleDateString(getLocale()) : '-');
-                
+
                 const statusLabel = inj.fechaFin ? t('injuryStats.status.recovered', 'En Recuperación') : t('injuryStats.summary.active', 'Activa');
                 const statusColor = inj.fechaFin ? 'badge-warning' : 'badge-danger';
                 const relapseLabel = inj.recaida ? t('injuryStats.relapse.relapse', 'Recaída') : t('injuryStats.relapse.new', 'Nueva');
@@ -1708,11 +1777,11 @@ playerStatsMap[p._id] = {
 
                 return `
                     <tr>
-                        <td><strong>${playerName}</strong></td>
+                        <td><strong style="font-size: 12px; color: #0f172a;">${playerName}</strong></td>
                         <td>${type}</td>
-                        <td style="color: #64748b;">${zone}</td>
-                        <td style="text-align: center;">${startDateStr}</td>
-                        <td style="text-align: center; font-weight: 500;">${endDateStr}</td>
+                        <td style="color: #475569;">${zone}</td>
+                        <td style="text-align: center; font-weight: 600;">${startDateStr}</td>
+                        <td style="text-align: center; font-weight: 600;">${endDateStr}</td>
                         <td style="text-align: center;"><span class="badge ${statusColor}">${statusLabel}</span></td>
                         <td style="text-align: center;"><span class="badge ${relapseColor}">${relapseLabel}</span></td>
                     </tr>
@@ -1722,14 +1791,14 @@ playerStatsMap[p._id] = {
 
         const activeTableHTML = activeInjuries.length > 0
             ? `
-                <table style="margin-top: 10px; margin-bottom: 10px;">
+                <table>
                     <thead>
                         <tr>
                             <th style="width: 25%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
                             <th style="width: 20%;">${t('injury.types.label', 'Tipo de Lesión')}</th>
                             <th style="width: 15%;">${t('injury.zones.label', 'Zona')}</th>
-                            <th style="width: 12%; text-align: center;">${t('injury.fechaInicio', 'Fecha Inicio')}</th>
-                            <th style="width: 12%; text-align: center;">${t('injury.fechaFinPrevista', 'Pronóstico')}</th>
+                            <th style="width: 13%; text-align: center;">${t('injury.fechaInicio', 'Fecha Inicio')}</th>
+                            <th style="width: 13%; text-align: center;">${t('injury.fechaFinPrevista', 'Pronóstico')}</th>
                             <th style="width: 8%; text-align: center;">${t('injury.estado', 'Estado')}</th>
                             <th style="width: 8%; text-align: center;">Recaída</th>
                         </tr>
@@ -1739,75 +1808,88 @@ playerStatsMap[p._id] = {
                     </tbody>
                 </table>
             `
-            : `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; text-align: center; color: #15803d; font-weight: 600; margin-bottom: 20px;">✓ ${t('injuryStats.noActiveInjuries', 'No hay lesiones activas en la plantilla.')}</div>`;
+            : `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 18px; text-align: center; color: #15803d; font-weight: 700; margin-bottom: 20px;">✓ ${t('injuryStats.noActiveInjuries', 'No hay lesiones activas en la plantilla.')}</div>`;
 
         return `
             <div class="page">
-                ${getReportHeaderHTML(t('statistics.tabs.injuries'))}
+                ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.injuries'), isSubPage)}
                 
-                <div class="section-title">${t('statistics.injuriesSummary', 'Resumen y Distribución de Lesiones')}</div>
+                <div class="section-title"><span class="icon-text">🚑</span> ${t('statistics.injuriesSummary', 'Resumen y Distribución de Lesiones')}</div>
                 
-                <div class="grid-4" style="margin-bottom: 20px;">
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #ef4444;">${activas}</div>
-                        <div class="metric-lbl">${t('injuryStats.summary.active', 'Activas')}</div>
+                <div class="grid-4" style="margin-bottom: 16px;">
+                    <div class="card" style="background: #fef2f2; border-color: #fecaca; padding: 12px;">
+                        <div class="metric-box">
+                            <div class="metric-val" style="color: #b91c1c;">${activas}</div>
+                            <div class="metric-lbl" style="color: #991b1b;">${t('injuryStats.summary.active', 'Activas')}</div>
+                        </div>
                     </div>
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #f59e0b;">${enRecuperacion}</div>
-                        <div class="metric-lbl">${t('injuryStats.status.recovered', 'En Recuperación')}</div>
+                    <div class="card" style="background: #fffbeb; border-color: #fde68a; padding: 12px;">
+                        <div class="metric-box">
+                            <div class="metric-val" style="color: #d97706;">${enRecuperacion}</div>
+                            <div class="metric-lbl" style="color: #b45309;">${t('injuryStats.status.recovered', 'En Recuperación')}</div>
+                        </div>
                     </div>
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #10b981;">${recuperadas}</div>
-                        <div class="metric-lbl">${t('injuryStats.summary.recovered', 'Recuperadas')}</div>
+                    <div class="card" style="background: #f0fdf4; border-color: #bbf7d0; padding: 12px;">
+                        <div class="metric-box">
+                            <div class="metric-val" style="color: #15803d;">${recuperadas}</div>
+                            <div class="metric-lbl" style="color: #166534;">${t('injuryStats.summary.recovered', 'Recuperadas')}</div>
+                        </div>
                     </div>
-                    <div class="card" style="text-align: center; padding: 12px;">
-                        <div class="metric-val" style="color: #1e293b;">${total}</div>
-                        <div class="metric-lbl">Total Histórico</div>
+                    <div class="card" style="background: #f8fafc; padding: 12px; border: 1px solid #cbd5e1;">
+                        <div class="metric-box">
+                            <div class="metric-val" style="color: #0f172a;">${total}</div>
+                            <div class="metric-lbl">Total Histórico</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid-2">
+                <div class="grid-2" style="margin-bottom: 16px;">
                     <div class="card">
-                        <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">${t('injuryStats.zones.label', 'Zonas Afectadas')}</h3>
+                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                            <span class="icon-text">🧍</span> ${t('injuryStats.zones.label', 'Zonas Afectadas')}
+                        </h3>
                         ${zonesHTML}
                     </div>
                     <div class="card">
-                        <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">${t('injuryStats.types.label', 'Tipos de Lesiones')}</h3>
+                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                            <span class="icon-text">⚕️</span> ${t('injuryStats.types.label', 'Tipos de Lesiones')}
+                        </h3>
                         ${typesHTML}
                     </div>
                 </div>
                 
                 <div class="grid-2" style="margin-bottom: 20px;">
                     <div class="card">
-                        <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">${t('injuryStats.duration.label', 'Duración de Lesiones')}</h3>
+                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                            <span class="icon-text">⏳</span> ${t('injuryStats.duration.label', 'Duración de Lesiones')}
+                        </h3>
                         ${durationHTML}
                     </div>
                     <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 style="font-size: 11px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;">Relación de Recaídas</h3>
-                        <div style="display: flex; justify-content: space-around; align-items: center; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; height: 100%;">
+                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
+                            <span class="icon-text">🔄</span> Relación de Recaídas
+                        </h3>
+                        <div style="display: flex; justify-content: space-around; align-items: center; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #cbd5e1; height: 100%;">
                             <div style="text-align: center;">
-                                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; display: block; font-weight: 600;">Lesiones Nuevas</span>
-                                <strong style="font-size: 18px; color: #10b981;">${withoutRelapse}</strong>
+                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Lesiones Nuevas</span>
+                                <strong style="font-size: 22px; color: #166534;">${withoutRelapse}</strong>
                             </div>
-                            <div style="width: 1px; height: 30px; background: #cbd5e1;"></div>
+                            <div style="width: 1px; height: 35px; background: #cbd5e1;"></div>
                             <div style="text-align: center;">
-                                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; display: block; font-weight: 600;">Recaídas</span>
-                                <strong style="font-size: 18px; color: #f59e0b;">${withRelapse}</strong>
+                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Recaídas</span>
+                                <strong style="font-size: 22px; color: #ca8a04;">${withRelapse}</strong>
                             </div>
-                            <div style="width: 1px; height: 30px; background: #cbd5e1;"></div>
+                            <div style="width: 1px; height: 35px; background: #cbd5e1;"></div>
                             <div style="text-align: center;">
-                                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; display: block; font-weight: 600;">Tasa Recaídas</span>
-                                <strong style="font-size: 18px; color: #ef4444;">${total > 0 ? Math.round((withRelapse / total) * 100) : 0}%</strong>
+                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Tasa Recaídas</span>
+                                <strong style="font-size: 22px; color: #dc2626;">${total > 0 ? Math.round((withRelapse / total) * 100) : 0}%</strong>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="section-title" style="margin-top: 20px;">${t('injuryStats.activeListTitle', 'Lesionados Activos y en Recuperación')}</div>
+                <div class="section-title"><span class="icon-text">🏥</span> ${t('injuryStats.activeListTitle', 'Lesionados Activos y en Recuperación')}</div>
                 ${activeTableHTML}
-                
-                <div style="flex-grow: 1;"></div>
-                ${getReportFooterHTML()}
             </div>
         `;
     };
@@ -1816,7 +1898,7 @@ playerStatsMap[p._id] = {
         const title = t('statistics.downloadTeamPDF', 'Descargar PDF de Equipo');
         const bodyContent = generateTeamStatsHTML();
         const html = wrapHTMLDocument(title, bodyContent);
-        
+
         try {
             const { uri } = await Print.printToFileAsync({ html });
             const prefix = t('statistics.pdfPrefixTeam', 'Estadisticas_Equipo');
@@ -1833,9 +1915,9 @@ playerStatsMap[p._id] = {
         const title = t('statistics.downloadPlayersPDF', 'Descargar PDF de Jugadores');
         const bodyContent = generatePlayersStatsHTML();
         const html = wrapHTMLDocument(title, bodyContent);
-        
+
         try {
-            const { uri } = await Print.printToFileAsync({ html });
+            const { uri } = await Print.printToFileAsync({ html, margins: { top: 40, bottom: 40, left: 40, right: 40 } });
             const prefix = t('statistics.pdfPrefixPlayers', 'Estadisticas_Jugadores');
             const teamName = selectedTeam?.nombre?.replace(/\s+/g, '_') || 'Equipo';
             const fileName = `${prefix}_${teamName}.pdf`;
@@ -1850,9 +1932,9 @@ playerStatsMap[p._id] = {
         const title = t('statistics.downloadInjuriesPDF', 'Descargar PDF de Lesiones');
         const bodyContent = generateInjuriesStatsHTML();
         const html = wrapHTMLDocument(title, bodyContent);
-        
+
         try {
-            const { uri } = await Print.printToFileAsync({ html });
+            const { uri } = await Print.printToFileAsync({ html, margins: { top: 40, bottom: 40, left: 40, right: 40 } });
             const prefix = t('statistics.pdfPrefixInjuries', 'Estadisticas_Lesiones');
             const teamName = selectedTeam?.nombre?.replace(/\s+/g, '_') || 'Equipo';
             const fileName = `${prefix}_${teamName}.pdf`;
@@ -1866,16 +1948,14 @@ playerStatsMap[p._id] = {
     const handleDownloadCombinedPDF = async () => {
         const title = t('statistics.downloadCombined', 'Descargar Reporte Completo');
         const bodyContent = `
-            ${generateTeamStatsHTML()}
-            <div class="page-break"></div>
-            ${generatePlayersStatsHTML()}
-            <div class="page-break"></div>
-            ${generateInjuriesStatsHTML()}
+            ${generateTeamStatsHTML(false, false)}
+            ${generatePlayersStatsHTML(false, true)}
+            ${generateInjuriesStatsHTML(false, true)}
         `;
         const html = wrapHTMLDocument(title, bodyContent);
-        
+
         try {
-            const { uri } = await Print.printToFileAsync({ html });
+            const { uri } = await Print.printToFileAsync({ html, margins: { top: 40, bottom: 40, left: 40, right: 40 } });
             const prefix = t('statistics.pdfPrefixCombined', 'Reporte_Estadisticas_Completo');
             const teamName = selectedTeam?.nombre?.replace(/\s+/g, '_') || 'Equipo';
             const fileName = `${prefix}_${teamName}.pdf`;
@@ -2016,9 +2096,9 @@ playerStatsMap[p._id] = {
                                 style={[styles.tab, activeTab === tab && styles.activeTab]}
                                 onPress={() => setActiveTab(tab)}
                             >
-                                <Ionicons 
-                                    name={icons[tab]} 
-                                    size={isMobile ? 14 : 18} 
+                                <Ionicons
+                                    name={icons[tab]}
+                                    size={isMobile ? 14 : 18}
                                     color={activeTab === tab ? theme.colors.primary : theme.colors.textSecondary}
                                     style={{ marginRight: isMobile ? 4 : 6 }}
                                 />
@@ -2072,7 +2152,7 @@ playerStatsMap[p._id] = {
                                                 <View style={styles.performanceRingOuter}>
                                                     <View style={[
                                                         styles.performanceRingProgress,
-                                                        { 
+                                                        {
                                                             borderTopColor: theme.colors.success,
                                                             borderRightColor: stats.team.winRate >= 25 ? theme.colors.success : 'rgba(255,255,255,0.1)',
                                                             borderBottomColor: stats.team.winRate >= 50 ? theme.colors.success : 'rgba(255,255,255,0.1)',
@@ -2117,19 +2197,19 @@ playerStatsMap[p._id] = {
                                     </View>
                                     <Text style={styles.goalsComparisonTitle}>{t('statistics.goalsBalance')}</Text>
                                 </View>
-                                
+
                                 <View style={styles.goalsComparisonBody}>
                                     <View style={styles.goalsComparisonSide}>
                                         <Text style={styles.goalsComparisonSideLabel}>{t('statistics.goalsFor')}</Text>
                                         <Text style={[styles.goalsComparisonSideValue, { color: theme.colors.success }]}>{stats.team.goalsFor}</Text>
                                         <View style={[styles.goalsComparisonBar, { backgroundColor: theme.colors.success + '30' }]}>
-                                            <View style={[styles.goalsComparisonBarFill, { 
+                                            <View style={[styles.goalsComparisonBarFill, {
                                                 width: `${Math.min((stats.team.goalsFor / Math.max(stats.team.goalsFor, stats.team.goalsAgainst, 1)) * 100, 100)}%`,
-                                                backgroundColor: theme.colors.success 
+                                                backgroundColor: theme.colors.success
                                             }]} />
                                         </View>
                                     </View>
-                                    
+
                                     <View style={styles.goalsComparisonDivider}>
                                         <View style={styles.goalsComparisonDiffBadge}>
                                             <Text style={[
@@ -2140,14 +2220,14 @@ playerStatsMap[p._id] = {
                                             </Text>
                                         </View>
                                     </View>
-                                    
+
                                     <View style={styles.goalsComparisonSide}>
                                         <Text style={styles.goalsComparisonSideLabel}>{t('statistics.goalsAgainst')}</Text>
                                         <Text style={[styles.goalsComparisonSideValue, { color: theme.colors.error }]}>{stats.team.goalsAgainst}</Text>
                                         <View style={[styles.goalsComparisonBar, { backgroundColor: theme.colors.error + '30' }]}>
-                                            <View style={[styles.goalsComparisonBarFill, { 
+                                            <View style={[styles.goalsComparisonBarFill, {
                                                 width: `${Math.min((stats.team.goalsAgainst / Math.max(stats.team.goalsFor, stats.team.goalsAgainst, 1)) * 100, 100)}%`,
-                                                backgroundColor: theme.colors.error 
+                                                backgroundColor: theme.colors.error
                                             }]} />
                                         </View>
                                     </View>
@@ -2392,10 +2472,10 @@ playerStatsMap[p._id] = {
                                                 {item.label}
                                             </Text>
                                             {sortBy === item.key && (
-                                                <Ionicons 
-                                                    name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} 
-                                                    size={12} 
-                                                    color={theme.colors.onPrimary} 
+                                                <Ionicons
+                                                    name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'}
+                                                    size={12}
+                                                    color={theme.colors.onPrimary}
                                                 />
                                             )}
                                         </TouchableOpacity>
@@ -2428,77 +2508,77 @@ playerStatsMap[p._id] = {
                             {/* Compact Player List */}
                             <View style={styles.compactPlayerList}>
                                 {stats.players
-                                    .filter(player => 
-                                        playerSearch.length === 0 || 
+                                    .filter(player =>
+                                        playerSearch.length === 0 ||
                                         player.name.toLowerCase().includes(playerSearch.toLowerCase())
                                     )
                                     .map((player, index) => (
-                                    <TouchableOpacity 
-                                        key={player.id} 
-                                        style={styles.compactPlayerRow}
-                                        onPress={() => handlePlayerProfilePress(player)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <View style={styles.compactPlayerLeft}>
-                                            <Text style={styles.compactPlayerRank}>#{index + 1}</Text>
-                                            <View style={[styles.compactPositionDot, { 
-                                                backgroundColor: (() => {
-                                                    const pos = (player.position || '').toLowerCase();
-                                                    if (pos.includes('portero') || pos.includes('goalkeeper') || pos.includes('arquero')) return '#f59e0b';
-                                                    if (pos.includes('defensa') || pos.includes('defender') || pos.includes('lateral') || pos.includes('central') || pos.includes('líbero') || pos.includes('libero') || pos.includes('zaguero') || pos.includes('carrilero')) return '#3b82f6';
-                                                    if (pos.includes('centro') || pos.includes('medio') || pos.includes('midfielder') || pos.includes('pivote') || pos.includes('interior') || pos.includes('extremo') || pos.includes('volante')) return '#10b981';
-                                                    if (pos.includes('delantero') || pos.includes('forward') || pos.includes('atacante') || pos.includes('punta') || pos.includes('ariete') || pos.includes('striker')) return '#ef4444';
-                                                    return '#9ca3af'; // Sin posición - gris
-                                                })()
-                                            }]} />
-                                            <Text style={styles.compactPlayerName} numberOfLines={1}>{player.name}</Text>
-                                        </View>
-                                        <View style={styles.compactPlayerStats}>
-                                            <View style={styles.compactStatBox}>
-                                                <Text style={styles.compactStatValue}>{player.matches}</Text>
-                                                <Text style={styles.compactStatLabel}>PJ</Text>
+                                        <TouchableOpacity
+                                            key={player.id}
+                                            style={styles.compactPlayerRow}
+                                            onPress={() => handlePlayerProfilePress(player)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.compactPlayerLeft}>
+                                                <Text style={styles.compactPlayerRank}>#{index + 1}</Text>
+                                                <View style={[styles.compactPositionDot, {
+                                                    backgroundColor: (() => {
+                                                        const pos = (player.position || '').toLowerCase();
+                                                        if (pos.includes('portero') || pos.includes('goalkeeper') || pos.includes('arquero')) return '#f59e0b';
+                                                        if (pos.includes('defensa') || pos.includes('defender') || pos.includes('lateral') || pos.includes('central') || pos.includes('líbero') || pos.includes('libero') || pos.includes('zaguero') || pos.includes('carrilero')) return '#3b82f6';
+                                                        if (pos.includes('centro') || pos.includes('medio') || pos.includes('midfielder') || pos.includes('pivote') || pos.includes('interior') || pos.includes('extremo') || pos.includes('volante')) return '#10b981';
+                                                        if (pos.includes('delantero') || pos.includes('forward') || pos.includes('atacante') || pos.includes('punta') || pos.includes('ariete') || pos.includes('striker')) return '#ef4444';
+                                                        return '#9ca3af'; // Sin posición - gris
+                                                    })()
+                                                }]} />
+                                                <Text style={styles.compactPlayerName} numberOfLines={1}>{player.name}</Text>
                                             </View>
-                                            <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, { color: theme.colors.primary }]}>{player.minutes}'</Text>
-                                                <Text style={styles.compactStatLabel}>MIN</Text>
-                                            </View>
-                                            <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, player.goals > 0 && { color: theme.colors.success, fontWeight: '700' }]}>{player.goals}</Text>
-                                                <Text style={styles.compactStatLabel}>G</Text>
-                                            </View>
-                                            <View style={styles.compactStatBox}>
-                                                <Text style={[styles.compactStatValue, player.assists > 0 && { color: theme.colors.purple, fontWeight: '700' }]}>{player.assists}</Text>
-                                                <Text style={styles.compactStatLabel}>A</Text>
-                                            </View>
-                                            <View style={styles.compactCardsContainer}>
-                                                {player.yellowCards > 0 && (
-                                                    <View style={styles.compactCardGroup}>
-                                                        <View style={styles.compactYellowCard}>
-                                                            <Text style={styles.compactCardText}>{player.yellowCards}</Text>
+                                            <View style={styles.compactPlayerStats}>
+                                                <View style={styles.compactStatBox}>
+                                                    <Text style={styles.compactStatValue}>{player.matches}</Text>
+                                                    <Text style={styles.compactStatLabel}>PJ</Text>
+                                                </View>
+                                                <View style={styles.compactStatBox}>
+                                                    <Text style={[styles.compactStatValue, { color: theme.colors.primary }]}>{player.minutes}'</Text>
+                                                    <Text style={styles.compactStatLabel}>MIN</Text>
+                                                </View>
+                                                <View style={styles.compactStatBox}>
+                                                    <Text style={[styles.compactStatValue, player.goals > 0 && { color: theme.colors.success, fontWeight: '700' }]}>{player.goals}</Text>
+                                                    <Text style={styles.compactStatLabel}>G</Text>
+                                                </View>
+                                                <View style={styles.compactStatBox}>
+                                                    <Text style={[styles.compactStatValue, player.assists > 0 && { color: theme.colors.purple, fontWeight: '700' }]}>{player.assists}</Text>
+                                                    <Text style={styles.compactStatLabel}>A</Text>
+                                                </View>
+                                                <View style={styles.compactCardsContainer}>
+                                                    {player.yellowCards > 0 && (
+                                                        <View style={styles.compactCardGroup}>
+                                                            <View style={styles.compactYellowCard}>
+                                                                <Text style={styles.compactCardText}>{player.yellowCards}</Text>
+                                                            </View>
+                                                            {player.doubleYellowCards > 0 && (
+                                                                <Text style={styles.compactDoubleYellowText}>({player.doubleYellowCards}🟨🟨)</Text>
+                                                            )}
                                                         </View>
-                                                        {player.doubleYellowCards > 0 && (
-                                                            <Text style={styles.compactDoubleYellowText}>({player.doubleYellowCards}🟨🟨)</Text>
-                                                        )}
-                                                    </View>
-                                                )}
-                                                {player.redCards > 0 && (
-                                                    <View style={styles.compactRedCard}>
-                                                        <Text style={styles.compactCardText}>{player.redCards}</Text>
-                                                    </View>
-                                                )}
+                                                    )}
+                                                    {player.redCards > 0 && (
+                                                        <View style={styles.compactRedCard}>
+                                                            <Text style={styles.compactCardText}>{player.redCards}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text style={[
+                                                    styles.compactAttendance,
+                                                    {
+                                                        color: player.attendancePercentage >= 80 ? theme.colors.success :
+                                                            player.attendancePercentage >= 60 ? theme.colors.warning : theme.colors.error
+                                                    }
+                                                ]}>
+                                                    {player.attendancePercentage}%
+                                                </Text>
                                             </View>
-                                            <Text style={[
-                                                styles.compactAttendance,
-                                                { 
-                                                    color: player.attendancePercentage >= 80 ? theme.colors.success :
-                                                        player.attendancePercentage >= 60 ? theme.colors.warning : theme.colors.error
-                                                }
-                                            ]}>
-                                                {player.attendancePercentage}%
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
+                                        </TouchableOpacity>
+                                    ))}
                             </View>
 
                             {/* Weekly Attendance Breakdown */}
