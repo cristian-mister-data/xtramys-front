@@ -489,18 +489,13 @@ export default function Home({ navigation: navigationProp }) {
   if (!temporada) {
     return (
       <View style={styles.loadingContainer}>
-        <LinearGradient
-          colors={BRAND_GRADIENT}
-          style={styles.loadingGradient}
-        >
-          <View style={styles.loadingContent}>
-            <View style={styles.loadingIconContainer}>
-              <Ionicons name="football" size={48} color="#fff" />
-            </View>
-            <ActivityIndicator size="large" color="#fff" style={{ marginTop: 20 }} />
-            <Text style={styles.loadingText}>{t('home.loadingSeason')}</Text>
+        <View style={styles.loadingContent}>
+          <View style={styles.loadingIconContainer}>
+            <Ionicons name="football" size={48} color={theme.colors.primary} />
           </View>
-        </LinearGradient>
+          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 20 }} />
+          <Text style={styles.loadingText}>{t('home.loadingSeason')}</Text>
+        </View>
       </View>
     );
   }
@@ -515,93 +510,74 @@ export default function Home({ navigation: navigationProp }) {
       }
     >
       {/* ========== HERO HEADER ========== */}
-      <LinearGradient
-        colors={BRAND_GRADIENT}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroGradient}
-      >
-        <View style={styles.heroPattern}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroWelcome}>{t("home.welcome")}</Text>
-            <Text style={styles.heroSeason}>
-              {temporada.año ? formatSeasonYear(temporada.año) : temporada.nombre}
-            </Text>
-            
-            {equipoSeleccionado && (
-              <TouchableOpacity 
-                style={styles.heroTeamCard}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('JugadoresDrawer')}
-              >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
-                  style={styles.heroTeamGradient}
-                >
-                  <View style={styles.heroTeamIcon}>
-                    {equipoSeleccionado.escudo ? (
-                      <Image 
-                        source={{ uri: equipoSeleccionado.escudo }} 
-                        style={styles.heroTeamBadge} 
-                      />
-                    ) : (
-                      <Ionicons name="shield" size={20} color="#fff" />
-                    )}
-                  </View>
-                  <View style={styles.heroTeamInfo}>
-                    <Text style={styles.heroTeamName}>{equipoSeleccionado.nombre}</Text>
-                    <Text style={styles.heroTeamCategory}>{equipoSeleccionado.categoria}</Text>
-                  </View>
-                  <View style={styles.heroTeamArrow}>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </View>
+      <View style={styles.heroContainer}>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroWelcome}>{t("home.welcome")}</Text>
+          <Text style={styles.heroSeason}>
+            {temporada.año ? formatSeasonYear(temporada.año) : temporada.nombre}
+          </Text>
+          
+          {equipoSeleccionado && (
+            <TouchableOpacity 
+              style={styles.heroTeamCard}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('JugadoresDrawer')}
+            >
+              <View style={styles.heroTeamContent}>
+                <View style={styles.heroTeamIcon}>
+                  {equipoSeleccionado.escudo ? (
+                    <Image 
+                      source={{ uri: equipoSeleccionado.escudo }} 
+                      style={styles.heroTeamBadge} 
+                    />
+                  ) : (
+                    <Ionicons name="shield" size={20} color={theme.colors.primary} />
+                  )}
+                </View>
+                <View style={styles.heroTeamInfo}>
+                  <Text style={styles.heroTeamName}>{equipoSeleccionado.nombre}</Text>
+                  <Text style={styles.heroTeamCategory}>{equipoSeleccionado.categoria}</Text>
+                </View>
+                <View style={styles.heroTeamArrow}>
+                  <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
-      </LinearGradient>
+      </View>
 
       {/* ========== QUICK STATS FLOATING CARDS ========== */}
       <View style={styles.quickStatsContainer}>
         <View style={styles.quickStatsRow}>
-          <View style={[styles.quickStatCard]}>
-            <LinearGradient
-              colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]}
-              style={styles.quickStatGradient}
-            >
-              <View style={styles.quickStatIconBg}>
-                <Ionicons name="people" size={20} color="#fff" />
+          <View style={styles.quickStatCard}>
+            <View style={styles.quickStatContent}>
+              <View style={[styles.quickStatIconBg, { backgroundColor: theme.colors.primarySoft }]}>
+                <Ionicons name="people" size={20} color={theme.colors.primary} />
               </View>
               <Text style={styles.quickStatNumber}>{jugadores.length}</Text>
               <Text style={styles.quickStatLabel}>{t('player.players')}</Text>
-            </LinearGradient>
+            </View>
           </View>
 
-          <View style={[styles.quickStatCard, styles.quickStatSessions]}>
-            <LinearGradient
-              colors={[BRAND_PRIMARY_LIGHT, '#5c6bc0']}
-              style={styles.quickStatGradient}
-            >
-              <View style={styles.quickStatIconBg}>
-                <Ionicons name="fitness" size={20} color="#fff" />
+          <View style={styles.quickStatCard}>
+            <View style={styles.quickStatContent}>
+              <View style={[styles.quickStatIconBg, { backgroundColor: theme.colors.purpleSoft }]}>
+                <Ionicons name="fitness" size={20} color={theme.colors.purple} />
               </View>
               <Text style={styles.quickStatNumber}>{sesiones.length}</Text>
               <Text style={styles.quickStatLabel}>{t('home.sessions')}</Text>
-            </LinearGradient>
+            </View>
           </View>
 
-          <View style={[styles.quickStatCard, styles.quickStatMatches]}>
-            <LinearGradient
-              colors={[theme.colors.success, '#047857']}
-              style={styles.quickStatGradient}
-            >
-              <View style={styles.quickStatIconBg}>
-                <Ionicons name="football" size={20} color="#fff" />
+          <View style={styles.quickStatCard}>
+            <View style={styles.quickStatContent}>
+              <View style={[styles.quickStatIconBg, { backgroundColor: theme.colors.successSoft }]}>
+                <Ionicons name="football" size={20} color={theme.colors.success} />
               </View>
               <Text style={styles.quickStatNumber}>{stats.partidosJugados}</Text>
               <Text style={styles.quickStatLabel}>{t('home.played')}</Text>
-            </LinearGradient>
+            </View>
           </View>
         </View>
       </View>
@@ -609,10 +585,8 @@ export default function Home({ navigation: navigationProp }) {
       {/* ========== MATCH PERFORMANCE CARD ========== */}
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
-          <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
-              <Ionicons name="stats-chart" size={18} color="#fff" />
-            </LinearGradient>
+          <View style={[styles.sectionIconContainer, { backgroundColor: theme.colors.primarySoft }]}>
+            <Ionicons name="stats-chart" size={18} color={theme.colors.primary} />
           </View>
           <View>
             <Text style={styles.sectionTitleModern}>{t('home.matchStats')}</Text>
@@ -639,30 +613,28 @@ export default function Home({ navigation: navigationProp }) {
         </ScrollView>
 
         <View style={styles.performanceCard}>
-          <LinearGradient
-            colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]}
-            style={styles.performanceGradient}
-          >
+          <View style={styles.performanceGradient}>
             {/* Win Rate Circle */}
             <View style={styles.winRateSection}>
-              <View style={styles.winRateCircle}>
-                <LinearGradient
-                  colors={currentWinPercentage >= 50 ? [theme.colors.success, '#047857'] : [theme.colors.warning, '#d97706']}
-                  style={styles.winRateGradient}
-                >
-                  <Text style={styles.winRateNumber}>
-                    {currentWinPercentage}%
-                  </Text>
-                  <Text style={styles.winRateLabel}>{t('home.wins')}</Text>
-                </LinearGradient>
+              <View style={[styles.winRateCircle, { 
+                backgroundColor: currentWinPercentage >= 50 ? theme.colors.successSoft : theme.colors.warningSoft 
+              }]}>
+                <Text style={[styles.winRateNumber, { 
+                  color: currentWinPercentage >= 50 ? theme.colors.success : theme.colors.warning 
+                }]}>
+                  {currentWinPercentage}%
+                </Text>
+                <Text style={[styles.winRateLabel, { 
+                  color: currentWinPercentage >= 50 ? theme.colors.successSoftText : theme.colors.warningSoftText 
+                }]}>{t('home.wins')}</Text>
               </View>
             </View>
 
             {/* Match Stats Grid */}
             <View style={styles.matchGridContainer}>
               <View style={styles.matchGridRow}>
-                <View style={[styles.matchGridItem, styles.matchGridWon]}>
-                  <View style={styles.matchGridIconBg}>
+                <View style={[styles.matchGridItem, { backgroundColor: theme.colors.background }]}>
+                  <View style={[styles.matchGridIconBg, { backgroundColor: theme.colors.successSoft }]}>
                     <Ionicons name="trophy" size={16} color={theme.colors.success} />
                   </View>
                   <Text style={styles.matchGridNumber}>
@@ -671,8 +643,8 @@ export default function Home({ navigation: navigationProp }) {
                   <Text style={styles.matchGridLabel}>{t('home.won')}</Text>
                 </View>
 
-                <View style={[styles.matchGridItem, styles.matchGridDrawn]}>
-                  <View style={styles.matchGridIconBg}>
+                <View style={[styles.matchGridItem, { backgroundColor: theme.colors.background }]}>
+                  <View style={[styles.matchGridIconBg, { backgroundColor: theme.colors.warningSoft }]}>
                     <Ionicons name="remove-circle" size={16} color={theme.colors.warning} />
                   </View>
                   <Text style={styles.matchGridNumber}>
@@ -681,8 +653,8 @@ export default function Home({ navigation: navigationProp }) {
                   <Text style={styles.matchGridLabel}>{t('home.drawn')}</Text>
                 </View>
 
-                <View style={[styles.matchGridItem, styles.matchGridLost]}>
-                  <View style={styles.matchGridIconBg}>
+                <View style={[styles.matchGridItem, { backgroundColor: theme.colors.background }]}>
+                  <View style={[styles.matchGridIconBg, { backgroundColor: theme.colors.errorSoft }]}>
                     <Ionicons name="close-circle" size={16} color={theme.colors.error} />
                   </View>
                   <Text style={styles.matchGridNumber}>
@@ -692,17 +664,15 @@ export default function Home({ navigation: navigationProp }) {
                 </View>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       </View>
 
       {/* ========== PRÓXIMO PARTIDO ========== */}
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
-          <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
-              <Ionicons name="football" size={18} color="#fff" />
-            </LinearGradient>
+          <View style={[styles.sectionIconContainer, { backgroundColor: theme.colors.primarySoft }]}>
+            <Ionicons name="football" size={18} color={theme.colors.primary} />
           </View>
           <View>
             <Text style={styles.sectionTitleModern}>{t('home.nextMatch')}</Text>
@@ -715,23 +685,18 @@ export default function Home({ navigation: navigationProp }) {
             onPress={() => openMatchDetail(proximoPartido)}
           >
             <View style={styles.matchCardModern}>
-              <LinearGradient
-                colors={BRAND_GRADIENT}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.matchCardGradient}
-              >
+              <View style={styles.matchCardContent}>
                 <View style={styles.matchCardHeader}>
                   {proximoPartido.fechaHora && (
                     <View style={styles.matchDateContainer}>
-                      <View style={styles.matchDateBadge}>
-                        <Text style={styles.matchDateWeekday}>
+                      <View style={[styles.matchDateBadge, { backgroundColor: theme.colors.backgroundAlt }]}>
+                        <Text style={[styles.matchDateWeekday, { color: theme.colors.textMuted }]}>
                           {new Date(proximoPartido.fechaHora).toLocaleDateString(i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US', { weekday: 'short' }).toUpperCase()}
                         </Text>
-                        <Text style={styles.matchDateDay}>
+                        <Text style={[styles.matchDateDay, { color: theme.colors.text }]}>
                           {new Date(proximoPartido.fechaHora).getDate()}
                         </Text>
-                        <Text style={styles.matchDateMonth}>
+                        <Text style={[styles.matchDateMonth, { color: theme.colors.textSecondary }]}>
                           {new Date(proximoPartido.fechaHora).toLocaleDateString(i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()}
                         </Text>
                       </View>
@@ -739,60 +704,60 @@ export default function Home({ navigation: navigationProp }) {
                   )}
                   
                   <View style={styles.matchMainInfo}>
-                    <Text style={styles.matchRivalText} numberOfLines={1}>
+                    <Text style={[styles.matchRivalText, { color: theme.colors.text }]} numberOfLines={1}>
                       vs {proximoPartido.rival || t('home.rivalToBeDetermined')}
                     </Text>
                     <View style={styles.matchInfoRow}>
                       {(proximoPartido.fase === 'eliminatoria' && proximoPartido.ronda) ? (
-                        <View style={styles.matchInfoChip}>
-                          <Ionicons name="trophy" size={12} color="rgba(255,255,255,0.8)" />
-                          <Text style={styles.matchInfoChipText}>
+                        <View style={[styles.matchInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                          <Ionicons name="trophy" size={12} color={theme.colors.textSecondary} />
+                          <Text style={[styles.matchInfoChipText, { color: theme.colors.textSecondary }]}>
                             {t(ROUND_I18N_KEYS[proximoPartido.ronda] || proximoPartido.ronda)}
                             {proximoPartido.pierna === 'ida' ? ` (${t('matchSheet.fields.legFirst')})` : proximoPartido.pierna === 'vuelta' ? ` (${t('matchSheet.fields.legSecond')})` : proximoPartido.pierna === 'unico' ? ` (${t('matchSheet.fields.legSingle')})` : ''}
                           </Text>
                         </View>
                       ) : (proximoPartido.fase === 'grupos' && proximoPartido.grupo) ? (
-                        <View style={styles.matchInfoChip}>
-                          <Ionicons name="flag" size={12} color="rgba(255,255,255,0.8)" />
-                          <Text style={styles.matchInfoChipText}>
+                        <View style={[styles.matchInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                          <Ionicons name="flag" size={12} color={theme.colors.textSecondary} />
+                          <Text style={[styles.matchInfoChipText, { color: theme.colors.textSecondary }]}>
                             {t('matchSheet.fields.groupN', { n: proximoPartido.grupo })}{proximoPartido.jornada ? ` · ${t('matchSheet.fields.matchday')} ${proximoPartido.jornada}` : ''}
                           </Text>
                         </View>
                       ) : proximoPartido.jornada ? (
-                        <View style={styles.matchInfoChip}>
-                          <Ionicons name="flag" size={12} color="rgba(255,255,255,0.8)" />
-                          <Text style={styles.matchInfoChipText}>{t('season.matchday')} {proximoPartido.jornada}</Text>
+                        <View style={[styles.matchInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                          <Ionicons name="flag" size={12} color={theme.colors.textSecondary} />
+                          <Text style={[styles.matchInfoChipText, { color: theme.colors.textSecondary }]}>{t('season.matchday')} {proximoPartido.jornada}</Text>
                         </View>
                       ) : null}
                       {proximoPartido.ubicacion && (
-                        <View style={styles.matchInfoChip}>
-                          <Ionicons name={['Casa','local'].includes(proximoPartido.ubicacion) ? 'home' : 'airplane'} size={12} color="rgba(255,255,255,0.8)" />
-                          <Text style={styles.matchInfoChipText}>
+                        <View style={[styles.matchInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                          <Ionicons name={['Casa','local'].includes(proximoPartido.ubicacion) ? 'home' : 'airplane'} size={12} color={theme.colors.textSecondary} />
+                          <Text style={[styles.matchInfoChipText, { color: theme.colors.textSecondary }]}>
                             {['Casa','local'].includes(proximoPartido.ubicacion) ? t('matchSheet.modals.home') : ['Fuera','visitante'].includes(proximoPartido.ubicacion) ? t('matchSheet.modals.away') : t('matchSheet.modals.neutral')}
                           </Text>
                         </View>
                       )}
                       {proximoPartido.torneoId && typeof proximoPartido.torneoId === 'object' && proximoPartido.torneoId.nombre && (
-                        <View style={styles.matchInfoChip}>
-                          <Ionicons name="trophy" size={12} color="rgba(255,255,255,0.8)" />
-                          <Text style={styles.matchInfoChipText} numberOfLines={1}>{proximoPartido.torneoId.nombre}</Text>
+                        <View style={[styles.matchInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                          <Ionicons name="trophy" size={12} color={theme.colors.textSecondary} />
+                          <Text style={[styles.matchInfoChipText, { color: theme.colors.textSecondary }]} numberOfLines={1}>{proximoPartido.torneoId.nombre}</Text>
                         </View>
                       )}
                     </View>
                   </View>
 
-                  <View style={styles.matchPendingBadge}>
-                    <Ionicons name="time" size={14} color="#fff" />
-                    <Text style={styles.matchPendingText}>{t('home.pending')}</Text>
+                  <View style={[styles.matchPendingBadge, { backgroundColor: theme.colors.primarySoft }]}>
+                    <Ionicons name="time" size={14} color={theme.colors.primary} />
+                    <Text style={[styles.matchPendingText, { color: theme.colors.primary }]}>{t('home.pending')}</Text>
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.emptyMatchCard} activeOpacity={0.8} onPress={() => navigation.navigate('FichasPartidoDrawer')} accessibilityRole="button" accessibilityLabel="Ir a fichas de partido">
             <View style={styles.emptyMatchIcon}>
-              <Ionicons name="football-outline" size={40} color={theme.colors.border} />
+              <Ionicons name="football-outline" size={40} color={theme.colors.textDisabled} />
             </View>
             <Text style={styles.emptyMatchTitle}>{t('home.noMatchesScheduled')}</Text>
             <Text style={styles.emptyMatchSubtitle}>{t('home.createMatchSheet')}</Text>
@@ -804,24 +769,22 @@ export default function Home({ navigation: navigationProp }) {
       {ultimoPartido && (
         <View style={styles.section}>
           <View style={styles.sectionHeaderModern}>
-            <View style={styles.sectionIconContainer}>
-              <LinearGradient 
-                colors={
-                  ultimoPartido.resultado === 'Victoria' ? [theme.colors.success, '#047857'] :
-                  ultimoPartido.resultado === 'Empate' ? [theme.colors.warning, '#d97706'] :
-                  [theme.colors.error, '#dc2626']
+            <View style={[styles.sectionIconContainer, {
+              backgroundColor: 
+                ultimoPartido.resultado === 'Victoria' ? theme.colors.successSoft :
+                ultimoPartido.resultado === 'Empate' ? theme.colors.warningSoft : theme.colors.errorSoft
+            }]}>
+              <Ionicons 
+                name={
+                  ultimoPartido.resultado === 'Victoria' ? 'trophy' :
+                  ultimoPartido.resultado === 'Empate' ? 'remove-circle' : 'close-circle'
                 } 
-                style={styles.sectionIconGradient}
-              >
-                <Ionicons 
-                  name={
-                    ultimoPartido.resultado === 'Victoria' ? 'trophy' :
-                    ultimoPartido.resultado === 'Empate' ? 'remove-circle' : 'close-circle'
-                  } 
-                  size={18} 
-                  color="#fff" 
-                />
-              </LinearGradient>
+                size={18} 
+                color={
+                  ultimoPartido.resultado === 'Victoria' ? theme.colors.success :
+                  ultimoPartido.resultado === 'Empate' ? theme.colors.warning : theme.colors.error
+                } 
+              />
             </View>
             <View>
               <Text style={styles.sectionTitleModern}>{t('home.lastMatch')}</Text>
@@ -945,13 +908,10 @@ export default function Home({ navigation: navigationProp }) {
       {/* ========== INJURY STATUS CARD ========== */}
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
-          <View style={styles.sectionIconContainer}>
-            <LinearGradient 
-              colors={stats.lesionesActivas > 0 ? [theme.colors.error, '#dc2626'] : [theme.colors.success, '#047857']} 
-              style={styles.sectionIconGradient}
-            >
-              <Ionicons name={stats.lesionesActivas > 0 ? 'bandage' : 'heart'} size={18} color="#fff" />
-            </LinearGradient>
+          <View style={[styles.sectionIconContainer, {
+            backgroundColor: stats.lesionesActivas > 0 ? theme.colors.errorSoft : theme.colors.successSoft
+          }]}>
+            <Ionicons name={stats.lesionesActivas > 0 ? 'bandage' : 'heart'} size={18} color={stats.lesionesActivas > 0 ? theme.colors.error : theme.colors.success} />
           </View>
           <View>
             <Text style={styles.sectionTitleModern}>{t('home.injuryState')}</Text>
@@ -964,62 +924,48 @@ export default function Home({ navigation: navigationProp }) {
             onPress={() => navigation.navigate('LesionesDrawer')}
           >
             <View style={styles.injuryCardModern}>
-              <LinearGradient
-                colors={['#fef2f2', '#fee2e2']}
-                style={styles.injuryCardGradient}
-              >
-                <View style={styles.injuryCardContent}>
-                  <View style={styles.injuryIconContainer}>
-                    <LinearGradient colors={[theme.colors.error, '#dc2626']} style={styles.injuryIconGradient}>
-                      <Ionicons name="warning" size={24} color="#fff" />
-                    </LinearGradient>
-                  </View>
-                  
-                  <View style={styles.injuryInfoContainer}>
-                    <Text style={styles.injuryTitle}>
-                      {t('home.activeInjuriesCount', { count: stats.lesionesActivas })}
-                    </Text>
-                    <Text style={styles.injurySubtext}>
-                      {t('home.affectedPlayersCount', { count: stats.jugadoresLesionados })}
-                    </Text>
-                  </View>
-
-                  <View style={styles.injuryArrow}>
-                    <Ionicons name="chevron-forward" size={24} color={theme.colors.error} />
-                  </View>
+              <View style={styles.injuryCardContent}>
+                <View style={[styles.injuryIconContainer, { backgroundColor: theme.colors.error }]}>
+                  <Ionicons name="warning" size={24} color="#fff" />
+                </View>
+                
+                <View style={styles.injuryInfoContainer}>
+                  <Text style={styles.injuryTitle}>
+                    {t('home.activeInjuriesCount', { count: stats.lesionesActivas })}
+                  </Text>
+                  <Text style={styles.injurySubtext}>
+                    {t('home.affectedPlayersCount', { count: stats.jugadoresLesionados })}
+                  </Text>
                 </View>
 
-                <View style={styles.injuryProgressBar}>
-                  <View style={[styles.injuryProgressFill, { width: `${Math.min(injuryPercentage, 100)}%` }]} />
+                <View style={styles.injuryArrow}>
+                  <Ionicons name="chevron-forward" size={24} color={theme.colors.error} />
                 </View>
-                <Text style={styles.injuryProgressText}>
-                  {t('home.affectedPercentage', { percent: injuryPercentage })}
-                </Text>
-              </LinearGradient>
+              </View>
+
+              <View style={styles.injuryProgressBar}>
+                <View style={[styles.injuryProgressFill, { width: `${Math.min(injuryPercentage, 100)}%` }]} />
+              </View>
+              <Text style={styles.injuryProgressText}>
+                {t('home.affectedPercentage', { percent: injuryPercentage })}
+              </Text>
             </View>
           </TouchableOpacity>
         ) : (
           <View style={styles.healthyCardModern}>
-            <LinearGradient
-              colors={theme.mode === 'dark' ? ['#064e3b', '#065f46', '#047857'] : ['#ecfdf5', '#d1fae5']}
-              style={styles.healthyCardGradient}
-            >
-              <View style={styles.healthyCardContent}>
-                <View style={styles.healthyIconContainer}>
-                  <LinearGradient colors={[theme.colors.success, '#047857']} style={styles.healthyIconGradient}>
-                    <Ionicons name="checkmark-circle" size={28} color="#fff" />
-                  </LinearGradient>
-                </View>
-                <View style={styles.healthyInfoContainer}>
-                  <Text style={[styles.healthyTitle, theme.mode === 'dark' && { color: '#fff' }]}>{t('home.noActiveInjuries')}</Text>
-                  <Text style={[styles.healthySubtext, theme.mode === 'dark' && { color: '#a7f3d0' }]}>{t('home.allAvailable')}</Text>
-                </View>
+            <View style={styles.healthyCardContent}>
+              <View style={[styles.healthyIconContainer, { backgroundColor: theme.colors.successSoft }]}>
+                <Ionicons name="checkmark-circle" size={28} color={theme.colors.success} />
               </View>
-              <View style={[styles.healthyBadge, theme.mode === 'dark' && { backgroundColor: 'rgba(16,185,129,0.25)' }]}>
-                <Ionicons name="shield-checkmark" size={14} color={theme.mode === 'dark' ? '#6ee7b7' : theme.colors.success} />
-                <Text style={[styles.healthyBadgeText, theme.mode === 'dark' && { color: '#6ee7b7' }]}>100% disponible</Text>
+              <View style={styles.healthyInfoContainer}>
+                <Text style={styles.healthyTitle}>{t('home.noActiveInjuries')}</Text>
+                <Text style={styles.healthySubtext}>{t('home.allAvailable')}</Text>
               </View>
-            </LinearGradient>
+            </View>
+            <View style={styles.healthyBadge}>
+              <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
+              <Text style={styles.healthyBadgeText}>100% disponible</Text>
+            </View>
           </View>
         )}
       </View>
@@ -1027,10 +973,8 @@ export default function Home({ navigation: navigationProp }) {
       {/* ========== UPCOMING SESSION CARD ========== */}
       <View style={styles.section}>
         <View style={styles.sectionHeaderModern}>
-          <View style={styles.sectionIconContainer}>
-            <LinearGradient colors={[BRAND_PRIMARY, BRAND_PRIMARY_LIGHT]} style={styles.sectionIconGradient}>
-              <Ionicons name="calendar" size={18} color="#fff" />
-            </LinearGradient>
+          <View style={[styles.sectionIconContainer, { backgroundColor: theme.colors.primarySoft }]}>
+            <Ionicons name="calendar" size={18} color={theme.colors.primary} />
           </View>
           <View>
             <Text style={styles.sectionTitleModern}>{t('session.upcomingSession')}</Text>
@@ -1043,39 +987,34 @@ export default function Home({ navigation: navigationProp }) {
             onPress={() => openSessionDetail(proximaSesion)}
           >
             <View style={styles.sessionCardModern}>
-              <LinearGradient
-                colors={BRAND_GRADIENT}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.sessionCardGradient}
-              >
+              <View style={styles.sessionCardContent}>
                 <View style={styles.sessionCardHeader}>
                   <View style={styles.sessionDateContainer}>
-                    <View style={styles.sessionDateBadge}>
-                      <Text style={styles.sessionDateDay}>
+                    <View style={[styles.sessionDateBadge, { backgroundColor: theme.colors.backgroundAlt }]}>
+                      <Text style={[styles.sessionDateDay, { color: theme.colors.text }]}>
                         {new Date(proximaSesion.fecha).getDate()}
                       </Text>
-                      <Text style={styles.sessionDateMonth}>
+                      <Text style={[styles.sessionDateMonth, { color: theme.colors.textSecondary }]}>
                         {new Date(proximaSesion.fecha).toLocaleDateString(i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase()}
                       </Text>
                     </View>
                   </View>
                   
                   <View style={styles.sessionMainInfo}>
-                    <Text style={styles.sessionDateText} numberOfLines={1}>
+                    <Text style={[styles.sessionDateText, { color: theme.colors.text }]} numberOfLines={1}>
                       {formatFecha(proximaSesion.fecha)}
                     </Text>
                     <View style={styles.sessionTimeContainer}>
-                      <Ionicons name="time" size={14} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.sessionTimeText}>
+                      <Ionicons name="time" size={14} color={theme.colors.textSecondary} />
+                      <Text style={[styles.sessionTimeText, { color: theme.colors.textSecondary }]}>
                         {proximaSesion.horaInicio} - {proximaSesion.horaFin}
                       </Text>
                     </View>
                   </View>
 
-                  <View style={styles.sessionStatusBadge}>
+                  <View style={[styles.sessionStatusBadge, { backgroundColor: theme.colors.successSoft }]}>
                     <View style={styles.sessionStatusDot} />
-                    <Text style={styles.sessionStatusText}>{t('session.upcoming')}</Text>
+                    <Text style={[styles.sessionStatusText, { color: theme.colors.success }]}>{t('session.upcoming')}</Text>
                   </View>
                 </View>
 
@@ -1093,7 +1032,7 @@ export default function Home({ navigation: navigationProp }) {
                             />
                           ) : (
                             <View style={styles.sessionExerciseMiniPlaceholder}>
-                              <MaterialIcons name="fitness-center" size={10} color="rgba(255,255,255,0.8)" />
+                              <MaterialIcons name="fitness-center" size={10} color={theme.colors.textSecondary} />
                             </View>
                           )}
                         </View>
@@ -1107,9 +1046,9 @@ export default function Home({ navigation: navigationProp }) {
                   )}
 
                   {proximaSesion.jugadores && proximaSesion.jugadores.length > 0 && (
-                    <View style={styles.sessionInfoChip}>
-                      <Ionicons name="people" size={14} color="#fff" />
-                      <Text style={styles.sessionInfoChipText}>
+                    <View style={[styles.sessionInfoChip, { backgroundColor: theme.colors.backgroundAlt }]}>
+                      <Ionicons name="people" size={14} color={theme.colors.textSecondary} />
+                      <Text style={[styles.sessionInfoChipText, { color: theme.colors.textSecondary }]}>
                         {t('session.playersCount', { count: proximaSesion.jugadores.length })}
                       </Text>
                     </View>
@@ -1117,16 +1056,16 @@ export default function Home({ navigation: navigationProp }) {
 
                   <View style={styles.sessionTapHint}>
                     <Text style={styles.sessionTapText}>{t('home.touchForDetails')}</Text>
-                    <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.6)" />
+                    <Ionicons name="arrow-forward" size={14} color={theme.colors.textSecondary} />
                   </View>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.emptySessionCard} activeOpacity={0.8} onPress={() => navigation.navigate('EntrenamientoDrawer')} accessibilityRole="button" accessibilityLabel="Ir a entrenamientos">
             <View style={styles.emptySessionIcon}>
-              <Ionicons name="calendar-outline" size={40} color={theme.colors.border} />
+              <Ionicons name="calendar-outline" size={40} color={theme.colors.textDisabled} />
             </View>
             <Text style={styles.emptySessionTitle}>{t('session.noSessions')}</Text>
             <Text style={styles.emptySessionSubtitle}>Programa tu próximo entrenamiento</Text>
@@ -1138,10 +1077,8 @@ export default function Home({ navigation: navigationProp }) {
       {ultimaSesion && (
         <View style={styles.section}>
           <View style={styles.sectionHeaderModern}>
-            <View style={styles.sectionIconContainer}>
-              <LinearGradient colors={[theme.colors.textSecondary, '#475569']} style={styles.sectionIconGradient}>
-                <Ionicons name="time" size={18} color="#fff" />
-              </LinearGradient>
+            <View style={[styles.sectionIconContainer, { backgroundColor: theme.colors.backgroundAlt }]}>
+              <Ionicons name="time" size={18} color={theme.colors.textSecondary} />
             </View>
             <View>
               <Text style={styles.sectionTitleModern}>{t('session.lastSession')}</Text>
@@ -1185,7 +1122,7 @@ export default function Home({ navigation: navigationProp }) {
                               />
                             ) : (
                               <View style={styles.lastSessionExerciseMiniPlaceholder}>
-                                <MaterialIcons name="fitness-center" size={10} color="#64748b" />
+                                <MaterialIcons name="fitness-center" size={10} color={theme.colors.textDisabled} />
                               </View>
                             )}
                           </View>
@@ -1309,85 +1246,54 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-  },
-  loadingGradient: {
-    flex: 1,
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingContent: {
     alignItems: 'center',
+    padding: 24,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   loadingIconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#fff',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   // ========== HERO HEADER ==========
-  heroGradient: {
+  heroContainer: {
     paddingTop: isMobileDevice() ? 50 : 60,
-    paddingBottom: isMobileDevice() ? 80 : 90,
+    paddingBottom: isMobileDevice() ? 40 : 50,
     paddingHorizontal: isMobileDevice() ? 20 : 30,
-  },
-  heroPattern: {
-    position: 'relative',
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   heroContent: {
     alignItems: 'center',
   },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  heroAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  heroBadgeText: {
-    color: '#fbbf24',
-    fontSize: 11,
-    fontWeight: '700',
-  },
   heroWelcome: {
     fontSize: isMobileDevice() ? 28 : 34,
     fontWeight: '800',
-    color: '#fff',
+    color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 4,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
   heroSeason: {
     fontSize: isMobileDevice() ? 16 : 18,
-    color: 'rgba(255,255,255,0.9)',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
     marginBottom: 20,
@@ -1396,9 +1302,12 @@ const makeStyles = (theme) => StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     borderRadius: 16,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
-  heroTeamGradient: {
+  heroTeamContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -1409,10 +1318,12 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   heroTeamBadge: {
     width: 36,
@@ -1423,12 +1334,12 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
   },
   heroTeamName: {
-    color: '#fff',
+    color: theme.colors.text,
     fontSize: 15,
     fontWeight: '700',
   },
   heroTeamCategory: {
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1437,7 +1348,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // ========== QUICK STATS ==========
   quickStatsContainer: {
-    marginTop: -50,
+    marginTop: 24,
     paddingHorizontal: isMobileDevice() ? 16 : 24,
     marginBottom: 8,
   },
@@ -1449,23 +1360,31 @@ const makeStyles = (theme) => StyleSheet.create({
   quickStatCard: {
     flex: 1,
     borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  quickStatGradient: {
+  quickStatContent: {
     paddingVertical: isMobileDevice() ? 16 : 20,
     paddingHorizontal: 12,
     alignItems: 'center',
   },
   quickStatIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -1473,11 +1392,11 @@ const makeStyles = (theme) => StyleSheet.create({
   quickStatNumber: {
     fontSize: isMobileDevice() ? 24 : 28,
     fontWeight: '800',
-    color: '#fff',
+    color: theme.colors.text,
   },
   quickStatLabel: {
     fontSize: isMobileDevice() ? 11 : 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     marginTop: 2,
     textAlign: 'center',
@@ -1494,12 +1413,9 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   sectionIconContainer: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  sectionIconGradient: {
     width: 40,
     height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1548,12 +1464,21 @@ const makeStyles = (theme) => StyleSheet.create({
   // ========== PERFORMANCE CARD ==========
   performanceCard: {
     borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   performanceGradient: {
     padding: isMobileDevice() ? 20 : 24,
@@ -1566,33 +1491,22 @@ const makeStyles = (theme) => StyleSheet.create({
     width: isMobileDevice() ? 100 : 120,
     height: isMobileDevice() ? 100 : 120,
     borderRadius: isMobileDevice() ? 50 : 60,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  winRateGradient: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   winRateNumber: {
     fontSize: isMobileDevice() ? 28 : 32,
     fontWeight: '800',
-    color: '#fff',
   },
   winRateLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
     fontWeight: '600',
     marginTop: 2,
   },
   matchGridContainer: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 16,
-    padding: 4,
+    padding: 8,
   },
   matchGridRow: {
     flexDirection: 'row',
@@ -1601,7 +1515,6 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   matchGridItem: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1610,7 +1523,6 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
@@ -1618,36 +1530,39 @@ const makeStyles = (theme) => StyleSheet.create({
   matchGridNumber: {
     fontSize: isMobileDevice() ? 22 : 26,
     fontWeight: '800',
-    color: '#fff',
+    color: theme.colors.text,
   },
   matchGridLabel: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     marginTop: 2,
     textTransform: 'uppercase',
   },
   // ========== MATCH CARDS (PRÓXIMO/ÚLTIMO PARTIDO) ==========
   matchCardModern: {
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  matchCardGradient: {
+  matchCardContent: {
     padding: isMobileDevice() ? 18 : 22,
-  },
-  matchCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
   },
   matchDateContainer: {},
   matchDateBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1657,20 +1572,17 @@ const makeStyles = (theme) => StyleSheet.create({
   matchDateWeekday: {
     fontSize: 9,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
     marginBottom: 1,
     letterSpacing: 0.5,
   },
   matchDateDay: {
     fontSize: isMobileDevice() ? 22 : 26,
     fontWeight: '800',
-    color: '#fff',
     lineHeight: 28,
   },
   matchDateMonth: {
     fontSize: 10,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
   matchMainInfo: {
@@ -1679,7 +1591,6 @@ const makeStyles = (theme) => StyleSheet.create({
   matchRivalText: {
     fontSize: isMobileDevice() ? 17 : 19,
     fontWeight: '800',
-    color: '#fff',
   },
   matchInfoRow: {
     flexDirection: 'row',
@@ -1690,7 +1601,6 @@ const makeStyles = (theme) => StyleSheet.create({
   matchInfoChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1698,13 +1608,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   matchInfoChipText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
     fontWeight: '500',
   },
   matchPendingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -1712,7 +1620,6 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   matchPendingText: {
     fontSize: 11,
-    color: '#fff',
     fontWeight: '600',
   },
   emptyMatchCard: {
@@ -1843,16 +1750,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // ========== INJURY CARDS ==========
   injuryCardModern: {
+    backgroundColor: theme.colors.errorSoft,
     borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: theme.colors.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  injuryCardGradient: {
     padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.error + '20',
   },
   injuryCardContent: {
     flexDirection: 'row',
@@ -1860,12 +1762,9 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 14,
   },
   injuryIconContainer: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  injuryIconGradient: {
     width: 48,
     height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1887,7 +1786,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   injuryProgressBar: {
     height: 6,
-    backgroundColor: 'rgba(239,68,68,0.2)',
+    backgroundColor: theme.colors.error + '20',
     borderRadius: 3,
     marginTop: 14,
     overflow: 'hidden',
@@ -1905,16 +1804,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // Healthy Card
   healthyCardModern: {
+    backgroundColor: theme.colors.successSoft,
     borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: theme.colors.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  healthyCardGradient: {
     padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.success + '20',
   },
   healthyCardContent: {
     flexDirection: 'row',
@@ -1922,12 +1816,9 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 14,
   },
   healthyIconContainer: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  healthyIconGradient: {
     width: 48,
     height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1948,7 +1839,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(16,185,129,0.15)',
+    backgroundColor: theme.colors.success + '20',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -1962,25 +1853,28 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // ========== SESSION CARDS ==========
   sessionCardModern: {
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  sessionCardGradient: {
+  sessionCardContent: {
     padding: isMobileDevice() ? 18 : 22,
-  },
-  sessionCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
   },
   sessionDateContainer: {},
   sessionDateBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1990,13 +1884,11 @@ const makeStyles = (theme) => StyleSheet.create({
   sessionDateDay: {
     fontSize: isMobileDevice() ? 22 : 26,
     fontWeight: '800',
-    color: '#fff',
     lineHeight: 28,
   },
   sessionDateMonth: {
     fontSize: 10,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
   sessionMainInfo: {
@@ -2005,7 +1897,6 @@ const makeStyles = (theme) => StyleSheet.create({
   sessionDateText: {
     fontSize: isMobileDevice() ? 15 : 17,
     fontWeight: '700',
-    color: '#fff',
     textTransform: 'capitalize',
   },
   sessionTimeContainer: {
@@ -2016,13 +1907,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sessionTimeText: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
   sessionStatusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -2032,16 +1921,15 @@ const makeStyles = (theme) => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#4ade80',
+    backgroundColor: theme.colors.success,
   },
   sessionStatusText: {
     fontSize: 11,
-    color: '#fff',
     fontWeight: '600',
   },
   sessionCardDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: theme.colors.border,
     marginVertical: 16,
   },
   sessionCardFooter: {
@@ -2053,7 +1941,6 @@ const makeStyles = (theme) => StyleSheet.create({
   sessionInfoChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -2061,7 +1948,6 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sessionInfoChipText: {
     fontSize: 12,
-    color: '#fff',
     fontWeight: '500',
   },
   sessionTapHint: {
@@ -2072,7 +1958,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sessionTapText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
   },
   // Empty Session
@@ -2184,8 +2070,8 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderColor: theme.colors.surface,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   sessionExerciseMiniImage: {
     width: '100%',
@@ -2196,22 +2082,21 @@ const makeStyles = (theme) => StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   sessionExerciseMoreBadge: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: theme.colors.surface,
   },
   sessionExerciseMoreText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
+    color: theme.colors.textSecondary,
   },
   // Exercise previews — last session card (light surface background)
   lastSessionExercisePreview: {

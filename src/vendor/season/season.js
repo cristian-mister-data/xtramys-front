@@ -810,28 +810,23 @@ export default function GestionEquipos() {
           </View>
         ) : (
           <>
-            {/* Header Section con Gradiente */}
+            {/* Header Section con Superficie Limpia */}
             <View style={styles.headerSection}>
-              <LinearGradient
-                colors={['#1a237e', '#3949ab', '#5c6bc0']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.headerGradient}
-              >
+              <View style={styles.headerCard}>
                 <View style={styles.headerContent}>
                   <View style={styles.headerLeft}>
-                    <View style={styles.headerIconContainer}>
-                      <Ionicons name="calendar" size={isMobileDevice() ? 20 : 24} color="#ffffff" />
+                    <View style={[styles.headerIconContainer, { backgroundColor: theme.colors.primarySoft }]}>
+                      <Ionicons name="calendar" size={isMobileDevice() ? 20 : 24} color={theme.colors.primary} />
                     </View>
                     <View style={styles.headerTextContainer}>
-                      <Text style={styles.headerTitle}>{t("season.currentSeason")}</Text>
-                      <Text style={styles.headerSubtitle}>
+                      <Text style={[styles.headerTitle, { color: theme.colors.textSecondary }]}>{t("season.currentSeason")}</Text>
+                      <Text style={[styles.headerSubtitle, { color: theme.colors.text }]}>
                         {formatSeasonYear(temporada.año)}
                       </Text>
                       {(() => {
                         const selectedTeam = equipos?.find(t => t.seleccionado === true);
                         return selectedTeam ? (
-                          <Text style={styles.headerTeamName} numberOfLines={1}>{selectedTeam.nombre}</Text>
+                          <Text style={[styles.headerTeamName, { color: theme.colors.textMuted }]} numberOfLines={1}>{selectedTeam.nombre}</Text>
                         ) : null;
                       })()}
                     </View>
@@ -845,7 +840,7 @@ export default function GestionEquipos() {
                     <Text style={styles.changeSeasonText}>{t('season.season')}</Text>
                   </TouchableOpacity>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
 
             {/* Teams Section */}
@@ -2017,18 +2012,21 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: isMobileDevice() ? 20 : 24,
     marginTop: isMobileDevice() ? 12 : 16,
   },
-  headerGradient: {
+  headerCard: {
     borderRadius: 20,
     marginHorizontal: isMobileDevice() ? 12 : 16,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 10,
+        elevation: 2,
       },
     }),
   },
@@ -2049,7 +2047,6 @@ const makeStyles = (theme) => StyleSheet.create({
     width: isMobileDevice() ? 40 : 48,
     height: isMobileDevice() ? 40 : 48,
     borderRadius: isMobileDevice() ? 12 : 14,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2060,44 +2057,29 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   headerTitle: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: 'rgba(255,255,255,0.85)',
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   headerSubtitle: {
     fontSize: isMobileDevice() ? 16 : 24,
-    color: '#ffffff',
     fontWeight: '700',
     marginTop: isMobileDevice() ? 2 : 4,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   headerTeamName: {
     fontSize: isMobileDevice() ? 13 : 16,
-    color: 'rgba(255,255,255,0.9)',
     fontWeight: '600',
     marginTop: isMobileDevice() ? 2 : 3,
   },
   changeSeasonButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 8 : 10,
     borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   changeSeasonText: {
     color: theme.colors.primary,
@@ -2123,24 +2105,24 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.colors.primary,
     paddingVertical: isMobileDevice() ? 14 : 16,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 14,
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.success,
+        shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 4,
       },
     }),
   },
   primaryActionText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary || '#ffffff',
     fontWeight: '700',
     fontSize: isMobileDevice() ? 13 : 14,
     marginLeft: 8,
@@ -2154,22 +2136,22 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: isMobileDevice() ? 14 : 16,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: theme.colors.success,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.05,
         shadowRadius: 6,
       },
       android: {
-        elevation: 3,
+        elevation: 2,
       },
     }),
   },
   secondaryActionText: {
-    color: theme.colors.success,
+    color: theme.colors.text,
     fontWeight: '700',
     fontSize: isMobileDevice() ? 13 : 14,
     marginLeft: 8,
