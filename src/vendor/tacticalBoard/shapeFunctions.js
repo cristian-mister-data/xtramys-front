@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, TouchableOpacity, View
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Circle, Rect, Text as SvgText, G } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 
 function renderCircle({ 
@@ -58,6 +58,10 @@ function renderCircle({
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const radius = Math.sqrt(dx * dx + dy * dy) / 2;
+  
+  const dx_ratio = icon.points[1].x - icon.points[0].x;
+  const dy_ratio = icon.points[1].y - icon.points[0].y;
+  const diameter_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
   
   const isSelected = selectedCloneId === icon.id;
   const isMultiSelected = multiSelectMode && selectedCloneIds && selectedCloneIds.includes(icon.id);
@@ -179,6 +183,20 @@ function renderCircle({
         fill={icon.fillColor && icon.fillColor !== 'transparent' ? `${icon.fillColor}99` : "transparent"}
         strokeDasharray={dashArray}
       />
+      {diameter_m !== undefined && diameter_m > 0 && (
+        <SvgText
+          x={centerX}
+          y={centerY + 4}
+          fill="#ffffff"
+          fontSize={11 * scale}
+          fontWeight="bold"
+          textAnchor="middle"
+          stroke="#000000"
+          strokeWidth="0.5"
+        >
+          {`${diameter_m.toFixed(1)}m`}
+        </SvgText>
+      )}
       
       {/* Área de detección SOLO en el perímetro - usando View con pointerEvents */}
       {!Object.values(drawingStates).some(state => state) && (
@@ -415,6 +433,11 @@ function renderRectangle({
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   
+  const dx_ratio = Math.abs(icon.points[1].x - icon.points[0].x);
+  const dy_ratio = Math.abs(icon.points[1].y - icon.points[0].y);
+  const width_m = dx_ratio * 105;
+  const height_m = dy_ratio * 68;
+  
   const isSelected = selectedCloneId === icon.id;
   const isMultiSelected = multiSelectMode && selectedCloneIds && selectedCloneIds.includes(icon.id);
   const isSelectedEither = isSelected || isMultiSelected;
@@ -451,6 +474,20 @@ function renderRectangle({
         fill={icon.fillColor && icon.fillColor !== 'transparent' ? `${icon.fillColor}99` : "transparent"}
         strokeDasharray={dashArray}
       />
+      {width_m !== undefined && height_m !== undefined && width_m > 0 && height_m > 0 && (
+        <SvgText
+          x={minX + width / 2}
+          y={minY + height / 2 + 4}
+          fill="#ffffff"
+          fontSize={11 * scale}
+          fontWeight="bold"
+          textAnchor="middle"
+          stroke="#000000"
+          strokeWidth="0.5"
+        >
+          {`${width_m.toFixed(1)}m x ${height_m.toFixed(1)}m`}
+        </SvgText>
+      )}
 
       {/* Indicador visual para selección múltiple */}
       {isMultiSelected && (

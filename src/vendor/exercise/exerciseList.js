@@ -1537,6 +1537,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
     dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
+    dispatch(fetchExerciseFolders({ lang }));
+    dispatch(fetchExerciseFoldersFlat({ lang }));
     if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
   };
 
@@ -1647,6 +1649,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
             showNotification(t('exercise.exerciseDeleted', 'Ejercicio eliminado'), 'success');
             // Recargar datos para reflejar cambios
             dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
+            dispatch(fetchExerciseFolders({ lang }));
+            dispatch(fetchExerciseFoldersFlat({ lang }));
             if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
           }
         }
@@ -2997,12 +3001,9 @@ const makeStyles = (theme) => StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.primaryHover,
+    color: theme.colors.text,
     marginBottom: 2,
     letterSpacing: 0.25,
-    ...(Platform.OS === 'web'
-      ? { textShadow: '0 1px 1px #e6eefc' }
-      : { textShadowColor: theme.colors.primarySoft, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }),
   },
   cardTitleMobile: {
     fontSize: 13,

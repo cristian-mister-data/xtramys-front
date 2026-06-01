@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import ViewShot from "react-native-view-shot";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy'; // Usar la API legacy
@@ -82,6 +82,28 @@ async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
 // Cuando un icono es seleccionado, se guarda el timestamp para evitar
 // que el onPress del campo lo deseleccione inmediatamente
 let lastIconSelectionTime = 0;
+
+function snapToHorizontalOrVertical(start, end) {
+  if (!start || !end) return end;
+  const dx_m = (end.x - start.x) * 105;
+  const dy_m = (end.y - start.y) * 68;
+  const angle_deg = Math.atan2(dy_m, dx_m) * 180 / Math.PI;
+  const absAngle = Math.abs(angle_deg);
+  
+  // Snap tolerance: 5 degrees
+  const snapTol = 5;
+  
+  const snapToHoriz = absAngle <= snapTol || Math.abs(absAngle - 180) <= snapTol;
+  const snapToVert = Math.abs(absAngle - 90) <= snapTol;
+  
+  const snappedEnd = { ...end };
+  if (snapToHoriz) {
+    snappedEnd.y = start.y;
+  } else if (snapToVert) {
+    snappedEnd.x = start.x;
+  }
+  return snappedEnd;
+}
 
 function fromRatioCoords(xRatio, yRatio, imageWidth, imageHeight, viewMode) {
   if (viewMode && viewMode !== 'entire') {
@@ -2881,6 +2903,9 @@ function LeftEditPanel({
   // Estados para portero
   const [goalkeeperStripeColor, setGoalkeeperStripeColor] = useState(icon?.goalkeeperStripeColor || teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
   const [goalkeeperStripePickerVisible, setGoalkeeperStripePickerVisible] = useState(false);
+  const [localDiameter, setLocalDiameter] = useState('');
+  const [localWidth, setLocalWidth] = useState('');
+  const [localHeight, setLocalHeight] = useState('');
 
   // Detectar si el jugador es portero
   const isGoalkeeper = icon?.type === 'player' && (
@@ -2918,6 +2943,23 @@ function LeftEditPanel({
     setLocalDotSize(icon?.dotSize ?? 2);
     setLocalDotSpacing(icon?.dotSpacing ?? 4);
     setGoalkeeperStripeColor(icon?.goalkeeperStripeColor || teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
+    if (icon && icon.type === 'circle' && icon.points && icon.points.length === 2) {
+      const dx_ratio = icon.points[1].x - icon.points[0].x;
+      const dy_ratio = icon.points[1].y - icon.points[0].y;
+      const d_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
+      setLocalDiameter(d_m.toFixed(1));
+    } else {
+      setLocalDiameter('');
+    }
+    if (icon && icon.type === 'rectangle' && icon.points && icon.points.length === 2) {
+      const w_ratio = Math.abs(icon.points[1].x - icon.points[0].x);
+      const h_ratio = Math.abs(icon.points[1].y - icon.points[0].y);
+      setLocalWidth((w_ratio * 105).toFixed(1));
+      setLocalHeight((h_ratio * 68).toFixed(1));
+    } else {
+      setLocalWidth('');
+      setLocalHeight('');
+    }
   }, [icon, standardSize, teamPlayerStyle]);
 
   if (!visible || !icon) return null;
@@ -3515,6 +3557,53 @@ function LeftEditPanel({
                 </>
               )}
 
+              {/* Controles para cambiar dimensiones en metros manualmente */}
+              {icon.type === 'circle' && (
+                <>
+                  <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>
+                    {t('tacticalBoard.editPanel.diameterLabel') || 'Diámetro (m)'}
+                  </Text>
+                  <TextInput
+                    style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
+                    keyboardType="numeric"
+                    autoComplete="off"
+                    value={localDiameter}
+                    onChangeText={setLocalDiameter}
+                    placeholder="Diámetro en metros"
+                    placeholderTextColor="#888"
+                  />
+                </>
+              )}
+
+              {icon.type === 'rectangle' && (
+                <>
+                  <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>
+                    {t('tacticalBoard.editPanel.widthLabel') || 'Ancho (m)'}
+                  </Text>
+                  <TextInput
+                    style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
+                    keyboardType="numeric"
+                    autoComplete="off"
+                    value={localWidth}
+                    onChangeText={setLocalWidth}
+                    placeholder="Ancho en metros"
+                    placeholderTextColor="#888"
+                  />
+                  <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 10 }]}>
+                    {t('tacticalBoard.editPanel.heightLabel') || 'Alto (m)'}
+                  </Text>
+                  <TextInput
+                    style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
+                    keyboardType="numeric"
+                    autoComplete="off"
+                    value={localHeight}
+                    onChangeText={setLocalHeight}
+                    placeholder="Alto en metros"
+                    placeholderTextColor="#888"
+                  />
+                </>
+              )}
+
               {/* Checkbox para aplicar a la paleta */}
               {canApplyToPalette && !hideApplyToPalette && !icon?.isMaterialPalette && (
                 <View style={[styles.proModalSwitch, { marginTop: 14 }]}>
@@ -3561,9 +3650,56 @@ function LeftEditPanel({
               <TouchableOpacity
                 style={[styles.proModalBtn, styles.proModalBtnPrimary]}
                 onPress={() => {
+                  let updatedPoints = icon.points;
+                  if (icon.type === 'circle' && localDiameter && icon.points && icon.points.length === 2) {
+                    const newD_m = parseFloat(localDiameter);
+                    if (!isNaN(newD_m) && newD_m > 0) {
+                      const dx_ratio = icon.points[1].x - icon.points[0].x;
+                      const dy_ratio = icon.points[1].y - icon.points[0].y;
+                      const currentD_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
+                      if (currentD_m > 0) {
+                        const cx = (icon.points[0].x + icon.points[1].x) / 2;
+                        const cy = (icon.points[0].y + icon.points[1].y) / 2;
+                        const factor = newD_m / currentD_m;
+                        updatedPoints = [
+                          {
+                            x: Math.max(0, Math.min(1, cx - (cx - icon.points[0].x) * factor)),
+                            y: Math.max(0, Math.min(1, cy - (cy - icon.points[0].y) * factor)),
+                          },
+                          {
+                            x: Math.max(0, Math.min(1, cx + (icon.points[1].x - cx) * factor)),
+                            y: Math.max(0, Math.min(1, cy + (icon.points[1].y - cy) * factor)),
+                          }
+                        ];
+                      }
+                    }
+                  } else if (icon.type === 'rectangle' && localWidth && localHeight && icon.points && icon.points.length === 2) {
+                    const newW_m = parseFloat(localWidth);
+                    const newH_m = parseFloat(localHeight);
+                    if (!isNaN(newW_m) && newW_m > 0 && !isNaN(newH_m) && newH_m > 0) {
+                      const cx = (icon.points[0].x + icon.points[1].x) / 2;
+                      const cy = (icon.points[0].y + icon.points[1].y) / 2;
+                      const signX = icon.points[1].x >= icon.points[0].x ? 1 : -1;
+                      const signY = icon.points[1].y >= icon.points[0].y ? 1 : -1;
+                      const newWRatio = newW_m / 105;
+                      const newHRatio = newH_m / 68;
+                      updatedPoints = [
+                        {
+                          x: Math.max(0, Math.min(1, cx - signX * (newWRatio / 2))),
+                          y: Math.max(0, Math.min(1, cy - signY * (newHRatio / 2))),
+                        },
+                        {
+                          x: Math.max(0, Math.min(1, cx + signX * (newWRatio / 2))),
+                          y: Math.max(0, Math.min(1, cy + signY * (newHRatio / 2))),
+                        }
+                      ];
+                    }
+                  }
+
                   const updatedIcon = {
                     ...icon,
-                    // No actualizar size para custom-shape (su tama�o viene de los puntos dibujados)
+                    points: updatedPoints,
+                    // No actualizar size para custom-shape (su tamao viene de los puntos dibujados)
                     size: (icon.type === 'custom-shape' || icon.type === 'custom-shape-button')
                       ? icon.size
                       : parseInt(size),
@@ -3577,10 +3713,10 @@ function LeftEditPanel({
                     textBackgroundColor: icon.type === 'player' && (icon.playerData || isPalettePlayer) ? textBackgroundColor : icon.textBackgroundColor,
                     // Propiedades de portero
                     goalkeeperStripeColor: isGoalkeeper ? goalkeeperStripeColor : icon.goalkeeperStripeColor,
-                    // Nuevas propiedades para tipo de l�nea y relleno
+                    // Nuevas propiedades para tipo de lnea y relleno
                     lineType: canHaveLineType ? localLineType : icon.lineType,
                     fillColor: canHaveFill ? fillColor : icon.fillColor,
-                    // Propiedades de espaciado para l�neas punteadas
+                    // Propiedades de espaciado para lneas punteadas
                     dotSize: canHaveLineType ? localDotSize : icon.dotSize,
                     dotSpacing: canHaveLineType ? localDotSpacing : icon.dotSpacing,
                   };
@@ -6952,6 +7088,66 @@ const MemoizedStraightLineDetector = React.memo(({
     if (saveClonesHistory) saveClonesHistory();
   };
 
+  const handleLineResizeGrant = (pointIndex, e) => {
+    dragStart.current[`${icon.id}-resize`] = {
+      pointIndex,
+      startX: e.nativeEvent.pageX,
+      startY: e.nativeEvent.pageY,
+      origPoints: icon.points.map(p => ({ x: p.x, y: p.y }))
+    };
+  };
+
+  const handleLineResizeMove = (e) => {
+    const base = dragStart.current[`${icon.id}-resize`];
+    if (!base) return;
+
+    const { dxRatio, dyRatio } = deltaToRatio(
+      (e.nativeEvent.pageX - base.startX) / zoomLevel,
+      (e.nativeEvent.pageY - base.startY) / zoomLevel,
+      viewMode, imageWidth, imageHeight
+    );
+
+    const isStartPoint = base.pointIndex === 0;
+    const staticPoint = isStartPoint ? base.origPoints[1] : base.origPoints[0];
+    const movingPoint = isStartPoint ? base.origPoints[0] : base.origPoints[1];
+
+    const rawNewPoint = {
+      x: Math.max(0, Math.min(1, movingPoint.x + dxRatio)),
+      y: Math.max(0, Math.min(1, movingPoint.y + dyRatio))
+    };
+
+    const finalNewPoint = snapToHorizontalOrVertical(staticPoint, rawNewPoint);
+
+    pendingUpdateRef.current = prev => {
+      const idx = prev.findIndex(c => c.id === icon.id);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      const newPoints = isStartPoint ? [finalNewPoint, staticPoint] : [staticPoint, finalNewPoint];
+      next[idx] = { ...next[idx], points: newPoints };
+      return next;
+    };
+
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        if (pendingUpdateRef.current) {
+          setClones(pendingUpdateRef.current);
+          pendingUpdateRef.current = null;
+        }
+        rafRef.current = null;
+      });
+    }
+  };
+
+  const handleLineResizeRelease = () => {
+    delete dragStart.current[`${icon.id}-resize`];
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (pendingUpdateRef.current) {
+      setClones(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
+    if (saveClonesHistory) saveClonesHistory();
+  };
+
   const responderProps = {
     onStartShouldSetResponderCapture: (e) => {
       return !isTouchOnOptionsButton(e.nativeEvent.pageX - (minX - touchMargin), e.nativeEvent.pageY - (minY - touchMargin));
@@ -7049,6 +7245,39 @@ const MemoizedStraightLineDetector = React.memo(({
         >
           <Feather name="more-vertical" size={16} color="#444444" />
         </TouchableOpacity>
+      )}
+
+      {/* Resize handles at endpoints for straight lines and arrows */}
+      {selectedCloneId === icon.id && !multiSelectMode && (
+        <>
+          {[
+            { index: 0, cx: x1 - minX + touchMargin, cy: y1 - minY + touchMargin },
+            { index: 1, cx: x2 - minX + touchMargin, cy: y2 - minY + touchMargin },
+          ].map(({ index, cx, cy }) => (
+            <View
+              key={`resize-endpoint-${index}`}
+              pointerEvents="auto"
+              style={{
+                position: 'absolute',
+                left: cx - 14,
+                top: cy - 14,
+                width: 28,
+                height: 28,
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 10001,
+              }}
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+              onResponderGrant={(e) => handleLineResizeGrant(index, e)}
+              onResponderMove={handleLineResizeMove}
+              onResponderRelease={handleLineResizeRelease}
+              onResponderTerminate={handleLineResizeRelease}
+            >
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#fff', borderWidth: 2, borderColor: '#3498db' }} />
+            </View>
+          ))}
+        </>
       )}
     </View>
   );
@@ -7396,22 +7625,38 @@ const MemoizedCurveLineDetector = React.memo(({
 // COMPONENTES SVG MEMOIZADOS PARA CÍRCULOS Y RECTÁNGULOS
 // =====================================================
 
-// C�rculo SVG memoizado - solo renderiza el SVG
+// Círculo SVG memoizado - solo renderiza el SVG
 const MemoizedCircleSvg = React.memo(({
-  id, centerX, centerY, radius, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected
+  id, centerX, centerY, radius, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, diameter_m
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
   return (
-    <Circle
-      key={`circle-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
-      cx={centerX}
-      cy={centerY}
-      r={radius}
-      stroke={isMultiSelected ? '#3498db' : color}
-      strokeWidth={thickness}
-      fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
-      strokeDasharray={dashArray}
-    />
+    <G>
+      <Circle
+        key={`circle-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
+        cx={centerX}
+        cy={centerY}
+        r={radius}
+        stroke={isMultiSelected ? '#3498db' : color}
+        strokeWidth={thickness}
+        fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
+        strokeDasharray={dashArray}
+      />
+      {diameter_m !== undefined && diameter_m > 0 && (
+        <SvgText
+          x={centerX}
+          y={centerY + 4}
+          fill="#ffffff"
+          fontSize="11"
+          fontWeight="bold"
+          textAnchor="middle"
+          stroke="#000000"
+          strokeWidth="0.5"
+        >
+          {`${diameter_m.toFixed(1)}m`}
+        </SvgText>
+      )}
+    </G>
   );
 }, (prev, next) => (
   prev.id === next.id &&
@@ -7424,26 +7669,43 @@ const MemoizedCircleSvg = React.memo(({
   prev.lineType === next.lineType &&
   prev.dotSize === next.dotSize &&
   prev.dotSpacing === next.dotSpacing &&
-  prev.isMultiSelected === next.isMultiSelected
+  prev.isMultiSelected === next.isMultiSelected &&
+  prev.diameter_m === next.diameter_m
 ));
 
-// Rect�ngulo SVG memoizado - solo renderiza el SVG
+// Rectángulo SVG memoizado - solo renderiza el SVG
 const MemoizedRectangleSvg = React.memo(({
-  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected
+  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, width_m, height_m
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
   return (
-    <Rect
-      key={`rect-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      stroke={isMultiSelected ? '#3498db' : color}
-      strokeWidth={thickness}
-      fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
-      strokeDasharray={dashArray}
-    />
+    <G>
+      <Rect
+        key={`rect-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        stroke={isMultiSelected ? '#3498db' : color}
+        strokeWidth={thickness}
+        fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
+        strokeDasharray={dashArray}
+      />
+      {width_m !== undefined && height_m !== undefined && width_m > 0 && height_m > 0 && (
+        <SvgText
+          x={x + width / 2}
+          y={y + height / 2 + 4}
+          fill="#ffffff"
+          fontSize="11"
+          fontWeight="bold"
+          textAnchor="middle"
+          stroke="#000000"
+          strokeWidth="0.5"
+        >
+          {`${width_m.toFixed(1)}m x ${height_m.toFixed(1)}m`}
+        </SvgText>
+      )}
+    </G>
   );
 }, (prev, next) => (
   prev.id === next.id &&
@@ -7457,7 +7719,9 @@ const MemoizedRectangleSvg = React.memo(({
   prev.lineType === next.lineType &&
   prev.dotSize === next.dotSize &&
   prev.dotSpacing === next.dotSpacing &&
-  prev.isMultiSelected === next.isMultiSelected
+  prev.isMultiSelected === next.isMultiSelected &&
+  prev.width_m === next.width_m &&
+  prev.height_m === next.height_m
 ));
 
 // Custom Shape SVG memoizado
@@ -7488,7 +7752,7 @@ const MemoizedCustomShapeSvg = React.memo(({
   prev.isMultiSelected === next.isMultiSelected
 ));
 
-// Batch renderer para todas las figuras geom�tricas
+// Batch renderer para todas las figuras geométricas
 const BatchShapesRenderer = React.memo(({
   circles,
   rectangles,
@@ -7505,7 +7769,7 @@ const BatchShapesRenderer = React.memo(({
     return ratioToDisplay(xR, yR, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
 
-  // Pre-calcular datos de c�rculos
+  // Pre-calcular datos de círculos
   const circleData = useMemo(() => {
     return circles.map(icon => {
       if (!icon.points || icon.points.length !== 2) return null;
@@ -7528,6 +7792,10 @@ const BatchShapesRenderer = React.memo(({
       const radius = Math.sqrt(dx * dx + dy * dy) / 2;
       const thickness = (icon.thickness || 1) * scale * 0.7;
 
+      const dx_ratio = icon.points[1].x - icon.points[0].x;
+      const dy_ratio = icon.points[1].y - icon.points[0].y;
+      const diameter_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
+
       return {
         id: icon.id,
         shapeType: 'circle',
@@ -7539,12 +7807,13 @@ const BatchShapesRenderer = React.memo(({
         lineType: icon.lineType,
         dotSize: icon.dotSize,
         dotSpacing: icon.dotSpacing,
-        isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id)
+        isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id),
+        diameter_m
       };
     }).filter(Boolean);
   }, [circles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
 
-  // Pre-calcular datos de rect�ngulos
+  // Pre-calcular datos de rectángulos
   const rectangleData = useMemo(() => {
     return rectangles.map(icon => {
       if (!icon.points || icon.points.length !== 2) return null;
@@ -7566,6 +7835,11 @@ const BatchShapesRenderer = React.memo(({
       const height = Math.abs(p2y - p1y);
       const thickness = (icon.thickness || 1) * scale * 0.7;
 
+      const dx_ratio = Math.abs(icon.points[1].x - icon.points[0].x);
+      const dy_ratio = Math.abs(icon.points[1].y - icon.points[0].y);
+      const width_m = dx_ratio * 105;
+      const height_m = dy_ratio * 68;
+
       return {
         id: icon.id,
         shapeType: 'rectangle',
@@ -7577,7 +7851,9 @@ const BatchShapesRenderer = React.memo(({
         lineType: icon.lineType,
         dotSize: icon.dotSize,
         dotSpacing: icon.dotSpacing,
-        isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id)
+        isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id),
+        width_m,
+        height_m
       };
     }).filter(Boolean);
   }, [rectangles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
@@ -12346,10 +12622,17 @@ export default function Field(props = {}) {
       !drawingCircle && !drawingRectangle) || !straightLineStart) return;
 
     const { locationX, locationY } = e.nativeEvent;
-    setStraightLineEnd(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
+    const rawEnd = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
+    
+    // Apply snapping if drawing a straight line or arrow
+    const finalEnd = (drawingStraightLine || drawingStraightArrow)
+      ? snapToHorizontalOrVertical(straightLineStart, rawEnd)
+      : rawEnd;
+
+    setStraightLineEnd(finalEnd);
     setTemporaryLinePoints([
       straightLineStart,
-      displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight)
+      finalEnd
     ]);
   }, [drawingStraightArrow, drawingStraightLine, drawingCircle, drawingRectangle, straightLineStart, viewMode, imageWidth, imageHeight]);
 

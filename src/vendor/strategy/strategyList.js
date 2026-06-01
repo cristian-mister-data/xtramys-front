@@ -1423,6 +1423,8 @@ export default function StrategyList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
     dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+    dispatch(fetchStrategyFolders({ lang }));
+    dispatch(fetchStrategyFoldersFlat({ lang }));
     if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
   };
 
@@ -1541,7 +1543,9 @@ const handleDelete = (strategy) => {
             await dispatch(deleteEstrategia(strategy._id));
             showNotification(t('strategy.strategyDeleted', 'Estrategia eliminada'), 'success');
             // Recargar datos para reflejar cambios
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+            dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+            dispatch(fetchStrategyFolders({ lang }));
+            dispatch(fetchStrategyFoldersFlat({ lang }));
             if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
           }
         }
@@ -3262,12 +3266,9 @@ const makeStyles = (theme) => StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.primaryHover,
+    color: theme.colors.text,
     marginBottom: 2,
     letterSpacing: 0.25,
-    textShadowColor: theme.colors.primarySoft,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
   cardTitleMobile: {
     fontSize: 13,
