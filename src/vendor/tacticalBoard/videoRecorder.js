@@ -44,6 +44,7 @@ import { captureRef } from 'react-native-view-shot';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { initRecordingSession, generateVideo as encodeVideo, warmUpFFmpeg, createStreamingVideoEncoder } from '@/utils/videoUtils';
 import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
+import { getAspectForView } from './fields';
 import { SPEED_TO_FPS } from '@/constants/video';
 import {
   saveVideo as apiSaveVideo,
@@ -514,6 +515,7 @@ export default function VideoRecorder({
   fieldBaseRef, // Nueva prop: referencia solo al campo base sin elementos
   fieldImageReady = false, // Nueva prop: estado de carga de la imagen del campo
   fieldType = 'full', // Tipo de campo (ID): 'full', 'half', etc.
+  viewMode = 'entire', // Tipo de vista activa (halfLeft, halfRight, etc.)
   keyframes = [], // Keyframes recibidos desde field.js
   onKeyframesChange, // Callback para actualizar keyframes en field.js
   onClearKeyframes, // Callback para limpiar keyframes desde field.js
@@ -1077,7 +1079,8 @@ export default function VideoRecorder({
       }
 
       // 2. Preparar canvas fijo para renderizado independiente de pantalla
-      const aspect = fieldWidth > 0 && fieldHeight > 0 ? fieldWidth / fieldHeight : 16 / 9;
+      const aspectVal = getAspectForView(viewMode);
+      const aspect = aspectVal ? 1 / aspectVal : (fieldWidth > 0 && fieldHeight > 0 ? fieldWidth / fieldHeight : 16 / 9);
       const { width: canvasW, height: canvasH } = getVideoDimensions(aspect);
       const canvas = document.createElement('canvas');
       canvas.width = canvasW;
@@ -1213,7 +1216,7 @@ export default function VideoRecorder({
 
         const frame = allFrames[i];
 
-        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, showPhotos });
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, showPhotos, viewMode });
 
         const frameCapture = await new Promise((resolve, reject) => {
           canvas.toBlob((blob) => {

@@ -11557,114 +11557,77 @@ export default function Field(props = {}) {
       return;
     }
 
-    // Buscar elementos dentro del rect�ngulo
-    const padding = 12; // expansi�n m�nima para capturar l�neas finas y textos
     const rectLeft = selectionRect.x;
     const rectRight = selectionRect.x + selectionRect.width;
     const rectTop = selectionRect.y;
     const rectBottom = selectionRect.y + selectionRect.height;
 
-    // helper: segment intersection
-    function segmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
-      const det = (x2 - x1) * (y4 - y3) - (y2 - y1) * (x4 - x3);
-      if (det === 0) return false; // parallel
-      const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
-      const gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
-      return (0 <= lambda && lambda <= 1) && (0 <= gamma && gamma <= 1);
-    }
-
-    // Helper: verificar si la circunferencia de un c�rculo est� completamente contenida en un rect�ngulo
-    function isCircleContainedInRect(centerX, centerY, radius, left, top, right, bottom) {
-      // La circunferencia est� contenida si el centro + radio en todas direcciones est� dentro
-      return (
-        (centerX - radius) >= left &&
-        (centerX + radius) <= right &&
-        (centerY - radius) >= top &&
-        (centerY + radius) <= bottom
-      );
-    }
-
-    // Helper: verificar si un rect�ngulo (shape) est� completamente contenido
-    function isRectShapeContainedInRect(minX, minY, maxX, maxY, left, top, right, bottom) {
-      return (
-        minX >= left &&
-        maxX <= right &&
-        minY >= top &&
-        maxY <= bottom
-      );
-    }
-
     const selected = clones.filter(clone => {
       // Tolerancia basada en grosor del trazo
       const strokeTolerance = (clone.thickness || clone.size || 0) / 2;
-      const pad = Math.max(2, padding) + strokeTolerance;
 
-      // CÍRCULOS: verificar si la circunferencia est� contenida
+      // CÍRCULOS: verificar si la circunferencia está completamente contenida
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
           return { x: p.x, y: p.y };
         });
 
-        // Calcular centro y radio del c�rculo
         const centerX = (pts[0].x + pts[1].x) / 2;
         const centerY = (pts[0].y + pts[1].y) / 2;
         const dx = pts[1].x - pts[0].x;
         const dy = pts[1].y - pts[0].y;
         const radius = Math.sqrt(dx * dx + dy * dy) / 2;
 
-        // Verificar si la circunferencia (incluyendo el grosor del trazo) est� contenida
-        return isCircleContainedInRect(
-          centerX, centerY, radius + strokeTolerance,
-          rectLeft - pad, rectTop - pad, rectRight + pad, rectBottom + pad
+        return (
+          (centerX - radius - strokeTolerance) >= rectLeft &&
+          (centerX + radius + strokeTolerance) <= rectRight &&
+          (centerY - radius - strokeTolerance) >= rectTop &&
+          (centerY + radius + strokeTolerance) <= rectBottom
         );
       }
 
-      // RECTÁNGULOS: verificar si el per�metro est� contenido
+      // RECTÁNGULOS: verificar si todo el rectángulo está completamente contenido
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
           return { x: p.x, y: p.y };
         });
 
-        const minX = Math.min(pts[0].x, pts[1].x);
-        const maxX = Math.max(pts[0].x, pts[1].x);
-        const minY = Math.min(pts[0].y, pts[1].y);
-        const maxY = Math.max(pts[0].y, pts[1].y);
+        const minX = Math.min(pts[0].x, pts[1].x) - strokeTolerance;
+        const maxX = Math.max(pts[0].x, pts[1].x) + strokeTolerance;
+        const minY = Math.min(pts[0].y, pts[1].y) - strokeTolerance;
+        const maxY = Math.max(pts[0].y, pts[1].y) + strokeTolerance;
 
-        // Verificar si el rect�ngulo (incluyendo grosor del trazo) est� contenido
-        return isRectShapeContainedInRect(
-          minX - strokeTolerance, minY - strokeTolerance,
-          maxX + strokeTolerance, maxY + strokeTolerance,
-          rectLeft - pad, rectTop - pad, rectRight + pad, rectBottom + pad
+        return (
+          minX >= rectLeft &&
+          maxX <= rectRight &&
+          minY >= rectTop &&
+          maxY <= rectBottom
         );
       }
 
-      // Si el elemento tiene puntos (l�neas, flechas, shapes), seleccionar SOLO si el recuadro recubre completamente el trazado
+      // LÍNEAS / FLECHAS / SHAPES con array de puntos: todos los puntos del trazado deben estar dentro del rectángulo de selección
       if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
-        // Normalizar puntos a coords en pixels (algunos pueden estar en ratio 0..1)
         const pts = clone.points.map(p => {
           if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight);
           return { x: p.x, y: p.y };
         });
 
-        const expandedLeft = rectLeft - pad;
-        const expandedRight = rectRight + pad;
-        const expandedTop = rectTop - pad;
-        const expandedBottom = rectBottom + pad;
+        const minX = Math.min(...pts.map(p => p.x)) - strokeTolerance;
+        const maxX = Math.max(...pts.map(p => p.x)) + strokeTolerance;
+        const minY = Math.min(...pts.map(p => p.y)) - strokeTolerance;
+        const maxY = Math.max(...pts.map(p => p.y)) + strokeTolerance;
 
-        // Para considerar que el recuadro recubre el trazado completo, TODOS los puntos del trazado deben estar dentro del rect�ngulo expandido
-        const allPointsInside = pts.every(pt => (
-          pt.x >= expandedLeft && pt.x <= expandedRight && pt.y >= expandedTop && pt.y <= expandedBottom
-        ));
-
-        if (allPointsInside) return true;
-
-        // No seleccionamos si solo hay intersecci�n parcial; requerimos cobertura completa del trazado
-        return false;
+        return (
+          minX >= rectLeft &&
+          maxX <= rectRight &&
+          minY >= rectTop &&
+          maxY <= rectBottom
+        );
       }
 
-      // Para elementos puntuales (jugadores, bal�n, conos, textos), usar xRatio/yRatio o x/y en pixels
+      // Para elementos puntuales (jugadores, balón, conos, textos), usar xRatio/yRatio o x/y en pixels
       let elemX, elemY;
       if (typeof clone.x === 'number') {
         elemX = clone.x;
@@ -11674,38 +11637,29 @@ export default function Field(props = {}) {
         elemX = coords.x;
         elemY = coords.y;
       } else {
-        elemX = null;
-        elemY = null;
+        return false;
       }
 
-      if (elemX === null || elemY === null) return false;
-
-      // Calcular el scale del elemento basado en su tama�o original vs actual
       const originalWidth = clone.imageWidth || imageWidth;
       const originalHeight = clone.imageHeight || imageHeight;
       const widthRatio = imageWidth / originalWidth;
       const heightRatio = imageHeight / originalHeight;
       const elementScale = (widthRatio + heightRatio) / 2;
 
-      // Calcular el tama�o visual real del elemento (size * scale) - sin padding extra
       const baseSize = clone.size || standardSize;
       const visualSize = baseSize * elementScale;
-
-      // Usar exactamente el tama�o visual del icono (mitad del tama�o a cada lado del centro)
       const halfSize = visualSize / 2;
       const elementLeft = elemX - halfSize;
       const elementRight = elemX + halfSize;
       const elementTop = elemY - halfSize;
       const elementBottom = elemY + halfSize;
 
-      // Requerir contenci�n completa del elemento dentro del rect�ngulo de selecci�n
       const fullyContained = (elementLeft >= rectLeft && elementRight <= rectRight && elementTop >= rectTop && elementBottom <= rectBottom);
       return fullyContained;
     }).map(c => c.id);
 
     setSelectedCloneIds(selected);
 
-    // Cambiar autom�ticamente a modo mover si se seleccionaron elementos
     if (selected.length > 0) {
       setSelectionInteractionMode('move');
     }
@@ -11715,130 +11669,116 @@ export default function Field(props = {}) {
     setIsSelecting(false);
   }, [multiSelectMode, isSelecting, selectionRect, clones, imageWidth, imageHeight]);
 
-  // ============================================================
-  // Multi-select web v3: rewrite completo desde cero (DOM nativo).
-  //
-  // - Overlay div nativo (en JSX) escucha pointer events.
-  // - Rect�ngulo de selecci�n dibujado por DOM puro durante el drag,
-  //   sin tocar React state hasta el pointerup → cero re-renders intra-drag.
-  // - Detecci�n de elementos contenidos v�a funci�n pura `findContainedIds`
-  //   que lee refs estables (actualClonesRef, refs de tama�o/viewMode).
-  // - Listeners attachados al `window` para move/up: el browser garantiza
-  //   que llegan aunque el puntero salga del overlay (m�s robusto que
-  //   setPointerCapture, que a veces falla con elementos React encima).
-  // ============================================================
-
-  // Refs estables para tama�o/viewMode (evitan re-attach del effect)
   const fieldSizeRef = useRef({ w: imageWidth, h: imageHeight, viewMode });
   fieldSizeRef.current = { w: imageWidth, h: imageHeight, viewMode };
 
-  // Funci�n pura: dado un rect en coords del overlay, devuelve los IDs
-  // de clones contenidos. Replica la l�gica original de handleSelectionEnd
-  // pero sin depender de React state.
   const findContainedIds = useCallback((rect) => {
     const { w: imgW, h: imgH, viewMode: vm } = fieldSizeRef.current;
     const clonesNow = actualClonesRef.current || [];
-    const padding = 12;
     const rectLeft = rect.x;
     const rectRight = rect.x + rect.width;
     const rectTop = rect.y;
     const rectBottom = rect.y + rect.height;
 
-    function rectsOverlap(aL, aT, aR, aB, bL, bT, bR, bB) {
-      return aL <= bR && aR >= bL && aT <= bB && aB >= bT;
-    }
-    function pointInRect(x, y, l, t, r, b) {
-      return x >= l && x <= r && y >= t && y <= b;
-    }
-    function ccw(ax, ay, bx, by, cx, cy) {
-      return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
-    }
-    function segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
-      return ccw(ax, ay, cx, cy, dx, dy) !== ccw(bx, by, cx, cy, dx, dy)
-        && ccw(ax, ay, bx, by, cx, cy) !== ccw(ax, ay, bx, by, dx, dy);
-    }
-    function segmentIntersectsRect(x1, y1, x2, y2, l, t, r, b) {
-      if (pointInRect(x1, y1, l, t, r, b) || pointInRect(x2, y2, l, t, r, b)) return true;
-      return segmentsIntersect(x1, y1, x2, y2, l, t, r, t)
-        || segmentsIntersect(x1, y1, x2, y2, r, t, r, b)
-        || segmentsIntersect(x1, y1, x2, y2, r, b, l, b)
-        || segmentsIntersect(x1, y1, x2, y2, l, b, l, t);
-    }
-    function circleIn(cx, cy, rad, l, t, r, b) {
-      const closestX = Math.max(l, Math.min(cx, r));
-      const closestY = Math.max(t, Math.min(cy, b));
-      return Math.hypot(cx - closestX, cy - closestY) <= rad;
-    }
-
     return clonesNow.filter((clone) => {
       const strokeTol = (clone.thickness || clone.size || 0) / 2;
-      const pad = padding + strokeTol;
-      const L = rectLeft - pad, R = rectRight + pad, T = rectTop - pad, B = rectBottom + pad;
 
-      // CÍRCULOS
+      // CÍRCULOS: verificar si la circunferencia está completamente contenida
       if (clone.type === 'circle' && clone.points && clone.points.length === 2) {
-        const pts = clone.points.map(p =>
-          (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
-        );
+        const pts = clone.points.map(p => {
+          if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, vm, imgW, imgH);
+          return { x: p.x, y: p.y };
+        });
+
         const cx = (pts[0].x + pts[1].x) / 2;
         const cy = (pts[0].y + pts[1].y) / 2;
         const dx = pts[1].x - pts[0].x;
         const dy = pts[1].y - pts[0].y;
         const radius = Math.sqrt(dx * dx + dy * dy) / 2;
-        return circleIn(cx, cy, radius + strokeTol, L, T, R, B);
+
+        return (
+          (cx - radius - strokeTol) >= rectLeft &&
+          (cx + radius + strokeTol) <= rectRight &&
+          (cy - radius - strokeTol) >= rectTop &&
+          (cy + radius + strokeTol) <= rectBottom
+        );
       }
 
-      // RECTÁNGULOS
+      // RECTÁNGULOS: verificar si todo el rectángulo está completamente contenido
       if (clone.type === 'rectangle' && clone.points && clone.points.length === 2) {
-        const pts = clone.points.map(p =>
-          (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
-        );
+        const pts = clone.points.map(p => {
+          if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, vm, imgW, imgH);
+          return { x: p.x, y: p.y };
+        });
+
         const minX = Math.min(pts[0].x, pts[1].x) - strokeTol;
         const maxX = Math.max(pts[0].x, pts[1].x) + strokeTol;
         const minY = Math.min(pts[0].y, pts[1].y) - strokeTol;
         const maxY = Math.max(pts[0].y, pts[1].y) + strokeTol;
-        return rectsOverlap(minX, minY, maxX, maxY, L, T, R, B);
-      }
 
-      // LÍNEAS / FLECHAS / SHAPES con array de puntos
-      if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
-        const pts = clone.points.map(p =>
-          (p.x <= 1 && p.y <= 1) ? ratioToDisplay(p.x, p.y, vm, imgW, imgH) : { x: p.x, y: p.y }
+        return (
+          minX >= rectLeft &&
+          maxX <= rectRight &&
+          minY >= rectTop &&
+          maxY <= rectBottom
         );
-        const xs = pts.map(p => p.x);
-        const ys = pts.map(p => p.y);
-        if (!rectsOverlap(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys), L, T, R, B)) {
-          return false;
-        }
-        for (let i = 0; i < pts.length - 1; i++) {
-          if (segmentIntersectsRect(pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y, L, T, R, B)) return true;
-        }
-        if (clone.type === 'custom-shape' && pts.length > 2) {
-          const first = pts[0];
-          const last = pts[pts.length - 1];
-          if (segmentIntersectsRect(last.x, last.y, first.x, first.y, L, T, R, B)) return true;
-        }
-        return pts.some(p => pointInRect(p.x, p.y, L, T, R, B));
       }
 
-      // PUNTUALES (jugadores, bal�n, conos, textos)
+      // LÍNEAS / FLECHAS / SHAPES con array de puntos: todos los puntos del trazado deben estar dentro del rectángulo de selección
+      if (clone.points && Array.isArray(clone.points) && clone.points.length > 0) {
+        const pts = clone.points.map(p => {
+          if (p.x <= 1 && p.y <= 1) return ratioToDisplay(p.x, p.y, vm, imgW, imgH);
+          return { x: p.x, y: p.y };
+        });
+
+        const minX = Math.min(...pts.map(p => p.x)) - strokeTol;
+        const maxX = Math.max(...pts.map(p => p.x)) + strokeTol;
+        const minY = Math.min(...pts.map(p => p.y)) - strokeTol;
+        const maxY = Math.max(...pts.map(p => p.y)) + strokeTol;
+
+        return (
+          minX >= rectLeft &&
+          maxX <= rectRight &&
+          minY >= rectTop &&
+          maxY <= rectBottom
+        );
+      }
+
+      // Para elementos puntuales (jugadores, balón, conos, textos)
       let elemX, elemY;
       if (typeof clone.x === 'number') {
-        elemX = clone.x; elemY = clone.y;
+        elemX = clone.x;
+        elemY = clone.y;
       } else if (clone.xRatio != null) {
-        const c = ratioToDisplay(clone.xRatio, clone.yRatio, vm, imgW, imgH);
-        elemX = c.x; elemY = c.y;
-      } else return false;
+        const coords = ratioToDisplay(clone.xRatio, clone.yRatio, vm, imgW, imgH);
+        elemX = coords.x;
+        elemY = coords.y;
+      } else {
+        return false;
+      }
 
       const origW = clone.imageWidth || imgW;
       const origH = clone.imageHeight || imgH;
       const scale = ((imgW / origW) + (imgH / origH)) / 2;
       const half = ((clone.size || standardSize) * scale) / 2;
-      return rectsOverlap(elemX - half, elemY - half, elemX + half, elemY + half, rectLeft, rectTop, rectRight, rectBottom);
+
+      const elementLeft = elemX - half;
+      const elementRight = elemX + half;
+      const elementTop = elemY - half;
+      const elementBottom = elemY + half;
+
+      return (
+        elementLeft >= rectLeft &&
+        elementRight <= rectRight &&
+        elementTop >= rectTop &&
+        elementBottom <= rectBottom
+      );
     }).map(c => c.id);
   }, []);
 
-  // Setup de listeners pointer + dibujo del rect�ngulo. Solo corre cuando
+  
+
+    // Setup de listeners pointer + dibujo del rect�ngulo. Solo corre cuando
   // se entra a modo selecci�n. Estrategia: TODOS los listeners en window
   // con capture=true. Validamos manualmente que el evento empieza dentro
   // del overlay. Esto evita cualquier problema de elementos hijos del
@@ -17265,6 +17205,7 @@ export default function Field(props = {}) {
             connectors={connectors}
             fieldImage={fieldImageForVideo}
             onClose={handleCloseVideoRecorder}
+            viewMode={viewMode}
             fieldWidth={referenceWidth}
             fieldHeight={referenceHeight}
             fieldRef={fieldRef}

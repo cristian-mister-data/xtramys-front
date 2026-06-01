@@ -1,4 +1,7 @@
 import ballImgSrc from '@/images/ball.png';
+import { ratioToDisplay } from '@/vendor/tacticalBoard/fields/fieldConfigs';
+
+let currentViewMode = 'entire';
 
 const VIDEO_WIDTH = 1920;
 const FIELD_BG = '#4a8c3f';
@@ -18,16 +21,16 @@ export function getVideoDimensions(aspectRatio) {
 function getScale(cw, ch) { return Math.min(cw, ch) / 500; }
 
 function pos(elem, cw, ch) {
-  if (elem.xRatio !== undefined && elem.yRatio !== undefined) {
-    return { x: elem.xRatio * cw, y: elem.yRatio * ch };
-  }
-  return { x: elem.x || 0, y: elem.y || 0 };
+  const xr = elem.xRatio !== undefined ? elem.xRatio : (elem.x !== undefined ? elem.x / 1280 : 0);
+  const yr = elem.yRatio !== undefined ? elem.yRatio : (elem.y !== undefined ? elem.y / 720 : 0);
+  return ratioToDisplay(xr, yr, currentViewMode, cw, ch);
 }
 
 function applyRotation(ctx, x, y, rotation) {
-  if (rotation) {
+  let rot = rotation || 0;
+  if (rot) {
     ctx.translate(x, y);
-    ctx.rotate(rotation * Math.PI / 180);
+    ctx.rotate(rot * Math.PI / 180);
     ctx.translate(-x, -y);
   }
 }
@@ -734,14 +737,16 @@ function drawWeights(ctx, cw, ch, elem, scale) {
 function drawStraightLine(ctx, cw, ch, elem, scale) {
   if (!elem.pointsRatio || elem.pointsRatio.length < 2) {
     if (elem.x1 !== undefined) {
-      const p1 = { x: elem.x1 / (elem.sourceWidth || cw) * cw, y: elem.y1 / (elem.sourceHeight || ch) * ch };
-      const p2 = { x: elem.x2 / (elem.sourceWidth || cw) * cw, y: elem.y2 / (elem.sourceHeight || ch) * ch };
+      const refW = elem.sourceWidth || 1280;
+      const refH = elem.sourceHeight || 720;
+      const p1 = ratioToDisplay(elem.x1 / refW, elem.y1 / refH, currentViewMode, cw, ch);
+      const p2 = ratioToDisplay(elem.x2 / refW, elem.y2 / refH, currentViewMode, cw, ch);
       drawLineSegment(ctx, p1, p2, elem, scale);
     }
     return;
   }
-  const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
-  const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+  const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
+  const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
   drawLineSegment(ctx, p1, p2, elem, scale);
 
   if (elem.type === 'straight-arrow') {
@@ -782,7 +787,9 @@ function drawArrowhead(ctx, from, to, elem, scale) {
 function drawCurveLine(ctx, cw, ch, elem, scale) {
   const pts = elem.pointsRatio || elem.points;
   if (!pts || pts.length < 2) return;
-  const points = elem.pointsRatio ? pts.map(p => ({ x: p.x * cw, y: p.y * ch })) : pts;
+  const points = elem.pointsRatio
+    ? pts.map(p => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
+    : pts.map(p => ratioToDisplay(p.x / (elem.sourceWidth || 1280), p.y / (elem.sourceHeight || 720), currentViewMode, cw, ch));
 
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
   ctx.save();
@@ -821,23 +828,23 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
   let cx, cy, r;
 
   if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
-    const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
-    const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+    const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
+    const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
     cx = (p1.x + p2.x) / 2;
     cy = (p1.y + p2.y) / 2;
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     r = Math.sqrt(dx * dx + dy * dy) / 2;
   } else if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.radius) {
-    cx = elem.xRatio * cw;
-    cy = elem.yRatio * ch;
-    r = elem.radius;
+    const coords = ratioToDisplay(elem.xRatio, elem.yRatio, currentViewMode, cw, ch);
+    cx = coords.x;
+    cy = coords.y;
+    r = elem.radius * scale;
   } else if (elem.x !== undefined && elem.y !== undefined && elem.radius) {
-    const scaleX = cw / (elem.sourceWidth || cw);
-    const scaleY = ch / (elem.sourceHeight || ch);
-    cx = elem.x * scaleX;
-    cy = elem.y * scaleY;
-    r = elem.radius * Math.min(scaleX, scaleY);
+    const coords = ratioToDisplay(elem.x / (elem.sourceWidth || 1280), elem.y / (elem.sourceHeight || 720), currentViewMode, cw, ch);
+    cx = coords.x;
+    cy = coords.y;
+    r = elem.radius * scale;
   } else {
     return;
   }
@@ -865,19 +872,21 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
   let rx, ry, rw, rh;
 
   if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
-    const p1 = { x: elem.pointsRatio[0].x * cw, y: elem.pointsRatio[0].y * ch };
-    const p2 = { x: elem.pointsRatio[1].x * cw, y: elem.pointsRatio[1].y * ch };
+    const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
+    const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
     rx = Math.min(p1.x, p2.x);
     ry = Math.min(p1.y, p2.y);
     rw = Math.abs(p2.x - p1.x);
     rh = Math.abs(p2.y - p1.y);
   } else if (elem.x !== undefined && elem.width) {
-    const scaleX = cw / (elem.sourceWidth || cw);
-    const scaleY = ch / (elem.sourceHeight || ch);
-    rx = elem.x * scaleX;
-    ry = elem.y * scaleY;
-    rw = elem.width * scaleX;
-    rh = elem.height * scaleY;
+    const refW = elem.sourceWidth || 1280;
+    const refH = elem.sourceHeight || 720;
+    const p1 = ratioToDisplay(elem.x / refW, elem.y / refH, currentViewMode, cw, ch);
+    const p2 = ratioToDisplay((elem.x + elem.width) / refW, (elem.y + elem.height) / refH, currentViewMode, cw, ch);
+    rx = Math.min(p1.x, p2.x);
+    ry = Math.min(p1.y, p2.y);
+    rw = Math.abs(p2.x - p1.x);
+    rh = Math.abs(p2.y - p1.y);
   } else {
     return;
   }
@@ -903,7 +912,9 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
 function drawCustomShape(ctx, cw, ch, elem, scale) {
   const pts = elem.pointsRatio || elem.points;
   if (!pts || pts.length < 2) return;
-  const points = elem.pointsRatio ? pts.map(p => ({ x: p.x * cw, y: p.y * ch })) : pts;
+  const points = elem.pointsRatio
+    ? pts.map(p => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
+    : pts.map(p => ratioToDisplay(p.x / (elem.sourceWidth || 1280), p.y / (elem.sourceHeight || 720), currentViewMode, cw, ch));
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
 
   ctx.save();
@@ -1008,6 +1019,7 @@ const LINE_DRAWERS = {
 };
 
 export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, _options = {}) {
+  currentViewMode = _options.viewMode || 'entire';
   ctx.fillStyle = FIELD_BG;
   ctx.fillRect(0, 0, cw, ch);
 
