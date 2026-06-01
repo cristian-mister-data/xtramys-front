@@ -214,6 +214,7 @@ function FullscreenStep({
       role="dialog"
       aria-modal="true"
       aria-labelledby="tutorial-title"
+      data-theme-aware="true"
     >
       <FullscreenContent>
         <HeroIcon>
@@ -285,7 +286,7 @@ function SpotlightStep({
   itemRefs,
 }) {
   return (
-    <SpotlightOverlay role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+    <SpotlightOverlay role="dialog" aria-modal="true" aria-labelledby="tutorial-title" data-theme-aware="true">
       <TutorialScene>
         <DrawerPreview t={t} step={step} drawerScrollRef={drawerScrollRef} itemRefs={itemRefs} />
         <PagePreview aria-hidden="true">
@@ -383,7 +384,7 @@ function DrawerPreview({ t, step, drawerScrollRef, itemRefs }) {
   );
 }
 
-const FullscreenOverlay = styled.div`
+const FullscreenOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
   position: fixed;
   inset: 0;
   z-index: ${({ theme }) => theme.zIndex.modal};
@@ -458,7 +459,7 @@ const BulletRow = styled.div`
   font-weight: 600;
 `;
 
-const SpotlightOverlay = styled.div`
+const SpotlightOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
   position: fixed;
   inset: 0;
   z-index: ${({ theme }) => theme.zIndex.modal};
@@ -678,8 +679,18 @@ const Tip = styled.div`
   margin-top: 4px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: ${({ $light }) => ($light ? 'rgba(255, 255, 255, 0.16)' : '#fffbeb')};
-  color: ${({ $light }) => ($light ? 'rgba(255,255,255,0.92)' : '#92400e')};
+  background: ${({ $light, theme }) => 
+    $light 
+      ? 'rgba(255, 255, 255, 0.16)' 
+      : theme.mode === 'dark' 
+        ? 'rgba(245, 158, 11, 0.12)' 
+        : '#fffbeb'};
+  color: ${({ $light, theme }) => 
+    $light 
+      ? 'rgba(255, 255, 255, 0.92)' 
+      : theme.mode === 'dark' 
+        ? '#f59e0b' 
+        : '#92400e'};
   font-size: 13px;
   line-height: 1.45;
 `;

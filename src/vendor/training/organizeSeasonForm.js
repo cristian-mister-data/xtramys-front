@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Platform, ScrollView, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,6 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 
 const daysList = [
   { label: 'weekdays.monday', value: 1 },
@@ -42,6 +43,8 @@ function getTodayWithTime(hour, minute) {
 
 export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   // Detectar si es móvil para estilos responsivos
   const [fechaInicio, setFechaInicio] = useState(new Date());
   const [fechaFin, setFechaFin] = useState(new Date());
@@ -177,7 +180,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
                 onPress={() => openPicker('fechaInicio', 'date')} 
                 style={styles.dateInput}
               >
-                <MaterialIcons name="calendar-today" size={20} color="#64748b" />
+                <MaterialIcons name="calendar-today" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.dateText}>
                   {fechaInicio.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US')}
                 </Text>
@@ -190,7 +193,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
                 onPress={() => openPicker('fechaFin', 'date')} 
                 style={styles.dateInput}
               >
-                <MaterialIcons name="calendar-today" size={20} color="#64748b" />
+                <MaterialIcons name="calendar-today" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.dateText}>
                   {fechaFin.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US')}
                 </Text>
@@ -235,7 +238,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
                 style={styles.timeInput} 
                 onPress={() => openPicker('horaInicio', 'time')}
               >
-                <MaterialIcons name="schedule" size={20} color="#64748b" />
+                <MaterialIcons name="schedule" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.timeText}>{formatTime(horaInicio)}</Text>
               </TouchableOpacity>
             </View>
@@ -246,7 +249,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
                 style={styles.timeInput} 
                 onPress={() => openPicker('horaFin', 'time')}
               >
-                <MaterialIcons name="schedule" size={20} color="#64748b" />
+                <MaterialIcons name="schedule" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.timeText}>{formatTime(horaFin)}</Text>
               </TouchableOpacity>
             </View>
@@ -258,7 +261,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
               style={styles.timeInput} 
               onPress={() => openPicker('horaReunion', 'time')}
             >
-              <MaterialIcons name="schedule" size={20} color="#64748b" />
+              <MaterialIcons name="schedule" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.timeText}>{formatTime(horaReunion)}</Text>
             </TouchableOpacity>
           </View>
@@ -275,7 +278,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
           minimumDate={picker.field === 'fechaFin' ? fechaInicio : undefined}
           maximumDate={picker.field === 'fechaInicio' ? fechaFin : undefined}
           onChange={onChange}
-          style={{ backgroundColor: 'white' }}
+          style={{ backgroundColor: theme.colors.surface }}
         />
       )}
 
@@ -322,10 +325,10 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingHorizontal: isMobileDevice() ? 16 : 24,
@@ -335,12 +338,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: isMobileDevice() ? 20 : 24,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     lineHeight: isMobileDevice() ? 18 : 20,
   },
   formContainer: {
@@ -353,12 +356,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: isMobileDevice() ? 16 : 18,
     fontWeight: '600',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: isMobileDevice() ? 12 : 14,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     marginBottom: isMobileDevice() ? 12 : 16,
     lineHeight: isMobileDevice() ? 18 : 20,
   },
@@ -373,15 +376,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: isMobileDevice() ? 12 : 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.textSecondary,
     marginBottom: isMobileDevice() ? 6 : 8,
   },
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 12 : 14,
@@ -393,16 +396,16 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: isMobileDevice() ? 14 : 16,
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 12,
     fontWeight: '500',
   },
   timeInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     paddingVertical: isMobileDevice() ? 10 : 14,
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: isMobileDevice() ? 14 : 16,
-    color: '#1e293b',
+    color: theme.colors.text,
     marginLeft: 12,
     fontWeight: '500',
   },
@@ -426,22 +429,22 @@ const styles = StyleSheet.create({
   dayButton: {
     flex: 1,
     minWidth: isMobileDevice() ? 70 : 80,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     paddingVertical: isMobileDevice() ? 10 : 12,
     paddingHorizontal: isMobileDevice() ? 6 : 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   dayButtonActive: {
-    backgroundColor: '#3578e5',
-    borderColor: '#3578e5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   dayButtonText: {
     fontSize: isMobileDevice() ? 12 : 14,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   dayButtonTextActive: {
     color: '#fff',
@@ -453,17 +456,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: isMobileDevice() ? 16 : 24,
     paddingVertical: isMobileDevice() ? 16 : 20,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    backgroundColor: '#fff',
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2856a2',
+    backgroundColor: theme.colors.primary,
     paddingVertical: isMobileDevice() ? 10 : 12,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 12,
-    shadowColor: '#2856a2',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -479,12 +482,12 @@ const styles = StyleSheet.create({
     paddingVertical: isMobileDevice() ? 10 : 12,
     paddingHorizontal: isMobileDevice() ? 16 : 20,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.colors.border,
   },
   secondaryButtonText: {
-    color: '#374151',
+    color: theme.colors.textSecondary,
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '600',
   },

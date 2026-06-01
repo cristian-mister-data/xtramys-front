@@ -38,10 +38,20 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigate = useNavigate();
 
-  const [año, setAño] = useState(new Date().getFullYear().toString());
+  const getDefaultSeasonString = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0 = Jan, 5 = June
+    if (currentMonth >= 5) {
+      return `${currentYear}-${currentYear + 1}`;
+    } else {
+      return `${currentYear - 1}-${currentYear}`;
+    }
+  };
+
+  const [año, setAño] = useState(getDefaultSeasonString());
   const [teamName, setTeamName] = useState('');
   const [idUsuario, setIdUsuario] = useState(null);
-  const [yearSelectVisible, setYearSelectVisible] = useState(false);
 
   const [categoriaKey, setCategoriaKey] = useState('');
   const [categoriaCustom, setCategoriaCustom] = useState('');
@@ -57,7 +67,12 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const { t } = useTranslation();
 
   const formatSeasonYear = (year) => {
-    const currentYear = parseInt(year);
+    if (!year) return '';
+    const yearStr = year.toString();
+    if (yearStr.includes('-') || yearStr.includes('/') || isNaN(yearStr)) {
+      return yearStr;
+    }
+    const currentYear = parseInt(yearStr);
     const nextYear = currentYear + 1;
     return `${currentYear}-${nextYear}`;
   };
@@ -75,15 +90,6 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
 
   const timePerHalfOptions = [10, 15, 20, 25, 30, 35, 40, 45];
   const playersPerTeamOptions = [7, 8, 11];
-
-  const yearOptions = [];
-  const currentYear = new Date().getFullYear();
-  for (let year = 2000; year <= currentYear; year++) {
-    yearOptions.push({
-      label: formatSeasonYear(year.toString()),
-      value: year.toString()
-    });
-  }
 
   const { loading: loadingSeason } = useSelector(state => state.season);
   const { loading: loadingTeam } = useSelector(state => state.team);
@@ -224,17 +230,16 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
               <Text style={styles.inputLabel}>
                 {t("season.season")}
               </Text>
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setYearSelectVisible(true)}
-                activeOpacity={0.7}
-              >
+              <View style={styles.input}>
                 {fieldIcon('calendar', primaryColor)}
-                <Text style={[styles.inputText, !año && styles.inputPlaceholder]}>
-                  {año ? formatSeasonYear(año) : t("season.season")}
-                </Text>
-                <Ionicons name="chevron-down" size={18} color={chevronColor} />
-              </TouchableOpacity>
+                <TextInput
+                  placeholder={t("season.season")}
+                  placeholderTextColor={theme.colors.inputPlaceholder}
+                  value={año}
+                  onChangeText={setAño}
+                  style={styles.textInput}
+                />
+              </View>
             </View>
 
             {/* Divider */}
@@ -383,36 +388,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Year Select Modal */}
-        <Modal visible={yearSelectVisible} transparent animationType="fade" onRequestClose={() => setYearSelectVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.selectModalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t("season.selectYear")}</Text>
-                <TouchableOpacity onPress={() => setYearSelectVisible(false)} style={styles.modalCloseButton}>
-                  <Ionicons name="close" size={22} color={chevronColor} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.selectModalBody} showsVerticalScrollIndicator={false}>
-                {yearOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[styles.selectOption, año === option.value && styles.selectOptionSelected]}
-                    onPress={() => { setAño(option.value); setYearSelectVisible(false); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.selectOptionText, año === option.value && styles.selectOptionTextSelected]}>
-                      {option.label}
-                    </Text>
-                    {año === option.value && (
-                      <Ionicons name="checkmark-circle" size={20} color={primaryColor} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+        {/* Year Select Modal removed - now using direct text input */}
 
         {/* Category Select Modal */}
         <Modal visible={showCategoryOptions} transparent animationType="fade" onRequestClose={() => setShowCategoryOptions(false)}>

@@ -372,6 +372,19 @@
         "deleteSeasonConfirmation": "Are you sure you want to delete this season?",
         "deleteSeasonSuccess": "Season deleted successfully",
         "deleteSeasonError": "Error deleting season",
+        "deleteSeasonTitle": "Delete Season",
+        "deleteWarningTitle": "⚠️ Irreversible Action",
+        "deleteWarningMessage": "You are going to permanently delete the season and ALL its associated data. This action cannot be undone. The following will be deleted:",
+        "deleteWarningTeams": "All teams of this season",
+        "deleteWarningPlayers": "All players of these teams",
+        "deleteWarningMatches": "All match sheets, stats, lineups, and goals",
+        "deleteWarningSessions": "All training sessions and attendances",
+        "deleteWarningInjuries": "All players injury records",
+        "deleteWarningStats": "All anthropometries, skinfolds, and physical logs",
+        "deleteWarningRivals": "All rivals and tactical rival analyses",
+        "deleteWarningStrategies": "All strategies and tactical videos associated with the season",
+        "deleteConfirmationInstruction": "To confirm deletion, type the season year \"{{seasonYear}}\":",
+        "deleteConfirmationMismatch": "The name does not match the season year",
         "editSeasonSuccess": "Season edited successfully",
         "editSeasonError": "Error editing season",
         "createSeasonSuccess": "Season created successfully",
@@ -1503,8 +1516,7 @@
             "RM": "Right Mid.",
             "LW": "Left Winger",
             "RW": "Right Winger",
-            "ST": "Striker",
-            "CF": "Center Forward"
+            "ST": "Striker"
         },
         "positionLabels": {
             "GK": "GK",
@@ -1518,8 +1530,7 @@
             "RM": "RM",
             "LW": "LW",
             "RW": "RW",
-            "ST": "ST",
-            "CF": "CF"
+            "ST": "ST"
         },
         "saveSettings": "Save settings",
         "saving": "Saving...",
@@ -2707,8 +2718,7 @@
             "MD": "RM",
             "DC": "ST",
             "EI": "LW",
-            "ED": "RW",
-            "SD": "CF"
+            "ED": "RW"
         },
         "events": {
             "out": "Out",

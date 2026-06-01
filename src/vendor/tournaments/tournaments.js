@@ -1198,31 +1198,70 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   if (!tournament) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.optionsOverlay} onPress={onClose}>
-        <View style={styles.optionsCard}>
-          <Text style={styles.optionsTitle} numberOfLines={1}>{tournament.nombre}</Text>
-          <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onEdit(tournament); }}>
-            <MaterialIcons name="edit" size={22} color={theme.colors.primary} />
-            <Text style={styles.optionText}>{t('common.edit')}</Text>
+    <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <View style={[styles.optionsModalContent, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]}>
+          {/* Handle bar */}
+          <View style={styles.optionsModalHandle} />
+          {/* Title */}
+          <Text style={styles.optionsModalTitle}>{tournament.nombre}</Text>
+
+          <TouchableOpacity
+            style={styles.optionsModalOption}
+            onPress={() => {
+              onClose();
+              onEdit(tournament);
+            }}
+          >
+            <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
+              <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onToggleStatus(tournament); }}>
-            <MaterialIcons
-              name={tournament.estado === 'activo' ? 'check-circle' : 'play-circle-filled'}
-              size={22}
-              color={tournament.estado === 'activo' ? theme.colors.textSecondary : theme.colors.success}
-            />
-            <Text style={styles.optionText}>
+          
+          <TouchableOpacity
+            style={styles.optionsModalOption}
+            onPress={() => {
+              onClose();
+              onToggleStatus(tournament);
+            }}
+          >
+            <View style={[styles.optionsModalIconBox, { backgroundColor: tournament.estado === 'activo' ? theme.colors.backgroundAlt : theme.colors.successSoft }]}>
+              <MaterialIcons
+                name={tournament.estado === 'activo' ? 'check-circle' : 'play-circle-filled'}
+                size={20}
+                color={tournament.estado === 'activo' ? theme.colors.textSecondary : theme.colors.success}
+              />
+            </View>
+            <Text style={styles.optionsModalOptionText}>
               {tournament.estado === 'activo' ? t('tournaments.markFinished') : t('tournaments.markActive')}
             </Text>
           </TouchableOpacity>
-          <View style={styles.optionDivider} />
-          <TouchableOpacity style={styles.optionItem} onPress={() => { onClose(); onDelete(tournament); }}>
-            <MaterialIcons name="delete-outline" size={22} color={theme.colors.error} />
-            <Text style={[styles.optionText, { color: theme.colors.error }]}>{t('common.delete')}</Text>
+          
+          <TouchableOpacity
+            style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
+            onPress={() => {
+              onClose();
+              onDelete(tournament);
+            }}
+          >
+            <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}>
+              <MaterialIcons name="delete" size={20} color={theme.colors.error} />
+            </View>
+            <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
+              {t('common.delete')}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.optionsModalCancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.optionsModalCancelText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </Pressable>
@@ -2196,48 +2235,78 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
   },
   // Options modal
-  optionsOverlay: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  optionsCard: {
+  optionsModalContent: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 14,
-    padding: 8,
-    width: 260,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12 },
-      android: { elevation: 8 },
-    }),
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
   },
-  optionsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.text,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  optionsModalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  optionsModalTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textDisabled,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  optionsModalIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionsModalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    gap: 14,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  optionText: {
-    fontSize: 14,
-    color: theme.colors.text,
+  optionsModalOptionText: {
+    fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.text,
   },
-  optionDivider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-    marginHorizontal: 10,
+  optionsModalOptionDanger: {
+    borderBottomWidth: 0,
+  },
+  optionsModalOptionTextDanger: {
+    color: theme.colors.error,
+  },
+  optionsModalCancelButton: {
+    marginTop: 8,
+    backgroundColor: theme.colors.backgroundAlt,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  optionsModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
   },
   // =================== Advanced Config Styles ===================
   advancedToggle: {

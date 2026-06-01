@@ -26,7 +26,7 @@ import AppLayout from '@/vendor/shared/appLayout';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchTemporadaUsuarioSeleccionada, fetchTemporadasUsuario, updateTemporadaSeleccionada, createTemporada } from '@/store/slices/season/seasonThunks';
+import { fetchTemporadaUsuarioSeleccionada, fetchTemporadasUsuario, updateTemporadaSeleccionada, createTemporada, deleteTemporada } from '@/store/slices/season/seasonThunks';
 import { fetchMatchSheetsByTeam, createMatchSheet, updateMatchSheet, deleteMatchSheet } from '@/store/slices/matchSheet/matchSheetThunks';
 import { clearMatchSheets } from '@/store/slices/matchSheet/matchSheetSlice';
 import { fetchEntrenamientosPorEquipo, createEntrenamiento, updateEntrenamiento, deleteEntrenamiento } from '@/store/slices/session/sessionThunks';
@@ -79,8 +79,24 @@ export default function GestionEquipos() {
   const [equipoSeleccionado, setEquipoSeleccionado] = useState(null);
   const [seasonSelectorVisible, setSeasonSelectorVisible] = useState(false);
   const [createSeasonModalVisible, setCreateSeasonModalVisible] = useState(false);
-  const [showYearOptions, setShowYearOptions] = useState(false);
-  const [newSeason, setNewSeason] = useState({ año: new Date().getFullYear().toString(), nombre: '' });
+  const getDefaultSeasonString = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0 = Jan, 5 = June
+    if (currentMonth >= 5) {
+      return `${currentYear}-${currentYear + 1}`;
+    } else {
+      return `${currentYear - 1}-${currentYear}`;
+    }
+  };
+
+  const [newSeason, setNewSeason] = useState({ año: getDefaultSeasonString(), nombre: '' });
+  
+  // Estados para eliminación de temporada
+  const [showSeasonDeleteConfirmation, setShowSeasonDeleteConfirmation] = useState(false);
+  const [seasonToDelete, setSeasonToDelete] = useState(null);
+  const [seasonDeleteConfirmationText, setSeasonDeleteConfirmationText] = useState('');
+  const [deletingSeason, setDeletingSeason] = useState(false);
   
   // Estados para gestión de equipos
   const [editTeamModalVisible, setEditTeamModalVisible] = useState(false);
@@ -177,21 +193,17 @@ export default function GestionEquipos() {
   const playersPerTeamOptions = [7, 8, 11];
 
   // Función helper para formatear el año como "2025-2026"
+  // Función helper para formatear el año
   const formatSeasonYear = (year) => {
-    const currentYear = parseInt(year);
+    if (!year) return '';
+    const yearStr = year.toString();
+    if (yearStr.includes('-') || yearStr.includes('/') || isNaN(yearStr)) {
+      return yearStr;
+    }
+    const currentYear = parseInt(yearStr);
     const nextYear = currentYear + 1;
     return `${currentYear}-${nextYear}`;
   };
-
-  // Generar opciones de años para el select (desde 2000 hasta año actual)
-  const yearOptions = [];
-  const currentYear = new Date().getFullYear();
-  for (let year = 2000; year <= currentYear; year++) {
-    yearOptions.push({
-      label: formatSeasonYear(year.toString()),
-      value: year.toString()
-    });
-  }
 
   const [idUsuario, setIdUsuario] = useState(null);
   const [ready, setReady] = useState(false);
@@ -209,8 +221,7 @@ export default function GestionEquipos() {
   // Reiniciar estado de nueva temporada cuando se abre el modal
   useEffect(() => {
     if (createSeasonModalVisible) {
-      const currentYear = new Date().getFullYear().toString();
-      setNewSeason({ año: currentYear, nombre: '' });
+      setNewSeason({ año: getDefaultSeasonString(), nombre: '' });
     }
   }, [createSeasonModalVisible]);
 
@@ -530,7 +541,7 @@ export default function GestionEquipos() {
       dispatch(clearTournaments());
       
       const result = await dispatch(createTemporada({
-        año: parseInt(newSeason.año),
+        año: newSeason.año.toString().trim(),
         usuario: idUsuario
       })).unwrap();
       
@@ -540,7 +551,7 @@ export default function GestionEquipos() {
         await dispatch(fetchEquiposTemporada({ season: result._id }));
       }
       
-      setNewSeason({ año: new Date().getFullYear().toString(), nombre: '' });
+      setNewSeason({ año: getDefaultSeasonString(), nombre: '' });
       Alert.alert(t('message.success'), t('season.createSeasonSuccess'));
     } catch (error) {
       console.error('Error creating season:', error);
@@ -548,6 +559,69 @@ export default function GestionEquipos() {
     } finally {
       setLoadingTemporada(false);
       setLoadingTeam(false);
+    }
+  };
+
+  // Abrir modal de confirmación de borrado de temporada
+  const handlePromptDeleteSeason = (season) => {
+    setSeasonToDelete(season);
+    setSeasonDeleteConfirmationText('');
+    setShowSeasonDeleteConfirmation(true);
+  };
+
+  // Confirmar y procesar borrado de temporada en cascada
+  const handleDeleteSeasonConfirm = async () => {
+    if (!seasonToDelete) return;
+    
+    // Verificar que el texto de confirmación coincida con el año formateado de la temporada
+    const expectedText = formatSeasonYear(seasonToDelete.año).trim();
+    if (seasonDeleteConfirmationText.trim() !== expectedText) {
+      Alert.alert(t('message.error'), t('season.deleteConfirmationMismatch'));
+      return;
+    }
+
+    try {
+      setDeletingSeason(true);
+      
+      // Dispatch la acción de eliminar temporada
+      const result = await dispatch(deleteTemporada(seasonToDelete._id)).unwrap();
+      
+      // Cerrar modales
+      setShowSeasonDeleteConfirmation(false);
+      setSeasonToDelete(null);
+      setSeasonDeleteConfirmationText('');
+
+      // Si la temporada eliminada era la seleccionada actualmente, cambiar a otra
+      if (temporada?._id === result) {
+        const remainingSeasons = temporadas.filter(s => s._id !== result);
+        if (remainingSeasons.length > 0) {
+          // Seleccionar la primera temporada disponible
+          await handleSelectSeason(remainingSeasons[0]);
+        } else {
+          // Si no quedan temporadas, limpiar estados de selección
+          setEquipoSeleccionado(null);
+          dispatch(clearTeams());
+          dispatch(clearSessions());
+          dispatch(clearMatchSheets());
+          dispatch(clearPlayers());
+          dispatch(clearInjuries());
+          dispatch(clearRivals());
+          dispatch(clearTournaments());
+          await AsyncStorage.removeItem('selectedSeason');
+          // Forzar recarga de temporadas del usuario
+          await dispatch(fetchTemporadasUsuario({ usuario: idUsuario }));
+        }
+      } else {
+        // Refrescar la lista de temporadas
+        await dispatch(fetchTemporadasUsuario({ usuario: idUsuario }));
+      }
+
+      Alert.alert(t('message.success'), t('season.deleteSeasonSuccess'));
+    } catch (error) {
+      console.error('Error deleting season:', error);
+      Alert.alert(t('message.error'), t('season.deleteSeasonError'));
+    } finally {
+      setDeletingSeason(false);
     }
   };
 
@@ -1073,15 +1147,18 @@ export default function GestionEquipos() {
               <ScrollView style={[styles.modalBody, IS_MOBILE && { padding: 14 }]} showsVerticalScrollIndicator={false}>
                 {temporadas && temporadas.length > 0 ? (
                   temporadas.map(season => (
-                    <TouchableOpacity
+                    <View
                       key={season._id}
                       style={[
                         styles.seasonItem,
                         temporada?._id === season._id && styles.seasonItemActive
                       ]}
-                      onPress={() => handleSelectSeason(season)}
                     >
-                      <View style={styles.seasonItemContent}>
+                      <TouchableOpacity
+                        style={styles.seasonItemSelectArea}
+                        onPress={() => handleSelectSeason(season)}
+                        activeOpacity={0.7}
+                      >
                         <Ionicons name="calendar" size={20} color={temporada?._id === season._id ? theme.colors.primary : theme.colors.textMuted} />
                         <View style={styles.seasonItemTextContainer}>
                           <Text style={[
@@ -1097,11 +1174,19 @@ export default function GestionEquipos() {
                             {season.nombre || t("season.season")}
                           </Text>
                         </View>
-                      </View>
-                      {temporada?._id === season._id && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-                      )}
-                    </TouchableOpacity>
+                        {temporada?._id === season._id && (
+                          <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.seasonItemDeleteButton}
+                        onPress={() => handlePromptDeleteSeason(season)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="trash" size={20} color={theme.colors.error} />
+                      </TouchableOpacity>
+                    </View>
                   ))
                 ) : (
                   <View style={styles.emptyModalContent}>
@@ -1148,47 +1233,14 @@ export default function GestionEquipos() {
               </View>
 
               <View style={[styles.modalBody, IS_MOBILE && { padding: 14 }]}>
-                {/* Year Select */}
-                <TouchableOpacity
+                {/* Year Input */}
+                <TextInput
                   style={styles.modalInput}
-                  onPress={() => setShowYearOptions(!showYearOptions)}
-                >
-                  <Text style={newSeason.año ? styles.modalInputText : styles.modalInputPlaceholder}>
-                    {newSeason.año ? formatSeasonYear(newSeason.año) : t("season.year")}
-                  </Text>
-                  <Ionicons name={showYearOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
-                </TouchableOpacity>
-
-                {/* Year Options */}
-                {showYearOptions && (
-                  <View style={styles.yearOptionsContainer}>
-                    <ScrollView style={styles.yearOptionsScroll} showsVerticalScrollIndicator={false}>
-                      {yearOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[
-                            styles.yearOption,
-                            newSeason.año === option.value && styles.yearOptionSelected
-                          ]}
-                          onPress={() => {
-                            setNewSeason({ ...newSeason, año: option.value });
-                            setShowYearOptions(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.yearOptionText,
-                            newSeason.año === option.value && styles.yearOptionTextSelected
-                          ]}>
-                            {option.label}
-                          </Text>
-                          {newSeason.año === option.value && (
-                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
+                  placeholder={t("season.year")}
+                  placeholderTextColor={theme.colors.inputPlaceholder}
+                  value={newSeason.año}
+                  onChangeText={(text) => setNewSeason({ ...newSeason, año: text })}
+                />
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -1206,6 +1258,108 @@ export default function GestionEquipos() {
                   </TouchableOpacity>
                 </View>
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Season Delete Confirmation Modal */}
+        <Modal
+          visible={showSeasonDeleteConfirmation}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            setShowSeasonDeleteConfirmation(false);
+            setSeasonToDelete(null);
+            setSeasonDeleteConfirmationText('');
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={IS_TABLET ? styles.modalContentTablet : styles.modalContent}>
+              <View style={[styles.modalHeader, IS_MOBILE && { padding: 14 }]}>
+                <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 16 }]}>
+                  {t('season.deleteSeasonTitle')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowSeasonDeleteConfirmation(false);
+                    setSeasonToDelete(null);
+                    setSeasonDeleteConfirmationText('');
+                  }}
+                  style={styles.modalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color={theme.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={[styles.modalBody, IS_MOBILE && { padding: 14 }]} showsVerticalScrollIndicator={false}>
+                {seasonToDelete && (
+                  <View style={styles.deleteConfirmationContainer}>
+                    <View style={styles.deleteWarningBox}>
+                      <Ionicons name="alert-circle" size={32} color={theme.colors.error} />
+                      <Text style={styles.deleteWarningTitle}>
+                        {t('season.deleteWarningTitle')}
+                      </Text>
+                      <Text style={styles.deleteWarningText}>
+                        {t('season.deleteWarningMessage')}
+                      </Text>
+                      <Text style={styles.deleteWarningList}>
+                        • {t('season.deleteWarningTeams')}{'\n'}
+                        • {t('season.deleteWarningPlayers')}{'\n'}
+                        • {t('season.deleteWarningMatches')}{'\n'}
+                        • {t('season.deleteWarningSessions')}{'\n'}
+                        • {t('season.deleteWarningInjuries')}{'\n'}
+                        • {t('season.deleteWarningStats')}{'\n'}
+                        • {t('season.deleteWarningRivals')}{'\n'}
+                        • {t('season.deleteWarningStrategies')}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.deleteConfirmationLabel}>
+                      {t('season.deleteConfirmationInstruction', {
+                        seasonYear: formatSeasonYear(seasonToDelete.año)
+                      })}
+                    </Text>
+                    <TextInput
+                      style={styles.deleteConfirmationInput}
+                      placeholder={formatSeasonYear(seasonToDelete.año)}
+                      placeholderTextColor={theme.colors.inputPlaceholder}
+                      value={seasonDeleteConfirmationText}
+                      onChangeText={setSeasonDeleteConfirmationText}
+                    />
+
+                    <View style={[styles.deleteConfirmationButtons, { marginBottom: 20 }]}>
+                      <TouchableOpacity
+                        style={styles.deleteCancelButton}
+                        onPress={() => {
+                          setShowSeasonDeleteConfirmation(false);
+                          setSeasonToDelete(null);
+                          setSeasonDeleteConfirmationText('');
+                        }}
+                      >
+                        <Text style={styles.deleteCancelButtonText}>{t('message.cancel')}</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.deleteConfirmButton,
+                          seasonDeleteConfirmationText.trim() !== formatSeasonYear(seasonToDelete.año).trim() && styles.deleteConfirmButtonDisabled
+                        ]}
+                        onPress={handleDeleteSeasonConfirm}
+                        disabled={seasonDeleteConfirmationText.trim() !== formatSeasonYear(seasonToDelete.año).trim() || deletingSeason}
+                      >
+                        {deletingSeason ? (
+                          <ActivityIndicator size="small" color={theme.colors.error} />
+                        ) : (
+                          <>
+                            <Ionicons name="trash" size={16} color={theme.colors.error} style={{ marginRight: 6 }} />
+                            <Text style={styles.deleteConfirmButtonText}>{t('edition.delete')}</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -2801,10 +2955,21 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
     borderRadius: 12,
     marginBottom: 8,
     backgroundColor: theme.colors.inputBg,
+    overflow: 'hidden',
+  },
+  seasonItemSelectArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    padding: 16,
+  },
+  seasonItemDeleteButton: {
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   seasonItemActive: {
     backgroundColor: theme.colors.primary + '15',

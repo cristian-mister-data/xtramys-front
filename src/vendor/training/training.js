@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import {
   View,
   Text,
@@ -806,6 +807,7 @@ function CategoryPage({ catPageItems, onOpenCategory }) {
 /* ---------------- Componente principal Training ---------------- */
 export default function Training() {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const temporada = useSelector(s => s.season.season);
@@ -1410,11 +1412,11 @@ export default function Training() {
   }
   if (!selectedTeam && !loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
-        <View style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 36, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 6, maxWidth: 400, width: '100%' }}>
-          <Ionicons name="people-circle-outline" size={64} color="#d1d5db" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b', marginTop: 18, textAlign: 'center' }}>{t('session.noTeamSelected')}</Text>
-          <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginTop: 8, lineHeight: 21 }}>{t('session.noTeamSelectedSubtitle')}</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: theme.colors.background }]}>
+        <View style={{ backgroundColor: theme.colors.surface, borderRadius: 20, padding: 36, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 6, maxWidth: 400, width: '100%' }}>
+          <Ionicons name="people-circle-outline" size={64} color={theme.colors.border} />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: theme.colors.text, marginTop: 18, textAlign: 'center' }}>{t('injury.noTeam')}</Text>
+          <Text style={{ fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 21 }}>{t('injury.noTeamSubtitle')}</Text>
         </View>
       </View>
     );
@@ -1573,64 +1575,64 @@ export default function Training() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.proHeader, { paddingTop: Math.max(insets.top, 10) + 2 }]}>
+      <View style={[styles.proHeader, { paddingTop: Math.max(insets.top, 10) + 2, backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         <View style={styles.proHeaderTop}>
           {selectedTeam?.nombre ? (
-            <View style={styles.proHeaderTeamPill}>
-              <MaterialIcons name="groups" size={18} color="#2474E5" />
-              <Text style={styles.proHeaderTeamPillText} numberOfLines={1}>{selectedTeam.nombre}</Text>
+            <View style={[styles.proHeaderTeamPill, { backgroundColor: theme.colors.primarySoft, borderColor: theme.colors.border }]}>
+              <MaterialIcons name="groups" size={18} color={theme.colors.primary} />
+              <Text style={[styles.proHeaderTeamPillText, { color: theme.colors.primary }]} numberOfLines={1}>{selectedTeam.nombre}</Text>
             </View>
           ) : <View style={styles.proHeaderTeamPillSpacer} />}
           <TouchableOpacity
-            style={styles.proCreateButton}
+            style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
             onPress={openCrearModal}
             activeOpacity={0.85}
           >
-            <MaterialIcons name="add" size={22} color="#fff" />
-            {!isMobile && <Text style={styles.proCreateButtonText}>{t('session.new')}</Text>}
+            <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
+            {!isMobile && <Text style={[styles.proCreateButtonText, { color: theme.colors.onPrimary }]}>{t('session.new')}</Text>}
           </TouchableOpacity>
         </View>
         
         {/* Tabs mejorados */}
         <View style={styles.proTabsContainer}>
-          <View style={styles.proTabs}>
+          <View style={[styles.proTabs, { backgroundColor: theme.colors.surfaceAlt }]}>
             <TouchableOpacity
-              style={[styles.proTab, tab === 'futuros' && styles.proTabActive]}
+              style={[styles.proTab, tab === 'futuros' && [styles.proTabActive, { backgroundColor: theme.colors.surface }]]}
               onPress={() => setTab('futuros')}
               activeOpacity={0.85}
             >
               <MaterialIcons 
                 name="upcoming" 
                 size={18} 
-                color={tab === 'futuros' ? '#2474E5' : '#94a3b8'} 
+                color={tab === 'futuros' ? theme.colors.primary : theme.colors.textSecondary} 
               />
-              <Text style={[styles.proTabText, tab === 'futuros' && styles.proTabTextActive]}>
+              <Text style={[styles.proTabText, tab === 'futuros' && [styles.proTabTextActive, { color: theme.colors.primary }]]}>
                 {t('session.upcoming')}
               </Text>
               {eventosFuturosFiltrados.length > 0 && (
-                <View style={[styles.proTabBadge, tab === 'futuros' && styles.proTabBadgeActive]}>
-                  <Text style={[styles.proTabBadgeText, tab === 'futuros' && styles.proTabBadgeTextActive]}>
+                <View style={[styles.proTabBadge, { backgroundColor: theme.colors.border }, tab === 'futuros' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
+                  <Text style={[styles.proTabBadgeText, { color: theme.colors.textSecondary }, tab === 'futuros' && [styles.proTabBadgeTextActive, { color: theme.colors.primary }]]}>
                     {eventosFuturosFiltrados.length}
                   </Text>
                 </View>
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.proTab, tab === 'pasados' && styles.proTabActive]}
+              style={[styles.proTab, tab === 'pasados' && [styles.proTabActive, { backgroundColor: theme.colors.surface }]]}
               onPress={() => setTab('pasados')}
               activeOpacity={0.85}
             >
               <MaterialIcons 
                 name="history" 
                 size={18} 
-                color={tab === 'pasados' ? '#2474E5' : '#94a3b8'} 
+                color={tab === 'pasados' ? theme.colors.primary : theme.colors.textSecondary} 
               />
-              <Text style={[styles.proTabText, tab === 'pasados' && styles.proTabTextActive]}>
+              <Text style={[styles.proTabText, tab === 'pasados' && [styles.proTabTextActive, { color: theme.colors.primary }]]}>
                 {t('session.completed')}
               </Text>
               {eventosPasadosFiltrados.length > 0 && (
-                <View style={[styles.proTabBadge, tab === 'pasados' && styles.proTabBadgeActive]}>
-                  <Text style={[styles.proTabBadgeText, tab === 'pasados' && styles.proTabBadgeTextActive]}>
+                <View style={[styles.proTabBadge, { backgroundColor: theme.colors.border }, tab === 'pasados' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
+                  <Text style={[styles.proTabBadgeText, { color: theme.colors.textSecondary }, tab === 'pasados' && [styles.proTabBadgeTextActive, { color: theme.colors.primary }]]}>
                     {eventosPasadosFiltrados.length}
                   </Text>
                 </View>
@@ -1643,16 +1645,20 @@ export default function Training() {
       {/* Barra de filtros */}
       <View style={styles.proFiltersBar}>
         <TouchableOpacity
-          style={styles.proFilterButton}
+          style={[styles.proFilterButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
           onPress={() => setShowOrgModal(true)}
           activeOpacity={0.8}
         >
-          <MaterialIcons name="auto-fix-high" size={18} color="#2474E5" />
-          <Text style={styles.proFilterButtonText}>{t('session.planTrainings')}</Text>
+          <MaterialIcons name="auto-fix-high" size={18} color={theme.colors.primary} />
+          <Text style={[styles.proFilterButtonText, { color: theme.colors.text }]}>{t('session.planTrainings')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.proFilterButton, dateFilter && styles.proFilterButtonActive]}
+          style={[
+            styles.proFilterButton, 
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            dateFilter && [styles.proFilterButtonActive, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]
+          ]}
           onPress={() => {
             setTempStartDate(dateFilter?.startDate || null);
             setTempEndDate(dateFilter?.endDate || null);
@@ -1662,9 +1668,13 @@ export default function Training() {
           <MaterialIcons 
             name="date-range" 
             size={18} 
-            color={dateFilter ? "#fff" : "#64748b"} 
+            color={dateFilter ? theme.colors.onPrimary : theme.colors.textSecondary} 
           />
-          <Text style={[styles.proFilterButtonText, dateFilter && styles.proFilterButtonTextActive]}>
+          <Text style={[
+            styles.proFilterButtonText, 
+            { color: theme.colors.textSecondary },
+            dateFilter && [styles.proFilterButtonTextActive, { color: theme.colors.onPrimary }]
+          ]}>
             {dateFilter
               ? `${new Date(dateFilter.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${new Date(dateFilter.endDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
               : t('common.filterByDate')
@@ -1675,7 +1685,7 @@ export default function Training() {
               style={styles.proClearFilterBtn}
               onPress={() => setDateFilter(null)}
             >
-              <MaterialIcons name="close" size={14} color="#fff" />
+              <MaterialIcons name="close" size={14} color={theme.colors.onPrimary} />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
@@ -1812,11 +1822,11 @@ export default function Training() {
         }}
       >
         <View style={styles.dateRangeModalBg}>
-          <View style={styles.dateRangeModalContent}>
-            <View style={styles.dateRangeModalHeader}>
-              <Text style={styles.dateRangeModalTitle}>{t('session.filterByDateRange')}</Text>
+          <View style={[styles.dateRangeModalContent, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1 }]}>
+            <View style={[styles.dateRangeModalHeader, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }]}>
+              <Text style={[styles.dateRangeModalTitle, { color: theme.colors.text }]}>{t('session.filterByDateRange')}</Text>
               <TouchableOpacity
-                style={styles.dateRangeModalCloseBtn}
+                style={[styles.dateRangeModalCloseBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                 onPress={() => {
                   setDateRangeModalVisible(false);
                   setTempStartDate(null);
@@ -1825,23 +1835,23 @@ export default function Training() {
                   setDatePickerVisibleEnd(false);
                 }}
               >
-                <MaterialIcons name="close" size={24} color="#64748b" />
+                <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.dateRangeModalBody}>
+            <View style={[styles.dateRangeModalBody, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.dateRangeSection}>
-                <Text style={styles.dateRangeSectionTitle}>{t('session.selectDates')}</Text>
+                <Text style={[styles.dateRangeSectionTitle, { color: theme.colors.textSecondary }]}>{t('session.selectDates')}</Text>
 
                 <TouchableOpacity
-                  style={styles.createDatePicker}
+                  style={[styles.createDatePicker, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}
                   onPress={() => setDatePickerVisibleStart(true)}
                 >
                   <View style={styles.createDatePickerContent}>
-                    <MaterialIcons name="calendar-today" size={24} color="#3578e5" />
+                    <MaterialIcons name="calendar-today" size={24} color={theme.colors.primary} />
                     <View style={styles.createDateTextContainer}>
-                      <Text style={styles.createDateLabel}>{t('session.startDate')}</Text>
-                      <Text style={styles.createDateValue}>
+                      <Text style={[styles.createDateLabel, { color: theme.colors.textSecondary }]}>{t('session.startDate')}</Text>
+                      <Text style={[styles.createDateValue, { color: theme.colors.text }]}>
                         {tempStartDate
                           ? tempStartDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
                             weekday: 'long',
@@ -1853,19 +1863,19 @@ export default function Training() {
                         }
                       </Text>
                     </View>
-                    <MaterialIcons name="arrow-drop-down" size={24} color="#64748b" />
+                    <MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.textSecondary} />
                   </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.createDatePicker, { marginTop: 12 }]}
+                  style={[styles.createDatePicker, { marginTop: 12, backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}
                   onPress={() => setDatePickerVisibleEnd(true)}
                 >
                   <View style={styles.createDatePickerContent}>
-                    <MaterialIcons name="event" size={24} color="#3578e5" />
+                    <MaterialIcons name="event" size={24} color={theme.colors.primary} />
                     <View style={styles.createDateTextContainer}>
-                      <Text style={styles.createDateLabel}>{t('session.endDate')}</Text>
-                      <Text style={styles.createDateValue}>
+                      <Text style={[styles.createDateLabel, { color: theme.colors.textSecondary }]}>{t('session.endDate')}</Text>
+                      <Text style={[styles.createDateValue, { color: theme.colors.text }]}>
                         {tempEndDate
                           ? tempEndDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
                             weekday: 'long',
@@ -1877,15 +1887,15 @@ export default function Training() {
                         }
                       </Text>
                     </View>
-                    <MaterialIcons name="arrow-drop-down" size={24} color="#64748b" />
+                    <MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.textSecondary} />
                   </View>
                 </TouchableOpacity>
               </View>
 
               {tempStartDate && tempEndDate && (
-                <View style={styles.dateRangePreview}>
-                  <Text style={styles.dateRangePreviewTitle}>{t('session.selectedRange')}</Text>
-                  <Text style={styles.dateRangePreviewText}>
+                <View style={[styles.dateRangePreview, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.dateRangePreviewTitle, { color: theme.colors.primary }]}>{t('session.selectedRange')}</Text>
+                  <Text style={[styles.dateRangePreviewText, { color: theme.colors.text }]}>
                     {(() => {
                       const start = new Date(tempStartDate);
                       start.setHours(0, 0, 0, 0);
@@ -1899,9 +1909,9 @@ export default function Training() {
               )}
             </View>
 
-            <View style={styles.dateRangeModalFooter}>
+            <View style={[styles.dateRangeModalFooter, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }]}>
               <TouchableOpacity
-                style={styles.dateRangeCancelBtn}
+                style={[styles.dateRangeCancelBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                 onPress={() => {
                   setDateRangeModalVisible(false);
                   setTempStartDate(null);
@@ -1910,13 +1920,13 @@ export default function Training() {
                   setDatePickerVisibleEnd(false);
                 }}
               >
-                <Text style={styles.dateRangeCancelText}>{t('common.cancel')}</Text>
+                <Text style={[styles.dateRangeCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               {/* Botón para limpiar filtro de fecha */}
               {dateFilter && (
                 <TouchableOpacity
-                  style={[styles.dateRangeCancelBtn, { borderColor: '#ef4444' }]}
+                  style={[styles.dateRangeCancelBtn, { backgroundColor: theme.colors.surface, borderColor: '#ef4444' }]}
                   onPress={() => {
                     setDateFilter(null);
                     setDateRangeModalVisible(false);
@@ -1933,7 +1943,7 @@ export default function Training() {
 
               {tempStartDate && tempEndDate && (
                 <TouchableOpacity
-                  style={styles.dateRangeApplyBtn}
+                  style={[styles.dateRangeApplyBtn, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
                   onPress={() => {
                     // Ajustar fechas para incluir todo el día
                     const startDate = new Date(tempStartDate);

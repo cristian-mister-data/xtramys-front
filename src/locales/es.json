@@ -372,6 +372,19 @@
         "deleteSeasonConfirmation": "¿Estás seguro de que deseas eliminar esta temporada?",
         "deleteSeasonSuccess": "Temporada eliminada correctamente",
         "deleteSeasonError": "Error al eliminar la temporada",
+        "deleteSeasonTitle": "Eliminar Temporada",
+        "deleteWarningTitle": "⚠️ Acción Irreversible",
+        "deleteWarningMessage": "Vas a eliminar permanentemente la temporada y TODOS sus datos asociados de forma definitiva. Esta acción no se puede deshacer. Se eliminarán:",
+        "deleteWarningTeams": "Todos los equipos de la temporada",
+        "deleteWarningPlayers": "Todos los jugadores de estos equipos",
+        "deleteWarningMatches": "Todas las fichas de partido, estadísticas, alineaciones y goles",
+        "deleteWarningSessions": "Todas las sesiones de entrenamiento y asistencias",
+        "deleteWarningInjuries": "Todos los registros de lesiones de los jugadores",
+        "deleteWarningStats": "Todas las antropometrías, pliegues cutáneos e historial físico",
+        "deleteWarningRivals": "Todos los rivales y análisis tácticos de rivales",
+        "deleteWarningStrategies": "Todas las estrategias y videos tácticos asociados a la temporada",
+        "deleteConfirmationInstruction": "Para confirmar la eliminación, escribe el año de la temporada \"{{seasonYear}}\":",
+        "deleteConfirmationMismatch": "El nombre no coincide con el año de la temporada",
         "editSeasonSuccess": "Temporada editada correctamente",
         "editSeasonError": "Error al editar la temporada",
         "createSeasonSuccess": "Temporada creada correctamente",
@@ -1503,8 +1516,7 @@
             "RM": "Mediocampo Der.",
             "LW": "Extremo Izq.",
             "RW": "Extremo Der.",
-            "ST": "Delantero Centro",
-            "CF": "Centro Delantero"
+            "ST": "Delantero Centro"
         },
         "positionLabels": {
             "GK": "PT",
@@ -1518,8 +1530,7 @@
             "RM": "MD",
             "LW": "EI",
             "RW": "ED",
-            "ST": "DC",
-            "CF": "DC"
+            "ST": "DC"
         },
         "saveSettings": "Guardar configuración",
         "saving": "Guardando...",

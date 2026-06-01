@@ -48,6 +48,7 @@ import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import ImageCropper from '../../components/season/ImageCropper';
+import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -475,18 +476,7 @@ export default function Rivals() {
           subtitle={t('rivals.noTeamSelectedSubtitle', 'Selecciona un equipo para ver y gestionar sus rivales.')}
           icon={MdShield}
         />
-        <EmptyState>
-          <MdGroups size={56} />
-          <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {t('rivals.noTeamSelected', 'No hay equipo seleccionado')}
-          </div>
-          <Muted>
-            {t(
-              'rivals.noTeamSelectedSubtitle',
-              'Selecciona un equipo para ver y gestionar sus rivales.'
-            )}
-          </Muted>
-        </EmptyState>
+        <TeamRequiredCard />
       </Container>
     );
   }

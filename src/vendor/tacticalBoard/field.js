@@ -519,7 +519,6 @@ const POSITION_TYPES = [
   'LW',  // Extremo Izquierdo
   'RW',  // Extremo Derecho
   'ST',  // Delantero Centro
-  'CF',  // Centro Delantero
 ];
 
 // Etiquetas por defecto para posiciones (m�ximo 2 caracteres)
@@ -537,7 +536,6 @@ const getDefaultPositionLabels = () => ({
   LW: i18n.t('formations.positionLabels.LW'),
   RW: i18n.t('formations.positionLabels.RW'),
   ST: i18n.t('formations.positionLabels.ST'),
-  CF: i18n.t('formations.positionLabels.CF'),
 });
 
 const FORMATIONS = {
@@ -4031,7 +4029,7 @@ function FormationModal({ visible, onClose, onSelectFormation, initialColor = '#
       'lateral': ['LB', 'RB'],
       'centrocampista': ['CM', 'CDM', 'CAM', 'LM', 'RM'],
       'extremo': ['LW', 'RW'],
-      'delantero': ['ST', 'CF']
+      'delantero': ['ST']
     };
 
     // Primero asignar jugadores a sus posiciones naturales

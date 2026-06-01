@@ -38,6 +38,7 @@ import {
 import AnalysisFormModal from './AnalysisFormModal';
 import AnalysisDetailModal from './AnalysisDetailModal';
 import TemplateManagerModal from './TemplateManagerModal';
+import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -322,18 +323,7 @@ export default function RivalAnalysis() {
           subtitle={t('rivalAnalysis.noTeamSelectedSubtitle', 'Selecciona un equipo para gestionar los análisis de sus rivales.')}
           icon={MdAnalytics}
         />
-        <EmptyState>
-          <MdAnalytics size={56} />
-          <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {t('rivalAnalysis.noTeamSelected', 'No hay equipo seleccionado')}
-          </div>
-          <Muted>
-            {t(
-              'rivalAnalysis.noTeamSelectedSubtitle',
-              'Selecciona un equipo para gestionar los análisis de sus rivales.'
-            )}
-          </Muted>
-        </EmptyState>
+        <TeamRequiredCard />
       </Container>
     );
   }

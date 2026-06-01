@@ -1869,6 +1869,9 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 8,
   },
   filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
