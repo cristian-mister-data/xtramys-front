@@ -139,7 +139,7 @@ export const generateSessionPDFHTML = ({
   };
 
   const getTeamColor = (teamNumber) => {
-    const colors = ['#1e293b', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#0f172a', '#334155', '#475569'];
+    const colors = ['#0f172a', '#1e293b', '#334155', '#475569', '#64748b', '#0d9488', '#2563eb', '#b45309'];
     return colors[(teamNumber - 1) % colors.length];
   };
 
@@ -218,29 +218,28 @@ export const generateSessionPDFHTML = ({
 
     // Pills de metadatos
     const pills = [];
-    if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} jugadores`);
-    if (ejercicio.equipos) pills.push(`${ejercicio.equipos} equipos`);
+    if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} Jugadores`);
+    if (ejercicio.equipos) pills.push(`${ejercicio.equipos} Equipos`);
     if (ejercicio.dimensiones) pills.push(ejercicio.dimensiones);
     if (ejercicio.tiempo) pills.push(`${ejercicio.tiempo} min`);
-    if (!isLastExercise && tiempoDescanso > 0) pills.push(`Descanso: ${tiempoDescanso}min`);
+    if (!isLastExercise && tiempoDescanso > 0) pills.push(`Descanso: ${tiempoDescanso} min`);
 
     const pillsHTML = pills.length > 0
-      ? `<div class="ex-pills">${pills.join(' &bull; ')}</div>`
+      ? `<div class="ex-pills">${pills.map(p => `<span class="ex-pill">${p}</span>`).join('')}</div>`
       : '';
 
     // Secciones de texto
     const sections = [];
     if (ejercicio.objetivo) sections.push({ label: 'Objetivo', text: ejercicio.objetivo });
-    if (ejercicio.descripcion) sections.push({ label: 'Descripcion', text: truncateText(ejercicio.descripcion, 500) });
-    if (observacion) sections.push({ label: 'Observacion', text: observacion });
+    if (ejercicio.descripcion) sections.push({ label: 'Descripción', text: truncateText(ejercicio.descripcion, 340) });
+    if (observacion) sections.push({ label: 'Observación', text: observacion });
 
-    const sectionsHTML = sections.map((s, i) => `
-      ${i > 0 ? '<div class="ex-divider"></div>' : ''}
+    const sectionsHTML = sections.map((s) => `
       <div class="ex-section">
         <div class="ex-section-label">${s.label}</div>
         <div class="ex-section-text">${s.text}</div>
       </div>
-    `).join('');
+    `).join('<div class="ex-divider"></div>');
 
     // Equipos
     const teamAssignmentsData = (detalle.teamAssignments || []).filter(ta =>
@@ -266,15 +265,15 @@ export const generateSessionPDFHTML = ({
         });
         return `
           <div class="team-row">
-            <span class="team-tag" style="color:${color};">Equipo ${ta.teamNumber}:</span>
-            <span class="team-names">${names.join(' &bull; ')}</span>
+            <span class="team-tag" style="background:${color}10; color:${color}; border: 1px solid ${color}30;">Equipo ${ta.teamNumber}:</span>
+            <span class="team-names">${names.join(', ')}</span>
           </div>
         `;
       }).join('');
 
       teamsHTML = `
         <div class="teams-block">
-          <div class="teams-title">Asignacion de equipos</div>
+          <div class="teams-title">Asignación de equipos</div>
           ${rowsHTML}
         </div>
       `;
@@ -283,7 +282,7 @@ export const generateSessionPDFHTML = ({
     return `
       <div class="ex-card">
         <div class="ex-header">
-          <div class="ex-num">${ordenNumero}</div>
+          <div class="ex-num">#${ordenNumero}</div>
           <div class="ex-header-content">
             <div class="ex-name">${ejercicio.nombre || 'Ejercicio sin nombre'}</div>
             ${pillsHTML}
@@ -292,11 +291,11 @@ export const generateSessionPDFHTML = ({
         <div class="ex-body">
           <div class="ex-img-col">
             ${imagenSrc
-        ? `<img src="${imagenSrc}" class="ex-img" onerror="this.style.display='none'" />`
-        : `<div class="ex-img-placeholder">Sin imagen</div>`}
+        ? `<img src="${imagenSrc}" class="ex-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="ex-img-placeholder" style="display:none;">Sin Imagen</div>`
+        : `<div class="ex-img-placeholder">Sin Imagen</div>`}
           </div>
           <div class="ex-info-col">
-            ${sectionsHTML || '<div class="ex-empty">Sin descripcion</div>'}
+            ${sectionsHTML || '<div class="ex-empty">Sin descripción</div>'}
             ${teamsHTML}
           </div>
         </div>
@@ -320,9 +319,9 @@ export const generateSessionPDFHTML = ({
         <div class="sheet-header">
           <div class="sheet-header-left">
             <div class="sheet-dot"></div>
-            <div class="sheet-title">Ejercicios</div>
+            <div class="sheet-title">Ejercicios de la Sesión</div>
           </div>
-          <div class="sheet-count">${fromNumber}-${toNumber} / ${ejerciciosOrdenados.length}</div>
+          <div class="sheet-count">Ejercicios ${fromNumber}-${toNumber} / ${ejerciciosOrdenados.length}</div>
         </div>
         <div class="${gridClass}">
           ${cardsHTML}
@@ -347,7 +346,6 @@ export const generateSessionPDFHTML = ({
         const imagenSrc = imageDataUris[exercise.image] || '';
         const exerciseName = i18n ? i18n.t(exercise.i18nKey) : exercise.id;
         const sectionResult = getSectionForExercise(exercise.id || exercise);
-        const sectionColor = '#475569';
         const sectionName = sectionResult ? (i18n ? i18n.t(sectionResult.section.i18nKey) : sectionResult.section.id) : '';
         return `
           <div class="st-card">
@@ -361,7 +359,7 @@ export const generateSessionPDFHTML = ({
               </div>
               <div class="st-footer">
                 <span class="st-section">${sectionName}</span>
-                <span class="st-level">Nv ${exercise.level}</span>
+                <span class="st-level">NV ${exercise.level}</span>
               </div>
             </div>
           </div>
@@ -374,7 +372,7 @@ export const generateSessionPDFHTML = ({
               <div class="sheet-dot" style="background:#475569;"></div>
               <div class="sheet-title" style="color:#0f172a;">Ejercicios de Fuerza</div>
             </div>
-            <div class="sheet-count">Pag ${pageIdx + 1} / ${pages.length}</div>
+            <div class="sheet-count">Pág ${pageIdx + 1} / ${pages.length}</div>
           </div>
           <div class="st-grid">
             ${cardsHTML}
@@ -389,7 +387,7 @@ export const generateSessionPDFHTML = ({
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Sesion de Entrenamiento - ${fechaFormateada}</title>
+  <title>Sesión de Entrenamiento - ${fechaFormateada}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -398,7 +396,7 @@ export const generateSessionPDFHTML = ({
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-size: 10px;
       color: #334155;
-      background: #fff;
+      background: #f8fafc;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -413,58 +411,67 @@ export const generateSessionPDFHTML = ({
       flex-direction: column;
       gap: 12px;
       overflow: hidden;
+      background: #f8fafc;
     }
     .banner {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #475569 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%);
       border-radius: 12px;
-      padding: 24px 28px;
+      padding: 22px 26px;
       color: #ffffff;
-      margin-bottom: 6px;
-      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
-      position: relative;
+      margin-bottom: 4px;
+      box-shadow: 0 4px 15px rgba(15, 23, 42, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .banner::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 150px;
-      background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0,0,0,0) 70%);
-      pointer-events: none;
+    .banner-left {
+      display: flex;
+      flex-direction: column;
     }
     .banner-team {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 2px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 9.5px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #60a5fa;
-      margin-bottom: 8px;
+      color: #94a3b8;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     .team-logo {
-      width: 32px;
-      height: 32px;
+      width: 24px;
+      height: 24px;
       object-fit: contain;
       background: #ffffff;
-      border: 2px solid #cbd5e1;
+      border: 1.5px solid #cbd5e1;
       border-radius: 50%;
-      padding: 2px;
+      padding: 1px;
     }
     .banner-title {
-      font-family: 'Outfit', 'Inter', sans-serif;
-      font-size: 26px;
-      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
       letter-spacing: 0.5px;
-      margin-bottom: 4px;
       text-transform: uppercase;
+      color: #ffffff;
     }
     .banner-date {
-      font-size: 11px;
-      color: rgba(255,255,255,0.85);
-      font-weight: 400;
+      font-size: 10px;
+      color: #cbd5e1;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .banner-logo-right {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 4px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
 
     /* Stats strip */
@@ -476,33 +483,36 @@ export const generateSessionPDFHTML = ({
     .stat-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-top: 3px solid #475569;
+      border-top: 3px solid #0f172a;
       border-radius: 8px;
-      padding: 12px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
     }
     .stat-label {
-      font-size: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 7.5px;
       color: #64748b;
       text-transform: uppercase;
-      letter-spacing: 0.7px;
-      font-weight: 800;
+      letter-spacing: 0.8px;
+      font-weight: 900;
       margin-bottom: 4px;
     }
     .stat-value {
-      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
       font-weight: 900;
       color: #0f172a;
       line-height: 1.2;
       word-break: break-word;
     }
     .stat-sub {
-      font-size: 8.5px;
+      font-size: 8px;
       color: #94a3b8;
       margin-top: 2px;
+      font-weight: 500;
     }
 
     /* Panels */
@@ -511,34 +521,37 @@ export const generateSessionPDFHTML = ({
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       flex: 1;
+      min-height: 0;
     }
     .panel {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      gap: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+      overflow-y: auto;
     }
     .panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 2px solid #f1f5f9;
     }
     .panel-title {
+      font-family: 'Outfit', sans-serif;
       font-size: 9.5px;
-      font-weight: 800;
+      font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #1e293b;
+      color: #0f172a;
     }
     .panel-badge {
-      font-size: 9.5px;
-      font-weight: 600;
+      font-size: 9px;
+      font-weight: 700;
       color: #64748b;
       line-height: 1.2;
     }
@@ -553,9 +566,16 @@ export const generateSessionPDFHTML = ({
     .roster-name {
       display: inline-block;
       color: #334155;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 1px;
+      font-weight: 600;
     }
     .roster-name.extra {
       color: #b45309;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
     }
     .panel-empty {
       font-size: 9px;
@@ -564,7 +584,7 @@ export const generateSessionPDFHTML = ({
     }
     .obs-text {
       font-size: 9px;
-      color: #475569;
+      color: #334155;
       line-height: 1.5;
       white-space: pre-wrap;
       padding: 2px 0;
@@ -573,6 +593,7 @@ export const generateSessionPDFHTML = ({
       margin-bottom: 8px;
     }
     .obs-ex-name {
+      font-family: 'Outfit', sans-serif;
       font-weight: 800;
       color: #0f172a;
       font-size: 8.5px;
@@ -581,7 +602,7 @@ export const generateSessionPDFHTML = ({
       margin-bottom: 3px;
     }
     .obs-ex-text {
-      font-size: 8px;
+      font-size: 8.5px;
       color: #475569;
       line-height: 1.4;
     }
@@ -595,7 +616,7 @@ export const generateSessionPDFHTML = ({
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #fff;
+      background: #f8fafc;
     }
     .exercise-sheet:last-of-type { page-break-after: auto; }
 
@@ -615,21 +636,24 @@ export const generateSessionPDFHTML = ({
     .sheet-dot {
       width: 8px;
       height: 8px;
-      background: #475569;
+      background: #0f172a;
       border-radius: 50%;
       flex-shrink: 0;
     }
     .sheet-title {
+      font-family: 'Outfit', sans-serif;
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 900;
       color: #0f172a;
       text-transform: uppercase;
       letter-spacing: 1.5px;
     }
     .sheet-count {
+      font-family: 'Outfit', sans-serif;
       font-size: 8.5px;
       color: #64748b;
-      font-weight: 700;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
     /* Exercise grid */
@@ -653,7 +677,7 @@ export const generateSessionPDFHTML = ({
       display: flex;
       flex-direction: column;
       min-height: 0;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
     }
     .ex-header {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -669,8 +693,9 @@ export const generateSessionPDFHTML = ({
     .ex-num {
       position: absolute;
       left: 14px;
-      font-weight: 800;
-      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 15px;
       color: #94a3b8;
     }
     .ex-header-content {
@@ -678,13 +703,14 @@ export const generateSessionPDFHTML = ({
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 2px;
       width: 100%;
       padding: 0 40px;
     }
     .ex-name {
+      font-family: 'Outfit', sans-serif;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing: 0.5px;
       text-align: center;
       text-transform: uppercase;
@@ -692,18 +718,21 @@ export const generateSessionPDFHTML = ({
     }
     .ex-pills {
       display: flex;
-      gap: 5px;
+      gap: 4px;
       flex-wrap: wrap;
       justify-content: center;
-      font-size: 8.5px;
-      font-weight: 600;
+      font-size: 7.5px;
+      font-weight: 800;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-top: 4px;
     }
     .ex-pill {
-      display: inline;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 8px;
     }
 
     /* Exercise body */
@@ -713,13 +742,13 @@ export const generateSessionPDFHTML = ({
       min-height: 0;
     }
     .ex-img-col {
-      flex: 0 0 50%;
+      flex: 0 0 45%;
       background: #f8fafc;
       border-right: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px;
+      padding: 10px;
       overflow: hidden;
     }
     .ex-img {
@@ -730,21 +759,23 @@ export const generateSessionPDFHTML = ({
       object-fit: contain;
       border-radius: 8px;
       display: block;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
     }
     .ex-img-placeholder {
       font-size: 9px;
       color: #94a3b8;
       text-align: center;
       font-weight: 600;
+      text-transform: uppercase;
+      font-family: 'Outfit', sans-serif;
     }
     .ex-info-col {
-      flex: 0 0 50%;
-      padding: 12px 14px;
+      flex: 0 0 55%;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      overflow: hidden;
+      gap: 6px;
+      overflow-y: auto;
     }
     .ex-section {
       display: flex;
@@ -752,7 +783,8 @@ export const generateSessionPDFHTML = ({
       gap: 2px;
     }
     .ex-section-label {
-      font-size: 7.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 8px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       font-weight: 900;
@@ -761,12 +793,12 @@ export const generateSessionPDFHTML = ({
     .ex-section-text {
       font-size: 8.5px;
       color: #334155;
-      line-height: 1.45;
+      line-height: 1.4;
       white-space: pre-wrap;
     }
     .ex-divider {
       height: 1px;
-      background: #f1f5f9;
+      background: #e2e8f0;
     }
     .ex-empty {
       font-size: 9px;
@@ -776,37 +808,39 @@ export const generateSessionPDFHTML = ({
 
     /* Teams */
     .teams-block {
-      margin-top: auto;
-      padding-top: 8px;
-      border-top: 1px solid #f1f5f9;
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid #e2e8f0;
     }
     .teams-title {
-      font-size: 7.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 8px;
       font-weight: 900;
       text-transform: uppercase;
       color: #94a3b8;
       letter-spacing: 0.8px;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
     .team-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
     .team-tag {
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 800;
       white-space: nowrap;
       flex-shrink: 0;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-right: 4px;
+      padding: 1.5px 5px;
+      border-radius: 4px;
     }
     .team-names {
       font-size: 8px;
       color: #475569;
-      line-height: 1.4;
+      line-height: 1.3;
       font-weight: 600;
     }
 
@@ -819,7 +853,7 @@ export const generateSessionPDFHTML = ({
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #fff;
+      background: #f8fafc;
     }
     .st-grid {
       display: grid;
@@ -834,7 +868,7 @@ export const generateSessionPDFHTML = ({
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 10px rgba(15,23,42,0.03);
       display: flex;
       flex-direction: column;
     }
@@ -853,15 +887,16 @@ export const generateSessionPDFHTML = ({
     .st-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
     .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 6px; }
     .st-num {
-      color: #64748b;
+      color: #94a3b8;
       font-size: 9.5px;
-      font-weight: 800;
+      font-weight: 900;
       margin-right: 2px;
+      font-family: 'Outfit', sans-serif;
     }
     .st-name { font-size: 8.5px; font-weight: 700; color: #0f172a; line-height: 1.25; }
     .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; border-top: 1px solid #f1f5f9; }
-    .st-section { font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase; }
-    .st-level { font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+    .st-section { font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase; font-family: 'Outfit', sans-serif; }
+    .st-level { font-size: 7.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; font-family: 'Outfit', sans-serif; }
   </style>
 </head>
 <body>
@@ -869,12 +904,15 @@ export const generateSessionPDFHTML = ({
   <!-- PORTADA -->
   <div class="cover-page">
     <div class="banner">
-      <div class="banner-team">
-        ${team?.escudo ? `<img src="${team.escudo}" class="team-logo" />` : ''}
-        ${team?.nombre || 'Equipo'}
+      <div class="banner-left">
+        <div class="banner-team">
+          ${team?.escudo ? `<img src="${team.escudo}" class="team-logo" />` : ''}
+          ${team?.nombre || 'Equipo'}
+        </div>
+        <div class="banner-title">${t('session.pdfTitle', 'Sesión de Entrenamiento')}</div>
+        <div class="banner-date">${fechaFormateada}</div>
       </div>
-      <div class="banner-title">${t('session.pdfTitle', 'Sesión de Entrenamiento')}</div>
-      <div class="banner-date">${fechaFormateada}</div>
+      ${team?.escudo ? `<img src="${team.escudo}" class="banner-logo-right" />` : ''}
     </div>
 
     <div class="stats-strip">
@@ -886,12 +924,12 @@ export const generateSessionPDFHTML = ({
       <div class="stat-card">
         <div class="stat-label">Ejercicios</div>
         <div class="stat-value">${ejerciciosOrdenados.length}</div>
-        <div class="stat-sub">${strengthExercises.length > 0 ? `+ ${strengthExercises.length} fuerza` : 'tacticos'}</div>
+        <div class="stat-sub">${strengthExercises.length > 0 ? `+ ${strengthExercises.length} Fuerza` : 'Tácticos'}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Jugadores</div>
         <div class="stat-value">${jugadoresNombres.length}</div>
-        <div class="stat-sub">${jugadoresExtrasNombres.length > 0 ? `+ ${jugadoresExtrasNombres.length} extras` : 'plantilla'}</div>
+        <div class="stat-sub">${jugadoresExtrasNombres.length > 0 ? `+ ${jugadoresExtrasNombres.length} Extras` : 'Plantilla'}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Lugar</div>
@@ -903,19 +941,19 @@ export const generateSessionPDFHTML = ({
     <div class="panels-row">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Jugadores disponibles (${jugadoresNombres.length + jugadoresExtrasNombres.length})</div>
+          <div class="panel-title">Jugadores Disponibles (${jugadoresNombres.length + jugadoresExtrasNombres.length})</div>
         </div>
         <div class="roster-text-list">
           ${jugadoresNombres.length > 0
-      ? jugadoresNombres.map(n => `<span class="roster-name">${n}</span>`).join(', ')
+      ? jugadoresNombres.map(n => `<span class="roster-name">${n}</span>`).join(' ')
       : `<span class="panel-empty">Sin jugadores cargados</span>`}
         </div>
         ${jugadoresExtrasNombres.length > 0 ? `
           <div class="panel-head" style="margin-top:12px; border-color:#e2e8f0; padding-top:6px;">
-            <div class="panel-title" style="color:#334155;">Jugadores extras (${jugadoresExtrasNombres.length})</div>
+            <div class="panel-title" style="color:#0f172a;">Jugadores Extras (${jugadoresExtrasNombres.length})</div>
           </div>
           <div class="roster-text-list extra">
-            ${jugadoresExtrasNombres.map(n => `<span class="roster-name extra">${n}</span>`).join(', ')}
+            ${jugadoresExtrasNombres.map(n => `<span class="roster-name extra">${n}</span>`).join(' ')}
           </div>
         ` : ''}
       </div>
@@ -936,7 +974,7 @@ export const generateSessionPDFHTML = ({
               </div>
             `).join('')}
             ${remainingExerciseObservations > 0 ? `
-              <div style="font-size:8px; color:#94a3b8; margin-top:4px;">+${remainingExerciseObservations} observaciones mas</div>
+              <div style="font-size:8px; color:#94a3b8; margin-top:4px;">+${remainingExerciseObservations} observaciones más</div>
             ` : ''}
           </div>
         ` : ''}

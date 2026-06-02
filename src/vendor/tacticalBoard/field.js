@@ -89,13 +89,13 @@ function snapToHorizontalOrVertical(start, end) {
   const dy_m = (end.y - start.y) * 68;
   const angle_deg = Math.atan2(dy_m, dx_m) * 180 / Math.PI;
   const absAngle = Math.abs(angle_deg);
-  
+
   // Snap tolerance: 5 degrees
   const snapTol = 5;
-  
+
   const snapToHoriz = absAngle <= snapTol || Math.abs(absAngle - 180) <= snapTol;
   const snapToVert = Math.abs(absAngle - 90) <= snapTol;
-  
+
   const snappedEnd = { ...end };
   if (snapToHoriz) {
     snappedEnd.y = start.y;
@@ -2481,16 +2481,16 @@ function SettingsPanel({
     setSize(standardSize.toString());
   }, [standardSize]);
 
-  // Sincronizar estados locales cuando cambia boardSettings
+  // Sincronizar estados locales solo al abrir el panel (no cuando boardSettings cambia por cambio de color)
   useEffect(() => {
-    if (boardSettings) {
+    if (visible && boardSettings) {
       const defaultVal = isMobile ? 24 : 18;
       setSize1((boardSettings.playerIcon1?.size || defaultVal).toString());
       setSize2((boardSettings.playerIcon2?.size || defaultVal).toString());
       setSize3((boardSettings.playerIcon3?.size || defaultVal).toString());
       setSizeTeam((boardSettings.teamPlayers?.size || defaultVal).toString());
     }
-  }, [boardSettings]);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -12052,9 +12052,9 @@ export default function Field(props = {}) {
     }).map(c => c.id);
   }, []);
 
-  
 
-    // Setup de listeners pointer + dibujo del rect�ngulo. Solo corre cuando
+
+  // Setup de listeners pointer + dibujo del rect�ngulo. Solo corre cuando
   // se entra a modo selecci�n. Estrategia: TODOS los listeners en window
   // con capture=true. Validamos manualmente que el evento empieza dentro
   // del overlay. Esto evita cualquier problema de elementos hijos del
@@ -12623,7 +12623,7 @@ export default function Field(props = {}) {
 
     const { locationX, locationY } = e.nativeEvent;
     const rawEnd = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
-    
+
     // Apply snapping if drawing a straight line or arrow
     const finalEnd = (drawingStraightLine || drawingStraightArrow)
       ? snapToHorizontalOrVertical(straightLineStart, rawEnd)

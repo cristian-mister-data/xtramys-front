@@ -261,160 +261,228 @@ ${answer.map(player => `
     <head>
       <meta charset="utf-8">
       <title>${t('rivalAnalysis.pdf.title')} - ${rivalAnalysis.rival}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
+        :root {
+          --bg-main: #f8fafc;
+          --bg-card: #ffffff;
+          --primary: #0f172a;
+          --secondary: #1e293b;
+          --accent: #2563eb;
+          --text-main: #334155;
+          --text-muted: #64748b;
+          --border: #e2e8f0;
+          --border-dark: #cbd5e1;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          font-size: 11px;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+          font-size: 10px;
           line-height: 1.5;
-          color: #1e293b;
-          padding: 24px;
-          background: #fff;
+          color: var(--text-main);
+          background: var(--bg-main);
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
+        
+        .pdf-page {
+          width: 210mm;
+          height: 297mm;
+          padding: 15mm 16mm;
+          box-sizing: border-box;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          background: var(--bg-main);
+          page-break-after: always;
+        }
+        .pdf-page:last-child {
+          page-break-after: avoid;
+        }
+        
         .header {
-          text-align: center;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 2px solid #e2e8f0;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          border-radius: 12px;
+          padding: 18px 24px;
+          color: #ffffff;
+          margin-bottom: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
         }
         .header-title {
-          font-size: 22px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 8px;
+          font-family: 'Outfit', sans-serif;
+          font-size: 18px;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
-        .section { margin-bottom: 20px; }
+        
+        .section { margin-bottom: 16px; page-break-inside: avoid; }
         .section-header {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #e2e8f0;
+          margin-bottom: 10px;
+          padding-bottom: 6px;
+          border-bottom: 2px solid var(--primary);
         }
         .section-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #334155;
+          font-family: 'Outfit', sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          color: var(--primary);
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
         }
-        .section-icon {
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 4px;
-          font-size: 12px;
-        }
+        
         .question-row {
           display: flex;
-          padding: 10px 0;
-          border-bottom: 1px solid #f1f5f9;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 12px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          margin-bottom: 6px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
         }
-        .question-row:last-child { border-bottom: none; }
         .question-label {
-          flex: 1;
-          font-weight: 500;
-          color: #475569;
-          font-size: 11px;
+          font-weight: 600;
+          color: var(--text-main);
+          font-size: 9px;
         }
         .question-value {
-          flex: 1;
-          font-weight: 600;
-          color: #1e293b;
+          font-weight: 700;
+          color: var(--primary);
           text-align: right;
+          font-size: 9px;
         }
         .question-value.no-value {
-          color: #94a3b8;
+          color: var(--text-muted);
           font-style: italic;
           font-weight: 400;
         }
+        
         .formation-badge {
           display: inline-block;
-          font-weight: 700;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
           font-size: 13px;
-          color: #334155;
+          color: #ffffff;
+          background: var(--accent);
+          padding: 5px 12px;
+          border-radius: 6px;
           text-transform: uppercase;
+          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
         }
         .formation-badge-inline {
-          font-weight: 700;
-          font-size: 11px;
-          color: #334155;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
+          font-size: 9px;
+          color: var(--accent);
+          background: #eff6ff;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid #bfdbfe;
         }
-        .players-section { margin-top: 12px; }
+        
+        .players-section { margin-top: 12px; page-break-inside: avoid; }
         .players-section h4 {
-          font-size: 12px;
-          font-weight: 600;
-          color: #475569;
+          font-family: 'Outfit', sans-serif;
+          font-size: 9.5px;
+          font-weight: 700;
+          color: var(--secondary);
           margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         .players-list {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
         }
         .player-item {
           display: flex;
           flex-direction: column;
-          margin-bottom: 8px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-left: 3px solid var(--accent);
+          border-radius: 6px;
+          padding: 8px 10px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
         }
         .player-name {
-          font-weight: 600;
-          color: #1e293b;
-          font-size: 11px;
+          font-weight: 700;
+          color: var(--primary);
+          font-size: 9.5px;
         }
         .player-note {
-          font-size: 10px;
-          color: #64748b;
+          font-size: 8.5px;
+          color: var(--text-muted);
           margin-top: 2px;
         }
+        
         .observations-box {
-          margin-top: 8px;
-          padding: 4px 0;
+          margin-top: 6px;
+          padding: 10px 12px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
         }
         .observations-text {
-          font-size: 11px;
-          line-height: 1.6;
-          color: #475569;
+          font-size: 9.5px;
+          line-height: 1.5;
+          color: var(--text-main);
         }
+        
         .footer {
-          margin-top: 24px;
-          padding-top: 16px;
-          border-top: 1px solid #e2e8f0;
+          margin-top: auto;
+          padding-top: 10px;
+          border-top: 1px solid var(--border);
           text-align: center;
-          color: #94a3b8;
-          font-size: 9px;
+          color: var(--text-muted);
+          font-size: 8px;
+          font-family: 'Inter', sans-serif;
+          font-weight: 500;
         }
-        @media print { body { padding: 16px; } @page { size: A4 portrait; margin: 12mm; } }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="header-title">${t('rivalAnalysis.pdf.title')} ${rivalAnalysis.rival}</div>
-      </div>
+      <div class="pdf-page">
+        <div class="header">
+          <h1 class="header-title">${t('rivalAnalysis.pdf.title')} — ${rivalAnalysis.rival}</h1>
+        </div>
 
-      ${rivalAnalysis.alineacion ? `
+        ${rivalAnalysis.alineacion ? `
+          <div class="section">
+            <div class="section-header">
+              <div class="section-title">${t('matchSheet.fields.rivalFormation')}</div>
+            </div>
+            <div style="margin-top: 4px;">
+              <span class="formation-badge">${normalizeFormation(rivalAnalysis.alineacion)}</span>
+            </div>
+          </div>
+        ` : ''}
+
         <div class="section">
           <div class="section-header">
-            <div class="section-title">${t('matchSheet.fields.rivalFormation')}</div>
+            <div class="section-title">${t('rivalAnalysis.pdf.tacticalSection')}</div>
           </div>
-          <div class="formation-badge">${normalizeFormation(rivalAnalysis.alineacion)}</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            ${renderDynamicQuestions()}
+          </div>
         </div>
-      ` : ''}
 
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">${t('rivalAnalysis.pdf.tacticalSection')}</div>
+        ${renderDynamicPlayersSection()}
+
+        <div class="footer">
+          ${t('rivalAnalysis.pdf.generatedBy')} Xtramys
         </div>
-        ${renderDynamicQuestions()}
-      </div>
-
-      ${renderDynamicPlayersSection()}
-
-      <div class="footer">
-        ${t('rivalAnalysis.pdf.generatedBy')}
       </div>
     </body>
     </html>
@@ -430,3 +498,4 @@ export async function generateRivalAnalysisPdf(rivalAnalysis, template, t, selec
   const { uri } = await Print.printToFileAsync({ html });
   await savePdfToDownloads(uri, `rival-analysis-${rivalAnalysis.rival || 'report'}`);
 }
+

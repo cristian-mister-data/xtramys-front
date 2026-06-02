@@ -22,13 +22,13 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
   const planLabel = getPlanLabel(planKey, t);
   const fileName = `Metodologia_Porteros_${planLabel}`.replace(/[\s/]+/g, '_');
 
-  const primaryColor = '#1e293b';
-  const secondaryColor = '#334155';
+  const primaryColor = '#0f172a';
+  const secondaryColor = '#1e293b';
 
   const tableHeaders = days
     .map(
       (day) => `
-    <th style="background-color: ${primaryColor}; color: white; padding: 10px 8px; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid ${primaryColor}; line-height: 1.2;">
+    <th style="background-color: ${primaryColor}; color: white; padding: 12px 8px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${primaryColor}; line-height: 1.2; font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">
       ${tt(t, 'goalkeeperMethodology.dayLabel', ({ label }) => `Día ${label}`, { label: day.day_label || day.day_number })}
     </th>
   `,
@@ -47,28 +47,30 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
           const mediumHigh = String(tt(t, 'goalkeeperMethodology.data.intensity.mediumHigh', 'media-alta')).toLowerCase();
           const high = String(tt(t, 'goalkeeperMethodology.data.intensity.high', 'alta')).toLowerCase();
 
-          let badgeStyle = 'color: #475569; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;';
+          let badgeStyle = 'padding: 4px 8px; border-radius: 12px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;';
           if (intensityText.includes(low)) {
-            badgeStyle = 'color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;';
+            badgeStyle += ' background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;';
           } else if (intensityText.includes(mediumLow) || intensityText.includes(medium)) {
-            badgeStyle = 'color: #334155; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;';
+            badgeStyle += ' background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;';
           } else if (intensityText.includes(mediumHigh) || intensityText.includes(high)) {
-            badgeStyle = 'color: #0f172a; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;';
+            badgeStyle += ' background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5;';
+          } else {
+            badgeStyle += ' background: #f8fafc; color: #334155; border: 1px solid #e2e8f0;';
           }
 
-          return `<td style="padding: 10px 12px; font-size: 11px; border: 1px solid #ddd; vertical-align: top; text-align: center;">
-            <span style="font-size: 10px; ${badgeStyle}">
+          return `<td style="padding: 12px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center;">
+            <span style="${badgeStyle}">
               ${value || '-'}
             </span>
           </td>`;
         }
-        return `<td style="padding: 10px 12px; font-size: 11px; border: 1px solid #ddd; vertical-align: top; line-height: 1.5;">${value || '-'}</td>`;
+        return `<td style="padding: 12px 14px; font-size: 9.5px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; color: #334155;">${value || '-'}</td>`;
       })
       .join('');
 
     return `
       <tr>
-        <td style="background-color: #f8f9fa; padding: 10px 12px; font-size: 11px; font-weight: bold; border: 1px solid #ddd; white-space: nowrap; color: #333;">
+        <td style="background-color: #f8fafc; padding: 12px 14px; font-size: 9.5px; font-weight: 700; border: 1px solid #e2e8f0; white-space: nowrap; color: #0f172a; font-family: 'Outfit', sans-serif;">
           ${icon} ${label}
         </td>
         ${cells}
@@ -76,7 +78,7 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
     `;
   };
 
-  const matchDayCell = `<td colspan="${days.length}" style="background-color: #f1f5f9; padding: 10px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: ${primaryColor}; font-size: 12px;">
+  const matchDayCell = `<td colspan="${days.length}" style="background-color: #eff6ff; padding: 12px; text-align: center; border: 1px solid #e2e8f0; font-family: 'Outfit', sans-serif; font-weight: 800; color: #1d4ed8; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;">
     ⚽ ${tt(t, 'goalkeeperMethodology.matchDay', 'Día de partido')}
   </td>`;
 
@@ -86,21 +88,73 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
     <head>
       <meta charset="utf-8">
       <title>${tt(t, 'goalkeeperMethodology.title', 'Metodología de Porteros')} - ${planLabel}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         @page { size: landscape; margin: 10mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 10px; background: white; }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+          padding: 10px;
+          background: #f8fafc;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         .header {
           background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});
-          color: white; padding: 16px 24px; border-radius: 10px; margin-bottom: 16px;
-          display: flex; justify-content: space-between; align-items: center;
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          margin-bottom: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
         }
-        .header-left h1 { font-size: 18px; margin-bottom: 3px; }
-        .header-left h2 { font-size: 13px; font-weight: normal; opacity: 0.9; }
-        .header-right { font-size: 10px; opacity: 0.8; text-align: right; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; border-radius: 8px; overflow: hidden; }
+        .header-left h1 {
+          font-family: 'Outfit', sans-serif;
+          font-size: 18px;
+          font-weight: 900;
+          margin-bottom: 3px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .header-left h2 {
+          font-family: 'Outfit', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          opacity: 0.9;
+          color: #94a3b8;
+        }
+        .header-right {
+          font-family: 'Outfit', sans-serif;
+          font-size: 10px;
+          opacity: 0.8;
+          text-align: right;
+          color: #cbd5e1;
+          letter-spacing: 1px;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          font-size: 10px;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
         th, td { text-align: left; }
-        .footer { margin-top: 12px; text-align: right; color: #999; font-size: 9px; }
+        
+        .footer {
+          margin-top: 16px;
+          text-align: right;
+          color: #94a3b8;
+          font-size: 8px;
+          font-family: 'Inter', sans-serif;
+          font-weight: 500;
+        }
       </style>
     </head>
     <body>
@@ -109,13 +163,13 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
           <h1>🧤 ${tt(t, 'goalkeeperMethodology.title', 'Metodología de Porteros')}</h1>
           <h2>${planLabel}</h2>
         </div>
-        <div class="header-right">Xtramys - www.xtramys.com</div>
+        <div class="header-right">Xtramys Performance</div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th style="background-color: #333; color: white; padding: 10px 8px; font-size: 11px; border: 1px solid #333; width: 120px; line-height: 1.2;"></th>
+            <th style="background-color: #1e293b; color: white; padding: 12px 10px; font-size: 11px; border: 1px solid #1e293b; width: 120px; line-height: 1.2; font-family: 'Outfit', sans-serif;"></th>
             ${tableHeaders}
           </tr>
         </thead>
@@ -124,7 +178,7 @@ export async function generateGoalkeeperMethodologyPdf(planKey, days, t) {
           ${generateRow(tt(t, 'goalkeeperMethodology.practicalContent', 'Contenido práctico'), '📋', (d) => d.practical_content)}
           ${generateRow(tt(t, 'goalkeeperMethodology.intensity', 'Intensidad'), '⚡', (d) => d.intensity, true)}
           <tr>
-            <td style="background-color: #f8f9fa; padding: 10px 12px; font-size: 11px; font-weight: bold; border: 1px solid #ddd; white-space: nowrap; color: #333;">
+            <td style="background-color: #f8fafc; padding: 12px 14px; font-size: 9.5px; font-weight: bold; border: 1px solid #e2e8f0; white-space: nowrap; color: #0f172a; font-family: 'Outfit', sans-serif;">
               📅 ${tt(t, 'goalkeeperMethodology.day', 'Día')} 0
             </td>
             ${matchDayCell}

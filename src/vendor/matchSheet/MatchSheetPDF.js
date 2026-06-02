@@ -42,14 +42,14 @@ const toDataUrl = async (url) => {
   }
 };
 
-// Colores por posición (Escala de grises)
+// Colores por posición (Premium Dark Theme/Cool Grays)
 const getPositionColor = (pos) => {
   const position = pos?.toUpperCase() || '';
-  if (position === 'POR' || position === 'PORTERO') return '#0f172a'; // Charcoal
-  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some(p => position.includes(p))) return '#334155'; // Dark Slate
-  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some(p => position.includes(p))) return '#475569'; // Cool Gray
-  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some(p => position.includes(p))) return '#64748b'; // Slate Gray
-  return '#475569'; // Default Gray
+  if (position === 'POR' || position === 'PORTERO') return '#0f172a'; // Slate 900
+  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some(p => position.includes(p))) return '#1e293b'; // Slate 800
+  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some(p => position.includes(p))) return '#334155'; // Slate 700
+  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some(p => position.includes(p))) return '#475569'; // Slate 600
+  return '#475569';
 };
 
 // Posiciones predefinidas para todas las formaciones
@@ -212,21 +212,20 @@ const FORMATION_POSITIONS = {
   ],
 };
 
-// Generar HTML del campo de fútbol en perspectiva 3D idéntica a la plantilla
-// Helper for drawing a 3D-ish soccer jersey SVG
+// Generar HTML del camiseta en SVG 3D
 const drawJerseySVG = (posCode) => {
   const isGK = posCode === 'POR' || posCode === 'PORTERO';
-  const shirtColor = isGK ? '#ffffff' : '#18181b';
-  const strokeColor = isGK ? '#1e293b' : '#ffffff';
+  const shirtColor = isGK ? '#ffffff' : '#0f172a';
+  const strokeColor = isGK ? '#0f172a' : '#ffffff';
   return `
-    <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35)); display: block;">
+    <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 3px 4px rgba(15,23,42,0.25)); display: block;">
       <path d="M6 3.5 L7.5 2 L12 4.5 L16.5 2 L18 3.5 L22 6 L19.5 9.5 L17.5 8 L17.5 21 L6.5 21 L6.5 8 L4.5 9.5 L2 6 Z" fill="${shirtColor}" stroke="${strokeColor}" stroke-width="1.2" stroke-linejoin="round" />
       <path d="M10 2.8 L12 5 L14 2.8" fill="none" stroke="${strokeColor}" stroke-width="1.2" />
     </svg>
   `;
 };
 
-// Generar HTML del campo de fútbol en perspectiva 3D idéntica a la plantilla
+// Generar HTML del campo de fútbol en perspectiva 3D
 const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fieldWidth = 340, titulares = [], positionTranslations = {}) => {
   const fieldHeight = fieldWidth * 1.22;
   
@@ -270,12 +269,12 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
     playersHTML += `
       <div style="position: absolute; left: ${proj.x - 22}px; top: ${proj.y - 28}px; width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
         ${showPhotos && player?.foto ? `
-          <img src="${player.foto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 0 0 2px ${color}, 0 4px 10px rgba(0,0,0,0.35); object-fit: cover;" />
+          <img src="${player.foto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 0 0 2px ${color}, 0 4px 10px rgba(15,23,42,0.3); object-fit: cover;" />
         ` : `
           ${drawJerseySVG(pos.pos)}
         `}
         ${showNames ? `
-          <div style="display: flex; align-items: center; justify-content: center; padding: 3px 6px; background: #0e1726; color: #ffffff; border-radius: 5px; font-size: 7.5px; font-weight: 800; text-align: center; margin-top: 5px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.2;">
+          <div style="display: flex; align-items: center; justify-content: center; padding: 3px 6px; background: #0f172a; color: #ffffff; border-radius: 5px; font-size: 7.5px; font-weight: 800; text-align: center; margin-top: 5px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.15); font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.2;">
             ${player ? getPlayerFirstName(player) : translatedPos}
           </div>
         ` : ''}
@@ -293,12 +292,12 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
     const pTR = project(100, y1);
     const pBR = project(100, y2);
     const pBL = project(0, y2);
-    // Alternating shades of premium green
-    const greenColor = i % 2 === 0 ? '#2e7d32' : '#1b5e20';
+    // Alternating shades of premium green (perfect contrast)
+    const greenColor = i % 2 === 0 ? '#1b4e3e' : '#143c30';
     stripesHTML += `<polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="${greenColor}" />`;
   }
   
-  // Proyectar líneas del campo (Grayscale -> White)
+  // Proyectar líneas del campo
   const pTL = project(0, 0);
   const pTR = project(100, 0);
   const pBR = project(100, 100);
@@ -340,30 +339,30 @@ const generateFieldHTML = (lineup, players, formation, showPhotos, showNames, fi
   const pSpotBot = project(50, 88.5);
  
   return `
-    <div style="position: relative; width: ${fieldWidth}px; height: ${fieldHeight}px; border-radius: 16px; overflow: hidden; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.15); background: radial-gradient(circle, #388e3c 0%, #1b5e20 100%); padding: 0;">
+    <div style="position: relative; width: ${fieldWidth}px; height: ${fieldHeight}px; border-radius: 12px; overflow: hidden; margin: 0 auto; box-shadow: 0 8px 24px rgba(15,23,42,0.12); background: radial-gradient(circle, #1b4e3e 0%, #0d2a20 100%); padding: 0;">
       <svg width="${fieldWidth}" height="${fieldHeight}" style="position: absolute; top: 0; left: 0;">
         <!-- Césped -->
         ${stripesHTML}
         
         <!-- Líneas exteriores -->
-        <polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2"/>
+        <polygon points="${pTL.x},${pTL.y} ${pTR.x},${pTR.y} ${pBR.x},${pBR.y} ${pBL.x},${pBL.y}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
         
         <!-- Línea media -->
-        <line x1="${pML.x}" y1="${pML.y}" x2="${pMR.x}" y2="${pMR.y}" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+        <line x1="${pML.x}" y1="${pML.y}" x2="${pMR.x}" y2="${pMR.y}" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
         
-        <!-- Círculo central (Elipse proyectada) -->
-        <ellipse cx="${pCenter.x}" cy="${pCenter.y}" rx="${rxCenter}" ry="${ryCenter}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
-        <circle cx="${pCenter.x}" cy="${pCenter.y}" r="3" fill="#ffffff" />
+        <!-- Círculo central -->
+        <ellipse cx="${pCenter.x}" cy="${pCenter.y}" rx="${rxCenter}" ry="${ryCenter}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <circle cx="${pCenter.x}" cy="${pCenter.y}" r="2.5" fill="#ffffff" />
         
         <!-- Área superior -->
-        <polygon points="${pP_TL.x},${pP_TL.y} ${pP_TR.x},${pP_TR.y} ${pP_BR.x},${pP_BR.y} ${pP_BL.x},${pP_BL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
-        <polygon points="${pG_TL.x},${pG_TL.y} ${pG_TR.x},${pG_TR.y} ${pG_BR.x},${pG_BR.y} ${pG_BL.x},${pG_BL.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
-        <circle cx="${pSpotTop.x}" cy="${pSpotTop.y}" r="2" fill="#ffffff" />
+        <polygon points="${pP_TL.x},${pP_TL.y} ${pP_TR.x},${pP_TR.y} ${pP_BR.x},${pP_BR.y} ${pP_BL.x},${pP_BL.y}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <polygon points="${pG_TL.x},${pG_TL.y} ${pG_TR.x},${pG_TR.y} ${pG_BR.x},${pG_BR.y} ${pG_BL.x},${pG_BL.y}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <circle cx="${pSpotTop.x}" cy="${pSpotTop.y}" r="1.5" fill="#ffffff" />
         
         <!-- Área inferior -->
-        <polygon points="${pP_BL_top.x},${pP_BL_top.y} ${pP_BR_top.x},${pP_BR_top.y} ${pP_BR_bot.x},${pP_BR_bot.y} ${pP_BL_bot.x},${pP_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
-        <polygon points="${pG_BL_top.x},${pG_BL_top.y} ${pG_BR_top.x},${pG_BR_top.y} ${pG_BR_bot.x},${pG_BR_bot.y} ${pG_BL_bot.x},${pG_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
-        <circle cx="${pSpotBot.x}" cy="${pSpotBot.y}" r="2" fill="#ffffff" />
+        <polygon points="${pP_BL_top.x},${pP_BL_top.y} ${pP_BR_top.x},${pP_BR_top.y} ${pP_BR_bot.x},${pP_BR_bot.y} ${pP_BL_bot.x},${pP_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <polygon points="${pG_BL_top.x},${pG_BL_top.y} ${pG_BR_top.x},${pG_BR_top.y} ${pG_BR_bot.x},${pG_BR_bot.y} ${pG_BL_bot.x},${pG_BL_bot.y}" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" />
+        <circle cx="${pSpotBot.x}" cy="${pSpotBot.y}" r="1.5" fill="#ffffff" />
       </svg>
       ${playersHTML}
     </div>
@@ -379,24 +378,24 @@ const generateSuplentesBanquilloCompact = (playerIds, players, showPhotos, showN
     if (!player) return '';
     const color = getPositionColor(player.posicion);
     return `
-      <div style="display: flex; flex-direction: column; align-items: center; width: 68px; margin: 4px;">
+      <div style="display: flex; flex-direction: column; align-items: center; width: 64px; margin: 4px;">
         ${showPhotos && player.foto ? `
-          <img src="${player.foto}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />
+          <img src="${player.foto}" style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #e2e8f0; object-fit: cover;" />
         ` : `
-          <div style="font-size: 11px; color: ${color}; font-weight: 800; font-family: 'Inter', sans-serif; text-align: center;">#${player.dorsal || '?'}</div>
+          <div style="font-size: 11px; color: ${color}; font-weight: 800; font-family: 'Outfit', sans-serif; text-align: center;">#${player.dorsal || '?'}</div>
         `}
-        ${showNames ? `<div style="font-size: 8px; font-weight: 700; margin-top: 5px; text-align: center; color: #334155; text-transform: uppercase; font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis;">${getPlayerFirstName(player)}</div>` : ''}
-        ${showPhotos && player.foto ? `<div style="font-size: 8px; color: ${color}; margin-top: 1px; font-weight: 800; font-family: 'Inter', sans-serif;">#${player.dorsal || '?'}</div>` : ''}
+        ${showNames ? `<div style="font-size: 8px; font-weight: 700; margin-top: 4px; text-align: center; color: #475569; text-transform: uppercase; font-family: 'Inter', sans-serif; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis;">${getPlayerFirstName(player)}</div>` : ''}
+        ${showPhotos && player.foto ? `<div style="font-size: 8px; color: ${color}; margin-top: 1px; font-weight: 800; font-family: 'Outfit', sans-serif;">#${player.dorsal || '?'}</div>` : ''}
       </div>
     `;
   }).join('');
   
   return `
-    <div style="margin-top: 14px; padding: 6px 0;">
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-        <span style="font-size: 9px; font-weight: 900; color: #334155; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Inter', sans-serif;">${substitutesLabel} (${playerIds.length})</span>
+    <div style="margin-top: 10px; padding: 6px 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="font-size: 8.5px; font-weight: 900; color: #1e293b; letter-spacing: 1px; text-transform: uppercase; font-family: 'Outfit', sans-serif;">${substitutesLabel} (${playerIds.length})</span>
       </div>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">${playerItems}</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">${playerItems}</div>
     </div>
   `;
 };
@@ -465,7 +464,7 @@ export const generateLineupPDF = async ({
     return ubi || '';
   };
 
-  const fieldHTML = generateFieldHTML(lineup, resolvedPlayers, formation, showPhotos, showNames, 440, titulares, positionTranslations);
+  const fieldHTML = generateFieldHTML(lineup, resolvedPlayers, formation, showPhotos, showNames, 420, titulares, positionTranslations);
 
   const html = `
     <!DOCTYPE html>
@@ -473,10 +472,11 @@ export const generateLineupPDF = async ({
     <head>
       <meta charset="utf-8">
       <title>${lineupHeader} - ${matchSheet.rival}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         @page { size: A4; margin: 0; }
-        * { box-sizing: border-box;        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background: #0f172a; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background: #0f172a; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         
         .pdf-page { 
           width: 210mm; 
@@ -505,19 +505,24 @@ export const generateLineupPDF = async ({
           background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
           display: flex;
           flex-direction: column;
-          padding: 12mm 10mm;
+          padding: 12mm 8mm;
           border-left: 2.5px solid rgba(255,255,255,0.08);
           box-shadow: -10px 0 25px rgba(0,0,0,0.4);
         }
         
         .chip {
-          font-size: 9px;
-          color: #ffffff;
+          display: inline-block;
+          font-size: 8.5px;
+          color: #e2e8f0;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.15);
+          padding: 4px 10px;
+          border-radius: 12px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          font-family: 'Inter', sans-serif;
-          margin-bottom: 2px;
+          font-family: 'Outfit', sans-serif;
+          margin-bottom: 4px;
         }
       </style>
     </head>
@@ -526,14 +531,14 @@ export const generateLineupPDF = async ({
         <!-- Left Side: Match Details & Tactical Board -->
         <div class="left-column">
           <!-- Match Header Info -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid rgba(15,23,42,0.08); padding-bottom: 10px; width: 100%; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid rgba(15,23,42,0.08); padding-bottom: 12px; width: 100%; margin-bottom: 12px;">
             <div>
-              <div style="color: #475569; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">${lineupHeader}</div>
-              <div style="color: #0f172a; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px;">vs ${matchSheet.rival}</div>
+              <div style="color: #64748b; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Outfit', sans-serif;">${lineupHeader}</div>
+              <div style="color: #0f172a; font-size: 18px; font-weight: 900; text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif;">vs ${matchSheet.rival}</div>
             </div>
             <div style="text-align: right;">
-              <div style="color: #64748b; font-size: 9px; font-weight: 700;">${formatDate(matchSheet.fechaHora)}</div>
-              ${formatTime(matchSheet.fechaHora) ? `<div style="color: #475569; font-size: 8.5px; font-weight: 800; margin-top: 2px;">${formatTime(matchSheet.fechaHora)}</div>` : ''}
+              <div style="color: #0f172a; font-size: 9.5px; font-weight: 700; font-family: 'Outfit', sans-serif;">${formatDate(matchSheet.fechaHora)}</div>
+              ${formatTime(matchSheet.fechaHora) ? `<div style="color: #64748b; font-size: 9px; font-weight: 800; margin-top: 2px;">${formatTime(matchSheet.fechaHora)}</div>` : ''}
             </div>
           </div>
 
@@ -543,9 +548,9 @@ export const generateLineupPDF = async ({
           </div>
 
           <!-- Bottom bar: Formation Pill and Footer -->
-          <div style="width: 100%; margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <div style="font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">
-              Formación: ${formation}
+          <div style="width: 100%; margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1.2px; font-family: 'Outfit', sans-serif; background: #e2e8f0; padding: 4px 12px; border-radius: 12px;">
+              ${formation}
             </div>
             <div style="color: #94a3b8; font-size: 8px; letter-spacing: 0.5px; border-top: 1px solid rgba(15,23,42,0.05); padding-top: 10px; width: 100%; text-align: center;">
               ${translations.generatedWith || 'Generado con Xtramys'} · ${new Date().toLocaleDateString(locale)}
@@ -558,15 +563,15 @@ export const generateLineupPDF = async ({
           <!-- Club Header shield -->
           <div style="text-align: center; margin-bottom: 20px;">
             ${resolvedTeam?.escudo
-              ? `<img src="${resolvedTeam.escudo}" style="width: 76px; height: 76px; object-fit: contain; background: #ffffff; border-radius: 12px; padding: 5px; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: 2.5px solid #ffffff;" />`
-              : `<div style="width: 76px; height: 76px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 2.5 dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 24px;">🛡️</div>`}
-            <div style="color: #ffffff; font-size: 13px; font-weight: 900; margin-top: 10px; text-transform: uppercase; letter-spacing: 1.5px;">
+              ? `<img src="${resolvedTeam.escudo}" style="width: 76px; height: 76px; object-fit: contain; background: #ffffff; border-radius: 14px; padding: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); border: 2px solid #ffffff;" />`
+              : `<div style="width: 76px; height: 76px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 2px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 24px;">🛡️</div>`}
+            <div style="color: #ffffff; font-size: 14px; font-weight: 900; margin-top: 12px; text-transform: uppercase; letter-spacing: 1px; font-family: 'Outfit', sans-serif;">
               ${resolvedTeam?.nombre || 'Mi Club'}
             </div>
           </div>
 
           <!-- Metadata Badges -->
-          <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 25px; align-items: center; width: 100%;">
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 20px; align-items: center; width: 100%;">
             ${(() => {
               const roundLabels = translations.roundLabels || {};
               const legFirstLabel = translations.legFirst || 'Ida';
@@ -592,7 +597,7 @@ export const generateLineupPDF = async ({
 
           <!-- Substitutions Section -->
           <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-            <div style="font-size: 10px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; font-family: 'Inter', sans-serif;">
+            <div style="font-size: 10px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-family: 'Outfit', sans-serif; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px;">
               ${substitutesLabel} (${suplentes.length})
             </div>
             
@@ -601,13 +606,13 @@ export const generateLineupPDF = async ({
                 const player = resolvedPlayers.find(p => p._id === id || p._id === id._id);
                 if (!player) return '';
                 const isGK = player.posicion?.toUpperCase() === 'POR' || player.posicion?.toUpperCase() === 'PORTERO';
-                const shirtColor = isGK ? '#ffffff' : '#18181b';
-                const strokeColor = isGK ? '#1e293b' : '#ffffff';
+                const shirtColor = isGK ? '#ffffff' : '#0f172a';
+                const strokeColor = isGK ? '#0f172a' : '#ffffff';
                 
                 return `
                   <div style="display: flex; align-items: center; gap: 10px;">
                     ${showPhotos && player.foto ? `
-                      <img src="${player.foto}" style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #ffffff; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.3); flex-shrink: 0;" />
+                      <img src="${player.foto}" style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #ffffff; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.25); flex-shrink: 0;" />
                     ` : `
                       <div style="flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
                         <svg viewBox="0 0 24 24" width="28" height="28" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35));">
@@ -616,8 +621,8 @@ export const generateLineupPDF = async ({
                         </svg>
                       </div>
                     `}
-                    <div style="color: #ffffff; font-size: 10px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.4; padding: 2px 0;">
-                      ${player.dorsal ? `<span style="color: #94a3b8; font-weight: 800; margin-right: 6px;">#${player.dorsal}</span>` : ''}${getPlayerFullName(player)}
+                    <div style="color: #ffffff; font-size: 10px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.4; padding: 2px 0; font-family: 'Inter', sans-serif;">
+                      ${player.dorsal ? `<span style="color: #94a3b8; font-weight: 800; margin-right: 6px; font-family: 'Outfit', sans-serif;">#${player.dorsal}</span>` : ''}${getPlayerFullName(player)}
                     </div>
                   </div>
                 `;
@@ -709,24 +714,24 @@ export const generateCallUpPDF = async ({
     positionGroups[group.order].players.push(player);
   });
 
-      // Fila de jugador para convocatoria clara (sin recuadros)
-      const playerCardHTML = (player) => {
-        const color = getPositionColor(player.posicion);
-        return `
-          <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-            <div style="min-width: 20px; font-weight: 800; font-size: 11px; color: ${color}; font-family: 'Inter', sans-serif; text-align: right;">${player.dorsal || ''}</div>
-            ${showPhotos && player.foto ? `
-              <img src="${player.foto}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1; flex-shrink: 0;" />
-            ` : `
-              <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0;">👤</div>
-            `}
-            <div style="flex: 1; min-width: 0;">
-              <div style="color: #0f172a; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif;">${getPlayerFullName(player)}</div>
-              <div style="color: #64748b; font-size: 8.5px; font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${player.posicion || ''}</div>
-            </div>
-          </div>
-        `;
-      };
+  // Fila de jugador para convocatoria clara (sin recuadros)
+  const playerCardHTML = (player) => {
+    const color = getPositionColor(player.posicion);
+    return `
+      <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+        <div style="min-width: 20px; font-weight: 800; font-size: 11px; color: ${color}; font-family: 'Outfit', sans-serif; text-align: right;">${player.dorsal || ''}</div>
+        ${showPhotos && player.foto ? `
+          <img src="${player.foto}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1; flex-shrink: 0;" />
+        ` : `
+          <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0; background: #e2e8f0;">👤</div>
+        `}
+        <div style="flex: 1; min-width: 0;">
+          <div style="color: #0f172a; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif;">${getPlayerFullName(player)}</div>
+          <div style="color: #64748b; font-size: 8.5px; font-family: 'Inter', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${player.posicion || ''}</div>
+        </div>
+      </div>
+    `;
+  };
 
   // HTML de grupos de convocados
   const groupsHTML = Object.keys(positionGroups)
@@ -748,7 +753,7 @@ export const generateCallUpPDF = async ({
         <div style="margin-bottom: 14px; page-break-inside: avoid;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
             <div style="width: 6px; height: 6px; background: #475569; border-radius: 50%;"></div>
-            <span style="color: #475569; font-size: 8.5px; letter-spacing: 1.8px; font-weight: 800; font-family: 'Inter', sans-serif; text-transform: uppercase;">${group.label}</span>
+            <span style="color: #475569; font-size: 8.5px; letter-spacing: 1.8px; font-weight: 800; font-family: 'Outfit', sans-serif; text-transform: uppercase;">${group.label}</span>
             <div style="flex: 1; height: 1px; background: #e2e8f0; margin-left: 4px;"></div>
           </div>
           ${rowsHTML}
@@ -767,7 +772,7 @@ export const generateCallUpPDF = async ({
     const color = getPositionColor(player.posicion);
     return `
       <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">
-        <div style="min-width: 18px; font-weight: 800; font-size: 10px; color: ${color}; font-family: 'Inter', sans-serif; text-align: right;">${player.dorsal || ''}</div>
+        <div style="min-width: 18px; font-weight: 800; font-size: 10px; color: ${color}; font-family: 'Outfit', sans-serif; text-align: right;">${player.dorsal || ''}</div>
         ${showPhotos && player.foto ? `
           <img src="${player.foto}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #cbd5e1; flex-shrink: 0;" />
         ` : `
@@ -799,7 +804,7 @@ export const generateCallUpPDF = async ({
     }
     noConvocadosHTML = `
       <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
-        <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 8px; font-family: 'Inter', sans-serif; text-transform: uppercase;">${notCalledLabel.toUpperCase()} (${noConvocados.length})</div>
+        <div style="font-size: 9px; letter-spacing: 1.5px; color: #475569; font-weight: 800; margin-bottom: 8px; font-family: 'Outfit', sans-serif; text-transform: uppercase;">${notCalledLabel.toUpperCase()} (${noConvocados.length})</div>
         <div style="display: flex; flex-direction: column; gap: 2px;">
           ${list.join('')}
         </div>
@@ -807,11 +812,11 @@ export const generateCallUpPDF = async ({
     `;
   }
 
-  // Observaciones diseño claro (Grayscale)
+  // Observaciones diseño claro
   const observacionesHTML = observaciones ? `
-    <div style="margin-top: 14px; padding: 6px 0; page-break-inside: avoid;">
-      <div style="font-size: 9px; letter-spacing: 1.5px; color: #334155; font-weight: 800; margin-bottom: 6px; font-family: 'Inter', sans-serif; text-transform: uppercase;">📝 ${observationsLabel.toUpperCase()}</div>
-      <div style="font-size: 10.5px; color: #334155; line-height: 1.6; white-space: pre-wrap; font-family: 'Inter', sans-serif;">${observaciones}</div>
+    <div style="margin-top: 14px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; page-break-inside: avoid;">
+      <div style="font-size: 9px; letter-spacing: 1.5px; color: #0f172a; font-weight: 800; margin-bottom: 6px; font-family: 'Outfit', sans-serif; text-transform: uppercase;">📝 ${observationsLabel.toUpperCase()}</div>
+      <div style="font-size: 10px; color: #334155; line-height: 1.5; white-space: pre-wrap; font-family: 'Inter', sans-serif;">${observaciones}</div>
     </div>
   ` : '';
 
@@ -821,7 +826,7 @@ export const generateCallUpPDF = async ({
     <head>
       <meta charset="utf-8">
       <title>${callupHeader} - ${matchSheet.rival}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -829,15 +834,15 @@ export const generateCallUpPDF = async ({
         .pdf-page { padding: 12mm 14mm; background: #ffffff; width: 210mm; height: 297mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
         
         .banner {
-          background: linear-gradient(135deg, #0f172a 0%, #334155 60%, #475569 100%);
-          border-radius: 14px;
-          padding: 14px 20px;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%);
+          border-radius: 12px;
+          padding: 16px 24px;
           color: #fff;
-          margin-bottom: 12px;
+          margin-bottom: 14px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          box-shadow: 0 4px 15px rgba(15, 23, 42, 0.1);
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
         }
         .banner-left {
           display: flex;
@@ -845,27 +850,29 @@ export const generateCallUpPDF = async ({
           gap: 12px;
         }
         .banner-logo {
-          width: 44px;
-          height: 44px;
+          width: 46px;
+          height: 46px;
           object-fit: contain;
           background: #ffffff;
           border-radius: 8px;
           padding: 4px;
-          border: 2px solid #ffffff;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          border: 2.5px solid #ffffff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         .banner-title-group {
           display: flex;
           flex-direction: column;
         }
         .banner-title {
-          font-size: 18px;
+          font-family: 'Outfit', sans-serif;
+          font-size: 20px;
           font-weight: 900;
           letter-spacing: 1px;
           text-transform: uppercase;
         }
         .banner-subtitle {
-          font-size: 10px;
+          font-family: 'Outfit', sans-serif;
+          font-size: 11px;
           opacity: 0.85;
           font-weight: 600;
           letter-spacing: 0.5px;
@@ -875,16 +882,19 @@ export const generateCallUpPDF = async ({
           text-align: right;
         }
         .banner-vs {
+          font-family: 'Outfit', sans-serif;
           font-size: 9px;
           font-weight: 800;
-          color: rgba(255,255,255,0.6);
-          letter-spacing: 1px;
+          color: #94a3b8;
+          letter-spacing: 1.5px;
         }
         .banner-rival {
-          font-size: 15px;
+          font-family: 'Outfit', sans-serif;
+          font-size: 16px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          color: #ffffff;
         }
         
         .meeting-strip {
@@ -892,19 +902,19 @@ export const generateCallUpPDF = async ({
           justify-content: space-between;
           background: #f8fafc;
           border-radius: 12px;
-          padding: 10px 16px;
+          padding: 12px 18px;
           border: 1px solid #e2e8f0;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
           gap: 12px;
         }
         .meeting-card {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           flex: 1;
         }
         .meeting-icon {
-          font-size: 16px;
+          font-size: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -914,18 +924,19 @@ export const generateCallUpPDF = async ({
           flex-direction: column;
         }
         .meeting-label {
-          font-size: 7px;
-          color: #94a3b8;
+          font-size: 7.5px;
+          color: #64748b;
           text-transform: uppercase;
           letter-spacing: 0.8px;
           font-weight: 800;
-          margin-bottom: 1px;
+          margin-bottom: 2px;
+          font-family: 'Outfit', sans-serif;
         }
         .meeting-value {
-          font-size: 9.5px;
+          font-size: 10px;
           font-weight: 700;
-          color: #1e293b;
-          line-height: 1.25;
+          color: #0f172a;
+          line-height: 1.3;
         }
       </style>
     </head>
@@ -933,7 +944,7 @@ export const generateCallUpPDF = async ({
       <div class="pdf-page">
         <div class="banner">
           <div class="banner-left">
-            ${resolvedTeam?.escudo ? `<img src="${resolvedTeam.escudo}" class="banner-logo" />` : '<div style="width:44px; height:44px; background:rgba(255,255,255,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🛡️</div>'}
+            ${resolvedTeam?.escudo ? `<img src="${resolvedTeam.escudo}" class="banner-logo" />` : '<div style="width:46px; height:46px; background:rgba(255,255,255,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🛡️</div>'}
             <div class="banner-title-group">
               <div class="banner-title">${callupHeader}</div>
               <div class="banner-subtitle">${resolvedTeam?.nombre || 'Mi Club'}</div>
@@ -970,7 +981,7 @@ export const generateCallUpPDF = async ({
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 2px solid #0f172a; padding-bottom: 6px;">
-          <span style="color: #0f172a; font-size: 10px; letter-spacing: 2px; font-weight: 900; text-transform: uppercase;">${calledLabel} — ${convocados.length}</span>
+          <span style="color: #0f172a; font-size: 11px; letter-spacing: 1px; font-weight: 900; text-transform: uppercase; font-family: 'Outfit', sans-serif;">${calledLabel} — ${convocados.length}</span>
         </div>
 
         <div style="flex: 1;">
@@ -1027,7 +1038,7 @@ export const generateMatchSheetPDF = async ({
   const cambios = matchSheet.cambios || [];
   const golesRival = matchSheet.golesRival || [];
   
-  // Helper para parsear minuto string ("45+2" → 47)
+  // Helper para parsear minuto string
   const parseMinutoPDF = (minuto) => {
     if (typeof minuto === 'number') return minuto;
     if (typeof minuto === 'string') {
@@ -1227,7 +1238,7 @@ export const generateMatchSheetPDF = async ({
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         @page { size: A4; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1250,7 +1261,7 @@ export const generateMatchSheetPDF = async ({
         }
         
         .header {
-          background: linear-gradient(135deg, #0f172a 0%, #334155 60%, #475569 100%);
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
           color: white;
           padding: 18px 24px;
           border-radius: 12px;
@@ -1258,8 +1269,8 @@ export const generateMatchSheetPDF = async ({
           text-align: center;
           box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
         }
-        .header-title { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
-        .header-subtitle { font-size: 11px; opacity: 0.85; font-weight: 500; }
+        .header-title { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+        .header-subtitle { font-family: 'Outfit', sans-serif; font-size: 11px; opacity: 0.85; font-weight: 500; color: #cbd5e1; }
         
         .page-header {
           border-bottom: 1.5px dashed #334155;
@@ -1270,10 +1281,11 @@ export const generateMatchSheetPDF = async ({
           align-items: center;
         }
         .page-header-title {
+          font-family: 'Outfit', sans-serif;
           font-size: 8.5px;
           font-weight: 800;
           text-transform: uppercase;
-          color: #334155;
+          color: #0f172a;
           letter-spacing: 1px;
         }
         .page-header-subtitle {
@@ -1286,38 +1298,35 @@ export const generateMatchSheetPDF = async ({
         .escudos-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
         .escudo-container { text-align: center; display: flex; flex-direction: column; align-items: center; width: 150px; flex-shrink: 1; }
         .escudo-img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 3px; border: 1px solid #e2e8f0; }
-        .escudo-placeholder { width: 44px; height: 44px; border-radius: 8px; background: linear-gradient(135deg, #0f172a, #1e3a5f); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .team-name { font-size: 10px; font-weight: 800; color: #1e293b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.2px; white-space: normal; line-height: 1.25; word-wrap: break-word; }
+        .escudo-placeholder { width: 44px; height: 44px; border-radius: 8px; background: linear-gradient(135deg, #0f172a, #1e293b); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .team-name { font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 800; color: #1e293b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.2px; white-space: normal; line-height: 1.25; word-wrap: break-word; }
         
         .score-container { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-        .score { font-size: 32px; font-weight: 900; color: #0f172a; min-width: 40px; text-align: center; letter-spacing: -1px; }
+        .score { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 900; color: #0f172a; min-width: 40px; text-align: center; letter-spacing: -1px; }
         .score-divider { font-size: 24px; color: #94a3b8; font-weight: 300; }
-        .result-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }
+        .result-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Outfit', sans-serif; }
         
         .meta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
-        .meta-badge { font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meta-badge { font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif; }
         
         .section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .section-title { font-size: 11px; font-weight: 900; color: #0f172a; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #0f172a; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        .section-title { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 900; color: #0f172a; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #0f172a; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1px; }
         
         .field-container { display: flex; justify-content: center; margin: 4px 0; }
         
         .events-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .event-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .event-title { font-size: 9px; font-weight: 900; color: #0f172a; padding-bottom: 6px; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 1.2px; }
+        .event-title { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 900; color: #0f172a; padding-bottom: 6px; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 1.2px; }
         
         .event-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
         .event-row:last-child { border-bottom: none; }
         .event-icon { font-size: 13px; display: flex; align-items: center; justify-content: center; }
-        .card-icon { width: 10px; height: 13px; border-radius: 2px; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .card-icon.yellow { background: #cbd5e1; border: 0.5px solid #475569; }
-        .card-icon.red { background: #18181b; border: 0.5px solid #18181b; }
         
         .event-details { flex: 1; min-width: 0; display: flex; flex-direction: column; }
         .event-player { font-weight: 700; color: #334155; font-size: 10px; }
         .event-subtext { color: #64748b; font-size: 8.5px; font-weight: 500; }
-        .event-time { font-size: 9.5px; font-weight: 800; color: #94a3b8; }
-        .event-badge { font-size: 8.5px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-left: 4px; }
+        .event-time { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 800; color: #94a3b8; }
+        .event-badge { font-size: 8.5px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-left: 4px; font-family: 'Outfit', sans-serif; }
         .event-empty { color: #94a3b8; font-size: 10px; padding: 12px 0; text-align: center; font-style: italic; }
         
         .notes-box { font-size: 10px; color: #334155; white-space: pre-wrap; line-height: 1.5; font-weight: 500; padding: 4px 0; }

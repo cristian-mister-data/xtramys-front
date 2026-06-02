@@ -144,8 +144,20 @@ export async function generateProtocolPdf(protocol, lang, t) {
 <head>
   <meta charset="UTF-8">
   <title>${escapeHtml(protocol.title[lang])}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --primary: #0f172a;
+      --secondary: #1e293b;
+      --accent: #2563eb;
+      --text-main: #334155;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+    }
+
     @page {
       size: A4;
       margin: 0;
@@ -155,8 +167,8 @@ export async function generateProtocolPdf(protocol, lang, t) {
       font-family: 'Inter', -apple-system, sans-serif;
       font-size: 9.5pt;
       line-height: 1.45;
-      color: #1e293b;
-      background: #ffffff;
+      color: var(--text-main);
+      background: var(--bg-main);
       padding: 0;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -164,33 +176,34 @@ export async function generateProtocolPdf(protocol, lang, t) {
     .pdf-page {
       width: 210mm;
       height: 297mm;
-      padding: 12mm 14mm;
+      padding: 15mm 16mm;
       box-sizing: border-box;
       position: relative;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #ffffff;
+      background: var(--bg-main);
       page-break-after: always;
     }
     .pdf-page:last-child {
       page-break-after: avoid;
     }
     .header {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: white;
       border-radius: 12px;
-      padding: 14px 22px;
-      margin-bottom: 10px;
+      padding: 18px 24px;
+      margin-bottom: 12px;
       text-align: center;
       box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
     }
     .header h1 {
+      font-family: 'Outfit', sans-serif;
       font-size: 16pt;
-      font-weight: 800;
+      font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
     .header .stats {
       font-size: 8pt;
@@ -199,131 +212,150 @@ export async function generateProtocolPdf(protocol, lang, t) {
       letter-spacing: 0.5px;
     }
     .page-header {
-      border-bottom: 1.5px dashed #475569;
-      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--border-dark);
+      padding-bottom: 8px;
       margin-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .page-header-title {
+      font-family: 'Outfit', sans-serif;
       font-size: 8.5px;
       font-weight: 800;
       text-transform: uppercase;
-      color: #334155;
+      color: var(--primary);
       letter-spacing: 1px;
     }
     .page-header-subtitle {
       font-size: 8px;
-      color: #94a3b8;
+      color: var(--text-muted);
       font-weight: 500;
     }
     .intro-section {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       padding: 0;
     }
     .intro-section h2 {
-      font-size: 9.5pt;
-      font-weight: 800;
-      color: #0f172a;
+      font-family: 'Outfit', sans-serif;
+      font-size: 10.5pt;
+      font-weight: 850;
+      color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1px;
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 3px;
-      margin-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 4px;
+      margin-bottom: 10px;
     }
     .intro-cols {
       display: flex;
-      gap: 10px;
+      gap: 12px;
     }
     .intro-block {
       flex: 1;
-      padding: 4px 0;
+      padding: 12px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     .intro-block h3 {
-      font-size: 8.5pt;
+      font-family: 'Outfit', sans-serif;
+      font-size: 9.5px;
       font-weight: 700;
-      color: #334155;
-      margin-bottom: 4px;
+      color: var(--primary);
+      margin-bottom: 6px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .intro-block ul {
-      margin-left: 0;
       list-style-type: none;
     }
     .intro-block li {
-      margin-bottom: 3px;
-      font-size: 8pt;
-      color: #475569;
+      margin-bottom: 4px;
+      font-size: 8.5px;
+      color: var(--text-main);
       position: relative;
       padding-left: 12px;
     }
     .intro-block li::before {
       content: "•";
-      color: #475569;
+      color: var(--accent);
       font-weight: bold;
       position: absolute;
       left: 0;
       top: 0;
     }
     .section {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     .section h2 {
-      font-size: 9.5pt;
-      font-weight: 800;
-      color: #0f172a;
+      font-family: 'Outfit', sans-serif;
+      font-size: 10.5pt;
+      font-weight: 850;
+      color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1px;
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 3px;
-      margin-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 4px;
+      margin-bottom: 10px;
     }
     .exercises {
       padding-left: 0;
     }
     .exercise {
-      margin-bottom: 12px;
-      padding: 4px 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3.5px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      page-break-inside: avoid;
     }
     .exercise:last-child {
       margin-bottom: 0;
     }
     .exercise h3 {
-      font-size: 9pt;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 4px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 9.5pt;
+      font-weight: 750;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
     }
     .detail {
-      margin-bottom: 2px;
+      margin-bottom: 3px;
       font-size: 8pt;
-      color: #475569;
+      color: var(--text-main);
     }
     .detail .label {
+      font-family: 'Outfit', sans-serif;
       font-weight: 700;
-      color: #334155;
+      color: var(--text-muted);
       text-transform: uppercase;
       font-size: 7.5pt;
       letter-spacing: 0.5px;
       margin-right: 4px;
     }
     .detail.tips {
-      margin-top: 4px;
-      color: #334155;
-      font-size: 8pt;
+      margin-top: 6px;
+      padding: 6px 8px;
+      background: #fffbeb;
+      border-left: 2.5px solid #d97706;
+      border-radius: 4px;
+      color: #78350f;
     }
     .detail.tips .label {
-      color: #475569;
+      color: #b45309;
     }
     .footer {
       margin-top: auto;
-      padding-top: 8px;
-      border-top: 1px solid #f1f5f9;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
       text-align: center;
       font-size: 8px;
-      color: #94a3b8;
+      color: var(--text-muted);
       font-weight: 500;
       letter-spacing: 0.5px;
     }
