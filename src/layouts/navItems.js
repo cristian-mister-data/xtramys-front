@@ -3,6 +3,7 @@ import {
   MdCalendarMonth,
   MdEmojiEvents,
   MdPeople,
+  MdSportsSoccer,
   MdFitnessCenter,
   MdVideoLibrary,
   MdLibraryBooks,
@@ -31,70 +32,114 @@ export function getNavSections(t) {
   return [
     {
       items: [
-        { to: '/', label: t('menu.home', 'Inicio'), end: true, Icon: MdHome,
-          keywords: ['inicio', 'home', 'dashboard', 'panel'] },
-        { to: '/season', label: t('menu.season', 'Temporada'), Icon: MdCalendarMonth,
-          keywords: ['temporada', 'season', 'calendario', 'eventos', 'partidos'] },
-        { to: '/tournaments', label: t('menu.tournaments', 'Torneos'), Icon: MdEmojiEvents,
-          keywords: ['torneos', 'tournaments', 'competiciones', 'liga', 'copa'] },
-        { to: '/players', label: t('menu.players', 'Jugadores'), Icon: MdPeople,
-          keywords: ['jugadores', 'players', 'plantilla', 'equipo'] },
+        {
+          to: '/', label: t('menu.home', 'Inicio'), end: true, Icon: MdHome,
+          keywords: ['inicio', 'home', 'dashboard', 'panel']
+        },
+        {
+          to: '/season', label: t('menu.season', 'Temporada'), Icon: MdCalendarMonth,
+          keywords: ['temporada', 'season', 'calendario', 'eventos', 'partidos']
+        },
+        {
+          to: '/tournaments', label: t('menu.tournaments', 'Torneos'), Icon: MdEmojiEvents,
+          keywords: ['torneos', 'tournaments', 'competiciones', 'liga', 'copa']
+        },
+        {
+          to: '/players', label: t('menu.players', 'Jugadores'), Icon: MdPeople,
+          keywords: ['jugadores', 'players', 'plantilla', 'equipo']
+        },
       ],
     },
     {
       title: t('menu.tools', 'Herramientas'),
       items: [
-        { to: '/tactical-board', label: t('menu.tacticalBoard', 'Pizarra táctica'), Icon: MdMap,
-          keywords: ['pizarra', 'tactica', 'tactical', 'board', 'campo', 'jugadas'] },
-        { to: '/exercises', label: t('menu.exercises', 'Ejercicios'), Icon: MdFitnessCenter,
-          keywords: ['ejercicios', 'exercises', 'rondos', 'drill'] },
-        { to: '/strength-exercises', label: t('menu.strengthExercises', 'Ejercicios de Fuerza'), Icon: MdFitnessCenter,
-          keywords: ['fuerza', 'strength', 'entrenamiento', 'coadyuvante', 'musculacion'] },
-        { to: '/strategies', label: t('menu.strategies', 'Estrategias'), Icon: MdOutlineAssignment,
-          keywords: ['estrategias', 'strategies', 'aboc', 'jugadas'] },
-        { to: '/my-videos', label: t('menu.myVideos', 'Mis Videos'), Icon: MdVideoLibrary,
-          keywords: ['videos', 'mis videos', 'grabaciones', 'clips'] },
+        {
+          to: '/tactical-board', label: t('menu.tacticalBoard', 'Pizarra táctica'), Icon: MdMap,
+          keywords: ['pizarra', 'tactica', 'tactical', 'board', 'campo', 'jugadas']
+        },
+        {
+          to: '/exercises', label: t('menu.exercises', 'Ejercicios'), Icon: MdSportsSoccer,
+          keywords: ['ejercicios', 'exercises', 'rondos', 'drill']
+        },
+        {
+          to: '/strength-exercises', label: t('menu.strengthExercises', 'Ejercicios de Fuerza'), Icon: MdFitnessCenter,
+          keywords: ['fuerza', 'strength', 'entrenamiento', 'coadyuvante', 'musculacion']
+        },
+        {
+          to: '/strategies', label: t('menu.strategies', 'Estrategias'), Icon: MdOutlineAssignment,
+          keywords: ['estrategias', 'strategies', 'aboc', 'jugadas']
+        },
+        {
+          to: '/my-videos', label: t('menu.myVideos', 'Mis Videos'), Icon: MdVideoLibrary,
+          keywords: ['videos', 'mis videos', 'grabaciones', 'clips']
+        },
       ],
     },
     {
       title: t('menu.management', 'Gestión'),
       items: [
-        { to: '/methodology', label: t('menu.methodology', 'Metodología'), Icon: MdLibraryBooks,
-          keywords: ['metodologia', 'methodology', 'plan'] },
-        { to: '/goalkeeper-methodology', label: t('menu.goalkeeperMethodology', 'Metodología porteros'), Icon: MdSportsHandball,
-          keywords: ['porteros', 'goalkeeper', 'metodologia porteros', 'arquero'] },
-        { to: '/training', label: t('menu.training', 'Entrenamientos'), Icon: MdTimer,
-          keywords: ['entrenamientos', 'training', 'sesiones', 'sesion'] },
-        { to: '/wellness', label: t('menu.wellness', 'Wellness'), Icon: MdFavorite,
-          keywords: ['wellness', 'bienestar', 'salud', 'pre wellness'] },
-        { to: '/rivals', label: t('menu.rivals', 'Rivales'), Icon: MdShield,
-          keywords: ['rivales', 'rivals', 'oponentes'] },
-        { to: '/match-sheets', label: t('menu.matchSheets', 'Fichas de partido'), Icon: MdDescription,
-          keywords: ['fichas', 'match sheets', 'partido', 'lineup', 'alineacion', 'jornada'] },
+        {
+          to: '/methodology', label: t('menu.methodology', 'Metodología'), Icon: MdLibraryBooks,
+          keywords: ['metodologia', 'methodology', 'plan']
+        },
+        {
+          to: '/goalkeeper-methodology', label: t('menu.goalkeeperMethodology', 'Metodología porteros'), Icon: MdSportsHandball,
+          keywords: ['porteros', 'goalkeeper', 'metodologia porteros', 'arquero']
+        },
+        {
+          to: '/training', label: t('menu.training', 'Entrenamientos'), Icon: MdTimer,
+          keywords: ['entrenamientos', 'training', 'sesiones', 'sesion']
+        },
+        {
+          to: '/wellness', label: t('menu.wellness', 'Wellness'), Icon: MdFavorite,
+          keywords: ['wellness', 'bienestar', 'salud', 'pre wellness']
+        },
+        {
+          to: '/rivals', label: t('menu.rivals', 'Rivales'), Icon: MdShield,
+          keywords: ['rivales', 'rivals', 'oponentes']
+        },
+        {
+          to: '/match-sheets', label: t('menu.matchSheets', 'Fichas de partido'), Icon: MdDescription,
+          keywords: ['fichas', 'match sheets', 'partido', 'lineup', 'alineacion', 'jornada']
+        },
       ],
     },
     {
       title: t('menu.analysis', 'Análisis'),
       items: [
-        { to: '/injuries', label: t('menu.injuries', 'Lesiones'), Icon: MdMedicalServices,
-          keywords: ['lesiones', 'injuries', 'salud', 'lesionados'] },
-        { to: '/rival-analysis', label: t('menu.rivalAnalysis', 'Análisis rival'), Icon: MdAnalytics,
-          keywords: ['analisis rival', 'rival analysis', 'scouting', 'rivales'] },
-        { to: '/anthropometry', label: t('menu.anthropometry', 'Antropometría'), Icon: MdAccessibility,
-          keywords: ['antropometria', 'anthropometry', 'medidas', 'peso', 'altura'] },
-        { to: '/statistics', label: t('menu.statistics', 'Estadísticas'), Icon: MdBarChart,
-          keywords: ['estadisticas', 'statistics', 'stats', 'metricas', 'datos'] },
-        { to: '/nutrition', label: t('menu.nutrition', 'Nutrición'), Icon: MdRestaurant,
-          keywords: ['nutricion', 'nutrition', 'dieta', 'alimentacion'] },
-        { to: '/injury-prevention', label: t('menu.injuryPrevention', 'Prevención de lesiones'), Icon: MdHealthAndSafety,
-          keywords: ['prevencion', 'injury prevention', 'lesiones'] },
+        {
+          to: '/injuries', label: t('menu.injuries', 'Lesiones'), Icon: MdMedicalServices,
+          keywords: ['lesiones', 'injuries', 'salud', 'lesionados']
+        },
+        {
+          to: '/rival-analysis', label: t('menu.rivalAnalysis', 'Análisis rival'), Icon: MdAnalytics,
+          keywords: ['analisis rival', 'rival analysis', 'scouting', 'rivales']
+        },
+        {
+          to: '/anthropometry', label: t('menu.anthropometry', 'Antropometría'), Icon: MdAccessibility,
+          keywords: ['antropometria', 'anthropometry', 'medidas', 'peso', 'altura']
+        },
+        {
+          to: '/statistics', label: t('menu.statistics', 'Estadísticas'), Icon: MdBarChart,
+          keywords: ['estadisticas', 'statistics', 'stats', 'metricas', 'datos']
+        },
+        {
+          to: '/nutrition', label: t('menu.nutrition', 'Nutrición'), Icon: MdRestaurant,
+          keywords: ['nutricion', 'nutrition', 'dieta', 'alimentacion']
+        },
+        {
+          to: '/injury-prevention', label: t('menu.injuryPrevention', 'Prevención de lesiones'), Icon: MdHealthAndSafety,
+          keywords: ['prevencion', 'injury prevention', 'lesiones']
+        },
       ],
     },
     {
       title: t('menu.account', 'Cuenta'),
       items: [
-        { to: '/profile', label: t('menu.profile', 'Perfil'), Icon: MdPerson,
-          keywords: ['perfil', 'profile', 'cuenta', 'ajustes', 'usuario'] },
+        {
+          to: '/profile', label: t('menu.profile', 'Perfil'), Icon: MdPerson,
+          keywords: ['perfil', 'profile', 'cuenta', 'ajustes', 'usuario']
+        },
       ],
       // No la mostramos en sidebar (el footer ya tiene la card con el avatar),
       // pero queremos que aparezca en el buscador.

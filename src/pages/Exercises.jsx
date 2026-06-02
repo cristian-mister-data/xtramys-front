@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { MdFitnessCenter } from 'react-icons/md';
+import { MdSportsSoccer } from 'react-icons/md';
 import RNWebPage from './_RNWebPage';
 import ExerciseList from '@/vendor/exercise/exerciseList';
 
@@ -10,7 +10,7 @@ export default function Exercises() {
     <RNWebPage themed
       title={t('menu.exercises', 'Ejercicios')}
       subtitle={t('sectionHeaders.exercises', 'Organiza ejercicios, carpetas y recursos para el trabajo diario.')}
-      icon={MdFitnessCenter}
+      icon={MdSportsSoccer}
     >
       <ExerciseList />
     </RNWebPage>
