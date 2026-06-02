@@ -2,7 +2,7 @@
 // xtramys-source/src/components/pages/goalkeeperMethodology/goalkeeperMethodology.js
 // Mismo patrón que Methodology (selector + editable) pero estructura plana de planes (3/4/5 días).
 import { useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { MdLock, MdAdd, MdDelete, MdEdit, MdPictureAsPdf, MdSportsHandball } from 'react-icons/md';
@@ -144,6 +144,56 @@ const IconBtn = styled.button`
   &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
 `;
 
+function AddPlanModal({ open, onClose, onSave }) {
+  const { t } = useTranslation();
+  const [daysStr, setDaysStr] = useState('5');
+  useEffect(() => { if (open) setDaysStr('5'); }, [open]);
+  const handleSave = () => {
+    const n = parseInt(daysStr, 10);
+    if (isNaN(n) || n < 1) {
+      toast?.error?.(t('common.daysRequired', 'Mínimo 1 día')) || alert(t('common.daysRequired', 'Mínimo 1 día'));
+      return;
+    }
+    if (n > 7) {
+      toast?.error?.(t('common.maxDays', 'Máximo 7 días')) || alert(t('common.maxDays', 'Máximo 7 días'));
+      return;
+    }
+    onSave(Math.min(n, 7));
+  };
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('goalkeeperMethodology.addTrainingPlan', 'Añadir plan de entrenamiento')}
+      width={400}
+      footer={
+        <>
+          <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
+          <Button onClick={handleSave}>{t('common.add', 'Añadir')}</Button>
+        </>
+      }
+    >
+      <Stack>
+        <Muted>{t('goalkeeperMethodology.daysPerWeekLabel', 'Días por semana')}</Muted>
+        <Input
+          type="number"
+          min={1}
+          max={7}
+          value={daysStr}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === '' || /^\d+$/.test(v)) {
+              const num = parseInt(v, 10);
+              if (!isNaN(num) && num > 7) return;
+              setDaysStr(v);
+            }
+          }}
+        />
+      </Stack>
+    </Modal>
+  );
+}
+
 function EditDayModal({ open, onClose, day, onSave }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(day);
@@ -188,11 +238,60 @@ function EditDayModal({ open, onClose, day, onSave }) {
   );
 }
 
+const OptionCard = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 2px solid ${p => p.$active ? p.theme?.colors?.primary || '#2563eb' : p.theme?.colors?.border || '#e2e8f0'};
+  background: ${p => p.$active ? (p.theme?.colors?.primary || '#2563eb') + '0d' : p.theme?.colors?.surface || '#fff'};
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: ${p => p.theme?.colors?.primary || '#2563eb'}; }
+`;
+
+const OptionDot = styled.div`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid ${p => p.$active ? p.theme?.colors?.primary || '#2563eb' : p.theme?.colors?.textMuted || '#94a3b8'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  &::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: ${p => p.$active ? p.theme?.colors?.primary || '#2563eb' : 'transparent'};
+  }
+`;
+
+const OptionText = styled.div`
+  flex: 1;
+`;
+
+const OptionTitle = styled.div`
+  font-weight: 600;
+  font-size: 15px;
+  color: ${p => p.theme?.colors?.text || '#1e293b'};
+  margin-bottom: 4px;
+`;
+
+const OptionDesc = styled.div`
+  font-size: 13px;
+  color: ${p => p.theme?.colors?.textMuted || '#64748b'};
+  line-height: 1.4;
+`;
+
 function CreateModal({ open, onClose, onSave }) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
-  const [fromRec, setFromRec] = useState(false);
-  useEffect(() => { if (open) { setName(''); setFromRec(false); } }, [open]);
+  const [mode, setMode] = useState('scratch');
+  useEffect(() => { if (open) { setName(''); setMode('scratch'); } }, [open]);
   return (
     <Modal
       open={open}
@@ -202,7 +301,7 @@ function CreateModal({ open, onClose, onSave }) {
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
-          <Button disabled={!name.trim()} onClick={() => onSave(name.trim(), fromRec)}>
+          <Button disabled={!name.trim()} onClick={() => onSave(name.trim(), mode === 'recommended')}>
             {t('common.create', 'Crear')}
           </Button>
         </>
@@ -215,10 +314,21 @@ function CreateModal({ open, onClose, onSave }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-          <input type="checkbox" checked={fromRec} onChange={(e) => setFromRec(e.target.checked)} />
-          {t('goalkeeperMethodology.basedOnRecommended', 'Basada en la recomendada')}
-        </label>
+        <Muted style={{ marginTop: 4 }}>{t('goalkeeperMethodology.howToCreate', '¿Cómo quieres crear la nueva metodología?')}</Muted>
+        <OptionCard $active={mode === 'scratch'} onClick={() => setMode('scratch')}>
+          <OptionDot $active={mode === 'scratch'} />
+          <OptionText>
+            <OptionTitle>{t('goalkeeperMethodology.fromScratch', 'Desde cero')}</OptionTitle>
+            <OptionDesc>{t('goalkeeperMethodology.emptyInfoText', 'Se creará una metodología vacía con los planes base para que la rellenes.')}</OptionDesc>
+          </OptionText>
+        </OptionCard>
+        <OptionCard $active={mode === 'recommended'} onClick={() => setMode('recommended')}>
+          <OptionDot $active={mode === 'recommended'} />
+          <OptionText>
+            <OptionTitle>{t('goalkeeperMethodology.basedOnRecommended', 'Basada en la recomendada')}</OptionTitle>
+            <OptionDesc>{t('goalkeeperMethodology.copyInfoText', 'Se copiará toda la estructura de la metodología recomendada para que puedas editarla.')}</OptionDesc>
+          </OptionText>
+        </OptionCard>
       </Stack>
     </Modal>
   );
@@ -226,6 +336,7 @@ function CreateModal({ open, onClose, onSave }) {
 
 export default function GoalkeeperMethodology() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const userId = useSelector((s) => s.usuario.user?._id);
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -233,6 +344,7 @@ export default function GoalkeeperMethodology() {
   const [expanded, setExpanded] = useState({});
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [planCreating, setPlanCreating] = useState(false);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -291,7 +403,7 @@ export default function GoalkeeperMethodology() {
 
   const handleDelete = async () => {
     if (!isEditable) return;
-    const ok = await confirmAction(t('goalkeeperMethodology.confirmDelete', '¿Eliminar metodología?'));
+    const ok = await confirmAction(t('goalkeeperMethodology.confirmDeleteMethodology', '¿Eliminar metodología?'));
     if (!ok) return;
     try {
       await deleteGkMethodology(selectedId);
@@ -308,6 +420,27 @@ export default function GoalkeeperMethodology() {
     plans[planKey][dayIndex] = day;
     await persist(plans);
     setEditTarget(null);
+  };
+
+  const handleAddPlan = async (days) => {
+    if (!isEditable) return;
+    const planKey = `${days}_days`;
+    const m = list.find((x) => x._id === selectedId);
+    if (!m) return;
+    const plans = JSON.parse(JSON.stringify(m.plans || {}));
+    if (plans[planKey]) {
+      toast.error(t('methodology.planAlreadyExists', 'El plan ya existe'));
+      return;
+    }
+    plans[planKey] = Array.from({ length: days }, (_, i) => ({
+      day_label: '',
+      day_number: i + 1,
+      main_objective: '',
+      practical_content: '',
+      intensity: '',
+    }));
+    await persist(plans);
+    setPlanCreating(false);
   };
 
   const handleAddDay = async (planKey) => {
@@ -358,6 +491,21 @@ export default function GoalkeeperMethodology() {
         {isEditable && <Chip onClick={handleDelete} style={{ color: '#ef4444', borderColor: '#ef4444' }}><MdDelete /> {t('common.delete', 'Eliminar')}</Chip>}
       </SelectorRow>
 
+      {Object.entries(current.plans || {}).length === 0 && isEditable && (
+        <div style={{ textAlign: 'center', padding: '40px 20px', borderRadius: 12, border: '2px dashed ' + (theme?.colors?.border || '#e2e8f0'), background: theme?.colors?.backgroundAlt || '#f8fafc' }}>
+          <MdAdd size={32} style={{ color: theme?.colors?.textMuted || '#94a3b8', marginBottom: 12 }} />
+          <p style={{ margin: 0, fontWeight: 600, fontSize: 16, color: theme?.colors?.text || '#1e293b' }}>
+            {t('goalkeeperMethodology.noPlans', 'Aún no hay planes de entrenamiento')}
+          </p>
+          <p style={{ margin: '6px 0 16px', fontSize: 13, color: theme?.colors?.textMuted || '#64748b' }}>
+            {t('goalkeeperMethodology.addPlanHint', 'Crea un plan con los días de entrenamiento por semana')}
+          </p>
+          <Button onClick={() => setPlanCreating(true)}>
+            <MdAdd /> {t('goalkeeperMethodology.addTrainingPlan', 'Añadir plan de entrenamiento')}
+          </Button>
+        </div>
+      )}
+
       {Object.entries(current.plans || {}).map(([planKey, days]) => {
         const isOpen = expanded[planKey] !== false;
         return (
@@ -402,7 +550,14 @@ export default function GoalkeeperMethodology() {
         );
       })}
 
+      {isEditable && Object.entries(current.plans || {}).length > 0 && (
+        <Button $variant="secondary" onClick={() => setPlanCreating(true)} style={{ alignSelf: 'flex-start' }}>
+          <MdAdd /> {t('goalkeeperMethodology.addTrainingPlan', 'Añadir plan de entrenamiento')}
+        </Button>
+      )}
+
       <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+      <AddPlanModal open={planCreating} onClose={() => setPlanCreating(false)} onSave={handleAddPlan} />
       <EditDayModal
         open={!!editTarget}
         onClose={() => setEditTarget(null)}

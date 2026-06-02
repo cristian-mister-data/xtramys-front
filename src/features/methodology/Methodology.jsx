@@ -421,7 +421,20 @@ function EditDayModal({ open, onClose, day, onSave }) {
 function AddPlanModal({ open, onClose, onSave }) {
   const { t } = useTranslation();
   const [days, setDays] = useState(2);
-  useEffect(() => { if (open) setDays(2); }, [open]);
+  const [daysStr, setDaysStr] = useState('2');
+  useEffect(() => { if (open) { setDays(2); setDaysStr('2'); } }, [open]);
+  const handleSave = () => {
+    const n = parseInt(daysStr, 10);
+    if (isNaN(n) || n < 1) {
+      toast?.error?.(t('common.daysRequired', 'Mínimo 1 día')) || alert(t('common.daysRequired', 'Mínimo 1 día'));
+      return;
+    }
+    if (n > 7) {
+      toast?.error?.(t('common.maxDays', 'Máximo 7 días')) || alert(t('common.maxDays', 'Máximo 7 días'));
+      return;
+    }
+    onSave(`${Math.min(n, 7)}_days_week`);
+  };
   return (
     <Modal
       open={open}
@@ -431,7 +444,7 @@ function AddPlanModal({ open, onClose, onSave }) {
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
-          <Button onClick={() => onSave(`${days}_days_week`)}>{t('common.add', 'Añadir')}</Button>
+          <Button onClick={handleSave}>{t('common.add', 'Añadir')}</Button>
         </>
       }
     >
@@ -441,8 +454,15 @@ function AddPlanModal({ open, onClose, onSave }) {
           type="number"
           min={1}
           max={7}
-          value={days}
-          onChange={(e) => setDays(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
+          value={daysStr}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === '' || /^\d+$/.test(v)) {
+              const num = parseInt(v, 10);
+              if (!isNaN(num) && num > 7) return;
+              setDaysStr(v);
+            }
+          }}
         />
       </Stack>
     </Modal>

@@ -2564,7 +2564,7 @@ function SettingsPanel({
             {/* Header */}
             <View style={styles.proModalHeader}>
               <View style={styles.proModalHeaderIcon}>
-                <Text style={{ fontSize: 14 }}>⚙️</Text>
+                <Ionicons name="settings-outline" size={16} color="#64748b" />
               </View>
               <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                 {t('tacticalBoard.settings.title')}
@@ -2575,7 +2575,7 @@ function SettingsPanel({
             </View>
 
             <KeyboardAwareScrollView contentContainerStyle={styles.proModalBody} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
-              {/* Tama�o de �conos */}
+              {/* Tamaño de íconos */}
               <View style={styles.proModalSection}>
                 <Text style={styles.proModalSectionTitle}>{t('tacticalBoard.settings.iconSizeLabel')}</Text>
                 <TextInput
@@ -2584,14 +2584,13 @@ function SettingsPanel({
                   autoComplete="off"
                   value={size}
                   onChangeText={setSize}
-                  placeholder={`M�nimo ${MIN_SIZE}`}
+                  placeholder={t('tacticalBoard.settings.minSizeHint', { min: MIN_SIZE })}
                   placeholderTextColor="#999"
                 />
                 <Text style={styles.proModalHint}>
-                  Tama�o m�nimo: {MIN_SIZE} p�xeles
+                  {t('tacticalBoard.settings.minSizeHint', { min: MIN_SIZE })}
                 </Text>
               </View>
-
               {/* Switch n�meros */}
               <View style={styles.proModalSwitch}>
                 <Text style={styles.proModalSwitchLabel}>
@@ -9096,6 +9095,7 @@ export default function Field(props = {}) {
   const {
     initialElements = [],
     initialFieldType = 'full',
+    initialConfig = {},
     fieldImages = [],
     isStrategyMode = false, // Nueva prop para modo estrategia
     sandbox = false, // Modo sandbox: solo para crear videos, no guarda estrategias ni ejercicios
@@ -10401,25 +10401,29 @@ export default function Field(props = {}) {
   // Estado real de clones
   const [actualClones, setActualClones] = useState(
     (initialElements ?? []).map(clone => {
+      const normalizedClone = { ...clone };
+      if (normalizedClone.type === 'player' && normalizedClone.playersWithNumber === undefined) {
+        normalizedClone.playersWithNumber = initialConfig?.playersWithNumber ?? true;
+      }
       if (
-        typeof clone.xRatio === 'number' &&
-        typeof clone.yRatio === 'number'
+        typeof normalizedClone.xRatio === 'number' &&
+        typeof normalizedClone.yRatio === 'number'
       ) {
-        return { ...clone };
+        return normalizedClone;
       } else if (
-        typeof clone.x === 'number' &&
-        typeof clone.y === 'number'
+        typeof normalizedClone.x === 'number' &&
+        typeof normalizedClone.y === 'number'
       ) {
         const initAspect = getAspectForView(viewMode);
         const initW = REFERENCE_WIDTH;
         const initH = REFERENCE_WIDTH * initAspect;
         return {
-          ...clone,
-          xRatio: clone.x / initW,
-          yRatio: clone.y / initH
+          ...normalizedClone,
+          xRatio: normalizedClone.x / initW,
+          yRatio: normalizedClone.y / initH
         };
       } else {
-        return { ...clone };
+        return normalizedClone;
       }
     })
   );
@@ -10668,10 +10672,18 @@ export default function Field(props = {}) {
   const [leftPanelVisible, setLeftPanelVisible] = useState(false);
   const [editingIcon, setEditingIcon] = useState(null);
   const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
-  const [playersWithNumber, setPlayersWithNumber] = useState(true);
+  const [playersWithNumber, setPlayersWithNumber] = useState(initialConfig?.playersWithNumber ?? true);
   const [arrowThickness, setArrowThickness] = useState(2);
   const [textEditPanel, setTextEditPanel] = useState({ visible: false, icon: null, isNew: false });
   const [debugPanelVisible, setDebugPanelVisible] = useState(false);
+
+  // Sync playersWithNumber from initialConfig when route params change
+  useEffect(() => {
+    const configVal = initialConfig?.playersWithNumber;
+    if (configVal === false || configVal === true) {
+      setPlayersWithNumber(configVal);
+    }
+  }, [initialConfig?.playersWithNumber]);
 
   // Inicializar availablePlayers con todos los jugadores no seleccionados
   useEffect(() => {
@@ -11474,7 +11486,7 @@ export default function Field(props = {}) {
         const imageBase64 = await captureViewShotBase64(canvasRef);
 
         if (saveCallback) {
-          saveCallback(clones, selectedField, imageBase64);
+          saveCallback(clones, selectedField, imageBase64, { playersWithNumber });
         }
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);

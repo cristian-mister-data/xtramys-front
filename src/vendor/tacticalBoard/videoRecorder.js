@@ -1216,7 +1216,7 @@ export default function VideoRecorder({
 
         const frame = allFrames[i];
 
-        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, showPhotos, viewMode });
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, playersWithNumber, showPhotos, viewMode });
 
         const frameCapture = await new Promise((resolve, reject) => {
           canvas.toBlob((blob) => {

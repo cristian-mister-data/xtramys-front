@@ -48,6 +48,8 @@ export function getNavSections(t) {
           keywords: ['pizarra', 'tactica', 'tactical', 'board', 'campo', 'jugadas'] },
         { to: '/exercises', label: t('menu.exercises', 'Ejercicios'), Icon: MdFitnessCenter,
           keywords: ['ejercicios', 'exercises', 'rondos', 'drill'] },
+        { to: '/strength-exercises', label: t('menu.strengthExercises', 'Ejercicios de Fuerza'), Icon: MdFitnessCenter,
+          keywords: ['fuerza', 'strength', 'entrenamiento', 'coadyuvante', 'musculacion'] },
         { to: '/strategies', label: t('menu.strategies', 'Estrategias'), Icon: MdOutlineAssignment,
           keywords: ['estrategias', 'strategies', 'aboc', 'jugadas'] },
         { to: '/my-videos', label: t('menu.myVideos', 'Mis Videos'), Icon: MdVideoLibrary,

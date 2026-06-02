@@ -1,9 +1,109 @@
-// PDF de Análisis del Rival - Port 1:1 desde misterdata (móvil) para que el
-// documento generado en web sea idéntico al de iOS/Android.
-// Ver: misterdata/src/components/pages/rivalAnalysis/rivalAnalysisList.js
-//      -> generateRivalAnalysisPDFHTML
 import { normalizeFormation } from './rivalAnalysisData';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+
+const PAGE = {
+  height: 1123,
+  paddingY: 113,
+  header: 68,
+  footer: 32,
+  get available() { return this.height - this.paddingY - this.header - this.footer; },
+};
+
+const H = {
+  questionRow: 36,
+  questionBase: 18,
+  questionLine: 12,
+  sectionHeader: 29,
+  sectionMargin: 16,
+  playerHeader: 22,
+  playerGridGap: 8,
+  playerItemRow: 40,
+  obsPad: 22,
+  obsLine: 14.25,
+  formationBadge: 27,
+};
+
+function lineCount(text, charsPerLine = 120) {
+  if (!text) return 0;
+  const lines = text.split('\n');
+  let total = 0;
+  for (const line of lines) {
+    total += Math.max(1, Math.ceil((line.length || 1) / charsPerLine));
+  }
+  return total;
+}
+
+function splitTextByLines(text, maxLines, charsPerLine = 95) {
+  const source = String(text || '').trim();
+  if (!source) return { first: '', second: '' };
+  const words = source.split(/\s+/);
+  let usedLines = 0;
+  let take = 0;
+
+  for (let i = 0; i < words.length; i++) {
+    const wordLines = lineCount(words[i], charsPerLine);
+    if (usedLines + wordLines > maxLines && take > 0) break;
+    usedLines += Math.max(1, wordLines);
+    take = i + 1;
+    if (usedLines >= maxLines) break;
+  }
+
+  return {
+    first: words.slice(0, take).join(' '),
+    second: words.slice(take).join(' '),
+  };
+}
+
+function distributeBlocks(blocks) {
+  const pages = [];
+  let page = [];
+  let used = 0;
+  const queue = blocks.filter(b => b && b.html);
+
+  while (queue.length > 0) {
+    const block = queue.shift();
+
+    if (used + block.height <= PAGE.available) {
+      page.push({ html: block.html, height: 0 });
+      used += block.height;
+      continue;
+    }
+
+    const canSplit = block.splittable && block.split && block.minHeight != null;
+    const fitsAlone = block.height <= PAGE.available;
+    const emptyPage = page.length === 0;
+
+    if (!fitsAlone && canSplit) {
+      const space = emptyPage ? PAGE.available : PAGE.available - used;
+      if (emptyPage || space >= block.minHeight) {
+        const { first, second } = block.split(space);
+        if (first) {
+          page.push({ html: first.html, height: 0 });
+          used = PAGE.available;
+        }
+        pages.push(page);
+        page = [];
+        used = 0;
+        if (second) queue.unshift(second);
+        continue;
+      }
+    }
+
+    if (emptyPage) {
+      page.push({ html: block.html, height: 0 });
+      used += block.height;
+      continue;
+    }
+
+    pages.push(page);
+    page = [];
+    used = 0;
+    queue.unshift(block);
+  }
+
+  if (page.length > 0) pages.push(page);
+  return pages;
+}
 
 function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTemplates = []) {
   const translateValue = (value) => {
@@ -58,209 +158,398 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
     return translateValue(answer) || answer;
   };
 
-  const renderQuestionAnswer = (questionLabel, answer, isTranslated = false) => {
-    const displayValue = answer && String(answer).trim() !== ''
-      ? (isTranslated ? translateValue(answer) : answer)
+  const renderQuestionRow = (label, value, isTranslated = false) => {
+    const displayValue = value && String(value).trim() !== ''
+      ? (isTranslated ? translateValue(value) : value)
       : t('rivalAnalysis.pdf.noInfo');
-    const hasValue = answer && String(answer).trim() !== '';
-    return `
-      <div class="question-row">
-        <div class="question-label">${questionLabel}</div>
-        <div class="question-value ${!hasValue ? 'no-value' : ''}">${displayValue}</div>
-      </div>
-    `;
-  };
+    const hasValue = value && String(value).trim() !== '';
 
-  const renderPlayersSection = (players, title) => {
-    if (!players || players.length === 0) return '';
-    return `
-      <div class="players-section">
-        <h4>${title} (${players.length})</h4>
-        <div class="players-list">
-${players.map(player => `
-            <div class="player-item">
-              <span class="player-name">${getPlayerFullName(player) || t('player.player')}</span>
-              ${player.observacion ? `<span class="player-note">${player.observacion}</span>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  };
+    const makeBlock = (remainingValue, cont) => {
+      const valueText = String(remainingValue || '');
+      const labelLines = cont ? 0 : lineCount(label, 52);
+      const valueLines = lineCount(valueText, cont ? 112 : 72);
+      const rowLines = Math.max(1, labelLines, valueLines);
+      const height = Math.max(H.questionRow, H.questionBase + rowLines * H.questionLine);
+      const minLines = Math.max(1, cont ? 1 : labelLines);
+      const minHeight = Math.max(H.questionRow, H.questionBase + minLines * H.questionLine);
 
-  const renderOrphanedCustomAnswersPDF = (coveredKeys = []) => {
-    const customAnswers = rivalAnalysis.customAnswers;
-    if (!customAnswers || typeof customAnswers !== 'object') return '';
-    return Object.entries(customAnswers)
-      .filter(([key]) => !coveredKeys.includes(key))
-      .map(([, value]) => {
-        if (value?.videoId) {
-          return `
+      return {
+        html: cont
+          ? `
+            <div class="question-continuation ${!hasValue ? 'no-value' : ''}">${valueText}</div>
+          `
+          : `
             <div class="question-row">
-              <div class="question-label">${t('rivalAnalysis.actions.video')}</div>
-              <div class="question-value">
-                <span class="formation-badge-inline" style="background: #f1f5f9; border-color: #cbd5e1; color: #334155;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
-              </div>
+              <div class="question-label">${label}</div>
+              <div class="question-value ${!hasValue ? 'no-value' : ''}">${valueText}</div>
             </div>
-          `;
-        }
-        if (value?.imageBase64) {
-          return `
-            <div class="section">
-              <div class="section-header">
-                <div class="section-title">${t('rivalAnalysis.actions.graphic')}</div>
-              </div>
-              <div style="text-align: center; margin: 8px 0;">
-                <img src="${value.imageBase64}" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #e2e8f0;" />
-              </div>
-            </div>
-          `;
-        }
-        return '';
-      }).join('');
+          `,
+        height,
+        minHeight,
+        splittable: hasValue && valueLines > 1,
+        split: (remaining) => {
+          const availableLines = Math.max(1, Math.floor((remaining - H.questionBase) / H.questionLine));
+          const { first, second } = splitTextByLines(valueText, availableLines, cont ? 112 : 72);
+          if (!first) return { first: null, second: null };
+          return {
+            first: makeBlock(first, cont),
+            second: second ? makeBlock(second, true) : null,
+          };
+        },
+      };
+    };
+
+    return makeBlock(displayValue, false);
   };
 
-  const renderDynamicQuestions = () => {
-    if (!templateQuestions.length) {
-      return `
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q1'), rivalAnalysis.ladoDebilSalidaBalon, true)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q2'), rivalAnalysis.generanPeligroPorDonde, true)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q3'), rivalAnalysis.combinativoDirecto, true)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q4'), rivalAnalysis.pressingAltura, true)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q5'), rivalAnalysis.pressingPuntas)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q6'), rivalAnalysis.pressingSaltanLineas)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q7'), rivalAnalysis.ortjDefendiendo)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q10'), rivalAnalysis.zonaSaquePortero)}
-        ${renderQuestionAnswer(t('rivalAnalysis.questions.q11'), rivalAnalysis.cambioSistemaDerrota)}
-        ${renderOrphanedCustomAnswersPDF([])}
-      `;
-    }
+  const makePlayerGrid = (players) => players.map(p => `
+    <div class="player-item">
+      <span class="player-name">${getPlayerFullName(p) || t('player.player')}</span>
+      ${p.observacion ? `<span class="player-note">${p.observacion}</span>` : ''}
+    </div>
+  `).join('');
 
-    const coveredKeys = templateQuestions.map(q => q.id);
-    const questionsHtml = templateQuestions.map(question => {
-      const answer = getAnswerValue(question);
-      const questionText = getQuestionText(question);
+  const buildPlayerBlock = (players, sectionTitle, totalCount) => {
+    const perRow = 2;
 
-      if (question.type === 'players') {
-        if (!answer || answer.length === 0) return '';
-        const iconColor = question.iconColor || '#3b82f6';
-        return `
-          <div class="players-section">
-            <h4>${questionText} (${answer.length})</h4>
-            <div class="players-list">
-${answer.map(player => `
-                <div class="player-item" style="border-left-color: #475569;">
-                  <span class="player-name">${getPlayerFullName(player) || t('player.player')}</span>
-                  ${player.observacion ? `<span class="player-note">${player.observacion}</span>` : ''}
-                </div>
-              `).join('')}
+    const makeBlock = (slice, cont) => {
+      if (!slice || slice.length === 0) return null;
+      const rows = Math.ceil(slice.length / perRow);
+      const gridH = 4 + rows * (H.playerItemRow + H.playerGridGap);
+
+      if (cont) {
+        return {
+          html: `
+            <div class="players-section continuation">
+              <div class="players-list">
+                ${makePlayerGrid(slice)}
+              </div>
             </div>
-          </div>
-        `;
+          `,
+          height: gridH,
+          minHeight: 4 + H.playerItemRow + H.playerGridGap,
+          splittable: true,
+          split: (remaining) => {
+            const rowH = H.playerItemRow + H.playerGridGap;
+            const availRows = Math.max(1, Math.floor((remaining - 4) / rowH));
+            const take = availRows * perRow;
+            const firstSlice = slice.slice(0, take);
+            const rest = slice.slice(take);
+            if (firstSlice.length === 0) return { first: null, second: null };
+            return {
+              first: makeBlock(firstSlice, true),
+              second: rest.length > 0 ? makeBlock(rest, true) : null,
+            };
+          },
+        };
       }
 
-      if (question.type === 'text' && question.id === 'observaciones') {
-        if (!answer) return '';
-        return `
+      return {
+        html: `
+          <div class="players-section">
+            <h4>${sectionTitle} (${totalCount})</h4>
+            <div class="players-list">
+              ${makePlayerGrid(slice)}
+            </div>
+          </div>
+        `,
+        height: 26 + rows * (H.playerItemRow + H.playerGridGap),
+        minHeight: 26 + H.playerItemRow + H.playerGridGap,
+        splittable: true,
+        split: (remaining) => {
+          const rowH = H.playerItemRow + H.playerGridGap;
+          const availRows = Math.max(1, Math.floor((remaining - 26) / rowH));
+          const take = availRows * perRow;
+          const firstSlice = slice.slice(0, take);
+          const rest = slice.slice(take);
+          if (firstSlice.length === 0) return { first: null, second: null };
+          return {
+            first: makeBlock(firstSlice, false),
+            second: rest.length > 0 ? makeBlock(rest, true) : null,
+          };
+        },
+      };
+    };
+
+    return makeBlock(players, false);
+  };
+
+  const buildObservationBlock = (text, questionText) => {
+    const makeBlock = (remainingText, cont) => {
+      if (!remainingText) return null;
+      const lines = lineCount(remainingText);
+      const textH = H.obsPad + lines * H.obsLine;
+
+      if (cont) {
+        return {
+          html: `
+            <div class="observations-box continuation">
+              <div class="observations-text">${remainingText}</div>
+            </div>
+          `,
+          height: textH,
+          minHeight: H.obsPad + H.obsLine,
+          splittable: true,
+          split: (remaining) => {
+            const lineH = H.obsLine;
+            const availLines = Math.max(1, Math.floor((remaining - H.obsPad) / lineH));
+            const words = remainingText.split(' ');
+            let splitIdx = 0;
+            let lineCountAcc = 0;
+            for (let i = 0; i < words.length; i++) {
+              const wl = lineCount(words[i]);
+              if (lineCountAcc + wl > availLines) break;
+              lineCountAcc += wl;
+              splitIdx = i;
+            }
+            const firstText = words.slice(0, splitIdx + 1).join(' ');
+            const secondText = words.slice(splitIdx + 1).join(' ');
+            if (!firstText) return { first: null, second: null };
+            return {
+              first: makeBlock(firstText, true),
+              second: secondText ? makeBlock(secondText, true) : null,
+            };
+          },
+        };
+      }
+
+      return {
+        html: `
           <div class="section">
             <div class="section-header">
               <div class="section-title">${questionText}</div>
             </div>
             <div class="observations-box">
-              <div class="observations-text">${answer}</div>
+              <div class="observations-text">${remainingText}</div>
             </div>
           </div>
-        `;
+        `,
+        height: H.sectionHeader + H.sectionMargin + textH,
+        minHeight: H.sectionHeader + H.sectionMargin + H.obsPad + H.obsLine,
+        splittable: true,
+        split: (remaining) => {
+          const lineH = H.obsLine;
+          const availLines = Math.max(1, Math.floor((remaining - H.sectionHeader - H.sectionMargin - H.obsPad) / lineH));
+          const words = remainingText.split(' ');
+          let splitIdx = 0;
+          let lineCountAcc = 0;
+          for (let i = 0; i < words.length; i++) {
+            const wl = lineCount(words[i]);
+            if (lineCountAcc + wl > availLines) break;
+            lineCountAcc += wl;
+            splitIdx = i;
+          }
+          const firstText = words.slice(0, splitIdx + 1).join(' ');
+          const secondText = words.slice(splitIdx + 1).join(' ');
+          if (!firstText) return { first: null, second: null };
+          return {
+            first: makeBlock(firstText, false),
+            second: secondText ? makeBlock(secondText, true) : null,
+          };
+        },
+      };
+    };
+
+    return makeBlock(text, false);
+  };
+
+  const renderGraphicBlock = (imageBase64, title) => ({
+    html: `
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">${title}</div>
+        </div>
+        <div class="graphic-container">
+          <img src="${imageBase64}" class="graphic-img" />
+        </div>
+      </div>
+    `,
+    height: H.sectionHeader + H.sectionMargin + 300,
+  });
+
+  const renderVideoBlock = (title) => ({
+    html: `
+      <div class="question-row">
+        <div class="question-label">${title}</div>
+        <div class="question-value">
+          <span class="formation-badge-inline" style="background: #f1f5f9; border-color: #cbd5e1; color: #334155;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
+        </div>
+      </div>
+    `,
+    height: H.questionRow,
+  });
+
+  const contentBlocks = [];
+
+  if (rivalAnalysis.alineacion) {
+    contentBlocks.push({
+      html: `
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">${t('matchSheet.fields.rivalFormation')}</div>
+          </div>
+          <div style="margin-top: 4px;">
+            <span class="formation-badge">${normalizeFormation(rivalAnalysis.alineacion)}</span>
+          </div>
+        </div>
+      `,
+      height: H.sectionHeader + H.sectionMargin + H.formationBadge + 4,
+    });
+  }
+
+  if (!templateQuestions.length) {
+    const legacyQuestions = [
+      { label: t('rivalAnalysis.questions.q1'), value: rivalAnalysis.ladoDebilSalidaBalon, translated: true },
+      { label: t('rivalAnalysis.questions.q2'), value: rivalAnalysis.generanPeligroPorDonde, translated: true },
+      { label: t('rivalAnalysis.questions.q3'), value: rivalAnalysis.combinativoDirecto, translated: true },
+      { label: t('rivalAnalysis.questions.q4'), value: rivalAnalysis.pressingAltura, translated: true },
+      { label: t('rivalAnalysis.questions.q5'), value: rivalAnalysis.pressingPuntas },
+      { label: t('rivalAnalysis.questions.q6'), value: rivalAnalysis.pressingSaltanLineas },
+      { label: t('rivalAnalysis.questions.q7'), value: rivalAnalysis.ortjDefendiendo },
+      { label: t('rivalAnalysis.questions.q10'), value: rivalAnalysis.zonaSaquePortero },
+      { label: t('rivalAnalysis.questions.q11'), value: rivalAnalysis.cambioSistemaDerrota },
+    ];
+    for (const q of legacyQuestions) {
+      contentBlocks.push(renderQuestionRow(q.label, q.value, q.translated));
+    }
+
+    const customAnswers = rivalAnalysis.customAnswers;
+    if (customAnswers && typeof customAnswers === 'object') {
+      for (const [, value] of Object.entries(customAnswers)) {
+        if (value?.videoId) contentBlocks.push(renderVideoBlock(t('rivalAnalysis.actions.video')));
+        if (value?.imageBase64) contentBlocks.push(renderGraphicBlock(value.imageBase64, t('rivalAnalysis.actions.graphic')));
+      }
+    }
+
+    const d = rivalAnalysis.jugadoresDestacados;
+    if (d && d.length > 0) {
+      contentBlocks.push(buildPlayerBlock(d, t('rivalAnalysis.pdf.keyPlayers'), d.length));
+    }
+    const w = rivalAnalysis.jugadoresDebiles;
+    if (w && w.length > 0) {
+      contentBlocks.push(buildPlayerBlock(w, t('rivalAnalysis.pdf.weakPlayers'), w.length));
+    }
+  } else {
+    const coveredKeys = templateQuestions.map(q => q.id);
+
+    for (const question of templateQuestions) {
+      const answer = getAnswerValue(question);
+      const questionText = getQuestionText(question);
+
+      if (question.type === 'players') {
+        if (!answer || answer.length === 0) continue;
+        contentBlocks.push(buildPlayerBlock(answer, questionText, answer.length));
+        continue;
       }
 
-      if (question.type === 'formation') {
-        const displayValue = answer ? normalizeFormation(answer) : t('rivalAnalysis.pdf.noInfo');
-        const hasValue = !!answer;
-        return `
-          <div class="question-row">
-            <div class="question-label">${questionText}</div>
-            <div class="question-value ${!hasValue ? 'no-value' : ''}">
-              ${hasValue ? `<span class="formation-badge-inline">${displayValue}</span>` : displayValue}
-            </div>
-          </div>
-        `;
+      if (question.type === 'text' && question.id === 'observaciones') {
+        if (!answer) continue;
+        contentBlocks.push(buildObservationBlock(answer, questionText));
+        continue;
       }
 
       if (question.type === 'graphic') {
         let graphicAnswer = answer;
         if (!graphicAnswer?.imageBase64 && rivalAnalysis.customAnswers) {
-          const graphicEntry = Object.entries(rivalAnalysis.customAnswers).find(
-            ([key, v]) => v?.imageBase64 && !coveredKeys.includes(key)
+          const entry = Object.entries(rivalAnalysis.customAnswers).find(
+            ([k, v]) => v?.imageBase64 && !coveredKeys.includes(k)
           );
-          if (graphicEntry) {
-            graphicAnswer = graphicEntry[1];
-            coveredKeys.push(graphicEntry[0]);
+          if (entry) {
+            graphicAnswer = entry[1];
+            coveredKeys.push(entry[0]);
           }
         }
-        if (!graphicAnswer?.imageBase64) return '';
-        return `
-          <div class="section">
-            <div class="section-header">
-              <div class="section-title">${questionText}</div>
-            </div>
-            <div style="text-align: center; margin: 8px 0;">
-              <img src="${graphicAnswer.imageBase64}" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #e2e8f0;" />
-            </div>
-          </div>
-        `;
+        if (!graphicAnswer?.imageBase64) continue;
+        contentBlocks.push(renderGraphicBlock(graphicAnswer.imageBase64, questionText));
+        continue;
       }
 
       if (question.type === 'video') {
         let videoAnswer = answer;
         if (!videoAnswer?.videoId && rivalAnalysis.customAnswers) {
-          const videoEntry = Object.entries(rivalAnalysis.customAnswers).find(
-            ([key, v]) => v?.videoId && !coveredKeys.includes(key)
+          const entry = Object.entries(rivalAnalysis.customAnswers).find(
+            ([k, v]) => v?.videoId && !coveredKeys.includes(k)
           );
-          if (videoEntry) {
-            videoAnswer = videoEntry[1];
-            coveredKeys.push(videoEntry[0]);
+          if (entry) {
+            videoAnswer = entry[1];
+            coveredKeys.push(entry[0]);
           }
         }
-        if (!videoAnswer?.videoId) return '';
-        return `
-          <div class="question-row">
-            <div class="question-label">${questionText}</div>
-            <div class="question-value">
-              <span class="formation-badge-inline" style="background: #f1f5f9; border-color: #cbd5e1; color: #334155;">📹 ${t('rivalAnalysis.actions.videoSaved')}</span>
+        if (!videoAnswer?.videoId) continue;
+        contentBlocks.push(renderVideoBlock(questionText));
+        continue;
+      }
+
+      if (question.type === 'formation') {
+        const displayValue = answer ? normalizeFormation(answer) : t('rivalAnalysis.pdf.noInfo');
+        const hasValue = !!answer;
+        contentBlocks.push({
+          html: `
+            <div class="question-row">
+              <div class="question-label">${questionText}</div>
+              <div class="question-value ${!hasValue ? 'no-value' : ''}">
+                ${hasValue ? `<span class="formation-badge-inline">${displayValue}</span>` : displayValue}
+              </div>
             </div>
-          </div>
-        `;
+          `,
+          height: H.questionRow,
+        });
+        continue;
       }
 
       const displayValue = formatAnswerValue(question, answer);
       const hasValue = answer && String(answer).trim() !== '';
-      return `
-        <div class="question-row">
-          <div class="question-label">${questionText}</div>
-          <div class="question-value ${!hasValue ? 'no-value' : ''}">${displayValue}</div>
-        </div>
-      `;
-    }).join('');
-
-    return questionsHtml + renderOrphanedCustomAnswersPDF(coveredKeys);
-  };
-
-  const renderDynamicPlayersSection = () => {
-    if (!templateQuestions.length) {
-      return `
-        ${renderPlayersSection(rivalAnalysis.jugadoresDestacados, t('rivalAnalysis.pdf.keyPlayers'))}
-        ${renderPlayersSection(rivalAnalysis.jugadoresDebiles, t('rivalAnalysis.pdf.weakPlayers'))}
-      `;
+      contentBlocks.push(renderQuestionRow(questionText, hasValue ? displayValue : ''));
     }
-    return '';
+
+    const customAnswers = rivalAnalysis.customAnswers;
+    if (customAnswers && typeof customAnswers === 'object') {
+      for (const [key, value] of Object.entries(customAnswers)) {
+        if (coveredKeys.includes(key)) continue;
+        if (value?.videoId) contentBlocks.push(renderVideoBlock(t('rivalAnalysis.actions.video')));
+        if (value?.imageBase64) contentBlocks.push(renderGraphicBlock(value.imageBase64, t('rivalAnalysis.actions.graphic')));
+      }
+    }
+  }
+
+  const sectionHeaderBlock = {
+    html: `
+      <div class="section-header">
+        <div class="section-title">${t('rivalAnalysis.pdf.tacticalSection')}</div>
+      </div>
+    `,
+    height: H.sectionHeader,
   };
+
+  const allBlocks = [sectionHeaderBlock, ...contentBlocks];
+  const pages = distributeBlocks(allBlocks);
+
+  const title = `${t('rivalAnalysis.pdf.title')} — ${rivalAnalysis.rival}`;
+  const footerText = t('rivalAnalysis.pdf.generatedBy');
+
+  const pageHtmls = pages.map((pageBlocks, pageIdx) => `
+    <div class="pdf-page">
+      <div class="header">
+        <h1 class="header-title">${title}</h1>
+        ${pages.length > 1 ? `<span class="header-page">${pageIdx + 1}/${pages.length}</span>` : ''}
+      </div>
+
+      <div class="content">
+        ${pageBlocks.map(b => b.html).join('')}
+      </div>
+
+      <div class="footer">
+        ${footerText} Xtramys ${pages.length > 1 ? `— ${pageIdx + 1}/${pages.length}` : ''}
+      </div>
+    </div>
+  `).join('');
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${t('rivalAnalysis.pdf.title')} - ${rivalAnalysis.rival}</title>
+      <title>${title}</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
         :root {
@@ -285,7 +574,7 @@ ${answer.map(player => `
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-        
+
         .pdf-page {
           width: 210mm;
           height: 297mm;
@@ -294,14 +583,13 @@ ${answer.map(player => `
           position: relative;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
           background: var(--bg-main);
           page-break-after: always;
         }
         .pdf-page:last-child {
           page-break-after: avoid;
         }
-        
+
         .header {
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
           border-radius: 12px;
@@ -312,6 +600,7 @@ ${answer.map(player => `
           justify-content: space-between;
           align-items: center;
           box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+          flex-shrink: 0;
         }
         .header-title {
           font-family: 'Outfit', sans-serif;
@@ -320,8 +609,18 @@ ${answer.map(player => `
           letter-spacing: 0.5px;
           text-transform: uppercase;
         }
-        
-        .section { margin-bottom: 16px; page-break-inside: avoid; }
+        .header-page {
+          font-family: 'Outfit', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          opacity: 0.8;
+        }
+
+        .content {
+          flex: 1;
+        }
+
+        .section { margin-bottom: 16px; }
         .section-header {
           display: flex;
           align-items: center;
@@ -338,7 +637,7 @@ ${answer.map(player => `
           text-transform: uppercase;
           letter-spacing: 0.8px;
         }
-        
+
         .question-row {
           display: flex;
           align-items: center;
@@ -354,19 +653,40 @@ ${answer.map(player => `
           font-weight: 600;
           color: var(--text-main);
           font-size: 9px;
+          flex: 1;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
         .question-value {
           font-weight: 700;
           color: var(--primary);
           text-align: right;
           font-size: 9px;
+          flex-shrink: 0;
+          max-width: 60%;
+          margin-left: 12px;
+          overflow-wrap: anywhere;
         }
-        .question-value.no-value {
+        .question-value.no-value,
+        .question-continuation.no-value {
           color: var(--text-muted);
           font-style: italic;
           font-weight: 400;
         }
-        
+        .question-continuation {
+          padding: 8px 12px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          margin-bottom: 6px;
+          font-weight: 700;
+          color: var(--primary);
+          font-size: 9px;
+          line-height: 1.5;
+          overflow-wrap: anywhere;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+        }
+
         .formation-badge {
           display: inline-block;
           font-family: 'Outfit', sans-serif;
@@ -389,8 +709,8 @@ ${answer.map(player => `
           border-radius: 4px;
           border: 1px solid #bfdbfe;
         }
-        
-        .players-section { margin-top: 12px; page-break-inside: avoid; }
+
+        .players-section { margin-top: 12px; }
         .players-section h4 {
           font-family: 'Outfit', sans-serif;
           font-size: 9.5px;
@@ -425,7 +745,7 @@ ${answer.map(player => `
           color: var(--text-muted);
           margin-top: 2px;
         }
-        
+
         .observations-box {
           margin-top: 6px;
           padding: 10px 12px;
@@ -438,8 +758,20 @@ ${answer.map(player => `
           font-size: 9.5px;
           line-height: 1.5;
           color: var(--text-main);
+          white-space: pre-wrap;
         }
-        
+
+        .graphic-container {
+          text-align: center;
+          margin: 8px 0;
+        }
+        .graphic-img {
+          max-width: 100%;
+          max-height: 350px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+        }
+
         .footer {
           margin-top: auto;
           padding-top: 10px;
@@ -449,41 +781,12 @@ ${answer.map(player => `
           font-size: 8px;
           font-family: 'Inter', sans-serif;
           font-weight: 500;
+          flex-shrink: 0;
         }
       </style>
     </head>
     <body>
-      <div class="pdf-page">
-        <div class="header">
-          <h1 class="header-title">${t('rivalAnalysis.pdf.title')} — ${rivalAnalysis.rival}</h1>
-        </div>
-
-        ${rivalAnalysis.alineacion ? `
-          <div class="section">
-            <div class="section-header">
-              <div class="section-title">${t('matchSheet.fields.rivalFormation')}</div>
-            </div>
-            <div style="margin-top: 4px;">
-              <span class="formation-badge">${normalizeFormation(rivalAnalysis.alineacion)}</span>
-            </div>
-          </div>
-        ` : ''}
-
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">${t('rivalAnalysis.pdf.tacticalSection')}</div>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            ${renderDynamicQuestions()}
-          </div>
-        </div>
-
-        ${renderDynamicPlayersSection()}
-
-        <div class="footer">
-          ${t('rivalAnalysis.pdf.generatedBy')} Xtramys
-        </div>
-      </div>
+      ${pageHtmls}
     </body>
     </html>
   `;
@@ -498,4 +801,3 @@ export async function generateRivalAnalysisPdf(rivalAnalysis, template, t, selec
   const { uri } = await Print.printToFileAsync({ html });
   await savePdfToDownloads(uri, `rival-analysis-${rivalAnalysis.rival || 'report'}`);
 }
-

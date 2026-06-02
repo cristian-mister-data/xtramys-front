@@ -18,6 +18,9 @@
     "navigation": {
         "goBack": "Atrás"
     },
+    "settings": {
+        "settingsSaved": "Configuración guardada"
+    },
     "register": {
         "requiredFields": "Rellena los campos obligatorios",
         "language": "Idioma",
@@ -89,6 +92,7 @@
         "home": "Inicio",
         "season": "Temporada",
         "exercises": "Ejercicios",
+        "strengthExercises": "Ejercicios de Fuerza",
         "training": "Entrenamientos",
         "wellness": "Wellness",
         "injuries": "Lesiones",
@@ -157,6 +161,7 @@
         "myVideos": "Clasifica clips, duplica plantillas y enlaza videos con ejercicios o estrategias.",
         "tournaments": "Gestiona competiciones, estados y seguimiento del calendario competitivo.",
         "exercises": "Organiza ejercicios, carpetas y recursos para el trabajo diario.",
+        "strengthExercises": "Catálogo de ejercicios de entrenamiento coadyuvante.",
         "strategies": "Centraliza jugadas, carpetas tácticas y materiales del modelo de juego.",
         "goalkeeperMethodology": "Planifica microciclos y tareas específicas para porteros.",
         "anthropometry": "Controla mediciones corporales, filtros por jugador y evolución física.",
@@ -1221,7 +1226,10 @@
         "year": "Año",
         "ok": "OK",
         "none": "Ninguno",
-        "open": "Abrir"
+        "open": "Abrir",
+        "confirmDelete": "¿Eliminar?",
+        "daysRequired": "Mínimo 1 día",
+        "maxDays": "Máximo 7 días"
     },
     "rivals": {
         "title": "Rivales",
@@ -1838,6 +1846,8 @@
             "backgroundColorLabel": "Color de fondo:",
             "noBackground": "Sin fondo",
             "sizeLabel": "Tamaño:",
+            "widthLabel": "Ancho:",
+            "heightLabel": "Alto:",
             "sizePlaceholder": "Tamaño",
             "apply": "Aplicar",
             "close": "Cerrar"
@@ -1887,6 +1897,8 @@
             "textBackgroundLabel": "Color de fondo del texto:",
             "noBackground": "Sin fondo",
             "sizeLabel": "Tamaño:",
+            "widthLabel": "Ancho:",
+            "heightLabel": "Alto:",
             "sizePlaceholder": "Tamaño",
             "strokeLabel": "Grosor:",
             "strokePlaceholder": "Grosor",
@@ -2928,7 +2940,7 @@
             "add": "Añadir jugador"
         },
         "detail": {
-            "deleteConfirm": "Eliminar el análisis de",
+            "deleteConfirm": "¿Estás seguro de que deseas eliminar este análisis de {{name}}?",
             "deleteSuccess": "Análisis eliminado",
             "noQuestions": "Sin información disponible"
         },

@@ -56,11 +56,18 @@ export default function CreateStrategyForm({
   // En web el componente puede remontarse después de volver del editor de campo.
   // Inicializamos imagen/fieldElements/fieldType desde FIELD_RESULT si existe,
   // para sobrevivir a remounts (ver bug fix análogo en createExerciseForm.js).
+  const __pendingFormDraft = (() => {
+    try {
+      return loadFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, { remove: false });
+    } catch {}
+    return null;
+  })();
   const __pendingFieldResult = (() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
       const editingId = editingStrategy?._id || editingStrategy?.id || null;
-      if (fr && (fr.editingId || null) === editingId && fr.kind === 'strategy') return fr;
+      const draftMatches = __pendingFormDraft && (__pendingFormDraft.editingId || null) === editingId && __pendingFormDraft.kind === 'strategy';
+      if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === 'strategy') return fr;
     } catch {}
     return null;
   })();
@@ -80,6 +87,11 @@ export default function CreateStrategyForm({
     __pendingFieldResult && typeof __pendingFieldResult.fieldType === 'string'
       ? __pendingFieldResult.fieldType
       : (editingStrategy ? editingStrategy.tipoCampo || '' : '')
+  );
+  const [pizarraConfig, setPizarraConfig] = useState(
+    __pendingFieldResult && __pendingFieldResult.pizarraConfig
+      ? __pendingFieldResult.pizarraConfig
+      : (editingStrategy ? editingStrategy.pizarraConfig || null : null)
   );
 
   // Estados para videos pendientes de asociar (para nuevas estrategias)
@@ -190,7 +202,7 @@ export default function CreateStrategyForm({
     const draft = loadFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'strategy';
-    const resultMatches = fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'strategy';
+    const resultMatches = draftMatches && fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'strategy';
 
     if (draftMatches) {
       if (typeof draft.name === 'string') setName(draft.name);
@@ -203,6 +215,7 @@ export default function CreateStrategyForm({
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
+      if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
     }
@@ -210,6 +223,7 @@ export default function CreateStrategyForm({
     if (resultMatches) {
       if (Array.isArray(fieldResult.fieldElements)) setFieldElements(fieldResult.fieldElements);
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
+      if (fieldResult.pizarraConfig) setPizarraConfig(fieldResult.pizarraConfig);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
       if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
@@ -236,13 +250,13 @@ export default function CreateStrategyForm({
       editingId,
       name, description, objective, folderId,
       nameEn, descriptionEn, objectiveEn, isGlobal,
-      fieldElements, fieldType, imagen,
+      fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
     global.fieldCallbacks = {
-      onSave: (updatedElements, updatedFieldType, imageBase64) => {
+      onSave: (updatedElements, updatedFieldType, imageBase64, updatedConfig) => {
         // Importante: en web este callback corre cuando esta pantalla está
         // desmontada, así que llamar a setState aquí no surte efecto. Lo
         // persistimos en sessionStorage y el efecto de montaje lo aplica al
@@ -253,12 +267,14 @@ export default function CreateStrategyForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          pizarraConfig: updatedConfig,
           pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
         try {
           setFieldElements(updatedElements);
           setFieldType(updatedFieldType);
           setImagen(imageBase64);
+          if (updatedConfig) setPizarraConfig(updatedConfig);
           setLoadingField(false);
         } catch {}
         global.fieldCallbacks = null;
@@ -277,7 +293,7 @@ export default function CreateStrategyForm({
             editingId,
             name, description, objective, folderId,
             nameEn, descriptionEn, objectiveEn, isGlobal,
-            fieldElements, fieldType, imagen,
+            fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
           });
         }
@@ -285,9 +301,12 @@ export default function CreateStrategyForm({
       }
     };
 
+    const safeConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
       initialFieldType: fieldType || 'full',
+      initialConfig: safeConfig,
       isEditing: true,
       fieldImages: [],
       isStrategyMode: true, // Nueva prop para indicar modo estrategia
@@ -328,6 +347,7 @@ export default function CreateStrategyForm({
         imagen: imagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
+        pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
@@ -427,7 +447,7 @@ export default function CreateStrategyForm({
             ) : stableFieldElements && stableFieldElements.length > 0 ? (
               <>
                 <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
-                <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} />
+                <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
                 <TouchableOpacity style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} onPress={handleOpenField}>
                     <Ionicons name="pencil-outline" size={18} color={onWarningColor} style={{ marginRight: 8 }} />
                     <Text style={[styles.saveButtonText, { color: onWarningColor }]}>{t('strategy.editGraphic')}</Text>
@@ -615,6 +635,7 @@ const makeStyles = (theme) => StyleSheet.create({
   graphicSection: {
     alignItems: "center",
     marginVertical: 16,
+    width: '100%',
   },
   addButton: {
     backgroundColor: theme?.colors?.surfaceAlt || '#111827',
@@ -628,6 +649,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
   },
   addButtonText: {
     color: theme?.colors?.primary || '#3b82f6',

@@ -125,15 +125,14 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const handlePlayVideo = async (video) => {
     setSelectedVideo(video);
     setShowVideoModal(true);
+    setVideoUrl(null);
     setIsGenerating(true);
-    
+
     try {
-      // Obtener la imagen del campo basada en fieldType
       const field = getFieldById(video.fieldType);
       let fieldImageData = null;
-      
+
       if (field && field.image) {
-        // Convertir la imagen a base64
         try {
           const asset = field.image;
           const assetUri = normalizeImageSource(asset, { cacheBust: false });
@@ -151,11 +150,15 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
           console.warn('Error cargando imagen del campo:', err);
         }
       }
-      
-      // Regenerar el video con la imagen del campo
+
       const result = await regenerateVideoWithField(video._id, fieldImageData);
-      
+
       if (result.success && result.videoId) {
+        const streamUrl = Platform.OS === 'web'
+          ? await resolvePlayableVideoUrl(result.videoId)
+          : getVideoStreamUrl(result.videoId);
+        setVideoUrl(streamUrl);
+      } else if (result?.videoId) {
         const streamUrl = Platform.OS === 'web'
           ? await resolvePlayableVideoUrl(result.videoId)
           : getVideoStreamUrl(result.videoId);
@@ -4197,7 +4200,8 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
   },
   videoLoadingContainer: {
-    height: 300,
+    minHeight: 200,
+    aspectRatio: 16 / 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4208,12 +4212,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   videoPlayerContainer: {
     width: '100%',
-    aspectRatio: 1.7778,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#000',
   },
   videoPlayer: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 16 / 9,
   },
   videoModalActions: {
     flexDirection: 'row',

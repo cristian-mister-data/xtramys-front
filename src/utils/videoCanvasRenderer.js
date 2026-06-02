@@ -98,7 +98,10 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     }
 
     const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
-    if (displayText !== undefined && elem.playersWithNumber !== false) {
+    const showNumbers = elem.playersWithNumber !== undefined
+      ? elem.playersWithNumber
+      : (options.playersWithNumber !== undefined ? options.playersWithNumber : true);
+    if (displayText !== undefined && showNumbers !== false) {
       const isLabel = elem.displayLabel !== undefined;
       const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
       ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px sans-serif`;

@@ -47,6 +47,7 @@ const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
+const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 
 const RouteFallback = () => (
   <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }} />
@@ -126,6 +127,7 @@ export default function AppRouter() {
         <Route path="/players" element={lazy_(<Players />)} />
         <Route path="/players/:id" element={lazy_(<PlayerProfile />)} />
         <Route path="/exercises/*" element={lazy_(<Exercises />)} />
+        <Route path="/strength-exercises" element={lazy_(<StrengthExercises />)} />
         <Route path="/strategies/*" element={lazy_(<Strategies />)} />
         <Route path="/training" element={lazy_(<Training />)} />
         <Route path="/my-videos" element={lazy_(<MyVideos />)} />

@@ -286,7 +286,18 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
     const result = response.data;
     if (result.status === 'processing' && result.jobId) {
       const done = await pollJobUntilDone(result.jobId, { signal: controller.signal });
-      return { success: true, videoId: done.videoId };
+      if (done?.status === 'completed' && done.videoId) {
+        return { success: true, videoId: done.videoId, _polled: true };
+      }
+      return { success: false, videoId: result.videoId || done?.videoId };
+    }
+    if (result.status === 'completed' && result.videoId) {
+      await new Promise(res => setTimeout(res, 500));
+      return { success: true, videoId: result.videoId };
+    }
+    if (result.success && result.videoId) {
+      await new Promise(res => setTimeout(res, 500));
+      return { success: true, videoId: result.videoId };
     }
     return result;
   } catch (error) {

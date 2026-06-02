@@ -82,7 +82,7 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
-    return maybeObjectUrl(getVideoStreamUrl(videoId), options);
+    return resolveWithRetry(getVideoStreamUrl(videoId), options);
   }
   if (knownUrl) return maybeObjectUrl(knownUrl, options);
   if (!videoId) return '';
@@ -90,14 +90,30 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   const metadata = await getVideoById(videoId).catch(() => null);
   const directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
   if (directUrl) return maybeObjectUrl(directUrl, options);
-  if (metadata?.video?.hasStoredVideo) return maybeObjectUrl(getVideoStreamUrl(videoId), options);
+  if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), options);
 
   const result = await regenerateVideoWithField(videoId, null);
   if (result?.success && result?.videoId) {
-    return maybeObjectUrl(getVideoStreamUrl(result.videoId), options);
+    return resolveWithRetry(getVideoStreamUrl(result.videoId), options);
   }
 
   return maybeObjectUrl(getVideoStreamUrl(videoId), options);
+}
+
+async function resolveWithRetry(url, options, attempts = 3, delayMs = 1000) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const result = await maybeObjectUrl(url, options);
+      return result;
+    } catch (err) {
+      const is404 = err?.message?.includes('404') || err?.message?.includes('No se pudo cargar');
+      if (i < attempts - 1 && is404) {
+        await new Promise(res => setTimeout(res, delayMs * (i + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 export async function triggerVideoDownload(url, filenameBase = 'video') {
@@ -160,6 +176,26 @@ export async function downloadResolvedVideo(videoOrId, filenameBase = 'video') {
 
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
     url = getVideoStreamUrl(videoId);
+    try {
+      const blob = await fetchVideoBlob(url);
+      await triggerVideoDownload(URL.createObjectURL(blob), filenameBase);
+      return url;
+    } catch {
+      if (videoId.startsWith('preview_')) {
+        await new Promise(res => setTimeout(res, 2000));
+        try {
+          const blob2 = await fetchVideoBlob(url);
+          await triggerVideoDownload(URL.createObjectURL(blob2), filenameBase);
+          return url;
+        } catch {
+          await new Promise(res => setTimeout(res, 3000));
+          const blob3 = await fetchVideoBlob(url);
+          await triggerVideoDownload(URL.createObjectURL(blob3), filenameBase);
+          return url;
+        }
+      }
+      throw new Error('No se pudo descargar el vídeo');
+    }
   }
 
   if (!url && videoId) {

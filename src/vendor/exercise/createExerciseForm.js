@@ -70,11 +70,18 @@ export default function CreateExerciseForm({
   // En web el componente puede remontarse después de volver del editor de campo.
   // Para sobrevivir remounts, inicializamos imagen/fieldElements/fieldType
   // leyendo primero el FIELD_RESULT persistido (si coincide con el ejercicio editado).
+  const __pendingFormDraft = (() => {
+    try {
+      return loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
+    } catch {}
+    return null;
+  })();
   const __pendingFieldResult = (() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
       const editingId = editingExercise?._id || editingExercise?.id || null;
-      if (fr && (fr.editingId || null) === editingId && fr.kind === 'exercise') return fr;
+      const draftMatches = __pendingFormDraft && (__pendingFormDraft.editingId || null) === editingId && __pendingFormDraft.kind === 'exercise';
+      if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === 'exercise') return fr;
     } catch {}
     return null;
   })();
@@ -94,6 +101,11 @@ export default function CreateExerciseForm({
     __pendingFieldResult && typeof __pendingFieldResult.fieldType === 'string'
       ? __pendingFieldResult.fieldType
       : (editingExercise ? editingExercise.tipoCampo || '' : '')
+  );
+  const [pizarraConfig, setPizarraConfig] = useState(
+    __pendingFieldResult && __pendingFieldResult.pizarraConfig
+      ? __pendingFieldResult.pizarraConfig
+      : (editingExercise ? editingExercise.pizarraConfig || null : null)
   );
 
   // Estados para videos pendientes de asociar (para nuevos ejercicios)
@@ -197,7 +209,7 @@ export default function CreateExerciseForm({
     const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'exercise';
-    const resultMatches = fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'exercise';
+    const resultMatches = draftMatches && fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'exercise';
 
     if (draftMatches) {
       if (typeof draft.name === 'string') setName(draft.name);
@@ -214,6 +226,7 @@ export default function CreateExerciseForm({
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
+      if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
     }
@@ -221,6 +234,7 @@ export default function CreateExerciseForm({
     if (resultMatches) {
       if (Array.isArray(fieldResult.fieldElements)) setFieldElements(fieldResult.fieldElements);
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
+      if (fieldResult.pizarraConfig) setPizarraConfig(fieldResult.pizarraConfig);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
       if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
@@ -244,13 +258,13 @@ export default function CreateExerciseForm({
       editingId,
       name, duration, description, objective, dimensions, folderId,
       playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
-      fieldElements, fieldType, imagen,
+      fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
     global.fieldCallbacks = {
-      onSave: (updatedElements, updatedFieldType, imageBase64) => {
+      onSave: (updatedElements, updatedFieldType, imageBase64, updatedConfig) => {
         // En web esta pantalla está desmontada cuando esto se ejecuta;
         // persistimos el resultado y el efecto de montaje lo aplica.
         saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
@@ -259,12 +273,14 @@ export default function CreateExerciseForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          pizarraConfig: updatedConfig,
           pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
         try {
           setFieldElements(updatedElements);
           setFieldType(updatedFieldType);
           setImagen(imageBase64);
+          if (updatedConfig) setPizarraConfig(updatedConfig);
           setLoadingField(false);
         } catch {}
         global.fieldCallbacks = null;
@@ -283,7 +299,7 @@ export default function CreateExerciseForm({
             editingId,
             name, duration, description, objective, dimensions, folderId,
             playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
-            fieldElements, fieldType, imagen,
+            fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
           });
         }
@@ -291,9 +307,12 @@ export default function CreateExerciseForm({
       }
     };
     
+    const safeConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
       initialFieldType: fieldType || 'full',
+      initialConfig: safeConfig,
       isEditing: true,
       fieldImages: [],
       // Forzar sandbox=false: la página /tactical-board standalone usa
@@ -340,6 +359,7 @@ export default function CreateExerciseForm({
         imagen: imagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
+        pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
         // Traducciones para ejercicios globales
         translations: (isAdmin && isGlobal)
@@ -505,7 +525,7 @@ export default function CreateExerciseForm({
             ) : (fieldElements && fieldElements.length > 0) || imagen ? (
               <>
                 <Text style={styles.subTitle}>{t('exercise.graphicSaved')}</Text>
-                <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} />
+                <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
                 <TouchableOpacity 
                     style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} 
                     onPress={handleOpenField}
@@ -732,6 +752,7 @@ const makeStyles = (theme) => StyleSheet.create({
   graphicSection: {
     alignItems: "center",
     marginVertical: 16,
+    width: '100%',
   },
   addButton: {
     backgroundColor: theme?.colors?.surfaceAlt || '#111827',
@@ -745,6 +766,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
   },
   addButtonText: {
     color: theme?.colors?.primary || '#3b82f6',

@@ -89,6 +89,7 @@
         "home": "Home",
         "season": "Season",
         "exercises": "Exercises",
+        "strengthExercises": "Strength Exercises",
         "training": "Trainings",
         "wellness": "Wellness",
         "injuries": "Injuries",
@@ -157,6 +158,7 @@
         "myVideos": "Organize clips, duplicate templates, and link videos to exercises or strategies.",
         "tournaments": "Manage competitions, statuses, and competitive calendar tracking.",
         "exercises": "Organize exercises, folders, and resources for daily work.",
+        "strengthExercises": "Catalog of strength and conditioning exercises.",
         "strategies": "Centralize plays, tactical folders, and materials for the game model.",
         "goalkeeperMethodology": "Plan microcycles and specific tasks for goalkeepers.",
         "anthropometry": "Control body measurements, player filters, and physical evolution.",
@@ -1221,7 +1223,10 @@
         "year": "Year",
         "ok": "OK",
         "none": "None",
-        "open": "Open"
+        "open": "Open",
+        "confirmDelete": "Delete?",
+        "daysRequired": "Minimum 1 day",
+        "maxDays": "Maximum 7 days"
     },
     "rivals": {
         "title": "Rivals",
@@ -1854,6 +1859,8 @@
             "unnamedPlayer3": "Unnamed player 3:",
             "teamPlayers": "Team players:",
             "saving": "Saving...",
+            "widthLabel": "Width:",
+            "heightLabel": "Height:",
             "save": "Save",
             "apply": "Apply",
             "close": "Close",
@@ -2918,7 +2925,7 @@
             "add": "Add player"
         },
         "detail": {
-            "deleteConfirm": "Delete the analysis of",
+            "deleteConfirm": "Do you want to delete the analysis of {{name}}?",
             "deleteSuccess": "Analysis deleted",
             "noQuestions": "No information available"
         },

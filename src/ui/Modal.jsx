@@ -153,6 +153,8 @@ const Footer = styled.div`
 export default function Modal({ open, onClose, title, children, footer, width }) {
   const contentRef = useRef(null);
   const previouslyFocused = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -160,8 +162,7 @@ export default function Modal({ open, onClose, title, children, footer, width })
     previouslyFocused.current = document.activeElement;
 
     const onKey = (e) => {
-      if (e.key === 'Escape' && onClose) onClose();
-      // Focus trap
+      if (e.key === 'Escape' && onCloseRef.current) onCloseRef.current();
       if (e.key === 'Tab' && contentRef.current) {
         const focusables = contentRef.current.querySelectorAll(
           'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -209,12 +210,11 @@ export default function Modal({ open, onClose, title, children, footer, width })
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
-      // Restaurar foco al disparador
       if (previouslyFocused.current && previouslyFocused.current.focus) {
         previouslyFocused.current.focus();
       }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

@@ -421,10 +421,12 @@ export default function FolderPickerModal({
                     </View>
                     <View style={styles.folderRowContent}>
                       <Text style={styles.folderRowName}>{folder.nombre}</Text>
-                      <Text style={styles.folderRowMeta}>
-                        {folder.exerciseCount || folder.strategyCount || folder.videoCount || 0} {t('folders.items') || 'elementos'}
-                        {folder.subfolderCount > 0 && ` · ${folder.subfolderCount} ${t('folders.subfolders') || 'subcarpetas'}`}
-                      </Text>
+                      {(folder.exerciseCount != null || folder.strategyCount != null || folder.videoCount != null || folder.count != null) && (
+                        <Text style={styles.folderRowMeta}>
+                          {folder.exerciseCount ?? folder.strategyCount ?? folder.videoCount ?? folder.count ?? 0} {t('folders.items') || 'elementos'}
+                          {folder.subfolderCount > 0 && ` · ${folder.subfolderCount} ${t('folders.subfolders') || 'subcarpetas'}`}
+                        </Text>
+                      )}
                     </View>
                     {isSelected && (
                       <Feather name="check-circle" size={20} color={accentColor} />

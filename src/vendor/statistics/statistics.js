@@ -726,7 +726,8 @@ export default function Statistics({ navigation: navigationProp }) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>${t('statistics.weeklyAttendance.pdfTitle')}</title>
                 <style>
-                    /* Reset y configuración de página */
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+                    
                     * {
                         margin: 0;
                         padding: 0;
@@ -735,53 +736,58 @@ export default function Statistics({ navigation: navigationProp }) {
                     
                     @page {
                         size: A4;
-                        margin: 15mm 10mm 20mm 10mm;
-                    }
-                    
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                        font-size: 12px;
-                        line-height: 1.4;
-                        color: #1e293b;
-                        background: #ffffff;
-                        padding: 0;
                         margin: 0;
                     }
                     
-                    .pdf-wrapper {
-                        border-left: 8px solid #1a237e;
-                        border-right: 8px solid #1a237e;
-                        padding: 0 24px;
-                        min-height: 100%;
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        font-size: 10.5px;
+                        line-height: 1.5;
+                        color: #1a1a2e;
+                        background: #ffffff;
+                        padding: 0;
+                        margin: 0;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    
+                    .page-wrapper {
+                        padding: 18mm 16mm 22mm 16mm;
+                        min-height: 100vh;
+                        position: relative;
                     }
                     
                     /* Header del documento */
                     .pdf-header {
-                        background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+                        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
                         color: white;
-                        padding: 20px 24px;
-                        border-radius: 12px;
-                        margin-bottom: 20px;
+                        padding: 24px 28px;
+                        border-radius: 10px;
+                        margin-bottom: 24px;
                         page-break-inside: avoid;
+                        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
                     }
                     
                     .pdf-header h1 {
                         font-size: 22px;
-                        font-weight: 700;
-                        margin-bottom: 8px;
+                        font-weight: 800;
+                        margin-bottom: 10px;
+                        letter-spacing: -0.3px;
+                        line-height: 1.2;
                     }
                     
                     .pdf-header p {
-                        font-size: 12px;
-                        opacity: 0.9;
-                        margin: 2px 0;
+                        font-size: 11px;
+                        opacity: 0.85;
+                        margin: 3px 0;
+                        font-weight: 500;
                     }
                     
                     .pdf-header .header-stats {
                         display: flex;
-                        gap: 20px;
-                        margin-top: 12px;
-                        padding-top: 12px;
+                        gap: 24px;
+                        margin-top: 16px;
+                        padding-top: 14px;
                         border-top: 1px solid rgba(255,255,255,0.2);
                     }
                     
@@ -790,22 +796,26 @@ export default function Statistics({ navigation: navigationProp }) {
                     }
                     
                     .pdf-header .stat-value {
-                        font-size: 20px;
-                        font-weight: 700;
+                        font-size: 22px;
+                        font-weight: 800;
+                        letter-spacing: -0.3px;
                     }
                     
                     .pdf-header .stat-label {
-                        font-size: 10px;
+                        font-size: 9px;
                         opacity: 0.8;
                         text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        font-weight: 600;
+                        margin-top: 2px;
                     }
                     
                     /* Contenedor de la tabla */
                     .table-container {
                         background: #ffffff;
-                        border-radius: 12px;
+                        border-radius: 10px;
                         overflow: hidden;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
                         border: 1px solid #e2e8f0;
                     }
                     
@@ -813,7 +823,7 @@ export default function Statistics({ navigation: navigationProp }) {
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        font-size: 11px;
+                        font-size: 10px;
                     }
                     
                     thead {
@@ -821,23 +831,17 @@ export default function Statistics({ navigation: navigationProp }) {
                     }
                     
                     thead th {
-                        background: #1a237e;
+                        background: #0f172a;
                         color: white;
-                        padding: 12px 10px;
+                        padding: 11px 12px;
                         text-align: left;
-                        font-weight: 600;
-                        font-size: 10px;
+                        font-weight: 700;
+                        font-size: 9.5px;
                         text-transform: uppercase;
                         letter-spacing: 0.5px;
-                        border-bottom: 2px solid #3949ab;
-                    }
-                    
-                    thead th:first-child {
-                        border-top-left-radius: 8px;
-                    }
-                    
-                    thead th:last-child {
-                        border-top-right-radius: 8px;
+                        border: none;
+                        border-bottom: 2px solid #1e293b;
+                        line-height: 1.3;
                     }
                     
                     tbody tr {
@@ -845,24 +849,31 @@ export default function Statistics({ navigation: navigationProp }) {
                     }
                     
                     tbody td {
-                        padding: 10px;
-                        border-bottom: 1px solid #e2e8f0;
+                        padding: 10px 12px;
+                        border: none;
+                        border-bottom: 1px solid #f1f5f9;
                         vertical-align: middle;
+                        line-height: 1.4;
+                        font-size: 10px;
                     }
                     
-                    tbody tr:nth-child(even) {
+                    tbody tr:nth-child(even) td {
                         background: #f8fafc;
                     }
                     
-                    /* Primera fila de nueva página */
+                    tbody tr:last-child td {
+                        border-bottom: none;
+                    }
+                    
+                    /* Primera fila de nueva pagina */
                     tbody tr.first-of-page td {
-                        border-top: 3px solid #1a237e;
+                        border-top: 2.5px solid #0f172a;
                         padding-top: 12px;
                     }
                     
-                    /* Última fila antes de salto de página */
+                    /* Ultima fila antes de salto de pagina */
                     tbody tr.last-of-page td {
-                        border-bottom: 3px solid #1a237e;
+                        border-bottom: 2.5px solid #0f172a;
                         padding-bottom: 12px;
                     }
                     
@@ -870,67 +881,78 @@ export default function Statistics({ navigation: navigationProp }) {
                         page-break-after: always;
                     }
                     
-                    /* Última fila de la tabla */
-                    tbody tr.last-row td {
-                        border-bottom: none;
-                    }
-                    
-                    tbody tr.last-row td:first-child {
-                        border-bottom-left-radius: 8px;
-                    }
-                    
-                    tbody tr.last-row td:last-child {
-                        border-bottom-right-radius: 8px;
-                    }
-                    
                     /* Estilos de porcentajes */
                     .percentage-high { 
-                        color: #10b981; 
-                        font-weight: 600; 
+                        color: #15803d; 
+                        font-weight: 800; 
                     }
                     
                     .percentage-medium { 
-                        color: #f59e0b; 
-                        font-weight: 600; 
+                        color: #b45309; 
+                        font-weight: 800; 
                     }
                     
                     .percentage-low { 
-                        color: #ef4444; 
-                        font-weight: 600; 
+                        color: #b91c1c; 
+                        font-weight: 800; 
                     }
                     
                     /* Badges */
                     .missed-days-badge {
-                        font-size: 10px;
-                        color: #ef4444;
+                        font-size: 9px;
+                        color: #b91c1c;
                         background: #fef2f2;
                         padding: 4px 8px;
-                        border-radius: 6px;
+                        border-radius: 5px;
                         display: inline-block;
+                        font-weight: 600;
                     }
                     
                     .no-missed-badge {
-                        font-size: 10px;
-                        color: #10b981;
+                        font-size: 9px;
+                        color: #15803d;
                         background: #f0fdf4;
                         padding: 4px 8px;
-                        border-radius: 6px;
+                        border-radius: 5px;
                         display: inline-block;
+                        font-weight: 600;
                     }
                     
                     /* Footer */
-                    .pdf-footer {
-                        margin-top: 32px;
-                        padding-top: 20px;
-                        padding-bottom: 20px;
-                        border-top: 1px solid #e2e8f0;
-                        text-align: center;
-                        page-break-inside: avoid;
+                    .footer-logo {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        height: 16mm;
+                        border-top: 1.5px solid #e2e8f0;
+                        padding: 8px 16mm 6px 16mm;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-size: 8.5px;
+                        color: #64748b;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.4px;
+                        background-color: #ffffff;
+                        font-family: 'Inter', sans-serif;
+                    }
+                    
+                    .footer-logo strong {
+                        color: #0f172a;
+                        font-size: 10px;
+                        font-weight: 800;
+                        letter-spacing: 0.3px;
+                    }
+                    
+                    .page-number::after {
+                        content: counter(page);
                     }
                 </style>
             </head>
             <body>
-                <div class="pdf-wrapper">
+                <div class="page-wrapper">
                     <div class="pdf-header">
                         <h1>${t('statistics.weeklyAttendance.pdfTitle')}</h1>
                         <p>${t('statistics.weeklyAttendance.team')}: ${teamName}</p>
@@ -955,10 +977,10 @@ export default function Statistics({ navigation: navigationProp }) {
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 35%;">${t('statistics.weeklyAttendance.player')}</th>
+                                    <th style="width: 30%;">${t('statistics.weeklyAttendance.player')}</th>
                                     <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.attended')}</th>
                                     <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.percentage')}</th>
-                                    <th style="width: 35%;">${t('statistics.weeklyAttendance.missedDays')}</th>
+                                    <th style="width: 40%;">${t('statistics.weeklyAttendance.missedDays')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -966,11 +988,11 @@ export default function Statistics({ navigation: navigationProp }) {
                             </tbody>
                         </table>
                     </div>
-                    
-                    <div class="pdf-footer">
-                        <div style="font-weight: 700; color: #1a237e; font-size: 14px; margin-bottom: 6px; letter-spacing: 0.5px;">Xtramys</div>
-                        <div style="color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">${t('statistics.weeklyAttendance.generatedAt', 'Generado')} - ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
+                </div>
+                
+                <div class="footer-logo">
+                    <div><strong>Xtramys</strong> | ${t('statistics.weeklyAttendance.pdfTitle')}</div>
+                    <div>${t('statistics.weeklyAttendance.generatedAt', 'Generado')}: ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} | Pagina <span class="page-number"></span></div>
                 </div>
             </body>
             </html>
@@ -998,19 +1020,25 @@ export default function Statistics({ navigation: navigationProp }) {
         
         @page {
             size: A4;
-            margin: 15mm 12mm 20mm 12mm;
+            margin: 0;
         }
         
         body {
-            font-family: 'Inter', Roboto, "Helvetica Neue", Arial, sans-serif;
-            color: #0f172a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1a1a2e;
             background-color: #ffffff;
-            font-size: 12px;
-            line-height: 1.55;
+            font-size: 10.5px;
+            line-height: 1.5;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             margin: 0;
-            padding: 10mm 12mm 18mm 12mm;
+            padding: 0;
+        }
+
+        .page-wrapper {
+            padding: 18mm 16mm 22mm 16mm;
+            min-height: 100vh;
+            position: relative;
         }
 
         .page {
@@ -1031,49 +1059,50 @@ export default function Statistics({ navigation: navigationProp }) {
             page-break-before: always;
             break-before: always;
             clear: both;
+            margin-top: 20px;
         }
         
         /* Main Header Banner */
         .header-container {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
             color: white;
-            border-radius: 8px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin-bottom: 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             page-break-inside: avoid;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
         }
         
         .header-left h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 800;
             color: #ffffff;
-            margin: 0 0 6px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
         }
         
         .header-left p {
             font-size: 11px;
-            color: #cbd5e1;
+            color: #94a3b8;
             margin: 0;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.3px;
         }
         
         .header-right {
             text-align: right;
+            flex-shrink: 0;
         }
         
         .header-right .date {
             font-size: 10px;
             color: #94a3b8;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .section-title, h1, h2, h3, h4, h5, h6 {
@@ -1084,22 +1113,23 @@ export default function Statistics({ navigation: navigationProp }) {
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 800;
             color: #0f172a;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             letter-spacing: -0.2px;
-            border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 8px;
+            padding-bottom: 10px;
+            border-bottom: 2.5px solid #e2e8f0;
             text-transform: uppercase;
+            line-height: 1.3;
         }
         
         /* Grid Layouts */
         .grid-2 {
             display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 18px;
+            margin-bottom: 18px;
             page-break-inside: avoid;
         }
         
@@ -1107,8 +1137,8 @@ export default function Statistics({ navigation: navigationProp }) {
         
         .grid-3 {
             display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 14px;
+            margin-bottom: 18px;
             page-break-inside: avoid;
         }
         
@@ -1117,7 +1147,7 @@ export default function Statistics({ navigation: navigationProp }) {
         .grid-4 {
             display: flex;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             page-break-inside: avoid;
         }
         
@@ -1126,32 +1156,33 @@ export default function Statistics({ navigation: navigationProp }) {
         /* Cards */
         .card {
             background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 18px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             page-break-inside: avoid;
         }
         
         .card-primary {
-            background: #0f172a;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #ffffff;
             border: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
         }
         
         /* Metric Items */
         .metric-box {
             text-align: center;
-            padding: 10px 0;
+            padding: 8px 0;
             page-break-inside: avoid;
         }
         
         .metric-val {
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 800;
             color: #0f172a;
             line-height: 1.1;
+            letter-spacing: -0.5px;
         }
         
         .card-primary .metric-val {
@@ -1159,12 +1190,13 @@ export default function Statistics({ navigation: navigationProp }) {
         }
         
         .metric-lbl {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 700;
-            color: #475569;
+            color: #64748b;
             text-transform: uppercase;
             margin-top: 6px;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
+            line-height: 1.3;
         }
         
         .card-primary .metric-lbl {
@@ -1175,11 +1207,14 @@ export default function Statistics({ navigation: navigationProp }) {
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 12px;
+            margin-top: 14px;
             margin-bottom: 24px;
             background-color: #ffffff;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
             page-break-inside: auto;
+            font-size: 10px;
         }
         
         thead {
@@ -1194,39 +1229,47 @@ export default function Statistics({ navigation: navigationProp }) {
         tbody { display: table-row-group; }
         
         th {
-            background-color: #1e293b;
+            background-color: #0f172a;
             color: #ffffff;
             font-weight: 700;
             text-align: left;
-            padding: 10px 12px;
-            font-size: 11px;
+            padding: 11px 12px;
+            font-size: 9.5px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border: 1px solid #334155;
-            border-bottom: 2px solid #0f172a;
+            letter-spacing: 0.6px;
+            border: none;
+            border-bottom: 2px solid #1e293b;
+            line-height: 1.3;
         }
         
         td {
             padding: 10px 12px;
-            border: 1px solid #cbd5e1;
-            font-size: 11px;
-            color: #0f172a;
+            border: none;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 10px;
+            color: #1a1a2e;
             vertical-align: middle;
+            line-height: 1.4;
         }
         
         tr:nth-child(even) td {
             background-color: #f8fafc;
         }
         
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
         .badge {
             display: inline-block;
-            padding: 4px 8px;
-            font-size: 9px;
+            padding: 3px 8px;
+            font-size: 8.5px;
             font-weight: 700;
             border-radius: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             text-align: center;
+            line-height: 1.4;
         }
         
         .badge-primary { background-color: #e2e8f0; color: #334155; }
@@ -1238,27 +1281,30 @@ export default function Statistics({ navigation: navigationProp }) {
         .bar-list-item {
             display: flex;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             page-break-inside: avoid;
+            gap: 10px;
         }
         
         .bar-list-label {
-            width: 140px;
+            width: 130px;
             font-weight: 600;
-            font-size: 11px;
+            font-size: 10px;
             color: #334155;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            flex-shrink: 0;
         }
         
         .bar-list-track {
             flex: 1;
-            height: 8px;
+            height: 7px;
             background-color: #e2e8f0;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
+            min-width: 0;
         }
         
         .bar-list-fill {
@@ -1267,12 +1313,13 @@ export default function Statistics({ navigation: navigationProp }) {
         }
         
         .bar-list-val {
-            width: 35px;
+            width: 30px;
             text-align: right;
             font-weight: 800;
-            font-size: 11px;
+            font-size: 10px;
             color: #0f172a;
-            margin-left: 10px;
+            margin-left: 8px;
+            flex-shrink: 0;
         }
         
         /* Ring chart representation */
@@ -1284,8 +1331,8 @@ export default function Statistics({ navigation: navigationProp }) {
         }
         
         .ring-outer {
-            width: 90px;
-            height: 90px;
+            width: 85px;
+            height: 85px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -1298,44 +1345,47 @@ export default function Statistics({ navigation: navigationProp }) {
         }
         
         .ring-value {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 800;
             color: #0f172a;
+            letter-spacing: -0.3px;
         }
         
         .ring-label {
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 700;
-            color: #475569;
+            color: #64748b;
             text-transform: uppercase;
             margin-top: 2px;
+            letter-spacing: 0.4px;
         }
         
         /* Footer logo (Fixed on every printed page) */
         .footer-logo {
             position: fixed;
-            bottom: 2mm;
-            left: 12mm;
-            right: 12mm;
-            height: 12mm;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 16mm;
             border-top: 1.5px solid #e2e8f0;
-            padding-top: 6px;
+            padding: 8px 16mm 6px 16mm;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 9px;
+            font-size: 8.5px;
             color: #64748b;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             background-color: #ffffff;
             font-family: 'Inter', sans-serif;
         }
         
         .footer-logo strong {
             color: #0f172a;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
+            letter-spacing: 0.3px;
         }
         
         .page-number::after {
@@ -1345,8 +1395,8 @@ export default function Statistics({ navigation: navigationProp }) {
         /* Icons via text */
         .icon-text {
             display: inline-block;
-            font-size: 12px;
-            margin-right: 4px;
+            font-size: 13px;
+            margin-right: 5px;
             vertical-align: middle;
         }
     `;
@@ -1367,10 +1417,12 @@ export default function Statistics({ navigation: navigationProp }) {
             </style>
         </head>
         <body>
-            ${bodyContent}
+            <div class="page-wrapper">
+                ${bodyContent}
+            </div>
             <div class="footer-logo">
-                <div><strong>Xtramys</strong> | ${t('statistics.premiumReport', 'Informe de Rendimiento Premium')}</div>
-                <div>${generatedLabel}: ${dateStr} | Página <span class="page-number"></span></div>
+                <div><strong>Xtramys</strong> | ${t('statistics.premiumReport', 'Informe de Rendimiento')}</div>
+                <div>${generatedLabel}: ${dateStr} | Pagina <span class="page-number"></span></div>
             </div>
         </body>
         </html>
@@ -1384,14 +1436,14 @@ export default function Statistics({ navigation: navigationProp }) {
         const dateStr = new Date().toLocaleDateString(getLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 
         if (isSubPage) {
-            return `<!-- Sin cabecera en subpáginas para evitar repeticiones -->`;
+            return `<div class="section-title" style="margin-top: 8px;"><span class="icon-text"></span> ${reportTitle}</div>`;
         }
 
         return `
             <div class="header-container">
                 <div class="header-left">
                     <h1>${teamName}</h1>
-                    <p>${reportTitle} - ${t('statistics.season')} ${seasonName}</p>
+                    <p>${reportTitle} | ${t('statistics.season')} ${seasonName}</p>
                 </div>
                 <div class="header-right">
                     <div class="date">${generatedLabel}: ${dateStr}</div>
@@ -1413,13 +1465,13 @@ export default function Statistics({ navigation: navigationProp }) {
                     <div class="bar-list-item">
                         <div class="bar-list-label">${formation}</div>
                         <div class="bar-list-track">
-                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #3b82f6;"></div>
+                            <div class="bar-list-fill" style="width: ${pct}%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
                         </div>
                         <div class="bar-list-val">${count}</div>
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #475569; font-style: italic;">${t('statistics.noData')}</p>`;
+            : `<p style="color: #64748b; font-style: italic; font-size: 10px;">${t('statistics.noData')}</p>`;
 
         // Rival goal histogram
         let rivalHistogramHTML = '';
@@ -1444,30 +1496,30 @@ export default function Statistics({ navigation: navigationProp }) {
             }).join('');
 
             rivalStatsHTML = `
-                <div class="card" style="margin-top: 0px;">
-                    <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                        <span class="icon-text">🛡️</span> ${t('statistics.team.rivalGoalStats', 'Goles del Rival por Periodos')}
+                <div class="card" style="margin-top: 0;">
+                    <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                        <span class="icon-text"></span> ${t('statistics.team.rivalGoalStats', 'Goles del Rival por Periodos')}
                     </h3>
-                    <div class="grid-3" style="margin-bottom: 12px; gap: 8px;">
-                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
-                            <div class="metric-val" style="font-size: 18px; color: #ef4444;">${stats.team.rivalGoalStats.avgFirstGoal}'</div>
-                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.avgFirstGoalAgainst', 'Min. 1º Gol Contra')}</div>
+                    <div class="grid-3" style="margin-bottom: 14px; gap: 10px;">
+                        <div class="metric-box" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 0;">
+                            <div class="metric-val" style="font-size: 20px; color: #dc2626;">${stats.team.rivalGoalStats.avgFirstGoal}'</div>
+                            <div class="metric-lbl" style="font-size: 8.5px; color: #991b1b;">${t('statistics.team.avgFirstGoalAgainst', 'Min. 1º Gol Contra')}</div>
                         </div>
-                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
-                            <div class="metric-val" style="font-size: 18px; color: #0f172a;">${stats.team.rivalGoalStats.avgPerMatch}</div>
-                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.avgRivalGoalsPerMatch', 'Goles / P')}</div>
+                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 0;">
+                            <div class="metric-val" style="font-size: 20px; color: #0f172a;">${stats.team.rivalGoalStats.avgPerMatch}</div>
+                            <div class="metric-lbl" style="font-size: 8.5px;">${t('statistics.team.avgRivalGoalsPerMatch', 'Goles / P')}</div>
                         </div>
-                        <div class="metric-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 0;">
-                            <div class="metric-val" style="font-size: 18px; color: #d97706;">${stats.team.rivalGoalStats.mostDangerousPeriod}'</div>
-                            <div class="metric-lbl" style="font-size: 9px;">${t('statistics.team.mostCommonRivalGoalMinutes', 'Periodo Crítico')}</div>
+                        <div class="metric-box" style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 0;">
+                            <div class="metric-val" style="font-size: 20px; color: #d97706;">${stats.team.rivalGoalStats.mostDangerousPeriod}'</div>
+                            <div class="metric-lbl" style="font-size: 8.5px; color: #b45309;">${t('statistics.team.mostCommonRivalGoalMinutes', 'Periodo Critico')}</div>
                         </div>
                     </div>
                     ${rivalHistogramHTML}
-                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #475569; margin-top: 10px; font-weight: 700; border-top: 1px solid #cbd5e1; padding-top: 8px;">
-                        <div>${t('statistics.team.firstHalf', '1ª Parte')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.firstHalfGoals}</strong></div>
-                        <div>${t('statistics.team.secondHalf', '2ª Parte')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.secondHalfGoals}</strong></div>
-                        <div>${t('statistics.team.earliestRivalGoal', 'Tempranero')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.earliest}'</strong></div>
-                        <div>${t('statistics.team.latestRivalGoal', 'Tardío')}: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.latest}'</strong></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #64748b; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-weight: 600;">
+                        <div>1ª: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.firstHalfGoals}</strong></div>
+                        <div>2ª: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.secondHalfGoals}</strong></div>
+                        <div>Min: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.earliest}'</strong></div>
+                        <div>Max: <strong style="color: #0f172a;">${stats.team.rivalGoalStats.latest}'</strong></div>
                     </div>
                 </div>
             `;
@@ -1479,78 +1531,78 @@ export default function Statistics({ navigation: navigationProp }) {
             <div class="page">
                 ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.team'), isSubPage)}
                 
-                <div class="section-title"><span class="icon-text">📊</span> ${t('statistics.teamPerformance', 'Rendimiento del Equipo')}</div>
+                <div class="section-title"><span class="icon-text"></span> ${t('statistics.teamPerformance', 'Rendimiento del Equipo')}</div>
                 
                 <div class="grid-2">
-                    <div class="card card-primary" style="display: flex; align-items: center; justify-content: space-around; padding: 20px;">
-                        <div class="ring-container">
-                            <div class="ring-outer" style="background: conic-gradient(#10b981 ${winRate * 3.6}deg, #1e293b 0deg); border: 2px solid #334155;">
-                                <div style="width: 76px; height: 76px; border-radius: 50%; background: #0f172a; display: flex; align-items: center; justify-content: center;">
+                    <div class="card card-primary" style="display: flex; align-items: center; padding: 22px;">
+                        <div class="ring-container" style="flex-shrink: 0;">
+                            <div class="ring-outer" style="background: conic-gradient(#10b981 ${winRate * 3.6}deg, #334155 0deg); border: 2px solid #475569;">
+                                <div style="width: 70px; height: 70px; border-radius: 50%; background: #0f172a; display: flex; align-items: center; justify-content: center;">
                                     <div class="ring-inner">
-                                        <div class="ring-value" style="color: #ffffff; font-size: 18px;">${winRate}%</div>
-                                        <div class="ring-label" style="color: #cbd5e1; font-size: 9px;">${t('statistics.wins')}</div>
+                                        <div class="ring-value" style="color: #ffffff; font-size: 17px;">${winRate}%</div>
+                                        <div class="ring-label" style="color: #94a3b8; font-size: 8px;">${t('statistics.wins')}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div style="flex: 1; padding-left: 24px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
-                                <span style="color: #cbd5e1;">${t('statistics.matchesPlayed', 'Partidos Jugados')}:</span>
-                                <strong style="font-size: 14px; color: #ffffff;">${stats.team.matches}</strong>
+                        <div style="flex: 1; padding-left: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11.5px; padding-bottom: 6px; border-bottom: 1px solid #334155;">
+                                <span style="color: #94a3b8;">${t('statistics.matchesPlayed', 'Partidos Jugados')}</span>
+                                <strong style="font-size: 16px; color: #ffffff;">${stats.team.matches}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                                <span style="color: #34d399; font-weight: 600;">● ${t('statistics.wins', 'Victorias')}:</span>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px;">
+                                <span style="color: #34d399; font-weight: 600;">● ${t('statistics.wins', 'Victorias')}</span>
                                 <strong style="color: #ffffff;">${stats.team.wins}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                                <span style="color: #fbbf24; font-weight: 600;">● ${t('statistics.draws', 'Empates')}:</span>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px;">
+                                <span style="color: #fbbf24; font-weight: 600;">● ${t('statistics.draws', 'Empates')}</span>
                                 <strong style="color: #ffffff;">${stats.team.draws}</strong>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                                <span style="color: #f87171; font-weight: 600;">● ${t('statistics.losses', 'Derrotas')}:</span>
+                            <div style="display: flex; justify-content: space-between; font-size: 11.5px;">
+                                <span style="color: #f87171; font-weight: 600;">● ${t('statistics.losses', 'Derrotas')}</span>
                                 <strong style="color: #ffffff;">${stats.team.losses}</strong>
                             </div>
                         </div>
                     </div>
                     
                     <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
-                            <span class="icon-text">⚽</span> ${t('statistics.goalsBalance', 'Balance de Goles')}
+                        <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.3px; text-transform: uppercase;">
+                            <span class="icon-text"></span> ${t('statistics.goalsBalance', 'Balance de Goles')}
                         </div>
                         <div class="grid-2" style="margin-bottom: 12px;">
-                            <div style="text-align: center; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                                <div style="font-size: 10px; color: #166534; font-weight: 700; text-transform: uppercase;">${t('statistics.goalsFor')}</div>
-                                <div style="font-size: 26px; font-weight: 800; color: #15803d; margin: 4px 0;">${stats.team.goalsFor}</div>
-                                <div style="font-size: 10px; color: #166534; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsFor / stats.team.matches : 0).toFixed(1)} / p</div>
+                            <div style="text-align: center; background: #f0fdf4; padding: 12px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                                <div style="font-size: 9px; color: #166534; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">${t('statistics.goalsFor')}</div>
+                                <div style="font-size: 28px; font-weight: 800; color: #15803d; margin: 4px 0; letter-spacing: -0.5px;">${stats.team.goalsFor}</div>
+                                <div style="font-size: 9px; color: #166534; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsFor / stats.team.matches : 0).toFixed(1)} / p</div>
                             </div>
-                            <div style="text-align: center; background: #fef2f2; padding: 10px; border-radius: 6px; border: 1px solid #fecaca;">
-                                <div style="font-size: 10px; color: #991b1b; font-weight: 700; text-transform: uppercase;">${t('statistics.goalsAgainst')}</div>
-                                <div style="font-size: 26px; font-weight: 800; color: #b91c1c; margin: 4px 0;">${stats.team.goalsAgainst}</div>
-                                <div style="font-size: 10px; color: #991b1b; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsAgainst / stats.team.matches : 0).toFixed(1)} / p</div>
+                            <div style="text-align: center; background: #fef2f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca;">
+                                <div style="font-size: 9px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">${t('statistics.goalsAgainst')}</div>
+                                <div style="font-size: 28px; font-weight: 800; color: #b91c1c; margin: 4px 0; letter-spacing: -0.5px;">${stats.team.goalsAgainst}</div>
+                                <div style="font-size: 9px; color: #991b1b; font-weight: 600;">Avg: ${(stats.team.matches > 0 ? stats.team.goalsAgainst / stats.team.matches : 0).toFixed(1)} / p</div>
                             </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11px; font-weight: 700; color: #334155;">
-                            <div>Diferencia: <strong style="font-size: 13px; color: ${stats.team.goalsFor >= stats.team.goalsAgainst ? '#15803d' : '#b91c1c'};">${stats.team.goalsFor - stats.team.goalsAgainst > 0 ? '+' : ''}${stats.team.goalsFor - stats.team.goalsAgainst}</strong></div>
-                            <div style="width: 1px; height: 14px; background-color: #cbd5e1;"></div>
-                            <div>Porterías a Cero: <strong style="font-size: 13px; color: #2563eb;">${stats.team.cleanSheets}</strong></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 10px; font-weight: 600; color: #475569;">
+                            <div>Dif: <strong style="font-size: 14px; color: ${stats.team.goalsFor >= stats.team.goalsAgainst ? '#15803d' : '#b91c1c'};">${stats.team.goalsFor - stats.team.goalsAgainst > 0 ? '+' : ''}${stats.team.goalsFor - stats.team.goalsAgainst}</strong></div>
+                            <div style="width: 1px; height: 16px; background-color: #e2e8f0;"></div>
+                            <div>Porterias a 0: <strong style="font-size: 14px; color: #2563eb;">${stats.team.cleanSheets}</strong></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="grid-2">
                     <div class="card">
-                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                            <span class="icon-text">📋</span> ${t('statistics.preferredFormation', 'Formaciones Utilizadas')}
+                        <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                            <span class="icon-text"></span> ${t('statistics.preferredFormation', 'Formaciones Utilizadas')}
                         </h3>
-                        <div style="display: flex; gap: 15px; margin-bottom: 16px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <div style="display: flex; gap: 16px; margin-bottom: 16px; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
                             <div>
-                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Más Usada</span>
-                                <strong style="font-size: 16px; color: #2563eb;">${stats.team.mostUsedFormation || '-'}</strong>
+                                <span style="font-size: 8.5px; color: #64748b; text-transform: uppercase; display: block; font-weight: 700; letter-spacing: 0.4px;">Mas Usada</span>
+                                <strong style="font-size: 18px; color: #2563eb; letter-spacing: -0.3px;">${stats.team.mostUsedFormation || '-'}</strong>
                             </div>
-                            <div style="width: 1px; background: #cbd5e1;"></div>
+                            <div style="width: 1px; background: #e2e8f0;"></div>
                             <div>
-                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Avg Cambios / P.</span>
-                                <strong style="font-size: 16px; color: #7c3aed;">${stats.team.avgSubs || '-'}</strong>
+                                <span style="font-size: 8.5px; color: #64748b; text-transform: uppercase; display: block; font-weight: 700; letter-spacing: 0.4px;">Avg Cambios / P.</span>
+                                <strong style="font-size: 18px; color: #7c3aed; letter-spacing: -0.3px;">${stats.team.avgSubs || '-'}</strong>
                             </div>
                         </div>
                         ${formationsHTML}
@@ -1578,31 +1630,31 @@ export default function Statistics({ navigation: navigationProp }) {
             const attendanceColor = player.attendancePercentage >= 80 ? '#15803d' : player.attendancePercentage >= 60 ? '#b45309' : '#b91c1c';
 
             const yellowCardIcon = player.yellowCards > 0
-                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-                     <span style="display: inline-block; width: 8px; height: 11px; background-color: #fbbf24; border-radius: 2px;"></span>
+                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 3px;">
+                     <span style="display: inline-block; width: 7px; height: 10px; background-color: #fbbf24; border-radius: 2px;"></span>
                      <strong style="font-weight: 800; color: #0f172a;">${player.yellowCards}</strong>
                    </div>`
-                : `<span style="color: #475569; font-weight: 600;">0</span>`;
+                : `<span style="color: #94a3b8; font-weight: 600;">0</span>`;
 
             const redCardIcon = player.redCards > 0
-                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-                     <span style="display: inline-block; width: 8px; height: 11px; background-color: #ef4444; border-radius: 2px;"></span>
+                ? `<div style="display: inline-flex; align-items: center; justify-content: center; gap: 3px;">
+                     <span style="display: inline-block; width: 7px; height: 10px; background-color: #ef4444; border-radius: 2px;"></span>
                      <strong style="font-weight: 800; color: #0f172a;">${player.redCards}</strong>
                    </div>`
-                : `<span style="color: #475569; font-weight: 600;">0</span>`;
+                : `<span style="color: #94a3b8; font-weight: 600;">0</span>`;
 
             return `
                 <tr>
-                    <td style="text-align: center; font-weight: 800; color: #475569;">${player.number}</td>
-                    <td><strong style="font-size: 12px; color: #0f172a;">${player.name}</strong></td>
-                    <td style="color: #475569; font-size: 10px; font-weight: 700; text-transform: uppercase;">${player.position}</td>
-                    <td style="text-align: center; font-weight: 700;">${player.matches}</td>
-                    <td style="text-align: center; font-weight: 800; color: #2563eb;">${player.minutes}'</td>
-                    <td style="text-align: center; font-weight: 800; ${player.goals > 0 ? 'color: #16a34a;' : 'color: #475569;'}">${player.goals}</td>
-                    <td style="text-align: center; font-weight: 800; ${player.assists > 0 ? 'color: #7c3aed;' : 'color: #475569;'}">${player.assists}</td>
-                    <td style="text-align: center;">${yellowCardIcon}</td>
-                    <td style="text-align: center;">${redCardIcon}</td>
-                    <td style="text-align: center; font-weight: 800; color: ${attendanceColor};">${player.attendancePercentage}%</td>
+                    <td style="text-align: center; font-weight: 800; color: #64748b; font-size: 10px;">${player.number}</td>
+                    <td><strong style="font-size: 10.5px; color: #0f172a;">${player.name}</strong></td>
+                    <td style="color: #64748b; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">${player.position}</td>
+                    <td style="text-align: center; font-weight: 700; font-size: 10px;">${player.matches}</td>
+                    <td style="text-align: center; font-weight: 800; color: #2563eb; font-size: 10px;">${player.minutes}'</td>
+                    <td style="text-align: center; font-weight: 800; ${player.goals > 0 ? 'color: #16a34a;' : 'color: #94a3b8;'} font-size: 10px;">${player.goals}</td>
+                    <td style="text-align: center; font-weight: 800; ${player.assists > 0 ? 'color: #7c3aed;' : 'color: #94a3b8;'} font-size: 10px;">${player.assists}</td>
+                    <td style="text-align: center; font-size: 10px;">${yellowCardIcon}</td>
+                    <td style="text-align: center; font-size: 10px;">${redCardIcon}</td>
+                    <td style="text-align: center; font-weight: 800; color: ${attendanceColor}; font-size: 10px;">${player.attendancePercentage}%</td>
                 </tr>
             `;
         }).join('');
@@ -1611,19 +1663,19 @@ export default function Statistics({ navigation: navigationProp }) {
             <div class="page">
                 ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.players'), isSubPage)}
                 
-                <div class="section-title"><span class="icon-text">🏃‍♂️</span> ${t('statistics.playersPerformance', 'Estadísticas Individuales')}</div>
+                <div class="section-title"><span class="icon-text"></span> ${t('statistics.playersPerformance', 'Estadisticas Individuales')}</div>
                 
-                <div class="grid-3" style="margin-bottom: 16px;">
-                    <div class="card" style="text-align: center; padding: 14px; background: #f8fafc; border: 1px solid #cbd5e1;">
-                        <div class="metric-val" style="color: #0f172a;">${totalPlayers}</div>
+                <div class="grid-3" style="margin-bottom: 18px;">
+                    <div class="card" style="text-align: center; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <div class="metric-val" style="color: #0f172a; font-size: 26px;">${totalPlayers}</div>
                         <div class="metric-lbl">${t('statistics.playersCount', 'Plantilla')}</div>
                     </div>
                     <div class="card" style="text-align: center; padding: 14px; background: #f0fdf4; border-color: #bbf7d0; border-style: solid; border-width: 1px;">
-                        <div class="metric-val" style="color: #15803d;">${totalGoals} <span class="icon-text">⚽</span></div>
+                        <div class="metric-val" style="color: #15803d; font-size: 26px;">${totalGoals}</div>
                         <div class="metric-lbl">${t('statistics.goals', 'Goles Totales')}</div>
                     </div>
                     <div class="card" style="text-align: center; padding: 14px; background: #faf5ff; border-color: #e9d5ff; border-style: solid; border-width: 1px;">
-                        <div class="metric-val" style="color: #7c3aed;">${totalAssists} <span class="icon-text">👟</span></div>
+                        <div class="metric-val" style="color: #7c3aed; font-size: 26px;">${totalAssists}</div>
                         <div class="metric-lbl">${t('statistics.assists', 'Asistencias Totales')}</div>
                     </div>
                 </div>
@@ -1631,16 +1683,16 @@ export default function Statistics({ navigation: navigationProp }) {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 7%; text-align: center;">Dorsal</th>
-                            <th style="width: 25%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
-                            <th style="width: 15%;">${t('statistics.sortLabels.position', 'Posición')}</th>
-                            <th style="width: 8%; text-align: center;">PJ</th>
+                            <th style="width: 7%; text-align: center;">#</th>
+                            <th style="width: 26%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
+                            <th style="width: 14%;">${t('statistics.sortLabels.position', 'Posicion')}</th>
+                            <th style="width: 7%; text-align: center;">PJ</th>
                             <th style="width: 9%; text-align: center;">${t('statistics.fullTable.minutes', 'Minutos')}</th>
-                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.goals', 'Goles')}</th>
-                            <th style="width: 8%; text-align: center;">${t('statistics.fullTable.assists', 'Asist.')}</th>
-                            <th style="width: 8%; text-align: center;">TA</th>
-                            <th style="width: 8%; text-align: center;">TR</th>
-                            <th style="width: 11%; text-align: center;">% Asist.</th>
+                            <th style="width: 7%; text-align: center;">G</th>
+                            <th style="width: 7%; text-align: center;">A</th>
+                            <th style="width: 7%; text-align: center;">TA</th>
+                            <th style="width: 7%; text-align: center;">TR</th>
+                            <th style="width: 10%; text-align: center;">% Asist.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1686,13 +1738,13 @@ export default function Statistics({ navigation: navigationProp }) {
                     <div class="bar-list-item">
                         <div class="bar-list-label" title="${name}">${name}</div>
                         <div class="bar-list-track">
-                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #ef4444;"></div>
+                            <div class="bar-list-fill" style="width: ${pct}%; background: linear-gradient(90deg, #ef4444, #f87171);"></div>
                         </div>
                         <div class="bar-list-val">${count}</div>
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #475569; font-style: italic; font-size: 11px;">${t('common.noData', 'No hay datos')}</p>`;
+            : `<p style="color: #64748b; font-style: italic; font-size: 10px;">${t('common.noData', 'No hay datos')}</p>`;
 
         // Injuries by Type
         const typeCounts = {};
@@ -1709,13 +1761,13 @@ export default function Statistics({ navigation: navigationProp }) {
                     <div class="bar-list-item">
                         <div class="bar-list-label" title="${name}">${name}</div>
                         <div class="bar-list-track">
-                            <div class="bar-list-fill" style="width: ${pct}%; background-color: #3b82f6;"></div>
+                            <div class="bar-list-fill" style="width: ${pct}%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
                         </div>
                         <div class="bar-list-val">${count}</div>
                     </div>
                 `;
             }).join('')
-            : `<p style="color: #475569; font-style: italic; font-size: 11px;">${t('common.noData', 'No hay datos')}</p>`;
+            : `<p style="color: #64748b; font-style: italic; font-size: 10px;">${t('common.noData', 'No hay datos')}</p>`;
 
         // Duration Breakdown
         const durationCounts = { corta: 0, media: 0, larga: 0 };
@@ -1734,21 +1786,21 @@ export default function Statistics({ navigation: navigationProp }) {
             <div class="bar-list-item">
                 <div class="bar-list-label">${t('injuryStats.duration.short', 'Corta (< 1 mes)')}</div>
                 <div class="bar-list-track">
-                    <div class="bar-list-fill" style="width: ${(durationCounts.corta / totalWithDuration) * 100}%; background-color: #10b981;"></div>
+                    <div class="bar-list-fill" style="width: ${(durationCounts.corta / totalWithDuration) * 100}%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
                 </div>
                 <div class="bar-list-val">${durationCounts.corta}</div>
             </div>
             <div class="bar-list-item">
                 <div class="bar-list-label">${t('injuryStats.duration.medium', 'Media (1-3 meses)')}</div>
                 <div class="bar-list-track">
-                    <div class="bar-list-fill" style="width: ${(durationCounts.media / totalWithDuration) * 100}%; background-color: #f59e0b;"></div>
+                    <div class="bar-list-fill" style="width: ${(durationCounts.media / totalWithDuration) * 100}%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
                 </div>
                 <div class="bar-list-val">${durationCounts.media}</div>
             </div>
             <div class="bar-list-item">
                 <div class="bar-list-label">${t('injuryStats.duration.long', 'Larga (> 3 meses)')}</div>
                 <div class="bar-list-track">
-                    <div class="bar-list-fill" style="width: ${(durationCounts.larga / totalWithDuration) * 100}%; background-color: #ef4444;"></div>
+                    <div class="bar-list-fill" style="width: ${(durationCounts.larga / totalWithDuration) * 100}%; background: linear-gradient(90deg, #ef4444, #f87171);"></div>
                 </div>
                 <div class="bar-list-val">${durationCounts.larga}</div>
             </div>
@@ -1770,18 +1822,18 @@ export default function Statistics({ navigation: navigationProp }) {
                     ? new Date(inj.fechaFin).toLocaleDateString(getLocale())
                     : (inj.fechaFinPrevista ? new Date(inj.fechaFinPrevista).toLocaleDateString(getLocale()) : '-');
 
-                const statusLabel = inj.fechaFin ? t('injuryStats.status.recovered', 'En Recuperación') : t('injuryStats.summary.active', 'Activa');
+                const statusLabel = inj.fechaFin ? t('injuryStats.status.recovered', 'En Recuperacion') : t('injuryStats.summary.active', 'Activa');
                 const statusColor = inj.fechaFin ? 'badge-warning' : 'badge-danger';
-                const relapseLabel = inj.recaida ? t('injuryStats.relapse.relapse', 'Recaída') : t('injuryStats.relapse.new', 'Nueva');
+                const relapseLabel = inj.recaida ? t('injuryStats.relapse.relapse', 'Recaida') : t('injuryStats.relapse.new', 'Nueva');
                 const relapseColor = inj.recaida ? 'badge-warning' : 'badge-success';
 
                 return `
                     <tr>
-                        <td><strong style="font-size: 12px; color: #0f172a;">${playerName}</strong></td>
-                        <td>${type}</td>
-                        <td style="color: #475569;">${zone}</td>
-                        <td style="text-align: center; font-weight: 600;">${startDateStr}</td>
-                        <td style="text-align: center; font-weight: 600;">${endDateStr}</td>
+                        <td><strong style="font-size: 10.5px; color: #0f172a;">${playerName}</strong></td>
+                        <td style="font-size: 10px;">${type}</td>
+                        <td style="color: #64748b; font-size: 10px;">${zone}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 10px;">${startDateStr}</td>
+                        <td style="text-align: center; font-weight: 600; font-size: 10px;">${endDateStr}</td>
                         <td style="text-align: center;"><span class="badge ${statusColor}">${statusLabel}</span></td>
                         <td style="text-align: center;"><span class="badge ${relapseColor}">${relapseLabel}</span></td>
                     </tr>
@@ -1794,13 +1846,13 @@ export default function Statistics({ navigation: navigationProp }) {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 25%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
-                            <th style="width: 20%;">${t('injury.types.label', 'Tipo de Lesión')}</th>
-                            <th style="width: 15%;">${t('injury.zones.label', 'Zona')}</th>
-                            <th style="width: 13%; text-align: center;">${t('injury.fechaInicio', 'Fecha Inicio')}</th>
-                            <th style="width: 13%; text-align: center;">${t('injury.fechaFinPrevista', 'Pronóstico')}</th>
-                            <th style="width: 8%; text-align: center;">${t('injury.estado', 'Estado')}</th>
-                            <th style="width: 8%; text-align: center;">Recaída</th>
+                            <th style="width: 24%;">${t('statistics.weeklyAttendance.player', 'Jugador')}</th>
+                            <th style="width: 20%;">${t('injury.types.label', 'Tipo')}</th>
+                            <th style="width: 14%;">${t('injury.zones.label', 'Zona')}</th>
+                            <th style="width: 13%; text-align: center;">Inicio</th>
+                            <th style="width: 13%; text-align: center;">Pronostico</th>
+                            <th style="width: 8%; text-align: center;">Estado</th>
+                            <th style="width: 8%; text-align: center;">Recaida</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1808,51 +1860,51 @@ export default function Statistics({ navigation: navigationProp }) {
                     </tbody>
                 </table>
             `
-            : `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 18px; text-align: center; color: #15803d; font-weight: 700; margin-bottom: 20px;">✓ ${t('injuryStats.noActiveInjuries', 'No hay lesiones activas en la plantilla.')}</div>`;
+            : `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 20px; text-align: center; color: #15803d; font-weight: 700; margin-bottom: 20px; font-size: 11px;">✓ ${t('injuryStats.noActiveInjuries', 'No hay lesiones activas en la plantilla.')}</div>`;
 
         return `
             <div class="page">
                 ${hideHeader ? '' : getReportHeaderHTML(t('statistics.tabs.injuries'), isSubPage)}
                 
-                <div class="section-title"><span class="icon-text">🚑</span> ${t('statistics.injuriesSummary', 'Resumen y Distribución de Lesiones')}</div>
+                <div class="section-title"><span class="icon-text"></span> ${t('statistics.injuriesSummary', 'Resumen y Distribucion de Lesiones')}</div>
                 
-                <div class="grid-4" style="margin-bottom: 16px;">
-                    <div class="card" style="background: #fef2f2; border-color: #fecaca; padding: 12px;">
+                <div class="grid-4" style="margin-bottom: 18px;">
+                    <div class="card" style="background: #fef2f2; border-color: #fecaca; padding: 14px;">
                         <div class="metric-box">
-                            <div class="metric-val" style="color: #b91c1c;">${activas}</div>
+                            <div class="metric-val" style="color: #b91c1c; font-size: 26px;">${activas}</div>
                             <div class="metric-lbl" style="color: #991b1b;">${t('injuryStats.summary.active', 'Activas')}</div>
                         </div>
                     </div>
-                    <div class="card" style="background: #fffbeb; border-color: #fde68a; padding: 12px;">
+                    <div class="card" style="background: #fffbeb; border-color: #fde68a; padding: 14px;">
                         <div class="metric-box">
-                            <div class="metric-val" style="color: #d97706;">${enRecuperacion}</div>
-                            <div class="metric-lbl" style="color: #b45309;">${t('injuryStats.status.recovered', 'En Recuperación')}</div>
+                            <div class="metric-val" style="color: #d97706; font-size: 26px;">${enRecuperacion}</div>
+                            <div class="metric-lbl" style="color: #b45309;">${t('injuryStats.status.recovered', 'En Recuperacion')}</div>
                         </div>
                     </div>
-                    <div class="card" style="background: #f0fdf4; border-color: #bbf7d0; padding: 12px;">
+                    <div class="card" style="background: #f0fdf4; border-color: #bbf7d0; padding: 14px;">
                         <div class="metric-box">
-                            <div class="metric-val" style="color: #15803d;">${recuperadas}</div>
+                            <div class="metric-val" style="color: #15803d; font-size: 26px;">${recuperadas}</div>
                             <div class="metric-lbl" style="color: #166534;">${t('injuryStats.summary.recovered', 'Recuperadas')}</div>
                         </div>
                     </div>
-                    <div class="card" style="background: #f8fafc; padding: 12px; border: 1px solid #cbd5e1;">
+                    <div class="card" style="background: #f8fafc; padding: 14px; border: 1px solid #e2e8f0;">
                         <div class="metric-box">
-                            <div class="metric-val" style="color: #0f172a;">${total}</div>
-                            <div class="metric-lbl">Total Histórico</div>
+                            <div class="metric-val" style="color: #0f172a; font-size: 26px;">${total}</div>
+                            <div class="metric-lbl">Total Historico</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid-2" style="margin-bottom: 16px;">
+                <div class="grid-2" style="margin-bottom: 18px;">
                     <div class="card">
-                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                            <span class="icon-text">🧍</span> ${t('injuryStats.zones.label', 'Zonas Afectadas')}
+                        <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                            <span class="icon-text"></span> ${t('injuryStats.zones.label', 'Zonas Afectadas')}
                         </h3>
                         ${zonesHTML}
                     </div>
                     <div class="card">
-                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                            <span class="icon-text">⚕️</span> ${t('injuryStats.types.label', 'Tipos de Lesiones')}
+                        <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                            <span class="icon-text"></span> ${t('injuryStats.types.label', 'Tipos de Lesiones')}
                         </h3>
                         ${typesHTML}
                     </div>
@@ -1860,35 +1912,35 @@ export default function Statistics({ navigation: navigationProp }) {
                 
                 <div class="grid-2" style="margin-bottom: 20px;">
                     <div class="card">
-                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                            <span class="icon-text">⏳</span> ${t('injuryStats.duration.label', 'Duración de Lesiones')}
+                        <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                            <span class="icon-text"></span> ${t('injuryStats.duration.label', 'Duracion de Lesiones')}
                         </h3>
                         ${durationHTML}
                     </div>
                     <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 style="font-size: 13px; text-transform: uppercase; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; font-weight: 800;">
-                            <span class="icon-text">🔄</span> Relación de Recaídas
+                        <h3 style="font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 800; letter-spacing: 0.3px;">
+                            <span class="icon-text"></span> Relacion de Recaidas
                         </h3>
-                        <div style="display: flex; justify-content: space-around; align-items: center; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #cbd5e1; height: 100%;">
+                        <div style="display: flex; justify-content: space-around; align-items: center; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; height: 100%;">
                             <div style="text-align: center;">
-                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Lesiones Nuevas</span>
-                                <strong style="font-size: 22px; color: #166534;">${withoutRelapse}</strong>
+                                <span style="font-size: 8.5px; color: #64748b; text-transform: uppercase; display: block; font-weight: 700; letter-spacing: 0.4px;">Lesiones Nuevas</span>
+                                <strong style="font-size: 24px; color: #166534;">${withoutRelapse}</strong>
                             </div>
-                            <div style="width: 1px; height: 35px; background: #cbd5e1;"></div>
+                            <div style="width: 1px; height: 40px; background: #e2e8f0;"></div>
                             <div style="text-align: center;">
-                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Recaídas</span>
-                                <strong style="font-size: 22px; color: #ca8a04;">${withRelapse}</strong>
+                                <span style="font-size: 8.5px; color: #64748b; text-transform: uppercase; display: block; font-weight: 700; letter-spacing: 0.4px;">Recaidas</span>
+                                <strong style="font-size: 24px; color: #ca8a04;">${withRelapse}</strong>
                             </div>
-                            <div style="width: 1px; height: 35px; background: #cbd5e1;"></div>
+                            <div style="width: 1px; height: 40px; background: #e2e8f0;"></div>
                             <div style="text-align: center;">
-                                <span style="font-size: 9px; color: #475569; text-transform: uppercase; display: block; font-weight: 700;">Tasa Recaídas</span>
-                                <strong style="font-size: 22px; color: #dc2626;">${total > 0 ? Math.round((withRelapse / total) * 100) : 0}%</strong>
+                                <span style="font-size: 8.5px; color: #64748b; text-transform: uppercase; display: block; font-weight: 700; letter-spacing: 0.4px;">Tasa Recaidas</span>
+                                <strong style="font-size: 24px; color: #dc2626;">${total > 0 ? Math.round((withRelapse / total) * 100) : 0}%</strong>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="section-title"><span class="icon-text">🏥</span> ${t('injuryStats.activeListTitle', 'Lesionados Activos y en Recuperación')}</div>
+                <div class="section-title"><span class="icon-text"></span> ${t('injuryStats.activeListTitle', 'Lesionados Activos y en Recuperacion')}</div>
                 ${activeTableHTML}
             </div>
         `;

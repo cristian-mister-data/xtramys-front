@@ -43,58 +43,54 @@ export default function Base64ImagePreview({
   aspect = 0.8,
   forceWidth,
   forceHeight,
+  maxWidth,
+  horizontalInset,
   marginVerticalBoolean,
-  style // Nuevo: permite pasar estilos personalizados externos
+  style,
 }) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  // Margen vertical y horizontal
   const verticalMargin = 24;
-  const horizontalMargin = 32;
+  const horizontalMargin = horizontalInset ?? 32;
 
-  // Calcula ancho máximo y alto máximo
-  let imageWidth = screenWidth - horizontalMargin;
+  let imageWidth = Math.max(120, screenWidth - horizontalMargin);
+  if (maxWidth) {
+    imageWidth = Math.min(imageWidth, maxWidth);
+  }
   let imageHeight = imageWidth * aspect;
 
-  // Limita altura a la pantalla
   const maxFieldHeight = screenHeight - verticalMargin - 54 - 150;
   if (imageHeight > maxFieldHeight) {
     imageHeight = maxFieldHeight;
     imageWidth = imageHeight / aspect;
   }
 
-  // Si se pasan estilos, se usan esos y se ignora el cálculo automático
-  const customStyle = style
-    ? [style]
-    : [
-        {
-          width: forceWidth ? forceWidth : imageWidth,
-          height: forceHeight ? forceHeight : imageHeight,
-          alignSelf: 'center',
-          borderRadius: 12,
-          overflow: 'hidden',
-          backgroundColor: 'green',
-          elevation: 3,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      ];
+  const computedStyle = {
+    width: forceWidth ? forceWidth : imageWidth,
+    height: forceHeight ? forceHeight : imageHeight,
+    alignSelf: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'green',
+    elevation: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  };
 
-  const imageCustomStyle = style
-    ? [style, { resizeMode: style?.resizeMode || 'contain' }]
-    : [
-        {
-          width: forceWidth ? forceWidth : imageWidth,
-          height: forceHeight ? forceHeight : imageHeight,
-          resizeMode: 'contain',
-        },
-      ];
+  const imageStyle = {
+    width: forceWidth ? forceWidth : imageWidth,
+    height: forceHeight ? forceHeight : imageHeight,
+    resizeMode: 'contain',
+  };
 
-  // Renderiza solo si hay imagen (URL o base64)
+  const baseStyle = style
+    ? Array.isArray(style) ? style : [style]
+    : [];
+
   const imageSource = imageUrl || base64;
   if (!imageSource) {
     return (
-      <View style={customStyle}>
+      <View style={[computedStyle, ...baseStyle]}>
         <Text style={{ color: '#888' }}>No hay imagen disponible</Text>
       </View>
     );
@@ -103,10 +99,10 @@ export default function Base64ImagePreview({
   const uri = normalizeImageSource(imageSource);
 
   return (
-    <View style={customStyle}>
+    <View style={[computedStyle, ...baseStyle]}>
       <Image
         source={{ uri }}
-        style={imageCustomStyle}
+        style={imageStyle}
       />
     </View>
   );
