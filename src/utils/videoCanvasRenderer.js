@@ -1,6 +1,7 @@
 import ballImgSrc from '@/images/ball.png';
 import { ratioToDisplay } from '@/vendor/tacticalBoard/fields/fieldConfigs';
 
+const FONT_STACK = 'Arial, Helvetica, sans-serif';
 let currentViewMode = 'entire';
 
 const VIDEO_WIDTH = 1920;
@@ -104,7 +105,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     if (displayText !== undefined && showNumbers !== false) {
       const isLabel = elem.displayLabel !== undefined;
       const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
-      ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px sans-serif`;
+      ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px ${FONT_STACK}`;
       ctx.fillStyle = numberColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -117,7 +118,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   if (elem.playerData && (elem.playerData.nombre || elem.playerData.name)) {
     const name = elem.playerData.nombre || elem.playerData.name;
     const fs = size * 0.3;
-    ctx.font = `${fs}px sans-serif`;
+    ctx.font = `${fs}px ${FONT_STACK}`;
     const tw = ctx.measureText(name).width;
     const pad = 2;
     const ny = p.y + r + fs / 2 + 3;
@@ -157,7 +158,7 @@ function drawStaff(ctx, cw, ch, elem, scale) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.font = `bold ${fs}px sans-serif`;
+  ctx.font = `bold ${fs}px ${FONT_STACK}`;
   ctx.fillStyle = elem.numberColor || '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -955,7 +956,7 @@ function drawFreeText(ctx, cw, ch, elem, scale) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  ctx.font = `${fs}px sans-serif`;
+  ctx.font = `${fs}px ${FONT_STACK}`;
   const tw = ctx.measureText(text).width;
   const pad = fs * 0.2;
 
