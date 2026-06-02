@@ -172,7 +172,7 @@ function DraggableExerciseItem({
               <Feather 
                 name="play-circle" 
                 size={20} 
-                color="#E91E63"
+                color={theme.colors.error || '#E91E63'}
               />
             </TouchableOpacity>
           )}
@@ -181,14 +181,14 @@ function DraggableExerciseItem({
             onPress={onMoveUp}
             disabled={isFirst}
           >
-            <Ionicons name="arrow-up" size={18} color={isFirst ? "#cbd5e1" : "#3578e5"} />
+            <Ionicons name="arrow-up" size={18} color={isFirst ? theme.colors.border : theme.colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.draggableControlBtn, isLast && styles.draggableControlBtnDisabled]}
             onPress={onMoveDown}
             disabled={isLast}
           >
-            <Ionicons name="arrow-down" size={18} color={isLast ? "#cbd5e1" : "#3578e5"} />
+            <Ionicons name="arrow-down" size={18} color={isLast ? theme.colors.border : theme.colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -223,7 +223,7 @@ function DraggableExerciseItem({
           style={styles.teamAssignmentButton}
           onPress={() => setShowTeamAssignmentModal(true)}
         >
-          <Ionicons name="people" size={18} color="#3578e5" />
+          <Ionicons name="people" size={18} color={theme.colors.primary} />
           <Text style={styles.teamAssignmentButtonText}>
             {t('session.assignTeams')} ({numEquipos} {t('session.teams')})
           </Text>
@@ -247,7 +247,7 @@ function DraggableExerciseItem({
             <View style={styles.teamAssignmentModalContainer}>
               <View style={styles.teamAssignmentModalHeader}>
                 <View style={styles.teamAssignmentModalHeaderLeft}>
-                  <Ionicons name="people" size={24} color="#3578e5" />
+                  <Ionicons name="people" size={24} color={theme.colors.primary} />
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.teamAssignmentModalTitle}>{t('session.assignTeams')}</Text>
                     <Text style={styles.teamAssignmentModalSubtitle}>{ejercicio.nombre}</Text>
@@ -652,7 +652,7 @@ function CustomDropdown({ value, onValueChange, options, placeholder }) {
                     {option.label}
                   </Text>
                   {value === option.value && (
-                    <MaterialIcons name="check" size={20} color="#3578e5" />
+                    <MaterialIcons name="check" size={20} color={theme.colors.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -810,6 +810,7 @@ export default function Training() {
   const theme = useTheme();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const temporada = useSelector(s => s.season.season);
   const sesiones = useSelector(s => s.session.session);
   const loading = useSelector(s => s.session.loading);
@@ -1405,7 +1406,7 @@ export default function Training() {
   if (!selectedTeam && loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator color="#3578e5" size="large" style={{ marginTop: 32 }} />
+        <ActivityIndicator color={theme.colors.primary} size="large" style={{ marginTop: 32 }} />
         <Text style={styles.emptyText}>{t('session.loadingTeam')}</Text>
       </View>
     );
@@ -1486,7 +1487,7 @@ export default function Training() {
             {/* Header con hora y duración */}
             <View style={styles.proSessionHeader}>
               <View style={styles.proTimeContainer}>
-                <MaterialIcons name="schedule" size={16} color={isPast ? "#94a3b8" : "#2474E5"} />
+                <MaterialIcons name="schedule" size={16} color={isPast ? theme.colors.textSecondary : theme.colors.primary} />
                 <Text style={[styles.proTimeText, isPast && styles.proTimeTextPast]}>
                   {session.horaInicio} - {session.horaFin}
                 </Text>
@@ -1502,8 +1503,8 @@ export default function Training() {
             <View style={styles.proStatsRow}>
               {/* Ejercicios */}
               <View style={styles.proStatItem}>
-                <View style={[styles.proStatIcon, { backgroundColor: '#fef3c7' }]}>
-                  <MaterialIcons name="fitness-center" size={14} color="#d97706" />
+                <View style={[styles.proStatIcon, { backgroundColor: theme.colors.warningSoft || '#fef3c7' }]}>
+                  <MaterialIcons name="fitness-center" size={14} color={theme.colors.warning || '#d97706'} />
                 </View>
                 <Text style={styles.proStatValue}>{(session.ejercicios?.length || 0) + (session.ejerciciosFuerza?.length || 0)}</Text>
                 <Text style={styles.proStatLabel}>{t('session.exercises')}</Text>
@@ -1511,8 +1512,8 @@ export default function Training() {
               
               {/* Jugadores */}
               <View style={styles.proStatItem}>
-                <View style={[styles.proStatIcon, { backgroundColor: '#dbeafe' }]}>
-                  <Ionicons name="people" size={14} color="#2563eb" />
+                <View style={[styles.proStatIcon, { backgroundColor: theme.colors.primarySoft || '#dbeafe' }]}>
+                  <Ionicons name="people" size={14} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.proStatValue}>{totalJugadores}</Text>
                 <Text style={styles.proStatLabel}>{t('session.players')}</Text>
@@ -1694,14 +1695,14 @@ export default function Training() {
       <View style={styles.proContentContainer}>
         {loading ? (
           <View style={styles.proLoadingContainer}>
-            <ActivityIndicator color="#2474E5" size="large" />
+            <ActivityIndicator color={theme.colors.primary} size="large" />
             <Text style={styles.proLoadingText}>{t('common.loading')}...</Text>
           </View>
         ) : tab === 'futuros' ? (
           eventosFuturosFiltrados.length === 0 ? (
             <View style={styles.proEmptyState}>
               <View style={styles.proEmptyIcon}>
-                <MaterialIcons name="event-note" size={48} color="#2474E5" />
+                <MaterialIcons name="event-note" size={48} color={theme.colors.primary} />
               </View>
               <Text style={styles.proEmptyTitle}>{t('session.noUpcomingSessionsTitle')}</Text>
               <Text style={styles.proEmptyText}>
@@ -1788,7 +1789,7 @@ export default function Training() {
             
             {isGeneratingVideoMain ? (
               <View style={styles.videoGeneratingContainer}>
-                <ActivityIndicator size="large" color="#E91E63" />
+                <ActivityIndicator size="large" color={theme.colors.error || '#E91E63'} />
                 <Text style={styles.videoGeneratingText}>{t('exercise.generatingVideo')}</Text>
               </View>
             ) : videoUrlMain ? (
@@ -1936,7 +1937,7 @@ export default function Training() {
                     setDatePickerVisibleEnd(false);
                   }}
                 >
-                  <MaterialIcons name="filter-alt-off" size={18} color="#ef4444" style={{ marginRight: 4 }} />
+                  <MaterialIcons name="filter-alt-off" size={18} color={theme.colors.error} style={{ marginRight: 4 }} />
                   <Text style={[styles.dateRangeCancelText, { color: '#ef4444' }]}>{t('session.clearDateFilter')}</Text>
                 </TouchableOpacity>
               )}
@@ -2026,7 +2027,7 @@ export default function Training() {
                   setDateRangeModalVisible(true);
                 }}
               >
-                <MaterialIcons name="filter-list" size={24} color="#2474E5" />
+                <MaterialIcons name="filter-list" size={24} color={theme.colors.primary} />
                 <Text style={styles.mobileMenuItemText}>{t('common.filters')}</Text>
                 {dateFilter && (
                   <View style={styles.mobileMenuItemBadge}>
@@ -2046,7 +2047,7 @@ export default function Training() {
                       setMobileMenuVisible(false);
                     }}
                   >
-                    <MaterialIcons name="clear" size={24} color="#ef4444" />
+                    <MaterialIcons name="clear" size={24} color={theme.colors.error} />
                     <Text style={[styles.mobileMenuItemText, { color: '#ef4444' }]}>{t('common.clear')} {t('common.filters')}</Text>
                   </TouchableOpacity>
                 </>
@@ -2062,7 +2063,7 @@ export default function Training() {
                   setShowOrgModal(true);
                 }}
               >
-                <MaterialIcons name="calendar-today" size={24} color="#2474E5" />
+                <MaterialIcons name="calendar-today" size={24} color={theme.colors.primary} />
                 <Text style={styles.mobileMenuItemText}>{t('session.planTrainings')}</Text>
               </TouchableOpacity>
 
@@ -2076,7 +2077,7 @@ export default function Training() {
                   openCrearModal();
                 }}
               >
-                <MaterialIcons name="add" size={24} color="#2474E5" />
+                <MaterialIcons name="add" size={24} color={theme.colors.primary} />
                 <Text style={styles.mobileMenuItemText}>{t('session.createSession')}</Text>
               </TouchableOpacity>
             </View>
@@ -2147,7 +2148,8 @@ export default function Training() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme) {
+  return StyleSheet.create({
   // --- General containers ---
   container: {
     flex: 1,
@@ -2161,12 +2163,12 @@ const styles = StyleSheet.create({
   
   // --- Draggable Exercise Item ---
   draggableExerciseItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     shadowColor: '#1e3a5a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -2189,24 +2191,24 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   draggableExerciseNumberText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary || '#ffffff',
     fontSize: 14,
     fontWeight: '700',
   },
   draggableExerciseTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     flex: 1,
   },
   draggableExerciseSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -2219,33 +2221,33 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#fef7f9',
+    backgroundColor: theme.colors.errorSoft || '#fef7f9',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#fce4ec',
+    borderColor: theme.colors.errorSoft || '#fce4ec',
   },
   draggableVideoBtnInactive: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   draggableControlBtn: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f0f9ff',
+    backgroundColor: theme.colors.primarySoft || '#f0f9ff',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#bfdbfe',
+    borderColor: theme.colors.primarySoft || '#bfdbfe',
   },
   draggableControlBtnDisabled: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
     opacity: 0.4,
   },
   restTimeContainer: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft || '#fef3c7',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -2277,9 +2279,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     fontSize: 15,
-    color: '#1e293b',
+    color: theme.colors.text,
     fontWeight: '600',
   },
   restTimeUnit: {
@@ -2289,26 +2291,26 @@ const styles = StyleSheet.create({
   },
   draggableObservationInput: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     fontSize: 14,
-    color: '#1e293b',
+    color: theme.colors.text,
     minHeight: 80,
     textAlignVertical: 'top',
   },
   
   // --- Pro Header ---
   proHeader: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     paddingBottom: 14,
     marginHorizontal: isMobileDevice() ? 10 : 16,
     marginTop: isMobileDevice() ? 10 : 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -2328,12 +2330,12 @@ const styles = StyleSheet.create({
   proHeaderTitle: {
     fontSize: isMobileDevice() ? 22 : 28,
     fontWeight: '800',
-    color: '#1e293b',
+    color: theme.colors.text,
     letterSpacing: -0.5,
   },
   proHeaderTeam: {
     fontSize: isMobileDevice() ? 13 : 15,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     marginTop: 4,
   },
@@ -2347,14 +2349,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.colors.primarySoft || '#eff6ff',
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: theme.colors.primarySoft || '#bfdbfe',
   },
   proHeaderTeamPillText: {
     flex: 1,
     minWidth: 0,
-    color: '#1d4ed8',
+    color: theme.colors.primary,
     fontSize: isMobileDevice() ? 13 : 14,
     fontWeight: '700',
   },
@@ -2364,11 +2366,11 @@ const styles = StyleSheet.create({
   proCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 14,
-    shadowColor: '#2474E5',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
@@ -2376,7 +2378,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   proCreateButtonText: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary || '#ffffff',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -2390,30 +2392,30 @@ const styles = StyleSheet.create({
   },
   proStatCard: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 16,
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   proStatCardFuture: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
+    backgroundColor: theme.colors.primarySoft || '#eff6ff',
+    borderColor: theme.colors.primarySoft || '#bfdbfe',
   },
   proStatCardPast: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   proStatCardTotal: {
-    backgroundColor: '#fefce8',
+    backgroundColor: theme.colors.warningSoft || '#fefce8',
     borderColor: '#fde047',
   },
   proStatCardIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft || '#dbeafe',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -2422,7 +2424,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -2431,7 +2433,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.colors.warningSoft || '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -2439,12 +2441,12 @@ const styles = StyleSheet.create({
   proStatCardValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#2474E5',
+    color: theme.colors.primary,
   },
   proStatCardValuePast: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   proStatCardValueTotal: {
     fontSize: 24,
@@ -2454,7 +2456,7 @@ const styles = StyleSheet.create({
   proStatCardLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 2,
@@ -2482,7 +2484,7 @@ const styles = StyleSheet.create({
   },
   proTabs: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 16,
     padding: 4,
   },
@@ -2496,7 +2498,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   proTabActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -2506,14 +2508,14 @@ const styles = StyleSheet.create({
   proTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: theme.colors.textSecondary,
   },
   proTabTextActive: {
-    color: '#2474E5',
+    color: theme.colors.primary,
     fontWeight: '700',
   },
   proTabBadge: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: theme.colors.border,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -2521,15 +2523,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   proTabBadgeActive: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: theme.colors.primarySoft || '#dbeafe',
   },
   proTabBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   proTabBadgeTextActive: {
-    color: '#2474E5',
+    color: theme.colors.primary,
   },
   
   // --- Pro Filters Bar ---
@@ -2543,12 +2545,12 @@ const styles = StyleSheet.create({
   proFilterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     paddingVertical: isMobileDevice() ? 8 : 10,
     paddingHorizontal: isMobileDevice() ? 12 : 16,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
     gap: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -2558,17 +2560,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   proFilterButtonActive: {
-    backgroundColor: '#2474E5',
-    borderColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   proFilterButtonText: {
     fontSize: isMobileDevice() ? 13 : 14,
     fontWeight: '600',
-    color: '#475569',
+    color: theme.colors.text,
     flexShrink: 1,
   },
   proFilterButtonTextActive: {
-    color: '#ffffff',
+    color: theme.colors.onPrimary || '#ffffff',
   },
   proClearFilterBtn: {
     width: 20,
@@ -2592,7 +2594,7 @@ const styles = StyleSheet.create({
   proLoadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   proListContent: {
@@ -2613,10 +2615,51 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.colors.primarySoft || '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+  },
+  proEmptyIconPast: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.backgroundAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  proEmptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  proEmptyText: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  proEmptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  proEmptyButtonText: {
+    color: theme.colors.onPrimary || '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   proEmptyIconPast: {
     width: 100,
@@ -2664,7 +2707,7 @@ const styles = StyleSheet.create({
   // --- Pro Session Card ---
   proSessionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
@@ -2684,10 +2727,10 @@ const styles = StyleSheet.create({
     width: 5,
   },
   proSessionIndicatorFuture: {
-    backgroundColor: '#2474E5',
+    backgroundColor: theme.colors.primary,
   },
   proSessionIndicatorPast: {
-    backgroundColor: '#cbd5e1',
+    backgroundColor: theme.colors.border,
   },
   proSessionContent: {
     flex: 1,
@@ -2701,29 +2744,29 @@ const styles = StyleSheet.create({
     width: isMobileDevice() ? 54 : 65,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.colors.primarySoft || '#eff6ff',
     borderRadius: 14,
     paddingVertical: isMobileDevice() ? 8 : 12,
   },
   proDateBadgePast: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
   },
   proDateBadgeFuture: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.colors.primarySoft || '#eff6ff',
   },
   proDateDay: {
     fontSize: isMobileDevice() ? 22 : 28,
     fontWeight: '800',
-    color: '#2474E5',
+    color: theme.colors.primary,
     lineHeight: isMobileDevice() ? 26 : 32,
   },
   proDateDayPast: {
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   proDateMonth: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2474E5',
+    color: theme.colors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -2733,7 +2776,7 @@ const styles = StyleSheet.create({
   proDateWeekday: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   proDateWeekdayPast: {
@@ -2760,31 +2803,31 @@ const styles = StyleSheet.create({
   proTimeText: {
     fontSize: isMobileDevice() ? 14 : 16,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
     flexShrink: 1,
   },
   proTimeTextPast: {
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   proDurationBadge: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: theme.colors.successSoft || '#f0fdf4',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: theme.colors.successSoft || '#bbf7d0',
   },
   proDurationBadgePast: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    backgroundColor: theme.colors.backgroundAlt,
+    borderColor: theme.colors.border,
   },
   proDurationText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#16a34a',
+    color: theme.colors.success,
   },
   proDurationTextPast: {
-    color: '#64748b',
+    color: theme.colors.textSecondary,
   },
   
   // --- Pro Stats Row ---
@@ -2809,11 +2852,11 @@ const styles = StyleSheet.create({
   proStatValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: theme.colors.text,
   },
   proStatLabel: {
     fontSize: 12,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   
@@ -2828,8 +2871,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#ffffff',
-    backgroundColor: '#f1f5f9',
+    borderColor: theme.colors.surface,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   proExerciseMiniImage: {
     width: '100%',
@@ -2840,22 +2883,22 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.backgroundAlt,
   },
   proMoreBadge: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: theme.colors.surface,
   },
   proMoreText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: theme.colors.textSecondary,
   },
   
   // --- Pro Action Button ---
@@ -2876,13 +2919,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#1e293b',
+    color: theme.colors.text,
     marginBottom: 6,
     letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 15,
-    color: '#64748b',
+    color: theme.colors.textSecondary,
     lineHeight: 22,
   },
   actionBar: {
@@ -5742,7 +5785,8 @@ const styles = StyleSheet.create({
   },
   
   // NOTE: Team assignment view styles removed - now in TrainingSessionDetailModal
-});
+  });
+}
 
 function VideoPlayerView({ url }) {
   const player = useVideoPlayer(url || '', p => {
