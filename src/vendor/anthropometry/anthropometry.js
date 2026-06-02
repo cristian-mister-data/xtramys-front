@@ -106,6 +106,13 @@ function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, i
               <Text style={styles.gridCardBadgeText}>{item.porcentaje_grasa.toFixed(1)}%</Text>
             </View>
           )}
+          {item.sistema_pliegues && (
+            <View style={[styles.gridCardBadge, { backgroundColor: item.sistema_pliegues === '8' ? '#ede9fe' : '#e0f2fe', marginTop: 2 }]}>
+              <Text style={[styles.gridCardBadgeText, { color: item.sistema_pliegues === '8' ? '#7c3aed' : '#0284c7', fontSize: 8 }]}>
+                {item.sistema_pliegues === '8' ? 'ISAK' : 'Yuhasz'}
+              </Text>
+            </View>
+          )}
         </View>
       </Pressable>
     );
@@ -152,6 +159,13 @@ function AnthropometryCard({ item, onPress, onOpenOptions, IS_MOBILE, players, i
             <View style={[styles.listCardTag, styles.listCardTagWarning]}>
               <Ionicons name="analytics-outline" size={12} color={theme.colors.warningSoftText} />
               <Text style={[styles.listCardTagText, { color: theme.colors.warningSoftText }]}>{item.porcentaje_grasa.toFixed(1)}%</Text>
+            </View>
+          )}
+          {item.sistema_pliegues && (
+            <View style={[styles.listCardTag, { backgroundColor: item.sistema_pliegues === '8' ? '#ede9fe' : '#e0f2fe' }]}>
+              <Text style={[styles.listCardTagText, { color: item.sistema_pliegues === '8' ? '#7c3aed' : '#0284c7', fontSize: 10, fontWeight: '700' }]}>
+                {item.sistema_pliegues === '8' ? 'ISAK' : 'Yuhasz'}
+              </Text>
             </View>
           )}
         </View>
@@ -222,6 +236,9 @@ const Anthropometry = ({ navigation }) => {
   const [abdominal, setAbdominal] = useState('');
   const [muslo_frontal, setMuslo_frontal] = useState('');
   const [pierna_medial, setPierna_medial] = useState('');
+  const [bicipital, setBicipital] = useState('');
+  const [cresta_iliaca, setCrestaIliaca] = useState('');
+  const [sistemaPliegues, setSistemaPliegues] = useState('6');
   const [notas, setNotas] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -322,7 +339,7 @@ const Anthropometry = ({ navigation }) => {
   };
   
   const openCreateModal = () => {
-    setSelectedPlayer('');
+    setSelectedPlayer(null);
     setFecha(new Date());
     setPeso('');
     setTricipital('');
@@ -331,6 +348,9 @@ const Anthropometry = ({ navigation }) => {
     setAbdominal('');
     setMuslo_frontal('');
     setPierna_medial('');
+    setBicipital('');
+    setCrestaIliaca('');
+    setSistemaPliegues('6');
     setNotas('');
     setEditingAnthropometry(null);
     setCreateModalVisible(true);
@@ -346,6 +366,12 @@ const Anthropometry = ({ navigation }) => {
     setAbdominal(anthropometry.pliegues?.abdominal?.toString() || '');
     setMuslo_frontal(anthropometry.pliegues?.muslo_frontal?.toString() || '');
     setPierna_medial(anthropometry.pliegues?.pierna_medial?.toString() || '');
+    setBicipital(anthropometry.pliegues?.bicipital?.toString() || '');
+    setCrestaIliaca(anthropometry.pliegues?.cresta_iliaca?.toString() || '');
+    setSistemaPliegues(
+      anthropometry.sistema_pliegues
+      || (anthropometry.pliegues?.bicipital || anthropometry.pliegues?.cresta_iliaca ? '8' : '6')
+    );
     setNotas(anthropometry.notas || '');
     setEditingAnthropometry(anthropometry);
     setCreateModalVisible(true);
@@ -364,43 +390,76 @@ const Anthropometry = ({ navigation }) => {
       Alert.alert(t('common.error'), t('anthropometry.selectPlayerRequired'));
       return;
     }
-    
+
     if (!selectedTeam?._id) {
       Alert.alert(t('common.error'), t('anthropometry.noTeamSelected'));
       return;
     }
-    
-    // Obtener el sexo del jugador para el cálculo
+
     const selectedPlayerObj = players.find(p => p._id === selectedPlayer);
     const sexo = selectedPlayerObj?.sexo || 'M';
-    
+
     try {
+      const plieguesData = {
+        tricipital: tricipital ? Number(tricipital) : undefined,
+        subescapular: subescapular ? Number(subescapular) : undefined,
+        suprailiaco: suprailiaco ? Number(suprailiaco) : undefined,
+        abdominal: abdominal ? Number(abdominal) : undefined,
+        muslo_frontal: muslo_frontal ? Number(muslo_frontal) : undefined,
+        pierna_medial: pierna_medial ? Number(pierna_medial) : undefined,
+      };
+      if (bicipital) plieguesData.bicipital = Number(bicipital);
+      if (cresta_iliaca) plieguesData.cresta_iliaca = Number(cresta_iliaca);
+
+      const suma = Object.values(plieguesData).filter(v => v !== undefined).reduce((a, b) => a + b, 0);
+      const media = Object.values(plieguesData).filter(v => v !== undefined).length > 0
+        ? suma / Object.values(plieguesData).filter(v => v !== undefined).length
+        : null;
+
+      // Yuhasz (6 pliegues):
+      //   Hombres:  %GC = 0.1051 × Σ6 + 2.58
+      //   Mujeres:  %GC = 0.1548 × Σ6 + 3.58
+      //   Sitios: tríceps, subescapular, supraespinal, abdominal, muslo anterior, pierna medial
+      // ISAK (8 pliegues): los 6 de Yuhasz + bíceps + cresta ilíaca
+      const yuhaszKeys = ['tricipital', 'subescapular', 'suprailiaco', 'abdominal', 'muslo_frontal', 'pierna_medial'];
+      const valsYuhasz = yuhaszKeys.map(k => plieguesData[k]).filter(v => typeof v === 'number' && !isNaN(v));
+      const sumaYuhasz = valsYuhasz.reduce((a, b) => a + b, 0);
+      const tiene6 = valsYuhasz.length >= 6;
+
+      let porcentaje_grasa = null, masa_grasa = null, masa_magra = null;
+      if (sistemaPliegues === '6' && tiene6 && sumaYuhasz > 0) {
+        porcentaje_grasa = sexo === 'F' ? 0.1548 * sumaYuhasz + 3.58 : 0.1051 * sumaYuhasz + 2.58;
+        if (peso) {
+          masa_grasa = (porcentaje_grasa / 100) * Number(peso);
+          masa_magra = Number(peso) - masa_grasa;
+        }
+      }
+
       const anthropometryData = {
         jugador: selectedPlayer,
         equipo: selectedTeam._id,
         fecha: fecha,
         peso: peso ? Number(peso) : undefined,
-        sexo: sexo, // Para el cálculo en backend
-        pliegues: {
-          tricipital: tricipital ? Number(tricipital) : undefined,
-          subescapular: subescapular ? Number(subescapular) : undefined,
-          suprailiaco: suprailiaco ? Number(suprailiaco) : undefined,
-          abdominal: abdominal ? Number(abdominal) : undefined,
-          muslo_frontal: muslo_frontal ? Number(muslo_frontal) : undefined,
-          pierna_medial: pierna_medial ? Number(pierna_medial) : undefined,
-        },
+        sexo: sexo,
+        pliegues: plieguesData,
+        sistema_pliegues: sistemaPliegues,
+        suma_pliegues: suma,
+        media_pliegues: media,
+        porcentaje_grasa,
+        masa_grasa,
+        masa_magra,
         notas: notas.trim() || undefined,
       };
-      
+
       if (editingAnthropometry) {
         await dispatch(updateAnthropometry({ id: editingAnthropometry._id, data: anthropometryData }));
       } else {
         await dispatch(createAnthropometry(anthropometryData));
       }
-      
+
       setCreateModalVisible(false);
       setEditingAnthropometry(null);
-      
+
       if (selectedTeam?._id) {
         dispatch(fetchAnthropometriesByTeam({ team: selectedTeam._id }));
       }
@@ -1062,9 +1121,29 @@ const Anthropometry = ({ navigation }) => {
                     <Ionicons name="analytics" size={24} color="#3578e5" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.createCardTitle}>{t('anthropometry.skinfolds')} (mm)</Text>
-                      <Text style={styles.sixFoldsHint}>{t('anthropometry.sixFoldsSystem')}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', backgroundColor: '#eef2f7', borderRadius: 8, padding: 2 }}>
+                      <TouchableOpacity
+                        style={[styles.systemPill, sistemaPliegues === '6' && styles.systemPillActive]}
+                        onPress={() => setSistemaPliegues('6')}
+                      >
+                        <Text style={[styles.systemPillText, sistemaPliegues === '6' && styles.systemPillTextActive]}>
+                          6 Pliegues
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.systemPill, sistemaPliegues === '8' && styles.systemPillActive]}
+                        onPress={() => setSistemaPliegues('8')}
+                      >
+                        <Text style={[styles.systemPillText, sistemaPliegues === '8' && styles.systemPillTextActive]}>
+                          8 Pliegues
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
+                  {sistemaPliegues === '6' && (
+                    <Text style={styles.sixFoldsHint}>{t('anthropometry.sixFoldsSystem')}</Text>
+                  )}
 
                   <View style={styles.createCardContent}>
                     <View style={styles.row}>
@@ -1141,6 +1220,61 @@ const Anthropometry = ({ navigation }) => {
                         />
                       </View>
                     </View>
+
+                    {sistemaPliegues === '8' && (
+                      <View style={styles.row}>
+                        <View style={styles.inputHalf}>
+                          <Text style={styles.inputLabel}>{t('anthropometry.bicipital')}</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="0"
+                            placeholderTextColor="#bbb"
+                            keyboardType="decimal-pad"
+                            value={bicipital}
+                            onChangeText={setBicipital}
+                          />
+                        </View>
+                        <View style={styles.inputHalf}>
+                          <Text style={styles.inputLabel}>{t('anthropometry.crestaIliaca')}</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="0"
+                            placeholderTextColor="#bbb"
+                            keyboardType="decimal-pad"
+                            value={cresta_iliaca}
+                            onChangeText={setCrestaIliaca}
+                          />
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Resultados en vivo */}
+                    {(() => {
+                      const vals = [tricipital, subescapular, suprailiaco, abdominal, muslo_frontal, pierna_medial]
+                        .map(v => parseFloat(v)).filter(v => !isNaN(v));
+                      if (sistemaPliegues === '8') {
+                        [bicipital, cresta_iliaca].forEach(v => { const n = parseFloat(v); if (!isNaN(n)) vals.push(n); });
+                      }
+                      const total = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) : null;
+                      const avg = total && vals.length > 0 ? (total / vals.length).toFixed(1) : null;
+                      if (!total) return null;
+                      return (
+                        <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#eef2f7', flexDirection: 'row', gap: 8 }}>
+                          <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Suma</Text>
+                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e293b' }}>{total.toFixed(1)} <Text style={{ fontSize: 10, color: '#94a3b8' }}>mm</Text></Text>
+                          </View>
+                          <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Media</Text>
+                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e293b' }}>{avg} <Text style={{ fontSize: 10, color: '#94a3b8' }}>mm</Text></Text>
+                          </View>
+                          <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Válidos</Text>
+                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e293b' }}>{vals.length}/{sistemaPliegues === '6' ? 6 : 8}</Text>
+                          </View>
+                        </View>
+                      );
+                    })()}
                   </View>
                 </View>
 
@@ -1386,9 +1520,16 @@ const Anthropometry = ({ navigation }) => {
 
                   {/* Pliegues Cutáneos */}
                   <View style={styles.detailSection}>
-                    <Text style={styles.detailSectionTitle}>{t('anthropometry.skinfolds')}</Text>
-                    <Text style={styles.sixFoldsHintSmall}>{t('anthropometry.sixFoldsSystem')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={styles.detailSectionTitle}>{t('anthropometry.skinfolds')}</Text>
+                      <View style={{ backgroundColor: '#e8f0fe', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#2474E5' }}>
+                          {viewingAnthropometry.sistema_pliegues === '8' ? 'ISAK (8)' : 'Yuhasz (6)'}
+                        </Text>
+                      </View>
+                    </View>
                     <View style={styles.detailGrid}>
+                      {/* Yuhasz 6 */}
                       <View style={styles.detailGridItem}>
                         <Text style={styles.detailLabel}>{t('anthropometry.tricipital')}</Text>
                         <Text style={styles.detailValue}>{viewingAnthropometry.pliegues?.tricipital || '-'} mm</Text>
@@ -1413,31 +1554,55 @@ const Anthropometry = ({ navigation }) => {
                         <Text style={styles.detailLabel}>{t('anthropometry.piernaMedial')}</Text>
                         <Text style={styles.detailValue}>{viewingAnthropometry.pliegues?.pierna_medial || '-'} mm</Text>
                       </View>
+                      {/* ISAK 8: bíceps + cresta ilíaca */}
+                      {viewingAnthropometry.pliegues?.bicipital != null && (
+                        <View style={styles.detailGridItem}>
+                          <Text style={styles.detailLabel}>{t('anthropometry.bicipital')}</Text>
+                          <Text style={styles.detailValue}>{viewingAnthropometry.pliegues?.bicipital} mm</Text>
+                        </View>
+                      )}
+                      {viewingAnthropometry.pliegues?.cresta_iliaca != null && (
+                        <View style={styles.detailGridItem}>
+                          <Text style={styles.detailLabel}>{t('anthropometry.crestaIliaca')}</Text>
+                          <Text style={styles.detailValue}>{viewingAnthropometry.pliegues?.cresta_iliaca} mm</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
 
                   {/* Resultados Calculados */}
                   <View style={styles.detailSection}>
-                    <Text style={styles.detailSectionTitle}>{t('anthropometry.bodyComposition')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={styles.detailSectionTitle}>{t('anthropometry.bodyComposition')}</Text>
+                      <View style={{ backgroundColor: '#e8f0fe', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#2474E5' }}>
+                          {viewingAnthropometry.sistema_pliegues === '8' ? 'ISAK (8)' : 'Yuhasz (6)'}
+                        </Text>
+                      </View>
+                    </View>
                     <View style={styles.detailResultsGrid}>
                       <View style={styles.detailResultCard}>
                         <Text style={styles.detailResultLabel}>{t('anthropometry.sumOfFolds')}</Text>
                         <Text style={styles.detailResultValue}>{viewingAnthropometry.suma_pliegues?.toFixed(1) || '-'} mm</Text>
                       </View>
                       <View style={styles.detailResultCard}>
-                        <Text style={styles.detailResultLabel}>{t('anthropometry.fatPercentage')}</Text>
-                        <Text style={styles.detailResultValue}>{viewingAnthropometry.porcentaje_grasa?.toFixed(1) || '-'}%</Text>
+                        <Text style={styles.detailResultLabel}>{t('anthropometry.average')}</Text>
+                        <Text style={styles.detailResultValue}>{viewingAnthropometry.media_pliegues?.toFixed(1) || '-'} mm</Text>
                       </View>
-                      {viewingAnthropometry.masa_grasa && (
+                      <View style={styles.detailResultCard}>
+                        <Text style={styles.detailResultLabel}>%GC</Text>
+                        <Text style={[styles.detailResultValue, { color: '#2474E5' }]}>{viewingAnthropometry.porcentaje_grasa?.toFixed(1) || '-'}%</Text>
+                      </View>
+                      {viewingAnthropometry.masa_grasa != null && (
                         <View style={styles.detailResultCard}>
                           <Text style={styles.detailResultLabel}>{t('anthropometry.fatMass')}</Text>
-                          <Text style={styles.detailResultValue}>{viewingAnthropometry.masa_grasa?.toFixed(1)} kg</Text>
+                          <Text style={styles.detailResultValue}>{Number(viewingAnthropometry.masa_grasa).toFixed(1)} kg</Text>
                         </View>
                       )}
-                      {viewingAnthropometry.masa_magra && (
+                      {viewingAnthropometry.masa_magra != null && (
                         <View style={styles.detailResultCard}>
                           <Text style={styles.detailResultLabel}>{t('anthropometry.leanMass')}</Text>
-                          <Text style={styles.detailResultValue}>{viewingAnthropometry.masa_magra?.toFixed(1)} kg</Text>
+                          <Text style={styles.detailResultValue}>{Number(viewingAnthropometry.masa_magra).toFixed(1)} kg</Text>
                         </View>
                       )}
                     </View>
@@ -2461,6 +2626,22 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginBottom: 12,
+  },
+  systemPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  systemPillActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  systemPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+  },
+  systemPillTextActive: {
+    color: '#fff',
   },
   createCardContent: {
     gap: 16,

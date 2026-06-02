@@ -129,6 +129,16 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     setIsGenerating(true);
 
     try {
+      // Si el video ya está almacenado en R2, usamos la URL permanente por ID de MongoDB.
+      // Esto evita el ciclo de regeneración que devuelve un preview_xxx temporal que expira.
+      if (video.hasStoredVideo) {
+        const streamUrl = Platform.OS === 'web'
+          ? await resolvePlayableVideoUrl(video._id)
+          : getVideoStreamUrl(video._id);
+        setVideoUrl(streamUrl);
+        return;
+      }
+
       const field = getFieldById(video.fieldType);
       let fieldImageData = null;
 
@@ -179,10 +189,43 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     
     setDownloadingVideo(true);
     try {
-      // Primero regenerar el video
+      // Si el video ya está almacenado en R2, descargar directamente por ID permanente
+      if (video.hasStoredVideo) {
+        if (Platform.OS === 'web') {
+          await downloadResolvedVideo(video._id, getLocalizedVideoName(video));
+          return;
+        }
+        const downloadUrl = getVideoDownloadUrl(video._id);
+        const fileName = `${getLocalizedVideoName(video)}.mp4`;
+        const fileUri = FileSystem.documentDirectory + fileName;
+        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, fileUri);
+        const downloadResult = await downloadResumable.downloadAsync();
+        if (downloadResult && downloadResult.uri) {
+          if (Platform.OS === 'android') {
+            try {
+              const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+              await MediaLibrary.createAlbumAsync('xtramys', asset, false);
+              Alert.alert(t('message.success'), t('video.savedToGallery'));
+            } catch (saveErr) {
+              const isAvailable = await Sharing.isAvailableAsync();
+              if (isAvailable) {
+                await Sharing.shareAsync(downloadResult.uri, { mimeType: 'video/mp4' });
+              } else {
+                throw saveErr;
+              }
+            }
+          } else {
+            const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+            await MediaLibrary.createAlbumAsync('xtramys', asset, false);
+            Alert.alert(t('message.success'), t('video.savedToGallery'));
+          }
+        }
+        return;
+      }
+
+      // Si no hay video guardado, regenerar desde keyframes
       const field = getFieldById(video.fieldType);
       let fieldImageData = null;
-      
       if (field && field.image) {
         try {
           const asset = field.image;
