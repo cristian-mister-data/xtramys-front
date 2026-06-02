@@ -121,7 +121,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     loadVideos();
   }, [exercise?._id]);
   
-  // Función para reproducir video
+  // Función para reproducir video - misma lógica que myVideos
   const handlePlayVideo = async (video) => {
     setSelectedVideo(video);
     setShowVideoModal(true);
@@ -129,51 +129,9 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     setIsGenerating(true);
 
     try {
-      // Si el video ya está almacenado en R2, usamos la URL permanente por ID de MongoDB.
-      // Esto evita el ciclo de regeneración que devuelve un preview_xxx temporal que expira.
-      if (video.hasStoredVideo) {
-        const streamUrl = Platform.OS === 'web'
-          ? await resolvePlayableVideoUrl(video._id)
-          : getVideoStreamUrl(video._id);
-        setVideoUrl(streamUrl);
-        return;
-      }
-
-      const field = getFieldById(video.fieldType);
-      let fieldImageData = null;
-
-      if (field && field.image) {
-        try {
-          const asset = field.image;
-          const assetUri = normalizeImageSource(asset, { cacheBust: false });
-          if (assetUri) {
-            const response = await fetch(assetUri);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            fieldImageData = await new Promise((resolve, reject) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          }
-        } catch (err) {
-          console.warn('Error cargando imagen del campo:', err);
-        }
-      }
-
-      const result = await regenerateVideoWithField(video._id, fieldImageData);
-
-      if (result.success && result.videoId) {
-        const streamUrl = Platform.OS === 'web'
-          ? await resolvePlayableVideoUrl(result.videoId)
-          : getVideoStreamUrl(result.videoId);
-        setVideoUrl(streamUrl);
-      } else if (result?.videoId) {
-        const streamUrl = Platform.OS === 'web'
-          ? await resolvePlayableVideoUrl(result.videoId)
-          : getVideoStreamUrl(result.videoId);
-        setVideoUrl(streamUrl);
-      }
+      const resolvedUrl = await resolvePlayableVideoUrl(video);
+      if (!resolvedUrl) throw new Error('No se pudo resolver la URL del vídeo');
+      setVideoUrl(resolvedUrl);
     } catch (error) {
       console.error('Error reproduciendo video:', error);
       Alert.alert(t('message.error'), t('exercise.videoPlayError'));
@@ -183,106 +141,15 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     }
   };
   
-  // Función para descargar video
+  // Función para descargar video - misma lógica que myVideos
   const handleDownloadVideo = async (video) => {
     if (downloadingVideo) return;
     
     setDownloadingVideo(true);
     try {
-      // Si el video ya está almacenado en R2, descargar directamente por ID permanente
-      if (video.hasStoredVideo) {
-        if (Platform.OS === 'web') {
-          await downloadResolvedVideo(video._id, getLocalizedVideoName(video));
-          return;
-        }
-        const downloadUrl = getVideoDownloadUrl(video._id);
-        const fileName = `${getLocalizedVideoName(video)}.mp4`;
-        const fileUri = FileSystem.documentDirectory + fileName;
-        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, fileUri);
-        const downloadResult = await downloadResumable.downloadAsync();
-        if (downloadResult && downloadResult.uri) {
-          if (Platform.OS === 'android') {
-            try {
-              const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-              await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-              Alert.alert(t('message.success'), t('video.savedToGallery'));
-            } catch (saveErr) {
-              const isAvailable = await Sharing.isAvailableAsync();
-              if (isAvailable) {
-                await Sharing.shareAsync(downloadResult.uri, { mimeType: 'video/mp4' });
-              } else {
-                throw saveErr;
-              }
-            }
-          } else {
-            const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-            await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-            Alert.alert(t('message.success'), t('video.savedToGallery'));
-          }
-        }
-        return;
-      }
-
-      // Si no hay video guardado, regenerar desde keyframes
-      const field = getFieldById(video.fieldType);
-      let fieldImageData = null;
-      if (field && field.image) {
-        try {
-          const asset = field.image;
-          const assetUri = normalizeImageSource(asset, { cacheBust: false });
-          if (!assetUri) throw new Error('No asset URI');
-          const response = await fetch(assetUri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          fieldImageData = await new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } catch (err) {
-          console.warn('Error cargando imagen del campo:', err);
-        }
-      }
-      
-      const result = await regenerateVideoWithField(video._id, fieldImageData);
-      
-      if (result.success && result.videoId) {
-        if (Platform.OS === 'web') {
-          await downloadResolvedVideo(result.videoId, getLocalizedVideoName(video));
-          return;
-        }
-
-        const downloadUrl = getVideoDownloadUrl(result.videoId);
-        const fileName = `${getLocalizedVideoName(video)}.mp4`;
-        const fileUri = FileSystem.documentDirectory + fileName;
-        
-        const downloadResumable = FileSystem.createDownloadResumable(
-          downloadUrl,
-          fileUri
-        );
-        
-        const downloadResult = await downloadResumable.downloadAsync();
-        if (downloadResult && downloadResult.uri) {
-          if (Platform.OS === 'android') {
-            try {
-              const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-              await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-              Alert.alert(t('message.success'), t('video.savedToGallery'));
-            } catch (saveErr) {
-              const isAvailable = await Sharing.isAvailableAsync();
-              if (isAvailable) {
-                await Sharing.shareAsync(downloadResult.uri, { mimeType: 'video/mp4' });
-              } else {
-                throw saveErr;
-              }
-            }
-          } else {
-            const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-            await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-            Alert.alert(t('message.success'), t('video.savedToGallery'));
-          }
-        }
-      }
+      const videoObj = typeof video === 'object' && video ? video : { id: video };
+      await downloadResolvedVideo(videoObj, getLocalizedVideoName(videoObj));
+      Alert.alert(t('message.success'), t('video.savedToGallery'));
     } catch (error) {
       console.error('Error descargando video:', error);
       Alert.alert(t('message.error'), t('video.downloadError'));
