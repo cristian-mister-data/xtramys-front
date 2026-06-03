@@ -1,0 +1,5 @@
+# Serve index.html with no-cache so the browser always fetches the latest version
+/index.html
+  Cache-Control: no-cache
+  Cache-Control: no-store
+  Cache-Control: must-revalidate
