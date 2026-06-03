@@ -45,6 +45,14 @@ const SectionTitle = styled.div`
   font-size: 14px;
 `;
 
+const DayBlock = styled.div`
+  margin-bottom: 12px;
+  padding: 10px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
 const ItemRow = styled.div`
   display: flex;
   gap: 8px;
@@ -246,7 +254,7 @@ export default function EditPlanModal({ open, onClose, plan, onSaved }) {
       <Section>
         <SectionTitle>{t('nutrition.sections.weeklyMenu', 'Menú semanal')}</SectionTitle>
         {(editData.preseason?.weekly_menu || []).map((day, i) => (
-        <div key={i} style={{ marginBottom: 12, padding: 10, background: 'var(--surface-bg, #f8fafc)', borderRadius: 8, border: '1px solid var(--border-color, #e2e8f0)' }}>
+        <DayBlock key={i}>
             <Row $gap={8}>
               <Input
                 style={{ flex: 1 }}
@@ -289,7 +297,7 @@ export default function EditPlanModal({ open, onClose, plan, onSaved }) {
               }
               placeholder={t('nutrition.meals.dinner')}
             />
-          </div>
+          </DayBlock>
         ))}
       </Section>
     </>

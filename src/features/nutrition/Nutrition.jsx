@@ -95,7 +95,9 @@ const ModePill = styled.button`
   color: ${({ $custom, theme }) => ($custom ? theme.colors.success : theme.colors.primary)};
   font-weight: 600;
   cursor: pointer;
-  &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
+  &:hover {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+  }
 `;
 
 const Counter = styled.span`
@@ -119,7 +121,9 @@ const PdfBtn = styled.button`
   font-weight: 600;
   cursor: pointer;
   margin-left: auto;
-  &:hover { opacity: 0.9; }
+  &:hover {
+    opacity: 0.9;
+  }
 
   @media (max-width: 720px) {
     width: 100%;
@@ -139,7 +143,8 @@ const OptionPill = styled.button`
   min-width: 120px;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.border)};
+  border: 1px solid
+    ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.border)};
   background: ${({ theme, $active }) => ($active ? theme.colors.primary : theme.colors.surface)};
   color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.text)};
   font-weight: 600;
@@ -234,7 +239,10 @@ const MealTile = styled.button`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  &:hover { transform: translateY(-2px); transition: transform .15s; }
+  &:hover {
+    transform: translateY(-2px);
+    transition: transform 0.15s;
+  }
 `;
 
 const MealTileTitle = styled.div`
@@ -287,7 +295,10 @@ const DayCardWrap = styled.button`
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
   &:hover {
     box-shadow: ${({ theme }) => theme.shadows.md};
     transform: translateY(-2px);
@@ -347,7 +358,10 @@ const MealRow = styled.div`
   gap: 10px;
   align-items: flex-start;
   min-width: 0;
-  > div:last-child { min-width: 0; flex: 1; }
+  > div:last-child {
+    min-width: 0;
+    flex: 1;
+  }
 `;
 
 const MealCircle = styled.div`
@@ -404,7 +418,10 @@ const ContextCardWrap = styled.button`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  &:hover { transform: translateY(-2px); transition: transform .15s; }
+  &:hover {
+    transform: translateY(-2px);
+    transition: transform 0.15s;
+  }
 `;
 
 const ContextLeft = styled.div`
@@ -427,11 +444,16 @@ const ContextRight = styled.div`
 const ContextStat = styled.div`
   text-align: center;
   font-size: 11px;
-  strong { display: block; font-size: 18px; }
+  strong {
+    display: block;
+    font-size: 18px;
+  }
 
   @media (max-width: 600px) {
     font-size: 10px;
-    strong { font-size: 16px; }
+    strong {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -476,7 +498,8 @@ const Table = styled.table`
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 12px;
-  th, td {
+  th,
+  td {
     padding: 6px 8px;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     text-align: left;
@@ -485,9 +508,16 @@ const Table = styled.table`
     overflow-wrap: anywhere;
     vertical-align: top;
   }
-  th { background: ${({ theme }) => theme.colors.backgroundAlt}; font-weight: 600; }
-  td:first-child { min-width: 0; }
-  tr:nth-child(even) td { background: #fafbfd; }
+  th {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    font-weight: 600;
+  }
+  td:first-child {
+    min-width: 0;
+  }
+  tr:nth-child(even) td {
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+  }
 `;
 
 const Bullet = styled.div`
@@ -511,7 +541,9 @@ const TimelineItem = styled.div`
   gap: 12px;
   padding: 8px 0;
   border-bottom: 1px dashed ${({ theme }) => theme.colors.border};
-  &:last-child { border-bottom: 0; }
+  &:last-child {
+    border-bottom: 0;
+  }
 `;
 
 const TimelineCircle = styled.div`
@@ -531,7 +563,9 @@ const SupplementCard = styled.div`
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px dashed ${({ theme }) => theme.colors.border};
-  &:last-child { border-bottom: 0; }
+  &:last-child {
+    border-bottom: 0;
+  }
 `;
 
 const ModalOptionItem = styled.div`
@@ -545,8 +579,8 @@ const OptionNumber = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: ${({ $color }) => `${$color}22`};
-  color: ${({ $color }) => $color};
+  background: ${({ $color, theme }) => `${$color || theme.colors.textMuted}22`};
+  color: ${({ $color, theme }) => $color || theme.colors.text};
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -580,7 +614,10 @@ function MealTypeCard({ mealKey, mealData, onClick, t }) {
       <Icon size={28} />
       <MealTileTitle>{titles[mealKey]}</MealTileTitle>
       <MealTileCount>
-        {mealData.length} {mealKey === 'breakfast' ? t('nutrition.edit.types', 'tipos') : t('nutrition.edit.options', 'opciones')}
+        {mealData.length}{' '}
+        {mealKey === 'breakfast'
+          ? t('nutrition.edit.types', 'tipos')
+          : t('nutrition.edit.options', 'opciones')}
       </MealTileCount>
     </MealTile>
   );
@@ -600,14 +637,18 @@ function DayCard({ dayData, onClick, t }) {
       </DayCardHeader>
       <DayBody>
         <MealRow>
-          <MealCircle $color={MEAL_COLORS.lunch}><MdRestaurant size={18} /></MealCircle>
+          <MealCircle $color={MEAL_COLORS.lunch}>
+            <MdRestaurant size={18} />
+          </MealCircle>
           <div>
             <MealLabel>{t('nutrition.meals.lunch')}</MealLabel>
             <MealDescription>{dayData.lunch}</MealDescription>
           </div>
         </MealRow>
         <MealRow>
-          <MealCircle $color={MEAL_COLORS.dinner}><MdDinnerDining size={18} /></MealCircle>
+          <MealCircle $color={MEAL_COLORS.dinner}>
+            <MdDinnerDining size={18} />
+          </MealCircle>
           <div>
             <MealLabel>{t('nutrition.meals.dinner')}</MealLabel>
             <MealDescription>{dayData.dinner}</MealDescription>
@@ -619,10 +660,14 @@ function DayCard({ dayData, onClick, t }) {
 }
 
 function ContextCard({ contextData, onClick, t }) {
-  const bg = contextData.icon === 'fitness-center' ? GRAD_GREEN
-    : contextData.icon === 'weekend' ? GRAD_PURPLE
-    : contextData.icon === 'sports-soccer' ? GRAD_ORANGE
-    : GRAD_BLUE;
+  const bg =
+    contextData.icon === 'fitness-center'
+      ? GRAD_GREEN
+      : contextData.icon === 'weekend'
+        ? GRAD_PURPLE
+        : contextData.icon === 'sports-soccer'
+          ? GRAD_ORANGE
+          : GRAD_BLUE;
   return (
     <ContextCardWrap $bg={bg} onClick={onClick}>
       <ContextLeft>
@@ -655,7 +700,9 @@ function QuantitiesSection({ data, t }) {
         {t('nutrition.reference.quantitiesTitle')}
       </RefHeader>
       <Collapsible onClick={() => setExpanded(expanded === 'carbs' ? '' : 'carbs')}>
-        <span><MdGrain color="#f59e0b" /> {t('nutrition.reference.carbohydrates')}</span>
+        <span>
+          <MdGrain color="#f59e0b" /> {t('nutrition.reference.carbohydrates')}
+        </span>
         {expanded === 'carbs' ? <MdExpandLess /> : <MdExpandMore />}
       </Collapsible>
       {expanded === 'carbs' && (
@@ -670,7 +717,10 @@ function QuantitiesSection({ data, t }) {
           <tbody>
             {carbs.map((it, i) => (
               <tr key={i}>
-                <td>{it.name}{it.note ? <Muted> ({it.note})</Muted> : null}</td>
+                <td>
+                  {it.name}
+                  {it.note ? <Muted> ({it.note})</Muted> : null}
+                </td>
                 <td>{it.lunch}g</td>
                 <td>{it.dinner === 0 ? '—' : `${it.dinner}g`}</td>
               </tr>
@@ -695,8 +745,14 @@ function QuantitiesSection({ data, t }) {
             {proteins.map((it, i) => (
               <tr key={i}>
                 <td>{it.name}</td>
-                <td>{it.lunch}{it.unit || 'g'}</td>
-                <td>{it.dinner}{it.unit || 'g'}</td>
+                <td>
+                  {it.lunch}
+                  {it.unit || 'g'}
+                </td>
+                <td>
+                  {it.dinner}
+                  {it.unit || 'g'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -711,7 +767,10 @@ function SupplementsSection({ data, t }) {
     <RefCard>
       <RefHeader>
         <MdMedication color="#3949ab" size={22} />
-        {t('nutrition.reference.supplementsTitle', t('nutrition.reference.supplements', 'Suplementos'))}
+        {t(
+          'nutrition.reference.supplementsTitle',
+          t('nutrition.reference.supplements', 'Suplementos'),
+        )}
       </RefHeader>
       {(data?.supplements || []).map((s, i) => (
         <SupplementCard key={i}>
@@ -732,7 +791,10 @@ function MatchProtocolSection({ data, t }) {
     <RefCard>
       <RefHeader>
         <MdSportsSoccer color="#f59e0b" size={22} />
-        {t('nutrition.reference.matchProtocolTitle', t('nutrition.reference.matchProtocol', 'Protocolo partido'))}
+        {t(
+          'nutrition.reference.matchProtocolTitle',
+          t('nutrition.reference.matchProtocol', 'Protocolo partido'),
+        )}
       </RefHeader>
       {steps.map((step, i) => (
         <TimelineItem key={i}>
@@ -771,25 +833,31 @@ function DayDetailModal({ open, onClose, dayData, t }) {
   return (
     <Modal open={open} onClose={onClose} title={`${dayData.day} · ${dayData.tag}`} width={560}>
       <Stack $gap={12}>
-        <div style={{
-          padding: 12,
-          borderRadius: 8,
-          background: isRest ? GRAD_PURPLE : GRAD_GREEN,
-          color: '#fff',
-          fontWeight: 600,
-        }}>
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 8,
+            background: isRest ? GRAD_PURPLE : GRAD_GREEN,
+            color: '#fff',
+            fontWeight: 600,
+          }}
+        >
           {isRest ? t('nutrition.tags.rest') : t('nutrition.tags.training', dayData.tag)}
         </div>
         <RefCard>
           <RefHeader>
-            <MealCircle $color={MEAL_COLORS.lunch}><MdRestaurant size={18} /></MealCircle>
+            <MealCircle $color={MEAL_COLORS.lunch}>
+              <MdRestaurant size={18} />
+            </MealCircle>
             {t('nutrition.meals.lunch')}
           </RefHeader>
           <div>{dayData.lunch}</div>
         </RefCard>
         <RefCard>
           <RefHeader>
-            <MealCircle $color={MEAL_COLORS.dinner}><MdDinnerDining size={18} /></MealCircle>
+            <MealCircle $color={MEAL_COLORS.dinner}>
+              <MdDinnerDining size={18} />
+            </MealCircle>
             {t('nutrition.meals.dinner')}
           </RefHeader>
           <div>{dayData.dinner}</div>
@@ -806,7 +874,9 @@ function ContextDetailModal({ open, onClose, contextData, t }) {
       <Stack $gap={12}>
         <RefCard>
           <RefHeader>
-            <MealCircle $color={MEAL_COLORS.lunch}><MdRestaurant size={18} /></MealCircle>
+            <MealCircle $color={MEAL_COLORS.lunch}>
+              <MdRestaurant size={18} />
+            </MealCircle>
             {t('nutrition.meals.lunchOptions', t('nutrition.meals.lunches', 'Comidas'))}
           </RefHeader>
           {contextData.lunches.map((lunch, i) => (
@@ -818,7 +888,9 @@ function ContextDetailModal({ open, onClose, contextData, t }) {
         </RefCard>
         <RefCard>
           <RefHeader>
-            <MealCircle $color={MEAL_COLORS.dinner}><MdDinnerDining size={18} /></MealCircle>
+            <MealCircle $color={MEAL_COLORS.dinner}>
+              <MdDinnerDining size={18} />
+            </MealCircle>
             {t('nutrition.meals.dinnerOptions', t('nutrition.meals.dinners', 'Cenas'))}
           </RefHeader>
           {contextData.dinners.map((dinner, i) => (
@@ -851,7 +923,7 @@ function MealDetailModal({ open, onClose, mealKey, mealData, t }) {
             ))}
             {(item.options || []).map((opt, j) => (
               <ModalOptionItem key={`o-${j}`}>
-                <OptionNumber $color="#1a237e">{j + 1}</OptionNumber>
+                <OptionNumber>{j + 1}</OptionNumber>
                 <div>{opt}</div>
               </ModalOptionItem>
             ))}
@@ -893,15 +965,20 @@ export default function Nutrition() {
   const defaultPreseasonDataOpt2 = useMemo(() => getPreSeasonDataOption2(t), [t]);
   const defaultSeasonDataOpt2 = useMemo(() => getSeasonDataOption2(t), [t]);
 
-  const currentPreseasonData = viewMode === 'custom' && customData?.preseason
-    ? customData.preseason
-    : recommendedOption === 2 ? defaultPreseasonDataOpt2 : defaultPreseasonData;
-  const currentSeasonData = viewMode === 'custom' && customData?.season
-    ? customData.season
-    : recommendedOption === 2 ? defaultSeasonDataOpt2 : defaultSeasonData;
-  const currentReferenceData = viewMode === 'custom' && customData?.reference
-    ? customData.reference
-    : defaultReferenceData;
+  const currentPreseasonData =
+    viewMode === 'custom' && customData?.preseason
+      ? customData.preseason
+      : recommendedOption === 2
+        ? defaultPreseasonDataOpt2
+        : defaultPreseasonData;
+  const currentSeasonData =
+    viewMode === 'custom' && customData?.season
+      ? customData.season
+      : recommendedOption === 2
+        ? defaultSeasonDataOpt2
+        : defaultSeasonData;
+  const currentReferenceData =
+    viewMode === 'custom' && customData?.reference ? customData.reference : defaultReferenceData;
 
   // Load plans
   useEffect(() => {
@@ -924,12 +1001,21 @@ export default function Nutrition() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [userId]);
 
   const handleGeneratePDF = () => {
-    const optionLabel = viewMode === 'recommended' ? `${t('nutrition.option', 'Opción')} ${recommendedOption}` : null;
-    generateNutritionPdf(currentPreseasonData, currentSeasonData, currentReferenceData, t, optionLabel);
+    const optionLabel =
+      viewMode === 'recommended' ? `${t('nutrition.option', 'Opción')} ${recommendedOption}` : null;
+    generateNutritionPdf(
+      currentPreseasonData,
+      currentSeasonData,
+      currentReferenceData,
+      t,
+      optionLabel,
+    );
   };
 
   const handleSelectRecommended = () => {
@@ -948,9 +1034,10 @@ export default function Nutrition() {
     try {
       const newPlan = {
         user: userId,
-        name: plans.length === 0
-          ? t('nutrition.titles.myNutritionalPlan', 'Mi plan nutricional')
-          : `${t('nutrition.titles.myNutritionalPlan', 'Mi plan nutricional')} ${plans.length + 1}`,
+        name:
+          plans.length === 0
+            ? t('nutrition.titles.myNutritionalPlan', 'Mi plan nutricional')
+            : `${t('nutrition.titles.myNutritionalPlan', 'Mi plan nutricional')} ${plans.length + 1}`,
         isCustom: true,
         preseason: JSON.parse(JSON.stringify(defaultPreseasonData)),
         season: JSON.parse(JSON.stringify(defaultSeasonData)),
@@ -1036,7 +1123,11 @@ export default function Nutrition() {
   };
 
   if (loading) {
-    return <Container><Muted>{t('nutrition.loading', 'Cargando...')}</Muted></Container>;
+    return (
+      <Container>
+        <Muted>{t('nutrition.loading', 'Cargando...')}</Muted>
+      </Container>
+    );
   }
 
   const renderPreseason = () => (
@@ -1046,12 +1137,30 @@ export default function Nutrition() {
       </SeasonHeader>
       <SectionTitle>🍳 {t('nutrition.edit.dailyMeals', 'Comidas diarias')}</SectionTitle>
       <HScroll>
-        <MealTypeCard mealKey="breakfast" mealData={currentPreseasonData.meals.breakfast}
-          onClick={() => setSelectedMeal({ key: 'breakfast', data: currentPreseasonData.meals.breakfast })} t={t} />
-        <MealTypeCard mealKey="mid_morning" mealData={currentPreseasonData.meals.mid_morning}
-          onClick={() => setSelectedMeal({ key: 'mid_morning', data: currentPreseasonData.meals.mid_morning })} t={t} />
-        <MealTypeCard mealKey="snacks" mealData={currentPreseasonData.meals.snacks}
-          onClick={() => setSelectedMeal({ key: 'snacks', data: currentPreseasonData.meals.snacks })} t={t} />
+        <MealTypeCard
+          mealKey="breakfast"
+          mealData={currentPreseasonData.meals.breakfast}
+          onClick={() =>
+            setSelectedMeal({ key: 'breakfast', data: currentPreseasonData.meals.breakfast })
+          }
+          t={t}
+        />
+        <MealTypeCard
+          mealKey="mid_morning"
+          mealData={currentPreseasonData.meals.mid_morning}
+          onClick={() =>
+            setSelectedMeal({ key: 'mid_morning', data: currentPreseasonData.meals.mid_morning })
+          }
+          t={t}
+        />
+        <MealTypeCard
+          mealKey="snacks"
+          mealData={currentPreseasonData.meals.snacks}
+          onClick={() =>
+            setSelectedMeal({ key: 'snacks', data: currentPreseasonData.meals.snacks })
+          }
+          t={t}
+        />
       </HScroll>
       <SectionTitle>📅 {t('nutrition.edit.weeklyMenu', 'Menú semanal')}</SectionTitle>
       <CardGrid>
@@ -1069,12 +1178,28 @@ export default function Nutrition() {
       </SeasonHeader>
       <SectionTitle>🍳 {t('nutrition.edit.dailyMeals', 'Comidas diarias')}</SectionTitle>
       <HScroll>
-        <MealTypeCard mealKey="breakfast" mealData={currentSeasonData.meals.breakfast}
-          onClick={() => setSelectedMeal({ key: 'breakfast', data: currentSeasonData.meals.breakfast })} t={t} />
-        <MealTypeCard mealKey="mid_morning" mealData={currentSeasonData.meals.mid_morning}
-          onClick={() => setSelectedMeal({ key: 'mid_morning', data: currentSeasonData.meals.mid_morning })} t={t} />
-        <MealTypeCard mealKey="snacks" mealData={currentSeasonData.meals.snacks}
-          onClick={() => setSelectedMeal({ key: 'snacks', data: currentSeasonData.meals.snacks })} t={t} />
+        <MealTypeCard
+          mealKey="breakfast"
+          mealData={currentSeasonData.meals.breakfast}
+          onClick={() =>
+            setSelectedMeal({ key: 'breakfast', data: currentSeasonData.meals.breakfast })
+          }
+          t={t}
+        />
+        <MealTypeCard
+          mealKey="mid_morning"
+          mealData={currentSeasonData.meals.mid_morning}
+          onClick={() =>
+            setSelectedMeal({ key: 'mid_morning', data: currentSeasonData.meals.mid_morning })
+          }
+          t={t}
+        />
+        <MealTypeCard
+          mealKey="snacks"
+          mealData={currentSeasonData.meals.snacks}
+          onClick={() => setSelectedMeal({ key: 'snacks', data: currentSeasonData.meals.snacks })}
+          t={t}
+        />
       </HScroll>
       <SectionTitle>📋 {t('nutrition.edit.menusByContext', 'Menús por contexto')}</SectionTitle>
       <Stack $gap={10}>

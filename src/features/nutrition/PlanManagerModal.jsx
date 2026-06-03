@@ -23,7 +23,7 @@ const ModeRow = styled.button`
   width: 100%;
   border-radius: ${({ theme }) => theme.radius.md};
   border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
-  background: ${({ $active, theme }) => ($active ? `${theme.colors.primary}10` : '#fff')};
+  background: ${({ $active, theme }) => ($active ? `${theme.colors.primary}10` : theme.colors.surface)};
   cursor: pointer;
   text-align: left;
   &:hover { background: ${({ theme }) => theme.colors.backgroundAlt}; }
@@ -42,7 +42,7 @@ const Actions = styled.div`
 
 const IconBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.radius.sm};
   padding: 6px 8px;
   cursor: pointer;
