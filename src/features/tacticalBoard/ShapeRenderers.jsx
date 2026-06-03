@@ -95,11 +95,49 @@ export function RectShape({ el, selected, onSelect, p2r, r2p, applyChange, refSc
   const dash = el.dashed ? [sw * 3, sw * 2] : undefined;
   const bodyHandlers = makeBodyDragHandlers({ el: { ...el, points: [{ x: el.x, y: el.y }, { x: el.x + el.w, y: el.y + el.h }] }, p2r, r2p, applyChange: (updater) => applyChange((prev) => { const interim = updater(prev); return interim.map((it) => { if (it.id !== el.id || !it.points) return it; const [a, b] = it.points; const nx = Math.min(a.x, b.x), ny = Math.min(a.y, b.y); const nw = Math.abs(b.x - a.x), nh = Math.abs(b.y - a.y); const { points: _omit, ...rest } = it; return { ...rest, x: nx, y: ny, w: nw, h: nh }; }); }), viewMode, size });
   const updateCorner = (corner) => (px, py) => { const r = p2r(px, py); applyChange((prev) => prev.map((it) => { if (it.id !== el.id) return it; let nx = it.x, ny = it.y, nw = it.w, nh = it.h; if (corner === 'tl') { nw = (it.x + it.w) - r.x; nh = (it.y + it.h) - r.y; nx = r.x; ny = r.y; } else if (corner === 'tr') { nw = r.x - it.x; nh = (it.y + it.h) - r.y; ny = r.y; } else if (corner === 'bl') { nw = (it.x + it.w) - r.x; nh = r.y - it.y; nx = r.x; } else if (corner === 'br') { nw = r.x - it.x; nh = r.y - it.y; } if (nw < 0) { nx += nw; nw = -nw; } if (nh < 0) { ny += nh; nh = -nh; } return { ...it, x: nx, y: ny, w: nw, h: nh }; })); };
+
+  const fontSize = Math.max(10, Math.min(14, (size?.w || refScale) * 0.015));
+  const mWidth = (el.w * 105).toFixed(1);
+  const mHeight = (el.h * 68).toFixed(1);
+  const labelText = `${mWidth}m × ${mHeight}m`;
+  // Estimate text width
+  const labelWidth = labelText.length * fontSize * 0.6 + 12;
+  const labelHeight = fontSize + 10;
+  
+  // Position at bottom-left corner of the canvas to avoid the center
+  const labelX = 16;
+  const labelY = (size?.h || 600) - labelHeight - 16;
   return (
     <Group {...bodyHandlers} onClick={onSelect} onTap={onSelect}>
       <Rect name="delIndicator" x={x - 8} y={y - 8} width={w + 16} height={h + 16} stroke="#ff0000" strokeWidth={3} dash={[6, 4]} fill="rgba(255,0,0,0.2)" cornerRadius={4} listening={false} visible={false} />
       <Rect x={x} y={y} width={w} height={h} stroke={selected ? '#fbbf24' : (el.color || '#000')} strokeWidth={selected ? sw + 2 : sw} dash={dash} />
-      {selected && <><VertexHandle x={x} y={y} onUpdate={updateCorner('tl')} /><VertexHandle x={x + w} y={y} onUpdate={updateCorner('tr')} /><VertexHandle x={x} y={y + h} onUpdate={updateCorner('bl')} /><VertexHandle x={x + w} y={y + h} onUpdate={updateCorner('br')} /></>}
+      {selected && (
+        <>
+          <VertexHandle x={x} y={y} onUpdate={updateCorner('tl')} />
+          <VertexHandle x={x + w} y={y} onUpdate={updateCorner('tr')} />
+          <VertexHandle x={x} y={y + h} onUpdate={updateCorner('bl')} />
+          <VertexHandle x={x + w} y={y + h} onUpdate={updateCorner('br')} />
+          <Group x={labelX} y={labelY}>
+            <Rect
+              width={labelWidth}
+              height={labelHeight}
+              fill="rgba(15, 23, 42, 0.9)"
+              cornerRadius={6}
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth={1}
+            />
+            <Text
+              text={labelText}
+              fontSize={fontSize}
+              fontFamily="sans-serif"
+              fill="#ffffff"
+              fontStyle="bold"
+              x={6}
+              y={5}
+            />
+          </Group>
+        </>
+      )}
     </Group>
   );
 }
@@ -111,11 +149,45 @@ export function CircleShape({ el, selected, onSelect, p2r, r2p, applyChange, ref
   const dash = el.dashed ? [sw * 3, sw * 2] : undefined;
   const bodyHandlers = makeBodyDragHandlers({ el, p2r, r2p, applyChange, viewMode, size });
   const updateRadius = (px) => { const dx = px - center.x; const newR = Math.hypot(dx, 0) / refScale; applyChange((prev) => prev.map((it) => (it.id === el.id ? { ...it, radius: Math.max(0.01, newR) } : it))); };
+
+  const fontSize = Math.max(10, Math.min(14, (size?.w || refScale) * 0.015));
+  const mRadius = (el.radius * 105).toFixed(1);
+  const labelText = `r: ${mRadius}m`;
+  const labelWidth = labelText.length * fontSize * 0.6 + 12;
+  const labelHeight = fontSize + 10;
+  
+  // Position at bottom-left corner of the canvas to avoid the center
+  const labelX = 16;
+  const labelY = (size?.h || 600) - labelHeight - 16;
   return (
     <Group {...bodyHandlers} onClick={onSelect} onTap={onSelect}>
       <Rect name="delIndicator" x={center.x - radiusPx - 8} y={center.y - radiusPx - 8} width={radiusPx * 2 + 16} height={radiusPx * 2 + 16} stroke="#ff0000" strokeWidth={3} dash={[6, 4]} fill="rgba(255,0,0,0.2)" cornerRadius={8} listening={false} visible={false} />
       <Circle x={center.x} y={center.y} radius={radiusPx} stroke={selected ? '#fbbf24' : (el.color || '#000')} strokeWidth={selected ? sw + 2 : sw} dash={dash} hitStrokeWidth={Math.max(12, sw + 12)} fillEnabled={false} />
-      {selected && <><VertexHandle x={center.x} y={center.y} onUpdate={() => {}} /><VertexHandle x={center.x + radiusPx} y={center.y} onUpdate={(px) => updateRadius(px)} /></>}
+      {selected && (
+        <>
+          <VertexHandle x={center.x} y={center.y} onUpdate={() => {}} />
+          <VertexHandle x={center.x + radiusPx} y={center.y} onUpdate={(px) => updateRadius(px)} />
+          <Group x={labelX} y={labelY}>
+            <Rect
+              width={labelWidth}
+              height={labelHeight}
+              fill="rgba(15, 23, 42, 0.9)"
+              cornerRadius={6}
+              stroke="rgba(255, 255, 255, 0.2)"
+              strokeWidth={1}
+            />
+            <Text
+              text={labelText}
+              fontSize={fontSize}
+              fontFamily="sans-serif"
+              fill="#ffffff"
+              fontStyle="bold"
+              x={6}
+              y={5}
+            />
+          </Group>
+        </>
+      )}
     </Group>
   );
 }

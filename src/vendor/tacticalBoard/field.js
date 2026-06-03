@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import Svg, { Path, Polygon, Rect, Circle, G, Defs, ClipPath, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Polygon, Rect, Circle, Ellipse, G, Defs, ClipPath, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 import ViewShot from "react-native-view-shot";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as FileSystem from 'expo-file-system/legacy'; // Usar la API legacy
@@ -2942,15 +2942,7 @@ function LeftEditPanel({
     setLocalDotSize(icon?.dotSize ?? 2);
     setLocalDotSpacing(icon?.dotSpacing ?? 4);
     setGoalkeeperStripeColor(icon?.goalkeeperStripeColor || teamPlayerStyle?.goalkeeperStripeColor || '#ffffff');
-    if (icon && icon.type === 'circle' && icon.points && icon.points.length === 2) {
-      const dx_ratio = icon.points[1].x - icon.points[0].x;
-      const dy_ratio = icon.points[1].y - icon.points[0].y;
-      const d_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
-      setLocalDiameter(d_m.toFixed(1));
-    } else {
-      setLocalDiameter('');
-    }
-    if (icon && icon.type === 'rectangle' && icon.points && icon.points.length === 2) {
+    if (icon && (icon.type === 'circle' || icon.type === 'rectangle') && icon.points && icon.points.length === 2) {
       const w_ratio = Math.abs(icon.points[1].x - icon.points[0].x);
       const h_ratio = Math.abs(icon.points[1].y - icon.points[0].y);
       setLocalWidth((w_ratio * 105).toFixed(1));
@@ -3557,27 +3549,10 @@ function LeftEditPanel({
               )}
 
               {/* Controles para cambiar dimensiones en metros manualmente */}
-              {icon.type === 'circle' && (
+              {(icon.type === 'circle' || icon.type === 'rectangle') && (
                 <>
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>
-                    {t('tacticalBoard.editPanel.diameterLabel') || 'Diámetro (m)'}
-                  </Text>
-                  <TextInput
-                    style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
-                    keyboardType="numeric"
-                    autoComplete="off"
-                    value={localDiameter}
-                    onChangeText={setLocalDiameter}
-                    placeholder="Diámetro en metros"
-                    placeholderTextColor="#888"
-                  />
-                </>
-              )}
-
-              {icon.type === 'rectangle' && (
-                <>
-                  <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 12 }]}>
-                    {t('tacticalBoard.editPanel.widthLabel') || 'Ancho (m)'}
+                    {icon.type === 'circle' ? 'Diámetro Horizontal / Ancho (m)' : (t('tacticalBoard.editPanel.widthLabel') || 'Ancho (m)')}
                   </Text>
                   <TextInput
                     style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
@@ -3589,7 +3564,7 @@ function LeftEditPanel({
                     placeholderTextColor="#888"
                   />
                   <Text style={[isMobile ? styles.proModalLabelMobile : styles.proModalLabel, { marginTop: 10 }]}>
-                    {t('tacticalBoard.editPanel.heightLabel') || 'Alto (m)'}
+                    {icon.type === 'circle' ? 'Diámetro Vertical / Alto (m)' : (t('tacticalBoard.editPanel.heightLabel') || 'Alto (m)')}
                   </Text>
                   <TextInput
                     style={isMobile ? styles.proModalInputMobile : styles.proModalInput}
@@ -3650,29 +3625,7 @@ function LeftEditPanel({
                 style={[styles.proModalBtn, styles.proModalBtnPrimary]}
                 onPress={() => {
                   let updatedPoints = icon.points;
-                  if (icon.type === 'circle' && localDiameter && icon.points && icon.points.length === 2) {
-                    const newD_m = parseFloat(localDiameter);
-                    if (!isNaN(newD_m) && newD_m > 0) {
-                      const dx_ratio = icon.points[1].x - icon.points[0].x;
-                      const dy_ratio = icon.points[1].y - icon.points[0].y;
-                      const currentD_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
-                      if (currentD_m > 0) {
-                        const cx = (icon.points[0].x + icon.points[1].x) / 2;
-                        const cy = (icon.points[0].y + icon.points[1].y) / 2;
-                        const factor = newD_m / currentD_m;
-                        updatedPoints = [
-                          {
-                            x: Math.max(0, Math.min(1, cx - (cx - icon.points[0].x) * factor)),
-                            y: Math.max(0, Math.min(1, cy - (cy - icon.points[0].y) * factor)),
-                          },
-                          {
-                            x: Math.max(0, Math.min(1, cx + (icon.points[1].x - cx) * factor)),
-                            y: Math.max(0, Math.min(1, cy + (icon.points[1].y - cy) * factor)),
-                          }
-                        ];
-                      }
-                    }
-                  } else if (icon.type === 'rectangle' && localWidth && localHeight && icon.points && icon.points.length === 2) {
+                  if ((icon.type === 'circle' || icon.type === 'rectangle') && localWidth && localHeight && icon.points && icon.points.length === 2) {
                     const newW_m = parseFloat(localWidth);
                     const newH_m = parseFloat(localHeight);
                     if (!isNaN(newW_m) && newW_m > 0 && !isNaN(newH_m) && newH_m > 0) {
@@ -3684,12 +3637,12 @@ function LeftEditPanel({
                       const newHRatio = newH_m / 68;
                       updatedPoints = [
                         {
-                          x: Math.max(0, Math.min(1, cx - signX * (newWRatio / 2))),
-                          y: Math.max(0, Math.min(1, cy - signY * (newHRatio / 2))),
+                          x: cx - signX * (newWRatio / 2),
+                          y: cy - signY * (newHRatio / 2),
                         },
                         {
-                          x: Math.max(0, Math.min(1, cx + signX * (newWRatio / 2))),
-                          y: Math.max(0, Math.min(1, cy + signY * (newHRatio / 2))),
+                          x: cx + signX * (newWRatio / 2),
+                          y: cy + signY * (newHRatio / 2),
                         }
                       ];
                     }
@@ -6237,6 +6190,19 @@ function isCircleBorderTouch(localX, localY, centerX, centerY, radius, tolerance
   return Math.abs(Math.hypot(localX - centerX, localY - centerY) - radius) <= usableTolerance;
 }
 
+function isEllipseBorderTouch(localX, localY, centerX, centerY, rx, ry, tolerance) {
+  if (!Number.isFinite(rx) || rx <= 0 || !Number.isFinite(ry) || ry <= 0) return false;
+  const dx = localX - centerX;
+  const dy = localY - centerY;
+  const distance = Math.hypot(dx, dy);
+  if (distance === 0) return false;
+  const cos = dx / distance;
+  const sin = dy / distance;
+  const angleRadius = (rx * ry) / Math.sqrt((ry * cos) ** 2 + (rx * sin) ** 2);
+  const usableTolerance = Math.min(tolerance, SHAPE_BORDER_HIT_TOLERANCE, Math.max(4, Math.min(rx, ry) * 0.14));
+  return Math.abs(distance - angleRadius) <= usableTolerance;
+}
+
 function isRectangleBorderTouch(localX, localY, rectX, rectY, rectWidth, rectHeight, tolerance) {
   if (rectWidth <= 0 || rectHeight <= 0) return false;
   const outerLeft = rectX - tolerance;
@@ -6326,8 +6292,9 @@ function isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageH
     const secondPoint = ratioToDisplay(clone.points[1].x, clone.points[1].y, viewMode, imageWidth, imageHeight);
     const centerX = (firstPoint.x + secondPoint.x) / 2;
     const centerY = (firstPoint.y + secondPoint.y) / 2;
-    const radius = Math.hypot(secondPoint.x - firstPoint.x, secondPoint.y - firstPoint.y) / 2;
-    return isCircleBorderTouch(pointX, pointY, centerX, centerY, radius, tolerance);
+    const rx = Math.abs(secondPoint.x - firstPoint.x) / 2;
+    const ry = Math.abs(secondPoint.y - firstPoint.y) / 2;
+    return isEllipseBorderTouch(pointX, pointY, centerX, centerY, rx, ry, tolerance);
   }
 
   if (clone.type === 'rectangle' && clone.points?.length === 2) {
@@ -7626,34 +7593,66 @@ const MemoizedCurveLineDetector = React.memo(({
 
 // Círculo SVG memoizado - solo renderiza el SVG
 const MemoizedCircleSvg = React.memo(({
-  id, centerX, centerY, radius, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, diameter_m
+  id, centerX, centerY, rx, ry, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, diameter_w_m, diameter_h_m,
+  isSelected, imageWidth, imageHeight
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
+
+  const showDimensions = isSelected && diameter_w_m !== undefined && diameter_h_m !== undefined && diameter_w_m > 0 && diameter_h_m > 0;
+  let labelText = '';
+  let labelWidth = 0;
+  let labelHeight = 0;
+  let labelX = 0;
+  let labelY = 0;
+  let fontSize = 0;
+
+  if (showDimensions) {
+    const equal = Math.abs(diameter_w_m - diameter_h_m) < 0.05;
+    labelText = equal ? `D: ${diameter_w_m.toFixed(1)}m` : `D: ${diameter_w_m.toFixed(1)}m x ${diameter_h_m.toFixed(1)}m`;
+    fontSize = Math.max(10, Math.min(14, (imageWidth || 800) * 0.015));
+    labelWidth = labelText.length * fontSize * 0.6 + 12;
+    labelHeight = fontSize + 10;
+    labelX = 16;
+    labelY = (imageHeight || 600) - labelHeight - 16;
+  }
+
   return (
     <G>
-      <Circle
+      <Ellipse
         key={`circle-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
         cx={centerX}
         cy={centerY}
-        r={radius}
+        rx={rx}
+        ry={ry}
         stroke={isMultiSelected ? '#3498db' : color}
         strokeWidth={thickness}
         fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
         strokeDasharray={dashArray}
       />
-      {diameter_m !== undefined && diameter_m > 0 && (
-        <SvgText
-          x={centerX}
-          y={centerY + 4}
-          fill="#ffffff"
-          fontSize="11"
-          fontWeight="bold"
-          textAnchor="middle"
-          stroke="#000000"
-          strokeWidth="0.5"
-        >
-          {`${diameter_m.toFixed(1)}m`}
-        </SvgText>
+      {showDimensions && (
+        <G>
+          <Rect
+            x={labelX}
+            y={labelY}
+            width={labelWidth}
+            height={labelHeight}
+            fill="rgba(15, 23, 42, 0.9)"
+            rx={6}
+            ry={6}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth={1}
+          />
+          <SvgText
+            x={labelX + 6}
+            y={labelY + fontSize + 3}
+            fill="#ffffff"
+            fontSize={fontSize}
+            fontWeight="bold"
+            textAnchor="start"
+          >
+            {labelText}
+          </SvgText>
+        </G>
       )}
     </G>
   );
@@ -7661,7 +7660,8 @@ const MemoizedCircleSvg = React.memo(({
   prev.id === next.id &&
   prev.centerX === next.centerX &&
   prev.centerY === next.centerY &&
-  prev.radius === next.radius &&
+  prev.rx === next.rx &&
+  prev.ry === next.ry &&
   prev.color === next.color &&
   prev.thickness === next.thickness &&
   prev.fillColor === next.fillColor &&
@@ -7669,14 +7669,37 @@ const MemoizedCircleSvg = React.memo(({
   prev.dotSize === next.dotSize &&
   prev.dotSpacing === next.dotSpacing &&
   prev.isMultiSelected === next.isMultiSelected &&
-  prev.diameter_m === next.diameter_m
+  prev.diameter_w_m === next.diameter_w_m &&
+  prev.diameter_h_m === next.diameter_h_m &&
+  prev.isSelected === next.isSelected &&
+  prev.imageWidth === next.imageWidth &&
+  prev.imageHeight === next.imageHeight
 ));
 
 // Rectángulo SVG memoizado - solo renderiza el SVG
 const MemoizedRectangleSvg = React.memo(({
-  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, width_m, height_m
+  id, x, y, width, height, color, thickness, fillColor, lineType, dotSize, dotSpacing, isMultiSelected, width_m, height_m,
+  isSelected, imageWidth, imageHeight
 }) => {
   const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
+
+  const showDimensions = isSelected && width_m !== undefined && height_m !== undefined && width_m > 0 && height_m > 0;
+  let labelText = '';
+  let labelWidth = 0;
+  let labelHeight = 0;
+  let labelX = 0;
+  let labelY = 0;
+  let fontSize = 0;
+
+  if (showDimensions) {
+    labelText = `${width_m.toFixed(1)}m x ${height_m.toFixed(1)}m`;
+    fontSize = Math.max(10, Math.min(14, (imageWidth || 800) * 0.015));
+    labelWidth = labelText.length * fontSize * 0.6 + 12;
+    labelHeight = fontSize + 10;
+    labelX = 16;
+    labelY = (imageHeight || 600) - labelHeight - 16;
+  }
+
   return (
     <G>
       <Rect
@@ -7690,19 +7713,30 @@ const MemoizedRectangleSvg = React.memo(({
         fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : "transparent"}
         strokeDasharray={dashArray}
       />
-      {width_m !== undefined && height_m !== undefined && width_m > 0 && height_m > 0 && (
-        <SvgText
-          x={x + width / 2}
-          y={y + height / 2 + 4}
-          fill="#ffffff"
-          fontSize="11"
-          fontWeight="bold"
-          textAnchor="middle"
-          stroke="#000000"
-          strokeWidth="0.5"
-        >
-          {`${width_m.toFixed(1)}m x ${height_m.toFixed(1)}m`}
-        </SvgText>
+      {showDimensions && (
+        <G>
+          <Rect
+            x={labelX}
+            y={labelY}
+            width={labelWidth}
+            height={labelHeight}
+            fill="rgba(15, 23, 42, 0.9)"
+            rx={6}
+            ry={6}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth={1}
+          />
+          <SvgText
+            x={labelX + 6}
+            y={labelY + fontSize + 3}
+            fill="#ffffff"
+            fontSize={fontSize}
+            fontWeight="bold"
+            textAnchor="start"
+          >
+            {labelText}
+          </SvgText>
+        </G>
       )}
     </G>
   );
@@ -7720,7 +7754,10 @@ const MemoizedRectangleSvg = React.memo(({
   prev.dotSpacing === next.dotSpacing &&
   prev.isMultiSelected === next.isMultiSelected &&
   prev.width_m === next.width_m &&
-  prev.height_m === next.height_m
+  prev.height_m === next.height_m &&
+  prev.isSelected === next.isSelected &&
+  prev.imageWidth === next.imageWidth &&
+  prev.imageHeight === next.imageHeight
 ));
 
 // Custom Shape SVG memoizado
@@ -7759,6 +7796,7 @@ const BatchShapesRenderer = React.memo(({
   imageWidth,
   imageHeight,
   selectedCloneIdsSet,
+  selectedCloneId,
   multiSelectMode,
   viewMode
 }) => {
@@ -7786,20 +7824,20 @@ const BatchShapesRenderer = React.memo(({
 
       const centerX = (p1x + p2x) / 2;
       const centerY = (p1y + p2y) / 2;
-      const dx = p2x - p1x;
-      const dy = p2y - p1y;
-      const radius = Math.sqrt(dx * dx + dy * dy) / 2;
+      const rx = Math.abs(p2x - p1x) / 2;
+      const ry = Math.abs(p2y - p1y) / 2;
       const thickness = (icon.thickness || 1) * scale * 0.7;
 
-      const dx_ratio = icon.points[1].x - icon.points[0].x;
-      const dy_ratio = icon.points[1].y - icon.points[0].y;
-      const diameter_m = Math.sqrt((dx_ratio * 105) ** 2 + (dy_ratio * 68) ** 2);
+      const dx_ratio = Math.abs(icon.points[1].x - icon.points[0].x);
+      const dy_ratio = Math.abs(icon.points[1].y - icon.points[0].y);
+      const diameter_w_m = dx_ratio * 105;
+      const diameter_h_m = dy_ratio * 68;
 
       return {
         id: icon.id,
         shapeType: 'circle',
         zIndex: icon.zIndex || 0,
-        centerX, centerY, radius,
+        centerX, centerY, rx, ry,
         color: icon.color || "#2980b9",
         thickness,
         fillColor: icon.fillColor,
@@ -7807,10 +7845,13 @@ const BatchShapesRenderer = React.memo(({
         dotSize: icon.dotSize,
         dotSpacing: icon.dotSpacing,
         isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id),
-        diameter_m
+        isSelected: multiSelectMode ? selectedCloneIdsSet?.has(icon.id) : selectedCloneId === icon.id,
+        imageWidth, imageHeight,
+        diameter_w_m,
+        diameter_h_m
       };
     }).filter(Boolean);
-  }, [circles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
+  }, [circles, imageWidth, imageHeight, selectedCloneIdsSet, selectedCloneId, multiSelectMode, tp]);
 
   // Pre-calcular datos de rectángulos
   const rectangleData = useMemo(() => {
@@ -7851,11 +7892,13 @@ const BatchShapesRenderer = React.memo(({
         dotSize: icon.dotSize,
         dotSpacing: icon.dotSpacing,
         isMultiSelected: multiSelectMode && selectedCloneIdsSet?.has(icon.id),
+        isSelected: multiSelectMode ? selectedCloneIdsSet?.has(icon.id) : selectedCloneId === icon.id,
+        imageWidth, imageHeight,
         width_m,
         height_m
       };
     }).filter(Boolean);
-  }, [rectangles, imageWidth, imageHeight, selectedCloneIdsSet, multiSelectMode, tp]);
+  }, [rectangles, imageWidth, imageHeight, selectedCloneIdsSet, selectedCloneId, multiSelectMode, tp]);
 
   // Pre-calcular datos de custom shapes
   const customShapeData = useMemo(() => {
@@ -7903,6 +7946,9 @@ const BatchShapesRenderer = React.memo(({
     </G>
   );
 }, (prevProps, nextProps) => {
+  if (prevProps.selectedCloneId !== nextProps.selectedCloneId) return false;
+  if (prevProps.selectedCloneIdsSet !== nextProps.selectedCloneIdsSet) return false;
+  if (prevProps.viewMode !== nextProps.viewMode) return false;
   if (prevProps.circles.length !== nextProps.circles.length) return false;
   if (prevProps.rectangles.length !== nextProps.rectangles.length) return false;
   if (prevProps.customShapes.length !== nextProps.customShapes.length) return false;
@@ -8477,7 +8523,7 @@ const MemoizedRectangleDetector = React.memo(({
     const origMaxY = Math.max(base.origPoints[0].y, base.origPoints[1].y);
 
     let nMinX = origMinX, nMinY = origMinY, nMaxX = origMaxX, nMaxY = origMaxY;
-    const minDim = 0.03;
+    const minDim = 0.001;
 
     switch (base.corner) {
       case 'tl': nMinX += dxRatio; nMinY += dyRatio; break;
@@ -8494,11 +8540,6 @@ const MemoizedRectangleDetector = React.memo(({
       if (base.corner === 'tl' || base.corner === 'tr') nMinY = nMaxY - minDim;
       else nMaxY = nMinY + minDim;
     }
-
-    nMinX = Math.max(0, Math.min(1, nMinX));
-    nMinY = Math.max(0, Math.min(1, nMinY));
-    nMaxX = Math.max(0, Math.min(1, nMaxX));
-    nMaxY = Math.max(0, Math.min(1, nMaxY));
 
     pendingUpdateRef.current = prev => {
       const idx = prev.findIndex(c => c.id === icon.id);
@@ -16455,6 +16496,7 @@ export default function Field(props = {}) {
                           imageWidth={imageWidth}
                           imageHeight={imageHeight}
                           selectedCloneIdsSet={selectedCloneIdsSet}
+                          selectedCloneId={selectedCloneId}
                           multiSelectMode={multiSelectMode}
                           viewMode={viewMode}
                         />
@@ -16783,7 +16825,7 @@ export default function Field(props = {}) {
                               zIndex: 100
                             }}
                           >
-                            {/* L�nea normal */}
+                            {/* Lnea normal */}
                             {(drawingStraightArrow || drawingStraightLine) && lineType === 'solid' && (
                               <Path
                                 d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
@@ -16794,7 +16836,7 @@ export default function Field(props = {}) {
                               />
                             )}
 
-                            {/* L�nea punteada */}
+                            {/* Lnea punteada */}
                             {(drawingStraightArrow || drawingStraightLine) && lineType === 'dotted' && (
                               <Path
                                 d={`M${dp0.x},${dp0.y} L${lineEndX},${lineEndY}`}
@@ -16816,13 +16858,11 @@ export default function Field(props = {}) {
 
                             {/* C�rculo */}
                             {drawingCircle && (
-                              <Circle
+                              <Ellipse
                                 cx={(dp0.x + dp1.x) / 2}
                                 cy={(dp0.y + dp1.y) / 2}
-                                r={Math.sqrt(
-                                  Math.pow(dp1.x - dp0.x, 2) +
-                                  Math.pow(dp1.y - dp0.y, 2)
-                                ) / 2 - 1}
+                                rx={Math.abs(dp1.x - dp0.x) / 2}
+                                ry={Math.abs(dp1.y - dp0.y) / 2}
                                 stroke={previewColor}
                                 strokeWidth={previewThickness}
                                 fill="none"

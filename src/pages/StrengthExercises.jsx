@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Image, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Image, TextInput, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -16,30 +16,32 @@ import {
 export default function StrengthExercises() {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { width } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
 
-  const sm = width < 480;
-  const md = width >= 480 && width < 768;
-  const lg = width >= 768 && width < 1024;
-  const xl = width >= 1024;
-  const cols = sm ? 2 : md ? 3 : lg ? 4 : xl ? 5 : 4;
-  const gap = 8;
-  const pad = 12;
-
-  const cardWidth = Math.floor((width - pad * 2 - (cols - 1) * gap) / cols);
-
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [search, setSearch] = useState('');
   const [viewerExercise, setViewerExercise] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
+
+  const currentWidth = containerWidth || windowWidth;
+  const sm = currentWidth < 480;
+  const md = currentWidth >= 480 && currentWidth < 768;
+  const lg = currentWidth >= 768 && currentWidth < 1024;
+  const xl = currentWidth >= 1024;
+  
+  const gap = 8;
+  const pad = 12;
 
   const filteredExercises = useMemo(() =>
     STRENGTH_EXERCISES.filter(ex => {
       const q = search.toLowerCase();
       const ms = !search || t(ex.i18nKey).toLowerCase().includes(q) ||
         (ex.description && t(ex.description).toLowerCase().includes(q));
-      const mc = !selectedCategory || ex.category === selectedCategory;
-      const ms2 = !selectedSection || getSectionForExercise(ex)?.section.id === selectedSection;
+      const secInfo = getSectionForExercise(ex);
+      const mc = !selectedCategory || secInfo?.category.id === selectedCategory;
+      const ms2 = !selectedSection || secInfo?.section.id === selectedSection;
       return ms && mc && ms2;
     }),
     [search, selectedCategory, selectedSection, t]
@@ -56,14 +58,7 @@ export default function StrengthExercises() {
   const closeExercise = useCallback(() => setViewerExercise(null), []);
 
   const cfg = {
-    cPH: sm ? 6 : md ? 8 : 12,
-    cPV: sm ? 3 : md ? 4 : 6,
-    cR: sm ? 10 : md ? 12 : 16,
-    cFS: sm ? 9 : md ? 10 : 12,
-    sPH: sm ? 5 : md ? 7 : 10,
-    sPV: sm ? 2 : md ? 3 : 4,
-    sFS: sm ? 8 : md ? 9 : 11,
-    icn: sm ? 12 : md ? 13 : 15,
+    icn: sm ? 14 : md ? 13 : 15,
     lvl: sm ? 7 : md ? 8 : 9,
     vBadge: sm ? 2 : md ? 3 : 4,
     vIcn: sm ? 6 : md ? 7 : 9,
@@ -72,26 +67,57 @@ export default function StrengthExercises() {
     infoP: sm ? 5 : md ? 6 : 8,
   };
 
+  const getFlexBasis = () => {
+    if (sm) return '100%';
+    if (md) return '30%';
+    if (lg) return '22%';
+    return '18%';
+  };
+
   return (
     <RNWebPage themed
       title={t('menu.strengthExercises', 'Ejercicios de Fuerza')}
       subtitle={t('sectionHeaders.strengthExercises', 'Catálogo de ejercicios de entrenamiento coadyuvante.')}
       icon={({ size, color }) => <Ionicons name="barbell" size={size} color={color} />}
     >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ paddingHorizontal: pad, paddingTop: 10, gap: 8 }}>
-          <View style={[ss.srch, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-            <Ionicons name="search" size={cfg.icn} color={theme.colors.textMuted} />
+      <View style={{ flex: 1 }} onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w && w !== containerWidth) setContainerWidth(w);
+      }}>
+        {/* Fixed Header: Filters and Search */}
+        <View style={{ 
+          paddingHorizontal: pad, 
+          paddingTop: 10, 
+          paddingBottom: 10,
+          gap: 12, 
+          backgroundColor: theme.colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.border,
+          zIndex: 10,
+          ...(Platform.OS === 'web' ? { position: 'sticky', top: 0 } : {})
+        }}>
+          {/* Search Bar */}
+          <View style={[
+            ss.srch,
+            {
+              borderColor: searchFocused ? theme.colors.primary : theme.colors.border,
+              backgroundColor: theme.colors.surface,
+              shadowColor: searchFocused ? theme.colors.primary : '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: searchFocused ? 0.15 : 0.04,
+              shadowRadius: 3,
+              elevation: searchFocused ? 3 : 1,
+            }
+          ]}>
+            <Ionicons name="search" size={cfg.icn + 2} color={searchFocused ? theme.colors.primary : theme.colors.textMuted} />
             <TextInput
               style={[ss.si, { color: theme.colors.text }]}
-              placeholder={t('strengthExercises.searchPlaceholder', 'Buscar...')}
+              placeholder={t('strengthExercises.searchPlaceholder', 'Buscar ejercicio...')}
               placeholderTextColor={theme.colors.textMuted}
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} hitSlop={6}>
@@ -100,80 +126,201 @@ export default function StrengthExercises() {
             )}
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {/* Categories Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            style={{ marginHorizontal: -pad }}
+            contentContainerStyle={{ paddingHorizontal: pad, gap: 10, paddingBottom: 6 }}
+          >
             {[
-              { key: null, label: t('strengthExercises.allCategories', 'Todas') },
-              ...STRENGTH_CATEGORIES.map(c => ({ key: c.id, label: `${c.icon} ${t(c.i18nKey)}` })),
+              { key: null, label: t('strengthExercises.allCategories', 'Todas las categorías'), color: theme.colors.primary },
+              ...STRENGTH_CATEGORIES.map(c => ({ key: c.id, label: `${c.icon} ${t(c.i18nKey)}`, color: c.color })),
             ].map(item => {
               const active = selectedCategory === item.key;
+              const activeColor = item.color || theme.colors.primary;
               return (
                 <TouchableOpacity
                   key={item.key || '__all'}
                   style={{
-                    paddingHorizontal: cfg.cPH,
-                    paddingVertical: cfg.cPV,
-                    borderRadius: cfg.cR,
-                    backgroundColor: active ? theme.colors.primary : theme.colors.surfaceAlt,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 12,
+                    backgroundColor: active ? activeColor : theme.colors.surfaceAlt,
                     borderWidth: 1,
-                    borderColor: theme.colors.border,
+                    borderColor: active ? activeColor : theme.colors.border,
+                    shadowColor: active ? activeColor : '#000',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: active ? 0.25 : 0.03,
+                    shadowRadius: 5,
+                    elevation: active ? 4 : 1,
                   }}
                   onPress={() => {
                     setSelectedCategory(item.key);
-                    if (!item.key) setSelectedSection(null);
+                    setSelectedSection(null);
                   }}
                 >
-                  <Text style={{ fontSize: cfg.cFS, fontWeight: '600', color: active ? '#fff' : theme.colors.textSecondary }}>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: active ? '700' : '600',
+                    color: active ? '#fff' : theme.colors.textSecondary
+                  }}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
 
-          {visibleSections.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-              {[
-                { key: null, label: t('strengthExercises.allSections', 'Todas') },
-                ...visibleSections.map(s => ({ key: s.id, label: t(s.i18nKey) })),
-              ].map(item => {
-                const active = selectedSection === item.key;
-                return (
-                  <TouchableOpacity
-                    key={item.key || '__all'}
-                    style={{
-                      paddingHorizontal: cfg.sPH,
-                      paddingVertical: cfg.sPV,
-                      borderRadius: 6,
-                      backgroundColor: active ? `${theme.colors.primary}18` : 'transparent',
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                    }}
-                    onPress={() => setSelectedSection(active ? null : item.key)}
-                  >
-                    <Text style={{
-                      fontSize: cfg.sFS,
-                      fontWeight: '600',
-                      color: active ? theme.colors.primary : theme.colors.textMuted,
-                    }}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+          {/* Sections Filter */}
+          {visibleSections.length > 0 && (() => {
+            const selectedCategoryColor = STRENGTH_CATEGORIES.find(c => c.id === selectedCategory)?.color;
+            const sectionOptions = [
+              { key: null, label: t('strengthExercises.allSections', 'Todas las secciones'), color: selectedCategoryColor || theme.colors.primary },
+              ...visibleSections.map(s => ({ key: s.id, label: t(s.i18nKey), color: s.color })),
+            ];
+            return (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={true}
+                style={{ marginHorizontal: -pad, marginTop: -4 }}
+                contentContainerStyle={{ paddingHorizontal: pad, gap: 8, paddingBottom: 6 }}
+              >
+                {sectionOptions.map(item => {
+                  const active = selectedSection === item.key;
+                  const activeColor = item.color || theme.colors.primary;
+                  return (
+                    <TouchableOpacity
+                      key={item.key || '__all'}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        backgroundColor: active ? activeColor : theme.colors.surfaceAlt,
+                        borderWidth: 1,
+                        borderColor: active ? activeColor : theme.colors.border,
+                        shadowColor: active ? activeColor : '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: active ? 0.2 : 0.02,
+                        shadowRadius: 3,
+                        elevation: active ? 2 : 1,
+                      }}
+                      onPress={() => setSelectedSection(active ? null : item.key)}
+                    >
+                      <Text style={{
+                        fontSize: 12,
+                        fontWeight: active ? '700' : '600',
+                        color: active ? '#fff' : theme.colors.textMuted,
+                      }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          })()}
         </View>
 
-        {filteredExercises.length > 0 && (
-          <View style={{ paddingHorizontal: pad, paddingTop: 8 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {/* Scrollable Exercises List */}
+        <ScrollView
+          style={{ flex: 1, backgroundColor: theme.colors.background }}
+          contentContainerStyle={{ paddingBottom: 24, paddingTop: 12, paddingHorizontal: pad }}
+          showsVerticalScrollIndicator={true}
+        >
+          {filteredExercises.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -gap / 2 }}>
               {filteredExercises.map(ex => {
                 const si = getSectionForExercise(ex);
                 const img = getStrengthExerciseImage(ex);
                 const hv = checkVideoAvailability(ex);
 
+                if (sm) {
+                  return (
+                    <View key={ex.id} style={{ width: '100%', paddingHorizontal: gap / 2, paddingVertical: gap / 2 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.75}
+                        onPress={() => openExercise(ex)}
+                        style={{
+                          flexDirection: 'row',
+                          backgroundColor: theme.colors.surface,
+                          borderColor: theme.colors.border,
+                          borderWidth: 1,
+                          borderRadius: 12,
+                          padding: 8,
+                          alignItems: 'center',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.05,
+                          shadowRadius: 2,
+                          elevation: 1,
+                        }}
+                      >
+                        <View style={{
+                          width: 80,
+                          height: 54,
+                          borderRadius: 8,
+                          overflow: 'hidden',
+                          backgroundColor: si?.section?.color || theme.colors.surfaceAlt,
+                          position: 'relative'
+                        }}>
+                          {img ? (
+                            <Image
+                              source={typeof img === 'string' ? { uri: img } : img}
+                              style={{ width: '100%', height: '100%' }}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.border }}>
+                              <Ionicons name="barbell-outline" size={20} color={theme.colors.textMuted} />
+                            </View>
+                          )}
+                          {hv && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 2,
+                              right: 2,
+                              backgroundColor: theme.colors.primary,
+                              padding: 2,
+                              borderRadius: 4
+                            }}>
+                              <Feather name="play" size={8} color="#fff" />
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={{ flex: 1, marginLeft: 12, gap: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.text, flex: 1, marginRight: 8 }} numberOfLines={1}>
+                              {t(ex.i18nKey)}
+                            </Text>
+                            {si && (
+                              <View style={{ backgroundColor: si.section.color, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>N{ex.level}</Text>
+                              </View>
+                            )}
+                          </View>
+                          {si && (
+                            <Text style={{ fontSize: 11, color: theme.colors.textMuted }} numberOfLines={1}>
+                              {t(si.section.i18nKey)}
+                            </Text>
+                          )}
+                        </View>
+
+                        <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} style={{ marginLeft: 4 }} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+
                 return (
-                  <View key={ex.id} style={{ width: cardWidth, padding: gap / 2 }}>
+                  <View key={ex.id} style={{ 
+                    flexGrow: 1, 
+                    flexBasis: getFlexBasis(),
+                    paddingHorizontal: gap / 2, 
+                    paddingVertical: gap / 2,
+                    minWidth: 160
+                  }}>
                     <TouchableOpacity
                       activeOpacity={0.75}
                       onPress={() => openExercise(ex)}
@@ -197,17 +344,17 @@ export default function StrengthExercises() {
                           </View>
                         )}
                         {si && (
-                          <View style={[ss.lvl, { backgroundColor: si.section.color, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }]}>
+                          <View style={[ss.lvl, { backgroundColor: si.section.color, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }]}>
                             <Text style={{ color: '#fff', fontSize: cfg.lvl, fontWeight: '800' }}>N{ex.level}</Text>
                           </View>
                         )}
                       </View>
-                      <View style={{ padding: cfg.infoP, gap: 1 }}>
-                        <Text style={{ fontSize: cfg.namF, fontWeight: '600', lineHeight: cfg.namF + 4, color: theme.colors.text }} numberOfLines={1}>
+                      <View style={{ padding: cfg.infoP, gap: 2 }}>
+                        <Text style={{ fontSize: cfg.namF, fontWeight: '700', lineHeight: cfg.namF + 4, color: theme.colors.text }} numberOfLines={1}>
                           {t(ex.i18nKey)}
                         </Text>
                         {si && (
-                          <Text style={{ fontSize: cfg.secF, lineHeight: cfg.secF + 3, color: theme.colors.textMuted }} numberOfLines={1}>
+                          <Text style={{ fontSize: cfg.secF, lineHeight: cfg.secF + 3, color: theme.colors.textMuted, fontWeight: '500' }} numberOfLines={1}>
                             {t(si.section.i18nKey)}
                           </Text>
                         )}
@@ -217,18 +364,18 @@ export default function StrengthExercises() {
                 );
               })}
             </View>
-          </View>
-        )}
+          )}
 
-        {filteredExercises.length === 0 && (
-          <View style={ss.empty}>
-            <Ionicons name="search-outline" size={32} color={theme.colors.textMuted} />
-            <Text style={{ fontSize: 14, fontWeight: '500', color: theme.colors.textMuted }}>
-              {t('strengthExercises.noResults', 'No se encontraron ejercicios')}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          {filteredExercises.length === 0 && (
+            <View style={ss.empty}>
+              <Ionicons name="search-outline" size={40} color={theme.colors.textMuted} />
+              <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.textMuted }}>
+                {t('strengthExercises.noResults', 'No se encontraron ejercicios')}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
 
       <StrengthExerciseViewer
         visible={!!viewerExercise}
@@ -244,21 +391,27 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 40,
-    gap: 6,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 48,
+    gap: 10,
   },
   si: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     padding: 0,
+    outlineStyle: 'none',
   },
   card: {
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
     flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   imgW: {
     position: 'relative',
@@ -275,18 +428,18 @@ const ss = StyleSheet.create({
   },
   vid: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: 6,
+    right: 6,
   },
   lvl: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 6,
+    right: 6,
   },
   empty: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 8,
+    paddingVertical: 80,
+    gap: 12,
   },
 });
