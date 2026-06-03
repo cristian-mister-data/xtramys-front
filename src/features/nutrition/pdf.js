@@ -83,20 +83,21 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           text-transform: uppercase;
         }
         .header-subtitle {
+          font-family: 'Outfit', sans-serif;
           font-size: 8.5px;
           color: #94a3b8;
-          font-weight: 600;
+          font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 1.5px;
           margin-top: 3px;
         }
         .header-right {
           font-family: 'Outfit', sans-serif;
           font-size: 11px;
-          font-weight: 700;
+          font-weight: 800;
           color: #60a5fa;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 1.2px;
         }
         
         .page-header {
@@ -126,7 +127,7 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           font-size: 12px;
           margin: 14px 0 12px 0;
           color: var(--primary);
-          font-weight: 850;
+          font-weight: 900;
           text-transform: uppercase;
           letter-spacing: 1px;
           padding-bottom: 5px;
@@ -141,7 +142,7 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           font-size: 10.5px;
           margin: 12px 0 8px 0;
           color: var(--primary);
-          font-weight: 750;
+          font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.8px;
         }
@@ -151,8 +152,9 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           font-size: 9px;
           margin: 8px 0 4px 0;
           color: var(--secondary);
-          font-weight: 700;
+          font-weight: 750;
           text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         
         table {
@@ -174,13 +176,17 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
         th {
           background: #1e293b;
           color: #ffffff;
-          font-weight: 600;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 700;
           text-transform: uppercase;
           font-size: 8px;
           letter-spacing: 0.8px;
         }
         td {
           border-bottom: 1px solid var(--border);
+        }
+        tr {
+          page-break-inside: avoid;
         }
         tr:last-child td {
           border-bottom: none;
@@ -196,10 +202,11 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           padding: 10px 12px;
           margin-bottom: 10px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
         .meal-title {
           font-family: 'Outfit', sans-serif;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--primary);
           font-size: 9.5px;
           margin-bottom: 6px;
@@ -228,10 +235,11 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           align-items: center;
           gap: 12px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
         .protocol-time {
           font-family: 'Outfit', sans-serif;
-          font-weight: 800;
+          font-weight: 850;
           color: var(--accent);
           font-size: 9.5px;
           white-space: nowrap;
@@ -264,7 +272,7 @@ function buildNutritionHTML(preseasonData, seasonData, referenceData, t, optionL
           margin-top: auto;
           text-align: center;
           color: var(--text-muted);
-          font-size: 8px;
+          font-size: 8.5px;
           border-top: 1px solid var(--border);
           padding-top: 10px;
           font-family: 'Inter', sans-serif;

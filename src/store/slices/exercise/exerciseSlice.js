@@ -82,7 +82,22 @@ const exerciseSlice = createSlice({
       })
 
       .addCase(deleteEjercicio.fulfilled, (state, action) => {
-        state.exercises = state.exercises.filter((e) => e._id !== action.payload);
+        const deletedId = action.payload;
+        const exercise = state.exercises.find((e) => e._id === deletedId) || 
+                         state.currentFolderExercises.find((e) => e._id === deletedId);
+        
+        if (exercise && exercise.folder) {
+          const folderId = typeof exercise.folder === 'object' ? exercise.folder._id : exercise.folder;
+          
+          const folder = state.folders.find(f => f._id === folderId);
+          if (folder && folder.exerciseCount > 0) folder.exerciseCount--;
+          
+          const folderFlat = state.foldersFlat.find(f => f._id === folderId);
+          if (folderFlat && folderFlat.exerciseCount > 0) folderFlat.exerciseCount--;
+        }
+
+        state.exercises = state.exercises.filter((e) => e._id !== deletedId);
+        state.currentFolderExercises = state.currentFolderExercises.filter((e) => e._id !== deletedId);
       })
 
       .addCase(fetchExerciseFolders.pending, (state) => { state.foldersLoading = true; })

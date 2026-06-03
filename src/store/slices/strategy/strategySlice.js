@@ -64,8 +64,23 @@ const strategySlice = createSlice({
       })
       .addCase(updateEstrategia.rejected, (s, a) => { s.loading = false; s.error = a.error.message; })
 
-      .addCase(deleteEstrategia.fulfilled, (s, a) => {
-        s.strategies = s.strategies.filter((e) => e._id !== a.payload);
+      .addCase(deleteEstrategia.fulfilled, (state, action) => {
+        const deletedId = action.payload;
+        const strategy = state.strategies.find((e) => e._id === deletedId) || 
+                         state.currentFolderStrategies.find((e) => e._id === deletedId);
+        
+        if (strategy && strategy.folder) {
+          const folderId = typeof strategy.folder === 'object' ? strategy.folder._id : strategy.folder;
+          
+          const folder = state.folders.find(f => f._id === folderId);
+          if (folder && folder.strategyCount > 0) folder.strategyCount--;
+          
+          const folderFlat = state.foldersFlat.find(f => f._id === folderId);
+          if (folderFlat && folderFlat.strategyCount > 0) folderFlat.strategyCount--;
+        }
+
+        state.strategies = state.strategies.filter((e) => e._id !== deletedId);
+        state.currentFolderStrategies = state.currentFolderStrategies.filter((e) => e._id !== deletedId);
       })
 
       .addCase(fetchStrategyFolders.pending, (s) => { s.foldersLoading = true; })

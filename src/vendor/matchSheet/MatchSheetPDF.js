@@ -474,9 +474,27 @@ export const generateLineupPDF = async ({
       <title>${lineupHeader} - ${matchSheet.rival}</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
+        :root {
+          --bg-main: #f8fafc;
+          --bg-card: #ffffff;
+          --primary: #0f172a;
+          --secondary: #1e293b;
+          --accent: #2563eb;
+          --text-main: #334155;
+          --text-muted: #64748b;
+          --border: #e2e8f0;
+          --border-dark: #cbd5e1;
+        }
+
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background: #0f172a; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+          background: var(--primary);
+          color: var(--text-main);
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         
         .pdf-page { 
           width: 210mm; 
@@ -490,39 +508,39 @@ export const generateLineupPDF = async ({
         .left-column {
           width: 65%;
           height: 100%;
-          background: #f8fafc;
+          background: var(--bg-main);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: space-between;
-          padding: 12mm 10mm;
+          padding: 15mm 12mm;
           position: relative;
         }
         
         .right-column {
           width: 35%;
           height: 100%;
-          background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+          background: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
           display: flex;
           flex-direction: column;
-          padding: 12mm 8mm;
+          padding: 15mm 10mm;
           border-left: 2.5px solid rgba(255,255,255,0.08);
-          box-shadow: -10px 0 25px rgba(0,0,0,0.4);
+          box-shadow: -10px 0 25px rgba(0,0,0,0.3);
         }
         
         .chip {
           display: inline-block;
-          font-size: 8.5px;
+          font-size: 9px;
           color: #e2e8f0;
           background: rgba(255,255,255,0.1);
           border: 1px solid rgba(255,255,255,0.15);
-          padding: 4px 10px;
+          padding: 5px 12px;
           border-radius: 12px;
-          font-weight: 700;
+          font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
           font-family: 'Outfit', sans-serif;
-          margin-bottom: 4px;
+          margin-bottom: 5px;
         }
       </style>
     </head>
@@ -828,17 +846,44 @@ export const generateCallUpPDF = async ({
       <title>${callupHeader} - ${matchSheet.rival}</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
+        :root {
+          --bg-main: #ffffff;
+          --bg-card: #ffffff;
+          --primary: #0f172a;
+          --secondary: #1e293b;
+          --accent: #2563eb;
+          --text-main: #334155;
+          --text-muted: #64748b;
+          --border: #e2e8f0;
+          --border-dark: #cbd5e1;
+        }
+
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; background: #ffffff; color: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .pdf-page { padding: 12mm 14mm; background: #ffffff; width: 210mm; height: 297mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+          background: var(--bg-main);
+          color: var(--text-main);
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .pdf-page {
+          padding: 15mm 16mm;
+          background: var(--bg-main);
+          width: 210mm;
+          height: 297mm;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
         
         .banner {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%);
+          background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 70%, #334155 100%);
           border-radius: 12px;
-          padding: 16px 24px;
+          padding: 18px 24px;
           color: #fff;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -850,14 +895,14 @@ export const generateCallUpPDF = async ({
           gap: 12px;
         }
         .banner-logo {
-          width: 46px;
-          height: 46px;
+          width: 48px;
+          height: 48px;
           object-fit: contain;
           background: #ffffff;
           border-radius: 8px;
           padding: 4px;
           border: 2.5px solid #ffffff;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.12);
         }
         .banner-title-group {
           display: flex;
@@ -902,9 +947,9 @@ export const generateCallUpPDF = async ({
           justify-content: space-between;
           background: #f8fafc;
           border-radius: 12px;
-          padding: 12px 18px;
-          border: 1px solid #e2e8f0;
-          margin-bottom: 16px;
+          padding: 14px 20px;
+          border: 1px solid var(--border);
+          margin-bottom: 18px;
           gap: 12px;
         }
         .meeting-card {
@@ -924,8 +969,8 @@ export const generateCallUpPDF = async ({
           flex-direction: column;
         }
         .meeting-label {
-          font-size: 7.5px;
-          color: #64748b;
+          font-size: 8px;
+          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.8px;
           font-weight: 800;
@@ -933,10 +978,10 @@ export const generateCallUpPDF = async ({
           font-family: 'Outfit', sans-serif;
         }
         .meeting-value {
-          font-size: 10px;
+          font-size: 10.5px;
           font-weight: 700;
-          color: #0f172a;
-          line-height: 1.3;
+          color: var(--primary);
+          line-height: 1.35;
         }
       </style>
     </head>
@@ -1240,20 +1285,41 @@ export const generateMatchSheetPDF = async ({
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
+        :root {
+          --bg-main: #f8fafc;
+          --bg-card: #ffffff;
+          --primary: #0f172a;
+          --secondary: #1e293b;
+          --accent: #2563eb;
+          --text-main: #334155;
+          --text-muted: #64748b;
+          --border: #e2e8f0;
+          --border-dark: #cbd5e1;
+        }
+
         @page { size: A4; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, sans-serif; font-size: 10px; line-height: 1.4; color: #1e293b; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+        body {
+          font-family: 'Inter', -apple-system, sans-serif;
+          font-size: 10px;
+          line-height: 1.45;
+          color: var(--text-main);
+          background: var(--bg-main);
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          padding: 0;
+        }
         
         .pdf-page {
           width: 210mm;
           height: 297mm;
-          padding: 12mm 14mm;
+          padding: 15mm 16mm;
           box-sizing: border-box;
           position: relative;
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          background: #ffffff;
+          background: var(--bg-main);
           page-break-after: always;
         }
         .pdf-page:last-child {
@@ -1261,7 +1327,7 @@ export const generateMatchSheetPDF = async ({
         }
         
         .header {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+          background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 60%, #334155 100%);
           color: white;
           padding: 18px 24px;
           border-radius: 12px;
@@ -1273,7 +1339,7 @@ export const generateMatchSheetPDF = async ({
         .header-subtitle { font-family: 'Outfit', sans-serif; font-size: 11px; opacity: 0.85; font-weight: 500; color: #cbd5e1; }
         
         .page-header {
-          border-bottom: 1.5px dashed #334155;
+          border-bottom: 1.5px dashed var(--secondary);
           padding-bottom: 6px;
           margin-bottom: 12px;
           display: flex;
@@ -1282,55 +1348,55 @@ export const generateMatchSheetPDF = async ({
         }
         .page-header-title {
           font-family: 'Outfit', sans-serif;
-          font-size: 8.5px;
-          font-weight: 800;
+          font-size: 9px;
+          font-weight: 850;
           text-transform: uppercase;
-          color: #0f172a;
+          color: var(--primary);
           letter-spacing: 1px;
         }
         .page-header-subtitle {
-          font-size: 8px;
-          color: #94a3b8;
+          font-size: 8.5px;
+          color: var(--text-muted);
           font-weight: 500;
         }
         
-        .match-info { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .match-info { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .escudos-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
         .escudo-container { text-align: center; display: flex; flex-direction: column; align-items: center; width: 150px; flex-shrink: 1; }
-        .escudo-img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 3px; border: 1px solid #e2e8f0; }
-        .escudo-placeholder { width: 44px; height: 44px; border-radius: 8px; background: linear-gradient(135deg, #0f172a, #1e293b); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .team-name { font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 800; color: #1e293b; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.2px; white-space: normal; line-height: 1.25; word-wrap: break-word; }
+        .escudo-img { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; background: #f8fafc; padding: 3px; border: 1px solid var(--border); }
+        .escudo-placeholder { width: 46px; height: 46px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .team-name { font-family: 'Outfit', sans-serif; font-size: 10.5px; font-weight: 800; color: var(--secondary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.2px; white-space: normal; line-height: 1.25; word-wrap: break-word; }
         
         .score-container { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-        .score { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 900; color: #0f172a; min-width: 40px; text-align: center; letter-spacing: -1px; }
-        .score-divider { font-size: 24px; color: #94a3b8; font-weight: 300; }
+        .score { font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 900; color: var(--primary); min-width: 40px; text-align: center; letter-spacing: -1px; }
+        .score-divider { font-size: 26px; color: var(--text-muted); font-weight: 300; }
         .result-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Outfit', sans-serif; }
         
         .meta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
-        .meta-badge { font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif; }
+        .meta-badge { font-size: 9.5px; color: var(--text-main); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif; }
         
-        .section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .section-title { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 900; color: #0f172a; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #0f172a; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .section-title { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 900; color: var(--primary); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid var(--primary); display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1.2px; }
         
         .field-container { display: flex; justify-content: center; margin: 4px 0; }
         
-        .events-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .event-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .event-title { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 900; color: #0f172a; padding-bottom: 6px; border-bottom: 1.5px solid #e2e8f0; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 1.2px; }
+        .events-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .event-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .event-title { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 900; color: var(--primary); padding-bottom: 8px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 1.2px; }
         
-        .event-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+        .event-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
         .event-row:last-child { border-bottom: none; }
         .event-icon { font-size: 13px; display: flex; align-items: center; justify-content: center; }
         
         .event-details { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-        .event-player { font-weight: 700; color: #334155; font-size: 10px; }
-        .event-subtext { color: #64748b; font-size: 8.5px; font-weight: 500; }
-        .event-time { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 800; color: #94a3b8; }
-        .event-badge { font-size: 8.5px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-left: 4px; font-family: 'Outfit', sans-serif; }
-        .event-empty { color: #94a3b8; font-size: 10px; padding: 12px 0; text-align: center; font-style: italic; }
+        .event-player { font-weight: 700; color: var(--text-main); font-size: 10px; }
+        .event-subtext { color: var(--text-muted); font-size: 8.5px; font-weight: 500; }
+        .event-time { font-family: 'Outfit', sans-serif; font-size: 9.5px; font-weight: 800; color: var(--text-muted); }
+        .event-badge { font-size: 8.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-left: 4px; font-family: 'Outfit', sans-serif; }
+        .event-empty { color: var(--text-muted); font-size: 10px; padding: 14px 0; text-align: center; font-style: italic; }
         
-        .notes-box { font-size: 10px; color: #334155; white-space: pre-wrap; line-height: 1.5; font-weight: 500; padding: 4px 0; }
-        .footer { text-align: center; color: #94a3b8; font-size: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid #e2e8f0; letter-spacing: 0.5px; }
+        .notes-box { font-size: 10px; color: var(--text-main); white-space: pre-wrap; line-height: 1.55; font-weight: 500; padding: 4px 0; letter-spacing: 0.2px; }
+        .footer { text-align: center; color: var(--text-muted); font-size: 8.5px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); letter-spacing: 0.5px; font-family: 'Inter', sans-serif; }
       </style>
     </head>
     <body>

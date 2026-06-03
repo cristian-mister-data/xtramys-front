@@ -390,13 +390,25 @@ export const generateSessionPDFHTML = ({
   <title>Sesión de Entrenamiento - ${fechaFormateada}</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --primary: #0f172a;
+      --secondary: #1e293b;
+      --accent: #2563eb;
+      --text-main: #334155;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: A4; margin: 0; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-size: 10px;
-      color: #334155;
-      background: #f8fafc;
+      color: var(--text-main);
+      background: var(--bg-main);
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -405,18 +417,18 @@ export const generateSessionPDFHTML = ({
     .cover-page {
       width: 210mm;
       height: 297mm;
-      padding: 12mm 14mm 10mm;
+      padding: 15mm 16mm 12mm;
       page-break-after: always;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       overflow: hidden;
-      background: #f8fafc;
+      background: var(--bg-main);
     }
     .banner {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%);
       border-radius: 12px;
-      padding: 22px 26px;
+      padding: 24px 28px;
       color: #ffffff;
       margin-bottom: 4px;
       box-shadow: 0 4px 15px rgba(15, 23, 42, 0.08);
@@ -430,8 +442,8 @@ export const generateSessionPDFHTML = ({
     }
     .banner-team {
       font-family: 'Outfit', sans-serif;
-      font-size: 9.5px;
-      font-weight: 900;
+      font-size: 10px;
+      font-weight: 800;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: #94a3b8;
@@ -441,11 +453,11 @@ export const generateSessionPDFHTML = ({
       gap: 8px;
     }
     .team-logo {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       object-fit: contain;
       background: #ffffff;
-      border: 1.5px solid #cbd5e1;
+      border: 1.5px solid var(--border-dark);
       border-radius: 50%;
       padding: 1px;
     }
@@ -458,59 +470,59 @@ export const generateSessionPDFHTML = ({
       color: #ffffff;
     }
     .banner-date {
-      font-size: 10px;
+      font-size: 10.5px;
       color: #cbd5e1;
       font-weight: 500;
       margin-top: 2px;
     }
     .banner-logo-right {
-      width: 54px;
-      height: 54px;
+      width: 56px;
+      height: 56px;
       object-fit: contain;
       background: #ffffff;
       border-radius: 8px;
       padding: 4px;
       border: 2px solid #ffffff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
     }
 
     /* Stats strip */
     .stats-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      gap: 12px;
     }
     .stat-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-top: 3px solid #0f172a;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3.5px solid var(--primary);
       border-radius: 8px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
     .stat-label {
       font-family: 'Outfit', sans-serif;
-      font-size: 7.5px;
-      color: #64748b;
+      font-size: 8px;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      font-weight: 900;
+      font-weight: 800;
       margin-bottom: 4px;
     }
     .stat-value {
       font-family: 'Outfit', sans-serif;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 900;
-      color: #0f172a;
+      color: var(--primary);
       line-height: 1.2;
       word-break: break-word;
     }
     .stat-sub {
-      font-size: 8px;
-      color: #94a3b8;
+      font-size: 8.5px;
+      color: var(--text-muted);
       margin-top: 2px;
       font-weight: 500;
     }
@@ -519,46 +531,46 @@ export const generateSessionPDFHTML = ({
     .panels-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
       flex: 1;
       min-height: 0;
     }
     .panel {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 16px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
       overflow-y: auto;
     }
     .panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 6px;
+      padding-bottom: 8px;
       border-bottom: 2px solid #f1f5f9;
     }
     .panel-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 9.5px;
-      font-weight: 900;
+      font-size: 10px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #0f172a;
+      color: var(--primary);
     }
     .panel-badge {
-      font-size: 9px;
+      font-size: 9.5px;
       font-weight: 700;
-      color: #64748b;
+      color: var(--text-muted);
       line-height: 1.2;
     }
     .roster-text-list {
-      font-size: 8.5px;
-      line-height: 1.6;
-      color: #475569;
+      font-size: 9px;
+      line-height: 1.7;
+      color: var(--text-main);
       font-weight: 500;
       white-space: normal;
       word-break: break-word;
@@ -567,10 +579,11 @@ export const generateSessionPDFHTML = ({
       display: inline-block;
       color: #334155;
       background: #f1f5f9;
-      padding: 2px 6px;
+      padding: 2.5px 7px;
       border-radius: 4px;
-      margin: 1px;
-      font-weight: 600;
+      margin: 1.5px;
+      font-weight: 650;
+      letter-spacing: 0.1px;
     }
     .roster-name.extra {
       color: #b45309;
@@ -578,45 +591,47 @@ export const generateSessionPDFHTML = ({
       border: 1px solid #fde68a;
     }
     .panel-empty {
-      font-size: 9px;
-      color: #94a3b8;
+      font-size: 9.5px;
+      color: var(--text-muted);
       font-style: italic;
     }
     .obs-text {
-      font-size: 9px;
-      color: #334155;
-      line-height: 1.5;
+      font-size: 9.5px;
+      color: var(--text-main);
+      line-height: 1.6;
       white-space: pre-wrap;
       padding: 2px 0;
+      letter-spacing: 0.2px;
     }
     .obs-ex-item {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .obs-ex-name {
       font-family: 'Outfit', sans-serif;
       font-weight: 800;
-      color: #0f172a;
-      font-size: 8.5px;
+      color: var(--primary);
+      font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 3px;
     }
     .obs-ex-text {
-      font-size: 8.5px;
-      color: #475569;
-      line-height: 1.4;
+      font-size: 9px;
+      color: var(--text-main);
+      line-height: 1.5;
+      letter-spacing: 0.2px;
     }
 
     /* ── EXERCISE SHEETS ── */
     .exercise-sheet {
       width: 210mm;
       height: 297mm;
-      padding: 12mm 14mm;
+      padding: 15mm 16mm;
       page-break-after: always;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #f8fafc;
+      background: var(--bg-main);
     }
     .exercise-sheet:last-of-type { page-break-after: auto; }
 
@@ -625,8 +640,8 @@ export const generateSessionPDFHTML = ({
       align-items: center;
       justify-content: space-between;
       padding-bottom: 8px;
-      margin-bottom: 12px;
-      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 14px;
+      border-bottom: 2.5px solid var(--border);
     }
     .sheet-header-left {
       display: flex;
@@ -636,31 +651,32 @@ export const generateSessionPDFHTML = ({
     .sheet-dot {
       width: 8px;
       height: 8px;
-      background: #0f172a;
+      background: var(--primary);
       border-radius: 50%;
       flex-shrink: 0;
     }
     .sheet-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 11px;
-      font-weight: 900;
-      color: #0f172a;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1.5px;
     }
     .sheet-count {
       font-family: 'Outfit', sans-serif;
-      font-size: 8.5px;
-      color: #64748b;
+      font-size: 9px;
+      color: var(--text-muted);
       font-weight: 800;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     /* Exercise grid */
     .ex-grid {
       display: grid;
       grid-template-rows: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
       flex: 1;
       min-height: 0;
     }
@@ -670,32 +686,32 @@ export const generateSessionPDFHTML = ({
 
     /* Exercise card */
     .ex-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       min-height: 0;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.02);
     }
     .ex-header {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
-      padding: 10px 14px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       flex-shrink: 0;
-      min-height: 48px;
+      min-height: 52px;
     }
     .ex-num {
       position: absolute;
-      left: 14px;
+      left: 16px;
       font-family: 'Outfit', sans-serif;
-      font-weight: 900;
-      font-size: 15px;
+      font-weight: 800;
+      font-size: 16px;
       color: #94a3b8;
     }
     .ex-header-content {
@@ -709,8 +725,8 @@ export const generateSessionPDFHTML = ({
     }
     .ex-name {
       font-family: 'Outfit', sans-serif;
-      font-size: 12px;
-      font-weight: 900;
+      font-size: 12.5px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       text-align: center;
       text-transform: uppercase;
@@ -718,10 +734,10 @@ export const generateSessionPDFHTML = ({
     }
     .ex-pills {
       display: flex;
-      gap: 4px;
+      gap: 5px;
       flex-wrap: wrap;
       justify-content: center;
-      font-size: 7.5px;
+      font-size: 8px;
       font-weight: 800;
       color: #94a3b8;
       text-transform: uppercase;
@@ -730,8 +746,8 @@ export const generateSessionPDFHTML = ({
     }
     .ex-pill {
       background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 2px 6px;
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 2.5px 7px;
       border-radius: 8px;
     }
 
@@ -744,11 +760,11 @@ export const generateSessionPDFHTML = ({
     .ex-img-col {
       flex: 0 0 45%;
       background: #f8fafc;
-      border-right: 1px solid #e2e8f0;
+      border-right: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
+      padding: 12px;
       overflow: hidden;
     }
     .ex-img {
@@ -759,50 +775,52 @@ export const generateSessionPDFHTML = ({
       object-fit: contain;
       border-radius: 8px;
       display: block;
-      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.04);
     }
     .ex-img-placeholder {
-      font-size: 9px;
-      color: #94a3b8;
+      font-size: 9.5px;
+      color: var(--text-muted);
       text-align: center;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       font-family: 'Outfit', sans-serif;
+      letter-spacing: 0.5px;
     }
     .ex-info-col {
       flex: 0 0 55%;
-      padding: 10px 12px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
       overflow-y: auto;
     }
     .ex-section {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
     .ex-section-label {
       font-family: 'Outfit', sans-serif;
-      font-size: 8px;
+      font-size: 8.5px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      font-weight: 900;
-      color: #475569;
+      font-weight: 800;
+      color: var(--secondary);
     }
     .ex-section-text {
-      font-size: 8.5px;
-      color: #334155;
-      line-height: 1.4;
+      font-size: 9px;
+      color: var(--text-main);
+      line-height: 1.5;
       white-space: pre-wrap;
+      letter-spacing: 0.2px;
     }
     .ex-divider {
       height: 1px;
-      background: #e2e8f0;
+      background: var(--border);
     }
     .ex-empty {
       font-size: 9px;
-      color: #94a3b8;
+      color: var(--text-muted);
       font-style: italic;
     }
 
@@ -810,14 +828,14 @@ export const generateSessionPDFHTML = ({
     .teams-block {
       margin-top: 4px;
       padding-top: 6px;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid var(--border);
     }
     .teams-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 8px;
-      font-weight: 900;
+      font-size: 8.5px;
+      font-weight: 800;
       text-transform: uppercase;
-      color: #94a3b8;
+      color: var(--text-muted);
       letter-spacing: 0.8px;
       margin-bottom: 4px;
     }
@@ -825,22 +843,23 @@ export const generateSessionPDFHTML = ({
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 3px;
+      margin-bottom: 4.5px;
     }
     .team-tag {
-      font-size: 7.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 8px;
       font-weight: 800;
       white-space: nowrap;
       flex-shrink: 0;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      padding: 1.5px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
     }
     .team-names {
-      font-size: 8px;
-      color: #475569;
-      line-height: 1.3;
+      font-size: 8.5px;
+      color: var(--text-main);
+      line-height: 1.35;
       font-weight: 600;
     }
 
@@ -848,27 +867,27 @@ export const generateSessionPDFHTML = ({
     .strength-page {
       width: 210mm;
       height: 297mm;
-      padding: 12mm 14mm;
+      padding: 15mm 16mm;
       page-break-before: always;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #f8fafc;
+      background: var(--bg-main);
     }
     .st-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      gap: 12px;
       margin-top: 4px;
       flex: 1;
       align-content: start;
     }
     .st-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 4px 10px rgba(15,23,42,0.03);
+      box-shadow: 0 4px 10px rgba(15,23,42,0.02);
       display: flex;
       flex-direction: column;
     }
@@ -884,19 +903,19 @@ export const generateSessionPDFHTML = ({
     }
     .st-img img { width: 100%; height: 100%; object-fit: cover; }
     .st-placeholder { font-size: 20px; opacity: 0.25; }
-    .st-body { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-    .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 6px; }
+    .st-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; }
+    .st-header { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 2px; }
     .st-num {
-      color: #94a3b8;
-      font-size: 9.5px;
-      font-weight: 900;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 800;
       margin-right: 2px;
       font-family: 'Outfit', sans-serif;
     }
-    .st-name { font-size: 8.5px; font-weight: 700; color: #0f172a; line-height: 1.25; }
-    .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 5px; border-top: 1px solid #f1f5f9; }
-    .st-section { font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase; font-family: 'Outfit', sans-serif; }
-    .st-level { font-size: 7.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; font-family: 'Outfit', sans-serif; }
+    .st-name { font-size: 9px; font-weight: 700; color: var(--primary); line-height: 1.3; }
+    .st-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; border-top: 1px solid #f1f5f9; }
+    .st-section { font-size: 8px; font-weight: 800; color: var(--text-main); text-transform: uppercase; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px; }
+    .st-level { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px; }
   </style>
 </head>
 <body>

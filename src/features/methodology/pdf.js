@@ -30,7 +30,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
   const tableHeaders = days
     .map(
       (day, index) => `
-    <th style="background-color: ${brandPrimaryColor}; color: white; padding: 12px 8px; font-size: 11px; font-weight: bold; text-align: center; border: 1px solid ${brandPrimaryColor}; line-height: 1.2; font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">
+    <th class="th-day">
       ${tt('methodology.dayNumber', ({ number }) => `Día ${number}`, { number: day.day_number || index + 1 })}
     </th>
   `,
@@ -41,12 +41,12 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
     const cells = days
       .map((day) => {
         const value = getValue(day);
-        return `<td style="padding: 12px 14px; font-size: 9.5px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; color: #334155;">${value || '-'}</td>`;
+        return `<td class="td-value">${value || '-'}</td>`;
       })
       .join('');
     return `
       <tr>
-        <td style="background-color: #f8fafc; padding: 12px 14px; font-size: 9.5px; font-weight: 700; border: 1px solid #e2e8f0; white-space: nowrap; color: #0f172a; font-family: 'Outfit', sans-serif;">
+        <td class="td-label">
           ${icon} ${label}
         </td>
         ${cells}
@@ -60,14 +60,14 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
   const instructionCells = days
     .map((day) => {
       const instruction = day.main_part?.instruction || '';
-      return `<td style="padding: 12px 14px; font-size: 9.5px; border: 1px solid #e2e8f0; vertical-align: middle; background-color: #f8fafc; font-weight: 700; color: #0f172a; font-family: 'Outfit', sans-serif;">
+      return `<td class="td-mainpart-instruction">
       ${instruction || '-'}
     </td>`;
     })
     .join('');
   mainPartRows += `
     <tr>
-      <td style="background-color: #f8fafc; padding: 12px 14px; font-size: 9.5px; font-weight: 700; border: 1px solid #e2e8f0; white-space: nowrap; color: #0f172a; font-family: 'Outfit', sans-serif;">
+      <td class="td-label">
         🏃 ${tt('methodology.mainPart', 'Parte principal')}
       </td>
       ${instructionCells}
@@ -80,17 +80,17 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
         const option = (day.main_part?.options || [])[i];
         if (option) {
           const tasksText = option.tasks?.join(' / ') || '';
-          return `<td style="padding: 12px 14px; font-size: 9.5px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5;">
-          <strong style="color: #0f172a; font-family: 'Outfit', sans-serif;">${tasksText}</strong><br/>
-          <span style="color: #64748b; font-size: 8.5px; display: block; margin-top: 4px;">${option.constraint || ''}</span>
+          return `<td class="td-mainpart-option">
+          <strong class="option-tasks">${tasksText}</strong><br/>
+          <span class="constraint-text">${option.constraint || ''}</span>
         </td>`;
         }
-        return `<td style="padding: 12px 14px; font-size: 9.5px; border: 1px solid #e2e8f0; vertical-align: top; color: #94a3b8;">-</td>`;
+        return `<td class="empty-cell">-</td>`;
       })
       .join('');
     mainPartRows += `
       <tr>
-        <td style="background-color: #f8fafc; padding: 12px 14px; font-size: 9.5px; font-weight: bold; border: 1px solid #e2e8f0; white-space: nowrap;"></td>
+        <td class="td-label-empty"></td>
         ${cells}
       </tr>
     `;
@@ -104,19 +104,32 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
       <title>${categoryName} - ${daysLabel}</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
       <style>
-        @page { size: landscape; margin: 10mm; }
+        :root {
+          --bg-main: #f8fafc;
+          --bg-card: #ffffff;
+          --primary: #0f172a;
+          --secondary: #1e293b;
+          --accent: #2563eb;
+          --text-main: #334155;
+          --text-muted: #64748b;
+          --border: #e2e8f0;
+          --border-dark: #cbd5e1;
+        }
+
+        @page { size: landscape; margin: 12mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-          padding: 10px;
-          background: #f8fafc;
+          padding: 8px;
+          color: var(--text-main);
+          background: var(--bg-main);
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
         .header {
-          background: linear-gradient(135deg, ${brandPrimaryColor}, ${brandSecondaryColor});
+          background: linear-gradient(135deg, var(--primary), var(--secondary));
           color: white;
-          padding: 16px 24px;
+          padding: 18px 24px;
           border-radius: 12px;
           margin-bottom: 16px;
           display: flex;
@@ -147,6 +160,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
           color: #cbd5e1;
           letter-spacing: 1px;
         }
+        
         table {
           width: 100%;
           border-collapse: separate;
@@ -154,16 +168,110 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
           font-size: 10px;
           border-radius: 8px;
           overflow: hidden;
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
+          border: 1px solid var(--border);
+          background: var(--bg-card);
           box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
-        th, td { text-align: left; }
+        
+        th.th-empty {
+          background-color: var(--secondary);
+          color: white;
+          padding: 12px 10px;
+          font-size: 11px;
+          border: 1px solid var(--secondary);
+          width: 130px;
+          line-height: 1.2;
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        th.th-day {
+          background-color: var(--primary);
+          color: white;
+          padding: 12px 8px;
+          font-size: 11px;
+          font-weight: bold;
+          text-align: center;
+          border: 1px solid var(--primary);
+          line-height: 1.2;
+          font-family: 'Outfit', sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        td.td-label {
+          background-color: #f8fafc;
+          padding: 12px 14px;
+          font-size: 9.5px;
+          font-weight: 700;
+          border: 1px solid var(--border);
+          white-space: nowrap;
+          color: var(--primary);
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        td.td-label-empty {
+          background-color: #f8fafc;
+          padding: 12px 14px;
+          font-size: 9.5px;
+          border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        
+        td.td-value {
+          padding: 12px 14px;
+          font-size: 9.5px;
+          border: 1px solid var(--border);
+          vertical-align: top;
+          line-height: 1.5;
+          color: var(--text-main);
+        }
+        
+        td.td-mainpart-instruction {
+          padding: 12px 14px;
+          font-size: 9.5px;
+          border: 1px solid var(--border);
+          vertical-align: middle;
+          background-color: #f8fafc;
+          font-weight: 750;
+          color: var(--primary);
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        td.td-mainpart-option {
+          padding: 12px 14px;
+          font-size: 9.5px;
+          border: 1px solid var(--border);
+          vertical-align: top;
+          line-height: 1.5;
+        }
+        
+        .option-tasks {
+          color: var(--primary);
+          font-family: 'Outfit', sans-serif;
+          font-weight: 700;
+        }
+        
+        .constraint-text {
+          color: var(--text-muted);
+          font-size: 8.5px;
+          display: block;
+          margin-top: 4px;
+          font-weight: 500;
+        }
+        
+        td.empty-cell {
+          padding: 12px 14px;
+          font-size: 9.5px;
+          border: 1px solid var(--border);
+          vertical-align: top;
+          color: var(--text-muted);
+        }
+        
         .footer {
-          margin-top: 16px;
+          margin-top: 18px;
           text-align: right;
-          color: #94a3b8;
-          font-size: 8px;
+          color: var(--text-muted);
+          font-size: 8.5px;
           font-family: 'Inter', sans-serif;
           font-weight: 500;
         }
@@ -181,7 +289,7 @@ export async function generateMethodologyPdf(categoryName, planKey, days, primar
       <table>
         <thead>
           <tr>
-            <th style="background-color: #1e293b; color: white; padding: 12px 10px; font-size: 11px; border: 1px solid #1e293b; width: 120px; line-height: 1.2; font-family: 'Outfit', sans-serif;"></th>
+            <th class="th-empty"></th>
             ${tableHeaders}
           </tr>
         </thead>

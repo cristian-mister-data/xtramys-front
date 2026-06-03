@@ -9,10 +9,8 @@ const escapeHtml = (text) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-};
-
 export async function generateProtocolPdf(protocol, lang, t) {
-  const protocolColor = protocol.color || '#3b82f6';
+  const protocolColor = protocol.color || '#2563eb';
   
   let riskFactorsHtml = '';
   if (protocol.introduction?.risk_factors?.length > 0) {
@@ -112,8 +110,11 @@ export async function generateProtocolPdf(protocol, lang, t) {
       <div class="pdf-page">
         ${isFirstPage ? `
           <div class="header">
-            <h1>${escapeHtml(protocol.title[lang])}</h1>
-            <div class="stats">${protocol.sections.length} ${escapeHtml(t('injuryPrevention.blocks'))} | ${totalExercises} ${escapeHtml(t('injuryPrevention.exercises'))}</div>
+            <div class="header-left">
+              <h1>${escapeHtml(protocol.title[lang])}</h1>
+              <div class="stats">${protocol.sections.length} ${escapeHtml(t('injuryPrevention.blocks'))} | ${totalExercises} ${escapeHtml(t('injuryPrevention.exercises'))}</div>
+            </div>
+            <span class="header-right">${escapeHtml(t('injuryPrevention.title') || 'PREVENCIÓN')}</span>
           </div>
           ${(riskFactorsHtml || objectivesHtml) ? `
             <div class="intro-section">
@@ -134,7 +135,7 @@ export async function generateProtocolPdf(protocol, lang, t) {
           ${pageContentHtml}
         </div>
 
-        <div class="footer">${escapeHtml(t('injuryPrevention.pdfGeneratedBy'))} Xtramys - Pág ${pageIdx + 1} / ${pages.length}</div>
+        <div class="footer">${escapeHtml(t('injuryPrevention.pdfGeneratedBy') || 'Xtramys')} - Pág ${pageIdx + 1} / ${pages.length}</div>
       </div>
     `;
   });
@@ -151,9 +152,9 @@ export async function generateProtocolPdf(protocol, lang, t) {
       --bg-card: #ffffff;
       --primary: #0f172a;
       --secondary: #1e293b;
-      --accent: #2563eb;
+      --accent: ${protocolColor};
       --text-main: #334155;
-      --text-muted: #64748b;
+      --text-muted: #475569;
       --border: #e2e8f0;
       --border-dark: #cbd5e1;
     }
@@ -165,13 +166,14 @@ export async function generateProtocolPdf(protocol, lang, t) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      font-size: 9.5pt;
-      line-height: 1.45;
+      font-size: 10px;
+      line-height: 1.5;
       color: var(--text-main);
       background: var(--bg-main);
       padding: 0;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      letter-spacing: 0.2px;
     }
     .pdf-page {
       width: 210mm;
@@ -192,68 +194,85 @@ export async function generateProtocolPdf(protocol, lang, t) {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: white;
       border-radius: 12px;
-      padding: 18px 24px;
-      margin-bottom: 12px;
-      text-align: center;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
     }
     .header h1 {
       font-family: 'Outfit', sans-serif;
-      font-size: 16pt;
+      font-size: 18px;
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 3px;
+      letter-spacing: 0.5px;
     }
     .header .stats {
-      font-size: 8pt;
-      opacity: 0.85;
-      font-weight: 500;
-      letter-spacing: 0.5px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 8.5px;
+      color: #94a3b8;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 3px;
+    }
+    .header-right {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
     }
     .page-header {
       border-bottom: 1.5px solid var(--border-dark);
       padding-bottom: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .page-header-title {
       font-family: 'Outfit', sans-serif;
-      font-size: 8.5px;
+      font-size: 9px;
       font-weight: 800;
       text-transform: uppercase;
       color: var(--primary);
       letter-spacing: 1px;
     }
     .page-header-subtitle {
-      font-size: 8px;
+      font-size: 8.5px;
       color: var(--text-muted);
-      font-weight: 500;
+      font-weight: 600;
     }
     .intro-section {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       padding: 0;
     }
     .intro-section h2 {
       font-family: 'Outfit', sans-serif;
-      font-size: 10.5pt;
-      font-weight: 850;
+      font-size: 12px;
+      font-weight: 900;
       color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1px;
       border-bottom: 2px solid var(--primary);
-      padding-bottom: 4px;
-      margin-bottom: 10px;
+      padding-bottom: 5px;
+      margin-bottom: 12px;
     }
     .intro-cols {
       display: flex;
-      gap: 12px;
+      gap: 16px;
     }
     .intro-block {
       flex: 1;
-      padding: 12px 14px;
+      padding: 12px 16px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -262,9 +281,9 @@ export async function generateProtocolPdf(protocol, lang, t) {
     .intro-block h3 {
       font-family: 'Outfit', sans-serif;
       font-size: 9.5px;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--primary);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -272,33 +291,35 @@ export async function generateProtocolPdf(protocol, lang, t) {
       list-style-type: none;
     }
     .intro-block li {
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       font-size: 8.5px;
       color: var(--text-main);
       position: relative;
-      padding-left: 12px;
+      padding-left: 14px;
+      line-height: 1.4;
     }
     .intro-block li::before {
       content: "•";
       color: var(--accent);
-      font-weight: bold;
+      font-weight: 900;
       position: absolute;
       left: 0;
       top: 0;
+      font-size: 10px;
     }
     .section {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
     .section h2 {
       font-family: 'Outfit', sans-serif;
-      font-size: 10.5pt;
-      font-weight: 850;
+      font-size: 12px;
+      font-weight: 900;
       color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 1px;
       border-bottom: 2px solid var(--primary);
-      padding-bottom: 4px;
-      margin-bottom: 10px;
+      padding-bottom: 5px;
+      margin-bottom: 12px;
     }
     .exercises {
       padding-left: 0;
@@ -306,10 +327,10 @@ export async function generateProtocolPdf(protocol, lang, t) {
     .exercise {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-left: 3.5px solid var(--accent);
+      border-left: 4px solid var(--accent);
       border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
       page-break-inside: avoid;
     }
@@ -318,43 +339,46 @@ export async function generateProtocolPdf(protocol, lang, t) {
     }
     .exercise h3 {
       font-family: 'Outfit', sans-serif;
-      font-size: 9.5pt;
-      font-weight: 750;
+      font-size: 11px;
+      font-weight: 800;
       color: var(--primary);
       margin-bottom: 6px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .detail {
-      margin-bottom: 3px;
-      font-size: 8pt;
+      margin-bottom: 4px;
+      font-size: 9px;
       color: var(--text-main);
+      line-height: 1.4;
     }
     .detail .label {
       font-family: 'Outfit', sans-serif;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
-      font-size: 7.5pt;
+      font-size: 8px;
       letter-spacing: 0.5px;
       margin-right: 4px;
     }
     .detail.tips {
-      margin-top: 6px;
-      padding: 6px 8px;
+      margin-top: 8px;
+      padding: 8px 10px;
       background: #fffbeb;
-      border-left: 2.5px solid #d97706;
-      border-radius: 4px;
+      border-left: 3px solid #d97706;
+      border-radius: 6px;
       color: #78350f;
     }
     .detail.tips .label {
       color: #b45309;
+      font-weight: 800;
     }
     .footer {
       margin-top: auto;
       padding-top: 10px;
       border-top: 1px solid var(--border);
       text-align: center;
-      font-size: 8px;
+      font-size: 8.5px;
       color: var(--text-muted);
       font-weight: 500;
       letter-spacing: 0.5px;

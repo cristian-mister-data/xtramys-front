@@ -530,7 +530,10 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
   const pageHtmls = pages.map((pageBlocks, pageIdx) => `
     <div class="pdf-page">
       <div class="header">
-        <h1 class="header-title">${title}</h1>
+        <div class="header-left">
+          <h1 class="header-title">${title}</h1>
+          <span class="header-subtitle">Xtramys Performance Report</span>
+        </div>
         ${pages.length > 1 ? `<span class="header-page">${pageIdx + 1}/${pages.length}</span>` : ''}
       </div>
 
@@ -559,9 +562,14 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           --secondary: #1e293b;
           --accent: #2563eb;
           --text-main: #334155;
-          --text-muted: #64748b;
+          --text-muted: #475569;
           --border: #e2e8f0;
           --border-dark: #cbd5e1;
+        }
+
+        @page {
+          size: A4;
+          margin: 0;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -573,6 +581,7 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           background: var(--bg-main);
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          letter-spacing: 0.2px;
         }
 
         .pdf-page {
@@ -593,7 +602,7 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
         .header {
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
           border-radius: 12px;
-          padding: 18px 24px;
+          padding: 20px 24px;
           color: #ffffff;
           margin-bottom: 16px;
           display: flex;
@@ -602,6 +611,11 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
           flex-shrink: 0;
         }
+        .header-left {
+          display: flex;
+          flex-direction: column;
+          text-align: left;
+        }
         .header-title {
           font-family: 'Outfit', sans-serif;
           font-size: 18px;
@@ -609,11 +623,22 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           letter-spacing: 0.5px;
           text-transform: uppercase;
         }
+        .header-subtitle {
+          font-family: 'Outfit', sans-serif;
+          font-size: 8.5px;
+          color: #94a3b8;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          margin-top: 3px;
+        }
         .header-page {
           font-family: 'Outfit', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          opacity: 0.8;
+          font-size: 11px;
+          font-weight: 800;
+          color: #60a5fa;
+          text-transform: uppercase;
+          letter-spacing: 1.2px;
         }
 
         .content {
@@ -625,31 +650,33 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 10px;
-          padding-bottom: 6px;
+          margin-bottom: 12px;
+          padding-bottom: 5px;
           border-bottom: 2px solid var(--primary);
         }
         .section-title {
           font-family: 'Outfit', sans-serif;
-          font-size: 11px;
-          font-weight: 800;
+          font-size: 12px;
+          font-weight: 900;
           color: var(--primary);
           text-transform: uppercase;
-          letter-spacing: 0.8px;
+          letter-spacing: 1px;
         }
 
         .question-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 8px 12px;
+          padding: 10px 12px;
           background: var(--bg-card);
           border: 1px solid var(--border);
-          border-radius: 6px;
-          margin-bottom: 6px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+          border-radius: 8px;
+          margin-bottom: 8px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
         .question-label {
+          font-family: 'Inter', sans-serif;
           font-weight: 600;
           color: var(--text-main);
           font-size: 9px;
@@ -658,6 +685,7 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           overflow-wrap: anywhere;
         }
         .question-value {
+          font-family: 'Inter', sans-serif;
           font-weight: 700;
           color: var(--primary);
           text-align: right;
@@ -674,17 +702,18 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           font-weight: 400;
         }
         .question-continuation {
-          padding: 8px 12px;
+          padding: 10px 12px;
           background: var(--bg-card);
           border: 1px solid var(--border);
-          border-radius: 6px;
-          margin-bottom: 6px;
+          border-radius: 8px;
+          margin-bottom: 8px;
           font-weight: 700;
           color: var(--primary);
           font-size: 9px;
           line-height: 1.5;
           overflow-wrap: anywhere;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
 
         .formation-badge {
@@ -714,7 +743,7 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
         .players-section h4 {
           font-family: 'Outfit', sans-serif;
           font-size: 9.5px;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--secondary);
           margin-bottom: 8px;
           text-transform: uppercase;
@@ -730,35 +759,44 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           flex-direction: column;
           background: var(--bg-card);
           border: 1px solid var(--border);
-          border-left: 3px solid var(--accent);
-          border-radius: 6px;
-          padding: 8px 10px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+          border-left: 4px solid var(--accent);
+          border-radius: 8px;
+          padding: 10px 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
         .player-name {
-          font-weight: 700;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
           color: var(--primary);
           font-size: 9.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
         }
         .player-note {
+          font-family: 'Inter', sans-serif;
           font-size: 8.5px;
           color: var(--text-muted);
-          margin-top: 2px;
+          margin-top: 3px;
+          line-height: 1.4;
         }
 
         .observations-box {
-          margin-top: 6px;
-          padding: 10px 12px;
+          margin-top: 8px;
+          padding: 12px 14px;
           background: var(--bg-card);
           border: 1px solid var(--border);
           border-radius: 8px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          page-break-inside: avoid;
         }
         .observations-text {
+          font-family: 'Inter', sans-serif;
           font-size: 9.5px;
           line-height: 1.5;
           color: var(--text-main);
           white-space: pre-wrap;
+          letter-spacing: 0.2px;
         }
 
         .graphic-container {
@@ -778,10 +816,11 @@ function generateRivalAnalysisPDFHTML(rivalAnalysis, selectedTeam, t, userTempla
           border-top: 1px solid var(--border);
           text-align: center;
           color: var(--text-muted);
-          font-size: 8px;
+          font-size: 8.5px;
           font-family: 'Inter', sans-serif;
           font-weight: 500;
           flex-shrink: 0;
+          letter-spacing: 0.5px;
         }
       </style>
     </head>
