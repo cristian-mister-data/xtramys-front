@@ -30,7 +30,7 @@ import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import ImageZoom from 'react-native-image-pan-zoom';
-import * as Print from 'expo-print';
+import { generateStrategyPdf } from '@/vendor/strategy/pdf';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -222,7 +222,6 @@ Alert.alert(
   };
 
   // Función para generar y compartir PDF
-  // Función para generar PDF con campo a página completa (landscape)
   const generatePDF = async () => {
     try {
       // Preparar la imagen
@@ -249,168 +248,7 @@ Alert.alert(
         }
       }
 
-      // Crear HTML para el PDF - Campo grande con información de la estrategia
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            @page {
-              size: A4 landscape;
-              margin: 0;
-            }
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            html, body {
-              width: 100%;
-              height: 100%;
-              margin: 0;
-              padding: 0;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              display: flex;
-              flex-direction: column;
-              height: 100vh;
-              background: #f8f9fa;
-            }
-            .header {
-              background: linear-gradient(135deg, #2e7d32 0%, #4CAF50 100%);
-              color: white;
-              padding: 10px 20px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-            .title {
-              font-size: 20px;
-              font-weight: bold;
-            }
-            .header-badge {
-              font-size: 14px;
-              background: rgba(255,255,255,0.2);
-              padding: 5px 12px;
-              border-radius: 20px;
-            }
-            .main-content {
-              flex: 1;
-              display: flex;
-              padding: 10px;
-              gap: 15px;
-              overflow: hidden;
-            }
-            .image-container {
-              flex: 2;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              background: white;
-              border-radius: 10px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-              padding: 10px;
-            }
-            .image-container img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-              border-radius: 6px;
-            }
-            .info-panel {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              gap: 10px;
-              max-width: 280px;
-              overflow-y: auto;
-            }
-            .info-card {
-              background: white;
-              border-radius: 8px;
-              padding: 12px 14px;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-            }
-            .info-card-title {
-              font-size: 10px;
-              font-weight: bold;
-              color: #666;
-              text-transform: uppercase;
-              margin-bottom: 6px;
-              display: flex;
-              align-items: center;
-              gap: 6px;
-            }
-            .info-card-content {
-              font-size: 13px;
-              color: #333;
-              line-height: 1.5;
-            }
-            .type-badge {
-              display: inline-block;
-              background: #fff3e0;
-              color: #f57c00;
-              padding: 4px 10px;
-              border-radius: 12px;
-              font-size: 12px;
-              font-weight: 600;
-            }
-            .footer {
-              background: #333;
-              color: white;
-              padding: 6px 20px;
-              font-size: 10px;
-              display: flex;
-              justify-content: space-between;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">${strategy.nombre || t('strategy.strategy')}</div>
-            ${getFolderName() ? `<div class="header-badge">${getFolderName()}</div>` : ''}
-          </div>
-          
-          <div class="main-content">
-            <div class="image-container">
-              ${imageBase64 ? `<img src="${imageBase64}" alt="Diagrama de estrategia" />` : '<p style="color:#999">Sin imagen</p>'}
-            </div>
-            
-            <div class="info-panel">
-              ${getFolderName() ? `
-              <div class="info-card">
-                <div class="info-card-title">📁 ${t('folders.folder')}</div>
-                <div class="info-card-content"><span class="type-badge">${getFolderName()}</span></div>
-              </div>` : ''}
-              
-              ${strategy.descripcion ? `
-              <div class="info-card">
-                <div class="info-card-title">📝 ${t('strategy.description')}</div>
-                <div class="info-card-content">${strategy.descripcion}</div>
-              </div>` : ''}
-            </div>
-          </div>
-          
-          <div class="footer">
-            <span>Xtramys</span>
-            <span>${new Date().toLocaleDateString()}</span>
-          </div>
-        </body>
-        </html>
-      `;
-
-      // Generar PDF en landscape
-      const { uri: tempUri } = await Print.printToFileAsync({ 
-        html: htmlContent,
-        orientation: Print.Orientation.landscape
-      });
-      
-      // Copiar el archivo con el nombre de la estrategia
-      const fileName = `${(strategy.nombre || 'Estrategia').replace(/[/\?%*:|"<>]/g, '-')}.pdf`;
-      await savePdfToDownloads(tempUri, fileName);
+      await generateStrategyPdf(strategy, getFolderName(), imageBase64, t);
     } catch (error) {
       console.error('Error generando PDF:', error);
       Alert.alert(t('message.error'), t('strategy.pdfGenerateError'));

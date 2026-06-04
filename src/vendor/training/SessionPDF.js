@@ -470,7 +470,9 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   if (ejercicio.tiempo) pills.push(`${ejercicio.tiempo} min`);
   if (!isLastExercise && detalle.tiempoDescanso > 0) pills.push(`Descanso: ${detalle.tiempoDescanso} min`);
 
-  const teamAssignmentsData = (detalle.teamAssignments || []).filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0));
+  const teamAssignmentsData = (detalle.teamAssignments || [])
+    .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0))
+    .sort((a, b) => (a.teamNumber || 0) - (b.teamNumber || 0));
 
   return (
     <View style={s.exCard} wrap={false}>

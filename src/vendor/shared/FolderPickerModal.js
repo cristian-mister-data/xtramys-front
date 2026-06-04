@@ -285,27 +285,31 @@ export default function FolderPickerModal({
           <KeyboardAwareScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Root option (Sin carpeta) */}
             {navPath.length === 0 && !searchFilter && (
-              <TouchableOpacity
+              <View
                 style={[
                   styles.folderRow,
                   !selectedFolderId && styles.folderRowSelected,
                 ]}
-                onPress={() => {
-                  onSelect(null, '');
-                  onClose();
-                }}
               >
-                <View style={[styles.folderRowIcon, { backgroundColor: theme.colors.backgroundAlt }]}>
-                  <Feather name="inbox" size={18} color={theme.colors.textMuted} />
-                </View>
-                <View style={styles.folderRowContent}>
-                  <Text style={styles.folderRowName}>{t('folders.noFolder') || 'Sin carpeta'}</Text>
-                  <Text style={styles.folderRowMeta}>{t('folders.rootDescription') || 'Guardar en raíz'}</Text>
-                </View>
-                {!selectedFolderId && (
-                  <Feather name="check-circle" size={20} color={accentColor} />
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.folderRowMain}
+                  onPress={() => {
+                    onSelect(null, '');
+                    onClose();
+                  }}
+                >
+                  <View style={[styles.folderRowIcon, { backgroundColor: theme.colors.backgroundAlt }]}>
+                    <Feather name="inbox" size={18} color={theme.colors.textMuted} />
+                  </View>
+                  <View style={styles.folderRowContent}>
+                    <Text style={styles.folderRowName}>{t('folders.noFolder') || 'Sin carpeta'}</Text>
+                    <Text style={styles.folderRowMeta}>{t('folders.rootDescription') || 'Guardar en raíz'}</Text>
+                  </View>
+                  {!selectedFolderId && (
+                    <Feather name="check-circle" size={20} color={accentColor} />
+                  )}
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Create folder inline */}

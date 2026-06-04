@@ -1,4 +1,4 @@
-﻿// components/pages/season/PreWellnessDetailModal.js
+// components/pages/season/PreWellnessDetailModal.js
 // Modal para ver detalle de pre-wellness de una sesión de entrenamiento
 import { useState, useEffect, useMemo } from 'react';
 import { useTheme } from 'styled-components';
@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import * as Print from 'expo-print';
+import { generateWellnessSessionPdf } from '@/vendor/wellness/pdf';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import {
@@ -271,80 +271,8 @@ export default function PreWellnessDetailModal({
     }
     setGeneratingPDF(true);
     try {
-      const locale = getLocale();
-      const dateStr = formatDateForPDF(sessionDate);
-      const teamName = session?.equipo?.nombre || session?.teamName || '';
-      const filePrefix = i18n.language === 'en' ? 'prewellness_training' : 'prewellness_entrenamiento';
-      const fileName = `${filePrefix}_${dateStr.replace(/\//g, '-')}.pdf`;
-      const htmlContent = `
-        <!DOCTYPE html><html><head><meta charset="UTF-8">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #1a1a1a; padding: 20px; }
-          .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #333; }
-          .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-          .header .date { font-size: 12px; color: #444; }
-          .summary { display: flex; justify-content: space-around; margin-bottom: 25px; padding: 15px; border: 1px solid #333; }
-          .summary-item { text-align: center; padding: 0 20px; }
-          .summary-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-bottom: 5px; }
-          .summary-item .value { font-size: 22px; font-weight: 700; }
-          .summary-item .sublabel { font-size: 9px; color: #666; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; }
-          th { background-color: #f5f5f5; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-          td { font-size: 11px; }
-          .score-cell { text-align: center; font-weight: 600; font-size: 14px; }
-          .response-row td { vertical-align: top; }
-          .question-responses { margin-top: 5px; }
-          .question-response { margin-bottom: 5px; padding-left: 10px; border-left: 2px solid #ddd; }
-          .question-response .q { font-size: 9px; color: #666; font-style: italic; }
-          .question-response .a { font-size: 10px; }
-          .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #333; text-align: center; font-size: 9px; color: #666; }
-        </style></head><body>
-          <div class="header">
-            <h1>${t('session.preWellnessReport') || 'Informe Pre-Wellness'}</h1>
-            <div class="date">${t('session.trainingOf')} ${dateStr}${teamName ? ` • ${teamName}` : ''}</div>
-          </div>
-          <div class="summary">
-            <div class="summary-item">
-              <div class="label">${t('session.expectedWellness') || 'Esperado'}</div>
-              <div class="value">${expectedPreWellness || '-'}</div>
-              <div class="sublabel">${t('session.coachObjective') || 'Objetivo entrenador'}</div>
-            </div>
-            <div class="summary-item">
-              <div class="label">${t('session.averageObtained') || 'Media obtenida'}</div>
-              <div class="value">${preWellnessData.averagePreWellness?.toFixed(1) || '-'}</div>
-              <div class="sublabel">${t('session.averageResponses') || 'Media respuestas'}</div>
-            </div>
-            <div class="summary-item">
-              <div class="label">${t('session.totalResponses')}</div>
-              <div class="value">${preWellnessData.totalResponses || 0}</div>
-              <div class="sublabel">${t('session.players')}</div>
-            </div>
-          </div>
-          <table><thead><tr>
-            <th style="width: 25%">${t('session.player')}</th>
-            <th style="width: 15%">Pre-Wellness</th>
-            <th style="width: 40%">${t('session.responses')}</th>
-            <th style="width: 20%">${t('session.date')}</th>
-          </tr></thead><tbody>
-            ${preWellnessData.responses.map(response => `
-              <tr class="response-row">
-                <td>${response.playerName}</td>
-                <td class="score-cell">${response.preWellnessScore ?? response.wellness ?? '-'}</td>
-                <td>${response.questionResponses && response.questionResponses.length > 0
-                  ? response.questionResponses.filter(qr => qr.answer).map(qr =>
-                      `<div class="question-response"><div class="q">${qr.question}</div><div class="a">${qr.answer}</div></div>`
-                    ).join('')
-                  : `<span style="color:#999;">${t('session.noAdditionalResponses')}</span>`}
-                </td>
-                <td>${new Date(response.submittedAt).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-              </tr>`).join('')}
-          </tbody></table>
-          <div class="footer">${t('player.profile.generatedAt')}: ${new Date().toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-        </body></html>`;
-      const { uri } = await Print.printToFileAsync({ html: htmlContent, base64: false });
-      await savePdfToDownloads(uri, fileName);
+      const lang = i18n.language || 'es';
+      await generateWellnessSessionPdf(session, expectedPreWellness, preWellnessData, t, lang, true);
     } catch (error) {
       console.error('Error generating pre-wellness PDF:', error);
       Alert.alert(t('message.error'), t('session.pdfError') || 'Error al generar el PDF');

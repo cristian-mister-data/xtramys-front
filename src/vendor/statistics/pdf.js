@@ -72,6 +72,8 @@ const s = {
     padding: SPACING.base,
     borderRadius: 6,
     borderWidth: 1,
+    borderColor: COLORS.border,
+    flex: 1,
   },
   metricVal: {
     fontSize: 24,
@@ -139,11 +141,12 @@ const s = {
 };
 
 // ── Helper ─────────────────────────────────────────────────────────
-const getPlayerFullName = (player) => {
-  if (!player) return 'Desconocido';
+const getPlayerFullName = (player, t) => {
+  if (!player) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
   const name = player.nombre || '';
   const surname = player.apellidos || '';
-  return `${name} ${surname}`.trim() || 'Desconocido';
+  const fullName = `${name} ${surname}`.trim();
+  return fullName || (t ? t('common.unknown', 'Desconocido') : 'Desconocido');
 };
 
 // ── Components ─────────────────────────────────────────────────────
@@ -203,17 +206,17 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
               <View style={[s.halfColumn, s.metricBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}>
                 <Text style={[s.metricLbl, { color: '#166534' }]}>{t('statistics.goalsFor')}</Text>
                 <Text style={[s.metricVal, { color: '#15803d' }]}>{team.goalsFor}</Text>
-                <Text style={{ fontSize: 7, color: '#166534' }}>Avg: {(team.matches > 0 ? team.goalsFor / team.matches : 0).toFixed(1)} / p</Text>
+                <Text style={{ fontSize: 7, color: '#166534' }}>{t('statistics.avg', 'Avg')}: {(team.matches > 0 ? team.goalsFor / team.matches : 0).toFixed(1)} / {t('statistics.matchAbbr', 'p')}</Text>
               </View>
               <View style={[s.halfColumn, s.metricBox, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
                 <Text style={[s.metricLbl, { color: '#991b1b' }]}>{t('statistics.goalsAgainst')}</Text>
                 <Text style={[s.metricVal, { color: '#b91c1c' }]}>{team.goalsAgainst}</Text>
-                <Text style={{ fontSize: 7, color: '#991b1b' }}>Avg: {(team.matches > 0 ? team.goalsAgainst / team.matches : 0).toFixed(1)} / p</Text>
+                <Text style={{ fontSize: 7, color: '#991b1b' }}>{t('statistics.avg', 'Avg')}: {(team.matches > 0 ? team.goalsAgainst / team.matches : 0).toFixed(1)} / {t('statistics.matchAbbr', 'p')}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: COLORS.bgSoft, padding: 6, borderRadius: 4, marginTop: 4 }}>
-              <Text style={{ fontSize: FONT_SIZE.xs, fontFamily: 'Helvetica-Bold' }}>Dif: <Text style={{ color: team.goalsFor >= team.goalsAgainst ? COLORS.success : COLORS.danger }}>{team.goalsFor - team.goalsAgainst > 0 ? '+' : ''}{team.goalsFor - team.goalsAgainst}</Text></Text>
-              <Text style={{ fontSize: FONT_SIZE.xs, fontFamily: 'Helvetica-Bold' }}>Porterías a 0: <Text style={{ color: COLORS.accent }}>{team.cleanSheets}</Text></Text>
+              <Text style={{ fontSize: FONT_SIZE.xs, fontFamily: 'Helvetica-Bold' }}>{t('statistics.diff', 'Dif')}: <Text style={{ color: team.goalsFor >= team.goalsAgainst ? COLORS.success : COLORS.danger }}>{team.goalsFor - team.goalsAgainst > 0 ? '+' : ''}{team.goalsFor - team.goalsAgainst}</Text></Text>
+              <Text style={{ fontSize: FONT_SIZE.xs, fontFamily: 'Helvetica-Bold' }}>{t('statistics.cleanSheets', 'Porterías a 0')}: <Text style={{ color: COLORS.accent }}>{team.cleanSheets}</Text></Text>
             </View>
           </View>
         </View>
@@ -225,11 +228,11 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
             <Text style={s.cardTitle}>{t('statistics.preferredFormation', 'Formaciones Utilizadas')}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: COLORS.bgSoft, padding: 8, borderRadius: 6, marginBottom: 12 }}>
               <View>
-                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>Más Usada</Text>
+                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>{t('statistics.mostUsed', 'Más Usada')}</Text>
                 <Text style={{ fontSize: FONT_SIZE.lg, color: COLORS.accent, fontFamily: 'Helvetica-Bold' }}>{team.mostUsedFormation || '-'}</Text>
               </View>
               <View>
-                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>Avg Cambios / P.</Text>
+                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>{t('statistics.avgSubsPerMatch', 'Avg Cambios / P.')}</Text>
                 <Text style={{ fontSize: FONT_SIZE.lg, color: '#7c3aed', fontFamily: 'Helvetica-Bold' }}>{team.avgSubs || '-'}</Text>
               </View>
             </View>
@@ -253,15 +256,15 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
                 <View style={[s.grid3, { marginBottom: SPACING.md }]}>
                   <View style={[s.col3, s.metricBox, { backgroundColor: '#fef2f2', borderColor: '#fecaca', padding: 4 }]}>
                     <Text style={[s.metricVal, { color: '#dc2626', fontSize: 16 }]}>{rivalStats.avgFirstGoal}'</Text>
-                    <Text style={[s.metricLbl, { color: '#991b1b', fontSize: 6 }]}>Min. 1º Gol</Text>
+                    <Text style={[s.metricLbl, { color: '#991b1b', fontSize: 6 }]}>{t('statistics.minFirstGoalConceded', 'Min. 1º Gol')}</Text>
                   </View>
                   <View style={[s.col3, s.metricBox, { backgroundColor: COLORS.bgSoft, borderColor: COLORS.border, padding: 4 }]}>
                     <Text style={[s.metricVal, { color: COLORS.primary, fontSize: 16 }]}>{rivalStats.avgPerMatch}</Text>
-                    <Text style={[s.metricLbl, { fontSize: 6 }]}>Goles / P</Text>
+                    <Text style={[s.metricLbl, { fontSize: 6 }]}>{t('statistics.goalsPerMatch', 'Goles / P')}</Text>
                   </View>
                   <View style={[s.col3, s.metricBox, { backgroundColor: '#fffbeb', borderColor: '#fde68a', padding: 4 }]}>
                     <Text style={[s.metricVal, { color: '#d97706', fontSize: 16 }]}>{rivalStats.mostDangerousPeriod}'</Text>
-                    <Text style={[s.metricLbl, { color: '#b45309', fontSize: 6 }]}>Crítico</Text>
+                    <Text style={[s.metricLbl, { color: '#b45309', fontSize: 6 }]}>{t('statistics.criticalPeriod', 'Crítico')}</Text>
                   </View>
                 </View>
                 
@@ -276,10 +279,10 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
                 ))}
                 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.border, marginTop: 8, paddingTop: 6 }}>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>1ª: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.firstHalfGoals}</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>2ª: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.secondHalfGoals}</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>Min: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.earliest}'</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>Max: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.latest}'</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.firstHalfAbbr', '1ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.firstHalfGoals}</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.secondHalfAbbr', '2ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.secondHalfGoals}</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.minAbbr', 'Min')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.earliest}'</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.maxAbbr', 'Max')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.latest}'</Text></Text>
                 </View>
               </>
             ) : <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontStyle: 'italic' }}>{t('statistics.noData')}</Text>}
@@ -325,13 +328,13 @@ const PlayersStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
             <View style={[s.headerCell, { width: '8%' }]}><Text style={s.headerText}>#</Text></View>
             <View style={[s.headerCell, { width: '28%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
             <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.sortLabels.position', 'Posición')}</Text></View>
-            <View style={[s.headerCell, { width: '8%' }]}><Text style={s.headerText}>PJ</Text></View>
-            <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('statistics.fullTable.minutes', 'Min')}</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>G</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>A</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>TA</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>TR</Text></View>
-            <View style={[s.headerCell, { width: '13%' }]}><Text style={s.headerText}>% Asis.</Text></View>
+            <View style={[s.headerCell, { width: '8%' }]}><Text style={s.headerText}>{t('statistics.matchesPlayedAbbr', 'PJ')}</Text></View>
+            <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('statistics.sortLabels.minutes', 'Min')}</Text></View>
+            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.goalsAbbr', 'G')}</Text></View>
+            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.assistsAbbr', 'A')}</Text></View>
+            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.yellowCardsAbbr', 'TA')}</Text></View>
+            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.redCardsAbbr', 'TR')}</Text></View>
+            <View style={[s.headerCell, { width: '13%' }]}><Text style={s.headerText}>{t('statistics.attendancePercentageAbbr', '% Asis.')}</Text></View>
           </View>
           
           {sortedPlayers.map((player, idx) => {
@@ -427,7 +430,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
           </View>
           <View style={[s.col4, s.metricBox, { backgroundColor: COLORS.bgSoft, borderColor: COLORS.border }]}>
             <Text style={[s.metricVal, { color: COLORS.primary }]}>{total}</Text>
-            <Text style={s.metricLbl}>Total Histórico</Text>
+            <Text style={s.metricLbl}>{t('statistics.historicalTotal', 'Total Histórico')}</Text>
           </View>
         </View>
 
@@ -479,20 +482,20 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
             </View>
           </View>
           <View style={[s.halfColumn, s.card, { justifyContent: 'center' }]}>
-            <Text style={s.cardTitle}>Relación de Recaídas</Text>
+            <Text style={s.cardTitle}>{t('injuryStats.relapseRatio', 'Relación de Recaídas')}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: COLORS.bgSoft, padding: SPACING.lg, borderRadius: 6 }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>Nuevas</Text>
+                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>{t('injuryStats.relapse.new', 'Nuevas')}</Text>
                 <Text style={{ fontSize: 24, color: COLORS.success, fontFamily: 'Helvetica-Bold' }}>{withoutRelapse}</Text>
               </View>
               <View style={{ width: 1, height: 30, backgroundColor: COLORS.border }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>Recaídas</Text>
+                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>{t('injuryStats.relapse.relapse', 'Recaídas')}</Text>
                 <Text style={{ fontSize: 24, color: COLORS.warning, fontFamily: 'Helvetica-Bold' }}>{withRelapse}</Text>
               </View>
               <View style={{ width: 1, height: 30, backgroundColor: COLORS.border }} />
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>Tasa</Text>
+                <Text style={{ fontSize: 7, color: COLORS.textSecondary, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' }}>{t('injuryStats.rate', 'Tasa')}</Text>
                 <Text style={{ fontSize: 24, color: COLORS.danger, fontFamily: 'Helvetica-Bold' }}>{total > 0 ? Math.round((withRelapse / total) * 100) : 0}%</Text>
               </View>
             </View>
@@ -503,23 +506,23 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
           <View style={s.table}>
             <View style={s.row}>
               <View style={[s.headerCell, { width: '24%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
-              <View style={[s.headerCell, { width: '20%' }]}><Text style={s.headerText}>{t('injury.types.label', 'Tipo')}</Text></View>
-              <View style={[s.headerCell, { width: '16%' }]}><Text style={s.headerText}>{t('injury.zones.label', 'Zona')}</Text></View>
-              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>Inicio</Text></View>
-              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>Pronost.</Text></View>
-              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>Estado</Text></View>
-              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>Recaída</Text></View>
+              <View style={[s.headerCell, { width: '20%' }]}><Text style={s.headerText}>{t('injury.type', 'Tipo')}</Text></View>
+              <View style={[s.headerCell, { width: '16%' }]}><Text style={s.headerText}>{t('injury.zone', 'Zona')}</Text></View>
+              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.startDateShort', 'Inicio')}</Text></View>
+              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.forecast', 'Pronost.')}</Text></View>
+              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.status', 'Estado')}</Text></View>
+              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.relapse', 'Recaída')}</Text></View>
             </View>
             
             {activeInjuries.map((inj, idx) => {
               const playerId = inj.jugador?._id || inj.jugador;
               const player = players.find((p) => p._id === playerId);
-              const playerName = player ? getPlayerFullName(player) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
+              const playerName = player ? getPlayerFullName(player, t) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
               const type = inj.tipo?.value ? t('injury.types.' + inj.tipo.value, inj.tipo.label) : t('common.unknown', 'Desconocido');
               const zone = inj.zona?.value ? t('injury.zones.' + inj.zona.value, inj.zona.label) : t('common.unknown', 'Desconocido');
               const startDateStr = inj.fechaInicio ? new Date(inj.fechaInicio).toLocaleDateString(getLocale()) : '-';
               const endDateStr = inj.fechaFin ? new Date(inj.fechaFin).toLocaleDateString(getLocale()) : (inj.fechaFinPrevista ? new Date(inj.fechaFinPrevista).toLocaleDateString(getLocale()) : '-');
-              const statusLabel = inj.fechaFin ? t('injuryStats.status.recovered', 'Recup.') : t('injuryStats.summary.active', 'Activa');
+              const statusLabel = inj.fechaFin ? t('injury.recovered', 'Recup.') : t('injury.active', 'Activa');
               const relapseLabel = inj.recaida ? t('injuryStats.relapse.relapse', 'Recaída') : t('injuryStats.relapse.new', 'Nueva');
 
               return (
@@ -592,5 +595,95 @@ export async function generateCombinedStatsPdf(stats, injuries, players, teamNam
   await renderPdf(
     <CombinedStatsDocument stats={stats} injuries={injuries} players={players} t={t} title={title} date={dateStr} />,
     `Reporte_Estadisticas_Completo_${teamName.replace(/\s+/g, '_')}`
+  );
+}
+
+// ── Weekly Attendance PDF ──────────────────────────────────────────
+
+const WeeklyAttendancePage = ({ week, teamName, weekLabel, t, title }) => {
+  const sortedPlayers = [...week.playerAttendance].sort((a, b) => b.percentage - a.percentage);
+
+  return (
+    <Page size="A4" style={baseStyles.page}>
+      <PdfHeader
+        title={title}
+        subtitle={`${t('statistics.weeklyAttendance.weekOf') || 'Semana del'}: ${weekLabel}`}
+        right={teamName}
+      />
+
+      {/* Summary Stats Grid */}
+      <View style={[s.grid3, { marginBottom: SPACING.lg }]}>
+        <View style={s.metricBox}>
+          <Text style={s.metricVal}>{week.totalSessions}</Text>
+          <Text style={s.metricLbl}>
+            {week.totalSessions === 1 ? t('statistics.weeklyAttendance.training') : t('statistics.weeklyAttendance.trainings')}
+          </Text>
+        </View>
+        <View style={s.metricBox}>
+          <Text style={s.metricVal}>{sortedPlayers.length}</Text>
+          <Text style={s.metricLbl}>{t('statistics.playersCount') || 'Jugadores'}</Text>
+        </View>
+        <View style={s.metricBox}>
+          <Text style={s.metricVal}>
+            {Math.round(sortedPlayers.reduce((acc, p) => acc + p.percentage, 0) / sortedPlayers.length)}%
+          </Text>
+          <Text style={s.metricLbl}>{t('statistics.weeklyAttendance.avgAttendance') || 'Media Asistencia'}</Text>
+        </View>
+      </View>
+
+      {/* Attendance Table */}
+      <PdfSection title={t('statistics.weeklyAttendance.pdfTitle') || 'Asistencia Semanal'}>
+        <View style={s.table}>
+          <View style={s.row}>
+            <View style={[s.headerCell, { width: '30%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
+            <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.attended', 'Asistidos')}</Text></View>
+            <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.percentage', 'Porcentaje')}</Text></View>
+            <View style={[s.headerCell, { width: '40%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.missedDays', 'Ausencias')}</Text></View>
+          </View>
+          {sortedPlayers.map((pa, idx) => {
+            const pctColor = pa.percentage >= 80 ? '#166534' : (pa.percentage >= 60 ? '#b45309' : '#991b1b');
+            return (
+              <View key={idx} style={s.row} wrap={false}>
+                <View style={[s.cell, { width: '30%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{pa.playerName}</Text></View>
+                <View style={[s.cell, { width: '15%' }]}><Text style={s.cellText}>{pa.attended}/{week.totalSessions}</Text></View>
+                <View style={[s.cell, { width: '15%' }]}><Text style={[s.cellBold, { color: pctColor }]}>{pa.percentage}%</Text></View>
+                <View style={[s.cell, { width: '40%', alignItems: 'flex-start', paddingLeft: 8 }]}>
+                  {pa.missedDates.length > 0 ? (
+                    <Text style={{ fontSize: 7, color: '#b91c1c', backgroundColor: '#fee2e2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                      {pa.missedDates.join(', ')}
+                    </Text>
+                  ) : (
+                    <Text style={{ fontSize: 7, color: '#166534', backgroundColor: '#dcfce7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                      {t('statistics.weeklyAttendance.noDays') || 'Ninguna'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </PdfSection>
+
+      <PdfFooter text="Xtramys Performance" />
+    </Page>
+  );
+};
+
+export async function generateWeeklyAttendancePdf(week, teamName, weekLabel, t) {
+  const title = t('statistics.weeklyAttendance.pdfTitle') || 'Asistencia Semanal';
+  const prefix = t('statistics.weeklyAttendance.pdfPrefix', 'Asistencia_Semanal');
+  const fileName = `${prefix}_${week.weekStart}`;
+
+  await renderPdf(
+    <Document>
+      <WeeklyAttendancePage
+        week={week}
+        teamName={teamName}
+        weekLabel={weekLabel}
+        t={t}
+        title={title}
+      />
+    </Document>,
+    fileName
   );
 }

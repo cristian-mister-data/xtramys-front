@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { MdAdd, MdPeople } from 'react-icons/md';
+import { MdAdd, MdPeople, MdFilterList } from 'react-icons/md';
 import { Card, Button, Input, Row, Stack, Muted } from '@/ui/primitives';
 import SectionHeader from '@/ui/SectionHeader';
 import { toast } from '@/ui/toast';
@@ -116,6 +116,137 @@ const ViewBtn = styled.button`
   }
 `;
 
+const FiltersToolbar = styled(Toolbar)`
+  @media (max-width: 600px) {
+    display: none;
+  }
+`;
+
+const SearchWrapper = styled.div`
+  display: flex;
+  gap: 8px;
+  flex: 1 1 240px;
+  min-width: 0;
+  
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+const MobileFilterBtn = styled(Button)`
+  display: none;
+  
+  @media (max-width: 600px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: ${({ theme }) => theme.radius.md};
+    position: relative;
+    background: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.surface)};
+    border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
+    color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.textSecondary)};
+  }
+`;
+
+const FilterBadge = styled.span`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff5722;
+  color: #fff;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 2px solid ${({ theme }) => theme.colors.surface};
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+`;
+
+const ModalContentMobile = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+  width: 100%;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: ${({ theme }) => theme.shadows.xl};
+  overflow: hidden;
+  animation: slideUp 200ms cubic-bezier(0.2, 0, 0, 1);
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+`;
+
+const ModalHeaderMobile = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+`;
+
+const ModalCloseBtn = styled.button`
+  background: transparent;
+  border: 0;
+  font-size: 24px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const ModalBodyMobile = styled.div`
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const ModalFooterMobile = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  
+  button {
+    flex: 1;
+    justify-content: center;
+  }
+`;
+
+const FilterSectionTitle = styled.h4`
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 const List = styled.div`
   display: flex;
   flex-direction: column;
@@ -168,6 +299,12 @@ export default function Players() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('dorsal');
   const [viewMode, setViewMode] = useState('list');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const activeFiltersCount = useMemo(
+    () => (positionFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0),
+    [positionFilter, typeFilter]
+  );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editPlayer, setEditPlayer] = useState(null);
@@ -273,12 +410,20 @@ export default function Players() {
       ) : (
         <>
           <Toolbar>
-            <Input
-              style={{ flex: '1 1 240px', minWidth: 0 }}
-              placeholder={t('player.searchPlaceholder', 'Buscar jugador...')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <SearchWrapper>
+              <Input
+                placeholder={t('player.searchPlaceholder', 'Buscar jugador...')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <MobileFilterBtn
+                $active={activeFiltersCount > 0}
+                onClick={() => setFiltersOpen(true)}
+              >
+                <MdFilterList size={20} />
+                {activeFiltersCount > 0 && <FilterBadge>{activeFiltersCount}</FilterBadge>}
+              </MobileFilterBtn>
+            </SearchWrapper>
             <ViewSwitch>
               <ViewBtn $active={viewMode === 'list'} onClick={() => setViewMode('list')}>☰ {t('player.viewList', 'Lista')}</ViewBtn>
               <ViewBtn $active={viewMode === 'grid'} onClick={() => setViewMode('grid')}>▦ {t('player.viewGrid', 'Cuadrícula')}</ViewBtn>
@@ -286,7 +431,7 @@ export default function Players() {
             <Spacer />
           </Toolbar>
 
-          <Toolbar>
+          <FiltersToolbar>
             <ChipRow>
               <Chip $active={!positionFilter} onClick={() => setPositionFilter('')}>
                 {t('player.allPositions', 'Todas las posiciones')}
@@ -326,7 +471,71 @@ export default function Players() {
                 ⚽ {t('player.sortByPosition', 'Posición')}
               </Chip>
             </ChipRow>
-          </Toolbar>
+          </FiltersToolbar>
+
+          {filtersOpen && (
+            <ModalOverlay onClick={() => setFiltersOpen(false)}>
+              <ModalContentMobile onClick={(e) => e.stopPropagation()}>
+                <ModalHeaderMobile>
+                  <h3>{t('statistics.players.filterByPlayers', 'Filtrar jugadores')}</h3>
+                  <ModalCloseBtn onClick={() => setFiltersOpen(false)}>&times;</ModalCloseBtn>
+                </ModalHeaderMobile>
+                <ModalBodyMobile>
+                  <FilterSectionTitle>{t('statistics.sortLabels.position', 'Posición')}</FilterSectionTitle>
+                  <ChipRow style={{ gap: '6px 8px' }}>
+                    <Chip $active={!positionFilter} onClick={() => setPositionFilter('')}>
+                      {t('player.allPositions', 'Todas las posiciones')}
+                    </Chip>
+                    {positionOptions.map((opt) => {
+                      const c = getPositionColor(opt.value);
+                      return (
+                        <Chip
+                          key={opt.value}
+                          $active={positionFilter === opt.value}
+                          $color={c[0]}
+                          onClick={() => setPositionFilter(opt.value)}
+                        >
+                          {getPositionIcon(opt.value)} {opt.label}
+                        </Chip>
+                      );
+                    })}
+                  </ChipRow>
+
+                  <FilterSectionTitle style={{ marginTop: 12 }}>{t('player.type', 'Tipo')}</FilterSectionTitle>
+                  <ChipRow style={{ gap: '6px 8px' }}>
+                    {TYPE_OPTIONS.map((opt) => (
+                      <Chip
+                        key={opt.value}
+                        $active={typeFilter === opt.value}
+                        $color={opt.value === 'extra' ? '#f59e0b' : undefined}
+                        onClick={() => setTypeFilter(opt.value)}
+                      >
+                        {opt.value === 'extra' ? '⭐ ' : ''}{t(opt.labelKey, opt.fallback)}
+                      </Chip>
+                    ))}
+                  </ChipRow>
+                  
+                  <FilterSectionTitle style={{ marginTop: 12 }}>{t('statistics.players.sortBy', 'Ordenar por')}</FilterSectionTitle>
+                  <ChipRow style={{ gap: '6px 8px' }}>
+                    <Chip $active={sortBy === 'dorsal'} onClick={() => setSortBy('dorsal')}>
+                      # {t('player.sortByNumber', 'Dorsal')}
+                    </Chip>
+                    <Chip $active={sortBy === 'posicion'} onClick={() => setSortBy('posicion')}>
+                      ⚽ {t('player.sortByPosition', 'Posición')}
+                    </Chip>
+                  </ChipRow>
+                </ModalBodyMobile>
+                <ModalFooterMobile>
+                  <Button $variant="secondary" onClick={() => { setPositionFilter(''); setTypeFilter('all'); setSortBy('dorsal'); }}>
+                    {t('statistics.players.clear', 'Limpiar')}
+                  </Button>
+                  <Button $variant="primary" onClick={() => setFiltersOpen(false)}>
+                    {t('statistics.players.apply', 'Aplicar')}
+                  </Button>
+                </ModalFooterMobile>
+              </ModalContentMobile>
+            </ModalOverlay>
+          )}
 
           {loading ? (
             <EmptyCard><Muted>{t('player.loadingPlayers', 'Cargando jugadores...')}</Muted></EmptyCard>

@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import * as Print from 'expo-print';
+import { generateWellnessSessionPdf, generateWellnessRangePdf } from '@/vendor/wellness/pdf';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
@@ -512,146 +512,12 @@ export default function WellnessManagement({ navigation }) {
 
     setGeneratingPDF(true);
     try {
-      const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
-      const dateStr = selectedSession?.fecha
-        ? new Date(selectedSession.fecha).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
-        : '';
-      const teamName = selectedSession?.equipo?.nombre || selectedSession?.teamName || '';
-      const average = isPreWellness
-        ? sessionWellnessData?.averagePreWellness
-        : sessionWellnessData?.averageWellness;
-      const filePrefix = isPreWellness
-        ? (i18n.language === 'en' ? 'prewellness_training' : 'prewellness_entrenamiento')
-        : (i18n.language === 'en' ? 'wellness_training' : 'wellness_entrenamiento');
-      const fileName = `${filePrefix}_${dateStr.replace(/\//g, '-')}.pdf`;
-      const accentColor = isPreWellness ? '#f59e0b' : '#276e15';
-      const reportTitle = isPreWellness ? t('session.preWellnessReport') : t('session.wellnessReport');
-
-      const diff = expectedValue && average
-        ? average - expectedValue
-        : null;
-      const diffLabel = diff !== null
-        ? (Math.abs(diff) <= 0.5
-          ? t('session.objectiveMet')
-          : diff > 0
-            ? t('session.above')
-            : t('session.below'))
-        : '';
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #1a1a1a; padding: 20px; }
-            .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid ${accentColor}; }
-            .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; color: ${accentColor}; }
-            .header .date { font-size: 12px; color: #444; }
-            .summary { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px; border: 1px solid ${accentColor}; border-radius: 8px; }
-            .summary-item { text-align: center; padding: 0 16px; min-width: 100px; }
-            .summary-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-bottom: 5px; }
-            .summary-item .value { font-size: 22px; font-weight: 700; color: ${accentColor}; }
-            .summary-item .sublabel { font-size: 9px; color: #666; }
-            .summary-item .diff-positive { color: #10b981; }
-            .summary-item .diff-negative { color: #ef4444; }
-            .summary-item .diff-neutral { color: #3b82f6; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; }
-            th { background-color: #f0f0ff; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-            td { font-size: 11px; }
-            .score-cell { text-align: center; font-weight: 600; font-size: 14px; }
-            .question-responses { margin-top: 5px; }
-            .question-response { margin-bottom: 5px; padding-left: 10px; border-left: 2px solid #ddd; }
-            .question-response .q { font-size: 9px; color: #666; font-style: italic; }
-            .question-response .a { font-size: 10px; }
-            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #333; text-align: center; font-size: 9px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${reportTitle}</h1>
-            <div class="date">${t('session.trainingOf')} ${dateStr}${teamName ? ` • ${teamName}` : ''}</div>
-          </div>
-
-          <div class="summary">
-            <div class="summary-item">
-              <div class="label">${t('session.expectedWellness')}</div>
-              <div class="value">${expectedValue || '-'}</div>
-              <div class="sublabel">${t('session.coachObjective')}</div>
-            </div>
-            <div class="summary-item">
-              <div class="label">${t('session.averageObtained')}</div>
-              <div class="value">${average?.toFixed(1) || '-'}</div>
-              <div class="sublabel">${t('session.averageResponses')}</div>
-            </div>
-            <div class="summary-item">
-              <div class="label">${t('session.totalResponses')}</div>
-              <div class="value">${responses.length}</div>
-              <div class="sublabel">${t('session.players')}</div>
-            </div>
-            ${diff !== null ? `
-            <div class="summary-item">
-              <div class="label">${t('session.difference')}</div>
-              <div class="value ${diff > 0.5 ? 'diff-positive' : (diff < -0.5 ? 'diff-negative' : 'diff-neutral')}">
-                ${diff > 0 ? '+' : ''}${diff.toFixed(1)}
-              </div>
-              <div class="sublabel">${diffLabel}</div>
-            </div>
-            ` : ''}
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 20%">${t('session.player')}</th>
-                <th style="width: 15%">${isPreWellness ? t('preWellness.title') : 'Wellness'}</th>
-                <th style="width: 40%">${t('session.responses')}</th>
-                <th style="width: 25%">${t('session.date')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${responses.map(response => {
-                const score = isPreWellness ? response.preWellnessScore : response.wellness;
-                return `
-                <tr>
-                  <td>${response.playerName}</td>
-                  <td class="score-cell">${score ?? '-'}</td>
-                  <td>
-                    ${response.questionResponses && response.questionResponses.length > 0
-                      ? `<div class="question-responses">
-                          ${response.questionResponses.filter(qr => qr.answer).map(qr => `
-                            <div class="question-response">
-                              <div class="q">${qr.question}</div>
-                              <div class="a">${qr.answer}</div>
-                            </div>
-                          `).join('')}
-                        </div>`
-                      : `<span style="color: #999;">${t('session.noAdditionalResponses')}</span>`
-                    }
-                  </td>
-                  <td>${response.submittedAt ? new Date(response.submittedAt).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                </tr>
-              `}).join('')}
-            </tbody>
-          </table>
-
-          <div class="footer">
-            ${t('player.profile.generatedAt')}: ${new Date().toLocaleDateString(locale, {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
-        </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html: htmlContent, base64: false });
-      await savePdfToDownloads(uri, fileName);
+      const lang = i18n.language || 'es';
+      const expectedValue = isPreWellness
+        ? sessionWellnessData?.expectedPreWellness
+        : sessionWellnessData?.expectedWellness;
+      
+      await generateWellnessSessionPdf(selectedSession, expectedValue, sessionWellnessData, t, lang, isPreWellness);
     } catch (error) {
       console.error('Error generating PDF:', error);
       Alert.alert(t('message.error'), t('session.pdfError'));
@@ -685,123 +551,14 @@ export default function WellnessManagement({ navigation }) {
       const fromStr = rangeFromDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
       const toStr = rangeToDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
       const teamName = selectedTeam.nombre || '';
-      const accentColor = isPreWellness ? '#f59e0b' : '#276e15';
-      const reportTitle = isPreWellness ? t('session.preWellnessReport') : t('session.wellnessReport');
-      const filePrefix = isPreWellness ? 'prewellness' : 'wellness';
-      const fileName = `${filePrefix}_${fromStr.replace(/\//g, '-')}_${toStr.replace(/\//g, '-')}.pdf`;
 
       const totalResponses = sessionsWithResponses.reduce((sum, s) => sum + s.totalResponses, 0);
       const avgScore = isPreWellness
         ? null
         : Math.round((sessionsWithResponses.filter(s => s.averageWellness).reduce((sum, s) => sum + s.averageWellness, 0) / sessionsWithResponses.filter(s => s.averageWellness).length) * 10) / 10;
 
-      const sessionsHTML = sessionsWithResponses.map(session => {
-        const sessionDate = new Date(session.fecha).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const avg = isPreWellness ? session.averageScore : session.averageWellness;
-        return `
-          <div style="margin-bottom: 20px; page-break-inside: avoid;">
-            <h3 style="font-size: 13px; color: ${accentColor}; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #ddd;">
-              📅 ${sessionDate} ${session.horaInicio ? `(${session.horaInicio}${session.horaFin ? ' - ' + session.horaFin : ''})` : ''}
-              ${avg ? ` — ${t('session.average', 'Media')}: ${avg}` : ''}
-            </h3>
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: ${isPreWellness ? '30' : '25'}%">${t('session.player')}</th>
-                  ${!isPreWellness ? `<th style="width: 12%">Wellness</th>` : ''}
-                  <th style="width: ${isPreWellness ? '70' : '63'}%">${t('session.responses')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${session.responses.map(r => {
-                  const score = isPreWellness ? r.preWellnessScore : r.wellness;
-                  return `
-                    <tr>
-                      <td>${r.playerName}</td>
-                      ${!isPreWellness ? `<td class="score-cell">${score || '-'}</td>` : ''}
-                      <td>
-                        ${r.questionResponses && r.questionResponses.length > 0
-                          ? r.questionResponses.filter(qr => qr.answer).map(qr => `
-                              <div class="question-response">
-                                <div class="q">${qr.question}</div>
-                                <div class="a">${qr.answer}</div>
-                              </div>
-                            `).join('')
-                          : `<span style="color: #999;">-</span>`
-                        }
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }).join('');
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #1a1a1a; padding: 20px; }
-            .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid ${accentColor}; }
-            .header h1 { font-size: 18px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; color: ${accentColor}; }
-            .header .date { font-size: 12px; color: #444; }
-            .summary { display: flex; justify-content: space-around; margin-bottom: 25px; padding: 15px; border: 1px solid ${accentColor}; border-radius: 8px; }
-            .summary-item { text-align: center; padding: 0 20px; }
-            .summary-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-bottom: 5px; }
-            .summary-item .value { font-size: 22px; font-weight: 700; color: ${accentColor}; }
-            .summary-item .sublabel { font-size: 9px; color: #666; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-            th, td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
-            th { background-color: #f0f0ff; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-            td { font-size: 10px; }
-            .score-cell { text-align: center; font-weight: 600; font-size: 13px; }
-            .question-response { margin-bottom: 4px; padding-left: 8px; border-left: 2px solid #ddd; }
-            .question-response .q { font-size: 8px; color: #666; font-style: italic; }
-            .question-response .a { font-size: 9px; }
-            .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #333; text-align: center; font-size: 9px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${reportTitle}</h1>
-            <div class="date">${fromStr} - ${toStr}${teamName ? ` • ${teamName}` : ''}</div>
-          </div>
-
-          <div class="summary">
-            <div class="summary-item">
-              <div class="label">${t('wellness.sessionsCount', 'Sesiones')}</div>
-              <div class="value">${sessionsWithResponses.length}</div>
-            </div>
-            <div class="summary-item">
-              <div class="label">${t('session.totalResponses')}</div>
-              <div class="value">${totalResponses}</div>
-            </div>
-            ${!isPreWellness && avgScore ? `
-            <div class="summary-item">
-              <div class="label">${t('session.averageWellness')}</div>
-              <div class="value">${avgScore}</div>
-            </div>
-            ` : ''}
-          </div>
-
-          ${sessionsHTML}
-
-          <div class="footer">
-            ${t('player.profile.generatedAt')}: ${new Date().toLocaleDateString(locale, { 
-              day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-            })}
-          </div>
-        </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html: htmlContent, base64: false });
-      await savePdfToDownloads(uri, fileName);
+      const lang = i18n.language || 'es';
+      await generateWellnessRangePdf(sessionsWithResponses, fromStr, toStr, teamName, totalResponses, avgScore, t, lang, isPreWellness);
       setShowRangePDFModal(false);
     } catch (error) {
       console.error('Error generating range PDF:', error);

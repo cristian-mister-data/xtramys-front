@@ -16,7 +16,7 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
-import * as Print from 'expo-print';
+import { generateExercisePdf } from '@/vendor/exercise/pdf';
 import * as Sharing from 'expo-sharing';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromExercise, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
@@ -195,7 +195,6 @@ Alert.alert(
     setVideoUrl(null);
   };
 
-  // Función para generar y compartir PDF con campo a página completa
   const generatePDF = async () => {
     try {
       // Preparar la imagen
@@ -220,210 +219,7 @@ Alert.alert(
         }
       }
 
-      // Crear HTML para el PDF - Campo grande con información del ejercicio
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            @page {
-              size: A4 landscape;
-              margin: 0;
-            }
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            html, body {
-              width: 100%;
-              height: 100%;
-              margin: 0;
-              padding: 0;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              display: flex;
-              flex-direction: column;
-              height: 100vh;
-              background: #f8f9fa;
-            }
-            .header {
-              background: linear-gradient(135deg, #2e7d32 0%, #4CAF50 100%);
-              color: white;
-              padding: 10px 20px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-            .title {
-              font-size: 20px;
-              font-weight: bold;
-            }
-            .duration {
-              font-size: 14px;
-              background: rgba(255,255,255,0.2);
-              padding: 5px 12px;
-              border-radius: 20px;
-            }
-            .main-content {
-              flex: 1;
-              display: flex;
-              padding: 10px;
-              gap: 15px;
-              overflow: hidden;
-            }
-            .image-container {
-              flex: 2;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              background: white;
-              border-radius: 10px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-              padding: 10px;
-            }
-            .image-container img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-              border-radius: 6px;
-            }
-            .info-panel {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-              max-width: 280px;
-              overflow-y: auto;
-            }
-            .info-card {
-              background: white;
-              border-radius: 8px;
-              padding: 10px 12px;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-            }
-            .info-card-title {
-              font-size: 10px;
-              font-weight: bold;
-              color: #666;
-              text-transform: uppercase;
-              margin-bottom: 4px;
-              display: flex;
-              align-items: center;
-              gap: 6px;
-            }
-            .info-card-content {
-              font-size: 13px;
-              color: #333;
-              line-height: 1.4;
-            }
-            .stats-row {
-              display: flex;
-              gap: 8px;
-            }
-            .stat-item {
-              flex: 1;
-              background: white;
-              border-radius: 8px;
-              padding: 8px 10px;
-              text-align: center;
-              box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-            }
-            .stat-value {
-              font-size: 18px;
-              font-weight: bold;
-              color: #2e7d32;
-            }
-            .stat-label {
-              font-size: 9px;
-              color: #666;
-              text-transform: uppercase;
-            }
-            .type-badge {
-              display: inline-block;
-              background: #fff3e0;
-              color: #f57c00;
-              padding: 4px 10px;
-              border-radius: 12px;
-              font-size: 12px;
-              font-weight: 600;
-            }
-            .footer {
-              background: #333;
-              color: white;
-              padding: 6px 20px;
-              font-size: 10px;
-              display: flex;
-              justify-content: space-between;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">${exercise.nombre || t('exercise.exercise')}</div>
-            ${exercise.tiempo ? `<div class="duration">${exercise.tiempo} min</div>` : ''}
-          </div>
-          
-          <div class="main-content">
-            <div class="image-container">
-              ${imageBase64 ? `<img src="${imageBase64}" alt="${t('exercise.diagramAlt')}" />` : `<p style=\"color:#999\">${t('exercise.noImage')}</p>`}
-            </div>
-            
-            <div class="info-panel">
-              ${(exercise.numeroJugadores || exercise.equipos || exercise.dimensiones) ? `
-              <div class="stats-row">
-                ${exercise.numeroJugadores ? `
-                <div class="stat-item">
-                  <div class="stat-value">${exercise.numeroJugadores}</div>
-                  <div class="stat-label">${t('exercise.players')}</div>
-                </div>` : ''}
-                ${exercise.equipos ? `
-                <div class="stat-item">
-                  <div class="stat-value">${exercise.equipos}</div>
-                  <div class="stat-label">${t('exercise.teams')}</div>
-                </div>` : ''}
-              </div>` : ''}
-              
-              ${exercise.dimensiones ? `
-              <div class="info-card">
-                <div class="info-card-title">📐 ${t('exercise.fieldDimensions')}</div>
-                <div class="info-card-content">${exercise.dimensiones}</div>
-              </div>` : ''}
-              
-              ${exercise.objetivo ? `
-              <div class="info-card">
-                <div class="info-card-title">🎯 ${t('exercise.objective')}</div>
-                <div class="info-card-content">${exercise.objetivo}</div>
-              </div>` : ''}
-              
-              ${exercise.descripcion ? `
-              <div class="info-card">
-                <div class="info-card-title">📝 ${t('exercise.description')}</div>
-                <div class="info-card-content">${exercise.descripcion}</div>
-              </div>` : ''}
-            </div>
-          </div>
-          
-          <div class="footer">
-            <span>Xtramys</span>
-            <span>${new Date().toLocaleDateString()}</span>
-          </div>
-        </body>
-        </html>
-      `;
-
-      // Generar PDF en landscape
-      const { uri: tempUri } = await Print.printToFileAsync({ 
-        html: htmlContent,
-        orientation: Print.Orientation.landscape
-      });
-      
-      // Copiar el archivo con el nombre del ejercicio
-      const fileName = `${(exercise.nombre || t('exercise.exercise')).replace(/[/\?%*:|"<>]/g, '-')}.pdf`;
-      await savePdfToDownloads(tempUri, fileName);
+      await generateExercisePdf(exercise, imageBase64, t);
     } catch (error) {
       console.error('Error generando PDF:', error);
       Alert.alert(t('message.error'), t('exercise.pdfGenerateError'));

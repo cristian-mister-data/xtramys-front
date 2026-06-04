@@ -408,8 +408,8 @@ export default function CreateStrategyForm({
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Ionicons name="folder-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
-              <Text style={[styles.typeSelectorText, folderName && styles.typeSelectorTextSelected]}>
-                {folderName || t('folders.selectFolder')}
+              <Text style={[styles.typeSelectorText, styles.typeSelectorTextSelected]}>
+                {folderId ? folderName : t('folders.noFolder')}
               </Text>
             </View>
             <Ionicons name="chevron-down" size={20} color={chevronColor} />
