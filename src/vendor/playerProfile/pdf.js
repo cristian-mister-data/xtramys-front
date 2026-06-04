@@ -241,17 +241,27 @@ const AnthropometryPage = ({ player, team, data, t }) => {
               </View>
             </View>
             
-            <Text style={[s.cardTitle, { marginTop: SPACING.md }]}>{t('anthropometry.skinfolds')}</Text>
+            <Text style={[s.cardTitle, { marginTop: SPACING.md, marginBottom: 4 }]}>
+              {t('anthropometry.skinfolds')} ({latest.sistema_pliegues === '8' ? 'Sumatoria de 8 Pliegues (ISAK)' : 'Fórmula de Yuhasz (6 Pliegues)'})
+            </Text>
             <View style={s.grid3}>
-              <View style={s.card}><Text style={s.statLabel}>Tricipital</Text><Text style={s.statValue}>{latest.pliegues?.tricipital || '-'} mm</Text></View>
-              <View style={s.card}><Text style={s.statLabel}>Subescapular</Text><Text style={s.statValue}>{latest.pliegues?.subescapular || '-'} mm</Text></View>
-              <View style={s.card}><Text style={s.statLabel}>Suprailíaco</Text><Text style={s.statValue}>{latest.pliegues?.suprailiaco || '-'} mm</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Tricipital</Text><Text style={s.statValue}>{latest.pliegues?.tricipital != null ? `${Number(latest.pliegues.tricipital).toFixed(1)} mm` : '-'}</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Bicipital</Text><Text style={s.statValue}>{latest.pliegues?.bicipital != null ? `${Number(latest.pliegues.bicipital).toFixed(1)} mm` : '-'}</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Subescapular</Text><Text style={s.statValue}>{latest.pliegues?.subescapular != null ? `${Number(latest.pliegues.subescapular).toFixed(1)} mm` : '-'}</Text></View>
             </View>
             <View style={s.grid3}>
-              <View style={s.card}><Text style={s.statLabel}>Abdominal</Text><Text style={s.statValue}>{latest.pliegues?.abdominal || '-'} mm</Text></View>
-              <View style={s.card}><Text style={s.statLabel}>Muslo Frontal</Text><Text style={s.statValue}>{latest.pliegues?.muslo_frontal || '-'} mm</Text></View>
-              <View style={s.card}><Text style={s.statLabel}>Pierna Medial</Text><Text style={s.statValue}>{latest.pliegues?.pierna_medial || '-'} mm</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Suprailíaco</Text><Text style={s.statValue}>{latest.pliegues?.suprailiaco != null ? `${Number(latest.pliegues.suprailiaco).toFixed(1)} mm` : '-'}</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Muslo Frontal</Text><Text style={s.statValue}>{latest.pliegues?.muslo_frontal != null ? `${Number(latest.pliegues.muslo_frontal).toFixed(1)} mm` : '-'}</Text></View>
+              <View style={s.card}><Text style={s.statLabel}>Pierna Medial</Text><Text style={s.statValue}>{latest.pliegues?.pierna_medial != null ? `${Number(latest.pliegues.pierna_medial).toFixed(1)} mm` : '-'}</Text></View>
             </View>
+            
+            {(latest.sistema_pliegues === '8' || latest.pliegues?.abdominal != null || latest.pliegues?.cresta_iliaca != null) && (
+              <View style={s.grid3}>
+                <View style={s.card}><Text style={s.statLabel}>Abdominal</Text><Text style={s.statValue}>{latest.pliegues?.abdominal != null ? `${Number(latest.pliegues.abdominal).toFixed(1)} mm` : '-'}</Text></View>
+                <View style={s.card}><Text style={s.statLabel}>Cresta Ilíaca</Text><Text style={s.statValue}>{latest.pliegues?.cresta_iliaca != null ? `${Number(latest.pliegues.cresta_iliaca).toFixed(1)} mm` : '-'}</Text></View>
+                <View style={[s.card, { borderColor: 'transparent', backgroundColor: 'transparent' }]}><Text style={s.statLabel}></Text><Text style={s.statValue}></Text></View>
+              </View>
+            )}
           </PdfSection>
         ) : (
           <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>No hay mediciones registradas.</Text>

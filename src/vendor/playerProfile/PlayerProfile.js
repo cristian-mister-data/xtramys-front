@@ -1498,37 +1498,110 @@ if (!stats) {
                   
                   {/* Pliegues */}
                   <View style={styles.anthropometryFoldsContainer}>
-                    <Text style={styles.anthropometryFoldsTitle}>{t('anthropometry.skinfolds')} ({t('anthropometry.sixFoldsSystem')})</Text>
+                    <Text style={styles.anthropometryFoldsTitle}>
+                      {t('anthropometry.skinfolds')} ({anthropometryData[0].sistema_pliegues === '8' ? 'Sumatoria de 8 Pliegues (ISAK)' : 'Fórmula de Yuhasz (6 Pliegues)'})
+                    </Text>
                     <Text style={styles.anthropometrySumText}>
                       {t('anthropometry.sumOfFolds')}: {anthropometryData[0].sumaPliegues ? anthropometryData[0].sumaPliegues.toFixed(1) : '-'} mm
                     </Text>
                     <View style={styles.anthropometryFoldsGrid}>
                       <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.tricipital || '-'}</Text>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.tricipital != null ? Number(anthropometryData[0].pliegues.tricipital).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.tricipital != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
                         <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.tricipital')}</Text>
                       </View>
                       <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.subescapular || '-'}</Text>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.bicipital != null ? Number(anthropometryData[0].pliegues.bicipital).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.bicipital != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
+                        <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.bicipital')}</Text>
+                      </View>
+                      <View style={styles.anthropometryFoldItem}>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.subescapular != null ? Number(anthropometryData[0].pliegues.subescapular).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.subescapular != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
                         <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.subescapular')}</Text>
                       </View>
                       <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.suprailiaco || '-'}</Text>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.suprailiaco != null ? Number(anthropometryData[0].pliegues.suprailiaco).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.suprailiaco != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
                         <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.suprailiaco')}</Text>
                       </View>
                       <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.abdominal || '-'}</Text>
-                        <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.abdominal')}</Text>
-                      </View>
-                      <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.muslo_frontal || '-'}</Text>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.muslo_frontal != null ? Number(anthropometryData[0].pliegues.muslo_frontal).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.muslo_frontal != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
                         <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.muslo_frontal')}</Text>
                       </View>
                       <View style={styles.anthropometryFoldItem}>
-                        <Text style={styles.anthropometryFoldValue}>{anthropometryData[0].pliegues?.pierna_medial || '-'}</Text>
+                        <Text style={styles.anthropometryFoldValue}>
+                          {anthropometryData[0].pliegues?.pierna_medial != null ? Number(anthropometryData[0].pliegues.pierna_medial).toFixed(1) : '-'}
+                          {anthropometryData[0].pliegues?.pierna_medial != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                        </Text>
                         <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.pierna_medial')}</Text>
                       </View>
+                      {(anthropometryData[0].sistema_pliegues === '8' || anthropometryData[0].pliegues?.abdominal != null) && (
+                        <View style={styles.anthropometryFoldItem}>
+                          <Text style={styles.anthropometryFoldValue}>
+                            {anthropometryData[0].pliegues?.abdominal != null ? Number(anthropometryData[0].pliegues.abdominal).toFixed(1) : '-'}
+                            {anthropometryData[0].pliegues?.abdominal != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                          </Text>
+                          <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.abdominal')}</Text>
+                        </View>
+                      )}
+                      {(anthropometryData[0].sistema_pliegues === '8' || anthropometryData[0].pliegues?.cresta_iliaca != null) && (
+                        <View style={styles.anthropometryFoldItem}>
+                          <Text style={styles.anthropometryFoldValue}>
+                            {anthropometryData[0].pliegues?.cresta_iliaca != null ? Number(anthropometryData[0].pliegues.cresta_iliaca).toFixed(1) : '-'}
+                            {anthropometryData[0].pliegues?.cresta_iliaca != null && <Text style={{ fontSize: 10, color: theme.colors.textMuted }}> mm</Text>}
+                          </Text>
+                          <Text style={styles.anthropometryFoldLabel}>{t('anthropometry.folds.cresta_iliaca')}</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
+
+                  {/* Explicación de la Fórmula */}
+                  {anthropometryData[0].porcentajeGrasa != null && (
+                    <View style={{
+                      marginTop: 16,
+                      padding: 12,
+                      borderRadius: 10,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc',
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      marginBottom: 8,
+                    }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.text, marginBottom: 6 }}>
+                        {anthropometryData[0].sistema_pliegues === '8'
+                          ? 'Fórmula de Porcentaje Graso (Withers / Siri):'
+                          : 'Fórmula de Porcentaje Graso (Yuhasz):'}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+                        {anthropometryData[0].sistema_pliegues === '8'
+                          ? (player.sexo === 'F'
+                              ? 'Mujeres: %Grasa = [(4.95 / BD) - 4.50] * 100\nDonde BD = 1.20953 - [0.08294 * log10(Suma 6 Pliegues)]'
+                              : 'Hombres: %Grasa = [(4.95 / BD) - 4.50] * 100\nDonde BD = 1.0988 - [0.0004 * Suma 7 Pliegues]')
+                          : (player.sexo === 'F'
+                              ? 'Mujeres: %Grasa = 3.5803 + (Suma 6 Pliegues × 0.1548)'
+                              : 'Hombres: %Grasa = 2.585 + (Suma 6 Pliegues × 0.1051)')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 6, lineHeight: 15 }}>
+                        {anthropometryData[0].sistema_pliegues === '8'
+                          ? (player.sexo === 'F'
+                              ? '* Pliegues para Suma6: Tricipital, Subescapular, Suprailíaco, Abdominal, Muslo Frontal y Pierna Medial.'
+                              : '* Pliegues para Suma7: Tricipital, Bicipital, Subescapular, Suprailíaco, Abdominal, Muslo Frontal y Pierna Medial.')
+                          : '* Pliegues para Suma6: Tricipital, Bicipital, Subescapular, Suprailíaco, Muslo Frontal y Pierna Medial.'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
