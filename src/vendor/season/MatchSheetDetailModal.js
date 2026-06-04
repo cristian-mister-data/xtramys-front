@@ -306,7 +306,16 @@ export default function MatchSheetDetailModal({
           {/* Header */}
           <View style={[styles.modalHeader, IS_MOBILE && { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }]}>
             <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 17 }]}>{t('matchSheet.title')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <MatchSheetPDFButtons
+                matchSheet={matchSheet}
+                onLineupPress={() => openLineupPDFModal(matchSheet)}
+                onCallUpPress={() => openConvocatoriaPDFModal(matchSheet)}
+                onMatchSheetPress={() => handleGenerateMatchSheetPDF(matchSheet)}
+                generatingPDF={generatingPDF}
+                generatingPDFType={generatingPDFType}
+                compact={true}
+              />
               {onEdit && (
                 <TouchableOpacity
                   style={styles.modalEditButton}

@@ -2299,7 +2299,8 @@ function getStyles(theme) {
     fontSize: 14,
     color: theme.colors.text,
     minHeight: 80,
-    textAlignVertical: 'top',
+    padding: 10,
+    verticalAlign: 'top',
   },
   
   // --- Pro Header ---
