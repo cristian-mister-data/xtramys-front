@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -164,6 +166,7 @@ const canShare = typeof navigator !== 'undefined' &&
   typeof navigator.canShare === 'function';
 
 export default function PdfActionDialog({ open, fileName, onDownload, onShare, onCancel, loading }) {
+  const { t } = useTranslation();
   if (!open) return null;
 
   return createPortal(
@@ -182,7 +185,7 @@ export default function PdfActionDialog({ open, fileName, onDownload, onShare, o
               <polyline points="10 9 9 9 8 9"/>
             </svg>
           </IconWrap>
-          <Heading>PDF generado</Heading>
+          <Heading>{t('pdfDialog.title', 'PDF generado')}</Heading>
           <Filename>{fileName}</Filename>
         </Header>
         <Actions>
@@ -195,8 +198,8 @@ export default function PdfActionDialog({ open, fileName, onDownload, onShare, o
               </svg>
             </ActionIcon>
             <ActionLabel>
-              <ActionTitle>Descargar</ActionTitle>
-              <ActionDesc>Guardar en tu dispositivo</ActionDesc>
+              <ActionTitle>{t('pdfDialog.download', 'Descargar')}</ActionTitle>
+              <ActionDesc>{t('pdfDialog.downloadDesc', 'Guardar en tu dispositivo')}</ActionDesc>
             </ActionLabel>
           </ActionBtn>
           {canShare && (
@@ -211,12 +214,12 @@ export default function PdfActionDialog({ open, fileName, onDownload, onShare, o
                 </svg>
               </ActionIcon>
               <ActionLabel>
-                <ActionTitle>Descargar y compartir</ActionTitle>
-                <ActionDesc>Guardar y abrir opciones para enviar</ActionDesc>
+                <ActionTitle>{t('pdfDialog.share', 'Descargar y compartir')}</ActionTitle>
+                <ActionDesc>{t('pdfDialog.shareDesc', 'Guardar y abrir opciones para enviar')}</ActionDesc>
               </ActionLabel>
             </ActionBtn>
           )}
-          <CancelBtn onClick={onCancel}>Cancelar</CancelBtn>
+          <CancelBtn onClick={onCancel}>{t('pdfDialog.cancel', 'Cancelar')}</CancelBtn>
         </Actions>
       </Panel>
     </Overlay>,
@@ -430,16 +433,16 @@ export function showPdfActions(blob, fileName) {
   header.appendChild(icon);
   header.appendChild(el('h3', {
     margin: '0 0 4px', fontSize: '17px', fontWeight: '600', color: '#0f172a',
-  }, {}, 'PDF generado'));
+  }, {}, i18n.t('pdfDialog.title', 'PDF generado')));
   header.appendChild(el('p', {
     margin: '0', fontSize: '13px', color: '#64748b',
     wordBreak: 'break-all', lineHeight: '1.4',
   }, {}, fullFileName));
 
   const actions = el('div', { padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '8px' });
-  actions.appendChild(createActionBtn(true, 'Descargar', 'Guardar en tu dispositivo', 'download', downloadOnly, true));
+  actions.appendChild(createActionBtn(true, i18n.t('pdfDialog.download', 'Descargar'), i18n.t('pdfDialog.downloadDesc', 'Guardar en tu dispositivo'), 'download', downloadOnly, true));
   if (canShare) {
-    actions.appendChild(createActionBtn(false, 'Descargar y compartir', 'Guardar y abrir opciones para enviar', 'share', downloadAndShare, false));
+    actions.appendChild(createActionBtn(false, i18n.t('pdfDialog.share', 'Descargar y compartir'), i18n.t('pdfDialog.shareDesc', 'Guardar y abrir opciones para enviar'), 'share', downloadAndShare, false));
   }
 
   const cancelBtn = el('button', {
@@ -448,7 +451,7 @@ export function showPdfActions(blob, fileName) {
     fontWeight: '500', fontFamily: 'inherit', cursor: 'pointer',
     borderRadius: '8px', marginTop: '4px',
     transition: 'color 0.15s ease, background-color 0.15s ease',
-  }, { type: 'button' }, 'Cancelar');
+  }, { type: 'button' }, i18n.t('pdfDialog.cancel', 'Cancelar'));
   cancelBtn.addEventListener('click', cancel);
   cancelBtn.addEventListener('mouseenter', () => {
     cancelBtn.style.color = '#0f172a';

@@ -149,6 +149,100 @@ const getPlayerFullName = (player, t) => {
   return fullName || (t ? t('common.unknown', 'Desconocido') : 'Desconocido');
 };
 
+const mapZoneKey = (zoneValue) => {
+  if (!zoneValue) return 'other';
+  const val = zoneValue.trim().toLowerCase();
+  const map = {
+    'cabeza': 'head', 'head': 'head',
+    'hombro': 'shoulder', 'shoulder': 'shoulder',
+    'brazo': 'arm', 'arm': 'arm',
+    'espalda': 'back', 'back': 'back',
+    'cadera': 'hip', 'hip': 'hip',
+    'muslo': 'thigh', 'thigh': 'thigh',
+    'rodilla': 'knee', 'knee': 'knee',
+    'tobillo': 'ankle', 'ankle': 'ankle',
+    'pie': 'foot', 'foot': 'foot',
+    'otro': 'other', 'otra': 'other', 'other': 'other'
+  };
+  return map[val] || val;
+};
+
+const translateZone = (zona, t) => {
+  if (!zona) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
+  const val = zona.value || (typeof zona === 'string' ? zona : '');
+  const label = zona.label || (typeof zona === 'string' ? zona : '');
+  if (!val) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
+  const key = mapZoneKey(val);
+  const trans = t ? t(`injuryStats.zones.${key}`) : null;
+  if (trans && !trans.startsWith('injuryStats.zones.')) {
+    return trans;
+  }
+  return label || val;
+};
+
+const mapTypeKey = (typeValue) => {
+  if (!typeValue) return 'other';
+  const val = typeValue.trim().toLowerCase();
+  const map = {
+    'muscular': 'muscular',
+    'ligamentosa': 'ligament', 'ligamento': 'ligament', 'ligament': 'ligament',
+    'ósea': 'bone', 'osea': 'bone', 'bone': 'bone',
+    'contusión': 'contusion', 'contusion': 'contusion',
+    'otra': 'other', 'otro': 'other', 'other': 'other'
+  };
+  return map[val] || val;
+};
+
+const translateType = (tipo, t) => {
+  if (!tipo) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
+  const val = tipo.value || (typeof tipo === 'string' ? tipo : '');
+  const label = tipo.label || (typeof tipo === 'string' ? tipo : '');
+  if (!val) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
+  const key = mapTypeKey(val);
+  const trans = t ? t(`injuryStats.types.${key}`) : null;
+  if (trans && !trans.startsWith('injuryStats.types.')) {
+    return trans;
+  }
+  return label || val;
+};
+
+const translatePosition = (position, t) => {
+  if (!position) return '-';
+  const posUpper = position.trim().toUpperCase();
+  const mapping = {
+    'GK': 'GK', 'GOALKEEPER': 'GK',
+    'LB': 'LB', 'LEFT BACK': 'LB',
+    'CB': 'CB', 'CENTER BACK': 'CB', 'CENTRAL': 'CB',
+    'RB': 'RB', 'RIGHT BACK': 'RB',
+    'CDM': 'CDM', 'DEFENSIVE MIDFIELDER': 'CDM', 'DEFENSIVE MID.': 'CDM', 'DEFENSIVE MID': 'CDM',
+    'CM': 'CM', 'CENTER MIDFIELDER': 'CM', 'CENTER MID.': 'CM', 'CENTER MID': 'CM',
+    'CAM': 'CAM', 'ATTACKING MIDFIELDER': 'CAM', 'ATTACKING MID.': 'CAM', 'ATTACKING MID': 'CAM',
+    'LM': 'LM', 'LEFT MIDFIELDER': 'LM', 'LEFT MID.': 'LM', 'LEFT MID': 'LM',
+    'RM': 'RM', 'RIGHT MIDFIELDER': 'RM', 'RIGHT MID.': 'RM', 'RIGHT MID': 'RM',
+    'LW': 'LW', 'LEFT WINGER': 'LW',
+    'RW': 'RW', 'RIGHT WINGER': 'RW',
+    'ST': 'ST', 'STRIKER': 'ST', 'FORWARD': 'ST',
+    'PORTERO': 'GK', 'ARQUERO': 'GK',
+    'LATERAL IZQUIERDO': 'LB', 'LATERAL IZQ.': 'LB', 'LATERAL IZQ': 'LB',
+    'DEFENSA CENTRAL': 'CB', 'CENTRAL CENTRAL': 'CB',
+    'LATERAL DERECHO': 'RB', 'LATERAL DER.': 'RB', 'LATERAL DER': 'RB',
+    'MEDIOCENTRO DEFENSIVO': 'CDM', 'MEDIOCENTRO DEF.': 'CDM',
+    'CENTROCAMPISTA': 'CM', 'MEDIO': 'CM', 'VOLANTE': 'CM',
+    'MEDIAPUNTA': 'CAM',
+    'MEDIO IZQUIERDO': 'LM', 'MEDIOCAMPO IZQ.': 'LM', 'MEDIOCAMPO IZQ': 'LM',
+    'MEDIO DERECHO': 'RM', 'MEDIOCAMPO DER.': 'RM', 'MEDIOCAMPO DER': 'RM',
+    'EXTREMO IZQUIERDO': 'LW', 'EXTREMO IZQ.': 'LW', 'EXTREMO IZQ': 'LW',
+    'EXTREMO DERECHO': 'RW', 'EXTREMO DER.': 'RW', 'EXTREMO DER': 'RW',
+    'DELANTERO CENTRO': 'ST', 'DELANTERO': 'ST', 'PUNTA': 'ST'
+  };
+  const key = mapping[posUpper] || posUpper;
+  const trans = t ? t(`formations.positions.${key}`) : null;
+  if (trans && !trans.startsWith('formations.positions.')) {
+    return trans;
+  }
+  return position;
+};
+
 // ── Components ─────────────────────────────────────────────────────
 
 const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
@@ -325,32 +419,48 @@ const PlayersStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
 
         <View style={s.table}>
           <View style={s.row}>
-            <View style={[s.headerCell, { width: '8%' }]}><Text style={s.headerText}>#</Text></View>
-            <View style={[s.headerCell, { width: '28%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
-            <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.sortLabels.position', 'Posición')}</Text></View>
-            <View style={[s.headerCell, { width: '8%' }]}><Text style={s.headerText}>{t('statistics.matchesPlayedAbbr', 'PJ')}</Text></View>
+            <View style={[s.headerCell, { width: '4%' }]}><Text style={s.headerText}>#</Text></View>
+            <View style={[s.headerCell, { width: '26%', alignItems: 'flex-start', paddingLeft: 6 }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
+            <View style={[s.headerCell, { width: '18%' }]}><Text style={s.headerText}>{t('statistics.sortLabels.position', 'Posición')}</Text></View>
+            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.matchesPlayedAbbr', 'PJ')}</Text></View>
             <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('statistics.sortLabels.minutes', 'Min')}</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.goalsAbbr', 'G')}</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.assistsAbbr', 'A')}</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.yellowCardsAbbr', 'TA')}</Text></View>
-            <View style={[s.headerCell, { width: '7%' }]}><Text style={s.headerText}>{t('statistics.redCardsAbbr', 'TR')}</Text></View>
-            <View style={[s.headerCell, { width: '13%' }]}><Text style={s.headerText}>{t('statistics.attendancePercentageAbbr', '% Asis.')}</Text></View>
+            <View style={[s.headerCell, { width: '6%' }]}><Text style={s.headerText}>{t('statistics.goalsAbbr', 'G')}</Text></View>
+            <View style={[s.headerCell, { width: '6%' }]}><Text style={s.headerText}>{t('statistics.assistsAbbr', 'A')}</Text></View>
+            <View style={[s.headerCell, { width: '6%', alignItems: 'center', justifyContent: 'center' }]}>
+              <View style={{ width: 8, height: 11, backgroundColor: '#fbbf24', borderRadius: 1.5, borderWidth: 0.5, borderColor: '#d97706' }} />
+            </View>
+            <View style={[s.headerCell, { width: '6%', alignItems: 'center', justifyContent: 'center' }]}>
+              <View style={{ width: 8, height: 11, backgroundColor: '#ef4444', borderRadius: 1.5, borderWidth: 0.5, borderColor: '#b91c1c' }} />
+            </View>
+            <View style={[s.headerCell, { width: '11%' }]}><Text style={s.headerText}>{t('statistics.attendancePercentageAbbr', '% Asis.')}</Text></View>
           </View>
           
           {sortedPlayers.map((player, idx) => {
             const attendanceColor = player.attendancePercentage >= 80 ? COLORS.success : player.attendancePercentage >= 60 ? COLORS.warning : COLORS.danger;
             return (
               <View style={s.row} key={idx} wrap={false}>
-                <View style={[s.cell, { width: '8%' }]}><Text style={[s.cellText, { color: COLORS.textSecondary }]} >{player.number}</Text></View>
-                <View style={[s.cell, { width: '28%' }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{player.name}</Text></View>
-                <View style={[s.cell, { width: '15%' }]}><Text style={[s.cellText, { fontSize: 7, textTransform: 'uppercase' }]}>{player.position}</Text></View>
-                <View style={[s.cell, { width: '8%' }]}><Text style={s.cellText}>{player.matches}</Text></View>
+                <View style={[s.cell, { width: '4%' }]}><Text style={[s.cellText, { color: COLORS.textSecondary }]} >{player.number}</Text></View>
+                <View style={[s.cell, { width: '26%', alignItems: 'flex-start', paddingLeft: 6 }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{player.name}</Text></View>
+                <View style={[s.cell, { width: '18%' }]}><Text style={[s.cellText, { fontSize: 7, textTransform: 'uppercase' }]}>{translatePosition(player.position, t)}</Text></View>
+                <View style={[s.cell, { width: '7%' }]}><Text style={s.cellText}>{player.matches}</Text></View>
                 <View style={[s.cell, { width: '10%' }]}><Text style={[s.cellBold, { color: COLORS.accent }]}>{player.minutes}'</Text></View>
-                <View style={[s.cell, { width: '7%' }]}><Text style={[s.cellBold, { color: player.goals > 0 ? COLORS.success : COLORS.textMuted }]}>{player.goals}</Text></View>
-                <View style={[s.cell, { width: '7%' }]}><Text style={[s.cellBold, { color: player.assists > 0 ? '#7c3aed' : COLORS.textMuted }]}>{player.assists}</Text></View>
-                <View style={[s.cell, { width: '7%' }]}><Text style={[s.cellBold, { color: player.yellowCards > 0 ? '#fbbf24' : COLORS.textMuted }]}>{player.yellowCards}</Text></View>
-                <View style={[s.cell, { width: '7%' }]}><Text style={[s.cellBold, { color: player.redCards > 0 ? '#ef4444' : COLORS.textMuted }]}>{player.redCards}</Text></View>
-                <View style={[s.cell, { width: '13%' }]}><Text style={[s.cellBold, { color: attendanceColor }]}>{player.attendancePercentage}%</Text></View>
+                <View style={[s.cell, { width: '6%' }]}><Text style={[s.cellBold, { color: player.goals > 0 ? COLORS.success : COLORS.textMuted }]}>{player.goals}</Text></View>
+                <View style={[s.cell, { width: '6%' }]}><Text style={[s.cellBold, { color: player.assists > 0 ? '#7c3aed' : COLORS.textMuted }]}>{player.assists}</Text></View>
+                <View style={[s.cell, { width: '6%', alignItems: 'center', justifyContent: 'center' }]}>
+                  {player.yellowCards > 0 ? (
+                    <Text style={[s.cellText, { color: '#b45309', fontFamily: 'Helvetica-Bold' }]}>{player.yellowCards}</Text>
+                  ) : (
+                    <Text style={[s.cellText, { color: COLORS.textMuted }]}>0</Text>
+                  )}
+                </View>
+                <View style={[s.cell, { width: '6%', alignItems: 'center', justifyContent: 'center' }]}>
+                  {player.redCards > 0 ? (
+                    <Text style={[s.cellText, { color: '#b91c1c', fontFamily: 'Helvetica-Bold' }]}>{player.redCards}</Text>
+                  ) : (
+                    <Text style={[s.cellText, { color: COLORS.textMuted }]}>0</Text>
+                  )}
+                </View>
+                <View style={[s.cell, { width: '11%' }]}><Text style={[s.cellBold, { color: attendanceColor }]}>{player.attendancePercentage}%</Text></View>
               </View>
             );
           })}
@@ -376,7 +486,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
   // Zones
   const zoneCounts = {};
   injuries.forEach((injury) => {
-    const zone = injury.zona?.value ? t('injury.zones.' + injury.zona.value, injury.zona.label) : t('common.unknown', 'Desconocido');
+    const zone = translateZone(injury.zona, t);
     zoneCounts[zone] = (zoneCounts[zone] || 0) + 1;
   });
   const zoneList = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1]);
@@ -385,7 +495,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
   // Types
   const typeCounts = {};
   injuries.forEach((injury) => {
-    const type = injury.tipo?.value ? t('injury.types.' + injury.tipo.value, injury.tipo.label) : t('common.unknown', 'Desconocido');
+    const type = translateType(injury.tipo, t);
     typeCounts[type] = (typeCounts[type] || 0) + 1;
   });
   const typeList = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
@@ -466,17 +576,17 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
           <View style={[s.halfColumn, s.card]}>
             <Text style={s.cardTitle}>{t('injuryStats.duration.label', 'Duración de Lesiones')}</Text>
             <View style={s.barListItem}>
-              <Text style={s.barListLabel}>{t('injuryStats.duration.short', 'Corta (< 1 mes)')}</Text>
+              <Text style={s.barListLabel}>{t('injuryStats.duration.short_pdf', 'Corta (< 1 mes)')}</Text>
               <View style={s.barListTrack}><View style={[s.barListFill, { width: `${(durationCounts.corta / totalWithDuration) * 100}%`, backgroundColor: '#10b981' }]} /></View>
               <Text style={s.barListVal}>{durationCounts.corta}</Text>
             </View>
             <View style={s.barListItem}>
-              <Text style={s.barListLabel}>{t('injuryStats.duration.medium', 'Media (1-3 meses)')}</Text>
+              <Text style={s.barListLabel}>{t('injuryStats.duration.medium_pdf', 'Media (1-3 meses)')}</Text>
               <View style={s.barListTrack}><View style={[s.barListFill, { width: `${(durationCounts.media / totalWithDuration) * 100}%`, backgroundColor: '#f59e0b' }]} /></View>
               <Text style={s.barListVal}>{durationCounts.media}</Text>
             </View>
             <View style={s.barListItem}>
-              <Text style={s.barListLabel}>{t('injuryStats.duration.long', 'Larga (> 3 meses)')}</Text>
+              <Text style={s.barListLabel}>{t('injuryStats.duration.long_pdf', 'Larga (> 3 meses)')}</Text>
               <View style={s.barListTrack}><View style={[s.barListFill, { width: `${(durationCounts.larga / totalWithDuration) * 100}%`, backgroundColor: '#ef4444' }]} /></View>
               <Text style={s.barListVal}>{durationCounts.larga}</Text>
             </View>
@@ -518,8 +628,8 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
               const playerId = inj.jugador?._id || inj.jugador;
               const player = players.find((p) => p._id === playerId);
               const playerName = player ? getPlayerFullName(player, t) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
-              const type = inj.tipo?.value ? t('injury.types.' + inj.tipo.value, inj.tipo.label) : t('common.unknown', 'Desconocido');
-              const zone = inj.zona?.value ? t('injury.zones.' + inj.zona.value, inj.zona.label) : t('common.unknown', 'Desconocido');
+              const type = translateType(inj.tipo, t);
+              const zone = translateZone(inj.zona, t);
               const startDateStr = inj.fechaInicio ? new Date(inj.fechaInicio).toLocaleDateString(getLocale()) : '-';
               const endDateStr = inj.fechaFin ? new Date(inj.fechaFin).toLocaleDateString(getLocale()) : (inj.fechaFinPrevista ? new Date(inj.fechaFinPrevista).toLocaleDateString(getLocale()) : '-');
               const statusLabel = inj.fechaFin ? t('injury.recovered', 'Recup.') : t('injury.active', 'Activa');
@@ -561,40 +671,44 @@ const CombinedStatsDocument = ({ stats, injuries, players, t, title, date }) => 
 // ── Public API ─────────────────────────────────────────────────────
 
 export async function generateTeamStatsPdf(stats, teamName, dateStr, t) {
-  const title = `${t('statistics.pdfPrefixTeam', 'Estadisticas_Equipo')} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixTeam', 'Estadisticas_Equipo');
+  const title = `${prefix} - ${teamName}`;
   await renderPdf(
     <Document>
       <TeamStatsPage stats={stats} t={t} title={title} date={dateStr} hideHeader={false} />
     </Document>,
-    `Estadisticas_Equipo_${teamName.replace(/\s+/g, '_')}`
+    `${prefix.replace(/\s+/g, '_')}_${teamName.replace(/\s+/g, '_')}`
   );
 }
 
 export async function generatePlayersStatsPdf(stats, teamName, dateStr, t) {
-  const title = `${t('statistics.pdfPrefixPlayers', 'Estadisticas_Jugadores')} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixPlayers', 'Estadisticas_Jugadores');
+  const title = `${prefix} - ${teamName}`;
   await renderPdf(
     <Document>
       <PlayersStatsPage stats={stats} t={t} title={title} date={dateStr} hideHeader={false} />
     </Document>,
-    `Estadisticas_Jugadores_${teamName.replace(/\s+/g, '_')}`
+    `${prefix.replace(/\s+/g, '_')}_${teamName.replace(/\s+/g, '_')}`
   );
 }
 
 export async function generateInjuriesStatsPdf(injuries, players, teamName, dateStr, t) {
-  const title = `${t('statistics.pdfPrefixInjuries', 'Estadisticas_Lesiones')} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixInjuries', 'Estadisticas_Lesiones');
+  const title = `${prefix} - ${teamName}`;
   await renderPdf(
     <Document>
       <InjuriesStatsPage injuries={injuries} players={players} t={t} title={title} date={dateStr} hideHeader={false} />
     </Document>,
-    `Estadisticas_Lesiones_${teamName.replace(/\s+/g, '_')}`
+    `${prefix.replace(/\s+/g, '_')}_${teamName.replace(/\s+/g, '_')}`
   );
 }
 
 export async function generateCombinedStatsPdf(stats, injuries, players, teamName, dateStr, t) {
-  const title = `${t('statistics.pdfPrefixCombined', 'Reporte_Estadisticas_Completo')} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixCombined', 'Reporte_Estadisticas_Completo');
+  const title = `${prefix} - ${teamName}`;
   await renderPdf(
     <CombinedStatsDocument stats={stats} injuries={injuries} players={players} t={t} title={title} date={dateStr} />,
-    `Reporte_Estadisticas_Completo_${teamName.replace(/\s+/g, '_')}`
+    `${prefix.replace(/\s+/g, '_')}_${teamName.replace(/\s+/g, '_')}`
   );
 }
 

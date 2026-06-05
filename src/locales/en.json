@@ -2078,6 +2078,10 @@
             "players": "Players",
             "injuries": "Injuries"
         },
+        "downloadCombined": "Download Complete Report",
+        "downloadTeamPDF": "Download Team PDF",
+        "downloadPlayersPDF": "Download Players PDF",
+        "downloadInjuriesPDF": "Download Injuries PDF",
         "allTournaments": "All tournaments",
         "noTeam": "No team selected",
         "noTeamSubtitle": "Select a team to view statistics",
@@ -2228,6 +2232,7 @@
         "historicalTotal": "Historical Total",
         "teamPerformance": "Team Performance",
         "individualStats": "Individual Stats",
+        "playersPerformance": "Individual Stats",
         "injuriesSummary": "Injuries Summary & Distribution",
         "attendancePercentageAbbr": "Att. %",
         "matchesPlayedAbbr": "MP",
@@ -2279,10 +2284,12 @@
             "recovered": "Recovered"
         },
         "zones": {
+            "label": "Affected Zones",
             "head": "Head",
             "shoulder": "Shoulder",
             "arm": "Arm",
             "back": "Back",
+            "grid": "Grid/General",
             "hip": "Hip",
             "thigh": "Thigh",
             "knee": "Knee",
@@ -2291,6 +2298,7 @@
             "other": "Other"
         },
         "types": {
+            "label": "Types of Injuries",
             "muscular": "Muscular",
             "ligament": "Ligament",
             "bone": "Bone",
@@ -2302,9 +2310,13 @@
             "relapse": "Relapse"
         },
         "duration": {
+            "label": "Injury Duration",
             "short": "Short (<7 days)",
             "medium": "Medium (7-21 days)",
-            "long": "Long (>21 days)"
+            "long": "Long (>21 days)",
+            "short_pdf": "Short (< 1 month)",
+            "medium_pdf": "Medium (1-3 months)",
+            "long_pdf": "Long (> 3 months)"
         },
         "status": {
             "active": "Active",
@@ -4865,5 +4877,13 @@
         "verifyingTitle": "Verifying payment...",
         "verifyingMessage": "We are confirming your subscription. This will take a few seconds.",
         "sessionId": "Session"
+    },
+    "pdfDialog": {
+        "title": "PDF generated",
+        "download": "Download",
+        "downloadDesc": "Save to your device",
+        "share": "Download & share",
+        "shareDesc": "Save and open sharing options",
+        "cancel": "Cancel"
     }
 }

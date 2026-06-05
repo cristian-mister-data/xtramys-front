@@ -1561,6 +1561,11 @@ const makeStyles = (theme) => StyleSheet.create({
   matchCardContent: {
     padding: isMobileDevice() ? 18 : 22,
   },
+  matchCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileDevice() ? 12 : 16,
+  },
   matchDateContainer: {},
   matchDateBadge: {
     borderRadius: 12,
@@ -1872,6 +1877,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   sessionCardContent: {
     padding: isMobileDevice() ? 18 : 22,
+  },
+  sessionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: isMobileDevice() ? 12 : 16,
   },
   sessionDateContainer: {},
   sessionDateBadge: {

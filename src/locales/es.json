@@ -2083,6 +2083,10 @@
             "players": "Jugadores",
             "injuries": "Lesiones"
         },
+        "downloadCombined": "Descargar Reporte Completo",
+        "downloadTeamPDF": "Descargar PDF de Equipo",
+        "downloadPlayersPDF": "Descargar PDF de Jugadores",
+        "downloadInjuriesPDF": "Descargar PDF de Lesiones",
         "allTournaments": "Todos los torneos",
         "noTeam": "No hay equipo seleccionado",
         "noTeamSubtitle": "Selecciona un equipo para ver estadísticas",
@@ -2233,6 +2237,7 @@
         "historicalTotal": "Total Histórico",
         "teamPerformance": "Rendimiento del Equipo",
         "individualStats": "Estadísticas Individuales",
+        "playersPerformance": "Estadísticas Individuales",
         "injuriesSummary": "Resumen y Distribución de Lesiones",
         "attendancePercentageAbbr": "% Asis.",
         "matchesPlayedAbbr": "PJ",
@@ -2284,10 +2289,12 @@
             "recovered": "Recuperadas"
         },
         "zones": {
+            "label": "Zonas Afectadas",
             "head": "Cabeza",
             "shoulder": "Hombro",
             "arm": "Brazo",
             "back": "Espalda",
+            "grid": "Rejilla/General",
             "hip": "Cadera",
             "thigh": "Muslo",
             "knee": "Rodilla",
@@ -2296,6 +2303,7 @@
             "other": "Otro"
         },
         "types": {
+            "label": "Tipos de Lesiones",
             "muscular": "Muscular",
             "ligament": "Ligamentosa",
             "bone": "Ósea",
@@ -2307,9 +2315,13 @@
             "relapse": "Recaída"
         },
         "duration": {
+            "label": "Duración de Lesiones",
             "short": "Corta (<7 días)",
             "medium": "Media (7-21 días)",
-            "long": "Larga (>21 días)"
+            "long": "Larga (>21 días)",
+            "short_pdf": "Corta (< 1 mes)",
+            "medium_pdf": "Media (1-3 meses)",
+            "long_pdf": "Larga (> 3 meses)"
         },
         "status": {
             "active": "Activa",
@@ -4871,5 +4883,13 @@
         "verifyingTitle": "Verificando pago...",
         "verifyingMessage": "Estamos confirmando tu suscripción. Esto tardará unos segundos.",
         "sessionId": "Sesión"
+    },
+    "pdfDialog": {
+        "title": "PDF generado",
+        "download": "Descargar",
+        "downloadDesc": "Guardar en tu dispositivo",
+        "share": "Descargar y compartir",
+        "shareDesc": "Guardar y abrir opciones para enviar",
+        "cancel": "Cancelar"
     }
 }
