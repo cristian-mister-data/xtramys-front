@@ -24,6 +24,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getSessionWellnessStats, getSessionPreWellnessStats } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import ImageZoom from 'react-native-image-pan-zoom';
 import WellnessDetailModal from './WellnessDetailModal';
@@ -293,33 +294,9 @@ export default function TrainingSessionDetailModal({
         const video = videos[0];
         setSelectedVideo(video);
         
-        const field = getFieldById(video.fieldType);
-        let fieldImageData = null;
-        
-        if (field && field.image) {
-          try {
-            const asset = field.image;
-            const assetUri = normalizeImageSource(asset, { cacheBust: false });
-            if (!assetUri) throw new Error('No asset URI');
-            const response = await fetch(assetUri);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            fieldImageData = await new Promise((resolve, reject) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          } catch (err) {
-            console.warn('Error cargando imagen del campo:', err);
-          }
-        }
-        
-        const result = await regenerateVideoWithField(video._id, fieldImageData);
-        
-        if (result.success && result.videoId) {
-          const streamUrl = getVideoStreamUrl(result.videoId);
-          setVideoUrl(streamUrl);
-        }
+        const resolvedUrl = await resolvePlayableVideoUrl(video);
+        if (!resolvedUrl) throw new Error('No se pudo resolver la URL del vídeo');
+        setVideoUrl(resolvedUrl);
       } else {
         Alert.alert(t('message.info'), t('exercise.noVideos'));
         setShowVideoModal(false);
@@ -350,56 +327,15 @@ export default function TrainingSessionDetailModal({
 
   // Función para descargar video
   const downloadVideo = async () => {
-    if (!selectedVideo?._id) return;
+    if (!selectedVideo) return;
     
     try {
       setIsDownloading(true);
-
-      const downloadUrl = getVideoDownloadUrl(selectedVideo._id);
-      const fileName = `${selectedVideo.nombre || 'video'}.mp4`;
-      const fileUri = FileSystem.documentDirectory + fileName;
-
-      const downloadResumable = FileSystem.createDownloadResumable(
-        downloadUrl,
-        fileUri,
-        {},
-        (downloadProgress) => {
-          const progress = downloadProgress.totalBytesWritten / (downloadProgress.totalBytesExpectedToWrite || 1);
-        }
-      );
-
-      const result = await downloadResumable.downloadAsync();
-      
-      if (!result || !result.uri) {
-        throw new Error('No se pudo descargar el archivo');
-      }
-
-      if (Platform.OS === 'android') {
-        try {
-          const asset = await MediaLibrary.createAssetAsync(result.uri);
-          await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          Alert.alert(t('message.success'), t('video.savedToGallery'));
-        } catch (saveErr) {
-          const isAvailable = await Sharing.isAvailableAsync();
-          if (isAvailable) {
-            await Sharing.shareAsync(result.uri, { mimeType: 'video/mp4' });
-          } else {
-            throw saveErr;
-          }
-        }
-      } else {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(t('message.error'), t('video.permissionRequired'));
-          return;
-        }
-        const asset = await MediaLibrary.createAssetAsync(result.uri);
-        await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        Alert.alert(t('message.success'), t('video.savedToGallery'));
-      }
+      const fileName = `${exerciseForVideo?.nombre || selectedVideo.nombre || 'video'}`;
+      await downloadResolvedVideo(selectedVideo, fileName);
     } catch (error) {
-      console.error('Error descargando video:', error);
-      Alert.alert(t('message.error'), t('video.saveFailed'));
+      console.error('Error en downloadVideo:', error);
+      Alert.alert(t('message.error'), t('exercise.videoPlayError') || 'Error downloading video');
     } finally {
       setIsDownloading(false);
     }
@@ -1749,5 +1685,16 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     paddingVertical: 3,
     lineHeight: 18,
+  },
+  exerciseCount: {
+    backgroundColor: theme.colors.purpleSoft,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  exerciseCountText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
 });
