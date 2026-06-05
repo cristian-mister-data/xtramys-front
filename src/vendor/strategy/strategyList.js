@@ -15,6 +15,9 @@ import {
   duplicateStrategyToFolder,
   fetchGlobalStrategies,
   fetchGlobalFolders,
+  toggleFavoriteStrategy,
+  batchDeleteStrategies,
+  batchMoveStrategies,
 } from '@/store/slices/strategy/strategyThunks';
 import {
   fetchStrategyFolders,
@@ -886,8 +889,9 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   );
 }
 
-function StrategyCard({ strategy, onPress, IS_MOBILE, isGrid = false, forceWidth = null, forceHeight = null, onOpenOptions, styles }) {
+function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = false, forceWidth = null, forceHeight = null, onOpenOptions, styles, isSelected = false, selectionMode = false, onToggleSelect, onToggleFavorite }) {
   const { i18n } = useTranslation();
+  const theme = useTheme();
   const lang = i18n.language;
 
   const getLocalizedName = () => {
@@ -912,10 +916,52 @@ function StrategyCard({ strategy, onPress, IS_MOBILE, isGrid = false, forceWidth
       styles.exerciseCard, 
       IS_MOBILE && styles.exerciseCardMobile,
       isGrid && styles.exerciseCardGrid,
-      isGrid && IS_MOBILE && styles.exerciseCardGridMobile
+      isGrid && IS_MOBILE && styles.exerciseCardGridMobile,
+      isSelected && { borderColor: '#3578e5', borderWidth: 2, backgroundColor: theme?.colors?.primarySoft || '#EEF2FF' }
     ]}>
+      {/* Checkbox de selección */}
+      {selectionMode && (
+        <TouchableOpacity
+          style={{
+            position: 'absolute', top: 6, left: 6, zIndex: 10,
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: isSelected ? '#3578e5' : 'rgba(255,255,255,0.9)',
+            borderWidth: 2, borderColor: isSelected ? '#3578e5' : '#CBD5E1',
+            alignItems: 'center', justifyContent: 'center',
+            shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
+          }}
+          onPress={() => onToggleSelect && onToggleSelect(strategy._id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          {isSelected && <Feather name="check" size={13} color="#fff" />}
+        </TouchableOpacity>
+      )}
+      {/* Botón estrella favorito */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute', top: 6, right: isGrid ? 6 : 38, zIndex: 10,
+          width: 32, height: 32, borderRadius: 16,
+          backgroundColor: strategy.favorito ? '#FEF3C7' : 'rgba(255,255,255,0.9)',
+          borderWidth: 1, borderColor: strategy.favorito ? '#FDE68A' : '#E2E8F0',
+          alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+        }}
+        onPress={() => onToggleFavorite && onToggleFavorite(strategy._id)}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={strategy.favorito ? 'star' : 'star-outline'}
+          size={16}
+          color={strategy.favorito ? '#F59E0B' : '#94A3B8'}
+        />
+      </TouchableOpacity>
       <Pressable
-        onPress={() => onPress(strategy)}
+        onPress={() => selectionMode ? (onToggleSelect && onToggleSelect(strategy._id)) : onPress(strategy)}
+        onLongPress={() => {
+          if (!selectionMode) { onLongPress && onLongPress(strategy); }
+        }}
+        delayLongPress={400}
         style={({ pressed }) => [
           styles.exerciseCardContent,
           pressed && styles.exerciseCardPressed,
@@ -1025,7 +1071,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
-  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global'
+  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [viewMode, setViewMode] = useState("list");
   // Estados para modal de opciones en cada tarjeta
@@ -1034,6 +1080,12 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [filters, setFilters] = useState({
     titulo: ''
   });
+
+  // Estado de selección múltiple
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBatchMoveModal, setShowBatchMoveModal] = useState(false);
+  const [batchMoving, setBatchMoving] = useState(false);
 
   // Estados para navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -1186,13 +1238,8 @@ export default function StrategyList({ navigation: navigationProp }) {
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
   };
 
-  const hasFolder = (strategy) => {
-    if (!strategy.folder) return false;
-    if (typeof strategy.folder === 'object') return !!strategy.folder._id;
-    return true; // string ID
-  };
-
   const displayedStrategies = (() => {
+    const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderStrategies;
       const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
@@ -1200,6 +1247,10 @@ export default function StrategyList({ navigation: navigationProp }) {
         ? rootGlobal.filter((s) => s.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
         : rootGlobal;
       return q;
+    }
+    if (listFilter === 'favorites') {
+      const favs = strategies.filter(ex => ex.favorito);
+      return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
     const base = listFilter === 'mine'
       ? strategies.filter((st) => !st.isGlobal)
@@ -1303,9 +1354,91 @@ const handleDelete = (strategy) => {
     );
   };
 
+  // ---- Selecci\u00f3n m\u00faltiple ----
+  const handleStrategyLongPress = (strategy) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedIds(new Set([strategy._id]));
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allIds = filteredStrategies.map(e => e._id);
+    setSelectedIds(new Set(allIds));
+  };
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleToggleFavorite = useCallback(async (strategyId) => {
+    try {
+      await dispatch(toggleFavoriteStrategy(strategyId)).unwrap();
+    } catch (err) {
+      showNotification(t('message.error'), 'error');
+    }
+  }, [dispatch, t]);
+
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      t('message.warning'),
+      t('strategy.deleteStrategyConfirmationName', { count: selectedIds.size, name: selectedIds.size }) || `\u00bfEliminar ${selectedIds.size} estrategia(s)?`,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('edition.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(batchDeleteStrategies([...selectedIds])).unwrap();
+              showNotification(t('strategy.strategyDeleted') || 'Eliminadas', 'success');
+              dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+              dispatch(fetchStrategyFolders({ lang }));
+              if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+              handleCancelSelection();
+            } catch (err) {
+              showNotification(t('message.error'), 'error');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBatchMove = async (folderId) => {
+    if (selectedIds.size === 0) return;
+    setBatchMoving(true);
+    try {
+      await dispatch(batchMoveStrategies({ ids: [...selectedIds], folderId: folderId || null })).unwrap();
+      showNotification(t('folders.moveToFolder') || 'Movidas', 'success');
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+      dispatch(fetchStrategyFolders({ lang }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+      setShowBatchMoveModal(false);
+      handleCancelSelection();
+    } catch (err) {
+      showNotification(t('message.error'), 'error');
+    } finally {
+      setBatchMoving(false);
+    }
+  };
+  // ---- Fin selecci\u00f3n m\u00faltiple ----
+
   const handleStrategyPress = (strategy) => {
     setViewingStrategy(strategy);
   };
+
 
   const duplicateGlobalStrategyForEdit = useCallback(async (strategy) => {
     const duplicateName = buildDuplicateName(strategy?.nombre || t('strategy.strategyName'));
@@ -1706,8 +1839,8 @@ const handleDelete = (strategy) => {
         </View>
 
         {/* Search Bar estilo myVideos */}
-        <View style={styles.mvSearchContainer}>
-          <View style={styles.mvSearchBar}>
+        <View style={[styles.mvSearchContainer, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+          <View style={[styles.mvSearchBar, { flex: 1 }]}>
             <Feather name="search" size={18} color="#94A3B8" />
             <TextInput
               style={styles.mvSearchInput}
@@ -1717,11 +1850,35 @@ const handleDelete = (strategy) => {
               onChangeText={(text) => setFilters(prev => ({ ...prev, titulo: text }))}
             />
             {filters.titulo.length > 0 && (
-              <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, titulo: '' }))}>
+              <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, titulo: '' }))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Feather name="x" size={18} color="#94A3B8" />
               </TouchableOpacity>
             )}
           </View>
+          <TouchableOpacity
+            style={{
+              paddingHorizontal: 12, height: 42,
+              backgroundColor: selectionMode 
+                ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF') 
+                : (theme.mode === 'dark' ? (theme.colors?.surfaceAlt || '#1e293b') : '#FFFFFF'),
+              borderRadius: 10,
+              borderWidth: 1, 
+              borderColor: selectionMode 
+                ? '#3578e5' 
+                : (theme.mode === 'dark' ? (theme.colors?.border || '#334155') : '#E2E8F0'),
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03, 
+              shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1,
+            }}
+            onPress={() => {
+              if (selectionMode) handleCancelSelection();
+              else setSelectionMode(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Feather name={selectionMode ? "check-square" : "square"} size={16} color={selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B')} />
+            {!IS_MOBILE && <Text style={{ color: selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B'), fontWeight: '600', fontSize: 13 }}>{selectionMode ? (t('common.cancelSelection') || 'Cancelar selección') : (t('common.select') || 'Seleccionar')}</Text>}
+          </TouchableOpacity>
         </View>
 
         {/* Filter tabs */}
@@ -1732,9 +1889,10 @@ const handleDelete = (strategy) => {
           style={styles.mvFilterScroll}
         >
           {[
-            { key: 'all', label: t('strategy.allStrategies') },
-            { key: 'mine', label: t('strategy.myStrategies') },
-            { key: 'global', label: t('strategy.appStrategies') },
+            { key: 'all', label: t('strategy.allStrategies') || 'Todas' },
+            { key: 'mine', label: t('strategy.myStrategies') || 'Mías' },
+            { key: 'global', label: t('strategy.appStrategies') || 'App' },
+            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (
@@ -1744,10 +1902,29 @@ const handleDelete = (strategy) => {
                   setListFilter(tab.key);
                   navigateToRoot();
                 }}
-                style={[styles.mvFilterTab, isActive && styles.mvFilterTabActive]}
+                style={[
+                  styles.mvFilterTab, 
+                  isActive && styles.mvFilterTabActive,
+                  tab.icon && { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', paddingHorizontal: 16 }
+                ]}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.mvFilterTabText, isActive && styles.mvFilterTabTextActive]}>
+                {tab.icon && (
+                  <Ionicons
+                    name={isActive ? tab.icon : `${tab.icon}-outline`}
+                    size={14}
+                    color={isActive ? '#fff' : (theme.mode === 'dark' ? '#94A3B8' : '#64748B')}
+                    style={{ marginRight: 6 }}
+                  />
+                )}
+                <Text 
+                  numberOfLines={1} 
+                  style={[
+                    styles.mvFilterTabText, 
+                    isActive && styles.mvFilterTabTextActive,
+                    { flexShrink: 1 }
+                  ]}
+                >
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -1814,12 +1991,17 @@ const handleDelete = (strategy) => {
                       <StrategyCard
                         strategy={item}
                         onPress={handleStrategyPress}
+                        onLongPress={handleStrategyLongPress}
                         onOpenOptions={(s) => { setSelectedStrategyForOptions(s); setOptionsModalVisible(true); }}
                         IS_MOBILE={IS_MOBILE}
                         isGrid={false}
                         forceWidth={null}
                         forceHeight={null}
                         styles={styles}
+                        selectionMode={selectionMode}
+                        isSelected={selectedIds.has(item._id)}
+                        onToggleSelect={handleToggleSelect}
+                        onToggleFavorite={handleToggleFavorite}
                       />
                     </View>
                   ))}
@@ -1828,6 +2010,118 @@ const handleDelete = (strategy) => {
             )}
           </ScrollView>
         )}
+
+        {/* ---- Barra flotante de selección múltiple ---- */}
+        {selectionMode && (
+          <View style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
+            backgroundColor: theme.colors.surface || '#1E293B',
+            borderTopWidth: 1, borderTopColor: theme.colors.border || '#334155',
+            paddingHorizontal: 16, paddingVertical: 10,
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, elevation: 20,
+          }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
+                {selectedIds.size} {t('common.selected') || 'seleccionados'}
+              </Text>
+              <TouchableOpacity onPress={handleSelectAll}>
+                <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
+                  {t('common.selectAll') || 'Seleccionar todo'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowBatchMoveModal(true)}
+              disabled={selectedIds.size === 0}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                backgroundColor: '#3578e5', borderRadius: 10,
+                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+              }}
+            >
+              <Feather name="folder" size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleBatchDelete}
+              disabled={selectedIds.size === 0}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                backgroundColor: '#EF4444', borderRadius: 10,
+                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+              }}
+            >
+              <Feather name="trash-2" size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleCancelSelection}
+              style={{
+                backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
+                padding: 8,
+              }}
+            >
+              <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ---- Modal para mover selección a carpeta ---- */}
+        <Modal
+          visible={showBatchMoveModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowBatchMoveModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.mvModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowBatchMoveModal(false)}
+          >
+            <View style={[styles.mvActionSheet, { maxHeight: '75%' }]}>
+              <View style={styles.mvActionSheetHeader}>
+                <Text style={styles.mvActionSheetTitle}>
+                  {t('folders.moveToFolder') || 'Mover a carpeta'} ({selectedIds.size})
+                </Text>
+                <Text style={styles.mvActionSheetSubtitle}>
+                  {t('folders.selectDestination') || 'Selecciona la carpeta destino'}
+                </Text>
+              </View>
+              <ScrollView style={{ maxHeight: 350 }}>
+                <TouchableOpacity
+                  style={styles.mvActionOption}
+                  onPress={() => handleBatchMove(null)}
+                  disabled={batchMoving}
+                >
+                  <View style={[styles.mvActionIcon, { backgroundColor: '#F1F5F9' }]}>
+                    <Feather name="home" size={20} color="#64748B" />
+                  </View>
+                  <View style={styles.mvActionTextContainer}>
+                    <Text style={styles.mvActionTitle}>{t('folders.root') || 'Raíz'}</Text>
+                    <Text style={styles.mvActionSubtitle}>{t('folders.noFolder') || 'Sin carpeta'}</Text>
+                  </View>
+                </TouchableOpacity>
+                {strategyFoldersFlat.filter(f => !f.isGlobal).map(folder => (
+                  <TouchableOpacity
+                    key={folder._id}
+                    style={styles.mvActionOption}
+                    onPress={() => handleBatchMove(folder._id)}
+                    disabled={batchMoving}
+                  >
+                    <View style={[styles.mvActionIcon, { backgroundColor: folder.color || '#3B82F6' }]}>
+                      <Feather name="folder" size={20} color="#fff" />
+                    </View>
+                    <View style={styles.mvActionTextContainer}>
+                      <Text style={styles.mvActionTitle} numberOfLines={1}>{folder.nombre}</Text>
+                    </View>
+                    {batchMoving && <ActivityIndicator size="small" color="#3578e5" />}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         {/* Strategy Options Modal - Action Sheet estilo myVideos */}
         <Modal
@@ -1848,6 +2142,30 @@ const handleDelete = (strategy) => {
               </View>
               
               <View style={styles.mvActionSheetBody}>
+                {/* Botón favorito */}
+                <TouchableOpacity
+                  style={styles.mvActionOption}
+                  onPress={() => {
+                    setOptionsModalVisible(false);
+                    handleToggleFavorite(selectedStrategyForOptions?._id);
+                  }}
+                >
+                  <View style={[styles.mvActionIcon, { backgroundColor: selectedStrategyForOptions?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>
+                    <Ionicons
+                      name={selectedStrategyForOptions?.favorito ? 'star' : 'star-outline'}
+                      size={20}
+                      color={selectedStrategyForOptions?.favorito ? '#F59E0B' : '#94A3B8'}
+                    />
+                  </View>
+                  <View style={styles.mvActionTextContainer}>
+                    <Text style={styles.mvActionTitle}>
+                      {selectedStrategyForOptions?.favorito
+                        ? (t('common.removeFromFavorites') || 'Quitar de favoritos')
+                        : (t('common.addToFavorites') || 'Añadir a favoritos')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {

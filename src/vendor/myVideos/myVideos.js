@@ -41,6 +41,9 @@ import {
   getVideoForEdit,
   duplicateVideoForEdit,
   listGlobalVideos,
+  toggleFavoriteVideo,
+  batchDeleteVideos,
+  batchMoveVideos,
 } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import VideoPoster from '@/components/shared/VideoPoster';
@@ -65,8 +68,14 @@ export default function MyVideos() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuVideo, setMenuVideo] = useState(null);
   
-  // Source filter: 'all' | 'mine' | 'global'
+  // Source filter: 'all' | 'mine' | 'global' | 'favorites'
   const [sourceFilter, setSourceFilter] = useState('all');
+
+  // Estado de selección múltiple
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBatchMoveModal, setShowBatchMoveModal] = useState(false);
+  const [batchMoving, setBatchMoving] = useState(false);
 
   // Estado para navegación de carpetas
   const [currentFolder, setCurrentFolder] = useState(null);
@@ -205,6 +214,10 @@ export default function MyVideos() {
       } else if (sourceFilter === 'mine') {
         const videosResult = await apiListVideos({ folderId: currentFolder || 'root' });
         setVideos(videosResult.success ? (videosResult.videos || []) : []);
+      } else if (sourceFilter === 'favorites') {
+        // Fetch all to filter favorites if not in a folder, otherwise fetch current folder
+        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', includeGlobal: 'true' });
+        setVideos(videosResult.success ? (videosResult.videos || []).filter(v => v.favorito) : []);
       } else {
         // 'all': user + global
         const videosResult = await apiListVideos({ folderId: currentFolder || 'root', includeGlobal: 'true' });
@@ -545,6 +558,88 @@ export default function MyVideos() {
     );
   };
 
+  // ---- Selecci\u00f3n m\u00faltiple ----
+  const handleVideoLongPress = (video) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedIds(new Set([video.id || video._id]));
+    }
+  };
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    // Si hay un filtro de texto, seleccionamos los filtrados. Sino todos los listados en 'videos'
+    const listToSelect = filter
+      ? videos.filter(v => getLocalizedVideoName(v).toLowerCase().includes(filter.toLowerCase()))
+      : videos;
+    const allIds = listToSelect.map(v => v.id || v._id);
+    setSelectedIds(new Set(allIds));
+  };
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleToggleFavorite = async (videoId) => {
+    try {
+      await toggleFavoriteVideo(videoId);
+      loadContent();
+    } catch (err) {
+      showNotification(t('message.error'), 'error');
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      t('message.warning'),
+      `\u00bfEliminar ${selectedIds.size} video(s)?`,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('edition.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await batchDeleteVideos([...selectedIds]);
+              showNotification(t('strategy.strategyDeleted') || 'Eliminados', 'success');
+              loadContent();
+              handleCancelSelection();
+            } catch (err) {
+              showNotification(t('message.error'), 'error');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBatchMove = async (folderId) => {
+    if (selectedIds.size === 0) return;
+    setBatchMoving(true);
+    try {
+      await batchMoveVideos([...selectedIds], folderId || null);
+      showNotification(t('folders.moveToFolder') || 'Movidos', 'success');
+      loadContent();
+      setShowBatchMoveModal(false);
+      handleCancelSelection();
+    } catch (err) {
+      showNotification(t('message.error'), 'error');
+    } finally {
+      setBatchMoving(false);
+    }
+  };
+  // ---- Fin selecci\u00f3n m\u00faltiple ----
+
   const filteredContent = useCallback(() => {
     const filterLower = filter.toLowerCase();
     const filteredFolders = folders.filter(f => f.nombre.toLowerCase().includes(filterLower));
@@ -609,13 +704,54 @@ export default function MyVideos() {
     </TouchableOpacity>
   );
 
-  const renderVideoItem = (video) => (
+  const renderVideoItem = (video) => {
+    const isSelected = selectedIds.has(video.id || video._id);
+    return (
     <TouchableOpacity 
       key={video._id || video.id} 
-      style={styles.videoCard}
-      onPress={() => viewVideo(video)}
+      style={[styles.videoCard, isSelected && { borderColor: '#3578e5', borderWidth: 2, backgroundColor: theme?.colors?.primarySoft || '#EEF2FF' }]}
+      onPress={() => selectionMode ? handleToggleSelect(video.id || video._id) : viewVideo(video)}
+      onLongPress={() => handleVideoLongPress(video)}
+      delayLongPress={400}
       activeOpacity={0.7}
     >
+      {/* Checkbox de selección */}
+      {selectionMode && (
+        <TouchableOpacity
+          style={{
+            position: 'absolute', top: 6, left: 6, zIndex: 10,
+            width: 22, height: 22, borderRadius: 11,
+            backgroundColor: isSelected ? '#3578e5' : 'rgba(255,255,255,0.9)',
+            borderWidth: 2, borderColor: isSelected ? '#3578e5' : '#CBD5E1',
+            alignItems: 'center', justifyContent: 'center',
+            shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
+          }}
+          onPress={() => handleToggleSelect(video.id || video._id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          {isSelected && <Feather name="check" size={13} color="#fff" />}
+        </TouchableOpacity>
+      )}
+      {/* Botón estrella favorito */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute', top: 6, right: 38, zIndex: 10,
+          width: 32, height: 32, borderRadius: 16,
+          backgroundColor: video.favorito ? '#FEF3C7' : 'rgba(255,255,255,0.9)',
+          borderWidth: 1, borderColor: video.favorito ? '#FDE68A' : '#E2E8F0',
+          alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+        }}
+        onPress={() => handleToggleFavorite(video.id || video._id)}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={video.favorito ? 'star' : 'star-outline'}
+          size={16}
+          color={video.favorito ? '#F59E0B' : '#94A3B8'}
+        />
+      </TouchableOpacity>
       <View style={styles.videoThumbnail}>
         <VideoPoster
           video={video}
@@ -648,7 +784,8 @@ export default function MyVideos() {
         <Feather name="more-vertical" size={18} color={theme.colors.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -698,8 +835,8 @@ export default function MyVideos() {
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
+      <View style={[styles.searchContainer, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+        <View style={[styles.searchBar, { flex: 1 }]}>
           <Feather name="search" size={18} color={theme.colors.textMuted} />
           <TextInput
             style={styles.searchInput}
@@ -709,11 +846,35 @@ export default function MyVideos() {
             onChangeText={setFilter}
           />
           {filter.length > 0 && (
-            <TouchableOpacity onPress={() => setFilter('')}>
+            <TouchableOpacity onPress={() => setFilter('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Feather name="x" size={18} color={theme.colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
+        <TouchableOpacity
+          style={{
+            paddingHorizontal: 12, height: 42,
+            backgroundColor: selectionMode 
+              ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF') 
+              : (theme.mode === 'dark' ? (theme.colors?.surfaceAlt || '#1e293b') : '#FFFFFF'),
+            borderRadius: 10,
+            borderWidth: 1, 
+            borderColor: selectionMode 
+              ? '#3578e5' 
+              : (theme.mode === 'dark' ? (theme.colors?.border || '#334155') : '#E2E8F0'),
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03, 
+            shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1,
+          }}
+          onPress={() => {
+            if (selectionMode) handleCancelSelection();
+            else setSelectionMode(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Feather name={selectionMode ? "check-square" : "square"} size={16} color={selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B')} />
+          {(!theme.IS_MOBILE && screenWidth >= 430) && <Text style={{ color: selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B'), fontWeight: '600', fontSize: 13 }}>{selectionMode ? (t('common.cancelSelection') || 'Cancelar selección') : (t('common.select') || 'Seleccionar')}</Text>}
+        </TouchableOpacity>
       </View>
 
       {/* Source Filter Tabs */}
@@ -724,19 +885,36 @@ export default function MyVideos() {
         style={styles.sourceFilterScroll}
       >
         {[
-          { key: 'all', label: t('myVideos.allVideos') },
-          { key: 'mine', label: t('myVideos.myVideosOnly') },
-          { key: 'global', label: t('myVideos.appVideos') },
+          { key: 'all', label: t('myVideos.allVideos') || 'Todos' },
+          { key: 'mine', label: t('myVideos.myVideosOnly') || 'Míos' },
+          { key: 'global', label: t('myVideos.appVideos') || 'App' },
+          { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
         ].map(tab => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.sourceTab, sourceFilter === tab.key && styles.sourceTabActive]}
+            style={[
+              styles.sourceTab, 
+              sourceFilter === tab.key && styles.sourceTabActive,
+              tab.icon && { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', paddingHorizontal: 16 }
+            ]}
             onPress={() => { setSourceFilter(tab.key); setCurrentFolder(null); setFolderPath([]); }}
             activeOpacity={0.8}
           >
+            {tab.icon && (
+              <Ionicons
+                name={sourceFilter === tab.key ? tab.icon : `${tab.icon}-outline`}
+                size={14}
+                color={sourceFilter === tab.key ? '#fff' : (theme.mode === 'dark' ? '#94A3B8' : '#64748B')}
+                style={{ marginRight: 6 }}
+              />
+            )}
             <Text
               numberOfLines={1}
-              style={[styles.sourceTabTxt, sourceFilter === tab.key && styles.sourceTabTxtActive]}
+              style={[
+                styles.sourceTabTxt, 
+                sourceFilter === tab.key && styles.sourceTabTxtActive,
+                { flexShrink: 1 }
+              ]}
             >
               {tab.label}
             </Text>
@@ -805,6 +983,118 @@ export default function MyVideos() {
         </ScrollView>
       )}
 
+      {/* ---- Barra flotante de selección múltiple ---- */}
+      {selectionMode && (
+        <View style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
+          backgroundColor: theme.colors.surface || '#1E293B',
+          borderTopWidth: 1, borderTopColor: theme.colors.border || '#334155',
+          paddingHorizontal: 16, paddingVertical: 10,
+          flexDirection: 'row', alignItems: 'center', gap: 8,
+          shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, elevation: 20,
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
+              {selectedIds.size} {t('common.selected') || 'seleccionados'}
+            </Text>
+            <TouchableOpacity onPress={handleSelectAll}>
+              <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
+                {t('common.selectAll') || 'Seleccionar todo'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            onPress={() => setShowBatchMoveModal(true)}
+            disabled={selectedIds.size === 0}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              backgroundColor: '#3578e5', borderRadius: 10,
+              paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+            }}
+          >
+            <Feather name="folder" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleBatchDelete}
+            disabled={selectedIds.size === 0}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              backgroundColor: '#EF4444', borderRadius: 10,
+              paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+            }}
+          >
+            <Feather name="trash-2" size={16} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete') || 'Eliminar'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleCancelSelection}
+            style={{
+              backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
+              padding: 8,
+            }}
+          >
+            <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ---- Modal para mover selección a carpeta ---- */}
+      <Modal
+        visible={showBatchMoveModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBatchMoveModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowBatchMoveModal(false)}
+        >
+          <View style={[styles.actionSheet, { maxHeight: '75%' }]}>
+            <View style={styles.actionSheetHeader}>
+              <Text style={styles.actionSheetTitle}>
+                {t('folders.moveToFolder') || 'Mover a carpeta'} ({selectedIds.size})
+              </Text>
+              <Text style={styles.actionSheetSubtitle}>
+                {t('folders.selectDestination') || 'Selecciona la carpeta destino'}
+              </Text>
+            </View>
+            <ScrollView style={{ maxHeight: 350 }}>
+              <TouchableOpacity
+                style={styles.actionOption}
+                onPress={() => handleBatchMove(null)}
+                disabled={batchMoving}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}>
+                  <Feather name="home" size={20} color="#64748B" />
+                </View>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>{t('folders.root') || 'Raíz'}</Text>
+                  <Text style={styles.actionSubtitle}>{t('folders.noFolder') || 'Sin carpeta'}</Text>
+                </View>
+              </TouchableOpacity>
+              {allFolders.map(folder => (
+                <TouchableOpacity
+                  key={folder._id || folder.id}
+                  style={styles.actionOption}
+                  onPress={() => handleBatchMove(folder._id || folder.id)}
+                  disabled={batchMoving}
+                >
+                  <View style={[styles.actionIcon, { backgroundColor: folder.color || '#3B82F6' }]}>
+                    <Feather name="folder" size={20} color="#fff" />
+                  </View>
+                  <View style={styles.actionTextContainer}>
+                    <Text style={styles.actionTitle} numberOfLines={1}>{folder.nombre}</Text>
+                  </View>
+                  {batchMoving && <ActivityIndicator size="small" color="#3578e5" />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Video Menu Modal */}
       <Modal
         visible={menuVisible}
@@ -826,6 +1116,30 @@ export default function MyVideos() {
             </View>
             
             <View style={styles.actionSheetBody}>
+              {/* Botón favorito */}
+              <TouchableOpacity
+                style={styles.actionOption}
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleToggleFavorite(menuVideo?.id || menuVideo?._id);
+                }}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: menuVideo?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>
+                  <Ionicons
+                    name={menuVideo?.favorito ? 'star' : 'star-outline'}
+                    size={20}
+                    color={menuVideo?.favorito ? '#F59E0B' : '#94A3B8'}
+                  />
+                </View>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>
+                    {menuVideo?.favorito
+                      ? (t('common.removeFromFavorites') || 'Quitar de favoritos')
+                      : (t('common.addToFavorites') || 'Añadir a favoritos')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.actionOption}
                 onPress={() => {

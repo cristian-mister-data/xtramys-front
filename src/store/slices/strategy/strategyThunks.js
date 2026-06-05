@@ -162,3 +162,28 @@ export const duplicateGlobalStrategy = createAsyncThunk(
     return res.data.strategy;
   }
 );
+
+export const toggleFavoriteStrategy = createAsyncThunk(
+  'strategy/toggleFavoriteStrategy',
+  async (strategyId) => {
+    const res = await api.patch(`/strategy/${strategyId}/favorite`);
+    return res.data; // { _id, favorito }
+  }
+);
+
+export const batchDeleteStrategies = createAsyncThunk(
+  'strategy/batchDeleteStrategies',
+  async (ids) => {
+    const res = await api.post('/strategy/batch-delete', { ids });
+    return res.data; // { deleted, ids }
+  }
+);
+
+export const batchMoveStrategies = createAsyncThunk(
+  'strategy/batchMoveStrategies',
+  async ({ ids, folderId }) => {
+    const res = await api.post('/strategy/batch-move', { ids, folderId });
+    return res.data; // { moved, folderId }
+  }
+);
+

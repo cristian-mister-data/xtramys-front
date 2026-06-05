@@ -4884,6 +4884,16 @@
         "verifyingMessage": "Estamos confirmando tu suscripción. Esto tardará unos segundos.",
         "sessionId": "Sesión"
     },
+    "common": {
+        "favorites": "Favoritos",
+        "selected": "seleccionados",
+        "selectAll": "Seleccionar todo",
+        "addToFavorites": "Añadir a favoritos",
+        "removeFromFavorites": "Quitar de favoritos",
+        "select": "Seleccionar",
+        "cancelSelection": "Cancelar selección",
+        "cancel": "Cancelar"
+    },
     "pdfDialog": {
         "title": "PDF generado",
         "download": "Descargar",

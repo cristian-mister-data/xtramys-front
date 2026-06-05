@@ -7,6 +7,7 @@ import {
   createStrategyFolder, updateStrategyFolder, deleteStrategyFolder,
   moveStrategyToFolder, duplicateStrategyToFolder, duplicateGlobalStrategy,
   fetchGlobalStrategies, fetchGlobalFolders,
+  toggleFavoriteStrategy, batchDeleteStrategies, batchMoveStrategies,
 } from './strategyThunks';
 
 const strategySlice = createSlice({
@@ -118,6 +119,31 @@ const strategySlice = createSlice({
 
       .addCase(duplicateGlobalStrategy.fulfilled, (s, a) => {
         s.strategies = [...s.strategies, a.payload];
+      })
+
+      // Favorito toggle
+      .addCase(toggleFavoriteStrategy.fulfilled, (state, action) => {
+        const { _id, favorito } = action.payload;
+        const idx = state.strategies.findIndex(e => e._id === _id);
+        if (idx !== -1) state.strategies[idx].favorito = favorito;
+        const idx2 = state.currentFolderStrategies.findIndex(e => e._id === _id);
+        if (idx2 !== -1) state.currentFolderStrategies[idx2].favorito = favorito;
+      })
+
+      // Batch delete
+      .addCase(batchDeleteStrategies.fulfilled, (state, action) => {
+        const deletedIds = new Set(action.payload.ids || []);
+        state.strategies = state.strategies.filter(e => !deletedIds.has(e._id));
+        state.currentFolderStrategies = state.currentFolderStrategies.filter(e => !deletedIds.has(e._id));
+      })
+
+      // Batch move
+      .addCase(batchMoveStrategies.fulfilled, (state, action) => {
+        const { ids, folderId } = action.payload;
+        const movedIds = new Set(ids || []);
+        state.strategies = state.strategies.map(e =>
+          movedIds.has(e._id) ? { ...e, folder: folderId || null } : e
+        );
       });
   },
 });

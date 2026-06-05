@@ -6,6 +6,7 @@ import {
   createExerciseFolder, updateExerciseFolder, deleteExerciseFolder,
   moveExerciseToFolder, duplicateExerciseToFolder, duplicateGlobalExercise,
   fetchGlobalExercises, fetchGlobalFolders,
+  toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises,
 } from './exerciseThunks';
 
 const exerciseSlice = createSlice({
@@ -145,6 +146,31 @@ const exerciseSlice = createSlice({
 
       .addCase(duplicateGlobalExercise.fulfilled, (state, action) => {
         state.exercises = [...state.exercises, action.payload];
+      })
+
+      // Favorito toggle
+      .addCase(toggleFavoriteExercise.fulfilled, (state, action) => {
+        const { _id, favorito } = action.payload;
+        const idx = state.exercises.findIndex(e => e._id === _id);
+        if (idx !== -1) state.exercises[idx].favorito = favorito;
+        const idx2 = state.currentFolderExercises.findIndex(e => e._id === _id);
+        if (idx2 !== -1) state.currentFolderExercises[idx2].favorito = favorito;
+      })
+
+      // Batch delete
+      .addCase(batchDeleteExercises.fulfilled, (state, action) => {
+        const deletedIds = new Set(action.payload.ids || []);
+        state.exercises = state.exercises.filter(e => !deletedIds.has(e._id));
+        state.currentFolderExercises = state.currentFolderExercises.filter(e => !deletedIds.has(e._id));
+      })
+
+      // Batch move
+      .addCase(batchMoveExercises.fulfilled, (state, action) => {
+        const { ids, folderId } = action.payload;
+        const movedIds = new Set(ids || []);
+        state.exercises = state.exercises.map(e =>
+          movedIds.has(e._id) ? { ...e, folder: folderId || null } : e
+        );
       });
   },
 });

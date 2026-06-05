@@ -114,6 +114,36 @@ export const deleteVideo = async (videoId) => {
   }
 };
 
+export const toggleFavoriteVideo = async (videoId) => {
+  try {
+    const response = await api.put(`/video/${videoId}/favorite`);
+    return response.data;
+  } catch (error) {
+    console.warn('Error toggling video favorite:', error);
+    throw error;
+  }
+};
+
+export const batchDeleteVideos = async (ids) => {
+  try {
+    const response = await api.post('/video/batch-delete', { ids });
+    return response.data;
+  } catch (error) {
+    console.warn('Error batch deleting videos:', error);
+    throw error;
+  }
+};
+
+export const batchMoveVideos = async (ids, folderId) => {
+  try {
+    const response = await api.post('/video/batch-move', { ids, folderId });
+    return response.data;
+  } catch (error) {
+    console.warn('Error batch moving videos:', error);
+    throw error;
+  }
+};
+
 // =====================
 // Carpetas de video
 // =====================

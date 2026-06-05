@@ -155,3 +155,28 @@ export const duplicateGlobalExercise = createAsyncThunk(
     return res.data.exercise;
   }
 );
+
+export const toggleFavoriteExercise = createAsyncThunk(
+  'ejercicio/toggleFavoriteExercise',
+  async (exerciseId) => {
+    const res = await api.patch(`/exercise/${exerciseId}/favorite`);
+    return res.data; // { _id, favorito }
+  }
+);
+
+export const batchDeleteExercises = createAsyncThunk(
+  'ejercicio/batchDeleteExercises',
+  async (ids) => {
+    const res = await api.post('/exercise/batch-delete', { ids });
+    return res.data; // { deleted, ids }
+  }
+);
+
+export const batchMoveExercises = createAsyncThunk(
+  'ejercicio/batchMoveExercises',
+  async ({ ids, folderId }) => {
+    const res = await api.post('/exercise/batch-move', { ids, folderId });
+    return res.data; // { moved, folderId }
+  }
+);
+
