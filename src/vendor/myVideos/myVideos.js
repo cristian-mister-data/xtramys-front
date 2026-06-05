@@ -642,10 +642,10 @@ export default function MyVideos() {
 
   const filteredContent = useCallback(() => {
     const filterLower = filter.toLowerCase();
-    const filteredFolders = folders.filter(f => f.nombre.toLowerCase().includes(filterLower));
+    const filteredFolders = sourceFilter === 'favorites' ? [] : folders.filter(f => f.nombre.toLowerCase().includes(filterLower));
     const filteredVideos = videos.filter(v => v.nombre.toLowerCase().includes(filterLower));
     return { filteredFolders, filteredVideos };
-  }, [folders, videos, filter]);
+  }, [folders, videos, filter, sourceFilter]);
 
   const { filteredFolders, filteredVideos } = filteredContent();
 

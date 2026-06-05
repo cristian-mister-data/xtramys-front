@@ -1267,6 +1267,7 @@ export default function StrategyList({ navigation: navigationProp }) {
     });
 
   const displayedSubfolders = (() => {
+    if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
     if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal);

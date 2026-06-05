@@ -1386,6 +1386,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   });
 
   const displayedSubfolders = (() => {
+    if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
     if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal);
