@@ -31,6 +31,7 @@ import {
   getVideoFolderById,
   deleteVideoFolder,
   updateVideoFolder,
+  updateVideo,
   moveVideoToFolder,
   duplicateVideoToFolder,
   getAllVideoFoldersFlat,
@@ -372,7 +373,7 @@ export default function MyVideos() {
     try {
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        setAllFolders((result.folders || []).filter(folder => !folder.isGlobal));
+        setAllFolders((result.folders || []).filter(folder => isAdmin || !folder.isGlobal));
       }
     } catch (error) {
       console.error('Error cargando carpetas:', error);
@@ -433,6 +434,46 @@ export default function MyVideos() {
     } catch (error) {
       console.error('Error asociando video:', error);
       showNotification(t('myVideos.couldNotLinkVideo'), 'error');
+    }
+  };
+
+  const toggleVideoGlobal = async (video) => {
+    try {
+      setIsGenerating(true);
+      const nextGlobal = !video.isGlobal;
+      const videoId = video._id || video.id;
+      const response = await updateVideo(videoId, { isGlobal: nextGlobal });
+      if (response.success) {
+        showNotification(nextGlobal ? (t('myVideos.videoMadeGlobal') || 'Video pasado a la app') : (t('myVideos.videoMadePrivate') || 'Video quitado de la app'), 'success');
+        loadContent();
+      } else {
+        showNotification(t('myVideos.errorUpdatingVideo') || 'Error al actualizar video', 'error');
+      }
+    } catch (error) {
+      console.error('Error toggling video global status:', error);
+      showNotification(t('myVideos.errorUpdatingVideo') || 'Error al actualizar video', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const toggleFolderGlobal = async (folder) => {
+    try {
+      setIsGenerating(true);
+      const nextGlobal = !folder.isGlobal;
+      const folderId = folder._id || folder.id;
+      const response = await updateVideoFolder(folderId, { isGlobal: nextGlobal });
+      if (response.success) {
+        showNotification(nextGlobal ? (t('myVideos.folderMadeGlobal') || 'Carpeta pasada a la app') : (t('myVideos.folderMadePrivate') || 'Carpeta quitada de la app'), 'success');
+        loadContent();
+      } else {
+        showNotification(t('myVideos.errorUpdatingFolder') || 'Error al actualizar carpeta', 'error');
+      }
+    } catch (error) {
+      console.error('Error toggling folder global status:', error);
+      showNotification(t('myVideos.errorUpdatingFolder') || 'Error al actualizar carpeta', 'error');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -1250,6 +1291,33 @@ export default function MyVideos() {
                   
                   <View style={styles.actionDivider} />
                   
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.actionOption}
+                        onPress={() => {
+                          setMenuVisible(false);
+                          if (menuVideo) toggleVideoGlobal(menuVideo);
+                        }}
+                      >
+                        <View style={[styles.actionIcon, { backgroundColor: menuVideo?.isGlobal ? '#FEF2F2' : '#F0FDF4' }]}>
+                          <Ionicons name={menuVideo?.isGlobal ? "eye-off-outline" : "globe-outline"} size={20} color={menuVideo?.isGlobal ? "#EF4444" : "#22C55E"} />
+                        </View>
+                        <View style={styles.actionTextContainer}>
+                          <Text style={styles.actionTitle}>
+                            {menuVideo?.isGlobal ? t('myVideos.makePrivate') || 'Hacer privado' : t('myVideos.makeGlobal') || 'Pasar a la app'}
+                          </Text>
+                          <Text style={styles.actionSubtitle}>
+                            {menuVideo?.isGlobal 
+                              ? t('myVideos.makePrivateSubtitle') || 'Quitar video de la sección global de la app' 
+                              : t('myVideos.makeGlobalSubtitle') || 'Hacer este video visible para todos los usuarios'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <View style={styles.actionDivider} />
+                    </>
+                  )}
+                  
                   <TouchableOpacity
                     style={styles.actionOption}
                     onPress={() => {
@@ -1335,6 +1403,33 @@ export default function MyVideos() {
                   </TouchableOpacity>
                   
                   <View style={styles.actionDivider} />
+                  
+                  {isAdmin && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.actionOption}
+                        onPress={() => {
+                          setFolderMenuVisible(false);
+                          if (menuFolder) toggleFolderGlobal(menuFolder);
+                        }}
+                      >
+                        <View style={[styles.actionIcon, { backgroundColor: menuFolder?.isGlobal ? '#FEF2F2' : '#F0FDF4' }]}>
+                          <Ionicons name={menuFolder?.isGlobal ? "eye-off-outline" : "globe-outline"} size={20} color={menuFolder?.isGlobal ? "#EF4444" : "#22C55E"} />
+                        </View>
+                        <View style={styles.actionTextContainer}>
+                          <Text style={styles.actionTitle}>
+                            {menuFolder?.isGlobal ? t('folders.makeFolderPrivate') || 'Hacer carpeta privada' : t('folders.makeFolderGlobal') || 'Pasar carpeta a la app'}
+                          </Text>
+                          <Text style={styles.actionSubtitle}>
+                            {menuFolder?.isGlobal 
+                              ? t('folders.makeFolderPrivateSubtitle') || 'Quitar esta carpeta y sus contenidos de la app' 
+                              : t('folders.makeFolderGlobalSubtitle') || 'Pasar esta carpeta y sus contenidos a la app'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <View style={styles.actionDivider} />
+                    </>
+                  )}
                   
                   <TouchableOpacity
                     style={styles.actionOption}

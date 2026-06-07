@@ -1688,6 +1688,10 @@
         "duplicateSubtitle": "Create a copy in another folder",
         "delete": "Delete",
         "deleteSubtitle": "Permanently delete",
+        "makePrivate": "Make private",
+        "makePrivateSubtitle": "Only you will be able to see this video",
+        "makeGlobal": "Move to app",
+        "makeGlobalSubtitle": "The video will be available to all app users",
         "cancel": "Cancel",
         "folderOptions": "Folder options",
         "openFolder": "Open folder",
@@ -4895,5 +4899,15 @@
         "share": "Download & share",
         "shareDesc": "Save and open sharing options",
         "cancel": "Cancel"
+    },
+    "folders": {
+        "editFolder": "Edit folder",
+        "editFolderSubtitle": "Modify folder name or color",
+        "makeFolderPrivate": "Make folder private",
+        "makeFolderPrivateSubtitle": "Remove this folder and its contents from the app",
+        "makeFolderGlobal": "Move folder to app",
+        "makeFolderGlobalSubtitle": "Move this folder and its contents to the app",
+        "moveToFolder": "Move to folder",
+        "moveToFolderSubtitle": "Move to another location"
     }
 }
