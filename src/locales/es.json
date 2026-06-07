@@ -1178,6 +1178,10 @@
             "enterPlayerName": "Escribe el nombre del jugador:"
         }
     },
+    "edition": {
+        "edit": "Editar",
+        "delete": "Eliminar"
+    },
     "common": {
         "options": "Opciones",
         "lightMode": "Modo claro",
@@ -1208,6 +1212,9 @@
         "noResults": "Sin resultados",
         "all": "Todos",
         "search": "Buscar",
+        "searchPages": "Buscar páginas",
+        "pressSlash": "pulsa /",
+        "searchPlaceholder": "Buscar páginas… (pulsa /)",
         "available": "Disponibles",
         "injured": "Lesionado",
         "filters": "Filtros",
@@ -1762,10 +1769,15 @@
         "noStrategiesAvailable": "No hay estrategias disponibles",
         "videoLinked": "Video asociado correctamente",
         "videoLinkedToExercise": "Video asociado al ejercicio",
-        "videoLinkedToStrategy": "Video asociado a la estrategia",
-        "couldNotLinkVideo": "No se pudo asociar el video",
         "searchExercise": "Buscar ejercicio...",
-        "searchStrategy": "Buscar estrategia..."
+        "searchStrategy": "Buscar estrategia...",
+        "editDetails": "Editar nombre",
+        "editDetailsSubtitle": "Cambiar nombre y descripción del video",
+        "videoNameLabel": "Nombre del video",
+        "videoNameEnLabel": "Nombre en inglés",
+        "descriptionLabel": "Descripción",
+        "saveSuccess": "Video actualizado correctamente",
+        "saveError": "Error al actualizar el video"
     },
     "tacticalBoard": {
         "dragToDelete": "Soltar para eliminar",
@@ -4346,6 +4358,7 @@
         "items": "elementos",
         "subfolders": "subcarpetas",
         "moveToFolder": "Mover a carpeta",
+        "moveToFolderSubtitle": "Mover a otra ubicación",
         "selectFolder": "Seleccionar carpeta",
         "root": "Inicio",
         "noFolder": "Sin carpeta",
@@ -4361,7 +4374,11 @@
         "folderUpdated": "Carpeta actualizada correctamente",
         "folderDeleted": "Carpeta eliminada correctamente",
         "editFolder": "Editar carpeta",
-        "editFolderSubtitle": "Cambiar nombre o color",
+        "editFolderSubtitle": "Modificar el nombre o color de la carpeta",
+        "makeFolderPrivate": "Hacer carpeta privada",
+        "makeFolderPrivateSubtitle": "Quitar esta carpeta y sus contenidos de la app",
+        "makeFolderGlobal": "Pasar carpeta a la app",
+        "makeFolderGlobalSubtitle": "Pasar esta carpeta y sus contenidos a la app",
         "deleteFolder": "Eliminar carpeta",
         "folderColor": "Color de la carpeta",
         "folderName": "Nombre",
@@ -4380,7 +4397,8 @@
         "folderColorLabel": "Color de la carpeta",
         "selectDestination": "Selecciona la carpeta de destino",
         "cannotDeleteGlobal": "No puedes eliminar carpetas de la app",
-        "rootDescription": "Carpeta raíz"
+        "rootDescription": "Carpeta raíz",
+        "noRoot": "Sin raíz"
     },
     "tournaments": {
         "title": "Torneos",
@@ -4905,15 +4923,5 @@
         "share": "Descargar y compartir",
         "shareDesc": "Guardar y abrir opciones para enviar",
         "cancel": "Cancelar"
-    },
-    "folders": {
-        "editFolder": "Editar carpeta",
-        "editFolderSubtitle": "Modificar el nombre o color de la carpeta",
-        "makeFolderPrivate": "Hacer carpeta privada",
-        "makeFolderPrivateSubtitle": "Quitar esta carpeta y sus contenidos de la app",
-        "makeFolderGlobal": "Pasar carpeta a la app",
-        "makeFolderGlobalSubtitle": "Pasar esta carpeta y sus contenidos a la app",
-        "moveToFolder": "Mover a carpeta",
-        "moveToFolderSubtitle": "Mover a otra ubicación"
     }
 }

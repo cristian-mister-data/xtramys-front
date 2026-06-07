@@ -79,6 +79,42 @@ const StatLabel = styled.div`
   margin-top: 2px;
 `;
 
+const FooterContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  gap: 12px;
+
+  @media (max-width: 600px) {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+  }
+`;
+
+const ActionsGroup = styled.div`
+  display: flex;
+  gap: 8px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+`;
+
+const FooterButton = styled(Button)`
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 14px;
+    height: auto;
+  }
+`;
+
 export default function PlayerDetailModal({ open, player, onClose, onEdit, onDelete, onViewProfile }) {
   const { t } = useTranslation();
   if (!player) return null;
@@ -91,28 +127,28 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
       title={getPlayerFullName(player)}
       width={560}
       footer={
-        <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Button type="button" $variant="danger" onClick={() => onDelete?.(player)}>
+        <FooterContainer>
+          <FooterButton type="button" $variant="danger" onClick={() => onDelete?.(player)}>
             <MdDelete size={16} />
             {t('edition.delete', 'Eliminar')}
-          </Button>
-          <Row style={{ gap: 8 }}>
-            <Button type="button" $variant="ghost" onClick={onClose}>
+          </FooterButton>
+          <ActionsGroup>
+            <FooterButton type="button" $variant="ghost" onClick={onClose}>
               <MdClose size={16} />
               {t('common.close', 'Cerrar')}
-            </Button>
+            </FooterButton>
             {onViewProfile ? (
-              <Button type="button" $variant="secondary" onClick={() => onViewProfile(player)}>
+              <FooterButton type="button" $variant="secondary" onClick={() => onViewProfile(player)}>
                 <MdBarChart size={16} />
                 {t('player.viewProfile', 'Ver perfil')}
-              </Button>
+              </FooterButton>
             ) : null}
-            <Button type="button" onClick={() => onEdit?.(player)}>
+            <FooterButton type="button" onClick={() => onEdit?.(player)}>
               <MdEdit size={16} />
               {t('edition.edit', 'Editar')}
-            </Button>
-          </Row>
-        </Row>
+            </FooterButton>
+          </ActionsGroup>
+        </FooterContainer>
       }
     >
       <Header $colors={colors}>

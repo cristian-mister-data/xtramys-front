@@ -1365,6 +1365,7 @@ export default function VideoRecorder({
           holdDuration: 0.1,
           speedMultiplier: videoSpeed,
           extraDurationEnd: 0.5,
+          playersWithNumber: playersWithNumber,
         },
         nombre: videoNombre,
         descripcion: videoDescripcion,

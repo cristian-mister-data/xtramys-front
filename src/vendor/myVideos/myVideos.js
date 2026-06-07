@@ -151,6 +151,12 @@ export default function MyVideos() {
   const [editFolderNameEn, setEditFolderNameEn] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#1d4ed8');
 
+  // Editar video
+  const [editVideoModalVisible, setEditVideoModalVisible] = useState(false);
+  const [editVideoName, setEditVideoName] = useState('');
+  const [editVideoNameEn, setEditVideoNameEn] = useState('');
+  const [editVideoDesc, setEditVideoDesc] = useState('');
+
   // Modal para asociar video a ejercicio/estrategia
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkType, setLinkType] = useState('exercise'); // 'exercise' o 'strategy'
@@ -363,6 +369,43 @@ export default function MyVideos() {
       loadContent();
     } catch (error) {
       showNotification(t('folders.updateError'), 'error');
+    }
+  };
+
+  const handleEditVideoDetails = (video) => {
+    setMenuVideo(video);
+    setEditVideoName(getLocalizedVideoName(video));
+    setEditVideoNameEn(video.translations?.en?.nombre || '');
+    setEditVideoDesc(video.descripcion || '');
+    setEditVideoModalVisible(true);
+  };
+
+  const handleUpdateVideoDetails = async () => {
+    if (!editVideoName.trim()) {
+      showNotification(t('myVideos.nameRequired') || 'El nombre es obligatorio', 'error');
+      return;
+    }
+    try {
+      const updateData = {
+        nombre: editVideoName.trim(),
+        descripcion: editVideoDesc.trim()
+      };
+      if (menuVideo?.isGlobal && isAdmin) {
+        updateData.translations = {
+          en: {
+            nombre: editVideoNameEn.trim(),
+            descripcion: menuVideo.translations?.en?.descripcion || ''
+          }
+        };
+      }
+      
+      const videoId = menuVideo?.id || menuVideo?._id;
+      await updateVideo(videoId, updateData);
+      showNotification(t('myVideos.saveSuccess') || 'Video actualizado correctamente', 'success');
+      setEditVideoModalVisible(false);
+      loadContent();
+    } catch (error) {
+      showNotification(t('myVideos.saveError') || 'Error al actualizar el video', 'error');
     }
   };
 
@@ -1237,6 +1280,22 @@ export default function MyVideos() {
                 <>
                   <TouchableOpacity
                     style={styles.actionOption}
+                    onPress={() => {
+                      setMenuVisible(false);
+                      if (menuVideo) handleEditVideoDetails(menuVideo);
+                    }}
+                  >
+                    <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
+                      <Feather name="edit" size={20} color="#D97706" />
+                    </View>
+                    <View style={styles.actionTextContainer}>
+                      <Text style={styles.actionTitle}>{t('myVideos.editDetails') || 'Editar nombre'}</Text>
+                      <Text style={styles.actionSubtitle}>{t('myVideos.editDetailsSubtitle') || 'Cambiar el nombre y descripción del video'}</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.actionOption}
                     onPress={() => openMoveModal('move')}
                   >
                     <View style={[styles.actionIcon, { backgroundColor: '#FFF7ED' }]}>
@@ -1458,6 +1517,110 @@ export default function MyVideos() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Edit Video Details Modal */}
+      <Modal
+        visible={editVideoModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditVideoModalVisible(false)}
+      >
+        <View style={styles.createModalOverlay}>
+          <View style={IS_MOBILE ? styles.createModalContainerMobile : IS_TABLET ? styles.createModalContainerTablet : styles.createModalContainer}>
+            {/* Header */}
+            <View style={styles.createModalHeader}>
+              <View style={IS_MOBILE ? styles.createModalHeaderLeftMobile : styles.createModalHeaderLeft}>
+                <View style={[styles.createModalIconContainer, { backgroundColor: '#FEF3C7' }]}>
+                  <Feather name="edit-3" size={IS_MOBILE ? 18 : 24} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={IS_MOBILE ? styles.createModalTitleMobile : styles.createModalTitle}>{t('myVideos.editDetails') || 'Editar nombre'}</Text>
+                  <Text style={IS_MOBILE ? styles.createModalSubtitleMobile : styles.createModalSubtitle}>{t('myVideos.editDetailsSubtitle') || 'Cambiar nombre y descripción del video'}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setEditVideoModalVisible(false)} style={styles.createModalCloseBtn}>
+                <Feather name="x" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Body */}
+            <KeyboardAwareScrollView
+              style={styles.createModalBody}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={IS_MOBILE ? styles.createModalContentMobile : styles.createModalContent}
+            >
+              <View style={IS_MOBILE ? styles.createCardMobile : styles.createCard}>
+                <View style={styles.createCardHeader}>
+                  <Feather name="video" size={24} color="#D97706" />
+                  <Text style={styles.createCardTitle}>{t('myVideos.video')}</Text>
+                </View>
+
+                <View style={styles.createCardContent}>
+                  <Text style={styles.createInputLabel}>{t('myVideos.videoNameLabel') || 'Nombre del video'}</Text>
+                  <TextInput
+                    style={styles.createInput}
+                    value={editVideoName}
+                    onChangeText={setEditVideoName}
+                    placeholder={t('videoRecorder.videoNamePlaceholder') || 'Ej: Jugada de táctica'}
+                    placeholderTextColor="#94A3B8"
+                    autoFocus
+                    maxLength={100}
+                  />
+
+                  {/* Traducción inglés (admin + video global) */}
+                  {menuVideo?.isGlobal && isAdmin && (
+                    <View style={{ marginTop: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <Ionicons name="language-outline" size={14} color="#1e40af" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#1e40af', textTransform: 'uppercase', letterSpacing: 0.5 }}>English Name</Text>
+                      </View>
+                      <TextInput
+                        style={styles.createInput}
+                        value={editVideoNameEn}
+                        onChangeText={setEditVideoNameEn}
+                        placeholder="Video name (English)"
+                        placeholderTextColor="#94A3B8"
+                        maxLength={100}
+                      />
+                    </View>
+                  )}
+
+                  <Text style={[styles.createInputLabel, { marginTop: 16 }]}>{t('myVideos.descriptionLabel') || 'Descripción'}</Text>
+                  <TextInput
+                    style={[styles.createInput, { height: 100, textAlignVertical: 'top' }]}
+                    value={editVideoDesc}
+                    onChangeText={setEditVideoDesc}
+                    placeholder={t('videoRecorder.descriptionPlaceholder') || 'Escribe una descripción...'}
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={4}
+                    maxLength={500}
+                  />
+                </View>
+              </View>
+            </KeyboardAwareScrollView>
+
+            {/* Footer */}
+            <View style={styles.createModalFooter}>
+              <TouchableOpacity
+                style={styles.createCancelButton}
+                onPress={() => setEditVideoModalVisible(false)}
+              >
+                <Feather name="x" size={18} color="#64748b" />
+                <Text style={styles.createCancelButtonText}>{t('myVideos.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.createSaveButton, !editVideoName.trim() && styles.createSaveButtonDisabled]}
+                onPress={handleUpdateVideoDetails}
+                disabled={!editVideoName.trim()}
+              >
+                <Feather name="check" size={18} color="#fff" />
+                <Text style={styles.createSaveButtonText}>{t('myVideos.save')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Edit Folder Modal */}

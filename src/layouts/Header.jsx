@@ -446,7 +446,7 @@ export default function Header({ onMenu }) {
             onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder={t('common.search', 'Buscar páginas… (pulsa /)')}
+            placeholder={t('common.searchPlaceholder', 'Buscar páginas… (pulsa /)')}
             aria-label={t('common.search', 'Buscar')}
             aria-autocomplete="list"
             aria-expanded={showDropdown}

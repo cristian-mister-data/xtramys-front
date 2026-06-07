@@ -10186,15 +10186,25 @@ export default function Field(props = {}) {
 
       lastLoadedVideoIdRef.current = currentEditVideoData.videoId;
 
-      // Limpiar global.editVideoData despu�s de usarlo
+      // Limpiar global.editVideoData despus de usarlo
       global.editVideoData = null;
 
-      // Establecer modo edici�n
+      // Establecer modo edicin
       setIsEditingVideo(true);
       setEditingVideoId(currentEditVideoData.videoId);
       setEditingVideoName(currentEditVideoData.nombre || '');
       setEditingVideoDescription(currentEditVideoData.descripcion || '');
       setEditingVideoFolderId(currentEditVideoData.folderId || null);
+
+      // Obtener dimensiones originales del video para conversin correcta de coordenadas
+      const originalDimensions = currentEditVideoData.config || { fieldWidth: 1280, fieldHeight: 720 };
+      // Guardar en ref para uso posterior (goToKeyframe, goToLastKeyframe)
+      editingVideoConfigRef.current = originalDimensions;
+
+      // Cargar playersWithNumber si viene en config
+      if (originalDimensions.playersWithNumber !== undefined) {
+        setPlayersWithNumber(originalDimensions.playersWithNumber);
+      }
 
       // Cambiar el tipo de campo si es diferente
       if (currentEditVideoData.fieldType) {

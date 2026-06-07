@@ -1175,6 +1175,10 @@
             "enterPlayerName": "Enter the player's name:"
         }
     },
+    "edition": {
+        "edit": "Edit",
+        "delete": "Delete"
+    },
     "common": {
         "options": "Options",
         "lightMode": "Light mode",
@@ -1205,6 +1209,9 @@
         "noResults": "No results",
         "all": "All",
         "search": "Search",
+        "searchPages": "Search pages",
+        "pressSlash": "press /",
+        "searchPlaceholder": "Search pages… (press /)",
         "available": "Available",
         "injured": "Injured",
         "filters": "Filters",
@@ -1759,10 +1766,15 @@
         "noStrategiesAvailable": "No strategies available",
         "videoLinked": "Video linked successfully",
         "videoLinkedToExercise": "Video linked to exercise",
-        "videoLinkedToStrategy": "Video linked to strategy",
-        "couldNotLinkVideo": "Could not link video",
         "searchExercise": "Search exercise...",
-        "searchStrategy": "Search strategy..."
+        "searchStrategy": "Search strategy...",
+        "editDetails": "Edit details",
+        "editDetailsSubtitle": "Change the video name and description",
+        "videoNameLabel": "Video name",
+        "videoNameEnLabel": "English name",
+        "descriptionLabel": "Description",
+        "saveSuccess": "Video updated successfully",
+        "saveError": "Error updating the video"
     },
     "tacticalBoard": {
         "dragToDelete": "Drop to delete",
@@ -4340,6 +4352,7 @@
         "items": "items",
         "subfolders": "subfolders",
         "moveToFolder": "Move to folder",
+        "moveToFolderSubtitle": "Move to another location",
         "selectFolder": "Select folder",
         "root": "Home",
         "noFolder": "No folder",
@@ -4355,7 +4368,11 @@
         "folderUpdated": "Folder updated successfully",
         "folderDeleted": "Folder deleted successfully",
         "editFolder": "Edit folder",
-        "editFolderSubtitle": "Change name or color",
+        "editFolderSubtitle": "Modify folder name or color",
+        "makeFolderPrivate": "Make folder private",
+        "makeFolderPrivateSubtitle": "Remove this folder and its contents from the app",
+        "makeFolderGlobal": "Move folder to app",
+        "makeFolderGlobalSubtitle": "Move this folder and its contents to the app",
         "deleteFolder": "Delete folder",
         "folderColor": "Folder color",
         "folderName": "Name",
@@ -4374,7 +4391,8 @@
         "folderColorLabel": "Folder color",
         "selectDestination": "Select destination folder",
         "cannotDeleteGlobal": "You cannot delete app folders",
-        "rootDescription": "Home folder"
+        "rootDescription": "Home folder",
+        "noRoot": "No root"
     },
     "tournaments": {
         "title": "Tournaments",
@@ -4899,15 +4917,5 @@
         "share": "Download & share",
         "shareDesc": "Save and open sharing options",
         "cancel": "Cancel"
-    },
-    "folders": {
-        "editFolder": "Edit folder",
-        "editFolderSubtitle": "Modify folder name or color",
-        "makeFolderPrivate": "Make folder private",
-        "makeFolderPrivateSubtitle": "Remove this folder and its contents from the app",
-        "makeFolderGlobal": "Move folder to app",
-        "makeFolderGlobalSubtitle": "Move this folder and its contents to the app",
-        "moveToFolder": "Move to folder",
-        "moveToFolderSubtitle": "Move to another location"
     }
 }
