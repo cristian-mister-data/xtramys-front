@@ -1175,10 +1175,6 @@
             "enterPlayerName": "Enter the player's name:"
         }
     },
-    "edition": {
-        "edit": "Edit",
-        "delete": "Delete"
-    },
     "common": {
         "options": "Options",
         "lightMode": "Light mode",
@@ -1243,7 +1239,13 @@
         "open": "Open",
         "confirmDelete": "Delete?",
         "daysRequired": "Minimum 1 day",
-        "maxDays": "Maximum 7 days"
+        "maxDays": "Maximum 7 days",
+        "favorites": "Favorites",
+        "selected": "selected",
+        "selectAll": "Select all",
+        "addToFavorites": "Add to favorites",
+        "removeFromFavorites": "Remove from favorites",
+        "cancelSelection": "Cancel selection"
     },
     "rivals": {
         "title": "Rivals",
@@ -4899,16 +4901,6 @@
         "verifyingTitle": "Verifying payment...",
         "verifyingMessage": "We are confirming your subscription. This will take a few seconds.",
         "sessionId": "Session"
-    },
-    "common": {
-        "favorites": "Favorites",
-        "selected": "selected",
-        "selectAll": "Select all",
-        "addToFavorites": "Add to favorites",
-        "removeFromFavorites": "Remove from favorites",
-        "select": "Select",
-        "cancelSelection": "Cancel selection",
-        "cancel": "Cancel"
     },
     "pdfDialog": {
         "title": "PDF generated",

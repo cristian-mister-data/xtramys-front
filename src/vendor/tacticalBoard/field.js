@@ -9547,7 +9547,7 @@ export default function Field(props = {}) {
         await AsyncStorage.setItem('usuario', JSON.stringify(updated));
 
         // Mostrar mensaje temporal de confirmaci�n
-        setInstructionMessage({ visible: true, text: t('formations.settingsSaved') });
+        setInstructionMessage({ visible: true, text: t('tacticalBoard.formations.settingsSaved') });
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
@@ -9597,12 +9597,12 @@ export default function Field(props = {}) {
           showPhotos: settingsToSave.teamPlayers.showPhotos !== undefined ? settingsToSave.teamPlayers.showPhotos : prev.showPhotos
         }));
 
-        // Mostrar mensaje temporal de confirmaci�n
-        setInstructionMessage({ visible: true, text: t('settings.settingsSaved') || 'Configuraci�n guardada' });
+        // Mostrar mensaje temporal de confirmacin
+        setInstructionMessage({ visible: true, text: t('tacticalBoard.settings.settingsSaved') || 'Configuración guardada' });
         setTimeout(() => setInstructionMessage(null), 2000);
       }
     } catch (err) {
-      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la Configuraci�n');
+      Alert.alert(t('message.error'), t('settings.saveError') || 'Error al guardar la Configuración');
     }
   }, [dispatch, boardSettings, t]);
 

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
 import { setUser, clearUserState, subscriptionRequired } from './store/slices/user/userSlice';
 import Toaster from './ui/Toaster';
+import i18n from './i18n';
 
 const ApiUnavailable = ({ checking, onRetry }) => (
   <div style={{
@@ -57,6 +58,15 @@ export default function App() {
   const apiUnavailableRef = useRef(false);
   const [apiUnavailable, setApiUnavailable] = useState(false);
   const [checkingApi, setCheckingApi] = useState(false);
+
+  const user = useSelector((s) => s.usuario?.user);
+  const userLanguage = user?.idioma;
+
+  useEffect(() => {
+    if (userLanguage && i18n.language !== userLanguage) {
+      i18n.changeLanguage(userLanguage);
+    }
+  }, [userLanguage]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {

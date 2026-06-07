@@ -575,6 +575,15 @@ export default function Profile() {
     dispatch(checkSubscription());
   }, [dispatch]);
 
+  useEffect(() => {
+    return () => {
+      // Si desmontamos la pantalla y el idioma actual del i18n difiere del guardado en Redux, revertimos al guardado
+      if (user?.idioma && i18n.language !== user.idioma) {
+        i18n.changeLanguage(user.idioma);
+      }
+    };
+  }, [user?.idioma, i18n]);
+
   if (!user) {
     return <Muted>{t('message.loading', 'Cargando...')}</Muted>;
   }
@@ -633,6 +642,7 @@ export default function Profile() {
     setApellido(user.apellido || '');
     setCorreo(user.correo || '');
     setLanguage(user.idioma || 'es');
+    if (user?.idioma) i18n.changeLanguage(user.idioma);
     setEditing(false);
   };
 
