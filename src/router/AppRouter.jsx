@@ -93,6 +93,22 @@ export default function AppRouter() {
         )}
       />
       <Route
+        path="/es/payment/success"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<PaymentSuccess />)}
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/en/payment/success"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<PaymentSuccess />)}
+          </ProtectedRoute>
+        )}
+      />
+      <Route
         path="/payment/paypal/success"
         element={(
           <ProtectedRoute>

@@ -2,7 +2,19 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 
-const SUBSCRIBE_PATHS = ['/subscribe', '/suscripcion', '/en/subscribe', '/es/subscribe', '/es/suscripcion', '/payment/success', '/payment/paypal/success'];
+const SUBSCRIBE_PATHS = [
+  '/subscribe',
+  '/suscripcion',
+  '/en/subscribe',
+  '/es/subscribe',
+  '/es/suscripcion',
+  '/payment/success',
+  '/payment/paypal/success',
+  '/es/payment/success',
+  '/en/payment/success',
+  '/es/payment/paypal/success',
+  '/en/payment/paypal/success'
+];
 
 const GuardFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
