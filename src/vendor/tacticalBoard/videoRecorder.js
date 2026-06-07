@@ -537,6 +537,7 @@ export default function VideoRecorder({
   hideFolderPicker = false, // Ocultar selector de carpeta
   presetFolderId = null, // Carpeta preseleccionada (se usa automáticamente)
   isGlobalExercise = false, // Si el ejercicio es global (app) - solo mostrar carpetas globales
+  isGlobalStrategy = false, // Si la estrategia es global (app) - solo mostrar carpetas globales
   onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
   onGeneratingChange = null, // Callback cuando el estado de generación cambia (isGenerating)
 }) {
@@ -586,7 +587,7 @@ export default function VideoRecorder({
 
   // Detección de admin
   const [isAdmin, setIsAdmin] = useState(false);
-  const shouldBeGlobal = isAdmin || isGlobalExercise;
+  const shouldBeGlobal = isAdmin || isGlobalExercise || isGlobalStrategy;
 
   // Cancelar generación de video y limpiar archivos al desmontar
   useEffect(() => {

@@ -9143,11 +9143,12 @@ export default function Field(props = {}) {
     ejercicioId = null, // ID del ejercicio para asociar videos
     estrategiaId = null, // ID de la estrategia para asociar videos
     editVideoData: editVideoDataParam = null, // Datos del video a editar (desde params)
-    autoOpenVideoRecorder = false, // Abrir grabador de video autom�ticamente
+    autoOpenVideoRecorder = false, // Abrir grabador de video automticamente
     hideFolderPicker = false, // Ocultar selector de carpeta en el grabador de video
     presetFolderId = null, // Carpeta preseleccionada para guardar videos
     presetVideoName = '', // Nombre preseleccionado para el video (auto-naming)
     isGlobalExercise = false, // Si el ejercicio es global (admin)
+    isGlobalStrategy = false, // Si la estrategia es global (admin)
     // Eliminar onSave y onCancel de los par�metros para evitar el warning
     // onSave,
     // onCancel
@@ -17567,6 +17568,7 @@ export default function Field(props = {}) {
             hideFolderPicker={hideFolderPicker}
             presetFolderId={presetFolderId}
             isGlobalExercise={isGlobalExercise}
+            isGlobalStrategy={isGlobalStrategy}
             onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
           />
         )}
