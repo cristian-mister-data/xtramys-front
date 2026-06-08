@@ -7851,6 +7851,82 @@ function isPolygonBorderTouch(
   return false;
 }
 
+function clampBoardRatio(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function clampDisplayValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getDisplayBoxFromRatioPoints(points, viewMode, imageWidth, imageHeight) {
+  const firstPoint = ratioToDisplay(points[0].x, points[0].y, viewMode, imageWidth, imageHeight);
+  const secondPoint = ratioToDisplay(points[1].x, points[1].y, viewMode, imageWidth, imageHeight);
+  return {
+    minX: Math.min(firstPoint.x, secondPoint.x),
+    minY: Math.min(firstPoint.y, secondPoint.y),
+    maxX: Math.max(firstPoint.x, secondPoint.x),
+    maxY: Math.max(firstPoint.y, secondPoint.y),
+  };
+}
+
+function getRatioPointsFromDisplayBox(box, viewMode, imageWidth, imageHeight) {
+  const firstPoint = displayToRatio(box.minX, box.minY, viewMode, imageWidth, imageHeight);
+  const secondPoint = displayToRatio(box.maxX, box.maxY, viewMode, imageWidth, imageHeight);
+  return [
+    { x: clampBoardRatio(firstPoint.x), y: clampBoardRatio(firstPoint.y) },
+    { x: clampBoardRatio(secondPoint.x), y: clampBoardRatio(secondPoint.y) },
+  ];
+}
+
+function resizeDisplayBoxFromHandle(
+  origBox,
+  handle,
+  dx,
+  dy,
+  imageWidth,
+  imageHeight,
+  minSize = 12,
+) {
+  let minX = origBox.minX;
+  let minY = origBox.minY;
+  let maxX = origBox.maxX;
+  let maxY = origBox.maxY;
+
+  const isCornerHandle = handle.length === 2;
+  if (isCornerHandle && handle.includes('l')) minX += dx;
+  if (isCornerHandle && handle.includes('r')) maxX += dx;
+  if (isCornerHandle && handle.includes('t')) minY += dy;
+  if (isCornerHandle && handle.includes('b')) maxY += dy;
+
+  if (handle === 'left') minX += dx;
+  if (handle === 'right') maxX += dx;
+  if (handle === 'top') minY += dy;
+  if (handle === 'bottom') maxY += dy;
+
+  minX = clampDisplayValue(minX, 0, imageWidth);
+  maxX = clampDisplayValue(maxX, 0, imageWidth);
+  minY = clampDisplayValue(minY, 0, imageHeight);
+  maxY = clampDisplayValue(maxY, 0, imageHeight);
+
+  if (maxX - minX < minSize) {
+    if ((isCornerHandle && handle.includes('l')) || handle === 'left') {
+      minX = clampDisplayValue(maxX - minSize, 0, imageWidth);
+    } else {
+      maxX = clampDisplayValue(minX + minSize, 0, imageWidth);
+    }
+  }
+  if (maxY - minY < minSize) {
+    if ((isCornerHandle && handle.includes('t')) || handle === 'top') {
+      minY = clampDisplayValue(maxY - minSize, 0, imageHeight);
+    } else {
+      maxY = clampDisplayValue(minY + minSize, 0, imageHeight);
+    }
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
 function isPointInsidePolygon(pointX, pointY, points) {
   let inside = false;
   for (
@@ -10072,9 +10148,8 @@ const MemoizedCircleDetector = React.memo(
 
     const centerX = (p1x + p2x) / 2;
     const centerY = (p1y + p2y) / 2;
-    const dx = p2x - p1x;
-    const dy = p2y - p1y;
-    const radius = Math.sqrt(dx * dx + dy * dy) / 2;
+    const rx = Math.abs(p2x - p1x) / 2;
+    const ry = Math.abs(p2y - p1y) / 2;
     const thickness = (icon.thickness || 1) * scale * 0.7;
 
     const touchTolerance = Math.max(thickness / 2 + 12, 18);
@@ -10088,10 +10163,10 @@ const MemoizedCircleDetector = React.memo(
     const detectorZIndex = icon.calculatedZIndex || ZINDEX_BASE_LINES;
 
     // Bounding box del c�rculo
-    const minX = centerX - radius;
-    const minY = centerY - radius;
-    const touchWidth = radius * 2 + touchMargin * 2;
-    const touchHeight = radius * 2 + touchMargin * 2;
+    const minX = centerX - rx;
+    const minY = centerY - ry;
+    const touchWidth = rx * 2 + touchMargin * 2;
+    const touchHeight = ry * 2 + touchMargin * 2;
 
     // Handlers para arrastre
     const handleResponderGrant = (e) => {
@@ -10234,17 +10309,13 @@ const MemoizedCircleDetector = React.memo(
       if (saveClonesHistory) saveClonesHistory();
     };
 
-    // Resize handlers for circle diameter
+    // Resize handlers for circle/ellipse bounds
     const handleCircleResizeGrant = (handle, e) => {
-      const cxR = (icon.points[0].x + icon.points[1].x) / 2;
-      const cyR = (icon.points[0].y + icon.points[1].y) / 2;
       dragStart.current[`${icon.id}-resize`] = {
         handle,
         startX: e.nativeEvent.pageX,
         startY: e.nativeEvent.pageY,
-        origPoints: icon.points.map((p) => ({ x: p.x, y: p.y })),
-        cxR,
-        cyR,
+        origBox: getDisplayBoxFromRatioPoints(icon.points, viewMode, imageWidth, imageHeight),
       };
     };
 
@@ -10252,51 +10323,21 @@ const MemoizedCircleDetector = React.memo(
       const base = dragStart.current[`${icon.id}-resize`];
       if (!base) return;
 
-      const { dxRatio, dyRatio } = deltaToRatio(
+      const nextBox = resizeDisplayBoxFromHandle(
+        base.origBox,
+        base.handle,
         (e.nativeEvent.pageX - base.startX) / zoomLevel,
         (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        imageWidth,
+        imageHeight,
+        14,
+      );
+      const nextPoints = getRatioPointsFromDisplayBox(
+        nextBox,
         viewMode,
         imageWidth,
         imageHeight,
       );
-
-      const halfDxR = (base.origPoints[1].x - base.origPoints[0].x) / 2;
-      const halfDyR = (base.origPoints[1].y - base.origPoints[0].y) / 2;
-      const halfDxPx = halfDxR * imageWidth;
-      const halfDyPx = halfDyR * imageHeight;
-      const origRadiusPx = Math.sqrt(halfDxPx * halfDxPx + halfDyPx * halfDyPx);
-
-      if (origRadiusPx < 1) return;
-
-      let radiusChangePx = 0;
-      const dragDxPx = dxRatio * imageWidth;
-      const dragDyPx = dyRatio * imageHeight;
-
-      switch (base.handle) {
-        case 'right':
-          radiusChangePx = dragDxPx;
-          break;
-        case 'left':
-          radiusChangePx = -dragDxPx;
-          break;
-        case 'top':
-          radiusChangePx = -dragDyPx;
-          break;
-        case 'bottom':
-          radiusChangePx = dragDyPx;
-          break;
-      }
-
-      const newRadiusPx = Math.max(10, origRadiusPx + radiusChangePx);
-      const scaleFactor = newRadiusPx / origRadiusPx;
-
-      const newHalfDxR = halfDxR * scaleFactor;
-      const newHalfDyR = halfDyR * scaleFactor;
-
-      const newP0x = Math.max(0, Math.min(1, base.cxR - newHalfDxR));
-      const newP0y = Math.max(0, Math.min(1, base.cyR - newHalfDyR));
-      const newP1x = Math.max(0, Math.min(1, base.cxR + newHalfDxR));
-      const newP1y = Math.max(0, Math.min(1, base.cyR + newHalfDyR));
 
       pendingUpdateRef.current = (prev) => {
         const idx = prev.findIndex((c) => c.id === icon.id);
@@ -10304,10 +10345,7 @@ const MemoizedCircleDetector = React.memo(
         const next = [...prev];
         next[idx] = {
           ...next[idx],
-          points: [
-            { x: newP0x, y: newP0y },
-            { x: newP1x, y: newP1y },
-          ],
+          points: nextPoints,
         };
         return next;
       };
@@ -10337,12 +10375,13 @@ const MemoizedCircleDetector = React.memo(
 
     const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
       const point = getResponderLocalPoint(e, offsetX, offsetY);
-      return isCircleBorderTouch(
+      return isEllipseBorderTouch(
         point.x,
         point.y,
-        touchMargin + radius,
-        touchMargin + radius,
-        radius,
+        touchMargin + rx,
+        touchMargin + ry,
+        rx,
+        ry,
         touchTolerance,
       );
     };
@@ -10363,14 +10402,14 @@ const MemoizedCircleDetector = React.memo(
       const segmentSize = touchTolerance * 2;
 
       // Calcular cu�ntos segmentos necesitamos para cubrir todo el per�metro
-      const perimeter = 2 * Math.PI * radius;
+      const perimeter = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
       const numSegments = Math.max(12, Math.ceil(perimeter / segmentSize));
 
       for (let i = 0; i < numSegments; i++) {
         const angle = (i / numSegments) * 2 * Math.PI;
         // Posici�n en el per�metro del c�rculo
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
+        const x = centerX + Math.cos(angle) * rx;
+        const y = centerY + Math.sin(angle) * ry;
         const segmentLeft = x - minX + touchMargin - touchTolerance;
         const segmentTop = y - minY + touchMargin - touchTolerance;
 
@@ -10420,10 +10459,14 @@ const MemoizedCircleDetector = React.memo(
         {selectedCloneId === icon.id && !multiSelectMode && (
           <>
             {[
-              { handle: 'top', cx: touchMargin + radius, cy: touchMargin },
-              { handle: 'right', cx: touchMargin + radius * 2, cy: touchMargin + radius },
-              { handle: 'bottom', cx: touchMargin + radius, cy: touchMargin + radius * 2 },
-              { handle: 'left', cx: touchMargin, cy: touchMargin + radius },
+              { handle: 'tl', cx: touchMargin, cy: touchMargin },
+              { handle: 'top', cx: touchMargin + rx, cy: touchMargin },
+              { handle: 'tr', cx: touchMargin + rx * 2, cy: touchMargin },
+              { handle: 'right', cx: touchMargin + rx * 2, cy: touchMargin + ry },
+              { handle: 'br', cx: touchMargin + rx * 2, cy: touchMargin + ry * 2 },
+              { handle: 'bottom', cx: touchMargin + rx, cy: touchMargin + ry * 2 },
+              { handle: 'bl', cx: touchMargin, cy: touchMargin + ry * 2 },
+              { handle: 'left', cx: touchMargin, cy: touchMargin + ry },
             ].map(({ handle, cx, cy }) => (
               <View
                 key={`resize-${handle}`}
@@ -10489,7 +10532,7 @@ const MemoizedCircleDetector = React.memo(
               e.stopPropagation();
               setOptionsMenu({
                 visible: true,
-                position: { x: centerX + radius + 20, y: centerY },
+                position: { x: centerX + rx + 20, y: centerY },
                 iconId: icon.id,
                 canRotate: false,
                 hideEdit: false,
@@ -10741,7 +10784,7 @@ const MemoizedRectangleDetector = React.memo(
         corner,
         startX: e.nativeEvent.pageX,
         startY: e.nativeEvent.pageY,
-        origPoints: icon.points.map((p) => ({ x: p.x, y: p.y })),
+        origBox: getDisplayBoxFromRatioPoints(icon.points, viewMode, imageWidth, imageHeight),
       };
     };
 
@@ -10749,52 +10792,21 @@ const MemoizedRectangleDetector = React.memo(
       const base = dragStart.current[`${icon.id}-resize`];
       if (!base) return;
 
-      const { dxRatio, dyRatio } = deltaToRatio(
+      const nextBox = resizeDisplayBoxFromHandle(
+        base.origBox,
+        base.corner,
         (e.nativeEvent.pageX - base.startX) / zoomLevel,
         (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        imageWidth,
+        imageHeight,
+        14,
+      );
+      const nextPoints = getRatioPointsFromDisplayBox(
+        nextBox,
         viewMode,
         imageWidth,
         imageHeight,
       );
-
-      const origMinX = Math.min(base.origPoints[0].x, base.origPoints[1].x);
-      const origMinY = Math.min(base.origPoints[0].y, base.origPoints[1].y);
-      const origMaxX = Math.max(base.origPoints[0].x, base.origPoints[1].x);
-      const origMaxY = Math.max(base.origPoints[0].y, base.origPoints[1].y);
-
-      let nMinX = origMinX,
-        nMinY = origMinY,
-        nMaxX = origMaxX,
-        nMaxY = origMaxY;
-      const minDim = 0.001;
-
-      switch (base.corner) {
-        case 'tl':
-          nMinX += dxRatio;
-          nMinY += dyRatio;
-          break;
-        case 'tr':
-          nMaxX += dxRatio;
-          nMinY += dyRatio;
-          break;
-        case 'bl':
-          nMinX += dxRatio;
-          nMaxY += dyRatio;
-          break;
-        case 'br':
-          nMaxX += dxRatio;
-          nMaxY += dyRatio;
-          break;
-      }
-
-      if (nMaxX - nMinX < minDim) {
-        if (base.corner === 'tl' || base.corner === 'bl') nMinX = nMaxX - minDim;
-        else nMaxX = nMinX + minDim;
-      }
-      if (nMaxY - nMinY < minDim) {
-        if (base.corner === 'tl' || base.corner === 'tr') nMinY = nMaxY - minDim;
-        else nMaxY = nMinY + minDim;
-      }
 
       pendingUpdateRef.current = (prev) => {
         const idx = prev.findIndex((c) => c.id === icon.id);
@@ -10802,10 +10814,7 @@ const MemoizedRectangleDetector = React.memo(
         const next = [...prev];
         next[idx] = {
           ...next[idx],
-          points: [
-            { x: nMinX, y: nMinY },
-            { x: nMaxX, y: nMaxY },
-          ],
+          points: nextPoints,
         };
         return next;
       };
