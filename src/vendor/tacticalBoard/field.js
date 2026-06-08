@@ -11833,6 +11833,7 @@ export default function Field(props = {}) {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [draggingOutside, setDraggingOutside] = useState(false);
   const [instructionMessage, setInstructionMessage] = useState(null);
+  const [pendingPlacementAction, setPendingPlacementAction] = useState(null);
   const [playersModalVisible, setPlayersModalVisible] = useState(false);
   const [availablePlayers, setAvailablePlayers] = useState([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
@@ -12215,6 +12216,7 @@ export default function Field(props = {}) {
     setDrawingCircle(false);
     setDrawingRectangle(false);
     setDrawingCustomShape(false);
+    setPendingPlacementAction(null);
   }, []);
 
   // Helper: clear entire board state when exiting without saving
@@ -12267,6 +12269,7 @@ export default function Field(props = {}) {
     setDrawingRectangle(false);
     setDrawingCustomShape(false);
     setPendingLineAction(null);
+    setPendingPlacementAction(null);
 
     // Resetear la referencia de carga de usuario para que al volver a entrar cargue datos frescos
     userSettingsLoadedRef.current = false;
@@ -13021,6 +13024,7 @@ export default function Field(props = {}) {
       drawingRectangle,
       drawingCustomShape,
       eraserMode,
+      pendingPlacementAction,
     }),
     [
       drawingStraightArrow,
@@ -13031,6 +13035,7 @@ export default function Field(props = {}) {
       drawingRectangle,
       drawingCustomShape,
       eraserMode,
+      pendingPlacementAction,
     ],
   );
 
@@ -13056,6 +13061,8 @@ export default function Field(props = {}) {
     setShowCloseCircle(false);
     setPreviewPoint(null);
     setIsPreviewingPoint(false);
+    setPendingLineAction(null);
+    setPendingPlacementAction(null);
   }, []);
 
   const canvasRef = useRef();
@@ -13570,6 +13577,132 @@ export default function Field(props = {}) {
     return displayToRatio(imageWidth / 2, imageHeight / 2, viewMode, imageWidth, imageHeight);
   }, [viewMode, imageWidth, imageHeight]);
 
+  const getNextAutoPlacementRatio = useCallback(
+    (type) => {
+      const center = getVisibleCenterRatio();
+      const existing = actualClonesRef.current || [];
+      const spacing = type === 'staff' || type === 'player' ? 0.075 : 0.06;
+      const candidates = [
+        { x: 0, y: 0 },
+        { x: -1, y: 0 },
+        { x: 1, y: 0 },
+        { x: 0, y: -1 },
+        { x: 0, y: 1 },
+        { x: -1, y: -1 },
+        { x: 1, y: -1 },
+        { x: -1, y: 1 },
+        { x: 1, y: 1 },
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+        { x: 0, y: -2 },
+        { x: 0, y: 2 },
+      ];
+
+      for (const candidate of candidates) {
+        const point = {
+          x: clampBoardRatio(center.x + candidate.x * spacing),
+          y: clampBoardRatio(center.y + candidate.y * spacing),
+        };
+        const isFree = !existing.some((clone) => {
+          if (clone.xRatio === undefined || clone.yRatio === undefined) return false;
+          const dx = clone.xRatio - point.x;
+          const dy = clone.yRatio - point.y;
+          return Math.sqrt(dx * dx + dy * dy) < spacing * 0.72;
+        });
+        if (isFree) return point;
+      }
+
+      return {
+        x: clampBoardRatio(center.x + (Math.random() - 0.5) * spacing * 2.5),
+        y: clampBoardRatio(center.y + (Math.random() - 0.5) * spacing * 2.5),
+      };
+    },
+    [getVisibleCenterRatio],
+  );
+
+  const activatePlacementMode = useCallback(
+    (placementAction) => {
+      setSelectedCloneId(null);
+      clearMultiSelect();
+      exitDrawingMode();
+      setEraserMode(false);
+      setPendingLineAction(null);
+      setPendingPlacementAction(placementAction);
+    },
+    [clearMultiSelect, exitDrawingMode],
+  );
+
+  const finishPlacementAction = useCallback(
+    (placementAction, ratioPoint) => {
+      if (!placementAction) return;
+      const shouldAutoNumber = placementAction.kind === 'palette-player' && placementAction.paletteIconId;
+      const currentNumber = shouldAutoNumber
+        ? iconCounters.current[placementAction.paletteIconId] || placementAction.number || 1
+        : placementAction.clone.number;
+      const clone = {
+        ...placementAction.clone,
+        id: `${placementAction.clone.idBase || placementAction.clone.type}-clone-${Date.now()}-${Math.random()}`,
+        xRatio: ratioPoint.x,
+        yRatio: ratioPoint.y,
+        zIndex: getNextZIndex(placementAction.clone.type),
+        number: currentNumber,
+      };
+      delete clone.idBase;
+
+      setClones((prev) => [clone, ...prev]);
+
+      if (shouldAutoNumber) {
+        const nextNumber = currentNumber + 1;
+        iconCounters.current[placementAction.paletteIconId] = nextNumber;
+        setPaletteIcons((prev) =>
+          prev.map((ic) =>
+            ic.id === placementAction.paletteIconId ? { ...ic, number: nextNumber } : ic,
+          ),
+        );
+      }
+
+      if (placementAction.kind === 'team-player' && placementAction.playerId) {
+        setAvailablePlayers((prev) => prev.filter((p) => p.uniqueId !== placementAction.playerId));
+        setSelectedPlayerIds((prev) =>
+          prev.includes(placementAction.playerId) ? prev : [...prev, placementAction.playerId],
+        );
+      }
+
+      if (placementAction.kind === 'staff' && placementAction.staffRoleId) {
+        setSelectedStaffIds((prev) =>
+          prev.includes(placementAction.staffRoleId) ? prev : [...prev, placementAction.staffRoleId],
+        );
+      }
+
+      if (placementAction.repeat) {
+        setPendingPlacementAction({
+          ...placementAction,
+          number:
+            shouldAutoNumber && placementAction.paletteIconId
+              ? iconCounters.current[placementAction.paletteIconId]
+              : placementAction.number,
+          clone: {
+            ...placementAction.clone,
+            number:
+              shouldAutoNumber && placementAction.paletteIconId
+                ? iconCounters.current[placementAction.paletteIconId]
+                : placementAction.clone.number,
+          },
+        });
+      } else {
+        setPendingPlacementAction(null);
+      }
+      if (placementAction.kind === 'free-text') {
+        setTimeout(() => {
+          setSelectedCloneId(clone.id);
+          setTextEditPanel({ visible: true, icon: clone, isNew: true });
+        }, 80);
+      }
+      if (saveClonesHistory) setTimeout(() => saveClonesHistory(), 0);
+    },
+    [getNextZIndex, saveClonesHistory],
+  );
+
   // 3. Reemplazar la funci�n handleIconPalettePress con esta versi�n
   const handleIconPalettePress = useCallback(
     (icon, paletteIndex) => {
@@ -13579,6 +13712,9 @@ export default function Field(props = {}) {
 
       // Manejar el bot�n de jugadores del equipo
       if (icon.type === 'team-players') {
+        exitDrawingMode();
+        setPendingLineAction(null);
+        setPendingPlacementAction(null);
         setShowingPlayersPalette(true);
         setShowingMaterialsPalette(false);
         setShowingStaffPalette(false);
@@ -13587,6 +13723,9 @@ export default function Field(props = {}) {
 
       // Manejar el bot�n de cuerpo t�cnico
       if (icon.type === 'coaching-staff') {
+        exitDrawingMode();
+        setPendingLineAction(null);
+        setPendingPlacementAction(null);
         setShowingStaffPalette(true);
         setShowingPlayersPalette(false);
         setShowingMaterialsPalette(false);
@@ -13595,6 +13734,9 @@ export default function Field(props = {}) {
 
       // Manejar el bot�n de materiales
       if (icon.type === 'materials-button') {
+        exitDrawingMode();
+        setPendingLineAction(null);
+        setPendingPlacementAction(null);
         setShowingMaterialsPalette(true);
         setShowingPlayersPalette(false);
         setShowingStaffPalette(false);
@@ -13603,6 +13745,11 @@ export default function Field(props = {}) {
 
       // Manejar el bot�n de figura personalizada de manera especial
       if (icon.type === 'custom-shape-button') {
+        if (drawingCustomShape && pendingLineAction?.paletteIndex === paletteIndex) {
+          handleDeselectDrawingTool();
+          setPendingLineAction(null);
+          return;
+        }
         setPendingLineAction({
           type: 'custom-shape',
           paletteIndex: paletteIndex,
@@ -13617,6 +13764,7 @@ export default function Field(props = {}) {
         setDrawingCircle(false);
         setDrawingRectangle(false);
         setEraserMode(false);
+        setPendingPlacementAction(null);
         return;
       }
 
@@ -13629,6 +13777,22 @@ export default function Field(props = {}) {
         icon.type === 'circle' ||
         icon.type === 'rectangle'
       ) {
+        const sameDrawingTool =
+          pendingLineAction?.type === icon.type && pendingLineAction?.paletteIndex === paletteIndex;
+        const isSameToolActive =
+          (icon.type === 'straight-arrow' && drawingStraightArrow) ||
+          (icon.type === 'straight-line' && drawingStraightLine) ||
+          (icon.type === 'curve-line' && drawingCurveLine) ||
+          (icon.type === 'curve-arrow' && drawingCurveArrow) ||
+          (icon.type === 'circle' && drawingCircle) ||
+          (icon.type === 'rectangle' && drawingRectangle);
+
+        if (sameDrawingTool && isSameToolActive) {
+          handleDeselectDrawingTool();
+          setPendingLineAction(null);
+          return;
+        }
+
         setPendingLineAction({
           type: icon.type,
           paletteIndex: paletteIndex,
@@ -13689,6 +13853,7 @@ export default function Field(props = {}) {
         setDrawingRectangle(false);
         setDrawingCustomShape(false);
         setEraserMode(false);
+        setPendingPlacementAction(null);
 
         // Activar solo el modo de dibujo correspondiente
         if (icon.type === 'straight-arrow') {
@@ -13707,30 +13872,35 @@ export default function Field(props = {}) {
         return;
       }
 
+      if (
+        (pendingPlacementAction?.kind === 'palette-icon' ||
+          pendingPlacementAction?.kind === 'palette-player') &&
+        pendingPlacementAction?.paletteIndex === paletteIndex &&
+        pendingPlacementAction?.clone?.type === icon.type
+      ) {
+        setPendingPlacementAction(null);
+        return;
+      }
+
       // Para otros tipos de iconos (jugadores, conos, etc.)
       let number = undefined;
       if (icon.type === 'player') {
         number = iconCounters.current[icon.id];
-        iconCounters.current[icon.id] = number + 1;
-        setPaletteIcons((prev) =>
-          prev.map((ic) =>
-            ic.id === icon.id ? { ...ic, number: iconCounters.current[icon.id] } : ic,
-          ),
-        );
       }
 
       // Usar la Configuraci�n actual de la paleta (color, tama�o, thickness)
       // Obtener el icono actualizado de la paleta para usar su Configuraci�n m�s reciente
-      const currentPaletteIcon = paletteIcons[paletteIndex];
+      const currentPaletteIcon = paletteIcons[paletteIndex] || icon || {};
 
-      const { x: centerX, y: centerY } = getVisibleCenterRatio();
-
-      setClones((prev) => [
-        {
+      activatePlacementMode({
+        kind: icon.type === 'player' ? 'palette-player' : 'palette-icon',
+        paletteIndex,
+        paletteIconId: icon.id,
+        number,
+        repeat: true,
+        clone: {
           ...icon,
-          id: `${icon.id}-clone-${Date.now()}-${Math.random()}`,
-          xRatio: centerX,
-          yRatio: centerY,
+          idBase: icon.id,
           number,
           rotation: 0,
           size: currentPaletteIcon.size || standardSize, // Usar el tama�o actual de la paleta
@@ -13741,12 +13911,9 @@ export default function Field(props = {}) {
           numberColor: currentPaletteIcon.numberColor || icon.numberColor || '#ffffff',
           zIndex: getNextZIndex(icon.type),
         },
-        ...prev,
-      ]);
+      });
 
       // Al a�adir un elemento, quitar multi-select y salir de cualquier modo de dibujo
-      clearMultiSelect();
-      exitDrawingMode();
     },
     [
       paletteIcons,
@@ -13755,7 +13922,17 @@ export default function Field(props = {}) {
       clearMultiSelect,
       exitDrawingMode,
       getNextZIndex,
-      getVisibleCenterRatio,
+      activatePlacementMode,
+      handleDeselectDrawingTool,
+      pendingLineAction,
+      pendingPlacementAction,
+      drawingStraightArrow,
+      drawingStraightLine,
+      drawingCurveLine,
+      drawingCurveArrow,
+      drawingCircle,
+      drawingRectangle,
+      drawingCustomShape,
     ],
   );
 
@@ -13769,15 +13946,19 @@ export default function Field(props = {}) {
       displayLabel = positionAbbreviation;
     }
 
-    const { x: centerX, y: centerY } = getVisibleCenterRatio();
+    setSelectedCloneId(null);
+    clearMultiSelect();
+    exitDrawingMode();
+    setEraserMode(false);
+    setPendingLineAction(null);
+    setPendingPlacementAction(null);
 
-    // Crear un clone con los datos del jugador
-    setClones((prev) => [
-      {
-        id: `player-${player.uniqueId}-clone-${Date.now()}-${Math.random()}`,
+    finishPlacementAction({
+      kind: 'team-player',
+      playerId: player.uniqueId,
+      clone: {
+        idBase: `player-${player.uniqueId}`,
         type: 'player',
-        xRatio: centerX,
-        yRatio: centerY,
         number: player.dorsal || player.number,
         rotation: 0,
         size: teamPlayerStyle.size || standardSize,
@@ -13791,32 +13972,30 @@ export default function Field(props = {}) {
         displayLabel: displayLabel, // Etiqueta de posici�n si est� habilitada
         zIndex: getNextZIndex('player'),
       },
-      ...prev,
-    ]);
-
-    // Remover el jugador de la lista de disponibles
-    setAvailablePlayers((prev) => prev.filter((p) => p.uniqueId !== player.uniqueId));
-    setSelectedPlayerIds((prev) => [...prev, player.uniqueId]);
-
-    // Desactivar modo dibujo al seleccionar un jugador
-    exitDrawingMode();
+    }, getNextAutoPlacementRatio('player'));
   };
 
   // Funci�n para manejar la selecci�n de un material de entrenamiento
   const handleSelectMaterial = useCallback(
     (material) => {
+      if (
+        pendingPlacementAction?.kind === 'material' &&
+        pendingPlacementAction?.materialType === material.type
+      ) {
+        setPendingPlacementAction(null);
+        return;
+      }
+
       // Obtener Configuraci�n personalizada del material
       const customConfig = materialsConfig[material.type] || {};
 
-      const { x: centerX, y: centerY } = getVisibleCenterRatio();
-
-      // Crear un clone del material seleccionado
-      setClones((prev) => [
-        {
-          id: `${material.type}-clone-${Date.now()}-${Math.random()}`,
+      activatePlacementMode({
+        kind: 'material',
+        materialType: material.type,
+        repeat: true,
+        clone: {
+          idBase: material.type,
           type: material.type,
-          xRatio: centerX,
-          yRatio: centerY,
           rotation: 0,
           size: customConfig.size || material.size || standardSize,
           color: customConfig.color || material.color || '#FF6B00',
@@ -13825,28 +14004,36 @@ export default function Field(props = {}) {
           rotatable: material.rotatable || false,
           zIndex: getNextZIndex(material.type),
         },
-        ...prev,
-      ]);
-
-      // Desactivar modo dibujo al seleccionar un material
-      exitDrawingMode();
+      });
     },
-    [standardSize, materialsConfig, exitDrawingMode, getNextZIndex, getVisibleCenterRatio],
+    [standardSize, materialsConfig, activatePlacementMode, getNextZIndex, pendingPlacementAction],
   );
 
   // Funci�n para manejar la selecci�n de un miembro del cuerpo t�cnico
   const handleSelectStaff = useCallback(
     (staffRole) => {
-      const { x: centerX, y: centerY } = getVisibleCenterRatio();
+      if (
+        pendingPlacementAction?.kind === 'staff' &&
+        pendingPlacementAction?.staffRoleId === staffRole.id
+      ) {
+        setPendingPlacementAction(null);
+        return;
+      }
 
-      // Crear un clone del staff seleccionado
-      setClones((prev) => [
-        {
-          id: `staff-${staffRole.id}-clone-${Date.now()}-${Math.random()}`,
+      setSelectedCloneId(null);
+      clearMultiSelect();
+      exitDrawingMode();
+      setEraserMode(false);
+      setPendingLineAction(null);
+      setPendingPlacementAction(null);
+
+      finishPlacementAction({
+        kind: 'staff',
+        staffRoleId: staffRole.id,
+        clone: {
+          idBase: `staff-${staffRole.id}`,
           type: 'staff',
           staffRole: staffRole.id,
-          xRatio: centerX,
-          yRatio: centerY,
           rotation: 0,
           size: standardSize,
           color: '#333333',
@@ -13857,16 +14044,19 @@ export default function Field(props = {}) {
           thickness: 1,
           zIndex: getNextZIndex('staff'),
         },
-        ...prev,
-      ]);
+      }, getNextAutoPlacementRatio('staff'));
 
       // A�adir a la lista de staff seleccionados (para que desaparezca de la paleta)
-      setSelectedStaffIds((prev) => [...prev, staffRole.id]);
-
-      // Desactivar modo dibujo al seleccionar un staff
-      exitDrawingMode();
     },
-    [standardSize, exitDrawingMode, getNextZIndex, getVisibleCenterRatio],
+    [
+      standardSize,
+      clearMultiSelect,
+      exitDrawingMode,
+      finishPlacementAction,
+      getNextAutoPlacementRatio,
+      getNextZIndex,
+      pendingPlacementAction,
+    ],
   );
 
   // Manejador para editar material de la paleta (long press)
@@ -15097,27 +15287,24 @@ export default function Field(props = {}) {
   }, []);
 
   const handleAddText = useCallback(() => {
-    const newTextId = `free-text-${Date.now()}`;
-    const newTextElement = {
-      id: newTextId,
-      type: 'free-text',
-      xRatio: 0.5,
-      yRatio: 0.5,
-      value: '',
-      color: '#000000',
-      size: 18,
-      backgroundColor: 'transparent',
-      zIndex: getNextZIndex('free-text'),
-    };
+    if (pendingPlacementAction?.kind === 'free-text') {
+      setPendingPlacementAction(null);
+      return;
+    }
 
-    setClones((prev) => [newTextElement, ...prev]);
-
-    // Abrir inmediatamente el panel de edicin para el nuevo texto (marcado como nuevo)
-    setTimeout(() => {
-      setTextEditPanel({ visible: true, icon: newTextElement, isNew: true });
-      setSelectedCloneId(newTextId);
-    }, 100);
-  }, [getNextZIndex]);
+    activatePlacementMode({
+      kind: 'free-text',
+      clone: {
+        idBase: 'free-text',
+        type: 'free-text',
+        value: '',
+        color: '#000000',
+        size: 18,
+        backgroundColor: 'transparent',
+        zIndex: getNextZIndex('free-text'),
+      },
+    });
+  }, [activatePlacementMode, getNextZIndex, pendingPlacementAction]);
 
   // Funcin para activar/desactivar el modo goma de borrar
   const handleToggleEraser = useCallback(() => {
@@ -15129,6 +15316,8 @@ export default function Field(props = {}) {
     setDrawingCircle(false);
     setDrawingRectangle(false);
     setDrawingCustomShape(false);
+    setPendingLineAction(null);
+    setPendingPlacementAction(null);
     // Toggle eraser mode
     setEraserMode((prev) => !prev);
     // Deseleccionar elementos
@@ -15287,6 +15476,20 @@ export default function Field(props = {}) {
       );
     },
     [viewMode, imageWidth, imageHeight, standardSize, selectedCloneId],
+  );
+
+  const handlePendingPlacementOnField = useCallback(
+    (e) => {
+      if (!pendingPlacementAction) return false;
+      const { locationX, locationY } = e.nativeEvent;
+      const ratioPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
+      finishPlacementAction(pendingPlacementAction, {
+        x: clampBoardRatio(ratioPoint.x),
+        y: clampBoardRatio(ratioPoint.y),
+      });
+      return true;
+    },
+    [pendingPlacementAction, finishPlacementAction, viewMode, imageWidth, imageHeight],
   );
 
   // Handler para iniciar arrastre de cualquier elemento existente si su detector especfico no captura el gesto.
@@ -19005,6 +19208,7 @@ export default function Field(props = {}) {
       onSelectMaterial,
       onLongPressMaterial,
       materialsConfig,
+      pendingPlacementAction,
       isMobile = false,
     }) {
       const slideAnim = useRef(new Animated.Value(visible ? 0 : 300)).current;
@@ -19064,6 +19268,9 @@ export default function Field(props = {}) {
             {MATERIALS_ICONS.map((material, idx) => {
               // Obtener Configuraci�n personalizada si existe
               const customConfig = materialsConfig?.[material.type] || {};
+              const isSelected =
+                pendingPlacementAction?.kind === 'material' &&
+                pendingPlacementAction?.materialType === material.type;
               const displayMaterial = {
                 ...material,
                 color: customConfig.color || material.color,
@@ -19087,9 +19294,10 @@ export default function Field(props = {}) {
                       height: iconSize + (isMobile ? 16 : 25),
                       flexDirection: 'column',
                     },
+                    isSelected && styles.paletteIconButtonSelected,
                     isMobile && {
                       borderRadius: 8,
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      backgroundColor: isSelected ? '#2176ff' : 'rgba(255, 255, 255, 0.15)',
                       marginHorizontal: 3,
                     },
                   ]}
@@ -19135,6 +19343,13 @@ export default function Field(props = {}) {
       if (prevProps.visible !== nextProps.visible) return false;
       if (prevProps.isMobile !== nextProps.isMobile) return false;
       if (prevProps.materialsConfig !== nextProps.materialsConfig) return false;
+      if (
+        prevProps.pendingPlacementAction?.kind !== nextProps.pendingPlacementAction?.kind ||
+        prevProps.pendingPlacementAction?.materialType !==
+          nextProps.pendingPlacementAction?.materialType
+      ) {
+        return false;
+      }
       return true;
     },
   );
@@ -19403,7 +19618,11 @@ export default function Field(props = {}) {
                 (icon.type === 'curve-arrow' && drawingStates.drawingCurveArrow) ||
                 (icon.type === 'circle' && drawingStates.drawingCircle) ||
                 (icon.type === 'rectangle' && drawingStates.drawingRectangle) ||
-                (icon.type === 'custom-shape-button' && drawingStates.drawingCustomShape);
+                (icon.type === 'custom-shape-button' && drawingStates.drawingCustomShape) ||
+                (drawingStates.pendingPlacementAction?.kind === 'palette-icon' &&
+                  drawingStates.pendingPlacementAction?.paletteIndex === idx) ||
+                (drawingStates.pendingPlacementAction?.kind === 'palette-player' &&
+                  drawingStates.pendingPlacementAction?.paletteIndex === idx);
 
               return (
                 <PaletteIconButton
@@ -19425,9 +19644,14 @@ export default function Field(props = {}) {
               style={[
                 styles.paletteIconButton,
                 { width: iconSize, height: iconSize },
+                drawingStates.pendingPlacementAction?.kind === 'free-text' &&
+                  styles.paletteIconButtonSelected,
                 isMobile && {
                   borderRadius: 8,
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  backgroundColor:
+                    drawingStates.pendingPlacementAction?.kind === 'free-text'
+                      ? '#2176ff'
+                      : 'rgba(255, 255, 255, 0.15)',
                 },
               ]}
             >
@@ -19492,7 +19716,9 @@ export default function Field(props = {}) {
         prevDS.drawingCircle !== nextDS.drawingCircle ||
         prevDS.drawingRectangle !== nextDS.drawingRectangle ||
         prevDS.drawingCustomShape !== nextDS.drawingCustomShape ||
-        prevDS.eraserMode !== nextDS.eraserMode
+        prevDS.eraserMode !== nextDS.eraserMode ||
+        prevDS.pendingPlacementAction?.kind !== nextDS.pendingPlacementAction?.kind ||
+        prevDS.pendingPlacementAction?.paletteIndex !== nextDS.pendingPlacementAction?.paletteIndex
       ) {
         return false;
       }
@@ -19818,28 +20044,37 @@ export default function Field(props = {}) {
           drawingStates.drawingCurveArrow ||
           drawingStates.drawingCircle ||
           drawingStates.drawingRectangle ||
-          drawingStates.drawingCustomShape) && (
+          drawingStates.drawingCustomShape ||
+          drawingStates.pendingPlacementAction) && (
           <TouchableOpacity
             onPress={handleDeselectDrawingTool}
             style={{
               position: 'absolute',
-              top: isMobile ? 55 : 90,
-              right: isMobile ? 10 : 20,
-              width: isMobile ? 36 : 50,
-              height: isMobile ? 36 : 50,
-              borderRadius: isMobile ? 18 : 25,
-              backgroundColor: '#ff0000',
+              top: isMobile ? 58 : 82,
+              right: isMobile ? 12 : 24,
+              minWidth: isMobile ? 42 : 54,
+              height: isMobile ? 36 : 42,
+              borderRadius: 999,
+              paddingHorizontal: isMobile ? 10 : 14,
+              backgroundColor: 'rgba(15, 23, 42, 0.92)',
               justifyContent: 'center',
               alignItems: 'center',
+              flexDirection: 'row',
               zIndex: 1000,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 3,
-              elevation: 5,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.18,
+              shadowRadius: 8,
+              elevation: 8,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.22)',
             }}
           >
-            <Ionicons name="move" size={isMobile ? 16 : 24} color="#ffffff" />
+            <MaterialCommunityIcons
+              name="cursor-default-click"
+              size={isMobile ? 18 : 22}
+              color="#ffffff"
+            />
           </TouchableOpacity>
         )}
 
@@ -19956,7 +20191,8 @@ export default function Field(props = {}) {
                               drawingCurveLine ||
                               drawingCurveArrow ||
                               drawingCustomShape ||
-                              eraserMode
+                              eraserMode ||
+                              pendingPlacementAction
                             ? 9999
                             : 0,
                       }}
@@ -19970,7 +20206,8 @@ export default function Field(props = {}) {
                           drawingRectangle ||
                           drawingCurveLine ||
                           drawingCurveArrow ||
-                          drawingCustomShape
+                          drawingCustomShape ||
+                          pendingPlacementAction
                         );
                       }}
                       onResponderGrant={(e) => {
@@ -19981,6 +20218,11 @@ export default function Field(props = {}) {
                           timestamp: Date.now(),
                         };
 
+                        if (pendingPlacementAction) {
+                          handlePendingPlacementOnField(e);
+                          fieldTouchStartRef.current = null;
+                          return;
+                        }
                         if (eraserMode) {
                           handleEraserStart(e);
                           return;
@@ -20001,6 +20243,9 @@ export default function Field(props = {}) {
                         }
                       }}
                       onResponderMove={(e) => {
+                        if (pendingPlacementAction) {
+                          return;
+                        }
                         if (eraserMode) {
                           handleEraserMove(e);
                           return;
@@ -20021,6 +20266,10 @@ export default function Field(props = {}) {
                         }
                       }}
                       onResponderRelease={(e) => {
+                        if (pendingPlacementAction) {
+                          fieldTouchStartRef.current = null;
+                          return;
+                        }
                         if (eraserMode) {
                           handleEraserEnd();
                           fieldTouchStartRef.current = null;
@@ -21009,6 +21258,7 @@ export default function Field(props = {}) {
             onSelectMaterial={handleSelectMaterial}
             onLongPressMaterial={handleLongPressMaterial}
             materialsConfig={materialsConfig}
+            pendingPlacementAction={pendingPlacementAction}
             isMobile={isMobile}
           />
         ) : showingStaffPalette ? (
@@ -21883,20 +22133,27 @@ const styles = StyleSheet.create({
   },
   eraserModeIndicator: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 14,
+    right: 14,
     flexDirection: 'row',
-    backgroundColor: 'rgba(220, 60, 60, 0.85)',
-    borderRadius: 14,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(127, 29, 29, 0.94)',
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    zIndex: 200,
+    zIndex: 1200,
     gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   eraserModeText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
 
