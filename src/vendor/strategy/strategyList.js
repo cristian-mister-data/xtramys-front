@@ -1918,10 +1918,10 @@ const handleDelete = (strategy) => {
           style={styles.mvFilterScroll}
         >
           {[
+            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('strategy.allStrategies') || 'Todas' },
             { key: 'mine', label: t('strategy.myStrategies') || 'Mías' },
             { key: 'global', label: t('strategy.appStrategies') || 'App' },
-            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (

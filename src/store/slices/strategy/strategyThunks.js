@@ -3,6 +3,41 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToStrategy } from '@/api/video';
 
+const getVideoId = (video) => video?._id || video?.id || video;
+
+const replaceStrategyVideos = async (strategyId, pendingVideoIds = []) => {
+  if (!strategyId || pendingVideoIds.length === 0) return;
+
+  const currentRes = await api.get(`/video/strategy/${strategyId}`);
+  const currentVideos = currentRes?.data?.videos || currentRes?.data || [];
+  const pendingSet = new Set(pendingVideoIds.map(String));
+
+  for (const video of currentVideos) {
+    const videoId = getVideoId(video);
+    if (!videoId || pendingSet.has(String(videoId))) continue;
+
+    try {
+      await api.post('/video/unlink-strategy', { videoId, strategyId });
+    } catch (error) {
+      console.error('Error desasociando video anterior:', error);
+    }
+
+    try {
+      await api.delete(`/video/${videoId}`);
+    } catch (error) {
+      console.error('Error eliminando video anterior:', error);
+    }
+  }
+
+  for (const videoId of pendingVideoIds) {
+    try {
+      await linkVideoToStrategy({ videoId, strategyId });
+    } catch (error) {
+      console.error('Error asociando video pendiente:', error);
+    }
+  }
+};
+
 export const fetchEstrategiasUsuario = createAsyncThunk(
   'strategy/fetchEstrategiasUsuario',
   async ({ user, lang } = {}) => {
@@ -58,7 +93,9 @@ export const createEstrategia = createAsyncThunk(
 export const updateEstrategia = createAsyncThunk(
   'strategy/updateEstrategia',
   async (strategy) => {
-    const res = await api.post(`/strategy/${strategy?._id}`, strategy);
+    const { pendingVideoIds, ...strategyData } = strategy || {};
+    const res = await api.post(`/strategy/${strategyData?._id}`, strategyData);
+    await replaceStrategyVideos(strategyData?._id, pendingVideoIds);
     return res.data;
   }
 );

@@ -1551,6 +1551,15 @@ export default function AddEventModal({
     if (visible) {
       setEventType(defaultEventType); // Usar defaultEventType si se proporciona
       const date = selectedDate || new Date();
+      const hasExplicitTime = selectedDate && (date.getHours() !== 0 || date.getMinutes() !== 0);
+      const startDate = new Date(date);
+      if (!hasExplicitTime) startDate.setHours(17, 0, 0, 0);
+      const selectedHour = String(startDate.getHours()).padStart(2, '0');
+      const selectedMinute = String(startDate.getMinutes()).padStart(2, '0');
+      const defaultStart = `${selectedHour}:${selectedMinute}`;
+      const endDate = new Date(startDate);
+      endDate.setMinutes(endDate.getMinutes() + 90);
+      const defaultEnd = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
       // Verificar si la fecha es pasada para inicializar goles
       const isPast = date < new Date();
       // Determinar competición por defecto (torneo por defecto o amistoso)
@@ -1559,7 +1568,7 @@ export default function AddEventModal({
         rival: '',
         rivalId: null,
         rivalEscudo: null,
-        fechaHora: date,
+        fechaHora: startDate,
         jornada: '',
         ubicacion: 'local',
         golesFavor: isPast ? '0' : '',
@@ -1587,9 +1596,9 @@ export default function AddEventModal({
       setJugadoresEnCampo([]);
       setJugadoresExpulsados([]);
       setSessionData({
-        fecha: date,
-        horaInicio: '17:00',
-        horaFin: '18:30',
+        fecha: startDate,
+        horaInicio: defaultStart,
+        horaFin: defaultEnd,
         observaciones: '',
       });
       setSelectedExercises([]);

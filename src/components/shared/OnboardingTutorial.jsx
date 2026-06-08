@@ -394,6 +394,10 @@ const FullscreenOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
   color: #fff;
   padding: 28px clamp(18px, 4vw, 48px);
   overflow: auto;
+
+  @media (max-width: 760px) {
+    padding: 18px 14px;
+  }
 `;
 
 const FullscreenContent = styled.div`
@@ -419,6 +423,11 @@ const HeroIcon = styled.div`
     width: 88px;
     height: 88px;
   }
+
+  @media (max-width: 480px) {
+    width: 78px;
+    height: 78px;
+  }
 `;
 
 const FullscreenTitle = styled.h2`
@@ -438,6 +447,10 @@ const FullscreenDescription = styled.p`
   font-size: clamp(16px, 2vw, 20px);
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.88);
+
+  @media (max-width: 480px) {
+    font-size: 15px;
+  }
 `;
 
 const BulletList = styled.div`
@@ -465,6 +478,13 @@ const SpotlightOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
   z-index: ${({ theme }) => theme.zIndex.modal};
   overflow: hidden;
   background: rgba(15, 23, 42, 0.72);
+
+  @media (max-width: 760px) {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding: 10px;
+    gap: 10px;
+  }
 `;
 
 const TutorialScene = styled.div`
@@ -475,7 +495,13 @@ const TutorialScene = styled.div`
   background: ${({ theme }) => theme.colors.background};
 
   @media (max-width: 760px) {
-    grid-template-columns: minmax(240px, 82vw) 1fr;
+    position: relative;
+    inset: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    border-radius: 8px;
+    overflow: hidden;
   }
 `;
 
@@ -491,6 +517,17 @@ const DrawerShell = styled.aside`
     $highlightDrawer
       ? '0 0 0 3px rgba(255,255,255,0.9), 0 0 0 7px rgba(37, 99, 235, 0.8)'
       : 'none'};
+
+  @media (max-width: 760px) {
+    width: min(100%, 380px);
+    height: 100%;
+    max-height: none;
+    justify-self: center;
+    margin-top: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid ${({ theme }) => theme.colors.sidebarBorder};
+  }
 `;
 
 const DrawerHeader = styled.div`
@@ -566,6 +603,10 @@ const IconBox = styled.span`
 const PagePreview = styled.div`
   min-width: 0;
   opacity: 0.4;
+
+  @media (max-width: 760px) {
+    display: none;
+  }
 `;
 
 const PageHeader = styled.div`
@@ -622,12 +663,18 @@ const TooltipCard = styled.div`
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35);
 
   @media (max-width: 760px) {
-    left: 14px;
-    right: 14px;
-    bottom: 14px;
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
     top: auto;
     transform: none;
-    width: auto;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    display: grid;
+    grid-template-rows: auto auto auto auto;
+    padding: 14px;
   }
 `;
 
@@ -670,6 +717,12 @@ const TooltipDescription = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.55;
+
+  @media (max-width: 760px) {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
 `;
 
 const Tip = styled.div`
@@ -701,10 +754,30 @@ const TooltipButtons = styled.div`
   gap: 8px;
   margin-top: 16px;
   flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+
+    > button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    > button:nth-of-type(2) {
+      grid-column: 1 / -1;
+      order: 3;
+    }
+  }
 `;
 
 const ButtonSpacer = styled.div`
   flex: 1;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 const PrimaryButton = styled.button`
@@ -784,6 +857,17 @@ const ButtonRow = styled.div`
   align-items: center;
   gap: 14px;
   margin-top: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(104px, auto);
+    gap: 10px;
+
+    > button {
+      min-width: 0;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
 `;
 
 const ProgressLabel = styled.div`

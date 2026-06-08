@@ -1968,10 +1968,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
           style={styles.mvFilterScroll}
         >
           {[
+            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('exercise.allExercises') },
             { key: 'mine', label: t('exercise.myExercises') },
             { key: 'global', label: t('exercise.appExercises') },
-            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (

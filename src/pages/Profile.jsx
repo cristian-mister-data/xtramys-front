@@ -528,7 +528,7 @@ export default function Profile() {
   const user = useSelector((s) => s.usuario?.user);
   const { mode, toggleTheme } = useThemeMode();
 
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [cropperSrc, setCropperSrc] = useState(null);
@@ -851,6 +851,11 @@ export default function Profile() {
   const isSocialAuth = user?.authProvider !== 'local' && user?.authProvider !== undefined;
   const isGoogle = user?.authProvider === 'google';
   const isApple = user?.authProvider === 'apple';
+  const hasProfileChanges =
+    nombre !== (user.nombre || '') ||
+    apellido !== (user.apellido || '') ||
+    correo !== (user.correo || '') ||
+    language !== (user.idioma || 'es');
 
   return (
     <ProfileGrid>
@@ -877,46 +882,6 @@ export default function Profile() {
           <HeroEmail>{user.correo}</HeroEmail>
           {isAdmin ? <div><RoleBadge>🛡 Admin</RoleBadge></div> : null}
         </Hero>
-
-        <FormCard>
-          <CardHeader>
-            <CardTitle>🌐 {t('profile.language', 'Idioma')}</CardTitle>
-          </CardHeader>
-          <LangRow>
-            <LangBtn
-              type="button"
-              $active={language === 'es'}
-              $disabled={!editing}
-              disabled={!editing}
-              onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
-            >
-              <Flag>
-                <FlagImage src={flagEs} alt="Español" />
-              </Flag>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>Español</div>
-                <Muted style={{ fontSize: 12 }}>Spanish</Muted>
-              </div>
-              {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
-            </LangBtn>
-            <LangBtn
-              type="button"
-              $active={language === 'en'}
-              $disabled={!editing}
-              disabled={!editing}
-              onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
-            >
-              <Flag>
-                <FlagImage src={flagEn} alt="English" />
-              </Flag>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>English</div>
-                <Muted style={{ fontSize: 12 }}>Inglés</Muted>
-              </div>
-              {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
-            </LangBtn>
-          </LangRow>
-        </FormCard>
 
         <FormCard>
           <CardHeader>
@@ -985,36 +950,13 @@ export default function Profile() {
         <FormCard>
           <CardHeader>
             <CardTitle>👤 {t('profile.personalInfo', 'Información personal')}</CardTitle>
-            {!editing ? (
-              <Button $variant="ghost" type="button" onClick={() => setEditing(true)}>
-                ✏️ {t('edition.edit', 'Editar')}
+            {hasProfileChanges ? (
+              <Button type="button" onClick={handleSave} disabled={saving}>
+                {saving ? t('common.saving', 'Guardando...') : `✓ ${t('edition.saveChanges', 'Guardar cambios')}`}
               </Button>
             ) : null}
           </CardHeader>
           
-          {!editing ? (
-            <ReadOnlyGrid>
-              <ReadOnlyItem>
-                <ReadOnlyLabel>🪪 {t('register.firstName', 'Nombre')}</ReadOnlyLabel>
-                <ReadOnlyValue>{nombre || '-'}</ReadOnlyValue>
-              </ReadOnlyItem>
-              <ReadOnlyItem>
-                <ReadOnlyLabel>🪪 {t('register.lastName', 'Apellido')}</ReadOnlyLabel>
-                <ReadOnlyValue>{apellido || '-'}</ReadOnlyValue>
-              </ReadOnlyItem>
-              <ReadOnlyItem style={{ gridColumn: 'span 2' }}>
-                <ReadOnlyLabel>✉️ {t('register.email', 'Correo electrónico')}</ReadOnlyLabel>
-                <ReadOnlyValue style={{ flexWrap: 'wrap', gap: 10 }}>
-                  {correo}
-                  {isSocialAuth && (
-                    <SocialBadge>
-                      🔒 {isGoogle ? t('profile.googleConnected', 'Conectado con Google') : t('profile.appleConnected', 'Conectado con Apple')}
-                    </SocialBadge>
-                  )}
-                </ReadOnlyValue>
-              </ReadOnlyItem>
-            </ReadOnlyGrid>
-          ) : (
             <Stack style={{ gap: 16 }}>
               <Field>
                 <Label>🪪 {t('register.firstName', 'Nombre')}</Label>
@@ -1067,16 +1009,40 @@ export default function Profile() {
                   </PendingBadge>
                 ) : null}
               </Field>
-              <ActionRow>
-                <Button type="button" $variant="ghost" onClick={handleCancel} disabled={saving}>
-                  {t('edition.cancel', 'Cancelar')}
-                </Button>
-                <Button type="button" onClick={handleSave} disabled={saving}>
-                  {saving ? t('common.saving', 'Guardando...') : `✓ ${t('edition.saveChanges', 'Guardar cambios')}`}
-                </Button>
-              </ActionRow>
+              <Field>
+                <Label>🌐 {t('profile.language', 'Idioma')}</Label>
+                <LangRow>
+                  <LangBtn
+                    type="button"
+                    $active={language === 'es'}
+                    onClick={() => { setLanguage('es'); i18n.changeLanguage('es'); }}
+                  >
+                    <Flag>
+                      <FlagImage src={flagEs} alt="Español" />
+                    </Flag>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>Español</div>
+                      <Muted style={{ fontSize: 12 }}>Spanish</Muted>
+                    </div>
+                    {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+                  </LangBtn>
+                  <LangBtn
+                    type="button"
+                    $active={language === 'en'}
+                    onClick={() => { setLanguage('en'); i18n.changeLanguage('en'); }}
+                  >
+                    <Flag>
+                      <FlagImage src={flagEn} alt="English" />
+                    </Flag>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>English</div>
+                      <Muted style={{ fontSize: 12 }}>Inglés</Muted>
+                    </div>
+                    {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
+                  </LangBtn>
+                </LangRow>
+              </Field>
             </Stack>
-          )}
         </FormCard>
 
         <FormCard>

@@ -19,8 +19,9 @@ import { cdnUrl } from '@/config';
 
 const Layout = styled.div`
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);
   gap: 12px;
+  align-items: start;
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -42,11 +43,12 @@ const Sidebar = styled.div`
     overflow-y: hidden;
     max-height: none;
     order: 2;
+    padding: 2px 0;
   }
 `;
 
 const FieldWrap = styled.div`
-  max-width: 480px;
+  max-width: 100%;
   width: 100%;
   margin: 0 auto;
   @media (max-width: 768px) {
@@ -65,6 +67,8 @@ const PlayerChip = styled.button`
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
+  min-width: 0;
+  flex: 0 0 auto;
 `;
 
 const Avatar = styled.div`

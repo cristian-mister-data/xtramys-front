@@ -3,6 +3,41 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToExercise } from '@/api/video';
 
+const getVideoId = (video) => video?._id || video?.id || video;
+
+const replaceExerciseVideos = async (exerciseId, pendingVideoIds = []) => {
+  if (!exerciseId || pendingVideoIds.length === 0) return;
+
+  const currentRes = await api.get(`/video/exercise/${exerciseId}`);
+  const currentVideos = currentRes?.data?.videos || currentRes?.data || [];
+  const pendingSet = new Set(pendingVideoIds.map(String));
+
+  for (const video of currentVideos) {
+    const videoId = getVideoId(video);
+    if (!videoId || pendingSet.has(String(videoId))) continue;
+
+    try {
+      await api.post('/video/unlink-exercise', { videoId, exerciseId });
+    } catch (error) {
+      console.error('Error desasociando video anterior:', error);
+    }
+
+    try {
+      await api.delete(`/video/${videoId}`);
+    } catch (error) {
+      console.error('Error eliminando video anterior:', error);
+    }
+  }
+
+  for (const videoId of pendingVideoIds) {
+    try {
+      await linkVideoToExercise({ videoId, exerciseId });
+    } catch (error) {
+      console.error('Error asociando video pendiente:', error);
+    }
+  }
+};
+
 export const fetchEjerciciosUsuario = createAsyncThunk(
   'ejercicio/fetchEjerciciosUsuario',
   async ({ user, lang } = {}) => {
@@ -48,7 +83,9 @@ export const createEjercicio = createAsyncThunk(
 
 export const updateEjercicio = createAsyncThunk('ejercicio/updateEjercicio', async (exercise, { rejectWithValue }) => {
   try {
-    const res = await api.post(`/exercise/${exercise?._id}`, exercise);
+    const { pendingVideoIds, ...exerciseData } = exercise || {};
+    const res = await api.post(`/exercise/${exerciseData?._id}`, exerciseData);
+    await replaceExerciseVideos(exerciseData?._id, pendingVideoIds);
     return res.data;
   } catch (err) {
     console.error('[updateEjercicio] FAIL', err?.response?.status, err?.response?.data || err?.message);

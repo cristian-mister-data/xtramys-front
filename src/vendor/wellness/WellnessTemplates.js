@@ -272,7 +272,10 @@ export default function WellnessTemplates({ navigation }) {
             style={[styles.typeButton, selectedType === 'pre' && styles.typeButtonActive]}
             onPress={() => setSelectedType('pre')}
           >
-            <Text style={[styles.typeButtonText, selectedType === 'pre' && styles.typeButtonTextActive]}>
+            <Text
+              style={[styles.typeButtonText, selectedType === 'pre' && styles.typeButtonTextActive]}
+              numberOfLines={1}
+            >
               {t('wellnessTemplates.preWellness')}
             </Text>
           </TouchableOpacity>
@@ -280,7 +283,10 @@ export default function WellnessTemplates({ navigation }) {
             style={[styles.typeButton, selectedType === 'post' && styles.typeButtonActive]}
             onPress={() => setSelectedType('post')}
           >
-            <Text style={[styles.typeButtonText, selectedType === 'post' && styles.typeButtonTextActive]}>
+            <Text
+              style={[styles.typeButtonText, selectedType === 'post' && styles.typeButtonTextActive]}
+              numberOfLines={1}
+            >
               {t('wellnessTemplates.postWellness')}
             </Text>
           </TouchableOpacity>
@@ -470,7 +476,9 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   typeButton: {
     flex: 1,
+    minWidth: 0,
     paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: 'center',
     borderRadius: 8,
     marginHorizontal: 5,
@@ -480,9 +488,11 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   typeButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.textSecondary,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   typeButtonTextActive: {
     color: theme.colors.onPrimary,

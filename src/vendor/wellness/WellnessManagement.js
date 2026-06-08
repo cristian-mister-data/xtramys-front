@@ -691,7 +691,10 @@ export default function WellnessManagement({ navigation }) {
           <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'pre' ? THEME.warning : THEME.backgroundAlt }]}>
             <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'pre' ? '#fff' : THEME.textSecondary }]}>PRE</Text>
           </View>
-          <Text style={[styles.typeBtnText, selectedTemplateType === 'pre' && styles.typeBtnTextActive]}>
+          <Text
+            style={[styles.typeBtnText, selectedTemplateType === 'pre' && styles.typeBtnTextActive]}
+            numberOfLines={1}
+          >
             {t('preWellness.title')}
           </Text>
         </TouchableOpacity>
@@ -702,7 +705,10 @@ export default function WellnessManagement({ navigation }) {
           <View style={[styles.typeBadgeSmall, { backgroundColor: selectedTemplateType === 'post' ? THEME.success : THEME.backgroundAlt }]}>
             <Text style={[styles.typeBadgeTextSmall, { color: selectedTemplateType === 'post' ? '#fff' : THEME.textSecondary }]}>POST</Text>
           </View>
-          <Text style={[styles.typeBtnText, selectedTemplateType === 'post' && styles.typeBtnTextActive]}>
+          <Text
+            style={[styles.typeBtnText, selectedTemplateType === 'post' && styles.typeBtnTextActive]}
+            numberOfLines={1}
+          >
             {t('session.wellness')}
           </Text>
         </TouchableOpacity>
@@ -1695,12 +1701,13 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   typeBtn: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     borderRadius: 12,
     backgroundColor: theme.colors.surface,
     borderWidth: 2,
@@ -1720,9 +1727,11 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '700',
   },
   typeBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.textSecondary,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   typeBtnTextActive: {
     color: theme.colors.primary,

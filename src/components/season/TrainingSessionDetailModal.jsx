@@ -1,13 +1,14 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
   MdSchedule, MdGroup, MdEdit, MdDelete, MdFitnessCenter, MdNote,
-  MdMonitorHeart, MdFavorite,
+  MdMonitorHeart, MdFavorite, MdClose, MdZoomIn,
 } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const HeroCard = styled.div`
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.success}, ${({ theme }) => theme.mode === 'dark' ? theme.colors.successSoftText : '#059669'});
@@ -110,12 +111,88 @@ const Card = styled.div`
 `;
 
 const ExerciseItem = styled.div`
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  &:last-child { border-bottom: 0; }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 10px;
+  }
+`;
+
+const ExerciseThumbButton = styled.button`
+  position: relative;
+  width: 112px;
+  height: 74px;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background: #16743a;
+  }
+
+  &:hover span,
+  &:focus-visible span {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${({ theme }) => theme.shadows.focus};
+  }
+
+  @media (max-width: 560px) {
+    width: 92px;
+    height: 62px;
+  }
+`;
+
+const ExerciseThumbEmpty = styled.div`
+  width: 112px;
+  height: 74px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  display: grid;
+  place-items: center;
+  color: ${({ theme }) => theme.colors.textMuted};
+
+  @media (max-width: 560px) {
+    width: 92px;
+    height: 62px;
+  }
+`;
+
+const ThumbOverlay = styled.span`
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.38);
+  opacity: 0;
+  transition: opacity 140ms ease;
+`;
+
+const ExerciseInfo = styled.div`
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  &:last-child { border-bottom: 0; }
+  justify-content: center;
 `;
 
 const normalizeTextValue = (value) => {
@@ -175,6 +252,86 @@ const Notes = styled.div`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+const ZoomOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: ${({ theme }) => theme.zIndex.modal + 2};
+  background: rgba(2, 6, 23, 0.92);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 18px;
+
+  @media (max-width: 640px) {
+    padding: 12px;
+  }
+`;
+
+const ZoomHeader = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #ffffff;
+  padding: 0 0 14px;
+`;
+
+const ZoomTitle = styled.div`
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ZoomClose = styled.button`
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+
+  &:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+`;
+
+const ZoomStage = styled.div`
+  min-height: 0;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+`;
+
+const ZoomImage = styled.img`
+  display: block;
+  max-width: min(1180px, 100%);
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #16743a;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+
+  @media (max-width: 760px) {
+    max-width: 100%;
+    max-height: calc(100dvh - 92px);
+  }
+`;
+
 function getPlayerName(players, ref) {
   if (!ref) return '—';
   const id = typeof ref === 'string' ? ref : ref?._id;
@@ -205,6 +362,7 @@ export default function TrainingSessionDetailModal({
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
   const players = useSelector((s) => s.player?.players ?? []);
   const exercises = useSelector((s) => s.exercise?.exercises ?? []);
+  const [zoomImage, setZoomImage] = useState(null);
 
   const data = session;
 
@@ -216,6 +374,19 @@ export default function TrainingSessionDetailModal({
       return found || (typeof ref === 'object' ? ref : { _id: id, nombre: '—' });
     });
   }, [data?.ejercicios, exercises]);
+
+  useEffect(() => {
+    if (!zoomImage) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      setZoomImage(null);
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [zoomImage]);
 
   if (!data) return null;
 
@@ -316,16 +487,38 @@ export default function TrainingSessionDetailModal({
               <MdFitnessCenter /> {t('session.exercises', 'Ejercicios')} ({linkedExercises.length})
             </SectionTitle>
             <Card>
-              {linkedExercises.map((ex, i) => (
+              {linkedExercises.map((ex, i) => {
+                const imageSrc = ex.imagen ? normalizeImageSource(ex.imagen) : '';
+                const exerciseName = ex.nombre || ex.titulo || `#${i + 1}`;
+                return (
                 <ExerciseItem key={ex._id || i}>
-                  <ExName>{ex.nombre || ex.titulo || `#${i + 1}`}</ExName>
+                  {imageSrc ? (
+                    <ExerciseThumbButton
+                      type="button"
+                      onClick={() => setZoomImage({ src: imageSrc, title: exerciseName })}
+                      aria-label={t('common.open', 'Abrir')}
+                    >
+                      <img src={imageSrc} alt="" />
+                      <ThumbOverlay>
+                        <MdZoomIn size={24} />
+                      </ThumbOverlay>
+                    </ExerciseThumbButton>
+                  ) : (
+                    <ExerciseThumbEmpty>
+                      <MdFitnessCenter size={22} />
+                    </ExerciseThumbEmpty>
+                  )}
+                  <ExerciseInfo>
+                  <ExName>{exerciseName}</ExName>
                   <ExMeta>
                     {ex.duracion ? <span>⏱ {ex.duracion} min</span> : null}
                     {ex.categoria ? <span>{ex.categoria}</span> : null}
                     {ex.objetivo ? <span>{ex.objetivo}</span> : null}
                   </ExMeta>
+                  </ExerciseInfo>
                 </ExerciseItem>
-              ))}
+                );
+              })}
             </Card>
           </Section>
         )}
@@ -408,6 +601,26 @@ export default function TrainingSessionDetailModal({
           </Muted>
         )}
       </Stack>
+      {zoomImage ? (
+        <ZoomOverlay
+          role="dialog"
+          aria-modal="true"
+          aria-label={zoomImage.title}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setZoomImage(null);
+          }}
+        >
+          <ZoomHeader>
+            <ZoomTitle>{zoomImage.title}</ZoomTitle>
+            <ZoomClose type="button" onClick={() => setZoomImage(null)} aria-label={t('common.close', 'Cerrar')}>
+              <MdClose size={24} />
+            </ZoomClose>
+          </ZoomHeader>
+          <ZoomStage>
+            <ZoomImage src={zoomImage.src} alt={zoomImage.title} />
+          </ZoomStage>
+        </ZoomOverlay>
+      ) : null}
     </Modal>
   );
 }
