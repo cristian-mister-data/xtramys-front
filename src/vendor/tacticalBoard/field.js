@@ -14,7 +14,6 @@ import {
   Animated,
   Button,
   Modal,
-  TouchableWithoutFeedback,
   Platform,
   StatusBar,
   Switch,
@@ -128,6 +127,10 @@ async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
 // Cuando un icono es seleccionado, se guarda el timestamp para evitar
 // que el onPress del campo lo deseleccione inmediatamente
 let lastIconSelectionTime = 0;
+
+// Variables para detectar doble tap/tap sobre un mismo elemento
+let lastTapTime = 0;
+let lastTapId = null;
 
 function snapToHorizontalOrVertical(start, end) {
   if (!start || !end) return end;
@@ -1571,18 +1574,17 @@ function OptionsMenu({
 
   return (
     <>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 999,
-          }}
-        />
-      </TouchableWithoutFeedback>
+      <Pressable
+        onPress={onClose}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 999,
+        }}
+      />
 
       <View style={menuStyle}>
         <MenuItem
@@ -1757,6 +1759,7 @@ const FreeTextTool = React.memo(
     viewMode,
     zoomLevel = 1,
     setDraggingOutside = null,
+    setTextEditPanel,
   }) => {
     // Detectar si es m�vil
     const { width, height } = Dimensions.get('window');
@@ -1766,6 +1769,7 @@ const FreeTextTool = React.memo(
     const scale = isMobile ? baseScale * 1.35 : baseScale;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const pointerDownHandledAtRef = useRef(0);
 
     const dragKey = `text-${textObj.id}`;
 
@@ -1797,6 +1801,58 @@ const FreeTextTool = React.memo(
         });
       },
       [setClones],
+    );
+
+    const openTextEditor = useCallback(() => {
+      setOptionsMenu((prev) => ({ ...prev, visible: false }));
+      setSelectedCloneId(textObj.id);
+      setTextEditPanel({ visible: true, icon: textObj, isNew: false });
+    }, [setOptionsMenu, setSelectedCloneId, setTextEditPanel, textObj]);
+
+    const registerTextPress = useCallback(() => {
+      const now = Date.now();
+      if (textObj.id === lastTapId && now - lastTapTime < 450) {
+        lastTapTime = 0;
+        lastTapId = null;
+        openTextEditor();
+        return true;
+      }
+      lastTapTime = now;
+      lastTapId = textObj.id;
+      if (!multiSelectMode) {
+        setSelectedCloneId(textObj.id);
+      }
+      return false;
+    }, [multiSelectMode, openTextEditor, setSelectedCloneId, textObj.id]);
+
+    const handleTextPointerDown = useCallback(
+      (e) => {
+        if (eraserMode || multiSelectMode) return;
+        const now = Date.now();
+        if (now - pointerDownHandledAtRef.current < 24) return;
+        pointerDownHandledAtRef.current = now;
+
+        const nativeEvent = e?.nativeEvent || e;
+        if (
+          nativeEvent?.button !== undefined &&
+          nativeEvent.button !== 0 &&
+          nativeEvent.button !== -1
+        ) {
+          return;
+        }
+
+        if (textObj.id === lastTapId && now - lastTapTime < 450) {
+          lastTapTime = 0;
+          lastTapId = null;
+          e?.stopPropagation?.();
+          openTextEditor();
+          return;
+        }
+
+        lastTapTime = now;
+        lastTapId = textObj.id;
+      },
+      [eraserMode, multiSelectMode, openTextEditor, textObj.id],
     );
 
     // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
@@ -1867,6 +1923,18 @@ const FreeTextTool = React.memo(
             e.nativeEvent.state === State.CANCELLED ||
             e.nativeEvent.state === State.FAILED
           ) {
+            // Detectar doble tap para abrir edici�n de texto
+            const translationX = Math.abs(e.nativeEvent.translationX || 0);
+            const translationY = Math.abs(e.nativeEvent.translationY || 0);
+            const pointerAlreadyHandled = Date.now() - pointerDownHandledAtRef.current < 120;
+            if (
+              e.nativeEvent.state === State.END &&
+              translationX < 4 &&
+              translationY < 4 &&
+              !pointerAlreadyHandled
+            ) {
+              registerTextPress();
+            }
             setDraggingOutside?.(false);
             setIsNearDeleteZone(false);
             if (rafRef.current) {
@@ -2009,6 +2077,14 @@ const FreeTextTool = React.memo(
       >
         <View
           key={textObj.id}
+          onPointerDown={handleTextPointerDown}
+          onMouseDown={handleTextPointerDown}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            lastTapTime = 0;
+            lastTapId = null;
+            openTextEditor();
+          }}
           style={{
             position: 'absolute',
             left: textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth,
@@ -2042,6 +2118,14 @@ const FreeTextTool = React.memo(
             />
           )}
           <Pressable
+            onPointerDown={handleTextPointerDown}
+            onMouseDown={handleTextPointerDown}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              lastTapTime = 0;
+              lastTapId = null;
+              openTextEditor();
+            }}
             onPress={() => {
               // Si est� en modo borrador, borrar el elemento
               if (eraserMode) {
@@ -2308,18 +2392,17 @@ function TextEditPanel({
       statusBarTranslucent={true}
     >
       <SafeAreaView style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={styles.proModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.proModalContainer,
-                  isMobile && {
-                    width: Math.min(SCREEN_WIDTH * 0.7, 320),
-                    maxHeight: SCREEN_HEIGHT * 0.85,
-                  },
-                ]}
-              >
+        <Pressable style={styles.proModalOverlay} onPress={handleClose}>
+          <Pressable
+            onPress={(e) => e?.stopPropagation?.()}
+            style={[
+              styles.proModalContainer,
+              isMobile && {
+                width: Math.min(SCREEN_WIDTH * 0.7, 320),
+                maxHeight: SCREEN_HEIGHT * 0.85,
+              },
+            ]}
+          >
                 {/* Header */}
                 <View style={styles.proModalHeader}>
                   <View style={styles.proModalHeaderIcon}>
@@ -2493,10 +2576,8 @@ function TextEditPanel({
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
       </SafeAreaView>
     </Modal>
   );
@@ -6895,6 +6976,8 @@ const DraggableIcon = React.memo(
     viewMode,
     zoomLevel = 1,
     setDraggingOutside = null,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     const size = icon.size * scale;
     const dragKey = `icon-${icon.id}`;
@@ -6991,15 +7074,32 @@ const DraggableIcon = React.memo(
     const handleTap = useCallback(
       (e) => {
         if (e.nativeEvent.state === State.END) {
+          // Detectar doble tap al inicio para abrir panel aunque est� bloqueado
+          if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+            lastTapTime = 0;
+            lastTapId = null;
+            setEditingIcon(icon);
+            setLeftPanelVisible(true);
+            return;
+          }
           // Solo seleccionar si no estamos arrastrando
           if (!isDragging.current && !isDrawingMode && !multiSelectMode && !icon.locked) {
             // Marcar el tiempo de selecci�n para proteger contra deselecci�n inmediata
             lastIconSelectionTime = Date.now();
             setSelectedCloneId(icon.id);
+            lastTapTime = Date.now();
+            lastTapId = icon.id;
           }
         }
       },
-      [isDrawingMode, multiSelectMode, icon.locked, icon.id, setSelectedCloneId],
+      [
+        isDrawingMode,
+        multiSelectMode,
+        icon,
+        setSelectedCloneId,
+        setEditingIcon,
+        setLeftPanelVisible,
+      ],
     );
 
     // Cleanup RAF on unmount
@@ -8529,6 +8629,8 @@ const MemoizedStraightLineDetector = React.memo(
     originalIdx,
     saveClonesHistory,
     zoomLevel = 1,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     if (!icon.points || icon.points.length !== 2) return null;
     if (isAnyDrawingMode) return null;
@@ -8594,6 +8696,15 @@ const MemoizedStraightLineDetector = React.memo(
     };
 
     const handleResponderGrant = (e) => {
+      if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+        lastTapTime = 0;
+        lastTapId = null;
+        setEditingIcon(icon);
+        setLeftPanelVisible(true);
+        return;
+      }
+      lastTapTime = Date.now();
+      lastTapId = icon.id;
       if (selectedCloneId && selectedCloneId !== icon.id) {
         setSelectedCloneId(null);
       }
@@ -9016,6 +9127,8 @@ const MemoizedCurveLineDetector = React.memo(
     originalIdx,
     saveClonesHistory,
     zoomLevel = 1,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     if (!icon.points || icon.points.length < 2) return null;
     if (isAnyDrawingMode) return null;
@@ -9070,6 +9183,15 @@ const MemoizedCurveLineDetector = React.memo(
 
     // Handlers para arrastre
     const handleResponderGrant = (e) => {
+      if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+        lastTapTime = 0;
+        lastTapId = null;
+        setEditingIcon(icon);
+        setLeftPanelVisible(true);
+        return;
+      }
+      lastTapTime = Date.now();
+      lastTapId = icon.id;
       if (selectedCloneId && selectedCloneId !== icon.id) {
         setSelectedCloneId(null);
       }
@@ -9921,6 +10043,8 @@ const MemoizedCircleDetector = React.memo(
     renderScale,
     saveClonesHistory,
     zoomLevel = 1,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     if (!icon.points || icon.points.length !== 2) return null;
     if (isAnyDrawingMode) return null;
@@ -9971,6 +10095,15 @@ const MemoizedCircleDetector = React.memo(
 
     // Handlers para arrastre
     const handleResponderGrant = (e) => {
+      if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+        lastTapTime = 0;
+        lastTapId = null;
+        setEditingIcon(icon);
+        setLeftPanelVisible(true);
+        return;
+      }
+      lastTapTime = Date.now();
+      lastTapId = icon.id;
       if (selectedCloneId && selectedCloneId !== icon.id) {
         setSelectedCloneId(null);
       }
@@ -10420,6 +10553,8 @@ const MemoizedRectangleDetector = React.memo(
     renderScale,
     saveClonesHistory,
     zoomLevel = 1,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     if (!icon.points || icon.points.length !== 2) return null;
     if (isAnyDrawingMode) return null;
@@ -10461,6 +10596,15 @@ const MemoizedRectangleDetector = React.memo(
     const detectorZIndex = icon.calculatedZIndex || ZINDEX_BASE_LINES;
 
     const handleResponderGrant = (e) => {
+      if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+        lastTapTime = 0;
+        lastTapId = null;
+        setEditingIcon(icon);
+        setLeftPanelVisible(true);
+        return;
+      }
+      lastTapTime = Date.now();
+      lastTapId = icon.id;
       if (selectedCloneId && selectedCloneId !== icon.id) {
         setSelectedCloneId(null);
       }
@@ -10946,6 +11090,8 @@ const MemoizedCustomShapeDetector = React.memo(
     renderScale,
     saveClonesHistory,
     zoomLevel = 1,
+    setEditingIcon,
+    setLeftPanelVisible,
   }) => {
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
@@ -10980,6 +11126,15 @@ const MemoizedCustomShapeDetector = React.memo(
 
     // Handlers para arrastre
     const handleResponderGrant = (e) => {
+      if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
+        lastTapTime = 0;
+        lastTapId = null;
+        setEditingIcon(icon);
+        setLeftPanelVisible(true);
+        return;
+      }
+      lastTapTime = Date.now();
+      lastTapId = icon.id;
       if (selectedCloneId && selectedCloneId !== icon.id) {
         setSelectedCloneId(null);
       }
@@ -10998,7 +11153,6 @@ const MemoizedCustomShapeDetector = React.memo(
         const initialPositions = {};
         selectedCloneIds.forEach((id) => {
           const c = clones.find((cl) => cl.id === id);
-          if (!c) return;
           const snapshot = createBoardDragSnapshot(c);
           if (snapshot) initialPositions[id] = snapshot;
         });
@@ -20171,6 +20325,8 @@ export default function Field(props = {}) {
                             renderScale={renderScale}
                             zoomLevel={zoomLevel}
                             saveClonesHistory={saveClonesHistory}
+                            setEditingIcon={setEditingIcon}
+                            setLeftPanelVisible={setLeftPanelVisible}
                           />
                         ))}
 
@@ -20196,6 +20352,8 @@ export default function Field(props = {}) {
                             renderScale={renderScale}
                             zoomLevel={zoomLevel}
                             saveClonesHistory={saveClonesHistory}
+                            setEditingIcon={setEditingIcon}
+                            setLeftPanelVisible={setLeftPanelVisible}
                           />
                         ))}
 
@@ -20221,6 +20379,8 @@ export default function Field(props = {}) {
                             renderScale={renderScale}
                             zoomLevel={zoomLevel}
                             saveClonesHistory={saveClonesHistory}
+                            setEditingIcon={setEditingIcon}
+                            setLeftPanelVisible={setLeftPanelVisible}
                           />
                         ))}
 
@@ -20259,6 +20419,8 @@ export default function Field(props = {}) {
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
                               setDraggingOutside={setDraggingOutside}
+                              setEditingIcon={setEditingIcon}
+                              setLeftPanelVisible={setLeftPanelVisible}
                             />
                           );
                         })}
@@ -20322,6 +20484,8 @@ export default function Field(props = {}) {
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
                               setDraggingOutside={setDraggingOutside}
+                              setEditingIcon={setEditingIcon}
+                              setLeftPanelVisible={setLeftPanelVisible}
                             />
                           );
                         })}
@@ -20352,6 +20516,7 @@ export default function Field(props = {}) {
                               viewMode={viewMode}
                               zoomLevel={zoomLevel}
                               setDraggingOutside={setDraggingOutside}
+                              setTextEditPanel={setTextEditPanel}
                             />
                           );
                         })}
@@ -20378,6 +20543,8 @@ export default function Field(props = {}) {
                             originalIdx={idx}
                             saveClonesHistory={saveClonesHistory}
                             zoomLevel={zoomLevel}
+                            setEditingIcon={setEditingIcon}
+                            setLeftPanelVisible={setLeftPanelVisible}
                           />
                         ))}
 
@@ -20402,6 +20569,8 @@ export default function Field(props = {}) {
                             originalIdx={idx + straightLines.length}
                             zoomLevel={zoomLevel}
                             saveClonesHistory={saveClonesHistory}
+                            setEditingIcon={setEditingIcon}
+                            setLeftPanelVisible={setLeftPanelVisible}
                           />
                         ))}
                       </View>
