@@ -550,7 +550,7 @@ const makeStyles = (THEME) => StyleSheet.create({
     fontWeight: '600',
   },
   selectedFilterChipTextActive: {
-    color: THEME.surface,
+    color: '#ffffff',
   },
   filterList: {
     flexGrow: 0,
@@ -579,7 +579,7 @@ const makeStyles = (THEME) => StyleSheet.create({
     fontWeight: '600',
   },
   filterChipTextActive: {
-    color: THEME.surface,
+    color: '#ffffff',
   },
   sectionChip: {
     paddingHorizontal: 12,
@@ -616,7 +616,7 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   cardSelected: {
     borderColor: THEME.success,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: THEME.success + '1A', // 10% opacity for dark/light mode compatibility
   },
   cardImageContainer: {
     position: 'relative',

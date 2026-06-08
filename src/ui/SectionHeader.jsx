@@ -16,7 +16,8 @@ const HeaderShell = styled.section`
   @media (max-width: 720px) {
     align-items: stretch;
     flex-direction: column;
-    padding: 16px;
+    padding: 10px 12px;
+    gap: 12px;
   }
 `;
 
@@ -28,6 +29,7 @@ const Identity = styled.div`
 
   @media (max-width: 720px) {
     align-items: flex-start;
+    gap: 10px;
   }
 `;
 
@@ -41,6 +43,22 @@ const IconBox = styled.div`
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.primarySoft};
   color: ${({ theme }) => theme.colors.primarySoftText};
+
+  svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  @media (max-width: 720px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+
+    svg {
+      width: 18px !important;
+      height: 18px !important;
+    }
+  }
 `;
 
 const Copy = styled.div`
@@ -48,6 +66,10 @@ const Copy = styled.div`
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+
+  @media (max-width: 720px) {
+    gap: 2px;
+  }
 `;
 
 const Eyebrow = styled.span`
@@ -75,7 +97,8 @@ const Title = styled.h1`
   letter-spacing: 0;
 
   @media (max-width: 720px) {
-    font-size: 21px;
+    font-size: 16px;
+    font-weight: 600;
   }
 `;
 
@@ -84,6 +107,11 @@ const Subtitle = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
   line-height: 1.45;
+
+  @media (max-width: 720px) {
+    font-size: 11px;
+    line-height: 1.35;
+  }
 `;
 
 const Actions = styled.div`
@@ -96,6 +124,7 @@ const Actions = styled.div`
   @media (max-width: 720px) {
     justify-content: flex-start;
     width: 100%;
+    gap: 6px;
 
     > * {
       width: 100%;

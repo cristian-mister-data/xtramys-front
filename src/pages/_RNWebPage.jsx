@@ -75,7 +75,7 @@ const PageStack = styled.div`
   gap: 16px;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    gap: 12px;
+    gap: 8px;
   }
 `;
 

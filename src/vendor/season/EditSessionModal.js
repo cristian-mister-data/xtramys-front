@@ -760,10 +760,10 @@ export default function EditSessionModal({
                         
                         {/* Tiempo de descanso - solo si no es el último ejercicio */}
                         {index < selectedExercises.length - 1 && (
-                          <View style={styles.exerciseField}>
+                          <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
                             <Text style={styles.exerciseFieldLabel}>{t('session.restMinutes')}:</Text>
                             <TextInput
-                              style={styles.exerciseFieldInput}
+                              style={[styles.exerciseFieldInput, isMobile && { flex: undefined }]}
                               value={exerciseRestTimes[exId] !== undefined ? String(exerciseRestTimes[exId]) : ''}
                               onChangeText={(text) => {
                                 const val = text.replace(/[^0-9]/g, '');
@@ -963,10 +963,10 @@ export default function EditSessionModal({
                         
                         {/* Tiempo de descanso */}
                         {index < selectedStrengthExercises.length - 1 && (
-                          <View style={styles.exerciseField}>
+                          <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
                             <Text style={styles.exerciseFieldLabel}>{t('session.restMinutes')}:</Text>
                             <TextInput
-                              style={styles.exerciseFieldInput}
+                              style={[styles.exerciseFieldInput, isMobile && { flex: undefined }]}
                               value={strengthExerciseRestTimes[seId] !== undefined ? String(strengthExerciseRestTimes[seId]) : ''}
                               onChangeText={(text) => {
                                 const val = text.replace(/[^0-9]/g, '');

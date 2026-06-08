@@ -1,7 +1,7 @@
 // components/StrengthExerciseViewer.js
 // Componente para ver un ejercicio de fuerza individual con video, imagen y opciones de descarga
 // Optimizado con caché de video para minimizar recursos
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -71,7 +72,7 @@ const getOrCacheVideo = async (exercise) => {
   return remoteUrl;
 };
 
-const THEME = {
+const THEME_DEFAULT = {
   primary: '#3b82f6',
   primaryDark: '#1d4ed8',
   success: '#10b981',
@@ -86,8 +87,29 @@ const THEME = {
   overlay: 'rgba(0,0,0,0.6)',
 };
 
+const buildTheme = (sc) => {
+  const c = sc?.colors || {};
+  return {
+    primary: c.primary || THEME_DEFAULT.primary,
+    primaryDark: c.primaryActive || c.primary || THEME_DEFAULT.primaryDark,
+    success: c.success || THEME_DEFAULT.success,
+    danger: c.error || THEME_DEFAULT.danger,
+    warning: c.warning || THEME_DEFAULT.warning,
+    textPrimary: c.text || THEME_DEFAULT.textPrimary,
+    textSecondary: c.textSecondary || THEME_DEFAULT.textSecondary,
+    textMuted: c.textMuted || THEME_DEFAULT.textMuted,
+    background: c.background || THEME_DEFAULT.background,
+    surface: c.surface || THEME_DEFAULT.surface,
+    border: c.border || THEME_DEFAULT.border,
+    overlay: THEME_DEFAULT.overlay,
+  };
+};
+
 export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   const { t } = useTranslation();
+  const themeSC = useTheme();
+  const THEME = useMemo(() => buildTheme(themeSC), [themeSC]);
+  const styles = useMemo(() => makeStyles(THEME), [THEME]);
   const [showVideo, setShowVideo] = useState(false);
   const [videoUri, setVideoUri] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -546,7 +568,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (THEME) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.background,
@@ -703,7 +725,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: THEME.border,
     borderRadius: 4,
     overflow: 'hidden',
   },

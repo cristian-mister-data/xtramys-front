@@ -808,6 +808,11 @@ export default function TrainingSessionDetailModal({
                                 <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.infoSoft }]}>
                                   <Text style={[styles.strengthGridTagText, { color: theme.colors.infoSoftText }]}>Nv {exercise.level}</Text>
                                 </View>
+                                {exercise.tiempoDescanso > 0 && (
+                                  <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.successSoft }]}>
+                                    <Text style={[styles.strengthGridTagText, { color: theme.colors.successSoftText }]}>{t('session.restTimeShort')}: {exercise.tiempoDescanso}m</Text>
+                                  </View>
+                                )}
                               </View>
                             </View>
                           </TouchableOpacity>

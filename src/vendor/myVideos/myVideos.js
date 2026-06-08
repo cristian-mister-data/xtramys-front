@@ -758,8 +758,8 @@ export default function MyVideos() {
       onLongPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
       activeOpacity={0.7}
     >
-      <View style={[styles.folderIconContainer, { backgroundColor: folder.color || '#1d4ed8' }]}>
-        <Feather name="folder" size={28} color="#fff" />
+      <View style={[styles.folderIconContainer, { backgroundColor: (folder.color || '#1d4ed8') + '15' }]}>
+        <Feather name="folder" size={26} color={folder.color || '#1d4ed8'} />
       </View>
       <View style={styles.folderContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1073,11 +1073,11 @@ export default function MyVideos() {
           position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
           backgroundColor: theme.colors.surface || '#1E293B',
           borderTopWidth: 1, borderTopColor: theme.colors.border || '#334155',
-          paddingHorizontal: 16, paddingVertical: 10,
-          flexDirection: 'row', alignItems: 'center', gap: 8,
+          paddingVertical: 10,
           shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, elevation: 20,
         }}>
-          <View style={{ flex: 1 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, flexGrow: 1 }}>
+            <View style={{ flex: 1, minWidth: 120 }}>
             <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
               {selectedIds.size} {t('common.selected') || 'seleccionados'}
             </Text>
@@ -1111,15 +1111,16 @@ export default function MyVideos() {
             <Feather name="trash-2" size={16} color="#fff" />
             <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete') || 'Eliminar'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleCancelSelection}
-            style={{
-              backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
-              padding: 8,
-            }}
-          >
-            <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleCancelSelection}
+              style={{
+                backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
+                padding: 8,
+              }}
+            >
+              <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       )}
 
@@ -1199,7 +1200,7 @@ export default function MyVideos() {
               <Text style={styles.actionSheetSubtitle}>{t('myVideos.videoOptions')}</Text>
             </View>
             
-            <View style={styles.actionSheetBody}>
+            <ScrollView style={styles.actionSheetBody} showsVerticalScrollIndicator={false}>
               {/* Botón favorito */}
               <TouchableOpacity
                 style={styles.actionOption}
@@ -1394,7 +1395,7 @@ export default function MyVideos() {
                   </TouchableOpacity>
                 </>
               )}
-            </View>
+            </ScrollView>
             
             <TouchableOpacity 
               style={styles.actionSheetCancel}
@@ -1424,7 +1425,7 @@ export default function MyVideos() {
               <Text style={styles.actionSheetSubtitle}>{t('myVideos.folderOptions')}</Text>
             </View>
             
-            <View style={styles.actionSheetBody}>
+            <ScrollView style={styles.actionSheetBody} showsVerticalScrollIndicator={false}>
               <TouchableOpacity
                 style={styles.actionOption}
                 onPress={() => {
@@ -1507,7 +1508,7 @@ export default function MyVideos() {
                   </TouchableOpacity>
                 </>
               )}
-            </View>
+            </ScrollView>
             
             <TouchableOpacity 
               style={styles.actionSheetCancel}
@@ -2537,6 +2538,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 34,
+    maxHeight: '85%',
   },
   actionSheetHeader: {
     alignItems: 'center',
@@ -2562,14 +2564,14 @@ const makeStyles = (theme) => StyleSheet.create({
   actionOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    gap: 14,
+    gap: 12,
   },
   actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2577,13 +2579,13 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
   },
   actionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text,
     marginBottom: 2,
   },
   actionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: theme.colors.textMuted,
   },
   actionDivider: {
@@ -2595,7 +2597,7 @@ const makeStyles = (theme) => StyleSheet.create({
   actionSheetCancel: {
     marginTop: 8,
     marginHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : '#F1F5F9',
     alignItems: 'center',

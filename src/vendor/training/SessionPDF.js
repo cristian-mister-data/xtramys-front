@@ -386,38 +386,38 @@ const SessionCoverPage = ({ data, title }) => {
       <PdfHeader title={title} subtitle={t('session.pdfTitle', 'Sesión de Entrenamiento')} date={fechaFormateada} right={teamName} />
       <PdfFooter />
 
-      <PdfSection title="Resumen de la Sesión">
+      <PdfSection title={t('session.summaryTitle', 'Resumen de la Sesión')}>
         <View style={[s.grid4, { marginBottom: SPACING.md }]}>
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{horaInicio} - {horaFin}</Text>
-            <Text style={s.metricLbl}>Horario ({duracionLabel})</Text>
+            <Text style={s.metricLbl}>{t('session.scheduleLabelPdf', 'Horario')} ({duracionLabel})</Text>
           </View>
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{ejerciciosOrdenados.length}</Text>
-            <Text style={s.metricLbl}>Ejercicios de Campo</Text>
+            <Text style={s.metricLbl}>{t('session.fieldExercises', 'Ejercicios de Campo')}</Text>
           </View>
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{jugadoresNombres.length + jugadoresExtrasNombres.length}</Text>
-            <Text style={s.metricLbl}>Jugadores Totales</Text>
+            <Text style={s.metricLbl}>{t('session.totalPlayers', 'Jugadores Totales')}</Text>
           </View>
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{lugar || '---'}</Text>
-            <Text style={s.metricLbl}>Lugar de Entreno</Text>
+            <Text style={s.metricLbl}>{t('session.trainingLocation', 'Lugar de Entreno')}</Text>
           </View>
         </View>
 
         <View style={s.grid2}>
           <View style={[s.halfColumn, s.card]}>
-            <Text style={s.cardTitle}>Jugadores Disponibles ({jugadoresNombres.length + jugadoresExtrasNombres.length})</Text>
+            <Text style={s.cardTitle}>{t('session.availablePlayers', 'Jugadores Disponibles')} ({jugadoresNombres.length + jugadoresExtrasNombres.length})</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {jugadoresNombres.length > 0 ? (
                 jugadoresNombres.map((n, i) => <Text key={i} style={s.rosterName}>{n}</Text>)
-              ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic' }}>Sin jugadores cargados</Text>}
+              ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noPlayersLoaded', 'Sin jugadores cargados')}</Text>}
             </View>
             
             {jugadoresExtrasNombres.length > 0 && (
               <>
-                <Text style={[s.cardTitle, { marginTop: SPACING.md, fontSize: FONT_SIZE.sm }]}>Jugadores Extras ({jugadoresExtrasNombres.length})</Text>
+                <Text style={[s.cardTitle, { marginTop: SPACING.md, fontSize: FONT_SIZE.sm }]}>{t('session.extraPlayers', 'Jugadores Extras')} ({jugadoresExtrasNombres.length})</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                   {jugadoresExtrasNombres.map((n, i) => <Text key={i} style={s.rosterNameExtra}>{n}</Text>)}
                 </View>
@@ -426,10 +426,10 @@ const SessionCoverPage = ({ data, title }) => {
           </View>
 
           <View style={[s.halfColumn, s.card]}>
-            <Text style={s.cardTitle}>Observaciones</Text>
+            <Text style={s.cardTitle}>{t('session.observations', 'Observaciones')}</Text>
             {generalObservationsPreview ? (
               <Text style={{ fontSize: 9, color: COLORS.text, lineHeight: 1.5, marginBottom: SPACING.sm }}>{generalObservationsPreview}</Text>
-            ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic', marginBottom: SPACING.sm }}>Sin observaciones generales</Text>}
+            ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic', marginBottom: SPACING.sm }}>{t('session.noGeneralObservations', 'Sin observaciones generales')}</Text>}
             
             {exerciseObservationsPreview.length > 0 && (
               <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.borderLight }}>
@@ -449,7 +449,7 @@ const SessionCoverPage = ({ data, title }) => {
 };
 
 const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
-  const { detalleMap } = data;
+  const { detalleMap, t } = data;
   const detalle = detalleMap[ejercicio._id] || {};
   const ordenNumero = detalle.orden || index + 1;
   const isLastExercise = index === data.ejerciciosOrdenados.length - 1;
@@ -464,11 +464,11 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   }
 
   const pills = [];
-  if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} Jugadores`);
-  if (ejercicio.equipos) pills.push(`${ejercicio.equipos} Equipos`);
+  if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} ${t('session.players', 'Jugadores')}`);
+  if (ejercicio.equipos) pills.push(`${ejercicio.equipos} ${t('session.teams', 'Equipos')}`);
   if (ejercicio.dimensiones) pills.push(ejercicio.dimensiones);
   if (ejercicio.tiempo) pills.push(`${ejercicio.tiempo} min`);
-  if (!isLastExercise && detalle.tiempoDescanso > 0) pills.push(`Descanso: ${detalle.tiempoDescanso} min`);
+  if (!isLastExercise && detalle.tiempoDescanso > 0) pills.push(`${t('session.rest', 'Descanso')}: ${detalle.tiempoDescanso} min`);
 
   const teamAssignmentsData = (detalle.teamAssignments || [])
     .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0))
@@ -477,13 +477,13 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   return (
     <View style={s.exCard} wrap={false}>
       <View style={s.exImgCol}>
-        {imagenSrc ? <Image src={imagenSrc} style={s.exImg} /> : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>Sin Imagen</Text>}
+        {imagenSrc ? <Image src={imagenSrc} style={s.exImg} /> : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>{t('session.noImage', 'Sin Imagen')}</Text>}
       </View>
       <View style={s.exInfoCol}>
         <View style={s.exHeader}>
           <Text style={s.exNum}>#{ordenNumero}</Text>
           <View style={{ flex: 1, paddingLeft: 12 }}>
-            <Text style={s.exName}>{ejercicio.nombre || 'Ejercicio sin nombre'}</Text>
+            <Text style={s.exName}>{ejercicio.nombre || t('session.unnamedExercise', 'Ejercicio sin nombre')}</Text>
             {pills.length > 0 && (
               <View style={s.exPills}>
                 {pills.map((p, i) => <Text key={i} style={s.exPill}>{p}</Text>)}
@@ -494,26 +494,26 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
 
         {Boolean(ejercicio.objetivo) && (
           <View style={s.exSection}>
-            <Text style={s.exSectionLabel}>Objetivo</Text>
+            <Text style={s.exSectionLabel}>{t('session.objective', 'Objetivo')}</Text>
             <Text style={s.exSectionText}>{ejercicio.objetivo}</Text>
           </View>
         )}
         {Boolean(ejercicio.descripcion) && (
           <View style={s.exSection}>
-            <Text style={s.exSectionLabel}>Descripción</Text>
+            <Text style={s.exSectionLabel}>{t('session.description', 'Descripción')}</Text>
             <Text style={s.exSectionText}>{truncateText(ejercicio.descripcion, 340)}</Text>
           </View>
         )}
         {Boolean(detalle.observacion) && (
           <View style={s.exSection}>
-            <Text style={s.exSectionLabel}>Observación</Text>
+            <Text style={s.exSectionLabel}>{t('session.observation', 'Observación')}</Text>
             <Text style={s.exSectionText}>{detalle.observacion}</Text>
           </View>
         )}
 
         {teamAssignmentsData.length > 0 && (
           <View style={{ marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.borderLight }}>
-            <Text style={[s.exSectionLabel, { marginBottom: 4 }]}>Asignación de equipos</Text>
+            <Text style={[s.exSectionLabel, { marginBottom: 4 }]}>{t('session.teamAssignments', 'Asignación de equipos')}</Text>
             {teamAssignmentsData.map((ta, i) => {
               const color = getTeamColor(ta.teamNumber);
               const names = [];
@@ -532,7 +532,7 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
 
               return (
                 <View key={i} style={s.teamRow}>
-                  <Text style={[s.teamTag, { backgroundColor: `${color}20`, color: color }]}>Eq. {ta.teamNumber}</Text>
+                  <Text style={[s.teamTag, { backgroundColor: `${color}20`, color: color }]}>{t('session.teamAbbr', 'Eq.')} {ta.teamNumber}</Text>
                   <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3 }}>{names.join(', ')}</Text>
                 </View>
               );
@@ -550,9 +550,9 @@ const ExercisesPage = ({ data, players, imageDataUris, title }) => {
 
   return (
     <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title={title} subtitle="Ejercicios de la Sesión" date={fechaFormateada} />
+      <PdfHeader title={title} subtitle={t('session.exercisesTitle', 'Ejercicios de la Sesión')} date={fechaFormateada} />
       <PdfFooter />
-      <PdfSection title="Desarrollo Táctico / Técnico">
+      <PdfSection title={t('session.tacticalTechnicalDev', 'Desarrollo Táctico / Técnico')}>
         {ejerciciosOrdenados.map((ej, idx) => (
           <ExerciseCard key={idx} ejercicio={ej} index={idx} data={data} players={players} imageDataUris={imageDataUris} />
         ))}
@@ -569,9 +569,9 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
 
   return chunks.map((chunk, pageIdx) => (
     <Page size="A4" style={baseStyles.page} key={pageIdx}>
-      <PdfHeader title={title} subtitle={`Ejercicios de Fuerza (Pág ${pageIdx + 1}/${chunks.length})`} date={fechaFormateada} />
+      <PdfHeader title={title} subtitle={`${t('session.strengthExercisesTitle', 'Ejercicios de Fuerza')} (${t('session.page', 'Pág')} ${pageIdx + 1}/${chunks.length})`} date={fechaFormateada} />
       <PdfFooter />
-      <PdfSection title="Rutina de Gimnasio / Prevención">
+      <PdfSection title={t('session.gymRoutinePrevention', 'Rutina de Gimnasio / Prevención')}>
         <View style={s.stGrid}>
           {chunk.map((exercise, idx) => {
             const globalIdx = pageIdx * 12 + idx;
@@ -593,7 +593,12 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
                   <Text style={s.stName}>{globalIdx + 1}. {exerciseName}</Text>
                   <View style={s.stFooter}>
                     <Text style={s.stSection}>{sectionName}</Text>
-                    <Text style={s.stLevel}>NV {exercise.level}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={s.stLevel}>{t('session.levelAbbr', 'NV')} {exercise.level}</Text>
+                      {exercise.tiempoDescanso > 0 && (
+                        <Text style={[s.stLevel, { marginLeft: 4, color: COLORS.primary }]}>• {t('session.restAbbr', 'DESC:')} {exercise.tiempoDescanso}'</Text>
+                      )}
+                    </View>
                   </View>
                 </View>
               </View>

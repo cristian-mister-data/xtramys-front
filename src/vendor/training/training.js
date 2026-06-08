@@ -1700,19 +1700,21 @@ export default function Training() {
           </View>
         ) : tab === 'futuros' ? (
           eventosFuturosFiltrados.length === 0 ? (
-            <View style={styles.proEmptyState}>
-              <View style={styles.proEmptyIcon}>
-                <MaterialIcons name="event-note" size={48} color={theme.colors.primary} />
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
+              <View style={styles.proEmptyState}>
+                <View style={styles.proEmptyIcon}>
+                  <MaterialIcons name="event-note" size={48} color={theme.colors.primary} />
+                </View>
+                <Text style={styles.proEmptyTitle}>{t('session.noUpcomingSessionsTitle')}</Text>
+                <Text style={styles.proEmptyText}>
+                  {t('session.noUpcomingSessionsSubtitle')}
+                </Text>
+                <TouchableOpacity style={styles.proEmptyButton} onPress={openCrearModal}>
+                  <MaterialIcons name="add" size={20} color="#fff" />
+                  <Text style={styles.proEmptyButtonText}>{t('session.createFirst')}</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.proEmptyTitle}>{t('session.noUpcomingSessionsTitle')}</Text>
-              <Text style={styles.proEmptyText}>
-                {t('session.noUpcomingSessionsSubtitle')}
-              </Text>
-              <TouchableOpacity style={styles.proEmptyButton} onPress={openCrearModal}>
-                <MaterialIcons name="add" size={20} color="#fff" />
-                <Text style={styles.proEmptyButtonText}>{t('session.createFirst')}</Text>
-              </TouchableOpacity>
-            </View>
+            </ScrollView>
           ) : (
             <FlatList
               data={[...eventosFuturosFiltrados].sort((a, b) => new Date(a.fecha) - new Date(b.fecha))}
@@ -1728,15 +1730,17 @@ export default function Training() {
           )
         ) : (
           eventosPasadosFiltrados.length === 0 ? (
-            <View style={styles.proEmptyState}>
-              <View style={styles.proEmptyIconPast}>
-                <MaterialIcons name="history" size={48} color="#94a3b8" />
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
+              <View style={styles.proEmptyState}>
+                <View style={styles.proEmptyIconPast}>
+                  <MaterialIcons name="history" size={48} color="#94a3b8" />
+                </View>
+                <Text style={styles.proEmptyTitle}>{t('session.noPastSessionsTitle')}</Text>
+                <Text style={styles.proEmptyText}>
+                  {t('session.noPastSessionsSubtitle')}
+                </Text>
               </View>
-              <Text style={styles.proEmptyTitle}>{t('session.noPastSessionsTitle')}</Text>
-              <Text style={styles.proEmptyText}>
-                {t('session.noPastSessionsSubtitle')}
-              </Text>
-            </View>
+            </ScrollView>
           ) : (
             <FlatList
               data={[...eventosPasadosFiltrados].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))}

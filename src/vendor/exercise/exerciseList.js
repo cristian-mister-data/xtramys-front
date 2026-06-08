@@ -850,11 +850,23 @@ function FolderManagement({
           )}
 
           {displayedFolders.map((folder) => (
-            <View key={folder._id} style={{ marginBottom: 16, backgroundColor: theme.colors.surfaceAlt, borderRadius: 12, padding: 16, elevation: 3, borderLeftWidth: 4, borderLeftColor: folder.color || '#2196F3' }}>
+            <View key={folder._id} style={{
+              marginBottom: 12,
+              backgroundColor: theme.colors.surface,
+              borderRadius: 14,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03,
+              shadowRadius: 6,
+              elevation: 1,
+            }}>
               {editingFolder?._id === folder._id ? (
                 <View>
                   <TextInput
-                    style={{ borderWidth: 2, borderColor: '#2196F3', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, marginBottom: 12 }}
+                    style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, marginBottom: 12, backgroundColor: theme.colors.backgroundAlt, color: theme.colors.text }}
                     value={editingFolderName}
                     onChangeText={setEditingFolderName}
                     placeholder={t('folders.folderNamePlaceholder')}
@@ -862,12 +874,12 @@ function FolderManagement({
                   />
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                     {FOLDER_COLORS.map((color) => (
-                      <TouchableOpacity key={color} onPress={() => setEditingFolderColor(color)} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color, borderWidth: editingFolderColor === color ? 3 : 0, borderColor: '#333' }} />
+                      <TouchableOpacity key={color} onPress={() => setEditingFolderColor(color)} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color, borderWidth: editingFolderColor === color ? 3 : 0, borderColor: theme.colors.text }} />
                     ))}
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
-                    <TouchableOpacity onPress={() => setEditingFolder(null)} style={{ backgroundColor: theme.colors.surface, borderRadius: 8, padding: 12 }}>
-                      <Ionicons name="close" size={20} color="#666" />
+                    <TouchableOpacity onPress={() => setEditingFolder(null)} style={{ backgroundColor: theme.colors.backgroundAlt, borderRadius: 8, padding: 12 }}>
+                      <Ionicons name="close" size={20} color={theme.colors.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleUpdate} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, padding: 12 }}>
                       <Ionicons name="checkmark" size={20} color="#fff" />
@@ -881,23 +893,29 @@ function FolderManagement({
                   activeOpacity={currentDepth < 2 ? 0.7 : 1}
                 >
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: (folder.color || '#2196F3') + '18', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="folder" size={26} color={theme.mode === 'dark' ? theme.colors.text : '#000'} />
+                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: (folder.color || '#2196F3') + '15', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="folder" size={24} color={folder.color || '#2196F3'} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: theme.mode === 'dark' ? theme.colors.text : '#000' }}>{folder.nombre}</Text>
-                      <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.text }} numberOfLines={1}>{folder.nombre}</Text>
+                      <Text style={{ fontSize: 12, color: theme.colors.textMuted, marginTop: 2 }}>
                         {folder.exerciseCount || 0} {t('folders.items')} {folder.subfolderCount > 0 ? `· ${folder.subfolderCount} ${t('folders.subfolders')}` : ''}
                       </Text>
                     </View>
-                    {currentDepth < 2 && <Ionicons name="chevron-forward" size={18} color="#ccc" style={{ marginRight: 8 }} />}
+                    {currentDepth < 2 && <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} style={{ marginRight: 8 }} />}
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); setEditingFolder(folder); setEditingFolderName(folder.nombre); setEditingFolderColor(folder.color || '#2196F3'); }} style={{ backgroundColor: '#E3F2FD', borderRadius: 8, padding: 12 }}>
-                      <Ionicons name="pencil" size={18} color="#2196F3" />
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={(e) => { e.stopPropagation(); setEditingFolder(folder); setEditingFolderName(folder.nombre); setEditingFolderColor(folder.color || '#2196F3'); }}
+                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="pencil" size={16} color={theme.mode === 'dark' ? '#94a3b8' : '#475569'} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }} style={{ backgroundColor: '#FFEBEE', borderRadius: 8, padding: 12 }}>
-                      <Ionicons name="trash" size={18} color="#FF5722" />
+                    <TouchableOpacity
+                      onPress={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }}
+                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Ionicons name="trash" size={16} color="#ef4444" />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -2068,11 +2086,11 @@ export default function ExerciseList({ navigation: navigationProp }) {
             position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
             backgroundColor: theme.colors.surface || '#1E293B',
             borderTopWidth: 1, borderTopColor: theme.colors.border || '#334155',
-            paddingHorizontal: 16, paddingVertical: 10,
-            flexDirection: 'row', alignItems: 'center', gap: 8,
+            paddingVertical: 10,
             shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, elevation: 20,
           }}>
-            <View style={{ flex: 1 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, flexGrow: 1 }}>
+              <View style={{ flex: 1, minWidth: 120 }}>
               <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
                 {selectedIds.size} {t('common.selected') || 'seleccionados'}
               </Text>
@@ -2106,15 +2124,16 @@ export default function ExerciseList({ navigation: navigationProp }) {
               <Feather name="trash-2" size={16} color="#fff" />
               <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleCancelSelection}
-              style={{
-                backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
-                padding: 8,
-              }}
-            >
-              <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCancelSelection}
+                style={{
+                  backgroundColor: theme.colors.card || '#334155', borderRadius: 10,
+                  padding: 8,
+                }}
+              >
+                <Feather name="x" size={18} color={theme.colors.textMuted || '#94A3B8'} />
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         )}
 
@@ -2192,7 +2211,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 <Text style={styles.mvActionSheetSubtitle}>{t('exercise.exerciseOptions')}</Text>
               </View>
               
-              <View style={styles.mvActionSheetBody}>
+              <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 {/* Botón favorito */}
                 <TouchableOpacity
                   style={styles.mvActionOption}
@@ -2336,7 +2355,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('edition.delete')}</Text>
                   </View>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
               
               <TouchableOpacity 
                 style={styles.mvActionSheetCancel}
@@ -2366,7 +2385,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 <Text style={styles.mvActionSheetSubtitle}>{t('folders.folderOptions')}</Text>
               </View>
               
-              <View style={styles.mvActionSheetBody}>
+              <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2419,7 +2438,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('folders.deleteFolder')}</Text>
                   </View>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
               
               <TouchableOpacity 
                 style={styles.mvActionSheetCancel}
@@ -4657,6 +4676,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 34,
+    maxHeight: '85%',
   },
   mvActionSheetHeader: {
     alignItems: 'center',
@@ -4682,14 +4702,14 @@ const makeStyles = (theme) => StyleSheet.create({
   mvActionOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    gap: 14,
+    gap: 12,
   },
   mvActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4697,7 +4717,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
   },
   mvActionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text,
     marginBottom: 2,
@@ -4711,7 +4731,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvActionSheetCancel: {
     marginTop: 8,
     marginHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: theme.colors.backgroundAlt,
     alignItems: 'center',
