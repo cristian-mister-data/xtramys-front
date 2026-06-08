@@ -1219,6 +1219,7 @@ export default function AddEventModal({
   const currentLang = i18n.language || 'es';
   const [eventType, setEventType] = useState(null); // 'match' or 'session'
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const insets = useSafeAreaInsets();
   // Detectar dispositivo móvil
   const { width } = useWindowDimensions();
@@ -1599,6 +1600,7 @@ export default function AddEventModal({
       setExtraPlayers([]);
       setExtraPlayerText('');
       setExerciseVideoAvailability({});
+      setValidationErrors({});
     }
   }, [visible, selectedDate]);
 
@@ -1794,13 +1796,21 @@ export default function AddEventModal({
 
   // Crear ficha de partido
   const handleCreateMatch = async () => {
+    let hasError = false;
+    const errors = {};
+
     if (!matchData.rival.trim()) {
-      Alert.alert(t('message.error'), t('schedule.selectRivalError'));
-      return;
+      errors.rival = t('common.validationErrorCreate', { field: t('rivals.rival') });
+      hasError = true;
     }
 
     if (matchData.competicion !== 'amistoso' && !matchData.torneoId) {
-      Alert.alert(t('message.error'), t('tournaments.tournamentRequired'));
+      errors.torneo = t('common.validationErrorCreate', { field: t('tournaments.tournament') });
+      hasError = true;
+    }
+
+    if (hasError) {
+      setValidationErrors(errors);
       return;
     }
 
@@ -1879,7 +1889,9 @@ export default function AddEventModal({
     const endTimeInMinutes = endHours * 60 + endMinutes;
 
     if (endTimeInMinutes < startTimeInMinutes) {
-      Alert.alert(t('message.error'), t('schedule.endTimeBeforeStartTime'));
+      setValidationErrors({
+        time: t('common.validationErrorCreate', { field: t('schedule.endTime') })
+      });
       return;
     }
 
@@ -1999,6 +2011,9 @@ export default function AddEventModal({
       const hours = date.getHours().toString().padStart(2, '0');
       const minutes = date.getMinutes().toString().padStart(2, '0');
       setSessionData(prev => ({ ...prev, horaInicio: `${hours}:${minutes}` }));
+      if (validationErrors.time) {
+        setValidationErrors(prev => ({ ...prev, time: null }));
+      }
     }
   };
 
@@ -2011,6 +2026,9 @@ export default function AddEventModal({
       const hours = date.getHours().toString().padStart(2, '0');
       const minutes = date.getMinutes().toString().padStart(2, '0');
       setSessionData(prev => ({ ...prev, horaFin: `${hours}:${minutes}` }));
+      if (validationErrors.time) {
+        setValidationErrors(prev => ({ ...prev, time: null }));
+      }
     }
   };
 
@@ -2214,10 +2232,18 @@ export default function AddEventModal({
                 rival: nombre,
                 rivalEscudo: escudo,
               }));
+              if (validationErrors.rival) {
+                setValidationErrors(prev => ({ ...prev, rival: null }));
+              }
             }}
             teamId={team?._id}
             placeholder={t('matchSheet.fields.rivalRequired')}
           />
+          {validationErrors.rival && (
+            <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500', marginBottom: 12 }}>
+              {validationErrors.rival}
+            </Text>
+          )}
 
           {/* Ubicación - dropdown */}
           <TouchableOpacity 
@@ -2254,6 +2280,11 @@ export default function AddEventModal({
               </View>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
+            {validationErrors.torneo && (
+              <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                {validationErrors.torneo}
+              </Text>
+            )}
           </View>
 
           {/* Alineaciones en fila */}
@@ -3375,6 +3406,9 @@ export default function AddEventModal({
                 onPress={() => {
                   setMatchData(prev => ({ ...prev, competicion: 'amistoso', torneoId: null }));
                   setShowTorneoModal(false);
+                  if (validationErrors.torneo) {
+                    setValidationErrors(prev => ({ ...prev, torneo: null }));
+                  }
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -3401,6 +3435,9 @@ export default function AddEventModal({
                   onPress={() => {
                     setMatchData(prev => ({ ...prev, competicion: 'torneo', torneoId: torneo._id }));
                     setShowTorneoModal(false);
+                    if (validationErrors.torneo) {
+                      setValidationErrors(prev => ({ ...prev, torneo: null }));
+                    }
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -3703,6 +3740,11 @@ export default function AddEventModal({
           <Ionicons name="time-outline" size={20} color={theme.colors.success} style={{ marginRight: 8 }} />
           <Text style={styles.selectInputText}>{sessionData.horaFin}</Text>
         </TouchableOpacity>
+        {validationErrors.time && (
+          <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+            {validationErrors.time}
+          </Text>
+        )}
       </View>
 
       {/* Sección de Jugadores */}

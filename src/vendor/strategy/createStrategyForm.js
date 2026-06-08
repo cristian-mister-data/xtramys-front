@@ -105,6 +105,7 @@ export default function CreateStrategyForm({
   const [nameEn, setNameEn] = useState(editingStrategy?.translations?.en?.nombre || '');
   const [descriptionEn, setDescriptionEn] = useState(editingStrategy?.translations?.en?.descripcion || '');
   const [objectiveEn, setObjectiveEn] = useState(editingStrategy?.translations?.en?.objetivo || '');
+  const [validationErrors, setValidationErrors] = useState({});
   
   const stableImagen = useMemo(() => imagen, [imagen]);
   const stableFieldElements = useMemo(() => fieldElements, [fieldElements]);
@@ -321,11 +322,15 @@ export default function CreateStrategyForm({
 
 
   const handleSave = async () => {
-    const missing = [];
-    if (!name.trim()) missing.push(t('strategy.name'));
+    const errors = {};
+    if (!name.trim()) {
+      errors.name = editingStrategy
+        ? t('common.validationErrorEdit', { field: t('strategy.name') })
+        : t('common.validationErrorCreate', { field: t('strategy.name') });
+    }
     
-    if (missing.length > 0) {
-      Alert.alert(t('message.warning'), t('strategy.missingFields', { fields: missing.join(', ') }));
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
     
@@ -398,8 +403,18 @@ export default function CreateStrategyForm({
             placeholder={t('strategy.examplePlaceholder')}
             placeholderTextColor={placeholderColor}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (validationErrors.name) {
+                setValidationErrors(prev => ({ ...prev, name: null }));
+              }
+            }}
           />
+          {validationErrors.name && (
+            <Text style={{ color: '#ef4444', fontSize: 13, marginTop: -10, marginBottom: 16, fontWeight: '500' }}>
+              {validationErrors.name}
+            </Text>
+          )}
           
           {/* Selector de carpeta */}
           <TouchableOpacity 

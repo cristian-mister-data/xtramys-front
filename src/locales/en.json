@@ -1176,6 +1176,8 @@
         }
     },
     "common": {
+        "validationErrorCreate": "Could not be created due to the {{field}} field",
+        "validationErrorEdit": "Could not be edited due to the {{field}} field",
         "options": "Options",
         "lightMode": "Light mode",
         "darkMode": "Dark mode",

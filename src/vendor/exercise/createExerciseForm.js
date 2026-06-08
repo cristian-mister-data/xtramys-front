@@ -123,6 +123,7 @@ export default function CreateExerciseForm({
   // Estados para carpeta de ejercicio
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [loadingField, setLoadingField] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Efecto para encontrar el nombre de la carpeta cuando se carga la edición
   useEffect(() => {
@@ -328,12 +329,20 @@ export default function CreateExerciseForm({
 
 
   const handleSave = async () => {
-    const missing = [];
-    if (!name.trim()) missing.push(t('exercise.name'));
-    if (!duration.trim()) missing.push(t('exercise.duration'));
+    const errors = {};
+    if (!name.trim()) {
+      errors.name = editingExercise
+        ? t('common.validationErrorEdit', { field: t('exercise.name') })
+        : t('common.validationErrorCreate', { field: t('exercise.name') });
+    }
+    if (!duration.trim()) {
+      errors.duration = editingExercise
+        ? t('common.validationErrorEdit', { field: t('exercise.duration') })
+        : t('common.validationErrorCreate', { field: t('exercise.duration') });
+    }
     
-    if (missing.length > 0) {
-      Alert.alert(t('message.warning'), t('exercise.missingFields', { fields: missing.join(', ') }));
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
     
@@ -412,8 +421,18 @@ export default function CreateExerciseForm({
             placeholder={t('exercise.examplePlaceholder')}
             placeholderTextColor={placeholderColor}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (validationErrors.name) {
+                setValidationErrors(prev => ({ ...prev, name: null }));
+              }
+            }}
           />
+          {validationErrors.name && (
+            <Text style={{ color: '#ef4444', fontSize: 13, marginTop: -10, marginBottom: 16, fontWeight: '500' }}>
+              {validationErrors.name}
+            </Text>
+          )}
           
           {/* Selector de carpeta */}
           <TouchableOpacity 
@@ -444,10 +463,20 @@ export default function CreateExerciseForm({
                   keyboardType="number-pad"
                   autoComplete="off"
                   value={duration}
-                  onChangeText={setDuration}
+                  onChangeText={(text) => {
+                    setDuration(text);
+                    if (validationErrors.duration) {
+                      setValidationErrors(prev => ({ ...prev, duration: null }));
+                    }
+                  }}
                   maxLength={3}
                 />
               </View>
+              {validationErrors.duration && (
+                <Text style={{ color: '#ef4444', fontSize: 12, marginTop: -10, marginBottom: 10, fontWeight: '500' }}>
+                  {validationErrors.duration}
+                </Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inputLabel}>{t('exercise.players')}</Text>

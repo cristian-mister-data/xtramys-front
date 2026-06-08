@@ -1179,6 +1179,8 @@
         }
     },
     "common": {
+        "validationErrorCreate": "No se ha podido crear por el campo {{field}}",
+        "validationErrorEdit": "No se ha podido editar por el campo {{field}}",
         "options": "Opciones",
         "lightMode": "Modo claro",
         "darkMode": "Modo oscuro",

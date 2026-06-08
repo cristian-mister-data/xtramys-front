@@ -7,6 +7,7 @@ import {
 } from '@/utils/pdfDesign';
 import { normalizeFormation } from './rivalAnalysisData';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 
 // ── Styles ─────────────────────────────────────────────────────────
 const s = {
@@ -48,7 +49,7 @@ const s = {
     justifyContent: 'space-between',
   },
   graphicContainer: { alignItems: 'center', marginVertical: SPACING.sm },
-  graphicImg: { maxHeight: 250, borderRadius: 6 },
+  graphicImg: { maxHeight: 250, maxWidth: '100%', objectFit: 'contain', borderRadius: 6 },
   videoBadge: {
     backgroundColor: '#f1f5f9',
     color: COLORS.text,
@@ -180,11 +181,11 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
     );
   };
 
-  const VideoBlock = ({ blockTitle }) => (
+  const VideoBlock = ({ blockTitle, videoUrl }) => (
     <View style={baseStyles.questionRow} wrap={false}>
       <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
-      <Text style={s.videoBadge}>
-        📹 {t('rivalAnalysis.actions.videoSaved')}
+      <Text style={[baseStyles.questionValue, { color: COLORS.accent }]}>
+        {videoUrl ? `📹 ${videoUrl}` : `📹 ${t('rivalAnalysis.actions.videoSaved')}`}
       </Text>
     </View>
   );
@@ -232,8 +233,8 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       // Custom answers (video/graphic)
       if (rivalAnalysis.customAnswers) {
         Object.entries(rivalAnalysis.customAnswers).forEach(([, v]) => {
-          if (v?.videoId)
-            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} key={key++} />);
+          if (v?.videoId || v?.url)
+            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} key={key++} />);
           if (v?.imageBase64)
             blocks.push(
               <GraphicBlock imageBase64={v.imageBase64} blockTitle={t('rivalAnalysis.actions.graphic')} key={key++} />,
@@ -307,17 +308,23 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
 
         if (question.type === 'video') {
           let videoAnswer = answer;
-          if (!videoAnswer?.videoId && rivalAnalysis.customAnswers) {
+          if (!videoAnswer?.videoId && !videoAnswer?.url && rivalAnalysis.customAnswers) {
             const entry = Object.entries(rivalAnalysis.customAnswers).find(
-              ([k, v]) => v?.videoId && !coveredKeys.includes(k),
+              ([k, v]) => (v?.videoId || v?.url) && !coveredKeys.includes(k),
             );
             if (entry) {
               videoAnswer = entry[1];
               coveredKeys.push(entry[0]);
             }
           }
-          if (videoAnswer?.videoId) {
-            blocks.push(<VideoBlock blockTitle={questionText} key={key++} />);
+          if (videoAnswer?.videoId || videoAnswer?.url) {
+            blocks.push(
+              <VideoBlock
+                blockTitle={questionText}
+                videoUrl={videoAnswer.resolvedUrl || videoAnswer.url}
+                key={key++}
+              />,
+            );
           }
           return;
         }
@@ -358,8 +365,8 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       if (rivalAnalysis.customAnswers) {
         Object.entries(rivalAnalysis.customAnswers).forEach(([k, v]) => {
           if (coveredKeys.includes(k)) return;
-          if (v?.videoId)
-            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} key={key++} />);
+          if (v?.videoId || v?.url)
+            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} key={key++} />);
           if (v?.imageBase64)
             blocks.push(
               <GraphicBlock
@@ -407,13 +414,34 @@ export async function generateRivalAnalysisPdf(
   if (!rivalAnalysis) return;
   const userTemplates = template ? [template] : [];
 
+  const clonedAnalysis = JSON.parse(JSON.stringify(rivalAnalysis));
+
+  if (clonedAnalysis.customAnswers) {
+    for (const [key, value] of Object.entries(clonedAnalysis.customAnswers)) {
+      if (value && (value.videoId || value.url)) {
+        let resolvedUrl = value.url || '';
+        if (value.videoId) {
+          try {
+            resolvedUrl = await resolvePlayableVideoUrl(value.videoId, { objectUrl: false });
+          } catch (err) {
+            console.error('Error resolving video url for pdf', err);
+          }
+        }
+        clonedAnalysis.customAnswers[key] = {
+          ...value,
+          resolvedUrl,
+        };
+      }
+    }
+  }
+
   await renderPdf(
     <RivalAnalysisDocument
-      rivalAnalysis={rivalAnalysis}
+      rivalAnalysis={clonedAnalysis}
       selectedTeam={selectedTeam}
       t={t}
       userTemplates={userTemplates}
     />,
-    `rival-analysis-${rivalAnalysis.rival || 'report'}`,
+    `rival-analysis-${clonedAnalysis.rival || 'report'}`,
   );
 }

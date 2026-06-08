@@ -1196,6 +1196,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   
   // Notificaciones
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
+  const [validationErrors, setValidationErrors] = useState({});
 
   const folderColors = [
     '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', 
@@ -1622,7 +1623,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Crear carpeta estilo myVideos
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
-      showNotification(t('folders.nameRequired'), 'error');
+      setValidationErrors(prev => ({
+        ...prev,
+        newFolder: t('common.validationErrorCreate', { field: t('folders.folderNameLabel') })
+      }));
       return;
     }
     try {
@@ -1721,7 +1725,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   const handleUpdateFolder = async () => {
     if (!editFolderName.trim()) {
-      showNotification(t('folders.nameRequired'), 'error');
+      setValidationErrors(prev => ({
+        ...prev,
+        editFolder: t('common.validationErrorEdit', { field: t('folders.folderNameLabel') })
+      }));
       return;
     }
     try {
@@ -2470,7 +2477,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={IS_MOBILE ? styles.mvCreateModalSubtitleMobile : styles.mvCreateModalSubtitle}>{t('folders.editFolderSubtitle')}</Text>
                   </View>
                 </View>
-                <TouchableOpacity onPress={() => setEditFolderModalVisible(false)} style={styles.mvCreateModalCloseBtn}>
+                <TouchableOpacity onPress={() => { setEditFolderModalVisible(false); setValidationErrors(prev => ({ ...prev, editFolder: null })); }} style={styles.mvCreateModalCloseBtn}>
                   <Feather name="x" size={24} color="#64748b" />
                 </TouchableOpacity>
               </View>
@@ -2493,12 +2500,22 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <TextInput
                       style={styles.mvCreateInput}
                       value={editFolderName}
-                      onChangeText={setEditFolderName}
+                      onChangeText={(text) => {
+                        setEditFolderName(text);
+                        if (validationErrors.editFolder) {
+                          setValidationErrors(prev => ({ ...prev, editFolder: null }));
+                        }
+                      }}
                       placeholder={t('folders.folderNamePlaceholder')}
                       placeholderTextColor="#94A3B8"
                       autoFocus
                       maxLength={50}
                     />
+                    {validationErrors.editFolder && (
+                      <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                        {validationErrors.editFolder}
+                      </Text>
+                    )}
 
                     {menuFolder?.isGlobal && userRole === 'admin' && (
                       <View style={{ marginTop: 10 }}>
@@ -2543,15 +2560,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
               <View style={styles.mvCreateModalFooter}>
                 <TouchableOpacity
                   style={styles.mvCreateCancelButton}
-                  onPress={() => setEditFolderModalVisible(false)}
+                  onPress={() => { setEditFolderModalVisible(false); setValidationErrors(prev => ({ ...prev, editFolder: null })); }}
                 >
                   <Feather name="x" size={18} color="#64748b" />
                   <Text style={styles.mvCreateCancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.mvCreateSaveButton, !editFolderName.trim() && styles.mvCreateSaveButtonDisabled]}
+                  style={styles.mvCreateSaveButton}
                   onPress={handleUpdateFolder}
-                  disabled={!editFolderName.trim()}
                 >
                   <Feather name="check" size={18} color="#fff" />
                   <Text style={styles.mvCreateSaveButtonText}>{t('common.save')}</Text>
@@ -2592,6 +2608,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     setNewFolderName('');
                     setNewFolderNameEn('');
                     setNewFolderIsGlobal(false);
+                    setValidationErrors(prev => ({ ...prev, newFolder: null }));
                   }}
                 >
                   <Feather name="x" size={24} color="#64748b" />
@@ -2641,9 +2658,19 @@ export default function ExerciseList({ navigation: navigationProp }) {
                       placeholder={t('folders.folderNamePlaceholder')}
                       placeholderTextColor="#94A3B8"
                       value={newFolderName}
-                      onChangeText={setNewFolderName}
+                      onChangeText={(text) => {
+                        setNewFolderName(text);
+                        if (validationErrors.newFolder) {
+                          setValidationErrors(prev => ({ ...prev, newFolder: null }));
+                        }
+                      }}
                       maxLength={50}
                     />
+                    {validationErrors.newFolder && (
+                      <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                        {validationErrors.newFolder}
+                      </Text>
+                    )}
 
                     {/* Traducción inglés (admin + global) */}
                     {userRole === 'admin' && newFolderIsGlobal && (
@@ -2694,15 +2721,15 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     setNewFolderName('');
                     setNewFolderNameEn('');
                     setNewFolderIsGlobal(false);
+                    setValidationErrors(prev => ({ ...prev, newFolder: null }));
                   }}
                 >
                   <Feather name="x" size={18} color="#64748b" />
                   <Text style={styles.mvCreateCancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.mvCreateSaveButton, !newFolderName.trim() && styles.mvCreateSaveButtonDisabled]}
+                  style={styles.mvCreateSaveButton}
                   onPress={handleCreateFolder}
-                  disabled={!newFolderName.trim()}
                 >
                   <Feather name="plus" size={18} color="#fff" />
                   <Text style={styles.mvCreateSaveButtonText}>{t('folders.createFolder')}</Text>

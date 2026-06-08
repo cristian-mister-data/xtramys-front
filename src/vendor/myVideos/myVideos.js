@@ -65,6 +65,7 @@ export default function MyVideos() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingAction, setLoadingAction] = useState('video');
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
+  const [validationErrors, setValidationErrors] = useState({});
   const [filter, setFilter] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuVideo, setMenuVideo] = useState(null);
@@ -267,7 +268,10 @@ export default function MyVideos() {
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
-      showNotification(t('myVideos.folderNameRequired'), 'error');
+      setValidationErrors(prev => ({
+        ...prev,
+        newFolder: t('common.validationErrorCreate', { field: t('myVideos.folderNameLabel') })
+      }));
       return;
     }
 
@@ -355,7 +359,10 @@ export default function MyVideos() {
 
   const handleUpdateFolder = async () => {
     if (!editFolderName.trim()) {
-      showNotification(t('folders.nameRequired'), 'error');
+      setValidationErrors(prev => ({
+        ...prev,
+        editFolder: t('common.validationErrorEdit', { field: t('myVideos.folderNameLabel') })
+      }));
       return;
     }
     try {
@@ -382,7 +389,10 @@ export default function MyVideos() {
 
   const handleUpdateVideoDetails = async () => {
     if (!editVideoName.trim()) {
-      showNotification(t('myVideos.nameRequired') || 'El nombre es obligatorio', 'error');
+      setValidationErrors(prev => ({
+        ...prev,
+        editVideo: t('common.validationErrorEdit', { field: t('myVideos.videoNameLabel') || 'Nombre del video' })
+      }));
       return;
     }
     try {
@@ -1540,7 +1550,7 @@ export default function MyVideos() {
                   <Text style={IS_MOBILE ? styles.createModalSubtitleMobile : styles.createModalSubtitle}>{t('myVideos.editDetailsSubtitle') || 'Cambiar nombre y descripción del video'}</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setEditVideoModalVisible(false)} style={styles.createModalCloseBtn}>
+              <TouchableOpacity onPress={() => { setEditVideoModalVisible(false); setValidationErrors(prev => ({ ...prev, editVideo: null })); }} style={styles.createModalCloseBtn}>
                 <Feather name="x" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
@@ -1562,12 +1572,22 @@ export default function MyVideos() {
                   <TextInput
                     style={styles.createInput}
                     value={editVideoName}
-                    onChangeText={setEditVideoName}
+                    onChangeText={(text) => {
+                      setEditVideoName(text);
+                      if (validationErrors.editVideo) {
+                        setValidationErrors(prev => ({ ...prev, editVideo: null }));
+                      }
+                    }}
                     placeholder={t('videoRecorder.videoNamePlaceholder') || 'Ej: Jugada de táctica'}
                     placeholderTextColor="#94A3B8"
                     autoFocus
                     maxLength={100}
                   />
+                  {validationErrors.editVideo && (
+                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                      {validationErrors.editVideo}
+                    </Text>
+                  )}
 
                   {/* Traducción inglés (admin + video global) */}
                   {menuVideo?.isGlobal && isAdmin && (
@@ -1606,15 +1626,14 @@ export default function MyVideos() {
             <View style={styles.createModalFooter}>
               <TouchableOpacity
                 style={styles.createCancelButton}
-                onPress={() => setEditVideoModalVisible(false)}
+                onPress={() => { setEditVideoModalVisible(false); setValidationErrors(prev => ({ ...prev, editVideo: null })); }}
               >
                 <Feather name="x" size={18} color="#64748b" />
                 <Text style={styles.createCancelButtonText}>{t('myVideos.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createSaveButton, !editVideoName.trim() && styles.createSaveButtonDisabled]}
+                style={styles.createSaveButton}
                 onPress={handleUpdateVideoDetails}
-                disabled={!editVideoName.trim()}
               >
                 <Feather name="check" size={18} color="#fff" />
                 <Text style={styles.createSaveButtonText}>{t('myVideos.save')}</Text>
@@ -1644,7 +1663,7 @@ export default function MyVideos() {
                   <Text style={IS_MOBILE ? styles.createModalSubtitleMobile : styles.createModalSubtitle}>{t('folders.editFolderSubtitle')}</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setEditFolderModalVisible(false)} style={styles.createModalCloseBtn}>
+              <TouchableOpacity onPress={() => { setEditFolderModalVisible(false); setValidationErrors(prev => ({ ...prev, editFolder: null })); }} style={styles.createModalCloseBtn}>
                 <Feather name="x" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
@@ -1666,12 +1685,22 @@ export default function MyVideos() {
                   <TextInput
                     style={styles.createInput}
                     value={editFolderName}
-                    onChangeText={setEditFolderName}
+                    onChangeText={(text) => {
+                      setEditFolderName(text);
+                      if (validationErrors.editFolder) {
+                        setValidationErrors(prev => ({ ...prev, editFolder: null }));
+                      }
+                    }}
                     placeholder={t('myVideos.folderNamePlaceholder')}
                     placeholderTextColor="#94A3B8"
                     autoFocus
                     maxLength={50}
                   />
+                  {validationErrors.editFolder && (
+                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                      {validationErrors.editFolder}
+                    </Text>
+                  )}
 
                   {/* Traducción inglés (admin + carpeta global) */}
                   {menuFolder?.isGlobal && isAdmin && (
@@ -1717,15 +1746,14 @@ export default function MyVideos() {
             <View style={styles.createModalFooter}>
               <TouchableOpacity
                 style={styles.createCancelButton}
-                onPress={() => setEditFolderModalVisible(false)}
+                onPress={() => { setEditFolderModalVisible(false); setValidationErrors(prev => ({ ...prev, editFolder: null })); }}
               >
                 <Feather name="x" size={18} color="#64748b" />
                 <Text style={styles.createCancelButtonText}>{t('myVideos.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createSaveButton, !editFolderName.trim() && styles.createSaveButtonDisabled]}
+                style={styles.createSaveButton}
                 onPress={handleUpdateFolder}
-                disabled={!editFolderName.trim()}
               >
                 <Feather name="check" size={18} color="#fff" />
                 <Text style={styles.createSaveButtonText}>{t('common.save')}</Text>
@@ -1765,6 +1793,7 @@ export default function MyVideos() {
                   setShowCreateFolderModal(false);
                   setNewFolderName('');
                   setNewFolderNameEn('');
+                  setValidationErrors(prev => ({ ...prev, newFolder: null }));
                 }}
               >
                 <Feather name="x" size={24} color="#64748b" />
@@ -1791,9 +1820,19 @@ export default function MyVideos() {
                     placeholder={t('myVideos.folderNamePlaceholder')}
                     placeholderTextColor="#94A3B8"
                     value={newFolderName}
-                    onChangeText={setNewFolderName}
+                    onChangeText={(text) => {
+                      setNewFolderName(text);
+                      if (validationErrors.newFolder) {
+                        setValidationErrors(prev => ({ ...prev, newFolder: null }));
+                      }
+                    }}
                     maxLength={50}
                   />
+                  {validationErrors.newFolder && (
+                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
+                      {validationErrors.newFolder}
+                    </Text>
+                  )}
 
                   {/* Traducción inglés (admin) */}
                   {isAdmin && (
@@ -1843,15 +1882,15 @@ export default function MyVideos() {
                   setShowCreateFolderModal(false);
                   setNewFolderName('');
                   setNewFolderNameEn('');
+                  setValidationErrors(prev => ({ ...prev, newFolder: null }));
                 }}
               >
                 <Feather name="x" size={18} color="#64748b" />
                 <Text style={styles.createCancelButtonText}>{t('myVideos.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.createSaveButton, !newFolderName.trim() && styles.createSaveButtonDisabled]}
+                style={styles.createSaveButton}
                 onPress={handleCreateFolder}
-                disabled={!newFolderName.trim()}
               >
                 <Feather name="plus" size={18} color="#fff" />
                 <Text style={styles.createSaveButtonText}>{t('myVideos.createFolder')}</Text>

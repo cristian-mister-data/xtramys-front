@@ -75,7 +75,7 @@ import { generateRivalAnalysisPdf } from './pdf';
 
 // ---------- VideoBlock component ----------
 function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }) {
-  const [meta, setMeta] = useState({ posterUrl: poster || '', videoName: '' });
+  const [meta, setMeta] = useState({ posterUrl: poster || '', videoName: '', resolvedUrl: '' });
 
   const captureFrame = async (videoUrl) => {
     const video = document.createElement('video');
@@ -98,23 +98,35 @@ function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }
   };
 
   useEffect(() => {
-    if (meta.posterUrl || !videoId) return;
+    if (!videoId) {
+      if (inlineUrl) {
+        setMeta((m) => ({ ...m, resolvedUrl: inlineUrl }));
+      }
+      return;
+    }
     getVideoById(videoId).then(async (data) => {
       const thumb = data?.video?.thumbnailUrl || data?.video?.thumbnail || data?.video?.poster;
       const name = data?.video?.name || '';
-      if (thumb) {
-        setMeta({ posterUrl: thumb, videoName: name });
-        return;
+      
+      let directUrl = '';
+      try {
+        directUrl = await resolvePlayableVideoUrl(videoId, { objectUrl: false });
+      } catch (err) {
+        console.error('Error resolving video url for UI', err);
       }
-      const url = await resolvePlayableVideoUrl(videoId);
-      if (url) {
-        const frame = await captureFrame(url);
-        setMeta({ posterUrl: frame || '', videoName: name });
-      } else if (name) {
-        setMeta({ posterUrl: '', videoName: name });
+
+      let posterUrl = thumb;
+      if (!posterUrl) {
+        const url = await resolvePlayableVideoUrl(videoId);
+        if (url) {
+          const frame = await captureFrame(url);
+          if (frame) posterUrl = frame;
+        }
       }
+      
+      setMeta({ posterUrl: posterUrl || '', videoName: name, resolvedUrl: directUrl });
     }).catch(() => {});
-  }, [videoId, meta.posterUrl]);
+  }, [videoId, inlineUrl]);
 
   const displayPoster = meta.posterUrl || poster || '';
   const displayName = meta.videoName || label;
@@ -134,9 +146,20 @@ function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }
             alt={label}
           />
         </VideoPreviewButton>
-        <VideoStatusRow>
-          <MdCheckCircle size={18} />
-          {t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}
+        <VideoStatusRow style={{ flexWrap: 'wrap', wordBreak: 'break-all' }}>
+          <MdCheckCircle size={18} style={{ flexShrink: 0 }} />
+          {(meta.resolvedUrl || inlineUrl) ? (
+            <a
+              href={meta.resolvedUrl || inlineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#22c55e', textDecoration: 'underline', fontSize: '13px' }}
+            >
+              {meta.resolvedUrl || inlineUrl}
+            </a>
+          ) : (
+            <span>{t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}</span>
+          )}
         </VideoStatusRow>
         {videoId ? (
           <VideoActions>
@@ -892,7 +915,7 @@ export default function AnalysisDetailModal({
           )}
 
         {/* 7. Observaciones (legacy, q12) */}
-        {analysis.observaciones && (
+        {templateQuestions.length === 0 && analysis.observaciones && (
           <SectionCard>
             <SectionHead>
               <MdNoteAlt size={18} color="#2196F3" />

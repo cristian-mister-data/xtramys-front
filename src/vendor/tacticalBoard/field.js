@@ -49,7 +49,7 @@ function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, child
 }
 
 const FIELD_CAPTURE_BACKGROUND = '#4a8c3f';
-const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND };
+const FIELD_CAPTURE_OPTIONS = { format: 'png', quality: 1, backgroundColor: FIELD_CAPTURE_BACKGROUND, pixelRatio: 3 };
 const REFERENCE_WIDTH = 1280;
 
 function getFieldCaptureOptions(extraOptions = {}) {
