@@ -116,7 +116,7 @@ export const deleteVideo = async (videoId) => {
 
 export const toggleFavoriteVideo = async (videoId) => {
   try {
-    const response = await api.put(`/video/${videoId}/favorite`);
+    const response = await api.patch(`/video/${videoId}/favorite`);
     return response.data;
   } catch (error) {
     console.warn('Error toggling video favorite:', error);
@@ -194,10 +194,7 @@ export const updateVideoFolder = async (folderId, folderData) => {
 
 export const deleteVideoFolder = async (folderId, options = {}) => {
   try {
-    const {
-      moveVideosTo = null,
-      deleteContents = false,
-    } = options || {};
+    const { moveVideosTo = null, deleteContents = false } = options || {};
     const response = await api.delete(`/video-folder/${folderId}`, {
       data: { moveVideosTo, deleteContents },
       params: { moveVideosTo, deleteContents },
@@ -271,10 +268,12 @@ export const getGlobalVideos = listGlobalVideos;
 // =====================
 // Stubs / no implementados en web
 // =====================
-const stub = (name, fallback = { data: null }) => async (..._args) => {
-  console.warn(`[utils/api] ${name}() no implementado en web`);
-  return fallback;
-};
+const stub =
+  (name, fallback = { data: null }) =>
+  async (..._args) => {
+    console.warn(`[utils/api] ${name}() no implementado en web`);
+    return fallback;
+  };
 
 export const proxyUploadToR2 = async (localVideoPath) => {
   if (!localVideoPath) throw new Error('No hay archivo de vídeo para subir');
@@ -311,7 +310,7 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
     const response = await api.post(
       `/video/${videoId}/regenerate`,
       { fieldImageData },
-      { timeout: 120000 }
+      { timeout: 120000 },
     );
     const result = response.data;
     if (result.status === 'processing' && result.jobId) {
@@ -322,11 +321,11 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
       return { success: false, videoId: result.videoId || done?.videoId };
     }
     if (result.status === 'completed' && result.videoId) {
-      await new Promise(res => setTimeout(res, 500));
+      await new Promise((res) => setTimeout(res, 500));
       return { success: true, videoId: result.videoId };
     }
     if (result.success && result.videoId) {
-      await new Promise(res => setTimeout(res, 500));
+      await new Promise((res) => setTimeout(res, 500));
       return { success: true, videoId: result.videoId };
     }
     return result;
@@ -342,7 +341,6 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
     }
   }
 };
-
 
 export const getAllExercises = async () => {
   try {
@@ -480,7 +478,9 @@ export const setDefaultWellnessTemplate = async (templateId) => {
 // ============ WELLNESS LINK / RESPONSES ============
 export const generateWellnessLink = async (sessionId, expiryHours = 72) => {
   try {
-    const response = await api.post(`/wellness/session/${sessionId}/generate-link`, { expiryHours });
+    const response = await api.post(`/wellness/session/${sessionId}/generate-link`, {
+      expiryHours,
+    });
     return response.data;
   } catch (error) {
     console.warn('Error generating wellness link:', error);
@@ -488,7 +488,12 @@ export const generateWellnessLink = async (sessionId, expiryHours = 72) => {
   }
 };
 
-export const generatePreWellnessLink = async (sessionId, expiryHours = 72, templateId = null, questions = null) => {
+export const generatePreWellnessLink = async (
+  sessionId,
+  expiryHours = 72,
+  templateId = null,
+  questions = null,
+) => {
   try {
     const body = { expiryHours };
     if (templateId) body.templateId = templateId;
@@ -513,7 +518,9 @@ export const toggleWellnessLink = async (sessionId, active) => {
 
 export const togglePreWellnessLink = async (sessionId, active) => {
   try {
-    const response = await apiBase.post(`/prewellness/session/${sessionId}/toggle-link`, { active });
+    const response = await apiBase.post(`/prewellness/session/${sessionId}/toggle-link`, {
+      active,
+    });
     return response.data;
   } catch (error) {
     console.warn('Error toggling pre-wellness link:', error);

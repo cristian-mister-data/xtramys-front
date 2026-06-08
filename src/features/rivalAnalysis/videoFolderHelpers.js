@@ -8,7 +8,7 @@
 // Las llamadas pasan por los wrappers de `@/utils/api` (createVideoFolder
 // devuelve `{ success, folder }` ahí) y por `getAllVideoFoldersFlat` que ya
 // devuelve `{ success, folders }`.
-import { getAllVideoFoldersFlat, createVideoFolder } from '@/utils/api';
+import { getAllVideoFoldersFlat, createVideoFolder, updateVideoFolder } from '@/utils/api';
 
 const ROOT_FOLDER_COLOR = '#FF5722';
 const RIVAL_FOLDER_COLOR = '#FF9800';
@@ -75,5 +75,20 @@ export async function ensureRivalAnalysisFolder({ rootName, rivalName, lang }) {
   } catch (err) {
     console.warn('[ensureRivalAnalysisFolder] failed:', err?.message || err);
     return null;
+  }
+}
+
+export async function renameRivalAnalysisFolder(folderId, rivalName) {
+  const nextName = (rivalName || '').trim();
+  if (!folderId || !nextName) return false;
+  try {
+    await updateVideoFolder(folderId, {
+      nombre: nextName,
+      color: RIVAL_FOLDER_COLOR,
+    });
+    return true;
+  } catch (err) {
+    console.warn('[renameRivalAnalysisFolder] failed:', err?.message || err);
+    return false;
   }
 }

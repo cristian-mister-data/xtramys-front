@@ -20,7 +20,6 @@ import { useTheme } from 'styled-components';
 import Svg, { Rect, Line, Circle, Path, G, Defs, ClipPath, Ellipse } from 'react-native-svg';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 
-
 // Posiciones tácticas predefinidas para diferentes formaciones
 const FORMATION_POSITIONS = {
   // === Formaciones de 11 jugadores ===
@@ -304,9 +303,12 @@ const FORMATION_POSITIONS = {
 const getPositionColor = (pos) => {
   const position = pos?.toUpperCase() || '';
   if (position === 'POR' || position === 'PORTERO') return ['#10b981', '#059669'];
-  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some(p => position.includes(p))) return ['#3b82f6', '#2563eb'];
-  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some(p => position.includes(p))) return ['#f59e0b', '#d97706'];
-  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some(p => position.includes(p))) return ['#ef4444', '#dc2626'];
+  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some((p) => position.includes(p)))
+    return ['#3b82f6', '#2563eb'];
+  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some((p) => position.includes(p)))
+    return ['#f59e0b', '#d97706'];
+  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some((p) => position.includes(p)))
+    return ['#ef4444', '#dc2626'];
   return ['#6366f1', '#4f46e5'];
 };
 
@@ -314,9 +316,12 @@ const getPositionColor = (pos) => {
 const getPositionIcon = (pos) => {
   const position = pos?.toUpperCase() || '';
   if (position === 'POR' || position === 'PORTERO') return 'shield';
-  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some(p => position.includes(p))) return 'shield-checkmark';
-  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some(p => position.includes(p))) return 'ellipse';
-  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some(p => position.includes(p))) return 'flag';
+  if (['DFC', 'LI', 'LD', 'CAI', 'CAD', 'CENTRAL', 'LATERAL'].some((p) => position.includes(p)))
+    return 'shield-checkmark';
+  if (['MC', 'MCO', 'MCD', 'MI', 'MD', 'MEDIO', 'CENTROCAMPISTA'].some((p) => position.includes(p)))
+    return 'ellipse';
+  if (['DC', 'EI', 'ED', 'SD', 'DELANTERO', 'EXTREMO'].some((p) => position.includes(p)))
+    return 'flag';
   return 'football';
 };
 
@@ -326,12 +331,12 @@ function ProfessionalFootballField({ width, height }) {
   const strokeColor = 'rgba(255,255,255,0.92)';
   const fieldColor = '#1d8f3e';
   const fieldColorAlt = '#178a35';
-  
+
   // Medidas proporcionales (campo real: 105m x 68m)
   const margin = 6;
   const fieldW = width - margin * 2;
   const fieldH = height - margin * 2;
-  
+
   // Áreas y elementos
   const penaltyAreaW = fieldW * 0.55;
   const penaltyAreaH = fieldH * 0.155;
@@ -343,7 +348,7 @@ function ProfessionalFootballField({ width, height }) {
   const goalW = fieldW * 0.14;
   const goalH = fieldH * 0.022;
   const cornerR = fieldW * 0.022;
-  
+
   // Franjas de césped
   const stripes = 14;
   const stripeH = height / stripes;
@@ -355,84 +360,79 @@ function ProfessionalFootballField({ width, height }) {
           <Rect x={0} y={0} width={width} height={height} rx={10} ry={10} />
         </ClipPath>
       </Defs>
-      
+
       <G clipPath="url(#fieldClip)">
         {/* Franjas de césped */}
         {Array.from({ length: stripes }).map((_, i) => (
-          <Rect 
-            key={i} 
-            x={0} 
-            y={i * stripeH} 
-            width={width} 
-            height={stripeH} 
-            fill={i % 2 === 0 ? fieldColor : fieldColorAlt} 
+          <Rect
+            key={i}
+            x={0}
+            y={i * stripeH}
+            width={width}
+            height={stripeH}
+            fill={i % 2 === 0 ? fieldColor : fieldColorAlt}
           />
         ))}
-        
+
         {/* Borde exterior del campo */}
-        <Rect 
-          x={margin} 
-          y={margin} 
-          width={fieldW} 
-          height={fieldH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Rect
+          x={margin}
+          y={margin}
+          width={fieldW}
+          height={fieldH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* === LÍNEA CENTRAL === */}
-        <Line 
-          x1={margin} 
-          y1={height / 2} 
-          x2={width - margin} 
-          y2={height / 2} 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Line
+          x1={margin}
+          y1={height / 2}
+          x2={width - margin}
+          y2={height / 2}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* === CÍRCULO CENTRAL === */}
-        <Circle 
-          cx={width / 2} 
-          cy={height / 2} 
-          r={centerCircleR} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Circle
+          cx={width / 2}
+          cy={height / 2}
+          r={centerCircleR}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
         <Circle cx={width / 2} cy={height / 2} r={4} fill={strokeColor} />
-        
+
         {/* ===== ÁREA SUPERIOR ===== */}
-        
+
         {/* Área grande */}
-        <Rect 
-          x={(width - penaltyAreaW) / 2} 
-          y={margin} 
-          width={penaltyAreaW} 
-          height={penaltyAreaH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Rect
+          x={(width - penaltyAreaW) / 2}
+          y={margin}
+          width={penaltyAreaW}
+          height={penaltyAreaH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* Área pequeña */}
-        <Rect 
-          x={(width - goalAreaW) / 2} 
-          y={margin} 
-          width={goalAreaW} 
-          height={goalAreaH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Rect
+          x={(width - goalAreaW) / 2}
+          y={margin}
+          width={goalAreaW}
+          height={goalAreaH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* Punto penal superior */}
-        <Circle 
-          cx={width / 2} 
-          cy={margin + penaltySpotDist} 
-          r={3} 
-          fill={strokeColor} 
-        />
-        
+        <Circle cx={width / 2} cy={margin + penaltySpotDist} r={3} fill={strokeColor} />
+
         {/* Semicírculo del área superior */}
         <Path
           d={`M ${(width - penaltyAreaW) / 2 + penaltyAreaW * 0.22} ${margin + penaltyAreaH}
@@ -441,18 +441,18 @@ function ProfessionalFootballField({ width, height }) {
           stroke={strokeColor}
           strokeWidth={strokeWidth}
         />
-        
+
         {/* Portería superior */}
-        <Rect 
-          x={(width - goalW) / 2} 
-          y={margin - goalH} 
-          width={goalW} 
-          height={goalH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth + 0.5} 
+        <Rect
+          x={(width - goalW) / 2}
+          y={margin - goalH}
+          width={goalW}
+          height={goalH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth + 0.5}
         />
-        
+
         {/* Arcos de córner superiores */}
         <Path
           d={`M ${margin} ${margin + cornerR} A ${cornerR} ${cornerR} 0 0 1 ${margin + cornerR} ${margin}`}
@@ -466,39 +466,34 @@ function ProfessionalFootballField({ width, height }) {
           stroke={strokeColor}
           strokeWidth={strokeWidth}
         />
-        
+
         {/* ===== ÁREA INFERIOR ===== */}
-        
+
         {/* Área grande */}
-        <Rect 
-          x={(width - penaltyAreaW) / 2} 
-          y={height - margin - penaltyAreaH} 
-          width={penaltyAreaW} 
-          height={penaltyAreaH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Rect
+          x={(width - penaltyAreaW) / 2}
+          y={height - margin - penaltyAreaH}
+          width={penaltyAreaW}
+          height={penaltyAreaH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* Área pequeña */}
-        <Rect 
-          x={(width - goalAreaW) / 2} 
-          y={height - margin - goalAreaH} 
-          width={goalAreaW} 
-          height={goalAreaH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth} 
+        <Rect
+          x={(width - goalAreaW) / 2}
+          y={height - margin - goalAreaH}
+          width={goalAreaW}
+          height={goalAreaH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
         />
-        
+
         {/* Punto penal inferior */}
-        <Circle 
-          cx={width / 2} 
-          cy={height - margin - penaltySpotDist} 
-          r={3} 
-          fill={strokeColor} 
-        />
-        
+        <Circle cx={width / 2} cy={height - margin - penaltySpotDist} r={3} fill={strokeColor} />
+
         {/* Semicírculo del área inferior */}
         <Path
           d={`M ${(width - penaltyAreaW) / 2 + penaltyAreaW * 0.22} ${height - margin - penaltyAreaH}
@@ -507,18 +502,18 @@ function ProfessionalFootballField({ width, height }) {
           stroke={strokeColor}
           strokeWidth={strokeWidth}
         />
-        
+
         {/* Portería inferior */}
-        <Rect 
-          x={(width - goalW) / 2} 
-          y={height - margin} 
-          width={goalW} 
-          height={goalH} 
-          fill="none" 
-          stroke={strokeColor} 
-          strokeWidth={strokeWidth + 0.5} 
+        <Rect
+          x={(width - goalW) / 2}
+          y={height - margin}
+          width={goalW}
+          height={goalH}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth + 0.5}
         />
-        
+
         {/* Arcos de córner inferiores */}
         <Path
           d={`M ${margin} ${height - margin - cornerR} A ${cornerR} ${cornerR} 0 0 0 ${margin + cornerR} ${height - margin}`}
@@ -538,14 +533,30 @@ function ProfessionalFootballField({ width, height }) {
 }
 
 // Componente de posición en el campo
-function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlayer, player, onRemove, isSelecting, readOnly = false, showPhotos = true, showNames = true, translatePosition, isMobile = false }) {
+function PositionSlot({
+  position,
+  x,
+  y,
+  fieldWidth,
+  fieldHeight,
+  onDrop,
+  hasPlayer,
+  player,
+  onRemove,
+  isSelecting,
+  readOnly = false,
+  showPhotos = true,
+  showNames = true,
+  translatePosition,
+  isMobile = false,
+}) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(position.pos);
   const pixelX = (x / 100) * fieldWidth;
   const pixelY = (y / 100) * fieldHeight;
   const size = Math.max(28, Math.min(isMobile ? 40 : 54, Math.round(fieldWidth * 0.12)));
-  
+
   return (
     <View
       style={[
@@ -554,31 +565,41 @@ function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlay
           left: pixelX - size / 2,
           top: pixelY - size / 2,
           width: size,
-        }
+        },
       ]}
     >
       <TouchableOpacity
         style={[
           styles.slotCircle,
-          { 
-            width: size, 
-            height: size, 
+          {
+            width: size,
+            height: size,
             borderRadius: size / 2,
             borderColor: hasPlayer ? colors[0] : 'rgba(255,255,255,0.5)',
             backgroundColor: hasPlayer ? 'transparent' : 'rgba(0,0,0,0.3)',
           },
           isSelecting && !hasPlayer && !readOnly && styles.slotHighlight,
         ]}
-        onPress={() => readOnly ? null : (hasPlayer ? onRemove(position.index) : onDrop(position))}
+        onPress={() => (readOnly ? null : hasPlayer ? onRemove(position.index) : onDrop(position))}
         activeOpacity={readOnly ? 1 : 0.8}
         disabled={readOnly}
       >
         {hasPlayer && player ? (
           showPhotos && player.foto ? (
-            <Image source={{ uri: player.foto }} style={[styles.slotPhoto, { borderRadius: size / 2 }]} />
+            <Image
+              source={{ uri: player.foto }}
+              style={[styles.slotPhoto, { borderRadius: size / 2 }]}
+            />
           ) : (
-            <LinearGradient colors={colors} style={[styles.slotGradient, { borderRadius: size / 2 }]}>
-              <Text style={[styles.slotNumber, { fontSize: Math.max(10, Math.round(size * 0.32)) }]}>{player.dorsal || '?'}</Text>
+            <LinearGradient
+              colors={colors}
+              style={[styles.slotGradient, { borderRadius: size / 2 }]}
+            >
+              <Text
+                style={[styles.slotNumber, { fontSize: Math.max(10, Math.round(size * 0.32)) }]}
+              >
+                {player.dorsal || '?'}
+              </Text>
             </LinearGradient>
           )
         ) : (
@@ -587,10 +608,14 @@ function PositionSlot({ position, x, y, fieldWidth, fieldHeight, onDrop, hasPlay
           </View>
         )}
       </TouchableOpacity>
-{showNames && (
+      {showNames && (
         <View style={[styles.slotLabelContainer, { maxWidth: size * 1.8 }]}>
           <Text style={styles.slotLabel} numberOfLines={1}>
-            {hasPlayer && player ? getPlayerFirstName(player) : (translatePosition ? translatePosition(position.pos) : position.pos)}
+            {hasPlayer && player
+              ? getPlayerFirstName(player)
+              : translatePosition
+                ? translatePosition(position.pos)
+                : position.pos}
           </Text>
         </View>
       )}
@@ -603,13 +628,13 @@ function PlayerItem({ player, onPress, isSelected, isAssigned }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(player.posicion);
-  
+
   return (
     <TouchableOpacity
       style={[
         styles.playerItem,
         isSelected && styles.playerItemSelected,
-        isAssigned && styles.playerItemAssigned
+        isAssigned && styles.playerItemAssigned,
       ]}
       onPress={() => !isAssigned && onPress(player)}
       disabled={isAssigned}
@@ -618,12 +643,18 @@ function PlayerItem({ player, onPress, isSelected, isAssigned }) {
       {player.foto ? (
         <Image source={{ uri: player.foto }} style={styles.playerItemPhoto} />
       ) : (
-        <LinearGradient colors={isAssigned ? ['#9ca3af', '#6b7280'] : colors} style={styles.playerItemCircle}>
+        <LinearGradient
+          colors={isAssigned ? ['#9ca3af', '#6b7280'] : colors}
+          style={styles.playerItemCircle}
+        >
           <Text style={styles.playerItemNumber}>{player.dorsal || '?'}</Text>
         </LinearGradient>
       )}
-<View style={styles.playerItemInfo}>
-        <Text style={[styles.playerItemName, isAssigned && styles.playerItemNameAssigned]} numberOfLines={1}>
+      <View style={styles.playerItemInfo}>
+        <Text
+          style={[styles.playerItemName, isAssigned && styles.playerItemNameAssigned]}
+          numberOfLines={1}
+        >
           {getPlayerFullName(player)}
         </Text>
         <Text style={styles.playerItemPos}>{player.posicion}</Text>
@@ -667,26 +698,27 @@ export default function LineupEditor({
   const [showFilters, setShowFilters] = useState(false);
   const [filterSearch, setFilterSearch] = useState('');
   const [filterPosition, setFilterPosition] = useState('');
-  
+
   // Función para traducir posiciones tácticas
   const translatePosition = (posCode) => {
     return t(`matchSheet.positions.${posCode}`, { defaultValue: posCode });
   };
-  
+
   // Calcular dimensiones del campo
   const maxFieldHeightTablet = isMobile ? Infinity : screenHeight * 0.58;
-  const rawMaxWidth = containerWidth != null
-    ? containerWidth
-    : isMobile
-      ? screenWidth - 32
-      : Math.min(screenWidth - 220, 480);
+  const rawMaxWidth =
+    containerWidth != null
+      ? containerWidth
+      : isMobile
+        ? Math.min(screenWidth - 24, 380)
+        : Math.min(screenWidth - 220, 480);
   const widthFromHeightLimit = maxFieldHeightTablet / 1.42;
   const fieldWidth = Math.max(
     isMobile ? rawMaxWidth : Math.min(rawMaxWidth, widthFromHeightLimit),
-    200
+    200,
   );
   const fieldHeight = fieldWidth * 1.42;
-  
+
   // Formación por defecto según número de jugadores
   const defaultFormation = useMemo(() => {
     if (jugadoresPorEquipo === 7) return '1-3-2-1';
@@ -699,48 +731,55 @@ export default function LineupEditor({
     const positions = FORMATION_POSITIONS[formation] || FORMATION_POSITIONS[defaultFormation];
     return positions.map((pos, index) => ({ ...pos, index }));
   }, [formation, defaultFormation]);
-  
+
   // Jugadores convocados con sus datos completos (ordenados por dorsal)
   const convocadosPlayers = useMemo(() => {
     return convocados
-      .map(id => players.find(p => p._id === id))
+      .map((id) => players.find((p) => p._id === id))
       .filter(Boolean)
       .sort((a, b) => {
-        const ad = Number.isFinite(parseInt(a.dorsal)) ? parseInt(a.dorsal) : Number.POSITIVE_INFINITY;
-        const bd = Number.isFinite(parseInt(b.dorsal)) ? parseInt(b.dorsal) : Number.POSITIVE_INFINITY;
+        const ad = Number.isFinite(parseInt(a.dorsal))
+          ? parseInt(a.dorsal)
+          : Number.POSITIVE_INFINITY;
+        const bd = Number.isFinite(parseInt(b.dorsal))
+          ? parseInt(b.dorsal)
+          : Number.POSITIVE_INFINITY;
         if (ad !== bd) return ad - bd;
         return (a.nombre || '').localeCompare(b.nombre || '');
       });
   }, [convocados, players]);
-  
+
   // Posiciones disponibles (dinámicas según los convocados)
   const availablePositions = useMemo(() => {
     const posSet = new Set();
-    convocadosPlayers.forEach(p => { if (p.posicion) posSet.add(p.posicion); });
+    convocadosPlayers.forEach((p) => {
+      if (p.posicion) posSet.add(p.posicion);
+    });
     return Array.from(posSet).sort();
   }, [convocadosPlayers]);
-  
+
   // Jugadores filtrados por búsqueda y posición
   const filteredPlayers = useMemo(() => {
     let result = convocadosPlayers;
     if (filterPosition) {
-      result = result.filter(p => p.posicion === filterPosition);
+      result = result.filter((p) => p.posicion === filterPosition);
     }
     if (filterSearch.trim()) {
       const lower = filterSearch.trim().toLowerCase();
-      result = result.filter(p =>
-        getPlayerFullName(p).toLowerCase().includes(lower) ||
-        String(p.dorsal || '').includes(lower)
+      result = result.filter(
+        (p) =>
+          getPlayerFullName(p).toLowerCase().includes(lower) ||
+          String(p.dorsal || '').includes(lower),
       );
     }
     return result;
   }, [convocadosPlayers, filterPosition, filterSearch]);
-  
+
   // IDs de jugadores ya asignados a titulares
   const assignedPlayerIds = useMemo(() => {
     return Object.values(lineupAssignments).filter(Boolean);
   }, [lineupAssignments]);
-  
+
   // Inicializar asignaciones desde titulares existentes
   React.useEffect(() => {
     if (titulares.length > 0 && Object.keys(lineupAssignments).length === 0) {
@@ -753,66 +792,67 @@ export default function LineupEditor({
       setLineupAssignments(initialAssignments);
     }
   }, [titulares, formationPositions.length]);
-  
+
   // Manejar selección de jugador
   const handlePlayerSelect = (player) => {
     setSelectedPlayer(selectedPlayer?._id === player._id ? null : player);
   };
-  
+
   // Manejar asignación a posición
   const handlePositionDrop = (position) => {
     if (!selectedPlayer) return;
-    
-    const existingPositionIndex = Object.entries(lineupAssignments)
-      .find(([_, playerId]) => playerId === selectedPlayer._id)?.[0];
-    
+
+    const existingPositionIndex = Object.entries(lineupAssignments).find(
+      ([_, playerId]) => playerId === selectedPlayer._id,
+    )?.[0];
+
     const newAssignments = { ...lineupAssignments };
-    
+
     if (existingPositionIndex !== undefined) {
       delete newAssignments[existingPositionIndex];
     }
-    
+
     newAssignments[position.index] = selectedPlayer._id;
-    
+
     setLineupAssignments(newAssignments);
     setSelectedPlayer(null);
-    
+
     const newTitulares = formationPositions.map((_, idx) => newAssignments[idx]).filter(Boolean);
     onTitularesChange?.(newTitulares);
-    
+
     // Quitar el jugador de suplentes si estaba ahí (consistencia)
     if (suplentes.includes(selectedPlayer._id)) {
-      const newSuplentes = suplentes.filter(id => id !== selectedPlayer._id);
+      const newSuplentes = suplentes.filter((id) => id !== selectedPlayer._id);
       onSuplentesChange?.(newSuplentes);
     }
 
     // Auto-fill suplentes cuando se completan los 11 titulares
     if (newTitulares.length === formationPositions.length) {
       const autoSuplentes = convocadosPlayers
-        .filter(p => !newTitulares.includes(p._id))
-        .map(p => p._id);
+        .filter((p) => !newTitulares.includes(p._id))
+        .map((p) => p._id);
       onSuplentesChange?.(autoSuplentes);
     }
   };
-  
+
   // Manejar remoción de jugador de posición
   const handleRemoveFromPosition = (positionIndex) => {
     const newAssignments = { ...lineupAssignments };
     delete newAssignments[positionIndex];
     setLineupAssignments(newAssignments);
-    
+
     const newTitulares = formationPositions.map((_, idx) => newAssignments[idx]).filter(Boolean);
     onTitularesChange?.(newTitulares);
   };
-  
+
   // Añadir todos los no asignados como suplentes
   const handleSetSuplentes = () => {
     const suplentesIds = convocadosPlayers
-      .filter(p => !assignedPlayerIds.includes(p._id))
-      .map(p => p._id);
+      .filter((p) => !assignedPlayerIds.includes(p._id))
+      .map((p) => p._id);
     onSuplentesChange?.(suplentesIds);
   };
-  
+
   // Limpiar toda la alineación
   const handleClearLineup = () => {
     setLineupAssignments({});
@@ -831,12 +871,12 @@ export default function LineupEditor({
         <View style={styles.fieldContainerReadOnly}>
           <View style={[styles.fieldWrapper, { width: fieldWidth, height: fieldHeight }]}>
             <ProfessionalFootballField width={fieldWidth} height={fieldHeight} />
-            
+
             {/* Posiciones */}
             {formationPositions.map((position) => {
               const playerId = lineupAssignments[position.index];
-              const player = playerId ? players.find(p => p._id === playerId) : null;
-              
+              const player = playerId ? players.find((p) => p._id === playerId) : null;
+
               return (
                 <PositionSlot
                   key={position.index}
@@ -860,32 +900,34 @@ export default function LineupEditor({
             })}
           </View>
         </View>
-        
+
         {/* Suplentes visuales debajo del campo */}
         {suplentes.length > 0 && (
           <View style={styles.suplentesReadOnlyCard}>
             <View style={styles.suplentesReadOnlyHeader}>
               <View style={styles.suplentesReadOnlyIndicator} />
-              <Text style={styles.suplentesReadOnlyTitle}>{t('matchSheet.lineup.substitutes')} ({suplentes.length})</Text>
+              <Text style={styles.suplentesReadOnlyTitle}>
+                {t('matchSheet.lineup.substitutes')} ({suplentes.length})
+              </Text>
             </View>
             <View style={styles.suplentesReadOnlyList}>
               {suplentes.map((supId, idx) => {
-                const suplente = players.find(p => p._id === supId);
+                const suplente = players.find((p) => p._id === supId);
                 if (!suplente) return null;
                 const colors = getPositionColor(suplente.posicion);
                 return (
                   <View key={idx} style={styles.suplenteReadOnlyItem}>
                     {showPhotos && suplente.foto ? (
-                      <Image source={{ uri: suplente.foto }} style={[styles.suplenteReadOnlyPhoto, { borderColor: colors[1] }]} />
+                      <Image
+                        source={{ uri: suplente.foto }}
+                        style={[styles.suplenteReadOnlyPhoto, { borderColor: colors[1] }]}
+                      />
                     ) : (
-                      <LinearGradient
-                        colors={colors}
-                        style={styles.suplenteReadOnlyCircle}
-                      >
+                      <LinearGradient colors={colors} style={styles.suplenteReadOnlyCircle}>
                         <Text style={styles.suplenteReadOnlyDorsal}>{suplente.dorsal || '?'}</Text>
                       </LinearGradient>
                     )}
-{showNames && (
+                    {showNames && (
                       <Text style={styles.suplenteReadOnlyName}>{getPlayerFullName(suplente)}</Text>
                     )}
                   </View>
@@ -915,22 +957,21 @@ export default function LineupEditor({
           <Ionicons name="refresh" size={18} color={theme.colors.textMuted} />
         </TouchableOpacity>
       </View>
-      
+
       {/* Barra de instrucciones */}
       <View style={[styles.instructionBar, selectedPlayer && styles.instructionBarActive]}>
-        <Ionicons 
-          name={selectedPlayer ? "hand-left" : "information-circle"} 
-          size={18} 
-          color={selectedPlayer ? theme.colors.primary : theme.colors.textMuted} 
+        <Ionicons
+          name={selectedPlayer ? 'hand-left' : 'information-circle'}
+          size={18}
+          color={selectedPlayer ? theme.colors.primary : theme.colors.textMuted}
         />
-<Text style={[styles.instructionText, selectedPlayer && styles.instructionTextActive]}>
-          {selectedPlayer 
+        <Text style={[styles.instructionText, selectedPlayer && styles.instructionTextActive]}>
+          {selectedPlayer
             ? t('matchSheet.lineup.tapPositionToPlace', { name: getPlayerFullName(selectedPlayer) })
-            : t('matchSheet.lineup.selectPlayerThenPosition')
-          }
+            : t('matchSheet.lineup.selectPlayerThenPosition')}
         </Text>
       </View>
-      
+
       {/* Contenedor principal */}
       <View style={[styles.editorContainer, isMobile && styles.editorContainerMobile]}>
         {isMobile ? (
@@ -939,12 +980,12 @@ export default function LineupEditor({
             <View style={styles.fieldContainerMobile}>
               <View style={[styles.fieldWrapper, { width: fieldWidth, height: fieldHeight }]}>
                 <ProfessionalFootballField width={fieldWidth} height={fieldHeight} />
-                
+
                 {/* Posiciones */}
                 {formationPositions.map((position) => {
                   const playerId = lineupAssignments[position.index];
-                  const player = playerId ? players.find(p => p._id === playerId) : null;
-                  
+                  const player = playerId ? players.find((p) => p._id === playerId) : null;
+
                   return (
                     <PositionSlot
                       key={position.index}
@@ -965,7 +1006,7 @@ export default function LineupEditor({
                 })}
               </View>
             </View>
-            
+
             {/* En móvil: Panel de jugadores abajo */}
             <View style={styles.playersPanelMobile}>
               <View style={styles.panelHeaderMobile}>
@@ -973,17 +1014,31 @@ export default function LineupEditor({
                   <Ionicons name="people" size={16} color={theme.colors.primary} />
                   <View>
                     <Text style={styles.panelTitleMobile}>{t('matchSheet.lineup.called')}</Text>
-                    <Text style={styles.panelSubtitleMobile}>{`${filteredPlayers.length}/${convocadosPlayers.length} ${t('matchSheet.lineup.called')}`}</Text>
+                    <Text
+                      style={styles.panelSubtitleMobile}
+                    >{`${filteredPlayers.length}/${convocadosPlayers.length} ${t('matchSheet.lineup.called')}`}</Text>
                   </View>
                 </View>
                 <View style={styles.panelHeaderActions}>
                   {convocadosPlayers.length > 4 && (
                     <TouchableOpacity
-                      style={[styles.filterToggleButton, showFilters && styles.filterToggleButtonActive]}
+                      style={[
+                        styles.filterToggleButton,
+                        showFilters && styles.filterToggleButtonActive,
+                      ]}
                       onPress={() => setShowFilters(!showFilters)}
                     >
-                      <Ionicons name={showFilters ? "chevron-up" : "options"} size={16} color={showFilters ? "#fff" : theme.colors.primary} />
-                      <Text style={[styles.filterToggleText, showFilters && styles.filterToggleTextActive]}>
+                      <Ionicons
+                        name={showFilters ? 'chevron-up' : 'options'}
+                        size={16}
+                        color={showFilters ? '#fff' : theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.filterToggleText,
+                          showFilters && styles.filterToggleTextActive,
+                        ]}
+                      >
                         {t('matchSheet.lineup.filters', 'Filtros')}
                       </Text>
                     </TouchableOpacity>
@@ -1001,7 +1056,7 @@ export default function LineupEditor({
                   )}
                 </View>
               </View>
-              
+
               {/* Panel de filtros colapsable */}
               {showFilters && convocadosPlayers.length > 4 && (
                 <View style={styles.filterPanel}>
@@ -1016,36 +1071,58 @@ export default function LineupEditor({
                     />
                     {filterSearch ? (
                       <TouchableOpacity onPress={() => setFilterSearch('')}>
-                        <Ionicons name="close-circle" size={18} color={theme.colors.inputPlaceholder} />
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={theme.colors.inputPlaceholder}
+                        />
                       </TouchableOpacity>
                     ) : null}
                   </View>
                   {availablePositions.length > 1 && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.filterScroll}
+                    >
                       <TouchableOpacity
                         style={[styles.filterChip, !filterPosition && styles.filterChipActive]}
                         onPress={() => setFilterPosition('')}
                       >
-                        <Text style={[styles.filterChipText, !filterPosition && styles.filterChipTextActive]}>
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            !filterPosition && styles.filterChipTextActive,
+                          ]}
+                        >
                           {t('matchSheet.lineup.allPositions', 'Todas')}
                         </Text>
                       </TouchableOpacity>
-                      {availablePositions.map(pos => {
+                      {availablePositions.map((pos) => {
                         const colors = getPositionColor(pos);
                         return (
                           <TouchableOpacity
                             key={pos}
                             style={[
                               styles.filterChip,
-                              filterPosition === pos && [styles.filterChipActive, { backgroundColor: colors[0] }]
+                              filterPosition === pos && [
+                                styles.filterChipActive,
+                                { backgroundColor: colors[0] },
+                              ],
                             ]}
                             onPress={() => setFilterPosition(filterPosition === pos ? '' : pos)}
                           >
-                            <Ionicons name={getPositionIcon(pos)} size={12} color={filterPosition === pos ? '#fff' : colors[1]} />
-                            <Text style={[
-                              styles.filterChipText,
-                              filterPosition === pos && styles.filterChipTextActive
-                            ]}>
+                            <Ionicons
+                              name={getPositionIcon(pos)}
+                              size={12}
+                              color={filterPosition === pos ? '#fff' : colors[1]}
+                            />
+                            <Text
+                              style={[
+                                styles.filterChipText,
+                                filterPosition === pos && styles.filterChipTextActive,
+                              ]}
+                            >
                               {translatePosition(pos)}
                             </Text>
                           </TouchableOpacity>
@@ -1054,45 +1131,64 @@ export default function LineupEditor({
                     </ScrollView>
                   )}
                   {(filterSearch || filterPosition) && (
-                    <TouchableOpacity style={styles.clearFiltersButton} onPress={() => { setFilterSearch(''); setFilterPosition(''); }}>
-                      <Ionicons name="close-circle-outline" size={14} color={theme.colors.primary} />
-                      <Text style={styles.clearFiltersText}>{t('matchSheet.lineup.clearFilters', 'Limpiar')}</Text>
+                    <TouchableOpacity
+                      style={styles.clearFiltersButton}
+                      onPress={() => {
+                        setFilterSearch('');
+                        setFilterPosition('');
+                      }}
+                    >
+                      <Ionicons
+                        name="close-circle-outline"
+                        size={14}
+                        color={theme.colors.primary}
+                      />
+                      <Text style={styles.clearFiltersText}>
+                        {t('matchSheet.lineup.clearFilters', 'Limpiar')}
+                      </Text>
                     </TouchableOpacity>
                   )}
                 </View>
               )}
-              
-              <ScrollView 
+
+              <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.playersListMobileGrid}
               >
-                {filteredPlayers.map(player => (
+                {filteredPlayers.map((player) => (
                   <TouchableOpacity
                     key={player._id}
                     style={[
                       styles.playerItemMobile,
                       selectedPlayer?._id === player._id && styles.playerItemMobileSelected,
-                      assignedPlayerIds.includes(player._id) && styles.playerItemMobileAssigned
+                      assignedPlayerIds.includes(player._id) && styles.playerItemMobileAssigned,
                     ]}
-                    onPress={() => !assignedPlayerIds.includes(player._id) && handlePlayerSelect(player)}
+                    onPress={() =>
+                      !assignedPlayerIds.includes(player._id) && handlePlayerSelect(player)
+                    }
                     disabled={assignedPlayerIds.includes(player._id)}
                     activeOpacity={0.7}
                   >
                     {player.foto ? (
                       <Image source={{ uri: player.foto }} style={styles.playerItemMobilePhoto} />
                     ) : (
-                      <LinearGradient 
-                        colors={assignedPlayerIds.includes(player._id) ? ['#9ca3af', '#6b7280'] : getPositionColor(player.posicion)} 
+                      <LinearGradient
+                        colors={
+                          assignedPlayerIds.includes(player._id)
+                            ? ['#9ca3af', '#6b7280']
+                            : getPositionColor(player.posicion)
+                        }
                         style={styles.playerItemMobileCircle}
                       >
                         <Text style={styles.playerItemMobileNumber}>{player.dorsal || '?'}</Text>
                       </LinearGradient>
                     )}
-                    <Text 
+                    <Text
                       style={[
-                        styles.playerItemMobileName, 
-                        assignedPlayerIds.includes(player._id) && styles.playerItemMobileNameAssigned
-                      ]} 
+                        styles.playerItemMobileName,
+                        assignedPlayerIds.includes(player._id) &&
+                          styles.playerItemMobileNameAssigned,
+                      ]}
                       numberOfLines={1}
                     >
                       {getPlayerFirstName(player)}
@@ -1114,14 +1210,22 @@ export default function LineupEditor({
                 ))}
                 {convocadosPlayers.length === 0 && (
                   <View style={styles.emptyContainerMobile}>
-                    <Ionicons name="alert-circle-outline" size={24} color={theme.colors.textDisabled} />
-                    <Text style={styles.emptyTextMobile}>{t('matchSheet.lineup.selectCalledFirst')}</Text>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={24}
+                      color={theme.colors.textDisabled}
+                    />
+                    <Text style={styles.emptyTextMobile}>
+                      {t('matchSheet.lineup.selectCalledFirst')}
+                    </Text>
                   </View>
                 )}
                 {filteredPlayers.length === 0 && convocadosPlayers.length > 0 && (
                   <View style={styles.emptyContainerMobile}>
                     <Ionicons name="search-outline" size={24} color={theme.colors.textDisabled} />
-                    <Text style={styles.emptyTextMobile}>{t('matchSheet.lineup.noResults', 'Sin resultados')}</Text>
+                    <Text style={styles.emptyTextMobile}>
+                      {t('matchSheet.lineup.noResults', 'Sin resultados')}
+                    </Text>
                   </View>
                 )}
               </ScrollView>
@@ -1140,13 +1244,13 @@ export default function LineupEditor({
                   <Text style={styles.panelBadgeText}>{convocadosPlayers.length}</Text>
                 </View>
               </View>
-              
-              <ScrollView 
-                style={styles.playersList} 
+
+              <ScrollView
+                style={styles.playersList}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
               >
-                {convocadosPlayers.map(player => (
+                {convocadosPlayers.map((player) => (
                   <PlayerItem
                     key={player._id}
                     player={player}
@@ -1157,18 +1261,19 @@ export default function LineupEditor({
                 ))}
                 {convocadosPlayers.length === 0 && (
                   <View style={styles.emptyContainer}>
-                    <Ionicons name="alert-circle-outline" size={36} color={theme.colors.textDisabled} />
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={36}
+                      color={theme.colors.textDisabled}
+                    />
                     <Text style={styles.emptyText}>{t('matchSheet.lineup.selectCalledFirst')}</Text>
                   </View>
                 )}
               </ScrollView>
-              
+
               {/* Botón suplentes */}
               {remainingPlayers > 0 && (
-                <TouchableOpacity
-                  style={styles.suplentesButton}
-                  onPress={handleSetSuplentes}
-                >
+                <TouchableOpacity style={styles.suplentesButton} onPress={handleSetSuplentes}>
                   <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
                   <Text style={styles.suplentesButtonText}>
                     {t('matchSheet.lineup.autoSubstitutes')} ({remainingPlayers})
@@ -1176,17 +1281,17 @@ export default function LineupEditor({
                 </TouchableOpacity>
               )}
             </View>
-            
+
             {/* En tablet/desktop: Campo a la derecha */}
             <View style={styles.fieldContainer}>
               <View style={[styles.fieldWrapper, { width: fieldWidth, height: fieldHeight }]}>
                 <ProfessionalFootballField width={fieldWidth} height={fieldHeight} />
-                
+
                 {/* Posiciones */}
                 {formationPositions.map((position) => {
                   const playerId = lineupAssignments[position.index];
-                  const player = playerId ? players.find(p => p._id === playerId) : null;
-                  
+                  const player = playerId ? players.find((p) => p._id === playerId) : null;
+
                   return (
                     <PositionSlot
                       key={position.index}
@@ -1210,13 +1315,15 @@ export default function LineupEditor({
           </>
         )}
       </View>
-      
+
       {/* Footer con contadores */}
       <View style={styles.footer}>
         <View style={[styles.counterBadge, styles.titularesBadge]}>
           <Ionicons name="star" size={16} color="#f59e0b" />
           <Text style={styles.counterLabel}>{t('matchSheet.lineup.starters')}</Text>
-          <Text style={styles.counterValue}>{assignedPlayerIds.length}/{jugadoresPorEquipo}</Text>
+          <Text style={styles.counterValue}>
+            {assignedPlayerIds.length}/{jugadoresPorEquipo}
+          </Text>
         </View>
         <View style={[styles.counterBadge, styles.suplentesBadge]}>
           <Ionicons name="swap-horizontal" size={16} color={theme.colors.purple} />
@@ -1228,613 +1335,614 @@ export default function LineupEditor({
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  formationText: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    fontWeight: '500',
-  },
-  clearButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: theme.colors.backgroundAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  instructionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: theme.colors.surfaceAlt,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  instructionBarActive: {
-    backgroundColor: theme.colors.primarySoft,
-    borderColor: theme.colors.primaryLight,
-  },
-  instructionText: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    flex: 1,
-  },
-  instructionTextActive: {
-    color: theme.colors.primary,
-    fontWeight: '500',
-  },
-  editorContainer: {
-    flexDirection: 'row',
-    gap: 16,
-    alignItems: 'flex-start',
-  },
-  editorContainerMobile: {
-    flexDirection: 'column',
-    gap: 16,
-    alignItems: 'stretch',
-  },
-  // Estilos para layout móvil vertical
-  fieldContainerMobile: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  playersPanelMobile: {
-    width: '100%',
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  panelHeaderMobile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    gap: 10,
-  },
-  panelTitleMobile: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  panelSubtitleMobile: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  panelHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterToggleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primarySoft,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryLight,
-  },
-  filterToggleButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  filterToggleText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.primary,
-  },
-  filterToggleTextActive: {
-    color: '#fff',
-  },
-  filterPanel: {
-    marginBottom: 12,
-    gap: 10,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: theme.colors.text,
-    padding: 0,
-  },
-  filterScroll: {
-    flexGrow: 0,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    gap: 4,
-  },
-  filterChipActive: {
-    borderWidth: 0,
-  },
-  filterChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.textMuted,
-  },
-  filterChipTextActive: {
-    color: '#fff',
-  },
-  clearFiltersButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    gap: 4,
-  },
-  clearFiltersText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: theme.colors.primary,
-  },
-  suplentesButtonMobile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.purple,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 6,
-  },
-  suplentesButtonTextMobile: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  playersListMobileGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 10,
-    paddingVertical: 4,
-  },
-  playerItemMobile: {
-    width: '48%',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  playerItemMobileSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primarySoft,
-  },
-  playerItemMobileAssigned: {
-    opacity: 0.9,
-    backgroundColor: theme.colors.backgroundAlt,
-    borderColor: theme.colors.border,
-  },
-  playerItemMobilePhoto: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  playerItemMobileCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerItemMobileNumber: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  playerItemMobileName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  playerItemMobileNameAssigned: {
-    color: theme.colors.textDisabled,
-  },
-  playerItemMobilePos: {
-    fontSize: 10,
-    color: theme.colors.textMuted,
-    marginTop: 4,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  selectedIndicatorMobile: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  assignedBadgeMobile: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-  },
-  emptyContainerMobile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  emptyTextMobile: {
-    fontSize: 11,
-    color: theme.colors.textDisabled,
-  },
-  playersPanel: {
-    width: 160,
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    maxHeight: 560,
-  },
+const makeStyles = (theme) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    headerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    formationText: {
+      fontSize: 13,
+      color: theme.colors.textMuted,
+      fontWeight: '500',
+    },
+    clearButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: theme.colors.backgroundAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    instructionBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: theme.colors.surfaceAlt,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    instructionBarActive: {
+      backgroundColor: theme.colors.primarySoft,
+      borderColor: theme.colors.primaryLight,
+    },
+    instructionText: {
+      fontSize: 13,
+      color: theme.colors.textMuted,
+      flex: 1,
+    },
+    instructionTextActive: {
+      color: theme.colors.primary,
+      fontWeight: '500',
+    },
+    editorContainer: {
+      flexDirection: 'row',
+      gap: 16,
+      alignItems: 'flex-start',
+    },
+    editorContainerMobile: {
+      flexDirection: 'column',
+      gap: 16,
+      alignItems: 'stretch',
+    },
+    // Estilos para layout móvil vertical
+    fieldContainerMobile: {
+      alignItems: 'center',
+      width: '100%',
+      paddingHorizontal: 8,
+    },
+    playersPanelMobile: {
+      width: '100%',
+      backgroundColor: theme.colors.surfaceAlt,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    panelHeaderMobile: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      gap: 10,
+    },
+    panelTitleMobile: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    panelSubtitleMobile: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    panelHeaderActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    filterToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primarySoft,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      borderRadius: 10,
+      gap: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.primaryLight,
+    },
+    filterToggleButtonActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    filterToggleText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.primary,
+    },
+    filterToggleTextActive: {
+      color: '#fff',
+    },
+    filterPanel: {
+      marginBottom: 12,
+      gap: 10,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 13,
+      color: theme.colors.text,
+      padding: 0,
+    },
+    filterScroll: {
+      flexGrow: 0,
+    },
+    filterChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      marginRight: 8,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 4,
+    },
+    filterChipActive: {
+      borderWidth: 0,
+    },
+    filterChipText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.textMuted,
+    },
+    filterChipTextActive: {
+      color: '#fff',
+    },
+    clearFiltersButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 6,
+      gap: 4,
+    },
+    clearFiltersText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: theme.colors.primary,
+    },
+    suplentesButtonMobile: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.purple,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      gap: 6,
+    },
+    suplentesButtonTextMobile: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#fff',
+    },
+    playersListMobileGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 10,
+      paddingVertical: 4,
+    },
+    playerItemMobile: {
+      width: '48%',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 14,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    playerItemMobileSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primarySoft,
+    },
+    playerItemMobileAssigned: {
+      opacity: 0.9,
+      backgroundColor: theme.colors.backgroundAlt,
+      borderColor: theme.colors.border,
+    },
+    playerItemMobilePhoto: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+    },
+    playerItemMobileCircle: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    playerItemMobileNumber: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    playerItemMobileName: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    playerItemMobileNameAssigned: {
+      color: theme.colors.textDisabled,
+    },
+    playerItemMobilePos: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      marginTop: 4,
+      textTransform: 'uppercase',
+      textAlign: 'center',
+    },
+    selectedIndicatorMobile: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+    },
+    assignedBadgeMobile: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+    },
+    emptyContainerMobile: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      gap: 8,
+    },
+    emptyTextMobile: {
+      fontSize: 11,
+      color: theme.colors.textDisabled,
+    },
+    playersPanel: {
+      width: 160,
+      backgroundColor: theme.colors.surfaceAlt,
+      borderRadius: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      maxHeight: 560,
+    },
 
-  panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  panelHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  panelTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-  },
-  panelBadge: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  panelBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  playersList: {
-    flex: 1,
-  },
-  playerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-  },
-  playerItemSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primarySoft,
-  },
-  playerItemAssigned: {
-    opacity: 0.55,
-    backgroundColor: theme.colors.backgroundAlt,
-    borderColor: theme.colors.border,
-  },
-  playerItemPhoto: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  playerItemCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playerItemNumber: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  playerItemInfo: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  playerItemName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  playerItemNameAssigned: {
-    color: theme.colors.textDisabled,
-  },
-  playerItemPos: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  selectedIndicator: {
-    marginLeft: 4,
-  },
-  assignedBadge: {
-    marginLeft: 4,
-  },
-  suplentesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.purple,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 8,
-  },
-  suplentesButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 12,
-    color: theme.colors.textDisabled,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  fieldContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  fieldWrapper: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  positionSlot: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  slotCircle: {
-    borderWidth: 3,
-    borderStyle: 'dashed',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  slotHighlight: {
-    borderColor: '#fbbf24',
-    borderStyle: 'solid',
-    backgroundColor: 'rgba(251, 191, 36, 0.3)',
-  },
-  slotEmpty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  slotPhoto: {
-    width: '100%',
-    height: '100%',
-  },
-  slotGradient: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  slotNumber: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  slotLabelContainer: {
-    marginTop: 4,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    maxWidth: 80,
-  },
-  slotLabel: {
-    fontSize: 10,
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  counterBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 24,
-    gap: 8,
-  },
-  titularesBadge: {
-    backgroundColor: theme.colors.warningSoft,
-    borderWidth: 1,
-    borderColor: theme.colors.warning,
-  },
-  suplentesBadge: {
-    backgroundColor: theme.colors.purpleSoft,
-    borderWidth: 1,
-    borderColor: theme.colors.purple,
-  },
-  counterLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: theme.colors.textSecondary,
-  },
-  counterValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  // Estilos para modo readOnly
-  containerReadOnly: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  fieldContainerReadOnly: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suplentesReadOnlyCard: {
-    backgroundColor: theme.colors.purpleSoft,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.purple,
-  },
-  suplentesReadOnlyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  suplentesReadOnlyIndicator: {
-    width: 5,
-    height: 18,
-    backgroundColor: theme.colors.purple,
-    borderRadius: 3,
-  },
-  suplentesReadOnlyTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.purpleSoftText,
-  },
-  suplentesReadOnlyList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 12,
-  },
-suplenteReadOnlyItem: {
-    alignItems: 'center',
-    width: 80,
-    marginBottom: 8,
-  },
-  suplenteReadOnlyPhoto: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 3,
-  },
-  suplenteReadOnlyCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  suplenteReadOnlyDorsal: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  suplenteReadOnlyName: {
-    fontSize: 11,
-    color: theme.colors.purpleSoftText,
-    fontWeight: '600',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-});
+    panelHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    panelHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    panelTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+    },
+    panelBadge: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 12,
+    },
+    panelBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    playersList: {
+      flex: 1,
+    },
+    playerItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderRadius: 12,
+      marginBottom: 8,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+    },
+    playerItemSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primarySoft,
+    },
+    playerItemAssigned: {
+      opacity: 0.55,
+      backgroundColor: theme.colors.backgroundAlt,
+      borderColor: theme.colors.border,
+    },
+    playerItemPhoto: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+    },
+    playerItemCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    playerItemNumber: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    playerItemInfo: {
+      flex: 1,
+      marginLeft: 10,
+    },
+    playerItemName: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    playerItemNameAssigned: {
+      color: theme.colors.textDisabled,
+    },
+    playerItemPos: {
+      fontSize: 11,
+      color: theme.colors.textMuted,
+      marginTop: 2,
+    },
+    selectedIndicator: {
+      marginLeft: 4,
+    },
+    assignedBadge: {
+      marginLeft: 4,
+    },
+    suplentesButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.purple,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      marginTop: 12,
+      gap: 8,
+    },
+    suplentesButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#fff',
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 40,
+    },
+    emptyText: {
+      fontSize: 12,
+      color: theme.colors.textDisabled,
+      textAlign: 'center',
+      marginTop: 10,
+    },
+    fieldContainer: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    fieldWrapper: {
+      borderRadius: 12,
+      position: 'relative',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.2,
+      shadowRadius: 16,
+      elevation: 10,
+    },
+    positionSlot: {
+      position: 'absolute',
+      alignItems: 'center',
+    },
+    slotCircle: {
+      borderWidth: 3,
+      borderStyle: 'dashed',
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    slotHighlight: {
+      borderColor: '#fbbf24',
+      borderStyle: 'solid',
+      backgroundColor: 'rgba(251, 191, 36, 0.3)',
+    },
+    slotEmpty: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    slotPhoto: {
+      width: '100%',
+      height: '100%',
+    },
+    slotGradient: {
+      width: '100%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    slotNumber: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    slotLabelContainer: {
+      marginTop: 4,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      maxWidth: 80,
+    },
+    slotLabel: {
+      fontSize: 10,
+      color: '#fff',
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+      marginTop: 20,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    counterBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 24,
+      gap: 8,
+    },
+    titularesBadge: {
+      backgroundColor: theme.colors.warningSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.warning,
+    },
+    suplentesBadge: {
+      backgroundColor: theme.colors.purpleSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.purple,
+    },
+    counterLabel: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.textSecondary,
+    },
+    counterValue: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    // Estilos para modo readOnly
+    containerReadOnly: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginTop: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    fieldContainerReadOnly: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    suplentesReadOnlyCard: {
+      backgroundColor: theme.colors.purpleSoft,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.purple,
+    },
+    suplentesReadOnlyHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+      gap: 8,
+    },
+    suplentesReadOnlyIndicator: {
+      width: 5,
+      height: 18,
+      backgroundColor: theme.colors.purple,
+      borderRadius: 3,
+    },
+    suplentesReadOnlyTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.purpleSoftText,
+    },
+    suplentesReadOnlyList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    suplenteReadOnlyItem: {
+      alignItems: 'center',
+      width: 80,
+      marginBottom: 8,
+    },
+    suplenteReadOnlyPhoto: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      borderWidth: 3,
+    },
+    suplenteReadOnlyCircle: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: '#fff',
+    },
+    suplenteReadOnlyDorsal: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: 15,
+    },
+    suplenteReadOnlyName: {
+      fontSize: 11,
+      color: theme.colors.purpleSoftText,
+      fontWeight: '600',
+      marginTop: 4,
+      textAlign: 'center',
+    },
+  });

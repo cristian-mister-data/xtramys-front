@@ -68,33 +68,6 @@
         "imageDeleted": "Image deleted successfully",
         "delete": "Delete"
     },
-    "common": {
-        "save": "Save",
-        "saving": "Saving...",
-        "saveChanges": "Save changes",
-        "cancel": "Cancel",
-        "close": "Close",
-        "delete": "Delete",
-        "edit": "Edit",
-        "remove": "Remove",
-        "open": "Open",
-        "create": "Create",
-        "clear": "Clear",
-        "search": "Search...",
-        "loading": "Loading...",
-        "today": "Today",
-        "none": "None",
-        "player": "Player",
-        "lightMode": "Light mode",
-        "darkMode": "Dark mode",
-        "filterByDate": "Filter by date",
-        "favorites": "Favorites",
-        "addToFavorites": "Add to favorites",
-        "removeFromFavorites": "Remove from favorites",
-        "morning": "Morning",
-        "afternoon": "Afternoon",
-        "evening": "Evening"
-    },
     "connection": {
         "offlineTitle": "No connection",
         "offlineMessage": "Could not connect to the server. Check your internet connection and try again.",
@@ -1274,7 +1247,9 @@
         "selectAll": "Select all",
         "addToFavorites": "Add to favorites",
         "removeFromFavorites": "Remove from favorites",
-        "cancelSelection": "Cancel selection"
+        "cancelSelection": "Cancel selection",
+        "saving": "Saving...",
+        "today": "Today"
     },
     "rivals": {
         "title": "Rivals",

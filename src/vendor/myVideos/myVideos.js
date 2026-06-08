@@ -979,10 +979,10 @@ export default function MyVideos() {
         style={styles.sourceFilterScroll}
       >
         {[
+          { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           { key: 'all', label: t('myVideos.allVideos') || 'Todos' },
           { key: 'mine', label: t('myVideos.myVideosOnly') || 'Míos' },
           { key: 'global', label: t('myVideos.appVideos') || 'App' },
-          { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
         ].map(tab => (
           <TouchableOpacity
             key={tab.key}

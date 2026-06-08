@@ -47,6 +47,7 @@ import VideoPoster from '@/components/shared/VideoPoster';
 import ImageCropper from '@/components/season/ImageCropper';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
 import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
+import { renameRivalAnalysisFolder } from './videoFolderHelpers';
 import {
   ALINEACIONES,
   getIconComponent,
@@ -515,6 +516,17 @@ export default function AnalysisFormModal({
     setDynamicAnswers((prev) => ({ ...prev, [qid]: value }));
   };
 
+  const syncRivalVideoFolders = async (answers = dynamicAnswers) => {
+    const folderIds = new Set();
+    Object.values(answers || {}).forEach((answer) => {
+      const folderId = answer?.rivalFolder || answer?.folderId;
+      if (folderId) folderIds.add(folderId);
+    });
+    await Promise.all(
+      Array.from(folderIds).map((folderId) => renameRivalAnalysisFolder(folderId, rival))
+    );
+  };
+
   // --- handlers
   const handlePickRival = (r) => {
     setRival(r.nombre || '');
@@ -722,9 +734,11 @@ export default function AnalysisFormModal({
       const data = buildSavePayload(dynamicAnswers);
       if (editing) {
         await dispatch(updateRivalAnalysis({ id: editing._id, data })).unwrap();
+        await syncRivalVideoFolders(dynamicAnswers);
         toast.success(t('rivalAnalysis.form.updateSuccess', 'Análisis actualizado'));
       } else {
         await dispatch(createRivalAnalysis(data)).unwrap();
+        await syncRivalVideoFolders(dynamicAnswers);
         toast.success(t('rivalAnalysis.form.createSuccess', 'Análisis creado'));
       }
       onSaved?.();

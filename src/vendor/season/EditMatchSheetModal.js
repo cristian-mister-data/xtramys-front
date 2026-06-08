@@ -2337,7 +2337,7 @@ export default function EditMatchSheetModal({
                     onTitularesChange={setAlineacionTitulares}
                     onSuplentesChange={setAlineacionSuplentes}
                     jugadoresPorEquipo={jugadoresPorEquipo}
-                    containerWidth={windowWidth - 56}
+                    containerWidth={isMobileDevice() ? Math.min(windowWidth - 32, 380) : windowWidth - 56}
                   />
                 </View>
               )}

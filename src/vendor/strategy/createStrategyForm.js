@@ -600,7 +600,7 @@ const makeStyles = (theme) => StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: "#fff",
+    color: theme?.colors?.text || '#111827',
     letterSpacing: 0.2
   },
   subTitle: {
