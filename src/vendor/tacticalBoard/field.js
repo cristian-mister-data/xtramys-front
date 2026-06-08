@@ -15171,204 +15171,61 @@ export default function Field(props = {}) {
     [handleElementDeleted],
   ); // Sin [clones] " usa actualClonesRef
 
-  // Funcin auxiliar para distancia a segmento (debe ir antes de findElementAtPosition)
-  const distanceToSegment = useCallback((px, py, x1, y1, x2, y2) => {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const lenSq = dx * dx + dy * dy;
-    if (lenSq === 0) return Math.hypot(px - x1, py - y1);
-    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
-    t = Math.max(0, Math.min(1, t));
-    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
-  }, []);
-
   // Funcin para encontrar elemento en una posicin (para la goma)
-  // Tolerancia ajustada para detectar elementos bajo el dedo
   const findElementAtPosition = useCallback(
     (touchX, touchY) => {
-      const LINE_TOLERANCE = 8; // Tolerancia para lneas
-      const ICON_TOLERANCE = 8; // Tolerancia para iconos
-
-      // Buscar en clones (iconos, jugadores, textos, etc.)
-      for (let i = actualClonesRef.current.length - 1; i >= 0; i--) {
-        const clone = actualClonesRef.current[i];
-
-        // Para elementos con puntos (lneas, formas)
-        if (clone.points && clone.points.length > 0) {
-          // Para lneas (rectas o curvas)
-          if (
-            clone.type === 'straight-line' ||
-            clone.type === 'straight-arrow' ||
-            clone.type === 'curve-line' ||
-            clone.type === 'curve-arrow'
-          ) {
-            const pts = clone.points.map((p) =>
-              ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight),
-            );
-
-            // Verificar proximidad a cada segmento de la lnea
-            for (let j = 0; j < pts.length - 1; j++) {
-              const dist = distanceToSegment(
-                touchX,
-                touchY,
-                pts[j].x,
-                pts[j].y,
-                pts[j + 1].x,
-                pts[j + 1].y,
-              );
-              // Solo borrar si est MUY cerca de la lnea
-              if (dist <= LINE_TOLERANCE) {
-                return clone.id;
-              }
-            }
-          }
-          // Para rectngulos - solo borrar si est sobre el borde, no dentro
-          else if (clone.type === 'rectangle' && clone.points.length === 2) {
-            const { x: p1x, y: p1y } = ratioToDisplay(
-              clone.points[0].x,
-              clone.points[0].y,
-              viewMode,
-              imageWidth,
-              imageHeight,
-            );
-            const { x: p2x, y: p2y } = ratioToDisplay(
-              clone.points[1].x,
-              clone.points[1].y,
-              viewMode,
-              imageWidth,
-              imageHeight,
-            );
-            const minX = Math.min(p1x, p2x);
-            const maxX = Math.max(p1x, p2x);
-            const minY = Math.min(p1y, p2y);
-            const maxY = Math.max(p1y, p2y);
-
-            // Verificar si est sobre algn borde del rectngulo (no dentro)
-            const onTopEdge =
-              touchY >= minY - LINE_TOLERANCE &&
-              touchY <= minY + LINE_TOLERANCE &&
-              touchX >= minX &&
-              touchX <= maxX;
-            const onBottomEdge =
-              touchY >= maxY - LINE_TOLERANCE &&
-              touchY <= maxY + LINE_TOLERANCE &&
-              touchX >= minX &&
-              touchX <= maxX;
-            const onLeftEdge =
-              touchX >= minX - LINE_TOLERANCE &&
-              touchX <= minX + LINE_TOLERANCE &&
-              touchY >= minY &&
-              touchY <= maxY;
-            const onRightEdge =
-              touchX >= maxX - LINE_TOLERANCE &&
-              touchX <= maxX + LINE_TOLERANCE &&
-              touchY >= minY &&
-              touchY <= maxY;
-
-            if (onTopEdge || onBottomEdge || onLeftEdge || onRightEdge) {
-              return clone.id;
-            }
-          }
-          // Para crculos - detectar si est sobre el borde (igual que rectngulo)
-          else if (clone.type === 'circle' && clone.points.length === 2) {
-            const { x: centerX, y: centerY } = ratioToDisplay(
-              clone.points[0].x,
-              clone.points[0].y,
-              viewMode,
-              imageWidth,
-              imageHeight,
-            );
-            const { x: edgeX, y: edgeY } = ratioToDisplay(
-              clone.points[1].x,
-              clone.points[1].y,
-              viewMode,
-              imageWidth,
-              imageHeight,
-            );
-            const radius = Math.hypot(edgeX - centerX, edgeY - centerY);
-            const distFromCenter = Math.hypot(touchX - centerX, touchY - centerY);
-
-            // Detectar si est en la zona del borde del crculo (como rectngulo)
-            // Zona externa: desde radius - tolerancia hasta radius + tolerancia
-            const innerRadius = Math.max(0, radius - LINE_TOLERANCE);
-            const outerRadius = radius + LINE_TOLERANCE;
-
-            if (distFromCenter >= innerRadius && distFromCenter <= outerRadius) {
-              return clone.id;
-            }
-          }
-          // Para formas personalizadas - solo si est sobre un borde
-          else if (clone.type === 'custom-shape') {
-            const pts = clone.points.map((p) =>
-              ratioToDisplay(p.x, p.y, viewMode, imageWidth, imageHeight),
-            );
-
-            // Verificar si est cerca de algn borde de la forma
-            for (let j = 0; j < pts.length; j++) {
-              const nextIdx = (j + 1) % pts.length;
-              const dist = distanceToSegment(
-                touchX,
-                touchY,
-                pts[j].x,
-                pts[j].y,
-                pts[nextIdx].x,
-                pts[nextIdx].y,
-              );
-              if (dist <= LINE_TOLERANCE) {
-                return clone.id;
-              }
-            }
-          }
-        }
-        // Para elementos con posicin (iconos, jugadores, textos)
-        else if (clone.xRatio !== undefined && clone.yRatio !== undefined) {
-          const { x: elemX, y: elemY } = ratioToDisplay(
-            clone.xRatio,
-            clone.yRatio,
-            viewMode,
-            imageWidth,
-            imageHeight,
-          );
-
-          // Para textos, usar un rea ms grande basada en el texto
-          if (clone.type === 'free-text') {
-            const textLength = (clone.value || '').length;
-            const fontSize = clone.size || 18;
-            const textWidth = Math.max(textLength * fontSize * 0.6, 40);
-            const textHeight = fontSize + 10;
-
-            if (
-              touchX >= elemX - textWidth / 2 - ICON_TOLERANCE &&
-              touchX <= elemX + textWidth / 2 + ICON_TOLERANCE &&
-              touchY >= elemY - textHeight / 2 - ICON_TOLERANCE &&
-              touchY <= elemY + textHeight / 2 + ICON_TOLERANCE
-            ) {
-              return clone.id;
-            }
-          } else {
-            // Para iconos y jugadores
-            const elemSize = clone.size || 40;
-            const halfSize = elemSize / 2;
-
-            // Solo borrar si el dedo est DENTRO del rea del elemento
-            if (
-              touchX >= elemX - halfSize - ICON_TOLERANCE &&
-              touchX <= elemX + halfSize + ICON_TOLERANCE &&
-              touchY >= elemY - halfSize - ICON_TOLERANCE &&
-              touchY <= elemY + halfSize + ICON_TOLERANCE
-            ) {
-              return clone.id;
-            }
-          }
-        }
-      }
-      return null;
+      return (
+        findTopBoardCloneAtPoint(
+          actualClonesRef.current,
+          touchX,
+          touchY,
+          viewMode,
+          imageWidth,
+          imageHeight,
+          standardSize,
+          selectedCloneId,
+        )?.id || null
+      );
     },
-    [imageWidth, imageHeight, distanceToSegment],
+    [viewMode, imageWidth, imageHeight, standardSize, selectedCloneId],
   ); // Sin [clones] " usa actualClonesRef
 
   // Ref para trackear elementos ya borrados durante un arrastre
   const erasedElementsRef = useRef(new Set());
+  const lastEraserPointRef = useRef(null);
+
+  const eraseAtPoint = useCallback(
+    (touchX, touchY) => {
+      const elementId = findElementAtPosition(touchX, touchY);
+      if (elementId && !erasedElementsRef.current.has(elementId)) {
+        eraseElementById(elementId);
+        erasedElementsRef.current.add(elementId);
+        return true;
+      }
+      return false;
+    },
+    [findElementAtPosition, eraseElementById],
+  );
+
+  const eraseAlongStroke = useCallback(
+    (fromPoint, toPoint) => {
+      if (!fromPoint) {
+        eraseAtPoint(toPoint.x, toPoint.y);
+        return;
+      }
+
+      const distance = Math.hypot(toPoint.x - fromPoint.x, toPoint.y - fromPoint.y);
+      const steps = Math.max(1, Math.ceil(distance / 4));
+      for (let step = 1; step <= steps; step++) {
+        const t = step / steps;
+        eraseAtPoint(
+          fromPoint.x + (toPoint.x - fromPoint.x) * t,
+          fromPoint.y + (toPoint.y - fromPoint.y) * t,
+        );
+      }
+    },
+    [eraseAtPoint],
+  );
 
   // Handler para el inicio del borrado (touch start)
   const handleEraserStart = useCallback(
@@ -15377,13 +15234,10 @@ export default function Field(props = {}) {
       erasedElementsRef.current = new Set();
       const touchX = e.nativeEvent.locationX;
       const touchY = e.nativeEvent.locationY;
-      const elementId = findElementAtPosition(touchX, touchY);
-      if (elementId) {
-        eraseElementById(elementId);
-        erasedElementsRef.current.add(elementId);
-      }
+      lastEraserPointRef.current = { x: touchX, y: touchY };
+      eraseAtPoint(touchX, touchY);
     },
-    [eraserMode, findElementAtPosition, eraseElementById],
+    [eraserMode, eraseAtPoint],
   );
 
   // Handler para el movimiento del borrado (touch move)
@@ -15392,18 +15246,17 @@ export default function Field(props = {}) {
       if (!eraserMode) return;
       const touchX = e.nativeEvent.locationX;
       const touchY = e.nativeEvent.locationY;
-      const elementId = findElementAtPosition(touchX, touchY);
-      if (elementId && !erasedElementsRef.current.has(elementId)) {
-        eraseElementById(elementId);
-        erasedElementsRef.current.add(elementId);
-      }
+      const nextPoint = { x: touchX, y: touchY };
+      eraseAlongStroke(lastEraserPointRef.current, nextPoint);
+      lastEraserPointRef.current = nextPoint;
     },
-    [eraserMode, findElementAtPosition, eraseElementById],
+    [eraserMode, eraseAlongStroke],
   );
 
   // Handler para el fin del borrado (touch end)
   const handleEraserEnd = useCallback(() => {
     erasedElementsRef.current = new Set();
+    lastEraserPointRef.current = null;
   }, []);
 
   // Ref para almacenar el estado de arrastre de elementos
