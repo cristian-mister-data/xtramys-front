@@ -182,7 +182,7 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
   /* ── Items in current folder ── */
   const currentLevelItems = useMemo(() => {
     if (!currentFolderId) {
-      return items.filter((e) => !e.folder);
+      return items;
     }
     return items.filter((e) => {
       if (!e.folder) return false;
@@ -451,9 +451,11 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
               ) : (
                 displayItems.map((item) => {
                   const folderName =
-                    isSearching && item.folder && typeof item.folder === 'object'
+                    !currentFolderId && item.folder && typeof item.folder === 'object'
                       ? item.folder.nombre
-                      : null;
+                      : isSearching && item.folder && typeof item.folder === 'object'
+                        ? item.folder.nombre
+                        : null;
                   return (
                     <TouchableOpacity
                       key={item._id}
