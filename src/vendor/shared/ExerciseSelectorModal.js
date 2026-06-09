@@ -37,7 +37,10 @@ import {
   fetchExerciseFolders,
   fetchExerciseFoldersFlat,
   fetchGlobalExercises,
+  toggleFavoriteExercise,
 } from '@/store/slices/exercise/exerciseThunks';
+import { setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
+import { getItemId, sameId, persistFavoriteState } from '@/utils/favoritePersistence';
 
 const THEME_DEFAULT = {
   primary: '#2474E5',
@@ -495,6 +498,25 @@ export default function ExerciseSelectorModal({
   );
 
   // ── Favoritos ──
+  const handleToggleFavorite = useCallback(
+    async (exerciseId) => {
+      const currentExercise = allExercises.find((ex) => sameId(getItemId(ex), exerciseId));
+      const previousFavorite = !!currentExercise?.favorito;
+      const optimisticFavorite = !previousFavorite;
+      dispatch(setExerciseFavorite({ exerciseId, favorito: optimisticFavorite }));
+      persistFavoriteState('exercise', exerciseId, optimisticFavorite).catch(() => {});
+      try {
+        await dispatch(
+          toggleFavoriteExercise({ exerciseId, favorito: optimisticFavorite }),
+        ).unwrap();
+      } catch {
+        dispatch(setExerciseFavorite({ exerciseId, favorito: previousFavorite }));
+        persistFavoriteState('exercise', exerciseId, previousFavorite).catch(() => {});
+      }
+    },
+    [dispatch, allExercises],
+  );
+
   const clearFilters = () => {
     setTitleFilter('');
     setPlayersFilter('');
