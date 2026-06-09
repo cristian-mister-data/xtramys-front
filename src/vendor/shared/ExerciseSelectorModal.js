@@ -844,15 +844,19 @@ export default function ExerciseSelectorModal({
                           </View>
                         </TouchableOpacity>
                         <View style={s.exRowActions}>
-                          {e.favorito && (
-                            <View
-                              style={[s.exRowActionBtn, { backgroundColor: '#FEF3C7' }]}
-                              accessibilityRole="image"
-                              accessibilityLabel={t('common.favorites', 'Favoritos')}
-                            >
-                              <Ionicons name="star" size={16} color="#F59E0B" />
-                            </View>
-                          )}
+                          <TouchableOpacity
+                            style={[
+                              s.exRowActionBtn,
+                              { backgroundColor: e.favorito ? '#FEF3C7' : THEME.surfaceAlt },
+                            ]}
+                            onPress={() => handleToggleFavorite(e._id)}
+                          >
+                            <Ionicons
+                              name={e.favorito ? 'star' : 'star-outline'}
+                              size={16}
+                              color={e.favorito ? '#F59E0B' : '#94A3B8'}
+                            />
+                          </TouchableOpacity>
                           {e.imagen && (
                             <TouchableOpacity
                               style={s.exRowActionBtn}
@@ -1061,15 +1065,19 @@ export default function ExerciseSelectorModal({
                               )}
                             </TouchableOpacity>
                             <View style={s.exCardActions}>
-                              {e.favorito && (
-                                <View
-                                  style={[s.exCardActionBtn, { backgroundColor: '#FEF3C7' }]}
-                                  accessibilityRole="image"
-                                  accessibilityLabel={t('common.favorites', 'Favoritos')}
-                                >
-                                  <Ionicons name="star" size={13} color="#F59E0B" />
-                                </View>
-                              )}
+                              <TouchableOpacity
+                                style={[
+                                  s.exCardActionBtn,
+                                  { backgroundColor: e.favorito ? '#FEF3C7' : 'transparent' },
+                                ]}
+                                onPress={() => handleToggleFavorite(e._id)}
+                              >
+                                <Ionicons
+                                  name={e.favorito ? 'star' : 'star-outline'}
+                                  size={13}
+                                  color={e.favorito ? '#F59E0B' : '#94A3B8'}
+                                />
+                              </TouchableOpacity>
                               {e.imagen && (
                                 <TouchableOpacity
                                   style={s.exCardActionBtn}
@@ -1157,8 +1165,8 @@ export default function ExerciseSelectorModal({
                   <Text style={s.vidTitle} numberOfLines={1}>
                     {exerciseForVideo?.nombre || t('exercise.video')}
                   </Text>
-                  <TouchableOpacity onPress={closeVideoModal}>
-                    <Feather name="x" size={24} color="#fff" />
+                  <TouchableOpacity onPress={closeVideoModal} style={{ padding: 8 }}>
+                    <Feather name="x" size={24} color="#f1f5f9" />
                   </TouchableOpacity>
                 </View>
                 {isGeneratingVideo ? (
@@ -1565,19 +1573,18 @@ const makeS = (THEME) =>
       width: '100%',
       borderTopWidth: 1,
       borderTopColor: THEME.border,
-      marginTop: 6,
-      borderRadius: 6,
-      overflow: 'hidden',
+      marginTop: 8,
+      paddingTop: 2,
+      gap: 1,
     },
     exCardActionBtn: {
       flex: 1,
-      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 6,
-      gap: 3,
+      borderRadius: 6,
     },
-    exCardActionBtnSep: { borderLeftWidth: 1, borderLeftColor: THEME.border },
+    exCardActionBtnSep: { borderLeftWidth: 1, borderLeftColor: THEME.border, borderRadius: 0 },
     exCardActionTxt: { fontSize: 10, fontWeight: '600', color: THEME.primary },
     exSelBadge: {
       position: 'absolute',
@@ -1592,12 +1599,16 @@ const makeS = (THEME) =>
       zIndex: 10,
     },
     exRowMobileSelectArea: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 },
-    exRowActions: { flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 36 },
+    exRowActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingLeft: 4,
+    },
     exRowActionBtn: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
-      backgroundColor: THEME.surfaceAlt,
+      width: 32,
+      height: 32,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1708,9 +1719,9 @@ const makeS = (THEME) =>
       paddingVertical: 12,
       backgroundColor: '#2a2a2a',
     },
-    vidTitle: { fontSize: 16, fontWeight: '600', color: THEME.surface, flex: 1 },
+    vidTitle: { fontSize: 16, fontWeight: '600', color: '#f1f5f9', flex: 1 },
     vidLoading: { padding: 40, alignItems: 'center' },
-    vidLoadTxt: { marginTop: 12, color: THEME.surface, fontSize: 14 },
+    vidLoadTxt: { marginTop: 12, color: '#f1f5f9', fontSize: 14 },
     vidDlBtn: {
       flexDirection: 'row',
       alignItems: 'center',
