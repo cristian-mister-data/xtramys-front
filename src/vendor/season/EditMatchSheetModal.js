@@ -1820,7 +1820,11 @@ export default function EditMatchSheetModal({
             </TouchableOpacity>
           </View>
 
-          <KeyboardAwareScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+          <KeyboardAwareScrollView
+            style={styles.modalBody}
+            contentContainerStyle={styles.modalBodyContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Fila de escudos - orden según ubicación */}
             <View style={styles.escudosRow}>
               {/* Primer escudo - mi equipo si local, rival si visitante */}
@@ -2622,8 +2626,7 @@ export default function EditMatchSheetModal({
                 placeholder={t('schedule.notesPlaceholder')}
                 placeholderTextColor={theme.colors.textMuted}
                 multiline
-                numberOfLines={4}
-                textAlignVertical="top"
+                rows={4}
               />
             </View>
 
@@ -2639,8 +2642,11 @@ export default function EditMatchSheetModal({
               
               <TouchableOpacity
                 style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
-                onPress={handleSave}
-                disabled={loading}
+                onPress={() => {
+                  if (loading) return;
+                  handleSave();
+                }}
+                activeOpacity={loading ? 1 : 0.8}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -2916,8 +2922,11 @@ export default function EditMatchSheetModal({
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.createRivalSaveButton, savingRival && styles.createRivalSaveButtonDisabled]}
-                    onPress={handleCreateRival}
-                    disabled={savingRival}
+                    onPress={() => {
+                      if (savingRival) return;
+                      handleCreateRival();
+                    }}
+                    activeOpacity={savingRival ? 1 : 0.8}
                   >
                     {savingRival ? (
                       <ActivityIndicator size="small" color="#fff" />
@@ -3567,6 +3576,9 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     padding: isMobileDevice() ? 10 : 16,
   },
+  modalBodyContent: {
+    paddingBottom: isMobileDevice() ? 100 : 24,
+  },
   
   // Form
   formGroup: {
@@ -4108,7 +4120,8 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: theme.colors.inputBg,
     borderRadius: 12,
-    padding: 14,
+    paddingVertical: isMobileDevice() ? 12 : 14,
+    paddingHorizontal: isMobileDevice() ? 12 : 14,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -4119,7 +4132,7 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 10,
   },
   playerSelectorText: {
-    fontSize: 15,
+    fontSize: isMobileDevice() ? 14 : 15,
     color: theme.colors.text,
   },
   
@@ -4222,19 +4235,19 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 10,
     backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginTop: 12,
   },
   emptyLineupText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: theme.colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   startersSubsContainer: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 12,
+    padding: 10,
     marginTop: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -4249,38 +4262,39 @@ const makeStyles = (theme) => StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   startersSubsTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.text,
   },
   startersSubsList: {
-    gap: 6,
+    gap: 5,
   },
   starterSubChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 6,
+    gap: 8,
+    paddingVertical: 7,
     paddingHorizontal: 8,
     backgroundColor: theme.colors.background,
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: theme.colors.success,
+    minWidth: 0,
   },
   starterSubDorsal: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   starterSubDorsalText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   starterSubName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: theme.colors.text,
     flex: 1,

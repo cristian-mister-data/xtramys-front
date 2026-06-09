@@ -204,7 +204,7 @@ export const toggleFavoriteStrategy = createAsyncThunk(
   'strategy/toggleFavoriteStrategy',
   async (strategyId) => {
     const res = await api.patch(`/strategy/${strategyId}/favorite`);
-    return res.data; // { _id, favorito }
+    return res.data?.strategy || res.data?.item || res.data?.data || res.data; // { _id, favorito }
   }
 );
 

@@ -582,7 +582,6 @@ function PositionSlot({
         ]}
         onPress={() => (readOnly ? null : hasPlayer ? onRemove(position.index) : onDrop(position))}
         activeOpacity={readOnly ? 1 : 0.8}
-        disabled={readOnly}
       >
         {hasPlayer && player ? (
           showPhotos && player.foto ? (
@@ -637,8 +636,7 @@ function PlayerItem({ player, onPress, isSelected, isAssigned }) {
         isAssigned && styles.playerItemAssigned,
       ]}
       onPress={() => !isAssigned && onPress(player)}
-      disabled={isAssigned}
-      activeOpacity={0.7}
+      activeOpacity={isAssigned ? 1 : 0.7}
     >
       {player.foto ? (
         <Image source={{ uri: player.foto }} style={styles.playerItemPhoto} />
@@ -705,19 +703,24 @@ export default function LineupEditor({
   };
 
   // Calcular dimensiones del campo
-  const maxFieldHeightTablet = isMobile ? Infinity : screenHeight * 0.58;
+  const fieldAspectRatio = 1.42;
+  const maxFieldHeightTablet = screenHeight * 0.58;
+  const maxFieldHeightMobile = Math.min(
+    Math.max(screenHeight * 0.42, 300),
+    430,
+  );
   const rawMaxWidth =
     containerWidth != null
-      ? containerWidth
+      ? Math.max(containerWidth - (isMobile ? 16 : 0), 200)
       : isMobile
-        ? Math.min(screenWidth - 24, 380)
+        ? Math.min(screenWidth - 40, 380)
         : Math.min(screenWidth - 220, 480);
-  const widthFromHeightLimit = maxFieldHeightTablet / 1.42;
+  const widthFromHeightLimit = (isMobile ? maxFieldHeightMobile : maxFieldHeightTablet) / fieldAspectRatio;
   const fieldWidth = Math.max(
-    isMobile ? rawMaxWidth : Math.min(rawMaxWidth, widthFromHeightLimit),
+    Math.min(rawMaxWidth, widthFromHeightLimit),
     200,
   );
-  const fieldHeight = fieldWidth * 1.42;
+  const fieldHeight = fieldWidth * fieldAspectRatio;
 
   // Formación por defecto según número de jugadores
   const defaultFormation = useMemo(() => {
@@ -959,7 +962,7 @@ export default function LineupEditor({
       </View>
 
       {/* Barra de instrucciones */}
-      <View style={[styles.instructionBar, selectedPlayer && styles.instructionBarActive]}>
+      <View style={[styles.instructionBar, isMobile && styles.instructionBarMobile, selectedPlayer && styles.instructionBarActive]}>
         <Ionicons
           name={selectedPlayer ? 'hand-left' : 'information-circle'}
           size={18}
@@ -1166,8 +1169,7 @@ export default function LineupEditor({
                     onPress={() =>
                       !assignedPlayerIds.includes(player._id) && handlePlayerSelect(player)
                     }
-                    disabled={assignedPlayerIds.includes(player._id)}
-                    activeOpacity={0.7}
+                    activeOpacity={assignedPlayerIds.includes(player._id) ? 1 : 0.7}
                   >
                     {player.foto ? (
                       <Image source={{ uri: player.foto }} style={styles.playerItemMobilePhoto} />
@@ -1399,6 +1401,12 @@ const makeStyles = (theme) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
+    instructionBarMobile: {
+      gap: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      marginBottom: 12,
+    },
     instructionBarActive: {
       backgroundColor: theme.colors.primarySoft,
       borderColor: theme.colors.primaryLight,
@@ -1426,51 +1434,57 @@ const makeStyles = (theme) =>
     fieldContainerMobile: {
       alignItems: 'center',
       width: '100%',
-      paddingHorizontal: 8,
+      paddingHorizontal: 4,
     },
     playersPanelMobile: {
       width: '100%',
       backgroundColor: theme.colors.surfaceAlt,
       borderRadius: 14,
-      padding: 14,
+      padding: 12,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
     panelHeaderMobile: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
       marginBottom: 12,
       paddingBottom: 8,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       gap: 10,
+      flexWrap: 'wrap',
     },
     panelTitleMobile: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '700',
       color: theme.colors.text,
     },
     panelSubtitleMobile: {
-      fontSize: 12,
+      fontSize: 11,
       color: theme.colors.textSecondary,
       marginTop: 2,
     },
     panelHeaderActions: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'stretch',
       gap: 8,
+      width: '100%',
+      flexWrap: 'wrap',
     },
     filterToggleButton: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: theme.colors.primarySoft,
-      paddingVertical: 8,
+      paddingVertical: 9,
       paddingHorizontal: 10,
       borderRadius: 10,
       gap: 4,
       borderWidth: 1,
       borderColor: theme.colors.primaryLight,
+      minHeight: 38,
+      flex: 1,
     },
     filterToggleButtonActive: {
       backgroundColor: theme.colors.primary,
@@ -1546,29 +1560,33 @@ const makeStyles = (theme) =>
     suplentesButtonMobile: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: theme.colors.purple,
-      paddingVertical: 10,
+      paddingVertical: 9,
       paddingHorizontal: 12,
       borderRadius: 12,
       gap: 6,
+      minHeight: 38,
+      flex: 1,
     },
     suplentesButtonTextMobile: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: '#fff',
     },
     playersListMobileGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: 10,
-      paddingVertical: 4,
+      gap: 8,
+      paddingTop: 2,
+      paddingBottom: 4,
     },
     playerItemMobile: {
-      width: '48%',
+      width: '47.5%',
       alignItems: 'center',
-      padding: 12,
-      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      borderRadius: 12,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -1583,36 +1601,36 @@ const makeStyles = (theme) =>
       borderColor: theme.colors.border,
     },
     playerItemMobilePhoto: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
     },
     playerItemMobileCircle: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       alignItems: 'center',
       justifyContent: 'center',
     },
     playerItemMobileNumber: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
       color: '#fff',
     },
     playerItemMobileName: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: theme.colors.text,
-      marginTop: 8,
+      marginTop: 6,
       textAlign: 'center',
     },
     playerItemMobileNameAssigned: {
       color: theme.colors.textDisabled,
     },
     playerItemMobilePos: {
-      fontSize: 10,
+      fontSize: 9,
       color: theme.colors.textMuted,
-      marginTop: 4,
+      marginTop: 3,
       textTransform: 'uppercase',
       textAlign: 'center',
     },
@@ -1660,6 +1678,8 @@ const makeStyles = (theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      flexShrink: 1,
+      minWidth: 0,
     },
     panelTitle: {
       fontSize: 14,
@@ -1832,19 +1852,23 @@ const makeStyles = (theme) =>
     footer: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: 16,
-      marginTop: 20,
-      paddingTop: 16,
+      gap: 10,
+      marginTop: 16,
+      paddingTop: 14,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
+      flexWrap: 'wrap',
     },
     counterBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      borderRadius: 24,
-      gap: 8,
+      justifyContent: 'center',
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+      borderRadius: 18,
+      gap: 6,
+      flex: 1,
+      minWidth: 132,
     },
     titularesBadge: {
       backgroundColor: theme.colors.warningSoft,
@@ -1857,12 +1881,12 @@ const makeStyles = (theme) =>
       borderColor: theme.colors.purple,
     },
     counterLabel: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '500',
       color: theme.colors.textSecondary,
     },
     counterValue: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '700',
       color: theme.colors.text,
     },

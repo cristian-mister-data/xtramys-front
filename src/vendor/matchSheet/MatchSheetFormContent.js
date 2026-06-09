@@ -643,8 +643,7 @@ const MatchSheetFormContent = ({
             value={notasEntrenador}
             onChangeText={setNotasEntrenador}
             multiline
-            numberOfLines={6}
-            textAlignVertical="top"
+            rows={6}
           />
         </View>
       </View>
@@ -1177,7 +1176,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textArea: {
     minHeight: 120,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
     paddingTop: 14,
   },
   eventSelector: {

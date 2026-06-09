@@ -157,8 +157,11 @@ export default function MatchSheetPDFModals({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.generateButton, generatingPDF && styles.buttonDisabled]}
-                onPress={() => onGenerateLineupPDF(matchSheet)}
-                disabled={generatingPDF}
+                onPress={() => {
+                  if (generatingPDF) return;
+                  onGenerateLineupPDF(matchSheet);
+                }}
+                activeOpacity={generatingPDF ? 1 : 0.8}
               >
                 {generatingPDF ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -290,7 +293,7 @@ export default function MatchSheetPDFModals({
                     placeholder={t('matchSheet.pdfOptions.observationsPlaceholder')}
                     placeholderTextColor={theme.colors.inputPlaceholder}
                     multiline
-                    numberOfLines={3}
+                    rows={3}
                   />
                 </View>
 
@@ -318,8 +321,11 @@ export default function MatchSheetPDFModals({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.generateButton, { backgroundColor: '#9C27B0' }, generatingPDF && styles.buttonDisabled]}
-                onPress={() => onGenerateCallUpPDF(matchSheet)}
-                disabled={generatingPDF}
+                onPress={() => {
+                  if (generatingPDF) return;
+                  onGenerateCallUpPDF(matchSheet);
+                }}
+                activeOpacity={generatingPDF ? 1 : 0.8}
               >
                 {generatingPDF ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -366,8 +372,11 @@ export function MatchSheetPDFButtons({
         {matchSheet.convocados && matchSheet.convocados.length > 0 && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.successSoft }]}
-            onPress={onCallUpPress}
-            disabled={generatingPDF}
+            onPress={() => {
+              if (generatingPDF) return;
+              onCallUpPress();
+            }}
+            activeOpacity={generatingPDF ? 1 : 0.8}
           >
             {generatingPDFType === 'callup' ? (
               <ActivityIndicator size={16} color="#4CAF50" />
@@ -380,8 +389,11 @@ export function MatchSheetPDFButtons({
         {matchSheet.alineacion && matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.primarySoft }]}
-            onPress={onLineupPress}
-            disabled={generatingPDF}
+            onPress={() => {
+              if (generatingPDF) return;
+              onLineupPress();
+            }}
+            activeOpacity={generatingPDF ? 1 : 0.8}
           >
             {generatingPDFType === 'lineup' ? (
               <ActivityIndicator size={16} color="#2196F3" />
@@ -394,8 +406,11 @@ export function MatchSheetPDFButtons({
         {showMatchSheetButton && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.warningSoft }]}
-            onPress={onMatchSheetPress}
-            disabled={generatingPDF}
+            onPress={() => {
+              if (generatingPDF) return;
+              onMatchSheetPress();
+            }}
+            activeOpacity={generatingPDF ? 1 : 0.8}
           >
             {generatingPDFType === 'matchsheet' ? (
               <ActivityIndicator size={16} color="#FF5722" />
@@ -414,9 +429,12 @@ export function MatchSheetPDFButtons({
   return (
     <View style={{ ...containerStyle, marginBottom: 40 }}>
       <TouchableOpacity
-        style={[buttonStyle, styles.pdfButtonPrimary]}
-        onPress={onLineupPress}
-        disabled={generatingPDF}
+        style={[buttonStyle, styles.pdfButtonPrimary, generatingPDF && styles.buttonDisabled]}
+        onPress={() => {
+          if (generatingPDF) return;
+          onLineupPress();
+        }}
+        activeOpacity={generatingPDF ? 1 : 0.8}
       >
         {generatingPDFType === 'lineup' ? (
           <ActivityIndicator color="#fff" size="small" />
@@ -429,9 +447,12 @@ export function MatchSheetPDFButtons({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[buttonStyle, styles.pdfButtonSecondary]}
-        onPress={onCallUpPress}
-        disabled={generatingPDF}
+        style={[buttonStyle, styles.pdfButtonSecondary, generatingPDF && styles.buttonDisabled]}
+        onPress={() => {
+          if (generatingPDF) return;
+          onCallUpPress();
+        }}
+        activeOpacity={generatingPDF ? 1 : 0.8}
       >
         <Ionicons name="people" size={20} color={theme.colors.primary} />
         <Text style={styles.pdfButtonTextSecondary}>{t('matchSheet.pdf.callupButton')}</Text>
@@ -439,9 +460,12 @@ export function MatchSheetPDFButtons({
 
       {showMatchSheetButton && (
         <TouchableOpacity
-          style={[buttonStyle, styles.pdfButtonFullSheet]}
-          onPress={onMatchSheetPress}
-          disabled={generatingPDF}
+          style={[buttonStyle, styles.pdfButtonFullSheet, generatingPDF && styles.buttonDisabled]}
+          onPress={() => {
+            if (generatingPDF) return;
+            onMatchSheetPress();
+          }}
+          activeOpacity={generatingPDF ? 1 : 0.8}
         >
           {generatingPDFType === 'matchsheet' ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -614,7 +638,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textInputMultiline: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
 
   // Buttons

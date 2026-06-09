@@ -117,7 +117,7 @@ export const deleteVideo = async (videoId) => {
 export const toggleFavoriteVideo = async (videoId) => {
   try {
     const response = await api.patch(`/video/${videoId}/favorite`);
-    return response.data;
+    return response.data?.video || response.data?.item || response.data?.data || response.data;
   } catch (error) {
     console.warn('Error toggling video favorite:', error);
     throw error;

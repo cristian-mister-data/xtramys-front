@@ -197,7 +197,7 @@ export const toggleFavoriteExercise = createAsyncThunk(
   'ejercicio/toggleFavoriteExercise',
   async (exerciseId) => {
     const res = await api.patch(`/exercise/${exerciseId}/favorite`);
-    return res.data; // { _id, favorito }
+    return res.data?.exercise || res.data?.item || res.data?.data || res.data; // { _id, favorito }
   }
 );
 
