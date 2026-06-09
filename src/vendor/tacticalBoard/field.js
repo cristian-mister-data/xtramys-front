@@ -164,6 +164,68 @@ function fromRatioCoords(xRatio, yRatio, imageWidth, imageHeight, viewMode) {
   };
 }
 
+const BALL_TRAJECTORY_MIN_MOVE = 0.006;
+
+function clampLayoutValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getSnapshotRatioPoint(ball) {
+  if (!ball) return null;
+  if (typeof ball.xRatio === 'number' && typeof ball.yRatio === 'number') {
+    return { x: ball.xRatio, y: ball.yRatio };
+  }
+  if (typeof ball.x === 'number' && typeof ball.y === 'number') {
+    return { x: ball.x / REFERENCE_WIDTH, y: ball.y / (REFERENCE_WIDTH * 0.65) };
+  }
+  return null;
+}
+
+function didBallMove(fromBall, toBall) {
+  const from = getSnapshotRatioPoint(fromBall);
+  const to = getSnapshotRatioPoint(toBall);
+  if (!from || !to) return false;
+  return Math.hypot(to.x - from.x, to.y - from.y) >= BALL_TRAJECTORY_MIN_MOVE;
+}
+
+function describeBallZone(point) {
+  if (!point) return 'zona sin ubicar';
+  const horizontal = point.x < 0.33 ? 'izquierda' : point.x > 0.67 ? 'derecha' : 'central';
+  const vertical = point.y < 0.33 ? 'alta' : point.y > 0.67 ? 'baja' : 'media';
+  return `zona ${horizontal} ${vertical}`;
+}
+
+function getBallMotionTitle(fromBall, toBall) {
+  const explicitLabel = toBall?.name || toBall?.label || fromBall?.name || fromBall?.label;
+  if (explicitLabel) return explicitLabel;
+  return `Pase ${describeBallZone(getSnapshotRatioPoint(fromBall))} -> ${describeBallZone(getSnapshotRatioPoint(toBall))}`;
+}
+
+function getBallMotionSubLabel(fromBall, toBall) {
+  return `${describeBallZone(getSnapshotRatioPoint(fromBall))} -> ${describeBallZone(getSnapshotRatioPoint(toBall))}`;
+}
+
+function getKeyframeMovedBalls(keyframes) {
+  if (!Array.isArray(keyframes) || keyframes.length < 2) return [];
+  const fromKf = keyframes[keyframes.length - 2];
+  const toKf = keyframes[keyframes.length - 1];
+  const fromBalls = new Map(
+    (fromKf?.elements || []).filter((el) => el.type === 'ball').map((ball) => [ball.id, ball]),
+  );
+  return (toKf?.elements || [])
+    .filter(
+      (ball) =>
+        ball.type === 'ball' && fromBalls.has(ball.id) && didBallMove(fromBalls.get(ball.id), ball),
+    )
+    .map((ball) => ({
+      ball,
+      fromBall: fromBalls.get(ball.id),
+      key: `${fromKf.timestamp || keyframes.length - 2}-${toKf.timestamp || keyframes.length - 1}-${ball.id}`,
+      segmentIndex: keyframes.length - 2,
+      trajectory: fromKf.ballTrajectoryById?.[ball.id] || fromKf.ballTrajectoryType || 'ground',
+    }));
+}
+
 // Componentes memoizados para iconos SVG personalizados
 const BallImage = React.memo(
   ({ size, rotation }) => {
@@ -2403,179 +2465,179 @@ function TextEditPanel({
               },
             ]}
           >
-                {/* Header */}
-                <View style={styles.proModalHeader}>
-                  <View style={styles.proModalHeaderIcon}>
-                    <Text style={{ fontSize: 14 }}>📝</Text>
-                  </View>
-                  <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
-                    {t('tacticalBoard.textPanel.title')}
+            {/* Header */}
+            <View style={styles.proModalHeader}>
+              <View style={styles.proModalHeaderIcon}>
+                <Text style={{ fontSize: 14 }}>📝</Text>
+              </View>
+              <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
+                {t('tacticalBoard.textPanel.title')}
+              </Text>
+              <TouchableOpacity style={styles.proModalCloseBtn} onPress={handleClose}>
+                <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Body */}
+            <KeyboardAwareScrollView
+              contentContainerStyle={styles.proModalBody}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Campo de texto */}
+              <View style={styles.proModalSection}>
+                <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                  {t('tacticalBoard.textPanel.textLabel')}
+                </Text>
+                <TextInput
+                  value={value}
+                  onChangeText={setValue}
+                  multiline
+                  style={[
+                    isMobile ? styles.proModalInputMobile : styles.proModalInput,
+                    {
+                      fontSize: isMobile ? 14 : parseInt(size) || 18,
+                      color: color,
+                      minHeight: 60,
+                      verticalAlign: 'top',
+                    },
+                  ]}
+                />
+              </View>
+
+              {/* Color del texto */}
+              <View style={styles.proModalSection}>
+                <View style={styles.proModalRow}>
+                  <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                    {t('tacticalBoard.textPanel.colorLabel')}
                   </Text>
-                  <TouchableOpacity style={styles.proModalCloseBtn} onPress={handleClose}>
-                    <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
+                  <TouchableOpacity
+                    style={[
+                      isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                      { backgroundColor: color },
+                    ]}
+                    onPress={() => setPickerVisible(true)}
+                  />
+                </View>
+              </View>
+
+              <MiniColorPickerModal
+                visible={pickerVisible}
+                initialColor={color}
+                onClose={() => setPickerVisible(false)}
+                onSelect={setColor}
+              />
+
+              {/* Color de fondo */}
+              <View style={styles.proModalSection}>
+                <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                  {t('tacticalBoard.textPanel.backgroundColorLabel')}
+                </Text>
+                <View style={[styles.proModalRow, { marginTop: 8 }]}>
+                  <TouchableOpacity
+                    style={[
+                      isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
+                      {
+                        backgroundColor:
+                          backgroundColor === 'transparent' ? '#fff' : backgroundColor,
+                        opacity: backgroundColor === 'transparent' ? 0.4 : 1,
+                      },
+                    ]}
+                    onPress={() => setBackgroundPickerVisible(true)}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setBackgroundColor('transparent')}
+                    style={[
+                      styles.proModalChip,
+                      backgroundColor === 'transparent' && styles.proModalChipSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.proModalChipText,
+                        backgroundColor === 'transparent' && styles.proModalChipTextSelected,
+                      ]}
+                    >
+                      {t('tacticalBoard.textPanel.noBackground')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
+              </View>
 
-                {/* Body */}
-                <KeyboardAwareScrollView
-                  contentContainerStyle={styles.proModalBody}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {/* Campo de texto */}
-                  <View style={styles.proModalSection}>
-                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                      {t('tacticalBoard.textPanel.textLabel')}
-                    </Text>
-                    <TextInput
-                      value={value}
-                      onChangeText={setValue}
-                      multiline
-                      style={[
-                        isMobile ? styles.proModalInputMobile : styles.proModalInput,
-                        {
-                          fontSize: isMobile ? 14 : parseInt(size) || 18,
-                          color: color,
-                          minHeight: 60,
-                          verticalAlign: 'top',
-                        },
-                      ]}
-                    />
-                  </View>
+              <MiniColorPickerModal
+                visible={backgroundPickerVisible}
+                initialColor={backgroundColor === 'transparent' ? '#ffffff' : backgroundColor}
+                onClose={() => setBackgroundPickerVisible(false)}
+                onSelect={setBackgroundColor}
+              />
 
-                  {/* Color del texto */}
-                  <View style={styles.proModalSection}>
-                    <View style={styles.proModalRow}>
-                      <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                        {t('tacticalBoard.textPanel.colorLabel')}
-                      </Text>
-                      <TouchableOpacity
-                        style={[
-                          isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                          { backgroundColor: color },
-                        ]}
-                        onPress={() => setPickerVisible(true)}
-                      />
-                    </View>
-                  </View>
-
-                  <MiniColorPickerModal
-                    visible={pickerVisible}
-                    initialColor={color}
-                    onClose={() => setPickerVisible(false)}
-                    onSelect={setColor}
-                  />
-
-                  {/* Color de fondo */}
-                  <View style={styles.proModalSection}>
-                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                      {t('tacticalBoard.textPanel.backgroundColorLabel')}
-                    </Text>
-                    <View style={[styles.proModalRow, { marginTop: 8 }]}>
-                      <TouchableOpacity
-                        style={[
-                          isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
-                          {
-                            backgroundColor:
-                              backgroundColor === 'transparent' ? '#fff' : backgroundColor,
-                            opacity: backgroundColor === 'transparent' ? 0.4 : 1,
-                          },
-                        ]}
-                        onPress={() => setBackgroundPickerVisible(true)}
-                      />
-                      <TouchableOpacity
-                        onPress={() => setBackgroundColor('transparent')}
-                        style={[
-                          styles.proModalChip,
-                          backgroundColor === 'transparent' && styles.proModalChipSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.proModalChipText,
-                            backgroundColor === 'transparent' && styles.proModalChipTextSelected,
-                          ]}
-                        >
-                          {t('tacticalBoard.textPanel.noBackground')}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <MiniColorPickerModal
-                    visible={backgroundPickerVisible}
-                    initialColor={backgroundColor === 'transparent' ? '#ffffff' : backgroundColor}
-                    onClose={() => setBackgroundPickerVisible(false)}
-                    onSelect={setBackgroundColor}
-                  />
-
-                  {/* Tama�o */}
-                  <View style={styles.proModalSection}>
-                    <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                      {t('tacticalBoard.textPanel.sizeLabel')}
-                    </Text>
-                    <View style={styles.proModalStepperRow}>
-                      <TouchableOpacity
-                        style={styles.proModalStepperBtn}
-                        onPress={() => {
-                          const current = parseInt(size) || 18;
-                          if (current > 8) setSize(String(current - 1));
-                        }}
-                      >
-                        <Feather name="minus" size={18} color="#666" />
-                      </TouchableOpacity>
-                      <View style={styles.proModalStepperValue}>
-                        <Text style={styles.proModalStepperValueText}>{size}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.proModalStepperBtn}
-                        onPress={() => {
-                          const current = parseInt(size) || 18;
-                          if (current < 100) setSize(String(current + 1));
-                        }}
-                      >
-                        <Feather name="plus" size={18} color="#666" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Preview */}
-                  <View style={styles.proModalPreview}>
-                    <Text
-                      style={{
-                        fontSize: parseInt(size) || 18,
-                        color: color,
-                        backgroundColor: backgroundColor,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 4,
-                      }}
-                    >
-                      {value || 'Preview'}
-                    </Text>
-                  </View>
-                </KeyboardAwareScrollView>
-
-                {/* Footer */}
-                <View style={styles.proModalFooter}>
+              {/* Tama�o */}
+              <View style={styles.proModalSection}>
+                <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
+                  {t('tacticalBoard.textPanel.sizeLabel')}
+                </Text>
+                <View style={styles.proModalStepperRow}>
                   <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnSecondary]}
-                    onPress={handleClose}
-                  >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
-                      {t('tacticalBoard.textPanel.close')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                    style={styles.proModalStepperBtn}
                     onPress={() => {
-                      onApply({ ...icon, color, backgroundColor, size: parseInt(size), value });
+                      const current = parseInt(size) || 18;
+                      if (current > 8) setSize(String(current - 1));
                     }}
                   >
-                    <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
-                      {t('tacticalBoard.textPanel.apply')}
-                    </Text>
+                    <Feather name="minus" size={18} color="#666" />
+                  </TouchableOpacity>
+                  <View style={styles.proModalStepperValue}>
+                    <Text style={styles.proModalStepperValueText}>{size}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.proModalStepperBtn}
+                    onPress={() => {
+                      const current = parseInt(size) || 18;
+                      if (current < 100) setSize(String(current + 1));
+                    }}
+                  >
+                    <Feather name="plus" size={18} color="#666" />
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              {/* Preview */}
+              <View style={styles.proModalPreview}>
+                <Text
+                  style={{
+                    fontSize: parseInt(size) || 18,
+                    color: color,
+                    backgroundColor: backgroundColor,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 4,
+                  }}
+                >
+                  {value || 'Preview'}
+                </Text>
+              </View>
+            </KeyboardAwareScrollView>
+
+            {/* Footer */}
+            <View style={styles.proModalFooter}>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnSecondary]}
+                onPress={handleClose}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextSecondary]}>
+                  {t('tacticalBoard.textPanel.close')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.proModalBtn, styles.proModalBtnPrimary]}
+                onPress={() => {
+                  onApply({ ...icon, color, backgroundColor, size: parseInt(size), value });
+                }}
+              >
+                <Text style={[styles.proModalBtnText, styles.proModalBtnTextPrimary]}>
+                  {t('tacticalBoard.textPanel.apply')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </Pressable>
         </Pressable>
       </SafeAreaView>
@@ -10332,12 +10394,7 @@ const MemoizedCircleDetector = React.memo(
         imageHeight,
         14,
       );
-      const nextPoints = getRatioPointsFromDisplayBox(
-        nextBox,
-        viewMode,
-        imageWidth,
-        imageHeight,
-      );
+      const nextPoints = getRatioPointsFromDisplayBox(nextBox, viewMode, imageWidth, imageHeight);
 
       pendingUpdateRef.current = (prev) => {
         const idx = prev.findIndex((c) => c.id === icon.id);
@@ -10801,12 +10858,7 @@ const MemoizedRectangleDetector = React.memo(
         imageHeight,
         14,
       );
-      const nextPoints = getRatioPointsFromDisplayBox(
-        nextBox,
-        viewMode,
-        imageWidth,
-        imageHeight,
-      );
+      const nextPoints = getRatioPointsFromDisplayBox(nextBox, viewMode, imageWidth, imageHeight);
 
       pendingUpdateRef.current = (prev) => {
         const idx = prev.findIndex((c) => c.id === icon.id);
@@ -11870,6 +11922,7 @@ export default function Field(props = {}) {
   const [videoRecorderVisible, setVideoRecorderVisible] = useState(false);
   const [fieldImageForVideo, setFieldImageForVideo] = useState(null);
   const [videoKeyframes, setVideoKeyframes] = useState([]);
+  const [dismissedBallTrajectoryPrompts, setDismissedBallTrajectoryPrompts] = useState({});
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -13540,7 +13593,7 @@ export default function Field(props = {}) {
     if (isMobile) {
       const topButtonsSpace = 34;
       const bottomButtonsSpace = 44;
-      const videoPanelW = videoRecorderVisible ? 112 : 0;
+      const videoPanelW = 0;
       const sideMargin = 6;
       const usableWidth = SCREEN_WIDTH - sideMargin * 2 - videoPanelW;
       const usableHeight = SCREEN_HEIGHT - topButtonsSpace - bottomButtonsSpace;
@@ -13571,6 +13624,31 @@ export default function Field(props = {}) {
     }
     return { imageWidth: w, imageHeight: h };
   }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible]);
+
+  const activeBallTrajectoryPrompts = useMemo(() => {
+    if (!videoRecorderVisible) return [];
+    return getKeyframeMovedBalls(videoKeyframes).filter(
+      (prompt) => !dismissedBallTrajectoryPrompts[prompt.key],
+    );
+  }, [videoRecorderVisible, videoKeyframes, dismissedBallTrajectoryPrompts]);
+
+  const updateSegmentBallTrajectory = useCallback((segmentIndex, ballId, trajectory, promptKey) => {
+    setVideoKeyframes((prev) =>
+      prev.map((kf, index) => {
+        if (index !== segmentIndex) return kf;
+        const segmentBalls = (kf.elements || []).filter((el) => el.type === 'ball');
+        return {
+          ...kf,
+          ballTrajectoryById: { ...(kf.ballTrajectoryById || {}), [ballId]: trajectory },
+          ballTrajectoryType:
+            segmentBalls.length <= 1 ? trajectory : kf.ballTrajectoryType || 'ground',
+        };
+      }),
+    );
+    if (promptKey) {
+      setDismissedBallTrajectoryPrompts((prev) => ({ ...prev, [promptKey]: true }));
+    }
+  }, []);
 
   // Helper: calcular el centro visible del campo seg�n el viewMode activo
   const getVisibleCenterRatio = useCallback(() => {
@@ -13635,7 +13713,8 @@ export default function Field(props = {}) {
   const finishPlacementAction = useCallback(
     (placementAction, ratioPoint) => {
       if (!placementAction) return;
-      const shouldAutoNumber = placementAction.kind === 'palette-player' && placementAction.paletteIconId;
+      const shouldAutoNumber =
+        placementAction.kind === 'palette-player' && placementAction.paletteIconId;
       const currentNumber = shouldAutoNumber
         ? iconCounters.current[placementAction.paletteIconId] || placementAction.number || 1
         : placementAction.clone.number;
@@ -13670,7 +13749,9 @@ export default function Field(props = {}) {
 
       if (placementAction.kind === 'staff' && placementAction.staffRoleId) {
         setSelectedStaffIds((prev) =>
-          prev.includes(placementAction.staffRoleId) ? prev : [...prev, placementAction.staffRoleId],
+          prev.includes(placementAction.staffRoleId)
+            ? prev
+            : [...prev, placementAction.staffRoleId],
         );
       }
 
@@ -13953,26 +14034,29 @@ export default function Field(props = {}) {
     setPendingLineAction(null);
     setPendingPlacementAction(null);
 
-    finishPlacementAction({
-      kind: 'team-player',
-      playerId: player.uniqueId,
-      clone: {
-        idBase: `player-${player.uniqueId}`,
-        type: 'player',
-        number: player.dorsal || player.number,
-        rotation: 0,
-        size: teamPlayerStyle.size || standardSize,
-        color: teamPlayerStyle.color || '#2176ff',
-        numberColor: teamPlayerStyle.numberColor || '#ffffff',
-        textColor: teamPlayerStyle.textColor || '#000000',
-        textBackgroundColor: teamPlayerStyle.textBackgroundColor || '#ffffff',
-        paletteIndex: 0, // No importa mucho
-        thickness: 1,
-        playerData: player, // Guardar los datos del jugador
-        displayLabel: displayLabel, // Etiqueta de posici�n si est� habilitada
-        zIndex: getNextZIndex('player'),
+    finishPlacementAction(
+      {
+        kind: 'team-player',
+        playerId: player.uniqueId,
+        clone: {
+          idBase: `player-${player.uniqueId}`,
+          type: 'player',
+          number: player.dorsal || player.number,
+          rotation: 0,
+          size: teamPlayerStyle.size || standardSize,
+          color: teamPlayerStyle.color || '#2176ff',
+          numberColor: teamPlayerStyle.numberColor || '#ffffff',
+          textColor: teamPlayerStyle.textColor || '#000000',
+          textBackgroundColor: teamPlayerStyle.textBackgroundColor || '#ffffff',
+          paletteIndex: 0, // No importa mucho
+          thickness: 1,
+          playerData: player, // Guardar los datos del jugador
+          displayLabel: displayLabel, // Etiqueta de posici�n si est� habilitada
+          zIndex: getNextZIndex('player'),
+        },
       },
-    }, getNextAutoPlacementRatio('player'));
+      getNextAutoPlacementRatio('player'),
+    );
   };
 
   // Funci�n para manejar la selecci�n de un material de entrenamiento
@@ -14027,24 +14111,27 @@ export default function Field(props = {}) {
       setPendingLineAction(null);
       setPendingPlacementAction(null);
 
-      finishPlacementAction({
-        kind: 'staff',
-        staffRoleId: staffRole.id,
-        clone: {
-          idBase: `staff-${staffRole.id}`,
-          type: 'staff',
-          staffRole: staffRole.id,
-          rotation: 0,
-          size: standardSize,
-          color: '#333333',
-          numberColor: '#ffffff',
-          displayLabel: staffRole.code, // Mostrar el c�digo (E1, E2, PF, etc)
-          staffLabel: staffRole.label, // Etiqueta completa para referencia
-          paletteIndex: 0,
-          thickness: 1,
-          zIndex: getNextZIndex('staff'),
+      finishPlacementAction(
+        {
+          kind: 'staff',
+          staffRoleId: staffRole.id,
+          clone: {
+            idBase: `staff-${staffRole.id}`,
+            type: 'staff',
+            staffRole: staffRole.id,
+            rotation: 0,
+            size: standardSize,
+            color: '#333333',
+            numberColor: '#ffffff',
+            displayLabel: staffRole.code, // Mostrar el c�digo (E1, E2, PF, etc)
+            staffLabel: staffRole.label, // Etiqueta completa para referencia
+            paletteIndex: 0,
+            thickness: 1,
+            zIndex: getNextZIndex('staff'),
+          },
         },
-      }, getNextAutoPlacementRatio('staff'));
+        getNextAutoPlacementRatio('staff'),
+      );
 
       // A�adir a la lista de staff seleccionados (para que desaparezca de la paleta)
     },
@@ -19980,7 +20067,7 @@ export default function Field(props = {}) {
           position: 'relative',
           touchAction: isMobile ? 'none' : 'auto',
           overflow: 'hidden',
-          paddingRight: isMobile && videoRecorderVisible ? 112 : 0,
+          paddingRight: 0,
         }}
       >
         <StatusBar
@@ -21145,6 +21232,122 @@ export default function Field(props = {}) {
                   </View>
                 </ViewShot>
 
+                {activeBallTrajectoryPrompts.map((prompt) => {
+                  const ratioPoint = getSnapshotRatioPoint(prompt.ball);
+                  if (!ratioPoint) return null;
+                  const displayPoint = ratioToDisplay(
+                    ratioPoint.x,
+                    ratioPoint.y,
+                    viewMode,
+                    imageWidth,
+                    imageHeight,
+                  );
+                  const cardWidth = isMobile ? (SCREEN_WIDTH < 380 ? 124 : 138) : 224;
+                  const cardHeight = isMobile ? 76 : 112;
+                  const left = clampLayoutValue(
+                    displayPoint.x - cardWidth / 2,
+                    4,
+                    Math.max(4, imageWidth - cardWidth - 4),
+                  );
+                  const preferTop = displayPoint.y + 18;
+                  const top =
+                    preferTop + cardHeight > imageHeight
+                      ? clampLayoutValue(
+                          displayPoint.y - cardHeight - 18,
+                          4,
+                          Math.max(4, imageHeight - cardHeight - 4),
+                        )
+                      : clampLayoutValue(preferTop, 4, Math.max(4, imageHeight - cardHeight - 4));
+                  const trajectory = prompt.trajectory || 'ground';
+
+                  return (
+                    <View
+                      key={prompt.key}
+                      style={[
+                        styles.ballTrajectoryPrompt,
+                        isMobile && styles.ballTrajectoryPromptMobile,
+                        { left, top, width: cardWidth },
+                      ]}
+                    >
+                      <View style={styles.ballTrajectoryPromptHeader}>
+                        <View style={styles.ballTrajectoryIcon}>
+                          <Feather name="send" size={isMobile ? 9 : 14} color="#0f172a" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.ballTrajectoryTitle} numberOfLines={1}>
+                            {getBallMotionTitle(prompt.fromBall, prompt.ball)}
+                          </Text>
+                          <Text style={styles.ballTrajectorySubtitle} numberOfLines={1}>
+                            {getBallMotionSubLabel(prompt.fromBall, prompt.ball)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.ballTrajectoryOptions}>
+                        <TouchableOpacity
+                          style={[
+                            styles.ballTrajectoryOption,
+                            trajectory === 'ground' && styles.ballTrajectoryOptionGround,
+                          ]}
+                          onPress={() =>
+                            updateSegmentBallTrajectory(
+                              prompt.segmentIndex,
+                              prompt.ball.id,
+                              'ground',
+                              prompt.key,
+                            )
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel="Mover este balón por suelo"
+                        >
+                          <Feather
+                            name="arrow-right"
+                            size={isMobile ? 9 : 15}
+                            color={trajectory === 'ground' ? '#fff' : '#166534'}
+                          />
+                          <Text
+                            style={[
+                              styles.ballTrajectoryOptionText,
+                              trajectory === 'ground' && styles.ballTrajectoryOptionTextActive,
+                            ]}
+                          >
+                            Suelo
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.ballTrajectoryOption,
+                            trajectory === 'air' && styles.ballTrajectoryOptionAir,
+                          ]}
+                          onPress={() =>
+                            updateSegmentBallTrajectory(
+                              prompt.segmentIndex,
+                              prompt.ball.id,
+                              'air',
+                              prompt.key,
+                            )
+                          }
+                          accessibilityRole="button"
+                          accessibilityLabel="Mover este balón por aire"
+                        >
+                          <Feather
+                            name="trending-up"
+                            size={isMobile ? 9 : 15}
+                            color={trajectory === 'air' ? '#fff' : '#92400e'}
+                          />
+                          <Text
+                            style={[
+                              styles.ballTrajectoryOptionText,
+                              trajectory === 'air' && styles.ballTrajectoryOptionTextActive,
+                            ]}
+                          >
+                            Aire
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+
                 {draggingOutside && (
                   <View
                     pointerEvents="none"
@@ -21553,6 +21756,8 @@ export default function Field(props = {}) {
 }
 
 // Actualiza algunos estilos espec�ficos
+const { width: screenW, height: screenH } = Dimensions.get('window');
+const IS_MOBILE = Math.min(screenW, screenH) < 768;
 const styles = StyleSheet.create({
   iconButton: {
     justifyContent: 'center',
@@ -21570,6 +21775,83 @@ const styles = StyleSheet.create({
     backgroundColor: '#4a8c3f',
     marginBottom: 8, // Reducido de 18 para dar m�s espacio
     elevation: 2,
+  },
+  ballTrajectoryPrompt: {
+    position: 'absolute',
+    zIndex: 19000,
+    elevation: 20,
+    borderRadius: 16,
+    padding: 10,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.10)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+  },
+  ballTrajectoryPromptMobile: {
+    borderRadius: 10,
+    padding: 5,
+  },
+  ballTrajectoryPromptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  ballTrajectoryIcon: {
+    width: IS_MOBILE ? 20 : 28,
+    height: IS_MOBILE ? 20 : 28,
+    borderRadius: IS_MOBILE ? 10 : 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e0f2fe',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  ballTrajectoryTitle: {
+    fontSize: IS_MOBILE ? 8 : 12,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  ballTrajectorySubtitle: {
+    marginTop: 1,
+    fontSize: IS_MOBILE ? 6 : 10,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  ballTrajectoryOptions: {
+    flexDirection: 'row',
+    gap: IS_MOBILE ? 3 : 6,
+  },
+  ballTrajectoryOption: {
+    flex: 1,
+    minHeight: IS_MOBILE ? 24 : 38,
+    borderRadius: IS_MOBILE ? 7 : 10,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: IS_MOBILE ? 2 : 5,
+  },
+  ballTrajectoryOptionGround: {
+    backgroundColor: '#16a34a',
+    borderColor: '#15803d',
+  },
+  ballTrajectoryOptionAir: {
+    backgroundColor: '#f59e0b',
+    borderColor: '#d97706',
+  },
+  ballTrajectoryOptionText: {
+    fontSize: IS_MOBILE ? 8 : 12,
+    fontWeight: '800',
+    color: '#334155',
+  },
+  ballTrajectoryOptionTextActive: {
+    color: '#fff',
   },
   leftPanelTitle: {
     fontSize: 18,

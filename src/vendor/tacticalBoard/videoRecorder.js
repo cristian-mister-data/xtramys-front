@@ -22,10 +22,7 @@ const IS_MOBILE = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
     <Pressable
-      style={({ pressed }) => [
-        style,
-        pressed && !disabled && { opacity: activeOpacity },
-      ]}
+      style={({ pressed }) => [style, pressed && !disabled && { opacity: activeOpacity }]}
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
       {...props}
@@ -42,7 +39,12 @@ import * as Sharing from 'expo-sharing';
 import RNFS from 'react-native-fs';
 import { captureRef } from 'react-native-view-shot';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
-import { initRecordingSession, generateVideo as encodeVideo, warmUpFFmpeg, createStreamingVideoEncoder } from '@/utils/videoUtils';
+import {
+  initRecordingSession,
+  generateVideo as encodeVideo,
+  warmUpFFmpeg,
+  createStreamingVideoEncoder,
+} from '@/utils/videoUtils';
 import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
 import { getAspectForView } from './fields';
 import { SPEED_TO_FPS } from '@/constants/video';
@@ -62,7 +64,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cdnUrl } from '@/config';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
-const LINE_TYPE_ELEMENTS = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape']);
+const LINE_TYPE_ELEMENTS = new Set([
+  'straight-line',
+  'straight-arrow',
+  'curve-line',
+  'curve-arrow',
+  'circle',
+  'rectangle',
+  'custom-shape',
+]);
 const VIDEO_CAPTURE_FORMAT = 'jpg';
 const VIDEO_CAPTURE_EXTENSION = 'jpg';
 const VIDEO_CAPTURE_QUALITY = 0.97;
@@ -83,7 +93,7 @@ const VideoPreviewScreen = React.memo(function VideoPreviewScreen({
   saveLabel,
   downloadLabel,
 }) {
-  const player = useVideoPlayer(videoUrl, p => {
+  const player = useVideoPlayer(videoUrl, (p) => {
     p.loop = true;
     p.play();
   });
@@ -176,13 +186,23 @@ function interpolateElement(from, to, t) {
   const out = { ...to };
 
   [
-    'xRatio', 'yRatio',
-    'x', 'y',
-    'x1', 'y1', 'x2', 'y2',
-    'width', 'height', 'radius',
-    'size', 'baseSize',
-    'fontSize', 'baseFontSize',
-    'thickness', 'baseThickness',
+    'xRatio',
+    'yRatio',
+    'x',
+    'y',
+    'x1',
+    'y1',
+    'x2',
+    'y2',
+    'width',
+    'height',
+    'radius',
+    'size',
+    'baseSize',
+    'fontSize',
+    'baseFontSize',
+    'thickness',
+    'baseThickness',
     'rotation',
   ].forEach((prop) => lerpNumericProp(out, from, to, prop, t));
 
@@ -242,19 +262,81 @@ function getBallTrajectoryForSegment(keyframe, ballId) {
   return keyframe?.ballTrajectoryById?.[ballId] || keyframe?.ballTrajectoryType || 'ground';
 }
 
+const BALL_TRAJECTORY_MIN_MOVE = 0.006;
+
+function getBallSnapshotRatio(ball) {
+  if (!ball) return null;
+  if (typeof ball.xRatio === 'number' && typeof ball.yRatio === 'number') {
+    return { x: ball.xRatio, y: ball.yRatio };
+  }
+  return null;
+}
+
+function getBallZone(point) {
+  if (!point) return i18n.t('videoRecorder.ballZoneUnlocated', 'zona sin ubicar');
+  const sideMap = { left: 'izquierda', center: 'central', right: 'derecha' };
+  const laneMap = { high: 'alta', mid: 'media', low: 'baja' };
+  const side = point.x < 0.33 ? 'left' : point.x > 0.67 ? 'right' : 'center';
+  const lane = point.y < 0.33 ? 'high' : point.y > 0.67 ? 'low' : 'mid';
+  const fallback = `zona ${sideMap[side]} ${laneMap[lane]}`;
+  return i18n.t(`videoRecorder.ballZone.${side}_${lane}`, fallback);
+}
+
+function getBallMovementDistance(fromBall, toBall) {
+  const from = getBallSnapshotRatio(fromBall);
+  const to = getBallSnapshotRatio(toBall);
+  if (!from || !to) return 0;
+  return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+function getBallMovementTitle(fromBall, toBall) {
+  const explicitLabel = toBall?.name || toBall?.label || fromBall?.name || fromBall?.label;
+  if (explicitLabel) return explicitLabel;
+  return `${getBallZone(getBallSnapshotRatio(fromBall))} -> ${getBallZone(getBallSnapshotRatio(toBall))}`;
+}
+
+function getSegmentBallMovements(keyframes, index) {
+  const fromKf = keyframes?.[index];
+  const toKf = keyframes?.[index + 1];
+  if (!fromKf || !toKf) return [];
+  const toBalls = new Map(
+    (toKf.elements || []).filter((el) => el.type === 'ball').map((ball) => [ball.id, ball]),
+  );
+  return (fromKf.elements || [])
+    .filter((ball) => ball.type === 'ball' && toBalls.has(ball.id))
+    .map((fromBall) => {
+      const toBall = toBalls.get(fromBall.id);
+      return {
+        id: fromBall.id,
+        fromBall,
+        toBall,
+        moved: getBallMovementDistance(fromBall, toBall) >= BALL_TRAJECTORY_MIN_MOVE,
+        trajectory: getBallTrajectoryForSegment(fromKf, fromBall.id),
+      };
+    })
+    .filter((movement) => movement.moved);
+}
+
 // Genera todos los frames interpolados entre todos los keyframes
-function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, speedMultiplier, extraDurationEnd) {
+function buildInterpolatedFrames(
+  keyframes,
+  fps,
+  moveDuration,
+  holdDuration,
+  speedMultiplier,
+  extraDurationEnd,
+) {
   if (!keyframes || keyframes.length < 2) return [];
 
-  const framesPerTransition = Math.max(2, Math.round(fps * moveDuration / speedMultiplier));
-  const holdFrames = Math.max(1, Math.round(fps * holdDuration / speedMultiplier));
+  const framesPerTransition = Math.max(2, Math.round((fps * moveDuration) / speedMultiplier));
+  const holdFrames = Math.max(1, Math.round((fps * holdDuration) / speedMultiplier));
   const extraFrames = Math.round(fps * extraDurationEnd);
   const frames = [];
 
   // Control de rotación acumulada de los balones para movimiento continuo
   const ballRotations = new Map();
   const firstKf = keyframes[0];
-  (firstKf.elements || []).forEach(e => {
+  (firstKf.elements || []).forEach((e) => {
     if (e.type === 'ball') {
       ballRotations.set(e.id, e.rotation || 0);
     }
@@ -262,7 +344,7 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
 
   // Hold inicial en la primera posición (misma duración que holdDuration)
   for (let h = 0; h < holdFrames; h++) {
-    const elementsWithUpdatedRotations = (firstKf.elements || []).map(el => {
+    const elementsWithUpdatedRotations = (firstKf.elements || []).map((el) => {
       if (el.type === 'ball') {
         return { ...el, rotation: ballRotations.get(el.id) || 0 };
       }
@@ -281,8 +363,8 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
       const toConnectors = keyframes[ki + 1].connectors || kf.connectors || [];
 
       // Build id→element maps
-      const fromMap = new Map(fromEls.map(e => [e.id, e]));
-      const toMap = new Map(toEls.map(e => [e.id, e]));
+      const fromMap = new Map(fromEls.map((e) => [e.id, e]));
+      const toMap = new Map(toEls.map((e) => [e.id, e]));
       const allIds = new Set([...fromMap.keys(), ...toMap.keys()]);
 
       // Calcular la diferencia de rotación de cada balón en esta transición
@@ -291,8 +373,14 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
         const fe = fromMap.get(id);
         const te = toMap.get(id);
         if (fe && te && fe.type === 'ball' && te.type === 'ball') {
-          const dx = (te.x !== undefined && fe.x !== undefined) ? (te.x - fe.x) : ((te.xRatio || 0) - (fe.xRatio || 0)) * 1000;
-          const dy = (te.y !== undefined && fe.y !== undefined) ? (te.y - fe.y) : ((te.yRatio || 0) - (fe.yRatio || 0)) * 1000;
+          const dx =
+            te.x !== undefined && fe.x !== undefined
+              ? te.x - fe.x
+              : ((te.xRatio || 0) - (fe.xRatio || 0)) * 1000;
+          const dy =
+            te.y !== undefined && fe.y !== undefined
+              ? te.y - fe.y
+              : ((te.yRatio || 0) - (fe.yRatio || 0)) * 1000;
           const dist = Math.sqrt(dx * dx + dy * dy);
           let sign = 1;
           if (Math.abs(dx) > 0.01) {
@@ -315,7 +403,10 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
         for (const id of allIds) {
           const fe = fromMap.get(id);
           const te = toMap.get(id);
-          const isAirBall = fe?.type === 'ball' && te?.type === 'ball' && getBallTrajectoryForSegment(kf, id) === 'air';
+          const isAirBall =
+            fe?.type === 'ball' &&
+            te?.type === 'ball' &&
+            getBallTrajectoryForSegment(kf, id) === 'air';
           let interpEl;
           if (fe && te) {
             interpEl = interpolateElement(fe, te, isAirBall ? linearProgress : t);
@@ -339,9 +430,12 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
               const groundXRatio = interpEl.xRatio;
               const groundYRatio = interpEl.yRatio;
               // Calcular nuevo yRatio (snapshotToClone prioriza ratio sobre y).
-              const refH = typeof groundY === 'number' && typeof groundYRatio === 'number' && groundYRatio !== 0
-                ? groundY / groundYRatio
-                : null;
+              const refH =
+                typeof groundY === 'number' &&
+                typeof groundYRatio === 'number' &&
+                groundYRatio !== 0
+                  ? groundY / groundYRatio
+                  : null;
               const newY = (groundY || 0) + airEffect.ballYOffset;
               const newYRatio = refH ? newY / refH : groundYRatio;
               interpEl = {
@@ -349,7 +443,9 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
                 y: newY,
                 yRatio: newYRatio,
                 size: (interpEl.size || (IS_MOBILE ? 24 : 18)) * airEffect.ballScale,
-                baseSize: (interpEl.baseSize || interpEl.size || (IS_MOBILE ? 24 : 18)) * airEffect.ballScale,
+                baseSize:
+                  (interpEl.baseSize || interpEl.size || (IS_MOBILE ? 24 : 18)) *
+                  airEffect.ballScale,
                 zIndex: (interpEl.zIndex || 200) + 50,
                 isAirborne: true,
               };
@@ -367,7 +463,7 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
         }
 
         // Interpolar conectores: usar los del destino para la segunda mitad
-        const connectors = t < 0.5 ? (kf.connectors || []) : toConnectors;
+        const connectors = t < 0.5 ? kf.connectors || [] : toConnectors;
         frames.push({ elements: [...airShadows, ...interpolated], connectors });
       }
 
@@ -380,13 +476,16 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
       // Hold: pausa breve en el punto de destino
       const destKf = keyframes[ki + 1];
       for (let h = 0; h < holdFrames; h++) {
-        const elementsWithUpdatedRotations = (destKf.elements || []).map(el => {
+        const elementsWithUpdatedRotations = (destKf.elements || []).map((el) => {
           if (el.type === 'ball') {
             return { ...el, rotation: ballRotations.get(el.id) || 0 };
           }
           return el;
         });
-        frames.push({ elements: elementsWithUpdatedRotations, connectors: destKf.connectors || [] });
+        frames.push({
+          elements: elementsWithUpdatedRotations,
+          connectors: destKf.connectors || [],
+        });
       }
     }
   }
@@ -394,7 +493,7 @@ function buildInterpolatedFrames(keyframes, fps, moveDuration, holdDuration, spe
   // Extra frames al final (mantener última posición)
   const lastKf = keyframes[keyframes.length - 1];
   for (let e = 0; e < extraFrames; e++) {
-    const elementsWithUpdatedRotations = (lastKf.elements || []).map(el => {
+    const elementsWithUpdatedRotations = (lastKf.elements || []).map((el) => {
       if (el.type === 'ball') {
         return { ...el, rotation: ballRotations.get(el.id) || 0 };
       }
@@ -419,9 +518,9 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
 
   const scaleFactor = Math.min(refWidth, refHeight) / 500;
 
-  return keyframes.map(kf => ({
+  return keyframes.map((kf) => ({
     ...kf,
-    elements: (kf.elements || []).map(elem => {
+    elements: (kf.elements || []).map((elem) => {
       const norm = { ...elem };
 
       // === Posición desde ratios ===
@@ -456,9 +555,9 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
           norm.x2 = norm.pointsRatio[1].x * refWidth;
           norm.y2 = norm.pointsRatio[1].y * refHeight;
         } else if (norm.type === 'curve-arrow' || norm.type === 'curve-line') {
-          norm.points = norm.pointsRatio.map(pt => ({
+          norm.points = norm.pointsRatio.map((pt) => ({
             x: pt.x * refWidth,
-            y: pt.y * refHeight
+            y: pt.y * refHeight,
           }));
         } else if (norm.type === 'circle') {
           const p1 = { x: norm.pointsRatio[0].x * refWidth, y: norm.pointsRatio[0].y * refHeight };
@@ -476,9 +575,9 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
           norm.width = Math.abs(p2.x - p1.x);
           norm.height = Math.abs(p2.y - p1.y);
         } else if (norm.type === 'custom-shape') {
-          norm.points = norm.pointsRatio.map(pt => ({
+          norm.points = norm.pointsRatio.map((pt) => ({
             x: pt.x * refWidth,
-            y: pt.y * refHeight
+            y: pt.y * refHeight,
           }));
           norm.imageWidth = refWidth;
           norm.imageHeight = refHeight;
@@ -572,7 +671,11 @@ export default function VideoRecorder({
       setVideoNombreEn((current) => current || editingVideoEnName);
     }
   }, [editingVideoName, editingVideoEnName]);
-  const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
+  const [notification, setNotification] = useState({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
   const notificationAnim = useRef(new Animated.Value(0)).current;
   const [currentVideoId, setCurrentVideoId] = useState(null);
   const [localVideoPath, setLocalVideoPath] = useState(null); // Ruta local del MP4 generado
@@ -595,7 +698,7 @@ export default function VideoRecorder({
       generationCancelledRef.current = true;
       // Limpiar video local si existe Y no está pendiente de upload a R2
       if (localVideoPath && localVideoPath !== uploadingPathRef.current) {
-        RNFS.unlink(localVideoPath).catch(() => { });
+        RNFS.unlink(localVideoPath).catch(() => {});
       }
     };
   }, [localVideoPath]);
@@ -606,19 +709,26 @@ export default function VideoRecorder({
         const str = await AsyncStorage.getItem('usuario');
         if (str) {
           const parsed = JSON.parse(str);
-          if (parsed?.role === 'admin') { setIsAdmin(true); return; }
+          if (parsed?.role === 'admin') {
+            setIsAdmin(true);
+            return;
+          }
         }
         const token = await AsyncStorage.getItem('token');
         if (token) {
           const parts = token.split('.');
           if (parts.length === 3) {
-            const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-              + '='.repeat((4 - parts[1].length % 4) % 4);
+            const b64 =
+              parts[1].replace(/-/g, '+').replace(/_/g, '/') +
+              '='.repeat((4 - (parts[1].length % 4)) % 4);
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-            let decoded = ''; let idx = 0;
+            let decoded = '';
+            let idx = 0;
             while (idx < b64.length) {
-              const e1 = chars.indexOf(b64[idx++]), e2 = chars.indexOf(b64[idx++]);
-              const e3 = chars.indexOf(b64[idx++]), e4 = chars.indexOf(b64[idx++]);
+              const e1 = chars.indexOf(b64[idx++]),
+                e2 = chars.indexOf(b64[idx++]);
+              const e3 = chars.indexOf(b64[idx++]),
+                e4 = chars.indexOf(b64[idx++]);
               decoded += String.fromCharCode((e1 << 2) | (e2 >> 4));
               if (e3 !== 64) decoded += String.fromCharCode(((e2 & 15) << 4) | (e3 >> 2));
               if (e4 !== 64) decoded += String.fromCharCode(((e3 & 3) << 6) | e4);
@@ -627,7 +737,7 @@ export default function VideoRecorder({
             if (payload?.role === 'admin') setIsAdmin(true);
           }
         }
-      } catch { }
+      } catch {}
     };
     detectAdmin();
   }, []);
@@ -692,7 +802,9 @@ export default function VideoRecorder({
 
   // Capturar un keyframe
   const captureKeyframe = async () => {
-    const savedSelection = videoFrameControl?.current?.getSelected ? videoFrameControl.current.getSelected() : null;
+    const savedSelection = videoFrameControl?.current?.getSelected
+      ? videoFrameControl.current.getSelected()
+      : null;
     try {
       // Deseleccionar todo para captura limpia (sin handles de selección)
       if (videoFrameControl?.current?.deselectAll) {
@@ -745,265 +857,286 @@ export default function VideoRecorder({
       }
 
       // Capturar datos de elementos para interpolación - ULTRA OPTIMIZADO
-      const elementsSnapshot = elements.map(elem => {
-        // SOLO guardar propiedades esenciales mínimas
-        const snapshot = {
-          type: elem.type,
-          id: elem.id,
-        };
+      const elementsSnapshot = elements
+        .map((elem) => {
+          // SOLO guardar propiedades esenciales mínimas
+          const snapshot = {
+            type: elem.type,
+            id: elem.id,
+          };
 
-        const baseScale = Math.min(fieldWidth, fieldHeight) / 500;
-        const scaleFactor = baseScale;
+          const baseScale = Math.min(fieldWidth, fieldHeight) / 500;
+          const scaleFactor = baseScale;
 
-        // Para elementos con xRatio/yRatio, convertir a coordenadas absolutas
-        if (elem.xRatio !== undefined && elem.yRatio !== undefined) {
-          // Guardar RATIOS originales para poder restaurar exactamente
-          snapshot.xRatio = elem.xRatio;
-          snapshot.yRatio = elem.yRatio;
-          // Redondear para reducir tamaño de datos JSON
-          snapshot.x = Math.round(elem.xRatio * fieldWidth * 100) / 100;
-          snapshot.y = Math.round(elem.yRatio * fieldHeight * 100) / 100;
+          // Para elementos con xRatio/yRatio, convertir a coordenadas absolutas
+          if (elem.xRatio !== undefined && elem.yRatio !== undefined) {
+            // Guardar RATIOS originales para poder restaurar exactamente
+            snapshot.xRatio = elem.xRatio;
+            snapshot.yRatio = elem.yRatio;
+            // Redondear para reducir tamaño de datos JSON
+            snapshot.x = Math.round(elem.xRatio * fieldWidth * 100) / 100;
+            snapshot.y = Math.round(elem.yRatio * fieldHeight * 100) / 100;
 
-          // Calcular tamaño escalado
-          const baseSize = elem.size || (IS_MOBILE ? 24 : 18);
-          snapshot.size = Math.round(baseSize * scaleFactor * 100) / 100;
-          snapshot.baseSize = baseSize;
+            // Calcular tamaño escalado
+            const baseSize = elem.size || (IS_MOBILE ? 24 : 18);
+            snapshot.size = Math.round(baseSize * scaleFactor * 100) / 100;
+            snapshot.baseSize = baseSize;
 
-          if (elem.rotation) snapshot.rotation = elem.rotation;
-          if (elem.locked) snapshot.locked = elem.locked;
-          if (elem.zIndex !== undefined) snapshot.zIndex = elem.zIndex;
-          if (elem.paletteIndex !== undefined) snapshot.paletteIndex = elem.paletteIndex;
+            if (elem.rotation) snapshot.rotation = elem.rotation;
+            if (elem.locked) snapshot.locked = elem.locked;
+            if (elem.zIndex !== undefined) snapshot.zIndex = elem.zIndex;
+            if (elem.paletteIndex !== undefined) snapshot.paletteIndex = elem.paletteIndex;
 
-          // Solo agregar propiedades necesarias según tipo
-          if (elem.type === 'player') {
-            snapshot.color = elem.color;
-            snapshot.number = elem.playerNumber || elem.number;
-            if (elem.numberColor) snapshot.numberColor = elem.numberColor;
-            if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
-            if (elem.ownerType) snapshot.ownerType = elem.ownerType;
-            // Añadir datos de texto para jugadores con nombre
-            if (elem.playerData) {
-              snapshot.playerData = {
-                nombre: elem.playerData.nombre,
-                demarcacion: elem.playerData.demarcacion,
-                posicion: elem.playerData.posicion,
-                foto: elem.playerData.foto,
-              };
-              snapshot.textColor = elem.textColor || '#000000';
-              snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
-              if (elem.playerData.foto) {
-                snapshot.photoUrl = cdnUrl(elem.playerData.foto);
+            // Solo agregar propiedades necesarias según tipo
+            if (elem.type === 'player') {
+              snapshot.color = elem.color;
+              snapshot.number = elem.playerNumber || elem.number;
+              if (elem.numberColor) snapshot.numberColor = elem.numberColor;
+              if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
+              if (elem.ownerType) snapshot.ownerType = elem.ownerType;
+              // Añadir datos de texto para jugadores con nombre
+              if (elem.playerData) {
+                snapshot.playerData = {
+                  nombre: elem.playerData.nombre,
+                  demarcacion: elem.playerData.demarcacion,
+                  posicion: elem.playerData.posicion,
+                  foto: elem.playerData.foto,
+                };
+                snapshot.textColor = elem.textColor || '#000000';
+                snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
+                if (elem.playerData.foto) {
+                  snapshot.photoUrl = cdnUrl(elem.playerData.foto);
+                }
               }
+              // Añadir configuración de mostrar fotos y números
+              snapshot.showPhotos = showPhotos;
+              snapshot.playersWithNumber = playersWithNumber;
+              // Añadir datos del portero
+              snapshot.isGoalkeeper =
+                elem.isGoalkeeper ||
+                elem.playerData?.posicion === 'portero' ||
+                elem.playerData?.position === 'goalkeeper' ||
+                elem.playerData?.demarcacion === 'POR';
+              if (elem.differentiateGoalkeeper !== undefined)
+                snapshot.differentiateGoalkeeper = elem.differentiateGoalkeeper;
+              if (elem.goalkeeperStripeColor)
+                snapshot.goalkeeperStripeColor = elem.goalkeeperStripeColor;
+            } else if (elem.type === 'staff') {
+              snapshot.staffRole = elem.staffRole;
+              snapshot.displayLabel = elem.displayLabel; // Iniciales (E1, E2, PF, etc.)
+              snapshot.color = elem.color;
+              if (elem.numberColor) snapshot.numberColor = elem.numberColor;
+            } else if (
+              elem.type === 'ball' ||
+              elem.type === 'cone' ||
+              elem.type === 'cone-pro' ||
+              elem.type === 'cone-flat' ||
+              elem.type === 'ring' ||
+              elem.type === 'goal' ||
+              elem.type === 'goal-large' ||
+              elem.type === 'goal-small' ||
+              elem.type === 'barrier' ||
+              elem.type === 'dummy' ||
+              elem.type === 'pole' ||
+              elem.type === 'ladder' ||
+              elem.type === 'weights'
+            ) {
+              if (elem.color) snapshot.color = elem.color;
+              if (elem.rotation) snapshot.rotation = elem.rotation;
             }
-            // Añadir configuración de mostrar fotos y números
-            snapshot.showPhotos = showPhotos;
-            snapshot.playersWithNumber = playersWithNumber;
-            // Añadir datos del portero
-            snapshot.isGoalkeeper = elem.isGoalkeeper ||
-              elem.playerData?.posicion === 'portero' ||
-              elem.playerData?.position === 'goalkeeper' ||
-              elem.playerData?.demarcacion === 'POR';
-            if (elem.differentiateGoalkeeper !== undefined) snapshot.differentiateGoalkeeper = elem.differentiateGoalkeeper;
-            if (elem.goalkeeperStripeColor) snapshot.goalkeeperStripeColor = elem.goalkeeperStripeColor;
-          } else if (elem.type === 'staff') {
-            snapshot.staffRole = elem.staffRole;
-            snapshot.displayLabel = elem.displayLabel; // Iniciales (E1, E2, PF, etc.)
-            snapshot.color = elem.color;
-            if (elem.numberColor) snapshot.numberColor = elem.numberColor;
-          } else if (elem.type === 'ball' || elem.type === 'cone' || elem.type === 'cone-pro' ||
-            elem.type === 'cone-flat' || elem.type === 'ring' ||
-            elem.type === 'goal' || elem.type === 'goal-large' || elem.type === 'goal-small' ||
-            elem.type === 'barrier' || elem.type === 'dummy' || elem.type === 'pole' ||
-            elem.type === 'ladder' || elem.type === 'weights') {
-            if (elem.color) snapshot.color = elem.color;
+          }
+
+          // Para líneas/flechas con points, convertir a coordenadas absolutas
+          if (elem.points && elem.points.length >= 2) {
+            if (elem.type === 'straight-arrow' || elem.type === 'straight-line') {
+              // Líneas rectas: solo necesitan punto inicial y final
+              // Guardar ratios originales para restauración exacta
+              snapshot.pointsRatio = [
+                { x: elem.points[0].x, y: elem.points[0].y },
+                { x: elem.points[1].x, y: elem.points[1].y },
+              ];
+              snapshot.x1 = elem.points[0].x * fieldWidth;
+              snapshot.y1 = elem.points[0].y * fieldHeight;
+              snapshot.x2 = elem.points[1].x * fieldWidth;
+              snapshot.y2 = elem.points[1].y * fieldHeight;
+
+              const baseThickness = elem.thickness || 1;
+              snapshot.thickness = baseThickness;
+              snapshot.baseThickness = baseThickness;
+              // Siempre capturar color (usar default si no hay)
+              snapshot.color = elem.color || '#000000';
+              // Siempre capturar información de tipo de línea para video
+              snapshot.lineType = elem.lineType || 'solid';
+              snapshot.dotSize = elem.dotSize ?? 2;
+              snapshot.dotSpacing = elem.dotSpacing ?? 4;
+            } else if (elem.type === 'curve-arrow' || elem.type === 'curve-line') {
+              // Líneas curvas: enviar TODOS los puntos para renderizado exacto
+              // Guardar ratios originales para restauración exacta
+              snapshot.pointsRatio = elem.points.map((pt) => ({ x: pt.x, y: pt.y }));
+              snapshot.points = elem.points.map((pt) => ({
+                x: pt.x * fieldWidth,
+                y: pt.y * fieldHeight,
+              }));
+
+              const baseThickness = elem.thickness || 1;
+              snapshot.thickness = baseThickness;
+              snapshot.baseThickness = baseThickness;
+              // Siempre capturar color (usar default si no hay)
+              snapshot.color = elem.color || '#000000';
+              // Siempre capturar información de tipo de línea para video
+              snapshot.lineType = elem.lineType || 'solid';
+              snapshot.dotSize = elem.dotSize ?? 2;
+              snapshot.dotSpacing = elem.dotSpacing ?? 4;
+            }
+
+            // Para círculos, calcular centro y radio desde points
+            if (elem.type === 'circle') {
+              // Guardar ratios originales
+              snapshot.pointsRatio = [
+                { x: elem.points[0].x, y: elem.points[0].y },
+                { x: elem.points[1].x, y: elem.points[1].y },
+              ];
+              const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
+              const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
+
+              // Centro del círculo
+              snapshot.x = (p1.x + p2.x) / 2;
+              snapshot.y = (p1.y + p2.y) / 2;
+
+              // Radio del círculo
+              const dx = p2.x - p1.x;
+              const dy = p2.y - p1.y;
+              snapshot.radius = Math.sqrt(dx * dx + dy * dy) / 2;
+
+              // Capturar thickness
+              const baseThickness = elem.thickness || 1;
+              snapshot.thickness = baseThickness;
+              snapshot.baseThickness = baseThickness;
+              // Siempre capturar color (usar default si no hay)
+              snapshot.color = elem.color || '#000000';
+              // Siempre capturar fillColor para que se renderice correctamente
+              snapshot.fillColor = elem.fillColor || 'transparent';
+              // Siempre capturar información de tipo de línea para video
+              snapshot.lineType = elem.lineType || 'solid';
+              snapshot.dotSize = elem.dotSize ?? 2;
+              snapshot.dotSpacing = elem.dotSpacing ?? 4;
+            }
+
+            // Para rectángulos, calcular posición y dimensiones desde points
+            if (elem.type === 'rectangle') {
+              // Guardar ratios originales
+              snapshot.pointsRatio = [
+                { x: elem.points[0].x, y: elem.points[0].y },
+                { x: elem.points[1].x, y: elem.points[1].y },
+              ];
+              const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
+              const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
+
+              const minX = Math.min(p1.x, p2.x);
+              const maxX = Math.max(p1.x, p2.x);
+              const minY = Math.min(p1.y, p2.y);
+              const maxY = Math.max(p1.y, p2.y);
+
+              snapshot.x = minX;
+              snapshot.y = minY;
+              snapshot.width = maxX - minX;
+              snapshot.height = maxY - minY;
+
+              // Capturar thickness
+              const baseThickness = elem.thickness || 1;
+              snapshot.thickness = baseThickness;
+              snapshot.baseThickness = baseThickness;
+              // Siempre capturar color (usar default si no hay)
+              snapshot.color = elem.color || '#000000';
+              // Siempre capturar fillColor para que se renderice correctamente
+              snapshot.fillColor = elem.fillColor || 'transparent';
+              // Siempre capturar información de tipo de línea para video
+              snapshot.lineType = elem.lineType || 'solid';
+              snapshot.dotSize = elem.dotSize ?? 2;
+              snapshot.dotSpacing = elem.dotSpacing ?? 4;
+              if (elem.rotation) snapshot.rotation = elem.rotation;
+            }
+
+            // Para custom-shape, convertir points a coordenadas absolutas
+            if (elem.type === 'custom-shape' && elem.isCustomShapeComplete) {
+              // Guardar ratios originales para restauración exacta
+              snapshot.pointsRatio = elem.points.map((pt) => ({ x: pt.x, y: pt.y }));
+              snapshot.points = elem.points.map((pt) => ({
+                x: pt.x * fieldWidth,
+                y: pt.y * fieldHeight,
+              }));
+
+              // Capturar thickness
+              const baseThickness = elem.thickness || 1;
+              snapshot.thickness = baseThickness;
+              snapshot.baseThickness = baseThickness;
+              snapshot.closed = true; // Las custom shapes siempre están cerradas
+              // Siempre capturar color (usar default si no hay)
+              snapshot.color = elem.color || '#000000';
+              // Siempre capturar fillColor para que se renderice correctamente
+              snapshot.fillColor = elem.fillColor || 'transparent';
+              // Siempre capturar información de tipo de línea para video
+              snapshot.lineType = elem.lineType || 'solid';
+              snapshot.dotSize = elem.dotSize ?? 2;
+              snapshot.dotSpacing = elem.dotSpacing ?? 4;
+              // Guardar dimensiones originales para renderizado correcto
+              snapshot.imageWidth = fieldWidth;
+              snapshot.imageHeight = fieldHeight;
+            }
+          }
+
+          // Para texto libre (free-text)
+          if (elem.type === 'free-text' || elem.type === 'text') {
+            snapshot.x = elem.xRatio * fieldWidth;
+            snapshot.y = elem.yRatio * fieldHeight;
+            snapshot.text = elem.value || elem.text || ''; // El texto está en 'value'
+            const baseFontSize = elem.size || elem.fontSize || 16;
+            snapshot.baseFontSize = baseFontSize; // Guardar tamaño base para normalización
+            snapshot.fontSize = baseFontSize * scaleFactor; // El tamaño está en 'size'
+            // Siempre capturar color (usar default si no hay)
+            snapshot.color = elem.color || '#000000';
+            snapshot.backgroundColor = elem.backgroundColor || 'transparent';
             if (elem.rotation) snapshot.rotation = elem.rotation;
           }
-        }
 
-        // Para líneas/flechas con points, convertir a coordenadas absolutas
-        if (elem.points && elem.points.length >= 2) {
-          if (elem.type === 'straight-arrow' || elem.type === 'straight-line') {
-            // Líneas rectas: solo necesitan punto inicial y final
-            // Guardar ratios originales para restauración exacta
-            snapshot.pointsRatio = [
-              { x: elem.points[0].x, y: elem.points[0].y },
-              { x: elem.points[1].x, y: elem.points[1].y }
-            ];
-            snapshot.x1 = elem.points[0].x * fieldWidth;
-            snapshot.y1 = elem.points[0].y * fieldHeight;
-            snapshot.x2 = elem.points[1].x * fieldWidth;
-            snapshot.y2 = elem.points[1].y * fieldHeight;
+          return snapshot;
+        })
+        .filter((snapshot) => {
+          // Filtrar snapshots incompletos que no tienen coordenadas válidas
+          // Esto evita que elementos en proceso de dibujo se incluyan
+          const hasPosition =
+            (snapshot.x !== undefined && snapshot.y !== undefined) ||
+            (snapshot.x1 !== undefined && snapshot.y1 !== undefined) ||
+            (snapshot.points && snapshot.points.length >= 2);
 
-            const baseThickness = elem.thickness || 1;
-            snapshot.thickness = baseThickness;
-            snapshot.baseThickness = baseThickness;
-            // Siempre capturar color (usar default si no hay)
-            snapshot.color = elem.color || '#000000';
-            // Siempre capturar información de tipo de línea para video
-            snapshot.lineType = elem.lineType || 'solid';
-            snapshot.dotSize = elem.dotSize ?? 2;
-            snapshot.dotSpacing = elem.dotSpacing ?? 4;
-          } else if (elem.type === 'curve-arrow' || elem.type === 'curve-line') {
-            // Líneas curvas: enviar TODOS los puntos para renderizado exacto
-            // Guardar ratios originales para restauración exacta
-            snapshot.pointsRatio = elem.points.map(pt => ({ x: pt.x, y: pt.y }));
-            snapshot.points = elem.points.map(pt => ({
-              x: pt.x * fieldWidth,
-              y: pt.y * fieldHeight
-            }));
+          const hasValidSize =
+            snapshot.size !== undefined ||
+            snapshot.radius !== undefined ||
+            (snapshot.width !== undefined && snapshot.height !== undefined) ||
+            snapshot.x1 !== undefined; // líneas no necesitan size
 
-            const baseThickness = elem.thickness || 1;
-            snapshot.thickness = baseThickness;
-            snapshot.baseThickness = baseThickness;
-            // Siempre capturar color (usar default si no hay)
-            snapshot.color = elem.color || '#000000';
-            // Siempre capturar información de tipo de línea para video
-            snapshot.lineType = elem.lineType || 'solid';
-            snapshot.dotSize = elem.dotSize ?? 2;
-            snapshot.dotSpacing = elem.dotSpacing ?? 4;
-
+          // Para formas, verificar que tienen dimensiones válidas (no son de tamaño 0)
+          if (snapshot.type === 'rectangle') {
+            if (
+              !snapshot.width ||
+              snapshot.width <= 0 ||
+              !snapshot.height ||
+              snapshot.height <= 0
+            ) {
+              return false;
+            }
+          }
+          if (snapshot.type === 'circle') {
+            if (!snapshot.radius || snapshot.radius <= 0) {
+              return false;
+            }
           }
 
-          // Para círculos, calcular centro y radio desde points
-          if (elem.type === 'circle') {
-            // Guardar ratios originales
-            snapshot.pointsRatio = [
-              { x: elem.points[0].x, y: elem.points[0].y },
-              { x: elem.points[1].x, y: elem.points[1].y }
-            ];
-            const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
-            const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
-
-            // Centro del círculo
-            snapshot.x = (p1.x + p2.x) / 2;
-            snapshot.y = (p1.y + p2.y) / 2;
-
-            // Radio del círculo
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            snapshot.radius = Math.sqrt(dx * dx + dy * dy) / 2;
-
-            // Capturar thickness
-            const baseThickness = elem.thickness || 1;
-            snapshot.thickness = baseThickness;
-            snapshot.baseThickness = baseThickness;
-            // Siempre capturar color (usar default si no hay)
-            snapshot.color = elem.color || '#000000';
-            // Siempre capturar fillColor para que se renderice correctamente
-            snapshot.fillColor = elem.fillColor || 'transparent';
-            // Siempre capturar información de tipo de línea para video
-            snapshot.lineType = elem.lineType || 'solid';
-            snapshot.dotSize = elem.dotSize ?? 2;
-            snapshot.dotSpacing = elem.dotSpacing ?? 4;
-          }
-
-          // Para rectángulos, calcular posición y dimensiones desde points
-          if (elem.type === 'rectangle') {
-            // Guardar ratios originales
-            snapshot.pointsRatio = [
-              { x: elem.points[0].x, y: elem.points[0].y },
-              { x: elem.points[1].x, y: elem.points[1].y }
-            ];
-            const p1 = { x: elem.points[0].x * fieldWidth, y: elem.points[0].y * fieldHeight };
-            const p2 = { x: elem.points[1].x * fieldWidth, y: elem.points[1].y * fieldHeight };
-
-            const minX = Math.min(p1.x, p2.x);
-            const maxX = Math.max(p1.x, p2.x);
-            const minY = Math.min(p1.y, p2.y);
-            const maxY = Math.max(p1.y, p2.y);
-
-            snapshot.x = minX;
-            snapshot.y = minY;
-            snapshot.width = maxX - minX;
-            snapshot.height = maxY - minY;
-
-            // Capturar thickness
-            const baseThickness = elem.thickness || 1;
-            snapshot.thickness = baseThickness;
-            snapshot.baseThickness = baseThickness;
-            // Siempre capturar color (usar default si no hay)
-            snapshot.color = elem.color || '#000000';
-            // Siempre capturar fillColor para que se renderice correctamente
-            snapshot.fillColor = elem.fillColor || 'transparent';
-            // Siempre capturar información de tipo de línea para video
-            snapshot.lineType = elem.lineType || 'solid';
-            snapshot.dotSize = elem.dotSize ?? 2;
-            snapshot.dotSpacing = elem.dotSpacing ?? 4;
-            if (elem.rotation) snapshot.rotation = elem.rotation;
-          }
-
-          // Para custom-shape, convertir points a coordenadas absolutas
-          if (elem.type === 'custom-shape' && elem.isCustomShapeComplete) {
-            // Guardar ratios originales para restauración exacta
-            snapshot.pointsRatio = elem.points.map(pt => ({ x: pt.x, y: pt.y }));
-            snapshot.points = elem.points.map(pt => ({
-              x: pt.x * fieldWidth,
-              y: pt.y * fieldHeight
-            }));
-
-            // Capturar thickness
-            const baseThickness = elem.thickness || 1;
-            snapshot.thickness = baseThickness;
-            snapshot.baseThickness = baseThickness;
-            snapshot.closed = true; // Las custom shapes siempre están cerradas
-            // Siempre capturar color (usar default si no hay)
-            snapshot.color = elem.color || '#000000';
-            // Siempre capturar fillColor para que se renderice correctamente
-            snapshot.fillColor = elem.fillColor || 'transparent';
-            // Siempre capturar información de tipo de línea para video
-            snapshot.lineType = elem.lineType || 'solid';
-            snapshot.dotSize = elem.dotSize ?? 2;
-            snapshot.dotSpacing = elem.dotSpacing ?? 4;
-            // Guardar dimensiones originales para renderizado correcto
-            snapshot.imageWidth = fieldWidth;
-            snapshot.imageHeight = fieldHeight;
-          }
-        }
-
-        // Para texto libre (free-text)
-        if (elem.type === 'free-text' || elem.type === 'text') {
-          snapshot.x = elem.xRatio * fieldWidth;
-          snapshot.y = elem.yRatio * fieldHeight;
-          snapshot.text = elem.value || elem.text || ''; // El texto está en 'value'
-          const baseFontSize = elem.size || elem.fontSize || 16;
-          snapshot.baseFontSize = baseFontSize; // Guardar tamaño base para normalización
-          snapshot.fontSize = baseFontSize * scaleFactor; // El tamaño está en 'size'
-          // Siempre capturar color (usar default si no hay)
-          snapshot.color = elem.color || '#000000';
-          snapshot.backgroundColor = elem.backgroundColor || 'transparent';
-          if (elem.rotation) snapshot.rotation = elem.rotation;
-        }
-
-        return snapshot;
-      }).filter(snapshot => {
-        // Filtrar snapshots incompletos que no tienen coordenadas válidas
-        // Esto evita que elementos en proceso de dibujo se incluyan
-        const hasPosition = (snapshot.x !== undefined && snapshot.y !== undefined) ||
-          (snapshot.x1 !== undefined && snapshot.y1 !== undefined) ||
-          (snapshot.points && snapshot.points.length >= 2);
-
-        const hasValidSize = snapshot.size !== undefined ||
-          snapshot.radius !== undefined ||
-          (snapshot.width !== undefined && snapshot.height !== undefined) ||
-          (snapshot.x1 !== undefined); // líneas no necesitan size
-
-        // Para formas, verificar que tienen dimensiones válidas (no son de tamaño 0)
-        if (snapshot.type === 'rectangle') {
-          if (!snapshot.width || snapshot.width <= 0 || !snapshot.height || snapshot.height <= 0) {
-            return false;
-          }
-        }
-        if (snapshot.type === 'circle') {
-          if (!snapshot.radius || snapshot.radius <= 0) {
-            return false;
-          }
-        }
-
-        return hasPosition;
-      });
+          return hasPosition;
+        });
 
       // Capturar conectores - las líneas que conectan elementos
-      const connectorsSnapshot = connectors.map(connector => ({
+      const connectorsSnapshot = connectors.map((connector) => ({
         id: connector.id,
         fromId: connector.fromId,
         toId: connector.toId,
@@ -1013,11 +1146,12 @@ export default function VideoRecorder({
 
       const ballTrajectoryById = {};
       elementsSnapshot
-        .filter(elem => elem.type === 'ball')
+        .filter((elem) => elem.type === 'ball')
         .forEach((ball) => {
-          ballTrajectoryById[ball.id] = keyframes[keyframes.length - 1]?.ballTrajectoryById?.[ball.id]
-            || keyframes[keyframes.length - 1]?.ballTrajectoryType
-            || 'ground';
+          ballTrajectoryById[ball.id] =
+            keyframes[keyframes.length - 1]?.ballTrajectoryById?.[ball.id] ||
+            keyframes[keyframes.length - 1]?.ballTrajectoryType ||
+            'ground';
         });
 
       const newKeyframe = {
@@ -1072,7 +1206,12 @@ export default function VideoRecorder({
 
       // 1. Interpolar todos los frames
       const allFrames = buildInterpolatedFrames(
-        keyframes, fps, moveDuration, holdDuration, videoSpeed, extraDurationEnd
+        keyframes,
+        fps,
+        moveDuration,
+        holdDuration,
+        videoSpeed,
+        extraDurationEnd,
       );
 
       if (allFrames.length === 0) {
@@ -1081,7 +1220,11 @@ export default function VideoRecorder({
 
       // 2. Preparar canvas fijo para renderizado independiente de pantalla
       const aspectVal = getAspectForView(viewMode);
-      const aspect = aspectVal ? 1 / aspectVal : (fieldWidth > 0 && fieldHeight > 0 ? fieldWidth / fieldHeight : 16 / 9);
+      const aspect = aspectVal
+        ? 1 / aspectVal
+        : fieldWidth > 0 && fieldHeight > 0
+          ? fieldWidth / fieldHeight
+          : 16 / 9;
       const { width: canvasW, height: canvasH } = getVideoDimensions(aspect);
       const canvas = document.createElement('canvas');
       canvas.width = canvasW;
@@ -1115,8 +1258,8 @@ export default function VideoRecorder({
       // Cargar todas las fotos de los jugadores antes de empezar
       const playerPhotos = {};
       const uniquePhotoUrls = new Set();
-      allFrames.forEach(frame => {
-        (frame.elements || []).forEach(elem => {
+      allFrames.forEach((frame) => {
+        (frame.elements || []).forEach((elem) => {
           if (elem.type === 'player' && elem.playerData?.foto) {
             uniquePhotoUrls.add(elem.playerData.foto);
           }
@@ -1137,9 +1280,12 @@ export default function VideoRecorder({
               });
               playerPhotos[fotoPath] = img;
             } catch (err) {
-              console.warn(`[videoRecorder] No se pudo cargar la foto del jugador ${fotoPath}:`, err);
+              console.warn(
+                `[videoRecorder] No se pudo cargar la foto del jugador ${fotoPath}:`,
+                err,
+              );
             }
-          })
+          }),
         );
       } catch (e) {
         console.warn('[videoRecorder] Error pre-cargando fotos de jugadores:', e);
@@ -1162,7 +1308,10 @@ export default function VideoRecorder({
       };
 
       const disableStreamingEncoder = (streamingErrorToReport) => {
-        console.warn('[videoRecorder] Streaming WebCodecs falló, se usara fallback al final', streamingErrorToReport);
+        console.warn(
+          '[videoRecorder] Streaming WebCodecs falló, se usara fallback al final',
+          streamingErrorToReport,
+        );
         streamingEncoder?.abort?.();
         streamingEncoder = null;
         encodedFrames = 0;
@@ -1195,7 +1344,10 @@ export default function VideoRecorder({
           },
         });
       } catch (streamingError) {
-        console.warn('[videoRecorder] WebCodecs streaming no disponible, se usara fallback', streamingError);
+        console.warn(
+          '[videoRecorder] WebCodecs streaming no disponible, se usara fallback',
+          streamingError,
+        );
         streamingEncoder = null;
       }
 
@@ -1205,7 +1357,7 @@ export default function VideoRecorder({
       for (let i = 0; i < totalFrames; i++) {
         if (generationCancelledRef.current) {
           streamingEncoder?.abort?.();
-          RNFS.unlink(framesDir).catch(() => { });
+          RNFS.unlink(framesDir).catch(() => {});
           setGenerationProgress(0);
           return;
         }
@@ -1217,13 +1369,22 @@ export default function VideoRecorder({
 
         const frame = allFrames[i];
 
-        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, { playerPhotos, playersWithNumber, showPhotos, viewMode });
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, {
+          playerPhotos,
+          playersWithNumber,
+          showPhotos,
+          viewMode,
+        });
 
         const frameCapture = await new Promise((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Canvas toBlob failed'));
-          }, `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`, VIDEO_CAPTURE_QUALITY);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('Canvas toBlob failed'));
+            },
+            `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`,
+            VIDEO_CAPTURE_QUALITY,
+          );
         });
 
         if (i === 0) {
@@ -1269,7 +1430,10 @@ export default function VideoRecorder({
           encodedFrames = totalFrames;
           updateLinearProgress();
         } catch (streamingError) {
-          console.warn('[videoRecorder] Finalizacion streaming falló, usando fallback', streamingError);
+          console.warn(
+            '[videoRecorder] Finalizacion streaming falló, usando fallback',
+            streamingError,
+          );
           streamingEncoder.abort?.();
           streamingEncoder = null;
           encodedFrames = 0;
@@ -1284,16 +1448,16 @@ export default function VideoRecorder({
           (encodeProgress) => {
             encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
             updateLinearProgress();
-          }
+          },
         );
         outputPath = result.outputPath;
         encodedMime = result.mimeType;
       }
       setLocalVideoMime(encodedMime || null);
-      RNFS.unlink(framesDir).catch(() => { });
+      RNFS.unlink(framesDir).catch(() => {});
 
       if (generationCancelledRef.current) {
-        RNFS.unlink(outputPath).catch(() => { });
+        RNFS.unlink(outputPath).catch(() => {});
         setGenerationProgress(0);
         return;
       }
@@ -1349,7 +1513,7 @@ export default function VideoRecorder({
 
       // Preparar datos del video
       const videoData = {
-        keyframes: normalizedKeyframes.map(kf => ({
+        keyframes: normalizedKeyframes.map((kf) => ({
           timestamp: kf.timestamp,
           elements: kf.elements,
           connectors: kf.connectors || [],
@@ -1369,7 +1533,8 @@ export default function VideoRecorder({
         },
         nombre: videoNombre,
         descripcion: videoDescripcion,
-        ...(shouldBeGlobal && videoNombreEn.trim() && { translations: { en: { nombre: videoNombreEn.trim() } } }),
+        ...(shouldBeGlobal &&
+          videoNombreEn.trim() && { translations: { en: { nombre: videoNombreEn.trim() } } }),
       };
       const thumbnailToSave = videoThumbnailRef.current || videoThumbnail;
       if (thumbnailToSave) videoData.thumbnail = thumbnailToSave;
@@ -1445,7 +1610,7 @@ export default function VideoRecorder({
                 } catch (uploadErr) {
                   console.warn(`R2 proxy upload intento ${attempt} falló:`, uploadErr.message);
                   if (attempt < 2) {
-                    await new Promise(r => setTimeout(r, 2000));
+                    await new Promise((r) => setTimeout(r, 2000));
                   }
                 }
               }
@@ -1460,7 +1625,7 @@ export default function VideoRecorder({
               if (Platform.OS === 'web') throw err;
             } finally {
               uploadingPathRef.current = null;
-              RNFS.unlink(videoPathToUpload).catch(() => { });
+              RNFS.unlink(videoPathToUpload).catch(() => {});
             }
           };
 
@@ -1471,7 +1636,7 @@ export default function VideoRecorder({
           }
         } else if (localVideoPath) {
           // No hay savedVideoId, limpiar archivo local
-          RNFS.unlink(localVideoPath).catch(() => { });
+          RNFS.unlink(localVideoPath).catch(() => {});
           setLocalVideoPath(null);
         }
 
@@ -1545,20 +1710,27 @@ export default function VideoRecorder({
       showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
 
       if (Platform.OS === 'web') {
-        const safeName = (videoNombre || editingVideoName || 'video')
-          .trim()
-          .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
-          .replace(/\s+/g, '_') || 'video';
+        const safeName =
+          (videoNombre || editingVideoName || 'video')
+            .trim()
+            .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+            .replace(/\s+/g, '_') || 'video';
         const ext = (localVideoMime || '').includes('mp4') ? 'mp4' : 'webm';
         const a = document.createElement('a');
         a.href = localVideoPath;
         a.download = `${safeName}.${ext}`;
         a.style.display = 'none';
         document.body.appendChild(a);
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise((r) => setTimeout(r, 0));
         a.click();
-        setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 100);
-        setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
+        setTimeout(() => {
+          if (a.parentNode) a.parentNode.removeChild(a);
+        }, 100);
+        setTimeout(
+          () =>
+            showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'),
+          150,
+        );
         return;
       }
 
@@ -1566,15 +1738,29 @@ export default function VideoRecorder({
         try {
           const asset = await MediaLibrary.createAssetAsync(localVideoPath);
           await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
+          setTimeout(
+            () =>
+              showNotification(
+                t('videoRecorder.downloadComplete') || 'Descarga iniciada',
+                'success',
+              ),
+            150,
+          );
         } catch (saveErr) {
           const isAvailable = await Sharing.isAvailableAsync();
           if (isAvailable) {
             await Sharing.shareAsync(
               Platform.OS === 'android' ? `file://${localVideoPath}` : localVideoPath,
-              { mimeType: 'video/mp4' }
+              { mimeType: 'video/mp4' },
             );
-            setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
+            setTimeout(
+              () =>
+                showNotification(
+                  t('videoRecorder.downloadComplete') || 'Descarga iniciada',
+                  'success',
+                ),
+              150,
+            );
           } else {
             throw saveErr;
           }
@@ -1582,16 +1768,26 @@ export default function VideoRecorder({
       } else {
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          showNotification(t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo', 'error');
+          showNotification(
+            t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo',
+            'error',
+          );
           return;
         }
         const asset = await MediaLibrary.createAssetAsync(localVideoPath);
         await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        setTimeout(() => showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'), 150);
+        setTimeout(
+          () =>
+            showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'),
+          150,
+        );
       }
     } catch (error) {
       console.error('Error descargando video:', error);
-      showNotification(t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo', 'error');
+      showNotification(
+        t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo',
+        'error',
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -1599,26 +1795,25 @@ export default function VideoRecorder({
 
   // Limpiar keyframes
   const clearKeyframes = () => {
-    Alert.alert(
-      t('field.clearPositionsTitle'),
-      t('field.clearPositionsMessage'),
-      [
-        { text: t('edition.cancel'), style: 'cancel' },
-        {
-          text: t('field.delete'),
-          onPress: () => {
-            // Restaurar al estado original (posición inicial)
-            // Esto SÍ se guarda en el historial para poder hacer undo
-            if (onRestoreOriginal) {
-              onRestoreOriginal();
-            }
-            onClearKeyframes();
-            showNotification(t ? t('field.positionsDeleted') : i18n.t('field.positionsDeleted'), 'success');
-          },
-          style: 'destructive'
-        }
-      ]
-    );
+    Alert.alert(t('field.clearPositionsTitle'), t('field.clearPositionsMessage'), [
+      { text: t('edition.cancel'), style: 'cancel' },
+      {
+        text: t('field.delete'),
+        onPress: () => {
+          // Restaurar al estado original (posición inicial)
+          // Esto SÍ se guarda en el historial para poder hacer undo
+          if (onRestoreOriginal) {
+            onRestoreOriginal();
+          }
+          onClearKeyframes();
+          showNotification(
+            t ? t('field.positionsDeleted') : i18n.t('field.positionsDeleted'),
+            'success',
+          );
+        },
+        style: 'destructive',
+      },
+    ]);
   };
 
   // Eliminar keyframe individual
@@ -1655,9 +1850,12 @@ export default function VideoRecorder({
       const lang = i18n.language;
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        const folders = (result.folders || []).filter(f => !f.isGlobal);
+        const folders = (result.folders || []).filter((f) => !f.isGlobal);
         setAllFolders(folders);
-        if (selectedFolderId && !folders.some(f => f.id === selectedFolderId || f._id === selectedFolderId)) {
+        if (
+          selectedFolderId &&
+          !folders.some((f) => f.id === selectedFolderId || f._id === selectedFolderId)
+        ) {
           setSelectedFolderId(null);
         }
       }
@@ -1669,7 +1867,10 @@ export default function VideoRecorder({
   // Crear nueva carpeta
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
-      showNotification(t('videoRecorder.folderNameRequired') || 'El nombre de la carpeta es requerido', 'error');
+      showNotification(
+        t('videoRecorder.folderNameRequired') || 'El nombre de la carpeta es requerido',
+        'error',
+      );
       return;
     }
 
@@ -1698,7 +1899,10 @@ export default function VideoRecorder({
       }
     } catch (error) {
       console.error('Error creando carpeta:', error);
-      const errorMsg = error.response?.data?.message || t('videoRecorder.couldNotCreateFolder') || 'No se pudo crear la carpeta';
+      const errorMsg =
+        error.response?.data?.message ||
+        t('videoRecorder.couldNotCreateFolder') ||
+        'No se pudo crear la carpeta';
       showNotification(errorMsg, 'error');
     }
   };
@@ -1723,9 +1927,18 @@ export default function VideoRecorder({
 
   // Colores disponibles para carpetas
   const folderColors = [
-    '#6366F1', '#8B5CF6', '#EC4899', '#EF4444',
-    '#F97316', '#F59E0B', '#10B981', '#14B8A6',
-    '#06B6D4', '#3B82F6', '#64748B', '#1E293B'
+    '#6366F1',
+    '#8B5CF6',
+    '#EC4899',
+    '#EF4444',
+    '#F97316',
+    '#F59E0B',
+    '#10B981',
+    '#14B8A6',
+    '#06B6D4',
+    '#3B82F6',
+    '#64748B',
+    '#1E293B',
   ];
 
   // Callbacks estables para el preview (useCallback evita que React.memo se invalide)
@@ -1746,16 +1959,28 @@ export default function VideoRecorder({
       const lang = i18n.language;
       const result = await getAllVideoFoldersFlat(lang);
       if (result.success) {
-        const folders = (result.folders || []).filter(f => !f.isGlobal);
+        const folders = (result.folders || []).filter((f) => !f.isGlobal);
         setAllFolders(folders);
-        if (selectedFolderId && !folders.some(f => f.id === selectedFolderId || f._id === selectedFolderId)) {
+        if (
+          selectedFolderId &&
+          !folders.some((f) => f.id === selectedFolderId || f._id === selectedFolderId)
+        ) {
           setSelectedFolderId(null);
         }
       }
     } catch (error) {
       console.error('Error cargando carpetas:', error);
     }
-  }, [isEditingVideo, editingVideoId, presetFolderId, editingVideoFolderId, editingVideoName, videoNombre, selectedFolderId, saveVideoToDB]);
+  }, [
+    isEditingVideo,
+    editingVideoId,
+    presetFolderId,
+    editingVideoFolderId,
+    editingVideoName,
+    videoNombre,
+    selectedFolderId,
+    saveVideoToDB,
+  ]);
 
   const handlePreviewDownload = useCallback(() => {
     downloadVideo();
@@ -1769,7 +1994,9 @@ export default function VideoRecorder({
       <View style={IS_MOBILE ? styles.panelMobile : styles.panelDesktop}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{t('videoRecorder.title')}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {t('videoRecorder.title')}
+          </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Feather name="x" size={14} color="#94a3b8" />
           </TouchableOpacity>
@@ -1793,7 +2020,12 @@ export default function VideoRecorder({
           {/* Counter */}
           <View style={styles.counterRow}>
             <View style={[styles.counterBadge, keyframes.length > 0 && styles.counterBadgeActive]}>
-              <Text style={[styles.counterBadgeText, keyframes.length > 0 && styles.counterBadgeTextActive]}>
+              <Text
+                style={[
+                  styles.counterBadgeText,
+                  keyframes.length > 0 && styles.counterBadgeTextActive,
+                ]}
+              >
                 {keyframes.length}
               </Text>
             </View>
@@ -1835,7 +2067,9 @@ export default function VideoRecorder({
                     style={[styles.speedBtn, videoSpeed === spd && styles.speedBtnActive]}
                     onPress={() => setVideoSpeed(spd)}
                   >
-                    <Text style={[styles.speedBtnText, videoSpeed === spd && styles.speedBtnTextActive]}>
+                    <Text
+                      style={[styles.speedBtnText, videoSpeed === spd && styles.speedBtnTextActive]}
+                    >
                       x{spd}
                     </Text>
                   </TouchableOpacity>
@@ -1862,20 +2096,24 @@ export default function VideoRecorder({
             <View style={styles.kfSection}>
               <Text style={styles.kfSectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
               <View style={styles.kfList}>
-                {keyframes.map((keyframe, index) => {
+                {keyframes.map((_, index) => {
                   const isLast = index === keyframes.length - 1;
-                  const balls = (keyframe.elements || []).filter(el => el.type === 'ball');
-                  const getTrajectory = (ballId) => getBallTrajectoryForSegment(keyframe, ballId);
+                  const ballMovements = getSegmentBallMovements(keyframes, index);
                   const setTrajectory = (ballId, newType) => {
                     onKeyframesChange(
                       keyframes.map((kf, i) => {
                         if (i !== index) return kf;
+                        const segmentBalls = (kf.elements || []).filter((el) => el.type === 'ball');
                         return {
                           ...kf,
-                          ballTrajectoryById: { ...(kf.ballTrajectoryById || {}), [ballId]: newType },
-                          ballTrajectoryType: balls.length <= 1 ? newType : (kf.ballTrajectoryType || 'ground'),
+                          ballTrajectoryById: {
+                            ...(kf.ballTrajectoryById || {}),
+                            [ballId]: newType,
+                          },
+                          ballTrajectoryType:
+                            segmentBalls.length <= 1 ? newType : kf.ballTrajectoryType || 'ground',
                         };
-                      })
+                      }),
                     );
                   };
                   return (
@@ -1898,28 +2136,77 @@ export default function VideoRecorder({
                         </TouchableOpacity>
                       </View>
 
-                      {!isLast && balls.length > 0 && (
+                      {!isLast && ballMovements.length > 0 && (
                         <View style={styles.trajSection}>
-                          {balls.map((ball, ballIndex) => {
-                            const trajectory = getTrajectory(ball.id);
-                            const label = ball.name || ball.label || `${t('videoRecorder.ballTrajectory', 'Balón')} ${ballIndex + 1}`;
+                          <View style={styles.trajHeaderRow}>
+                            <Text style={styles.trajHeaderText}>
+                              {t('videoRecorder.ballMovementType', 'Movimiento del balón')}
+                            </Text>
+                            <Text style={styles.trajHeaderHint}>
+                              {t('videoRecorder.ballMovementHint', 'Tramo')} {index + 1}
+                              {' -> '}
+                              {index + 2}
+                            </Text>
+                          </View>
+                          {ballMovements.map((movement) => {
+                            const trajectory = movement.trajectory;
+                            const label = getBallMovementTitle(movement.fromBall, movement.toBall);
                             return (
-                              <View key={ball.id || ballIndex} style={styles.trajRow}>
-                                <Text style={styles.trajLabel} numberOfLines={1}>{label}</Text>
+                              <View key={movement.id} style={styles.trajCard}>
+                                <View style={styles.trajCardTextCol}>
+                                  <Text style={styles.trajLabel} numberOfLines={2}>
+                                    {label}
+                                  </Text>
+                                  <Text style={styles.trajMeta} numberOfLines={1}>
+                                    {trajectory === 'air'
+                                      ? t('videoRecorder.ballAirSelected', 'Sale por aire')
+                                      : t('videoRecorder.ballGroundSelected', 'Rueda por suelo')}
+                                  </Text>
+                                </View>
                                 <View style={styles.trajToggle}>
                                   <TouchableOpacity
-                                    onPress={() => setTrajectory(ball.id, 'ground')}
-                                    style={[styles.trajOpt, trajectory === 'ground' && styles.trajOptActive]}
+                                    onPress={() => setTrajectory(movement.id, 'ground')}
+                                    style={[
+                                      styles.trajOpt,
+                                      trajectory === 'ground' && styles.trajOptActive,
+                                    ]}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('videoRecorder.ballGround', 'Suelo')}
                                   >
-                                    <Text style={[styles.trajOptText, trajectory === 'ground' && styles.trajOptTextActive]}>
+                                    <Feather
+                                      name="arrow-right"
+                                      size={10}
+                                      color={trajectory === 'ground' ? '#fff' : '#166534'}
+                                    />
+                                    <Text
+                                      style={[
+                                        styles.trajOptText,
+                                        trajectory === 'ground' && styles.trajOptTextActive,
+                                      ]}
+                                    >
                                       {t('videoRecorder.ballGround', 'Suelo')}
                                     </Text>
                                   </TouchableOpacity>
                                   <TouchableOpacity
-                                    onPress={() => setTrajectory(ball.id, 'air')}
-                                    style={[styles.trajOpt, trajectory === 'air' && styles.trajOptActiveAir]}
+                                    onPress={() => setTrajectory(movement.id, 'air')}
+                                    style={[
+                                      styles.trajOpt,
+                                      trajectory === 'air' && styles.trajOptActiveAir,
+                                    ]}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('videoRecorder.ballAir', 'Aire')}
                                   >
-                                    <Text style={[styles.trajOptText, trajectory === 'air' && styles.trajOptTextActive]}>
+                                    <Feather
+                                      name="trending-up"
+                                      size={10}
+                                      color={trajectory === 'air' ? '#fff' : '#92400e'}
+                                    />
+                                    <Text
+                                      style={[
+                                        styles.trajOptText,
+                                        trajectory === 'air' && styles.trajOptTextActive,
+                                      ]}
+                                    >
                                       {t('videoRecorder.ballAir', 'Aire')}
                                     </Text>
                                   </TouchableOpacity>
@@ -1961,12 +2248,19 @@ export default function VideoRecorder({
         <View style={styles.modalOverlay}>
           <View style={styles.saveModal}>
             {/* Header del modal */}
-            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }]}>
+            <View
+              style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }]}
+            >
               <View style={[styles.modalHeaderIcon, { backgroundColor: '#f5f5f5' }]}>
                 <Feather name="save" size={20} color="#4CAF50" />
               </View>
-              <Text style={[styles.modalTitle, { color: '#1a1a1a' }]}>{t('videoRecorder.saveModalTitle')}</Text>
-              <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: '#f5f5f5' }]} onPress={closeSaveModal}>
+              <Text style={[styles.modalTitle, { color: '#1a1a1a' }]}>
+                {t('videoRecorder.saveModalTitle')}
+              </Text>
+              <TouchableOpacity
+                style={[styles.modalCloseBtn, { backgroundColor: '#f5f5f5' }]}
+                onPress={closeSaveModal}
+              >
                 <Feather name="x" size={20} color="#666" />
               </TouchableOpacity>
             </View>
@@ -2039,7 +2333,9 @@ export default function VideoRecorder({
                       onPress={() => openCreateFolderModal(null)}
                     >
                       <Feather name="folder-plus" size={14} color="#4CAF50" />
-                      <Text style={styles.createFolderHeaderBtnText}>{t('videoRecorder.newFolder') || 'Nueva'}</Text>
+                      <Text style={styles.createFolderHeaderBtnText}>
+                        {t('videoRecorder.newFolder') || 'Nueva'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <View style={styles.folderSelectContainer}>
@@ -2054,31 +2350,41 @@ export default function VideoRecorder({
                           style={[
                             styles.folderSelectItem,
                             styles.folderSelectItemFlex,
-                            selectedFolderId === null && styles.folderSelectItemActive
+                            selectedFolderId === null && styles.folderSelectItemActive,
                           ]}
                           onPress={() => setSelectedFolderId(null)}
                         >
                           <View style={[styles.folderSelectIcon, { backgroundColor: '#F1F5F9' }]}>
                             <Feather name="home" size={14} color="#64748B" />
                           </View>
-                          <Text style={styles.folderSelectText}>{t('videoRecorder.rootFolder')}</Text>
+                          <Text style={styles.folderSelectText}>
+                            {t('videoRecorder.rootFolder')}
+                          </Text>
                           {selectedFolderId === null && (
                             <Feather name="check-circle" size={16} color="#4CAF50" />
                           )}
                         </TouchableOpacity>
                       </View>
 
-                      {allFolders.map(folder => (
-                        <View key={folder.id} style={[styles.folderItemRow, folder.level === 1 && { marginLeft: 16 }]}>
+                      {allFolders.map((folder) => (
+                        <View
+                          key={folder.id}
+                          style={[styles.folderItemRow, folder.level === 1 && { marginLeft: 16 }]}
+                        >
                           <TouchableOpacity
                             style={[
                               styles.folderSelectItem,
                               styles.folderSelectItemFlex,
-                              selectedFolderId === folder.id && styles.folderSelectItemActive
+                              selectedFolderId === folder.id && styles.folderSelectItemActive,
                             ]}
                             onPress={() => setSelectedFolderId(folder.id)}
                           >
-                            <View style={[styles.folderSelectIcon, { backgroundColor: folder.color || '#2196F3' }]}>
+                            <View
+                              style={[
+                                styles.folderSelectIcon,
+                                { backgroundColor: folder.color || '#2196F3' },
+                              ]}
+                            >
                               <Feather name="folder" size={12} color="#fff" />
                             </View>
                             <Text style={styles.folderSelectText} numberOfLines={1}>
@@ -2118,7 +2424,7 @@ export default function VideoRecorder({
                 style={[
                   styles.saveModalBtn,
                   styles.saveModalBtnPrimary,
-                  (!videoNombre.trim() || isSaving) && styles.saveModalBtnDisabled
+                  (!videoNombre.trim() || isSaving) && styles.saveModalBtnDisabled,
                 ]}
                 onPress={saveVideoToDB}
                 disabled={isSaving || !videoNombre.trim()}
@@ -2149,13 +2455,10 @@ export default function VideoRecorder({
               </View>
               <Text style={[styles.modalTitle, { color: '#1a1a1a' }]}>
                 {parentFolderForNew
-                  ? (t('videoRecorder.createSubfolder') || 'Nueva subcarpeta')
-                  : (t('videoRecorder.createFolder') || 'Nueva carpeta')}
+                  ? t('videoRecorder.createSubfolder') || 'Nueva subcarpeta'
+                  : t('videoRecorder.createFolder') || 'Nueva carpeta'}
               </Text>
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={closeCreateFolderModal}
-              >
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={closeCreateFolderModal}>
                 <Feather name="x" size={20} color="#666" />
               </TouchableOpacity>
             </View>
@@ -2166,9 +2469,8 @@ export default function VideoRecorder({
                 <View style={styles.parentFolderInfo}>
                   <Feather name="corner-down-right" size={14} color="#666" />
                   <Text style={styles.parentFolderText}>
-                    {t('videoRecorder.insideFolder') || 'Dentro de:'} {
-                      allFolders.find(f => f.id === parentFolderForNew)?.nombre || 'Carpeta'
-                    }
+                    {t('videoRecorder.insideFolder') || 'Dentro de:'}{' '}
+                    {allFolders.find((f) => f.id === parentFolderForNew)?.nombre || 'Carpeta'}
                   </Text>
                 </View>
               )}
@@ -2177,7 +2479,9 @@ export default function VideoRecorder({
               <View style={styles.inputGroup}>
                 <View style={styles.inputLabelRow}>
                   <Feather name="edit-3" size={14} color="#666" />
-                  <Text style={styles.inputLabel}>{t('videoRecorder.folderNameLabel') || 'Nombre de la carpeta'}</Text>
+                  <Text style={styles.inputLabel}>
+                    {t('videoRecorder.folderNameLabel') || 'Nombre de la carpeta'}
+                  </Text>
                 </View>
                 <TextInput
                   style={styles.input}
@@ -2215,19 +2519,17 @@ export default function VideoRecorder({
                   <Text style={styles.inputLabel}>{t('videoRecorder.folderColor') || 'Color'}</Text>
                 </View>
                 <View style={styles.colorGrid}>
-                  {folderColors.map(color => (
+                  {folderColors.map((color) => (
                     <TouchableOpacity
                       key={color}
                       style={[
                         styles.colorOption,
                         { backgroundColor: color },
-                        newFolderColor === color && styles.colorOptionSelected
+                        newFolderColor === color && styles.colorOptionSelected,
                       ]}
                       onPress={() => setNewFolderColor(color)}
                     >
-                      {newFolderColor === color && (
-                        <Feather name="check" size={14} color="#fff" />
-                      )}
+                      {newFolderColor === color && <Feather name="check" size={14} color="#fff" />}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -2241,20 +2543,24 @@ export default function VideoRecorder({
                 onPress={closeCreateFolderModal}
               >
                 <Feather name="x" size={16} color="#666" />
-                <Text style={styles.saveModalBtnTextSecondary}>{t('videoRecorder.cancel') || 'Cancelar'}</Text>
+                <Text style={styles.saveModalBtnTextSecondary}>
+                  {t('videoRecorder.cancel') || 'Cancelar'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.saveModalBtn,
                   styles.saveModalBtnPrimary,
-                  !newFolderName.trim() && styles.saveModalBtnDisabled
+                  !newFolderName.trim() && styles.saveModalBtnDisabled,
                 ]}
                 onPress={handleCreateFolder}
                 disabled={!newFolderName.trim()}
               >
                 <Feather name="folder-plus" size={16} color="#fff" />
-                <Text style={styles.saveModalBtnTextPrimary}>{t('videoRecorder.create') || 'Crear'}</Text>
+                <Text style={styles.saveModalBtnTextPrimary}>
+                  {t('videoRecorder.create') || 'Crear'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2305,18 +2611,18 @@ export default function VideoRecorder({
             notification.type === 'success' ? styles.notificationSuccess : styles.notificationError,
             {
               opacity: notificationAnim,
-              transform: [{
-                translateY: notificationAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-20, 0],
-                }),
-              }],
+              transform: [
+                {
+                  translateY: notificationAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
             },
           ]}
         >
-          <Text style={styles.notificationIcon}>
-            {notification.type === 'success' ? '✓' : '⚠'}
-          </Text>
+          <Text style={styles.notificationIcon}>{notification.type === 'success' ? '✓' : '⚠'}</Text>
           <Text style={styles.notificationText}>{notification.message}</Text>
         </Animated.View>
       )}
@@ -2330,7 +2636,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     top: 80,
-    width: 155,
+    width: 230,
     maxHeight: '80%',
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -2345,12 +2651,12 @@ const styles = StyleSheet.create({
   panelMobile: {
     position: 'absolute',
     right: 6,
-    top: 55,
-    width: 100,
-    maxHeight: '84%',
+    top: 52,
+    width: SCREEN_WIDTH < 380 ? 108 : 120,
+    maxHeight: SCREEN_HEIGHT < 720 ? '70%' : '76%',
     backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 8,
+    borderRadius: 9,
+    padding: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -2363,45 +2669,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 8,
-    marginBottom: 8,
+    paddingBottom: IS_MOBILE ? 3 : 8,
+    marginBottom: IS_MOBILE ? 3 : 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   headerTitle: {
-    fontSize: IS_MOBILE ? 11 : 13,
+    fontSize: IS_MOBILE ? (SCREEN_WIDTH < 400 ? 8 : 9) : 13,
     fontWeight: '700',
     color: '#0f172a',
     flex: 1,
   },
   closeBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: IS_MOBILE ? 18 : 22,
+    height: IS_MOBILE ? 18 : 22,
+    borderRadius: IS_MOBILE ? 9 : 11,
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
+    marginLeft: IS_MOBILE ? 3 : 6,
   },
   // ── Scroll ──
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 6 },
+  scrollContent: { paddingBottom: 4 },
   // ── Capture button ──
   btnCapture: {
     backgroundColor: '#16a34a',
-    borderRadius: 8,
-    paddingVertical: IS_MOBILE ? 7 : 9,
+    borderRadius: IS_MOBILE ? 5 : 8,
+    paddingVertical: IS_MOBILE ? 3 : 9,
     alignItems: 'center',
     shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    marginBottom: 6,
+    marginBottom: IS_MOBILE ? 3 : 6,
   },
   btnCaptureText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 10 : 12,
+    fontSize: IS_MOBILE ? 7 : 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -2409,13 +2715,13 @@ const styles = StyleSheet.create({
   counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: IS_MOBILE ? 3 : 6,
+    marginBottom: IS_MOBILE ? 3 : 6,
   },
   counterBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: IS_MOBILE ? 15 : 20,
+    height: IS_MOBILE ? 15 : 20,
+    borderRadius: IS_MOBILE ? 7.5 : 10,
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2424,7 +2730,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   counterBadgeText: {
-    fontSize: 10,
+    fontSize: IS_MOBILE ? 7 : 10,
     fontWeight: '700',
     color: '#94a3b8',
   },
@@ -2432,66 +2738,66 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   counterLabel: {
-    fontSize: IS_MOBILE ? 10 : 11,
+    fontSize: IS_MOBILE ? 7 : 11,
     color: '#64748b',
     fontWeight: '500',
   },
   // ── Secondary actions ──
   secondaryRow: {
     flexDirection: IS_MOBILE ? 'column' : 'row',
-    gap: IS_MOBILE ? 3 : 4,
-    marginBottom: IS_MOBILE ? 5 : 6,
+    gap: IS_MOBILE ? 2 : 4,
+    marginBottom: IS_MOBILE ? 3 : 6,
   },
   btnSecondary: {
     backgroundColor: '#d97706',
-    borderRadius: 6,
-    paddingVertical: IS_MOBILE ? 6 : 7,
-    paddingHorizontal: 4,
+    borderRadius: IS_MOBILE ? 4 : 6,
+    paddingVertical: IS_MOBILE ? 3 : 7,
+    paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: IS_MOBILE ? 28 : 30,
+    minHeight: IS_MOBILE ? 20 : 30,
   },
   btnSecondaryText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 9 : 11,
+    fontSize: IS_MOBILE ? 6 : 11,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   btnDanger: {
     backgroundColor: '#dc2626',
-    borderRadius: 6,
-    paddingVertical: IS_MOBILE ? 6 : 7,
-    paddingHorizontal: 4,
+    borderRadius: IS_MOBILE ? 4 : 6,
+    paddingVertical: IS_MOBILE ? 3 : 7,
+    paddingHorizontal: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: IS_MOBILE ? 28 : 30,
+    minHeight: IS_MOBILE ? 20 : 30,
   },
   btnDangerText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 9 : 11,
+    fontSize: IS_MOBILE ? 6 : 11,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   // ── Speed ──
   speedSection: {
-    marginBottom: 6,
+    marginBottom: IS_MOBILE ? 3 : 6,
   },
   speedLabel: {
-    fontSize: IS_MOBILE ? 9 : 10,
+    fontSize: IS_MOBILE ? 6 : 10,
     color: '#64748b',
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: IS_MOBILE ? 2 : 4,
   },
   speedGroup: {
     flexDirection: 'row',
     backgroundColor: '#f1f5f9',
-    borderRadius: 6,
-    padding: 2,
-    gap: 2,
+    borderRadius: IS_MOBILE ? 4 : 6,
+    padding: IS_MOBILE ? 1 : 2,
+    gap: IS_MOBILE ? 1 : 2,
   },
   speedBtn: {
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: IS_MOBILE ? 2 : 4,
     borderRadius: 4,
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -2500,7 +2806,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   speedBtnText: {
-    fontSize: IS_MOBILE ? 9 : 10,
+    fontSize: IS_MOBILE ? 6 : 10,
     fontWeight: '600',
     color: '#64748b',
   },
@@ -2510,63 +2816,63 @@ const styles = StyleSheet.create({
   // ── Generate ──
   btnGenerate: {
     backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingVertical: IS_MOBILE ? 7 : 9,
+    borderRadius: IS_MOBILE ? 5 : 8,
+    paddingVertical: IS_MOBILE ? 3 : 9,
     alignItems: 'center',
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
-    marginBottom: 6,
+    marginBottom: IS_MOBILE ? 3 : 6,
   },
   btnGenerateDisabled: {
     opacity: 0.5,
   },
   btnGenerateText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 10 : 12,
+    fontSize: IS_MOBILE ? 7 : 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
   // ── Keyframe section ──
   kfSection: {
-    marginTop: 2,
+    marginTop: 1,
   },
   kfSectionTitle: {
-    fontSize: IS_MOBILE ? 8 : 9,
+    fontSize: SCREEN_WIDTH < 400 ? 7 : 8,
     fontWeight: '700',
     color: '#94a3b8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   kfList: {
-    maxHeight: IS_MOBILE ? 120 : 200,
+    maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : 320,
   },
   kfItem: {
     backgroundColor: '#f8fafc',
-    borderRadius: 6,
-    padding: 5,
-    marginBottom: 3,
-    borderLeftWidth: 2,
+    borderRadius: IS_MOBILE ? 6 : 10,
+    padding: IS_MOBILE ? 3 : 7,
+    marginBottom: IS_MOBILE ? 3 : 6,
+    borderLeftWidth: IS_MOBILE ? 2 : 3,
     borderLeftColor: '#2563EB',
   },
   kfItemTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: IS_MOBILE ? 2 : 4,
   },
   kfNum: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: IS_MOBILE ? 14 : 18,
+    height: IS_MOBILE ? 14 : 18,
+    borderRadius: IS_MOBILE ? 7 : 9,
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   kfNumText: {
-    fontSize: 9,
+    fontSize: IS_MOBILE ? 7 : 9,
     fontWeight: '700',
     color: '#2563EB',
   },
@@ -2574,57 +2880,92 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#eff6ff',
     borderRadius: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    paddingVertical: IS_MOBILE ? 1 : 2,
+    paddingHorizontal: IS_MOBILE ? 2 : 4,
     alignItems: 'center',
   },
   kfViewBtnText: {
-    fontSize: IS_MOBILE ? 8 : 9,
+    fontSize: IS_MOBILE ? 6 : 9,
     fontWeight: '600',
     color: '#2563EB',
   },
   kfRemoveBtn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: IS_MOBILE ? 14 : 18,
+    height: IS_MOBILE ? 14 : 18,
+    borderRadius: IS_MOBILE ? 7 : 9,
     backgroundColor: '#fef2f2',
     alignItems: 'center',
     justifyContent: 'center',
   },
   kfRemoveBtnText: {
-    fontSize: 14,
+    fontSize: IS_MOBILE ? 10 : 14,
     fontWeight: '700',
     color: '#ef4444',
-    lineHeight: 14,
+    lineHeight: IS_MOBILE ? 10 : 14,
   },
   // ── Trajectory ──
   trajSection: {
-    marginTop: 4,
-    gap: 3,
+    marginTop: IS_MOBILE ? 2 : 7,
+    gap: IS_MOBILE ? 2 : 6,
   },
-  trajRow: {
+  trajHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    gap: IS_MOBILE ? 3 : 6,
+    marginBottom: IS_MOBILE ? 0 : 1,
+  },
+  trajHeaderText: {
+    flex: 1,
+    fontSize: IS_MOBILE ? 6 : 10,
+    color: '#0f172a',
+    fontWeight: '800',
+  },
+  trajHeaderHint: {
+    fontSize: IS_MOBILE ? 5 : 9,
+    color: '#64748b',
+    fontWeight: '700',
+  },
+  trajCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: IS_MOBILE ? 5 : 9,
+    padding: IS_MOBILE ? 2 : 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: IS_MOBILE ? 2 : 6,
+  },
+  trajCardTextCol: {
+    gap: 1,
   },
   trajLabel: {
-    flex: 1,
-    fontSize: IS_MOBILE ? 8 : 9,
+    fontSize: IS_MOBILE ? 6 : 10,
+    color: '#0f172a',
+    fontWeight: '800',
+    lineHeight: IS_MOBILE ? 8 : 13,
+  },
+  trajMeta: {
+    fontSize: IS_MOBILE ? 5 : 9,
     color: '#64748b',
     fontWeight: '600',
   },
   trajToggle: {
     flexDirection: 'row',
-    backgroundColor: '#e2e8f0',
-    borderRadius: 999,
-    padding: 1,
-    gap: 1,
+    backgroundColor: '#f1f5f9',
+    borderRadius: IS_MOBILE ? 5 : 12,
+    padding: IS_MOBILE ? 1 : 2,
+    gap: IS_MOBILE ? 1 : 3,
   },
   trajOpt: {
+    flex: 1,
+    minHeight: IS_MOBILE ? 16 : 30,
     paddingVertical: 1,
-    paddingHorizontal: 5,
-    borderRadius: 999,
+    paddingHorizontal: IS_MOBILE ? 2 : 5,
+    borderRadius: IS_MOBILE ? 4 : 10,
     backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: IS_MOBILE ? 1 : 3,
   },
   trajOptActive: {
     backgroundColor: '#16a34a',
@@ -2633,8 +2974,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f59e0b',
   },
   trajOptText: {
-    fontSize: 7,
-    fontWeight: '600',
+    fontSize: IS_MOBILE ? 5 : 10,
+    fontWeight: '800',
     color: '#475569',
   },
   trajOptTextActive: {

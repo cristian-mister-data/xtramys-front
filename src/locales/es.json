@@ -1716,7 +1716,23 @@
     "couldNotDownload": "No se pudo descargar el archivo",
     "lastPositionDeleted": "Última posición eliminada",
     "duration": "Duración: {{seconds}}s",
-    "speed": "Velocidad"
+    "speed": "Velocidad",
+    "ballMovementType": "Movimiento del balón",
+    "ballMovementHint": "Tramo",
+    "ballAirSelected": "Sale por aire",
+    "ballGroundSelected": "Rueda por suelo",
+    "ballZoneUnlocated": "Zona sin ubicar",
+    "ballZone": {
+      "left_high": "Zona izquierda alta",
+      "left_mid": "Zona izquierda media",
+      "left_low": "Zona izquierda baja",
+      "center_high": "Zona central alta",
+      "center_mid": "Zona central media",
+      "center_low": "Zona central baja",
+      "right_high": "Zona derecha alta",
+      "right_mid": "Zona derecha media",
+      "right_low": "Zona derecha baja"
+    }
   },
   "myVideos": {
     "title": "Mis Videos",

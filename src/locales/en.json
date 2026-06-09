@@ -1713,7 +1713,23 @@
     "couldNotDownload": "Could not download file",
     "lastPositionDeleted": "Last position deleted",
     "duration": "Duration: {{seconds}}s",
-    "speed": "Speed"
+    "speed": "Speed",
+    "ballMovementType": "Ball movement",
+    "ballMovementHint": "Segment",
+    "ballAirSelected": "Goes through air",
+    "ballGroundSelected": "Rolls on ground",
+    "ballZoneUnlocated": "Unlocated zone",
+    "ballZone": {
+      "left_high": "Left high zone",
+      "left_mid": "Left mid zone",
+      "left_low": "Left low zone",
+      "center_high": "Center high zone",
+      "center_mid": "Center mid zone",
+      "center_low": "Center low zone",
+      "right_high": "Right high zone",
+      "right_mid": "Right mid zone",
+      "right_low": "Right low zone"
+    }
   },
   "myVideos": {
     "title": "My Videos",
