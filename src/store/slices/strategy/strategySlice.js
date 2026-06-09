@@ -10,6 +10,19 @@ import {
   toggleFavoriteStrategy, batchDeleteStrategies, batchMoveStrategies,
 } from './strategyThunks';
 
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
+
+const applyFavorite = (state, strategyId, favorito) => {
+  if (!strategyId || typeof favorito !== 'boolean') return;
+  const lists = [state.strategies, state.currentFolderStrategies, state.globalStrategies];
+  lists.forEach((list) => {
+    const idx = list.findIndex((strategy) => sameId(getItemId(strategy), strategyId));
+    if (idx !== -1) list[idx].favorito = favorito;
+  });
+  if (sameId(getItemId(state.strategy), strategyId)) state.strategy.favorito = favorito;
+};
+
 const strategySlice = createSlice({
   name: 'estrategia',
   initialState: {
@@ -31,6 +44,10 @@ const strategySlice = createSlice({
       state.currentFolder = null;
       state.currentFolderStrategies = [];
       state.currentFolderSubfolders = [];
+    },
+    setStrategyFavorite: (state, action) => {
+      const { strategyId, favorito } = action.payload || {};
+      applyFavorite(state, strategyId, favorito);
     },
   },
   extraReducers: (builder) => {
@@ -123,11 +140,8 @@ const strategySlice = createSlice({
 
       // Favorito toggle
       .addCase(toggleFavoriteStrategy.fulfilled, (state, action) => {
-        const { _id, favorito } = action.payload;
-        const idx = state.strategies.findIndex(e => e._id === _id);
-        if (idx !== -1) state.strategies[idx].favorito = favorito;
-        const idx2 = state.currentFolderStrategies.findIndex(e => e._id === _id);
-        if (idx2 !== -1) state.currentFolderStrategies[idx2].favorito = favorito;
+        const payload = action.payload || {};
+        applyFavorite(state, getItemId(payload), payload.favorito);
       })
 
       // Batch delete
@@ -148,5 +162,5 @@ const strategySlice = createSlice({
   },
 });
 
-export const { clearCurrentFolder } = strategySlice.actions;
+export const { clearCurrentFolder, setStrategyFavorite } = strategySlice.actions;
 export default strategySlice.reducer;

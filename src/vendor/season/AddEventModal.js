@@ -2145,7 +2145,11 @@ export default function AddEventModal({
   // Renderizar formulario de partido - Estructura idéntica a matchSheetList
   const renderMatchForm = () => (
     <>
-    <KeyboardAwareScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+    <KeyboardAwareScrollView
+      style={styles.formContainer}
+      contentContainerStyle={styles.formContainerContent}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.formHeader}>
         {!defaultEventType && (
           <TouchableOpacity onPress={() => setEventType(null)} style={styles.backButton}>
@@ -2763,8 +2767,7 @@ export default function AddEventModal({
             placeholder={t('matchSheet.fields.notesPlaceholder')}
             placeholderTextColor={theme.colors.textMuted}
             multiline
-            numberOfLines={6}
-            textAlignVertical="top"
+            rows={6}
           />
         </View>
       </View>
@@ -2990,8 +2993,11 @@ export default function AddEventModal({
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.footerSaveBtn, loading && styles.footerSaveBtnDisabled]}
-          onPress={handleCreateMatch}
-          disabled={loading}
+          onPress={() => {
+            if (loading) return;
+            handleCreateMatch();
+          }}
+          activeOpacity={loading ? 1 : 0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -3278,8 +3284,11 @@ export default function AddEventModal({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.createRivalSaveButton, savingRival && styles.createRivalSaveButtonDisabled]}
-                onPress={handleCreateRival}
-                disabled={savingRival}
+                onPress={() => {
+                  if (savingRival) return;
+                  handleCreateRival();
+                }}
+                activeOpacity={savingRival ? 1 : 0.8}
               >
                 {savingRival ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -3702,7 +3711,11 @@ export default function AddEventModal({
 
   const renderSessionForm = () => (
     <>
-    <KeyboardAwareScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+    <KeyboardAwareScrollView
+      style={styles.formContainer}
+      contentContainerStyle={styles.formContainerContent}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.formHeader}>
         {!defaultEventType && (
           <TouchableOpacity onPress={() => setEventType(null)} style={styles.backButton}>
@@ -3929,18 +3942,24 @@ export default function AddEventModal({
                                 <Feather name="play-circle" size={16} color="#fff" />
                               </TouchableOpacity>
                             )}
-                            <TouchableOpacity
-                              style={[styles.orderBtnMobile, index === 0 && styles.orderBtnDisabled]}
-                              onPress={handleMoveUp}
-                              disabled={index === 0}
-                            >
+                              <TouchableOpacity
+                                style={[styles.orderBtnMobile, index === 0 && styles.orderBtnDisabled]}
+                                onPress={() => {
+                                  if (index === 0) return;
+                                  handleMoveUp();
+                                }}
+                                activeOpacity={index === 0 ? 1 : 0.8}
+                              >
                               <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.orderBtnMobile, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
-                              onPress={handleMoveDown}
-                              disabled={index === selectedExercises.length - 1}
-                            >
+                              <TouchableOpacity
+                                style={[styles.orderBtnMobile, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
+                                onPress={() => {
+                                  if (index === selectedExercises.length - 1) return;
+                                  handleMoveDown();
+                                }}
+                                activeOpacity={index === selectedExercises.length - 1 ? 1 : 0.8}
+                              >
                               <Ionicons name="arrow-down" size={16} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                           </View>
@@ -3991,15 +4010,21 @@ export default function AddEventModal({
                         )}
                         <TouchableOpacity
                           style={[styles.orderBtn, index === 0 && styles.orderBtnDisabled]}
-                          onPress={handleMoveUp}
-                          disabled={index === 0}
+                          onPress={() => {
+                            if (index === 0) return;
+                            handleMoveUp();
+                          }}
+                          activeOpacity={index === 0 ? 1 : 0.8}
                         >
                           <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.orderBtn, index === selectedExercises.length - 1 && styles.orderBtnDisabled]}
-                          onPress={handleMoveDown}
-                          disabled={index === selectedExercises.length - 1}
+                          onPress={() => {
+                            if (index === selectedExercises.length - 1) return;
+                            handleMoveDown();
+                          }}
+                          activeOpacity={index === selectedExercises.length - 1 ? 1 : 0.8}
                         >
                           <Ionicons name="arrow-down" size={18} color={index === selectedExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
@@ -4155,15 +4180,21 @@ export default function AddEventModal({
                           <View style={styles.exerciseOrderControlsMobile}>
                             <TouchableOpacity
                               style={[styles.orderBtnMobile, index === 0 && styles.orderBtnDisabled]}
-                              onPress={handleMoveUpStrength}
-                              disabled={index === 0}
+                              onPress={() => {
+                                if (index === 0) return;
+                                handleMoveUpStrength();
+                              }}
+                              activeOpacity={index === 0 ? 1 : 0.8}
                             >
                               <Ionicons name="arrow-up" size={16} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.orderBtnMobile, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
-                              onPress={handleMoveDownStrength}
-                              disabled={index === selectedStrengthExercises.length - 1}
+                              onPress={() => {
+                                if (index === selectedStrengthExercises.length - 1) return;
+                                handleMoveDownStrength();
+                              }}
+                              activeOpacity={index === selectedStrengthExercises.length - 1 ? 1 : 0.8}
                             >
                               <Ionicons name="arrow-down" size={16} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                             </TouchableOpacity>
@@ -4194,15 +4225,21 @@ export default function AddEventModal({
                       <View style={styles.exerciseOrderControls}>
                         <TouchableOpacity
                           style={[styles.orderBtn, index === 0 && styles.orderBtnDisabled]}
-                          onPress={handleMoveUpStrength}
-                          disabled={index === 0}
+                          onPress={() => {
+                            if (index === 0) return;
+                            handleMoveUpStrength();
+                          }}
+                          activeOpacity={index === 0 ? 1 : 0.8}
                         >
                           <Ionicons name="arrow-up" size={18} color={index === 0 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.orderBtn, index === selectedStrengthExercises.length - 1 && styles.orderBtnDisabled]}
-                          onPress={handleMoveDownStrength}
-                          disabled={index === selectedStrengthExercises.length - 1}
+                          onPress={() => {
+                            if (index === selectedStrengthExercises.length - 1) return;
+                            handleMoveDownStrength();
+                          }}
+                          activeOpacity={index === selectedStrengthExercises.length - 1 ? 1 : 0.8}
                         >
                           <Ionicons name="arrow-down" size={18} color={index === selectedStrengthExercises.length - 1 ? theme.colors.textMuted : theme.colors.primary} />
                         </TouchableOpacity>
@@ -4272,8 +4309,7 @@ export default function AddEventModal({
           placeholder={t('schedule.sessionNotesPlaceholder')}
           placeholderTextColor={theme.colors.textMuted}
           multiline
-          numberOfLines={4}
-          textAlignVertical="top"
+          rows={4}
         />
       </View>
 
@@ -4318,8 +4354,11 @@ export default function AddEventModal({
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.footerSaveBtn, loading && styles.footerSaveBtnDisabled]}
-          onPress={handleCreateSession}
-          disabled={loading}
+          onPress={() => {
+            if (loading) return;
+            handleCreateSession();
+          }}
+          activeOpacity={loading ? 1 : 0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -4664,7 +4703,7 @@ export default function AddEventModal({
                                 }
                               });
                             }}
-                            disabled={isInOtherTeam}
+                            activeOpacity={isInOtherTeam ? 1 : 0.8}
                           >
                             <Text style={[
                               styles.playerChipText,
@@ -4729,7 +4768,7 @@ export default function AddEventModal({
                                   }
                                 });
                               }}
-                              disabled={isInOtherTeam}
+                              activeOpacity={isInOtherTeam ? 1 : 0.8}
                             >
                               <Text style={[
                                 styles.playerChipText,
@@ -4911,6 +4950,9 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     padding: 20,
     paddingTop: 0,
+  },
+  formContainerContent: {
+    paddingBottom: 104,
   },
   formHeader: {
     flexDirection: 'row',
@@ -5202,23 +5244,25 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   calledChip: {
     backgroundColor: theme.colors.successSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 16,
+    maxWidth: '100%',
   },
   calledChipText: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.colors.successSoftText,
     fontWeight: '500',
   },
   notCalledChip: {
     backgroundColor: theme.colors.errorSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 16,
+    maxWidth: '100%',
   },
   notCalledChipText: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.colors.errorSoftText,
     fontWeight: '500',
   },
@@ -5778,19 +5822,19 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 10,
     backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginTop: 12,
   },
   emptyLineupText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: theme.colors.textMuted,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   startersSubsContainer: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 12,
+    padding: 10,
     marginTop: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -5805,38 +5849,39 @@ const makeStyles = (theme) => StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   startersSubsTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: theme.colors.text,
   },
   startersSubsList: {
-    gap: 6,
+    gap: 5,
   },
   starterSubChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 6,
+    gap: 8,
+    paddingVertical: 7,
     paddingHorizontal: 8,
     backgroundColor: theme.colors.backgroundAlt,
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: '#4CAF50', // semantic: starter (green)
+    minWidth: 0,
   },
   starterSubDorsal: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   starterSubDorsalText: {
     color: '#fff', // text on semantic dorsal bg (#4CAF50/#9C27B0)
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   starterSubName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: theme.colors.text,
     flex: 1,

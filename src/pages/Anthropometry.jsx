@@ -15,19 +15,26 @@ export default function Anthropometry() {
     <RNWebPage
       themed
       title={t('sectionHeaders.anthropometryTitle', 'Pliegues y Pesos')}
-      subtitle={t('sectionHeaders.anthropometry', 'Controla mediciones corporales, filtros por jugador y evolución física.')}
+      subtitle={t(
+        'sectionHeaders.anthropometry',
+        'Controla mediciones corporales, filtros por jugador y evolución física.',
+      )}
       icon={MdAccessibility}
-      actions={selectedTeam ? (
-        <Button $variant="primary" onClick={() => window.dispatchEvent(new CustomEvent('anthropometry:create'))}>
-          <Row $gap={6}>
-            <MdAdd size={18} />
-            {t('anthropometry.newMeasurement', 'Nueva medición')}
-          </Row>
-        </Button>
-      ) : null}
+      actions={
+        selectedTeam ? (
+          <Button
+            $variant="primary"
+            onClick={() => window.dispatchEvent(new CustomEvent('anthropometry:create'))}
+          >
+            <Row $gap={6}>
+              <MdAdd size={18} />
+              {t('anthropometry.newMeasurement', 'Nueva medición')}
+            </Row>
+          </Button>
+        ) : null
+      }
     >
       {selectedTeam ? <AnthropometryView /> : <TeamRequiredCard />}
     </RNWebPage>
   );
 }
-

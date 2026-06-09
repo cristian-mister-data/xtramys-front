@@ -2,8 +2,34 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToStrategy } from '@/api/video';
+import {
+  applyFavoritePrefsToItem,
+  applyFavoritePrefsToItems,
+  normalizeFavoritePayload,
+  persistFavoriteState,
+  readFavoritePrefs,
+  sameId,
+  getItemId,
+} from '@/utils/favoritePersistence';
 
 const getVideoId = (video) => video?._id || video?.id || video;
+
+const applyStrategyFavoritePrefs = async (items) => {
+  const prefs = await readFavoritePrefs('strategy');
+  return Array.isArray(items)
+    ? applyFavoritePrefsToItems(items, prefs)
+    : applyFavoritePrefsToItem(items, prefs);
+};
+
+const findStrategyFavorite = (state, strategyId) => {
+  const lists = [
+    state?.strategy?.strategies || [],
+    state?.strategy?.currentFolderStrategies || [],
+    state?.strategy?.globalStrategies || [],
+    state?.strategy?.strategy ? [state.strategy.strategy] : [],
+  ];
+  return lists.flat().find((item) => sameId(getItemId(item), strategyId))?.favorito;
+};
 
 const replaceStrategyVideos = async (strategyId, pendingVideoIds = []) => {
   if (!strategyId || pendingVideoIds.length === 0) return;
@@ -43,7 +69,7 @@ export const fetchEstrategiasUsuario = createAsyncThunk(
   async ({ user, lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/strategy/user/${user}${params}`);
-    return res.data;
+    return applyStrategyFavoritePrefs(res.data);
   }
 );
 
@@ -52,14 +78,14 @@ export const fetchEstrategiasTemporada = createAsyncThunk(
   async ({ season, lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/strategy/season/${season}${params}`);
-    return res.data;
+    return applyStrategyFavoritePrefs(res.data);
   }
 );
 
 export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', async ({ id, lang } = {}) => {
   const params = lang ? `?lang=${lang}` : '';
   const res = await api.get(`/strategy/${id}${params}`);
-  return res.data;
+  return applyStrategyFavoritePrefs(res.data);
 });
 
 export const fetchGlobalStrategies = createAsyncThunk(
@@ -67,7 +93,7 @@ export const fetchGlobalStrategies = createAsyncThunk(
   async ({ lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/strategy/global${params}`);
-    return res.data;
+    return applyStrategyFavoritePrefs(res.data);
   }
 );
 
@@ -133,7 +159,11 @@ export const fetchStrategyFolderById = createAsyncThunk(
   async ({ id, lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/strategy-folder/${id}${params}`);
-    return res.data;
+    const prefs = await readFavoritePrefs('strategy');
+    return {
+      ...res.data,
+      strategies: applyFavoritePrefsToItems(res.data?.strategies || [], prefs),
+    };
   }
 );
 
@@ -202,9 +232,15 @@ export const duplicateGlobalStrategy = createAsyncThunk(
 
 export const toggleFavoriteStrategy = createAsyncThunk(
   'strategy/toggleFavoriteStrategy',
-  async (strategyId) => {
+  async (payloadArg, { getState }) => {
+    const strategyId = typeof payloadArg === 'object' ? payloadArg.strategyId : payloadArg;
+    const expectedFavorite = typeof payloadArg === 'object' ? payloadArg.favorito : undefined;
     const res = await api.patch(`/strategy/${strategyId}/favorite`);
-    return res.data; // { _id, favorito }
+    const fallbackFavorite = findStrategyFavorite(getState(), strategyId);
+    const payload = normalizeFavoritePayload(res.data, strategyId, expectedFavorite ?? fallbackFavorite);
+    if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
+    await persistFavoriteState('strategy', strategyId, payload.favorito);
+    return payload; // { _id, favorito }
   }
 );
 

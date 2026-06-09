@@ -13,17 +13,24 @@ if (typeof Image !== 'undefined') {
   ballImage.src = ballImgSrc;
 }
 
-function ensureEven(n) { return n % 2 === 0 ? n : n + 1; }
-
-export function getVideoDimensions(aspectRatio) {
-  return { width: ensureEven(VIDEO_WIDTH), height: ensureEven(Math.round(VIDEO_WIDTH / aspectRatio)) };
+function ensureEven(n) {
+  return n % 2 === 0 ? n : n + 1;
 }
 
-function getScale(cw, ch) { return Math.min(cw, ch) / 500; }
+export function getVideoDimensions(aspectRatio) {
+  return {
+    width: ensureEven(VIDEO_WIDTH),
+    height: ensureEven(Math.round(VIDEO_WIDTH / aspectRatio)),
+  };
+}
+
+function getScale(cw, ch) {
+  return Math.min(cw, ch) / 500;
+}
 
 function pos(elem, cw, ch) {
-  const xr = elem.xRatio !== undefined ? elem.xRatio : (elem.x !== undefined ? elem.x / 1280 : 0);
-  const yr = elem.yRatio !== undefined ? elem.yRatio : (elem.y !== undefined ? elem.y / 720 : 0);
+  const xr = elem.xRatio !== undefined ? elem.xRatio : elem.x !== undefined ? elem.x / 1280 : 0;
+  const yr = elem.yRatio !== undefined ? elem.yRatio : elem.y !== undefined ? elem.y / 720 : 0;
   return ratioToDisplay(xr, yr, currentViewMode, cw, ch);
 }
 
@@ -31,7 +38,7 @@ function applyRotation(ctx, x, y, rotation) {
   let rot = rotation || 0;
   if (rot) {
     ctx.translate(x, y);
-    ctx.rotate(rot * Math.PI / 180);
+    ctx.rotate((rot * Math.PI) / 180);
     ctx.translate(-x, -y);
   }
 }
@@ -99,12 +106,19 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     }
 
     const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
-    const showNumbers = elem.playersWithNumber !== undefined
-      ? elem.playersWithNumber
-      : (options.playersWithNumber !== undefined ? options.playersWithNumber : true);
+    const showNumbers =
+      elem.playersWithNumber !== undefined
+        ? elem.playersWithNumber
+        : options.playersWithNumber !== undefined
+          ? options.playersWithNumber
+          : true;
     if (displayText !== undefined && showNumbers !== false) {
       const isLabel = elem.displayLabel !== undefined;
-      const fs = isLabel ? Math.max(10, size * 0.45) : (String(displayText).length > 2 ? size * 0.4 : size * 0.6);
+      const fs = isLabel
+        ? Math.max(10, size * 0.45)
+        : String(displayText).length > 2
+          ? size * 0.4
+          : size * 0.6;
       ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px ${FONT_STACK}`;
       ctx.fillStyle = numberColor;
       ctx.textAlign = 'center';
@@ -201,7 +215,7 @@ function drawBallShadow(ctx, cw, ch, elem, scale) {
 
   ctx.save();
   ctx.translate(p.x + w * 0.1, p.y + h * 0.04);
-  ctx.rotate(-8 * Math.PI / 180);
+  ctx.rotate((-8 * Math.PI) / 180);
 
   ctx.beginPath();
   ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
@@ -210,12 +224,12 @@ function drawBallShadow(ctx, cw, ch, elem, scale) {
   ctx.fill();
 
   ctx.beginPath();
-  ctx.ellipse(0, 0, w * 0.72 / 2, h * 0.7 / 2, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, (w * 0.72) / 2, (h * 0.7) / 2, 0, 0, Math.PI * 2);
   ctx.globalAlpha = opacity * 0.55;
   ctx.fill();
 
   ctx.beginPath();
-  ctx.ellipse(0, 0, w * 0.42 / 2, h * 0.48 / 2, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, (w * 0.42) / 2, (h * 0.48) / 2, 0, 0, Math.PI * 2);
   ctx.globalAlpha = opacity;
   ctx.fill();
 
@@ -224,16 +238,16 @@ function drawBallShadow(ctx, cw, ch, elem, scale) {
 
 function drawCone(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
-  const baseSize = elem.baseSize || 24;
+  const baseSize = elem.baseSize || elem.size || 24;
   const size = baseSize * scale;
   const color = elem.color || '#FF6B00';
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  const topY = p.y - size * 0.42;
-  const botY = p.y + size * 0.42;
-  const halfW = size * 0.45;
+  const topY = p.y - size * 0.425;
+  const botY = p.y + size * 0.425;
+  const halfW = size * 0.5;
   ctx.beginPath();
   ctx.moveTo(p.x, topY);
   ctx.lineTo(p.x + halfW, botY);
@@ -241,15 +255,13 @@ function drawCone(ctx, cw, ch, elem, scale) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 1;
-  ctx.stroke();
 
   ctx.fillStyle = '#222';
-  const barH = size * 0.1;
-  const barW = size * 0.55;
+  const barH = size * 0.13;
+  const barW = size * 0.6;
+  const barY = botY - barH / 2 - 1;
   ctx.beginPath();
-  ctx.roundRect(p.x - barW / 2, botY - barH / 2, barW, barH, barH / 2);
+  ctx.roundRect(p.x - barW / 2, barY, barW, barH, barH / 2);
   ctx.fill();
 
   ctx.restore();
@@ -257,7 +269,7 @@ function drawCone(ctx, cw, ch, elem, scale) {
 
 function drawConePro(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
-  const size = (elem.baseSize || 24) * scale;
+  const size = (elem.baseSize || elem.size || 24) * scale;
   const color = elem.color || '#FF6B00';
   const s = size / 50;
 
@@ -265,9 +277,9 @@ function drawConePro(ctx, cw, ch, elem, scale) {
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
   ctx.beginPath();
-  ctx.moveTo(p.x - 15 * s, p.y + 5 * s);
+  ctx.moveTo(p.x - 15 * s, p.y + 20 * s);
   ctx.lineTo(p.x, p.y - 17 * s);
-  ctx.lineTo(p.x + 15 * s, p.y + 5 * s);
+  ctx.lineTo(p.x + 15 * s, p.y + 20 * s);
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
@@ -276,12 +288,21 @@ function drawConePro(ctx, cw, ch, elem, scale) {
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(p.x - 10 * s, p.y + 2 * s);
+  ctx.moveTo(p.x - 10 * s, p.y + 13 * s);
   ctx.lineTo(p.x, p.y - 10 * s);
-  ctx.lineTo(p.x + 10 * s, p.y + 2 * s);
+  ctx.lineTo(p.x + 10 * s, p.y + 13 * s);
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2 * s;
   ctx.globalAlpha = 0.7;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(p.x - 7 * s, p.y + 10 * s);
+  ctx.lineTo(p.x, p.y - 7 * s);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1 * s;
+  ctx.globalAlpha = 0.4;
   ctx.stroke();
   ctx.globalAlpha = 1;
 
@@ -289,7 +310,7 @@ function drawConePro(ctx, cw, ch, elem, scale) {
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(p.x - 17 * s, p.y + 3 * s, 34 * s, 5 * s, s);
+  ctx.roundRect(p.x - 17 * s, p.y + 18 * s, 34 * s, 5 * s, s);
   ctx.fill();
   ctx.stroke();
 
@@ -298,7 +319,7 @@ function drawConePro(ctx, cw, ch, elem, scale) {
 
 function drawConeFlat(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
-  const size = (elem.baseSize || 18) * scale;
+  const size = (elem.baseSize || elem.size || 18) * scale;
   const color = elem.color || '#FF6B00';
   const s = size / 40;
 
@@ -306,9 +327,9 @@ function drawConeFlat(ctx, cw, ch, elem, scale) {
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
   ctx.beginPath();
-  ctx.moveTo(p.x - 18 * s, p.y);
-  ctx.quadraticCurveTo(p.x, p.y + 8 * s, p.x + 18 * s, p.y);
-  ctx.quadraticCurveTo(p.x, p.y - 8 * s, p.x - 18 * s, p.y);
+  ctx.moveTo(p.x - 18 * s, p.y + 4 * s);
+  ctx.quadraticCurveTo(p.x, p.y + 12 * s, p.x + 18 * s, p.y + 4 * s);
+  ctx.quadraticCurveTo(p.x, p.y - 4 * s, p.x - 18 * s, p.y + 4 * s);
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
@@ -317,8 +338,8 @@ function drawConeFlat(ctx, cw, ch, elem, scale) {
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.moveTo(p.x - 12 * s, p.y - 2 * s);
-  ctx.quadraticCurveTo(p.x, p.y - 6 * s, p.x + 12 * s, p.y - 2 * s);
+  ctx.moveTo(p.x - 12 * s, p.y + 2 * s);
+  ctx.quadraticCurveTo(p.x, p.y - 2 * s, p.x + 12 * s, p.y + 2 * s);
   ctx.strokeStyle = 'rgba(255,255,255,0.5)';
   ctx.lineWidth = 2 * s;
   ctx.stroke();
@@ -355,7 +376,8 @@ function drawGoalLarge(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
   const size = (elem.baseSize || 50) * scale;
   const s = size / 120;
-  const ox = p.x, oy = p.y;
+  const ox = p.x,
+    oy = p.y;
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
@@ -468,7 +490,8 @@ function drawGoalSmall(ctx, cw, ch, elem, scale) {
   const p = pos(elem, cw, ch);
   const size = (elem.baseSize || 30) * scale;
   const s = size / 80;
-  const ox = p.x, oy = p.y;
+  const ox = p.x,
+    oy = p.y;
   const color = elem.color || '#FF6B00';
 
   ctx.save();
@@ -724,7 +747,12 @@ function drawWeights(ctx, cw, ch, elem, scale) {
   ctx.roundRect(p.x - 15 * s, p.y - 3 * s, 30 * s, 6 * s, s);
   ctx.fill();
 
-  for (const [x, w, h, yOff] of [[-21, 6, 26, 0], [-17, 4, 18, -4], [13, 4, 18, -4], [17, 6, 26, 0]]) {
+  for (const [x, w, h, yOff] of [
+    [-21, 6, 26, 0],
+    [-17, 4, 18, -4],
+    [13, 4, 18, -4],
+    [17, 6, 26, 0],
+  ]) {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.roundRect(p.x + x * s, p.y + (yOff - h / 2) * s, w * s, h * s, s);
@@ -780,8 +808,14 @@ function drawArrowhead(ctx, from, to, elem, scale) {
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(to.x, to.y);
-  ctx.lineTo(to.x - headLen * Math.cos(angle - Math.PI / 6), to.y - headLen * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(to.x - headLen * Math.cos(angle + Math.PI / 6), to.y - headLen * Math.sin(angle + Math.PI / 6));
+  ctx.lineTo(
+    to.x - headLen * Math.cos(angle - Math.PI / 6),
+    to.y - headLen * Math.sin(angle - Math.PI / 6),
+  );
+  ctx.lineTo(
+    to.x - headLen * Math.cos(angle + Math.PI / 6),
+    to.y - headLen * Math.sin(angle + Math.PI / 6),
+  );
   ctx.closePath();
   ctx.fillStyle = elem.color || '#000';
   ctx.fill();
@@ -792,8 +826,16 @@ function drawCurveLine(ctx, cw, ch, elem, scale) {
   const pts = elem.pointsRatio || elem.points;
   if (!pts || pts.length < 2) return;
   const points = elem.pointsRatio
-    ? pts.map(p => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
-    : pts.map(p => ratioToDisplay(p.x / (elem.sourceWidth || 1280), p.y / (elem.sourceHeight || 720), currentViewMode, cw, ch));
+    ? pts.map((p) => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
+    : pts.map((p) =>
+        ratioToDisplay(
+          p.x / (elem.sourceWidth || 1280),
+          p.y / (elem.sourceHeight || 720),
+          currentViewMode,
+          cw,
+          ch,
+        ),
+      );
 
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
   ctx.save();
@@ -832,8 +874,20 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
   let cx, cy, r;
 
   if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
-    const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
-    const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
+    const p1 = ratioToDisplay(
+      elem.pointsRatio[0].x,
+      elem.pointsRatio[0].y,
+      currentViewMode,
+      cw,
+      ch,
+    );
+    const p2 = ratioToDisplay(
+      elem.pointsRatio[1].x,
+      elem.pointsRatio[1].y,
+      currentViewMode,
+      cw,
+      ch,
+    );
     cx = (p1.x + p2.x) / 2;
     cy = (p1.y + p2.y) / 2;
     const dx = p2.x - p1.x;
@@ -845,7 +899,13 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
     cy = coords.y;
     r = elem.radius * scale;
   } else if (elem.x !== undefined && elem.y !== undefined && elem.radius) {
-    const coords = ratioToDisplay(elem.x / (elem.sourceWidth || 1280), elem.y / (elem.sourceHeight || 720), currentViewMode, cw, ch);
+    const coords = ratioToDisplay(
+      elem.x / (elem.sourceWidth || 1280),
+      elem.y / (elem.sourceHeight || 720),
+      currentViewMode,
+      cw,
+      ch,
+    );
     cx = coords.x;
     cy = coords.y;
     r = elem.radius * scale;
@@ -876,8 +936,20 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
   let rx, ry, rw, rh;
 
   if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
-    const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
-    const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
+    const p1 = ratioToDisplay(
+      elem.pointsRatio[0].x,
+      elem.pointsRatio[0].y,
+      currentViewMode,
+      cw,
+      ch,
+    );
+    const p2 = ratioToDisplay(
+      elem.pointsRatio[1].x,
+      elem.pointsRatio[1].y,
+      currentViewMode,
+      cw,
+      ch,
+    );
     rx = Math.min(p1.x, p2.x);
     ry = Math.min(p1.y, p2.y);
     rw = Math.abs(p2.x - p1.x);
@@ -886,7 +958,13 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
     const refW = elem.sourceWidth || 1280;
     const refH = elem.sourceHeight || 720;
     const p1 = ratioToDisplay(elem.x / refW, elem.y / refH, currentViewMode, cw, ch);
-    const p2 = ratioToDisplay((elem.x + elem.width) / refW, (elem.y + elem.height) / refH, currentViewMode, cw, ch);
+    const p2 = ratioToDisplay(
+      (elem.x + elem.width) / refW,
+      (elem.y + elem.height) / refH,
+      currentViewMode,
+      cw,
+      ch,
+    );
     rx = Math.min(p1.x, p2.x);
     ry = Math.min(p1.y, p2.y);
     rw = Math.abs(p2.x - p1.x);
@@ -917,8 +995,16 @@ function drawCustomShape(ctx, cw, ch, elem, scale) {
   const pts = elem.pointsRatio || elem.points;
   if (!pts || pts.length < 2) return;
   const points = elem.pointsRatio
-    ? pts.map(p => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
-    : pts.map(p => ratioToDisplay(p.x / (elem.sourceWidth || 1280), p.y / (elem.sourceHeight || 720), currentViewMode, cw, ch));
+    ? pts.map((p) => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
+    : pts.map((p) =>
+        ratioToDisplay(
+          p.x / (elem.sourceWidth || 1280),
+          p.y / (elem.sourceHeight || 720),
+          currentViewMode,
+          cw,
+          ch,
+        ),
+      );
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
 
   ctx.save();
@@ -974,8 +1060,8 @@ function drawFreeText(ctx, cw, ch, elem, scale) {
 }
 
 function drawConnector(ctx, cw, ch, conn, elements) {
-  const fromEl = elements.find(e => e.id === conn.fromId);
-  const toEl = elements.find(e => e.id === conn.toId);
+  const fromEl = elements.find((e) => e.id === conn.fromId);
+  const toEl = elements.find((e) => e.id === conn.toId);
   if (!fromEl || !toEl) return;
 
   const p1 = pos(fromEl, cw, ch);

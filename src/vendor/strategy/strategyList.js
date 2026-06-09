@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +28,7 @@ import {
   moveStrategyToFolder,
   fetchStrategyFoldersFlat,
 } from '@/store/slices/strategy/strategyThunks';
-import { clearCurrentFolder } from '@/store/slices/strategy/strategySlice';
+import { clearCurrentFolder, setStrategyFavorite } from '@/store/slices/strategy/strategySlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
@@ -51,6 +51,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -61,6 +62,8 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t, i18n } = useTranslation();
@@ -951,7 +954,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(strategy._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(strategy._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -967,7 +973,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(strategy._id)}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(strategy));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -1098,6 +1107,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   // Estados para modal de opciones en cada tarjeta
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedStrategyForOptions, setSelectedStrategyForOptions] = useState(null);
+  const favoriteToggleLocksRef = useRef(new Set());
   const [filters, setFilters] = useState({
     titulo: ''
   });
@@ -1262,6 +1272,14 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   const displayedStrategies = (() => {
     const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
+    const mergeById = (items) => {
+      const map = new Map();
+      items.flat().filter(Boolean).forEach((item) => {
+        const id = item._id || item.id;
+        if (id) map.set(id, item);
+      });
+      return Array.from(map.values());
+    };
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderStrategies;
       const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
@@ -1271,7 +1289,7 @@ export default function StrategyList({ navigation: navigationProp }) {
       return q;
     }
     if (listFilter === 'favorites') {
-      const favs = strategies.filter(ex => ex.favorito);
+      const favs = mergeById([strategies, globalStrategies]).filter((st) => st.favorito);
       return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
     const base = listFilter === 'mine'
@@ -1405,12 +1423,31 @@ const handleDelete = (strategy) => {
   };
 
   const handleToggleFavorite = useCallback(async (strategyId) => {
+    if (!strategyId) return;
+    const strategyIdKey = String(strategyId);
+    if (favoriteToggleLocksRef.current.has(strategyIdKey)) return;
+    favoriteToggleLocksRef.current.add(strategyIdKey);
+    const currentStrategy = [
+      ...filteredStrategies,
+      ...currentFolderStrategies,
+      ...strategies,
+      ...globalStrategies,
+    ].find((strategy) => sameId(getItemId(strategy), strategyId));
+    const previousFavorite = !!currentStrategy?.favorito;
+    const optimisticFavorite = !previousFavorite;
+
+    dispatch(setStrategyFavorite({ strategyId, favorito: optimisticFavorite }));
+    persistFavoriteState('strategy', strategyId, optimisticFavorite).catch(() => {});
     try {
-      await dispatch(toggleFavoriteStrategy(strategyId)).unwrap();
+      await dispatch(toggleFavoriteStrategy({ strategyId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
+      dispatch(setStrategyFavorite({ strategyId, favorito: previousFavorite }));
+      persistFavoriteState('strategy', strategyId, previousFavorite).catch(() => {});
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(strategyIdKey);
     }
-  }, [dispatch, t]);
+  }, [currentFolderStrategies, dispatch, filteredStrategies, globalStrategies, strategies, t]);
 
   const handleBatchDelete = () => {
     if (selectedIds.size === 0) return;
@@ -1461,6 +1498,26 @@ const handleDelete = (strategy) => {
   const handleStrategyPress = (strategy) => {
     setViewingStrategy(strategy);
   };
+
+  useEffect(() => {
+    if (!selectedStrategyForOptions) return;
+    const selectedId = selectedStrategyForOptions._id || selectedStrategyForOptions.id;
+    const updatedStrategy = [
+      ...filteredStrategies,
+      ...currentFolderStrategies,
+      ...strategies,
+      ...globalStrategies,
+    ].find((strategy) => (strategy._id || strategy.id) === selectedId);
+    if (updatedStrategy && updatedStrategy !== selectedStrategyForOptions) {
+      setSelectedStrategyForOptions(updatedStrategy);
+    }
+  }, [
+    selectedStrategyForOptions,
+    filteredStrategies,
+    currentFolderStrategies,
+    strategies,
+    globalStrategies,
+  ]);
 
 
   const duplicateGlobalStrategyForEdit = useCallback(async (strategy) => {
@@ -2177,7 +2234,7 @@ const handleDelete = (strategy) => {
                   style={styles.mvActionOption}
                   onPress={() => {
                     setOptionsModalVisible(false);
-                    handleToggleFavorite(selectedStrategyForOptions?._id);
+                    handleToggleFavorite(getItemId(selectedStrategyForOptions));
                   }}
                 >
                   <View style={[styles.mvActionIcon, { backgroundColor: selectedStrategyForOptions?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>

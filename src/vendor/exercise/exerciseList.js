@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -8,7 +8,7 @@ import CreateExerciseForm from './createExerciseForm';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, updateExerciseFolder, deleteExerciseFolder, moveExerciseToFolder, duplicateExerciseToFolder, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
-import { clearCurrentFolder } from '@/store/slices/exercise/exerciseSlice';
+import { clearCurrentFolder, setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
@@ -30,6 +30,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -40,6 +41,8 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
 
 function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t, i18n } = useTranslation();
@@ -964,7 +967,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(exercise._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(exercise._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -980,7 +986,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(exercise._id)}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(exercise));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -1152,6 +1161,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Estados para modal de opciones
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedExerciseForOptions, setSelectedExerciseForOptions] = useState(null);
+  const favoriteToggleLocksRef = useRef(new Set());
   
   // Estado de navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -1372,6 +1382,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Función para filtrar ejercicios
   const displayedExercises = (() => {
+    const mergeById = (items) => {
+      const map = new Map();
+      items.flat().filter(Boolean).forEach((item) => {
+        const id = item._id || item.id;
+        if (id) map.set(id, item);
+      });
+      return Array.from(map.values());
+    };
     if (listFilter === 'global') {
       // If inside a global folder, show folder exercises; else show root global exercises
       if (currentFolderId) return currentFolderExercises;
@@ -1380,7 +1398,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
       return q;
     }
     if (listFilter === 'favorites') {
-      const favs = ejercicios.filter(ex => ex.favorito);
+      const favs = mergeById([ejercicios, globalExercises]).filter((ex) => ex.favorito);
       return currentFolderId ? currentFolderExercises.filter(e => e.favorito) : favs.filter(ex => !ex.folder);
     }
     const base = listFilter === 'mine'
@@ -1554,12 +1572,31 @@ export default function ExerciseList({ navigation: navigationProp }) {
   };
 
   const handleToggleFavorite = useCallback(async (exerciseId) => {
+    if (!exerciseId) return;
+    const exerciseIdKey = String(exerciseId);
+    if (favoriteToggleLocksRef.current.has(exerciseIdKey)) return;
+    favoriteToggleLocksRef.current.add(exerciseIdKey);
+    const currentExercise = [
+      ...filteredEjercicios,
+      ...currentFolderExercises,
+      ...ejercicios,
+      ...globalExercises,
+    ].find((exercise) => sameId(getItemId(exercise), exerciseId));
+    const previousFavorite = !!currentExercise?.favorito;
+    const optimisticFavorite = !previousFavorite;
+
+    dispatch(setExerciseFavorite({ exerciseId, favorito: optimisticFavorite }));
+    persistFavoriteState('exercise', exerciseId, optimisticFavorite).catch(() => {});
     try {
-      await dispatch(toggleFavoriteExercise(exerciseId)).unwrap();
+      await dispatch(toggleFavoriteExercise({ exerciseId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
+      dispatch(setExerciseFavorite({ exerciseId, favorito: previousFavorite }));
+      persistFavoriteState('exercise', exerciseId, previousFavorite).catch(() => {});
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(exerciseIdKey);
     }
-  }, [dispatch, t]);
+  }, [currentFolderExercises, dispatch, ejercicios, filteredEjercicios, globalExercises, t]);
 
   const handleBatchDelete = () => {
     if (selectedIds.size === 0) return;
@@ -1611,6 +1648,26 @@ export default function ExerciseList({ navigation: navigationProp }) {
     setSelectedExerciseForOptions(exercise);
     setOptionsModalVisible(true);
   };
+
+  useEffect(() => {
+    if (!selectedExerciseForOptions) return;
+    const selectedId = selectedExerciseForOptions._id || selectedExerciseForOptions.id;
+    const updatedExercise = [
+      ...filteredEjercicios,
+      ...currentFolderExercises,
+      ...ejercicios,
+      ...globalExercises,
+    ].find((exercise) => (exercise._id || exercise.id) === selectedId);
+    if (updatedExercise && updatedExercise !== selectedExerciseForOptions) {
+      setSelectedExerciseForOptions(updatedExercise);
+    }
+  }, [
+    selectedExerciseForOptions,
+    filteredEjercicios,
+    currentFolderExercises,
+    ejercicios,
+    globalExercises,
+  ]);
 
   // Notificaciones estilo myVideos
   const showNotification = (message, type = 'success') => {
@@ -2224,7 +2281,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   style={styles.mvActionOption}
                   onPress={() => {
                     setOptionsModalVisible(false);
-                    handleToggleFavorite(selectedExerciseForOptions?._id);
+                    handleToggleFavorite(getItemId(selectedExerciseForOptions));
                   }}
                 >
                   <View style={[styles.mvActionIcon, { backgroundColor: selectedExerciseForOptions?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>

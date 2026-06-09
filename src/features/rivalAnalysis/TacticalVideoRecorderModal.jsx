@@ -137,7 +137,7 @@ export default function TacticalVideoRecorderModal({
         const root = t('menu.rivalAnalysis', 'Análisis Rival');
         const id = await ensureRivalAnalysisFolder({
           rootName: root,
-          rivalName: rivalName?.trim() || t('rivalAnalysis.unknownRival', 'Sin rival'),
+          rivalName: t('rivalAnalysis.unknownRival', 'Sin rival'),
           lang: i18n.language,
         });
         if (!cancelled) setFolderId(id);
