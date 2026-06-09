@@ -201,6 +201,8 @@ export default function ExerciseSelectorModal({
       candidates = candidates.filter(f => f.isGlobal);
     } else if (sourceFilter === 'mine') {
       candidates = candidates.filter(f => !f.isGlobal);
+    } else if (sourceFilter === 'favorites') {
+      candidates = [];
     }
     return candidates.sort((a, b) => (getFolderName(a)).localeCompare(getFolderName(b)));
   }, [reduxFolders, reduxFoldersFlat, currentFolderId, getFolderName, sourceFilter]);
@@ -215,6 +217,8 @@ export default function ExerciseSelectorModal({
       source = globalExercises;
     } else if (sourceFilter === 'mine') {
       source = ejercicios || [];
+    } else if (sourceFilter === 'favorites') {
+      return allExercises.filter(e => e.favorito);
     } else {
       source = allExercises;
     }
@@ -250,6 +254,7 @@ export default function ExerciseSelectorModal({
   const baseList = useMemo(() => {
     const allSource = sourceFilter === 'global' ? globalExercises
       : sourceFilter === 'mine' ? (ejercicios || [])
+      : sourceFilter === 'favorites' ? allExercises.filter(e => e.favorito)
       : allExercises;
     let source = isSearching ? allSource : currentLevelExercises;
     let filtered = source.slice();

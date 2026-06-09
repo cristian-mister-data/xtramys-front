@@ -1380,8 +1380,18 @@ export default function ExerciseList({ navigation: navigationProp }) {
       return q;
     }
     if (listFilter === 'favorites') {
-      const favs = ejercicios.filter(ex => ex.favorito);
-      return currentFolderId ? currentFolderExercises.filter(e => e.favorito) : favs.filter(ex => !ex.folder);
+      const favsById = new Map();
+      [...ejercicios, ...globalExercises].filter(Boolean).forEach((exercise) => {
+        const id = getItemId(exercise);
+        if (!id) return;
+        const prev = favsById.get(String(id));
+        favsById.set(String(id), {
+          ...prev,
+          ...exercise,
+          favorito: Boolean(prev?.favorito || exercise.favorito),
+        });
+      });
+      return Array.from(favsById.values()).filter((exercise) => exercise.favorito);
     }
     const base = listFilter === 'mine'
       ? ejercicios.filter(ex => !ex.isGlobal)

@@ -1271,8 +1271,18 @@ export default function StrategyList({ navigation: navigationProp }) {
       return q;
     }
     if (listFilter === 'favorites') {
-      const favs = strategies.filter(ex => ex.favorito);
-      return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
+      const favsById = new Map();
+      [...strategies, ...globalStrategies].filter(Boolean).forEach((strategy) => {
+        const id = getItemId(strategy);
+        if (!id) return;
+        const prev = favsById.get(String(id));
+        favsById.set(String(id), {
+          ...prev,
+          ...strategy,
+          favorito: Boolean(prev?.favorito || strategy.favorito),
+        });
+      });
+      return Array.from(favsById.values()).filter((strategy) => strategy.favorito);
     }
     const base = listFilter === 'mine'
       ? strategies.filter((st) => !st.isGlobal)
