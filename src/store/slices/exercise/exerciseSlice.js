@@ -9,6 +9,19 @@ import {
   toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises,
 } from './exerciseThunks';
 
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
+
+const applyFavorite = (state, exerciseId, favorito) => {
+  if (!exerciseId || typeof favorito !== 'boolean') return;
+  const lists = [state.exercises, state.currentFolderExercises, state.globalExercises];
+  lists.forEach((list) => {
+    const idx = list.findIndex((exercise) => sameId(getItemId(exercise), exerciseId));
+    if (idx !== -1) list[idx].favorito = favorito;
+  });
+  if (sameId(getItemId(state.exercise), exerciseId)) state.exercise.favorito = favorito;
+};
+
 const exerciseSlice = createSlice({
   name: 'ejercicio',
   initialState: {
@@ -30,6 +43,10 @@ const exerciseSlice = createSlice({
       state.currentFolder = null;
       state.currentFolderExercises = [];
       state.currentFolderSubfolders = [];
+    },
+    setExerciseFavorite: (state, action) => {
+      const { exerciseId, favorito } = action.payload || {};
+      applyFavorite(state, exerciseId, favorito);
     },
   },
   extraReducers: (builder) => {
@@ -150,11 +167,8 @@ const exerciseSlice = createSlice({
 
       // Favorito toggle
       .addCase(toggleFavoriteExercise.fulfilled, (state, action) => {
-        const { _id, favorito } = action.payload;
-        const idx = state.exercises.findIndex(e => e._id === _id);
-        if (idx !== -1) state.exercises[idx].favorito = favorito;
-        const idx2 = state.currentFolderExercises.findIndex(e => e._id === _id);
-        if (idx2 !== -1) state.currentFolderExercises[idx2].favorito = favorito;
+        const payload = action.payload || {};
+        applyFavorite(state, getItemId(payload), payload.favorito);
       })
 
       // Batch delete
@@ -175,5 +189,5 @@ const exerciseSlice = createSlice({
   },
 });
 
-export const { clearCurrentFolder } = exerciseSlice.actions;
+export const { clearCurrentFolder, setExerciseFavorite } = exerciseSlice.actions;
 export default exerciseSlice.reducer;

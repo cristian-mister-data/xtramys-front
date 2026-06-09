@@ -9,11 +9,16 @@ const Wrapper = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 100 / 142;
+  user-select: none;
+`;
+
+const FieldClip = styled.div`
+  position: absolute;
+  inset: 0;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   background: #2f7a2f;
-  user-select: none;
 `;
 
 const Field = styled.svg`
@@ -22,6 +27,11 @@ const Field = styled.svg`
   width: 100%;
   height: 100%;
   display: block;
+`;
+
+const SlotsLayer = styled.div`
+  position: absolute;
+  inset: 0;
 `;
 
 export function FieldBackground() {
@@ -36,14 +46,22 @@ export function FieldBackground() {
         width="100"
         height={142 / 14}
         fill={i % 2 === 0 ? '#3a8a3a' : '#2f7a2f'}
-      />
+      />,
     );
   }
   return (
     <>
       {stripes}
       {/* Outer border */}
-      <rect x="0.4" y="0.4" width="99.2" height="141.2" fill="none" stroke="#fff" strokeWidth="0.4" />
+      <rect
+        x="0.4"
+        y="0.4"
+        width="99.2"
+        height="141.2"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.4"
+      />
       {/* Halfway line */}
       <line x1="0" y1="71" x2="100" y2="71" stroke="#fff" strokeWidth="0.4" />
       {/* Center circle */}
@@ -55,10 +73,23 @@ export function FieldBackground() {
       <circle cx="50" cy="10" r="0.5" fill="#fff" />
       <path d="M 40.85 10 A 9.15 9.15 0 0 0 59.15 10" fill="none" stroke="#fff" strokeWidth="0.4" />
       {/* Bottom penalty box */}
-      <rect x="22.5" y="126.5" width="55" height="15.5" fill="none" stroke="#fff" strokeWidth="0.4" />
+      <rect
+        x="22.5"
+        y="126.5"
+        width="55"
+        height="15.5"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.4"
+      />
       <rect x="38" y="136.5" width="24" height="5.5" fill="none" stroke="#fff" strokeWidth="0.4" />
       <circle cx="50" cy="132" r="0.5" fill="#fff" />
-      <path d="M 40.85 132 A 9.15 9.15 0 0 1 59.15 132" fill="none" stroke="#fff" strokeWidth="0.4" />
+      <path
+        d="M 40.85 132 A 9.15 9.15 0 0 1 59.15 132"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.4"
+      />
     </>
   );
 }
@@ -85,11 +116,9 @@ const Circle = styled.div`
   align-items: center;
   justify-content: center;
   background: ${({ $color, $empty }) =>
-    $empty
-      ? 'rgba(255,255,255,0.18)'
-      : `linear-gradient(135deg, ${$color}, ${$color}cc)`};
+    $empty ? 'rgba(255,255,255,0.18)' : `linear-gradient(135deg, ${$color}, ${$color}cc)`};
   border: 3px solid ${({ $color, $selected }) => ($selected ? '#fde047' : $color)};
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   color: #fff;
   font-weight: 800;
   font-size: 13px;
@@ -109,7 +138,7 @@ const NameTag = styled.div`
   font-size: 10px;
   font-weight: 700;
   color: #fff;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   padding: 1px 6px;
   border-radius: 6px;
   max-width: 80px;
@@ -151,27 +180,38 @@ export function PlayerSlot({
   );
 }
 
-export default function LineupField({ slots, players = [], starterIds = [], slotSize = 44, onSlotClick, selectedPlayerId }) {
+export default function LineupField({
+  slots,
+  players = [],
+  starterIds = [],
+  slotSize = 44,
+  onSlotClick,
+  selectedPlayerId,
+}) {
   return (
     <Wrapper>
-      <Field viewBox="0 0 100 142" preserveAspectRatio="none">
-        <FieldBackground />
-      </Field>
-      {slots.map((slot, idx) => {
-        const playerId = starterIds[idx] || null;
-        const player = playerId ? players.find((p) => p._id === playerId) : null;
-        return (
-          <PlayerSlot
-            key={`${slot.pos}-${idx}`}
-            slot={slot}
-            player={player}
-            size={slotSize}
-            selected={selectedPlayerId && playerId === selectedPlayerId}
-            clickable={Boolean(onSlotClick)}
-            onClick={() => onSlotClick?.(idx, playerId)}
-          />
-        );
-      })}
+      <FieldClip>
+        <Field viewBox="0 0 100 142" preserveAspectRatio="xMidYMid meet">
+          <FieldBackground />
+        </Field>
+      </FieldClip>
+      <SlotsLayer>
+        {slots.map((slot, idx) => {
+          const playerId = starterIds[idx] || null;
+          const player = playerId ? players.find((p) => p._id === playerId) : null;
+          return (
+            <PlayerSlot
+              key={`${slot.pos}-${idx}`}
+              slot={slot}
+              player={player}
+              size={slotSize}
+              selected={selectedPlayerId && playerId === selectedPlayerId}
+              clickable={Boolean(onSlotClick)}
+              onClick={() => onSlotClick?.(idx, playerId)}
+            />
+          );
+        })}
+      </SlotsLayer>
     </Wrapper>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +28,7 @@ import {
   moveStrategyToFolder,
   fetchStrategyFoldersFlat,
 } from '@/store/slices/strategy/strategyThunks';
-import { clearCurrentFolder } from '@/store/slices/strategy/strategySlice';
+import { clearCurrentFolder, setStrategyFavorite } from '@/store/slices/strategy/strategySlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
@@ -51,6 +51,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -61,6 +62,8 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t, i18n } = useTranslation();
@@ -105,7 +108,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const { width, height } = useWindowDimensions();
-  
+
   // Video states
   const [strategyVideos, setStrategyVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -114,7 +117,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingVideo, setDownloadingVideo] = useState(false);
-  
+
   // Video player hook
   const player = useVideoPlayer(videoUrl || '', player => {
     if (videoUrl) {
@@ -129,7 +132,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
     if (typeof strategy.folder === 'object') return strategy.folder.nombre;
     return null;
   };
-  
+
   // Cargar videos de la estrategia
   useEffect(() => {
     const loadVideos = async () => {
@@ -148,7 +151,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
     };
     loadVideos();
   }, [strategy?._id]);
-  
+
   // Función para reproducir video - misma lógica que myVideos
   const handlePlayVideo = async (video) => {
     setSelectedVideo(video);
@@ -167,11 +170,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
       setIsGenerating(false);
     }
   };
-  
+
   // Función para descargar video - misma lógica que myVideos
   const handleDownloadVideo = async (video) => {
     if (downloadingVideo) return;
-    
+
     setDownloadingVideo(true);
     try {
       const videoObj = typeof video === 'object' && video ? video : { id: video };
@@ -184,10 +187,10 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
       setDownloadingVideo(false);
     }
   };
-  
+
   // Desasociar video de la estrategia
   const handleUnlinkVideo = async (video) => {
-Alert.alert(
+    Alert.alert(
       t('strategy.unlinkVideoTitle'),
       t('strategy.unlinkVideoMessage'),
       [
@@ -213,7 +216,7 @@ Alert.alert(
       ]
     );
   };
-  
+
   // Cerrar modal de video
   const closeVideoModal = () => {
     if (Platform.OS === 'web' && videoUrl) {
@@ -273,12 +276,12 @@ Alert.alert(
       }
 
       let imageUri = '';
-      
+
       if (strategy.imagen.startsWith('http')) {
         // Si es URL, descargar primero
         const fileName = `strategy_${strategy.nombre || 'image'}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
-        
+
         const downloadResult = await FileSystem.downloadAsync(
           strategy.imagen,
           fileUri
@@ -288,12 +291,12 @@ Alert.alert(
         // Si es base64, convertir a archivo
         const fileName = `strategy_${strategy.nombre || 'image'}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
-        
+
         let base64Data = strategy.imagen;
         if (base64Data.startsWith('data:image')) {
           base64Data = base64Data.split(',')[1];
         }
-        
+
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -387,7 +390,7 @@ Alert.alert(
             {/* Imagen del campo */}
             {showField && (
               <View style={styles.detailSection}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     setSelectedImage(strategy?.imagen);
                     setModalVisible(true);
@@ -422,7 +425,7 @@ Alert.alert(
                 )}
 
                 {strategy.descripcion && (
-                  <View style={{...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30}}>
+                  <View style={{ ...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30 }}>
                     <View style={styles.detailCardHeader}>
                       <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
                       <Text style={styles.detailCardTitle}>{t('strategy.description')}</Text>
@@ -432,7 +435,7 @@ Alert.alert(
                 )}
 
                 {strategy.objetivo && (
-                  <View style={{...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30}}>
+                  <View style={{ ...styles.detailCard, marginBottom: strategyVideos.length > 0 ? 16 : 30 }}>
                     <View style={styles.detailCardHeader}>
                       <Ionicons name="flag-outline" size={18} color="#E91E63" />
                       <Text style={styles.detailCardTitle}>{t('strategy.objective')}</Text>
@@ -440,74 +443,74 @@ Alert.alert(
                     <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
                   </View>
                 )}
-                
+
                 {/* Sección de Videos de la Estrategia */}
-                <View style={{...styles.detailCard, marginBottom: 30}}>
-                    <View style={styles.detailCardHeader}>
-                      <Feather name="video" size={18} color="#E91E63" />
-                      <Text style={styles.detailCardTitle}>{t('strategy.videos') || 'Videos'}</Text>
-                      {loadingVideos && <ActivityIndicator size="small" color="#E91E63" style={{ marginLeft: 8 }} />}
-                    </View>
-                    {!loadingVideos && strategyVideos.length > 0 && (
-                      <View style={styles.videosGrid}>
-                        {strategyVideos.map((video) => (
-                          <View key={video._id} style={styles.videoCard}>
-                            {/* Botón de desasociar */}
-                            <TouchableOpacity
-                              style={styles.videoUnlinkBtn}
-                              onPress={() => handleUnlinkVideo(video)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Feather name="x" size={16} color="#EF4444" />
-                            </TouchableOpacity>
-                            <View style={styles.videoCardContent}>
-                              <Feather name="film" size={28} color="#E91E63" />
-                              <Text style={styles.videoCardTitle} numberOfLines={1}>
-                                {getLocalizedVideoName(video)}
+                <View style={{ ...styles.detailCard, marginBottom: 30 }}>
+                  <View style={styles.detailCardHeader}>
+                    <Feather name="video" size={18} color="#E91E63" />
+                    <Text style={styles.detailCardTitle}>{t('strategy.videos') || 'Videos'}</Text>
+                    {loadingVideos && <ActivityIndicator size="small" color="#E91E63" style={{ marginLeft: 8 }} />}
+                  </View>
+                  {!loadingVideos && strategyVideos.length > 0 && (
+                    <View style={styles.videosGrid}>
+                      {strategyVideos.map((video) => (
+                        <View key={video._id} style={styles.videoCard}>
+                          {/* Botón de desasociar */}
+                          <TouchableOpacity
+                            style={styles.videoUnlinkBtn}
+                            onPress={() => handleUnlinkVideo(video)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Feather name="x" size={16} color="#EF4444" />
+                          </TouchableOpacity>
+                          <View style={styles.videoCardContent}>
+                            <Feather name="film" size={28} color="#E91E63" />
+                            <Text style={styles.videoCardTitle} numberOfLines={1}>
+                              {getLocalizedVideoName(video)}
+                            </Text>
+                            {video.descripcion && (
+                              <Text style={styles.videoCardDescription} numberOfLines={2}>
+                                {video.descripcion}
                               </Text>
-                              {video.descripcion && (
-                                <Text style={styles.videoCardDescription} numberOfLines={2}>
-                                  {video.descripcion}
-                                </Text>
-                              )}
-                            </View>
-                            <View style={styles.videoCardActions}>
-                              <TouchableOpacity
-                                style={[styles.videoActionBtn, styles.videoPlayBtn]}
-                                onPress={() => handlePlayVideo(video)}
-                              >
-                                <Feather name="play" size={16} color="#fff" />
-                                <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
-                                onPress={() => onEditVideo && onEditVideo(video, strategy)}
-                              >
-                                <Feather name="edit-3" size={14} color="#fff" />
-                                <Text style={styles.videoActionText}>{t('edition.edit') || 'Editar'}</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.videoActionBtn, styles.videoDownloadBtn]}
-                                onPress={() => handleDownloadVideo(video)}
-                                disabled={downloadingVideo}
-                              >
-                                {downloadingVideo ? (
-                                  <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                  <>
-                                    <Feather name="download" size={16} color="#fff" />
-                                    <Text style={styles.videoActionText}>{t('strategy.download') || 'Descargar'}</Text>
-                                  </>
-                                )}
-                              </TouchableOpacity>
-                            </View>
+                            )}
                           </View>
-                        ))}
-                      </View>
-                    )}
-                    {!loadingVideos && strategyVideos.length === 0 && (
-                      <Text style={styles.noVideosText}>{t('strategy.noVideos') || 'No hay videos asociados'}</Text>
-                    )}
+                          <View style={styles.videoCardActions}>
+                            <TouchableOpacity
+                              style={[styles.videoActionBtn, styles.videoPlayBtn]}
+                              onPress={() => handlePlayVideo(video)}
+                            >
+                              <Feather name="play" size={16} color="#fff" />
+                              <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
+                              onPress={() => onEditVideo && onEditVideo(video, strategy)}
+                            >
+                              <Feather name="edit-3" size={14} color="#fff" />
+                              <Text style={styles.videoActionText}>{t('edition.edit') || 'Editar'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.videoActionBtn, styles.videoDownloadBtn]}
+                              onPress={() => handleDownloadVideo(video)}
+                              disabled={downloadingVideo}
+                            >
+                              {downloadingVideo ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <>
+                                  <Feather name="download" size={16} color="#fff" />
+                                  <Text style={styles.videoActionText}>{t('strategy.download') || 'Descargar'}</Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {!loadingVideos && strategyVideos.length === 0 && (
+                    <Text style={styles.noVideosText}>{t('strategy.noVideos') || 'No hay videos asociados'}</Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -558,15 +561,17 @@ Alert.alert(
               maxScale={4}
             >
               <Image
-                source={{ uri: (() => {
-                  if (selectedImage?.startsWith('http')) {
-                    const timestamp = new Date().getTime();
-                    return selectedImage.includes('?') 
-                      ? `${selectedImage}&t=${timestamp}` 
-                      : `${selectedImage}?t=${timestamp}`;
-                  }
-                  return `data:image/png;base64,${selectedImage}`;
-                })() }}
+                source={{
+                  uri: (() => {
+                    if (selectedImage?.startsWith('http')) {
+                      const timestamp = new Date().getTime();
+                      return selectedImage.includes('?')
+                        ? `${selectedImage}&t=${timestamp}`
+                        : `${selectedImage}?t=${timestamp}`;
+                    }
+                    return `data:image/png;base64,${selectedImage}`;
+                  })()
+                }}
                 style={{
                   width: width * 0.95,
                   height: height * 0.8,
@@ -584,7 +589,7 @@ Alert.alert(
           </Text>
         </View>
       </Modal>
-      
+
       {/* Modal de reproducción de video */}
       <Modal
         visible={showVideoModal}
@@ -605,7 +610,7 @@ Alert.alert(
                 <MaterialIcons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
-            
+
             {isGenerating ? (
               <View style={styles.videoLoadingContainer}>
                 <ActivityIndicator size="large" color="#E91E63" />
@@ -621,7 +626,7 @@ Alert.alert(
                 />
               </View>
             ) : null}
-            
+
             <View style={styles.videoModalActions}>
               <TouchableOpacity
                 style={[styles.videoModalBtn, styles.videoModalDownloadBtn]}
@@ -658,7 +663,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [folderPath, setFolderPath] = useState([]); // [{_id, nombre, color}]
   const currentDepth = folderPath.length;
-  
+
   const FOLDER_COLORS = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B'];
 
   // Carpetas del nivel actual
@@ -727,13 +732,15 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   const handleDeleteFolder = (folder) => {
     Alert.alert(t('message.warning'), t('folders.deleteConfirmation', { name: folder.nombre }), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: async () => {
-        try {
-          await dispatch(deleteFolder(folder._id)).unwrap();
-          dispatch(fetchStrategyFolders());
-          dispatch(fetchStrategyFoldersFlat());
-        } catch (e) { Alert.alert(t('message.error'), e.message); }
-      }}
+      {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
+          try {
+            await dispatch(deleteFolder(folder._id)).unwrap();
+            dispatch(fetchStrategyFolders());
+            dispatch(fetchStrategyFoldersFlat());
+          } catch (e) { Alert.alert(t('message.error'), e.message); }
+        }
+      }
     ]);
   };
 
@@ -921,20 +928,20 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
     }
     return strategy.nombre;
   };
-  
+
   // Función para obtener el nombre de la carpeta
   const getFolderName = () => {
     if (!strategy.folder) return null;
     if (typeof strategy.folder === 'object') return strategy.folder.nombre;
     return null;
   };
-  
+
   // Mostrar imagen si existe
   const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || strategy.imagen;
 
   return (
     <View style={[
-      styles.exerciseCard, 
+      styles.exerciseCard,
       IS_MOBILE && styles.exerciseCardMobile,
       isGrid && styles.exerciseCardGrid,
       isGrid && IS_MOBILE && styles.exerciseCardGridMobile,
@@ -951,7 +958,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(strategy._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(strategy._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -967,7 +977,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(strategy._id)}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(strategy));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -998,24 +1011,24 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             marginRight: isGrid ? 0 : 12,
             marginBottom: isGrid ? 8 : 0,
           }}>
-            <Base64ImagePreview 
-              imageUrl={strategy?.imagen} 
+            <Base64ImagePreview
+              imageUrl={strategy?.imagen}
               forceWidth={forceWidth || (isGrid ? (IS_MOBILE ? 100 : 130) : (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH))}
               forceHeight={forceHeight || (isGrid ? (IS_MOBILE ? 60 : 78) : (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT))}
             />
           </View>
         )}
-        
+
         <View style={[styles.cardInfo, isGrid && styles.cardInfoGrid]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
-            <Text 
+            <Text
               style={[
-                styles.cardTitle, 
+                styles.cardTitle,
                 IS_MOBILE && styles.cardTitleMobile,
                 isGrid && styles.cardTitleGrid,
                 { flex: 1 },
-              ]} 
-              numberOfLines={isGrid ? 2 : 1} 
+              ]}
+              numberOfLines={isGrid ? 2 : 1}
               ellipsizeMode="tail"
             >
               {getLocalizedName()}
@@ -1024,7 +1037,7 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
               <Ionicons name="globe-outline" size={14} color="#16a34a" />
             )}
           </View>
-          
+
           {getFolderName() && (
             <View style={[styles.infoTagsContainer, isGrid && styles.infoTagsContainerGrid]}>
               <View style={[styles.infoTag, isGrid && styles.infoTagGrid, { backgroundColor: theme.colors.successSoft }]}>
@@ -1037,7 +1050,7 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
           )}
         </View>
       </Pressable>
-      
+
       {!isGrid && (
         <View style={styles.exerciseCardActions}>
           <TouchableOpacity
@@ -1088,7 +1101,7 @@ export default function StrategyList({ navigation: navigationProp }) {
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     return fieldResult?.kind === 'strategy' ? (s?.editingStrategy || null) : null;
   });
-  
+
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
@@ -1098,6 +1111,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   // Estados para modal de opciones en cada tarjeta
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedStrategyForOptions, setSelectedStrategyForOptions] = useState(null);
+  const favoriteToggleLocksRef = useRef(new Set());
   const [filters, setFilters] = useState({
     titulo: ''
   });
@@ -1136,8 +1150,8 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [validationErrors, setValidationErrors] = useState({});
 
   const folderColors = [
-    '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', 
-    '#F43F5E', '#F97316', '#EAB308', '#22C55E', 
+    '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899',
+    '#F43F5E', '#F97316', '#EAB308', '#22C55E',
     '#14B8A6', '#06B6D4', '#64748B', '#78716C'
   ];
 
@@ -1262,6 +1276,14 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   const displayedStrategies = (() => {
     const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
+    const mergeById = (items) => {
+      const map = new Map();
+      items.flat().filter(Boolean).forEach((item) => {
+        const id = item._id || item.id;
+        if (id) map.set(id, item);
+      });
+      return Array.from(map.values());
+    };
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderStrategies;
       const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
@@ -1271,18 +1293,8 @@ export default function StrategyList({ navigation: navigationProp }) {
       return q;
     }
     if (listFilter === 'favorites') {
-      const favsById = new Map();
-      [...strategies, ...globalStrategies].filter(Boolean).forEach((strategy) => {
-        const id = getItemId(strategy);
-        if (!id) return;
-        const prev = favsById.get(String(id));
-        favsById.set(String(id), {
-          ...prev,
-          ...strategy,
-          favorito: Boolean(prev?.favorito || strategy.favorito),
-        });
-      });
-      return Array.from(favsById.values()).filter((strategy) => strategy.favorito);
+      const favs = mergeById([strategies, globalStrategies]).filter((st) => st.favorito);
+      return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
     const base = listFilter === 'mine'
       ? strategies.filter((st) => !st.isGlobal)
@@ -1345,14 +1357,14 @@ export default function StrategyList({ navigation: navigationProp }) {
         strategyId: strategyToMove._id,
         folderId: targetFolderId
       })).unwrap();
-      
+
       // Refresh data
       dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       dispatch(fetchStrategyFolders({ lang }));
       if (currentFolderId) {
         dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
       }
-      
+
       setShowMoveToFolder(false);
       setStrategyToMove(null);
     } catch (error) {
@@ -1360,7 +1372,7 @@ export default function StrategyList({ navigation: navigationProp }) {
     }
   };
 
-const handleDelete = (strategy) => {
+  const handleDelete = (strategy) => {
     if (strategy.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('strategy.cannotDeleteGlobal'));
       return;
@@ -1415,12 +1427,31 @@ const handleDelete = (strategy) => {
   };
 
   const handleToggleFavorite = useCallback(async (strategyId) => {
+    if (!strategyId) return;
+    const strategyIdKey = String(strategyId);
+    if (favoriteToggleLocksRef.current.has(strategyIdKey)) return;
+    favoriteToggleLocksRef.current.add(strategyIdKey);
+    const currentStrategy = [
+      ...filteredStrategies,
+      ...currentFolderStrategies,
+      ...strategies,
+      ...globalStrategies,
+    ].find((strategy) => sameId(getItemId(strategy), strategyId));
+    const previousFavorite = !!currentStrategy?.favorito;
+    const optimisticFavorite = !previousFavorite;
+
+    dispatch(setStrategyFavorite({ strategyId, favorito: optimisticFavorite }));
+    persistFavoriteState('strategy', strategyId, optimisticFavorite).catch(() => { });
     try {
-      await dispatch(toggleFavoriteStrategy(strategyId)).unwrap();
+      await dispatch(toggleFavoriteStrategy({ strategyId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
+      dispatch(setStrategyFavorite({ strategyId, favorito: previousFavorite }));
+      persistFavoriteState('strategy', strategyId, previousFavorite).catch(() => { });
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(strategyIdKey);
     }
-  }, [dispatch, t]);
+  }, [currentFolderStrategies, dispatch, filteredStrategies, globalStrategies, strategies, t]);
 
   const handleBatchDelete = () => {
     if (selectedIds.size === 0) return;
@@ -1471,6 +1502,26 @@ const handleDelete = (strategy) => {
   const handleStrategyPress = (strategy) => {
     setViewingStrategy(strategy);
   };
+
+  useEffect(() => {
+    if (!selectedStrategyForOptions) return;
+    const selectedId = selectedStrategyForOptions._id || selectedStrategyForOptions.id;
+    const updatedStrategy = [
+      ...filteredStrategies,
+      ...currentFolderStrategies,
+      ...strategies,
+      ...globalStrategies,
+    ].find((strategy) => (strategy._id || strategy.id) === selectedId);
+    if (updatedStrategy && updatedStrategy !== selectedStrategyForOptions) {
+      setSelectedStrategyForOptions(updatedStrategy);
+    }
+  }, [
+    selectedStrategyForOptions,
+    filteredStrategies,
+    currentFolderStrategies,
+    strategies,
+    globalStrategies,
+  ]);
 
 
   const duplicateGlobalStrategyForEdit = useCallback(async (strategy) => {
@@ -1600,8 +1651,8 @@ const handleDelete = (strategy) => {
     }
     try {
       const folderData = {
-        nombre: newFolderName.trim(), 
-        parentFolder: currentFolderId, 
+        nombre: newFolderName.trim(),
+        parentFolder: currentFolderId,
         color: newFolderColor,
         isGlobal: newFolderIsGlobal && userRole === 'admin'
       };
@@ -1656,21 +1707,21 @@ const handleDelete = (strategy) => {
 
   const performDeleteFolder = async (mode) => {
     if (!folderToDelete) return;
-    
+
     try {
-      const options = mode === 'delete' 
-        ? { deleteContents: true } 
+      const options = mode === 'delete'
+        ? { deleteContents: true }
         : { moveStrategiesTo: null, deleteContents: false };
-      
+
       await dispatch(deleteStrategyFolder({ id: folderToDelete._id, ...options })).unwrap();
       showNotification(t('folders.folderDeleted'), 'success');
-      
+
       dispatch(fetchStrategyFolders({ lang }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
       dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
       if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
-      
+
       setShowDeleteFolderModal(false);
       setShowDeleteConfirmModal(false);
       setFolderToDelete(null);
@@ -1719,8 +1770,8 @@ const handleDelete = (strategy) => {
 
   // Render folder card estilo myVideos
   const renderFolderItem = (folder) => (
-    <TouchableOpacity 
-      key={folder._id} 
+    <TouchableOpacity
+      key={folder._id}
       style={styles.mvFolderCard}
       onPress={() => navigateToFolder(folder)}
       onLongPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
@@ -1776,7 +1827,7 @@ const handleDelete = (strategy) => {
         onBack={() => setViewingStrategy(null)}
         navigation={navigation}
         onEdit={async (strategy) => {
-          
+
           if (strategy.isGlobal && userRole !== 'admin') {
             try {
               const result = await duplicateGlobalStrategyForEdit(strategy);
@@ -1791,7 +1842,7 @@ const handleDelete = (strategy) => {
               return;
             }
           } else {
-            
+
             setEditingStrategy(strategy);
           }
           setCreating(true);
@@ -1803,7 +1854,7 @@ const handleDelete = (strategy) => {
       />
     );
   }
-  
+
   if (creating || editingStrategy) {
     return (
       <CreateStrategyForm
@@ -1823,7 +1874,7 @@ const handleDelete = (strategy) => {
           <View style={styles.mvHeaderTop}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {folderPath.length < 2 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvAddFolderButton}
                   onPress={() => {
                     setNewFolderIsGlobal(listFilter === 'global' && userRole === 'admin');
@@ -1844,11 +1895,11 @@ const handleDelete = (strategy) => {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Breadcrumb estilo myVideos */}
           <View style={styles.mvBreadcrumb}>
-            <TouchableOpacity 
-              onPress={navigateToRoot} 
+            <TouchableOpacity
+              onPress={navigateToRoot}
               style={[styles.mvBreadcrumbItem, folderPath.length === 0 && styles.mvBreadcrumbItemActive]}
             >
               <Feather name="home" size={16} color={folderPath.length === 0 ? "#3578e5" : "#64748B"} />
@@ -1857,7 +1908,7 @@ const handleDelete = (strategy) => {
             {folderPath.map((crumb, index) => (
               <React.Fragment key={crumb.id}>
                 <Feather name="chevron-right" size={16} color="#CBD5E1" style={{ marginHorizontal: 2 }} />
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     if (index < folderPath.length - 1) {
                       navigateToBreadcrumb(index);
@@ -1865,8 +1916,8 @@ const handleDelete = (strategy) => {
                   }}
                   style={[styles.mvBreadcrumbItem, index === folderPath.length - 1 && styles.mvBreadcrumbItemActive]}
                 >
-                  <Text 
-                    style={[styles.mvBreadcrumbText, index === folderPath.length - 1 && styles.mvBreadcrumbTextActive]} 
+                  <Text
+                    style={[styles.mvBreadcrumbText, index === folderPath.length - 1 && styles.mvBreadcrumbTextActive]}
                     numberOfLines={1}
                   >
                     {crumb.name}
@@ -1897,16 +1948,16 @@ const handleDelete = (strategy) => {
           <TouchableOpacity
             style={{
               paddingHorizontal: 12, height: 42,
-              backgroundColor: selectionMode 
-                ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF') 
+              backgroundColor: selectionMode
+                ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF')
                 : (theme.mode === 'dark' ? (theme.colors?.surfaceAlt || '#1e293b') : '#FFFFFF'),
               borderRadius: 10,
-              borderWidth: 1, 
-              borderColor: selectionMode 
-                ? '#3578e5' 
+              borderWidth: 1,
+              borderColor: selectionMode
+                ? '#3578e5'
                 : (theme.mode === 'dark' ? (theme.colors?.border || '#334155') : '#E2E8F0'),
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03, 
+              shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03,
               shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1,
             }}
             onPress={() => {
@@ -1942,7 +1993,7 @@ const handleDelete = (strategy) => {
                   navigateToRoot();
                 }}
                 style={[
-                  styles.mvFilterTab, 
+                  styles.mvFilterTab,
                   isActive && styles.mvFilterTabActive,
                   tab.icon && { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', paddingHorizontal: 16 }
                 ]}
@@ -1956,10 +2007,10 @@ const handleDelete = (strategy) => {
                     style={{ marginRight: 6 }}
                   />
                 )}
-                <Text 
-                  numberOfLines={1} 
+                <Text
+                  numberOfLines={1}
                   style={[
-                    styles.mvFilterTabText, 
+                    styles.mvFilterTabText,
                     isActive && styles.mvFilterTabTextActive,
                     { flexShrink: 1 }
                   ]}
@@ -1986,14 +2037,14 @@ const handleDelete = (strategy) => {
               {filters.titulo ? t('strategy.noStrategiesFiltered') : currentFolderId ? t('folders.emptyFolder') : t('strategy.noStrategiesCreated')}
             </Text>
             <Text style={styles.mvEmptySubtitle}>
-              {filters.titulo 
+              {filters.titulo
                 ? t('strategy.clearFiltersText')
                 : t('strategy.createFirstStrategy')
               }
             </Text>
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.mvContentList}
             contentContainerStyle={styles.mvContentListInner}
             showsVerticalScrollIndicator={false}
@@ -2013,7 +2064,7 @@ const handleDelete = (strategy) => {
                 </View>
               </View>
             )}
-            
+
             {/* Estrategias */}
             {filteredStrategies.length > 0 && (
               <View style={styles.mvSection}>
@@ -2061,39 +2112,39 @@ const handleDelete = (strategy) => {
           }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, flexGrow: 1 }}>
               <View style={{ flex: 1, minWidth: 120 }}>
-              <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
-                {selectedIds.size} {t('common.selected') || 'seleccionados'}
-              </Text>
-              <TouchableOpacity onPress={handleSelectAll}>
-                <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
-                  {t('common.selectAll') || 'Seleccionar todo'}
+                <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
+                  {selectedIds.size} {t('common.selected') || 'seleccionados'}
                 </Text>
+                <TouchableOpacity onPress={handleSelectAll}>
+                  <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
+                    {t('common.selectAll') || 'Seleccionar todo'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowBatchMoveModal(true)}
+                disabled={selectedIds.size === 0}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: '#3578e5', borderRadius: 10,
+                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                }}
+              >
+                <Feather name="folder" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
               </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              onPress={() => setShowBatchMoveModal(true)}
-              disabled={selectedIds.size === 0}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: '#3578e5', borderRadius: 10,
-                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-              }}
-            >
-              <Feather name="folder" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBatchDelete}
-              disabled={selectedIds.size === 0}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: '#EF4444', borderRadius: 10,
-                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-              }}
-            >
-              <Feather name="trash-2" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleBatchDelete}
+                disabled={selectedIds.size === 0}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: '#EF4444', borderRadius: 10,
+                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                }}
+              >
+                <Feather name="trash-2" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCancelSelection}
                 style={{
@@ -2170,9 +2221,9 @@ const handleDelete = (strategy) => {
           animationType="fade"
           onRequestClose={() => setOptionsModalVisible(false)}
         >
-          <TouchableOpacity 
-            style={styles.mvModalBackdrop} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.mvModalBackdrop}
+            activeOpacity={1}
             onPress={() => setOptionsModalVisible(false)}
           >
             <View style={styles.mvActionSheet}>
@@ -2180,14 +2231,14 @@ const handleDelete = (strategy) => {
                 <Text style={styles.mvActionSheetTitle} numberOfLines={1}>{selectedStrategyForOptions?.nombre}</Text>
                 <Text style={styles.mvActionSheetSubtitle}>{t('strategy.strategyOptions')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 {/* Botón favorito */}
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
                     setOptionsModalVisible(false);
-                    handleToggleFavorite(selectedStrategyForOptions?._id);
+                    handleToggleFavorite(getItemId(selectedStrategyForOptions));
                   }}
                 >
                   <View style={[styles.mvActionIcon, { backgroundColor: selectedStrategyForOptions?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>
@@ -2220,7 +2271,7 @@ const handleDelete = (strategy) => {
                     <Text style={styles.mvActionTitle}>{t('strategy.lookDetails')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2277,7 +2328,7 @@ const handleDelete = (strategy) => {
                         })).unwrap();
                       }
                       showNotification(t('strategy.cloneCreated'), 'success');
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
                       dispatch(fetchGlobalStrategies({ lang }));
                       if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
                     } catch (err) {
@@ -2292,7 +2343,7 @@ const handleDelete = (strategy) => {
                     <Text style={styles.mvActionTitle}>{t('myVideos.duplicate')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2308,9 +2359,9 @@ const handleDelete = (strategy) => {
                     <Text style={styles.mvActionTitle}>{t('folders.moveToFolder')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.mvActionDivider} />
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2326,8 +2377,8 @@ const handleDelete = (strategy) => {
                   </View>
                 </TouchableOpacity>
               </ScrollView>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.mvActionSheetCancel}
                 onPress={() => setOptionsModalVisible(false)}
               >
@@ -2344,9 +2395,9 @@ const handleDelete = (strategy) => {
           animationType="fade"
           onRequestClose={() => setFolderMenuVisible(false)}
         >
-          <TouchableOpacity 
-            style={styles.mvModalBackdrop} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.mvModalBackdrop}
+            activeOpacity={1}
             onPress={() => setFolderMenuVisible(false)}
           >
             <View style={styles.mvActionSheet}>
@@ -2354,7 +2405,7 @@ const handleDelete = (strategy) => {
                 <Text style={styles.mvActionSheetTitle} numberOfLines={1}>{menuFolder?.nombre}</Text>
                 <Text style={styles.mvActionSheetSubtitle}>{t('folders.folderOptions')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                   style={styles.mvActionOption}
@@ -2370,7 +2421,7 @@ const handleDelete = (strategy) => {
                     <Text style={styles.mvActionTitle}>{t('folders.openFolder')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.mvActionDivider} />
 
                 {(!menuFolder?.isGlobal || userRole === 'admin') && (
@@ -2393,7 +2444,7 @@ const handleDelete = (strategy) => {
                     <View style={styles.mvActionDivider} />
                   </>
                 )}
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2409,8 +2460,8 @@ const handleDelete = (strategy) => {
                   </View>
                 </TouchableOpacity>
               </ScrollView>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.mvActionSheetCancel}
                 onPress={() => setFolderMenuVisible(false)}
               >
@@ -2650,7 +2701,7 @@ const handleDelete = (strategy) => {
                         />
                       </View>
                     )}
-                    
+
                     <Text style={[styles.mvCreateInputLabel, { marginTop: 16 }]}>{t('folders.folderColorLabel')}</Text>
                     <View style={styles.mvColorGrid}>
                       {folderColors.map(color => (
@@ -2675,7 +2726,7 @@ const handleDelete = (strategy) => {
 
               {/* Footer */}
               <View style={styles.mvCreateModalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvCreateCancelButton}
                   onPress={() => {
                     setShowCreateFolderModal(false);
@@ -2688,7 +2739,7 @@ const handleDelete = (strategy) => {
                   <Feather name="x" size={18} color="#64748b" />
                   <Text style={styles.mvCreateCancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvCreateSaveButton}
                   onPress={handleCreateFolder}
                 >
@@ -2716,7 +2767,7 @@ const handleDelete = (strategy) => {
                 <Text style={styles.mvFormModalTitle}>{t('folders.moveToFolder')}</Text>
                 <Text style={styles.mvFormModalSubtitle}>{t('folders.selectDestination')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvFolderSelectList} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                   style={styles.mvFolderSelectItem}
@@ -2727,7 +2778,7 @@ const handleDelete = (strategy) => {
                   </View>
                   <Text style={styles.mvFolderSelectText}>{t('folders.root')}</Text>
                 </TouchableOpacity>
-                
+
                 {(userRole === 'admin' ? strategyFoldersFlat : strategyFoldersFlat.filter(f => !f.isGlobal)).map(folder => (
                   <TouchableOpacity
                     key={folder._id}
@@ -2744,9 +2795,9 @@ const handleDelete = (strategy) => {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              
+
               <View style={styles.mvFormModalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvSecondaryButton}
                   onPress={() => { setShowMoveToFolder(false); setStrategyToMove(null); }}
                 >
@@ -2884,13 +2935,13 @@ const handleDelete = (strategy) => {
         {notification.visible && (
           <View style={styles.mvNotificationFloatingContainer} pointerEvents="none">
             <View style={[
-              styles.mvNotification, 
+              styles.mvNotification,
               notification.type === 'success' ? styles.mvNotificationSuccess : styles.mvNotificationError
             ]}>
-              <Feather 
-                name={notification.type === 'success' ? 'check-circle' : 'alert-circle'} 
-                size={20} 
-                color="#fff" 
+              <Feather
+                name={notification.type === 'success' ? 'check-circle' : 'alert-circle'}
+                size={20}
+                color="#fff"
               />
               <Text style={styles.mvNotificationText}>{notification.message}</Text>
             </View>
@@ -3722,7 +3773,7 @@ const makeStyles = (theme) => StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  
+
   // --- Modal de Video ---
   videoModalBg: {
     flex: 1,
@@ -3799,7 +3850,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  
+
   // --- Estilos de carpetas ---
   breadcrumbContainer: {
     flexDirection: 'row',
@@ -3867,7 +3918,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  
+
   // Header
   mvHeader: {
     backgroundColor: theme.colors.surface,
@@ -3934,7 +3985,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
+
   // View mode switch
   mvViewModeSwitch: {
     flexDirection: 'row',
@@ -3952,7 +4003,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderRadius: 8,
   },
-  
+
   // Breadcrumb
   mvBreadcrumb: {
     flexDirection: 'row',
@@ -3981,7 +4032,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  
+
   // Search
   mvSearchContainer: {
     marginHorizontal: 20,
@@ -4048,7 +4099,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvFilterTabTextActive: {
     color: theme.colors.onPrimary,
   },
-  
+
   // Loading & Empty
   mvLoadingContainer: {
     flex: 1,
@@ -4090,7 +4141,7 @@ const makeStyles = (theme) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  
+
   // Content List
   mvContentList: {
     flex: 1,
@@ -4100,7 +4151,7 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
-  
+
   // Sections
   mvSection: {
     marginBottom: 24,
@@ -4132,7 +4183,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvItemsContainer: {
     gap: 10,
   },
-  
+
   // Folder Card
   mvFolderCard: {
     flexDirection: 'row',
@@ -4181,14 +4232,14 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   // Modal Backdrop
   mvModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'flex-end',
   },
-  
+
   // Action Sheet
   mvActionSheet: {
     backgroundColor: theme.colors.surfaceAlt,
@@ -4260,7 +4311,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
-  
+
   // Form Modal
   mvFormModal: {
     backgroundColor: theme.colors.surfaceAlt,
@@ -4314,7 +4365,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
-  
+
   // Folder Select List
   mvFolderSelectList: {
     maxHeight: 280,
@@ -4343,7 +4394,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.colors.text,
   },
-  
+
   // Create Folder Modal
   mvCreateModalOverlay: {
     flex: 1,
@@ -4569,7 +4620,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.onPrimary,
   },
-  
+
   // Notification
   mvNotificationFloatingContainer: {
     position: 'absolute',

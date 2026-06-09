@@ -92,21 +92,21 @@ const getPositionColor = (pos) => {
 function FootballFieldSVG({ width, height }) {
   const strokeWidth = 2;
   const strokeColor = '#ffffff';
-  
+
   // Dimensiones proporcionales
   const penaltyAreaWidth = width * 0.44;
   const penaltyAreaHeight = height * 0.18;
-  const goalAreaWidth = width * 0.20;
+  const goalAreaWidth = width * 0.2;
   const goalAreaHeight = height * 0.06;
   const centerCircleRadius = Math.min(width, height) * 0.12;
   const penaltySpotDistance = height * 0.12;
   const arcRadius = Math.min(width, height) * 0.12;
-  
+
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
       {/* Fondo verde */}
       <Rect x={0} y={0} width={width} height={height} fill="#2e7d32" />
-      
+
       {/* Borde del campo */}
       <Rect
         x={strokeWidth}
@@ -117,7 +117,7 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Línea central */}
       <Line
         x1={strokeWidth}
@@ -127,7 +127,7 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Círculo central */}
       <Circle
         cx={width / 2}
@@ -137,15 +137,10 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Punto central */}
-      <Circle
-        cx={width / 2}
-        cy={height / 2}
-        r={4}
-        fill={strokeColor}
-      />
-      
+      <Circle cx={width / 2} cy={height / 2} r={4} fill={strokeColor} />
+
       {/* Área grande superior */}
       <Rect
         x={(width - penaltyAreaWidth) / 2}
@@ -156,7 +151,7 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Área pequeña superior */}
       <Rect
         x={(width - goalAreaWidth) / 2}
@@ -167,15 +162,10 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Punto de penalti superior */}
-      <Circle
-        cx={width / 2}
-        cy={penaltySpotDistance}
-        r={3}
-        fill={strokeColor}
-      />
-      
+      <Circle cx={width / 2} cy={penaltySpotDistance} r={3} fill={strokeColor} />
+
       {/* Área grande inferior */}
       <Rect
         x={(width - penaltyAreaWidth) / 2}
@@ -186,7 +176,7 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Área pequeña inferior */}
       <Rect
         x={(width - goalAreaWidth) / 2}
@@ -197,40 +187,35 @@ function FootballFieldSVG({ width, height }) {
         stroke={strokeColor}
         strokeWidth={strokeWidth}
       />
-      
+
       {/* Punto de penalti inferior */}
-      <Circle
-        cx={width / 2}
-        cy={height - penaltySpotDistance}
-        r={3}
-        fill={strokeColor}
-      />
+      <Circle cx={width / 2} cy={height - penaltySpotDistance} r={3} fill={strokeColor} />
     </Svg>
   );
 }
 
 // Componente de jugador en el campo
-function PlayerMarker({ 
-  player, 
-  position, 
-  x, 
-  y, 
-  fieldWidth, 
-  fieldHeight, 
-  showPhoto, 
+function PlayerMarker({
+  player,
+  position,
+  x,
+  y,
+  fieldWidth,
+  fieldHeight,
+  showPhoto,
   showName,
   onPress,
   onDrag,
   isDraggable,
   isSelected,
-  size = 40
+  size = 40,
 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const colors = getPositionColor(position);
   const pixelX = (x / 100) * fieldWidth;
   const pixelY = (y / 100) * fieldHeight;
-  
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => isDraggable,
@@ -242,7 +227,7 @@ function PlayerMarker({
           onDrag(player._id, newX, newY);
         }
       },
-    })
+    }),
   ).current;
 
   return (
@@ -255,7 +240,7 @@ function PlayerMarker({
           width: size,
           height: size,
         },
-        isSelected && styles.playerMarkerSelected
+        isSelected && styles.playerMarkerSelected,
       ]}
       onPress={() => onPress && onPress(player)}
       {...(isDraggable ? panResponder.panHandlers : {})}
@@ -303,45 +288,48 @@ export default function LineupField({
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
   const screenWidth = Dimensions.get('window').width;
-  
+
   // Calcular dimensiones del campo
   const fieldWidth = propWidth || Math.min(screenWidth - 32, 400);
   const fieldHeight = propHeight || fieldWidth / FIELD_ASPECT_RATIO;
-  
+
   // Obtener posiciones de la formación
   const formationPositions = useMemo(() => {
     return FORMATION_POSITIONS[formation] || FORMATION_POSITIONS['1-4-4-2'];
   }, [formation]);
-  
+
   // Combinar posiciones de formación con jugadores asignados
   const displayPositions = useMemo(() => {
     return formationPositions.map((pos, index) => {
-      const assignedPlayer = lineup.find(l => l.posicionTactica === pos.pos && l.index === index) ||
-                            lineup.find(l => l.index === index);
+      const assignedPlayer =
+        lineup.find((l) => l.posicionTactica === pos.pos && l.index === index) ||
+        lineup.find((l) => l.index === index);
       return {
         ...pos,
         index,
-        player: assignedPlayer?.player ? 
-          players.find(p => p._id === assignedPlayer.player || p._id === assignedPlayer.player._id) : 
-          null,
+        player: assignedPlayer?.player
+          ? players.find(
+              (p) => p._id === assignedPlayer.player || p._id === assignedPlayer.player._id,
+            )
+          : null,
         x: assignedPlayer?.x ?? pos.x,
         y: assignedPlayer?.y ?? pos.y,
       };
     });
   }, [formationPositions, lineup, players]);
-  
+
   // Manejar selección de posición para añadir jugador
   const handlePositionPress = (position) => {
     if (!editable) return;
     setSelectedPosition(position);
     setShowPlayerSelector(true);
   };
-  
+
   // Manejar selección de jugador
   const handlePlayerSelect = (player) => {
     if (!selectedPosition || !onLineupChange) return;
-    
-    const newLineup = lineup.filter(l => l.index !== selectedPosition.index);
+
+    const newLineup = lineup.filter((l) => l.index !== selectedPosition.index);
     newLineup.push({
       player: player._id,
       x: selectedPosition.x,
@@ -349,37 +337,37 @@ export default function LineupField({
       posicionTactica: selectedPosition.pos,
       index: selectedPosition.index,
     });
-    
+
     onLineupChange(newLineup);
     setShowPlayerSelector(false);
     setSelectedPosition(null);
   };
-  
+
   // Manejar arrastre de jugador
   const handlePlayerDrag = (playerId, newX, newY) => {
     if (!onLineupChange) return;
-    
-    const newLineup = lineup.map(l => {
+
+    const newLineup = lineup.map((l) => {
       if (l.player === playerId || l.player?._id === playerId) {
         return { ...l, x: newX, y: newY };
       }
       return l;
     });
-    
+
     onLineupChange(newLineup);
   };
-  
+
   // Jugadores disponibles (no en la alineación)
   const availablePlayers = useMemo(() => {
-    const assignedIds = lineup.map(l => l.player?._id || l.player).filter(Boolean);
-    return players.filter(p => !assignedIds.includes(p._id));
+    const assignedIds = lineup.map((l) => l.player?._id || l.player).filter(Boolean);
+    return players.filter((p) => !assignedIds.includes(p._id));
   }, [players, lineup]);
 
   return (
     <View style={[styles.container, style]}>
       <View style={[styles.fieldContainer, { width: fieldWidth, height: fieldHeight }]}>
         <FootballFieldSVG width={fieldWidth} height={fieldHeight} />
-        
+
         {/* Renderizar jugadores */}
         {displayPositions.map((pos, index) => (
           <PlayerMarker
@@ -400,7 +388,7 @@ export default function LineupField({
           />
         ))}
       </View>
-      
+
       {/* Modal para seleccionar jugador */}
       <Modal
         visible={showPlayerSelector}
@@ -418,14 +406,14 @@ export default function LineupField({
                 <Ionicons name="close" size={24} color={theme.colors.textMuted} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.playerList}>
               {/* Opción para quitar jugador */}
               {selectedPosition?.player && (
                 <TouchableOpacity
                   style={[styles.playerOption, styles.removeOption]}
                   onPress={() => {
-                    const newLineup = lineup.filter(l => l.index !== selectedPosition.index);
+                    const newLineup = lineup.filter((l) => l.index !== selectedPosition.index);
                     onLineupChange(newLineup);
                     setShowPlayerSelector(false);
                     setSelectedPosition(null);
@@ -437,7 +425,7 @@ export default function LineupField({
                   </Text>
                 </TouchableOpacity>
               )}
-              
+
               {availablePlayers.map((player) => (
                 <TouchableOpacity
                   key={player._id}
@@ -448,22 +436,18 @@ export default function LineupField({
                     <Image source={{ uri: player.foto }} style={styles.optionPhoto} />
                   ) : (
                     <View style={styles.optionInitials}>
-                      <Text style={styles.initialsText}>
-                        {getPlayerInitials(player)}
-                      </Text>
+                      <Text style={styles.initialsText}>{getPlayerInitials(player)}</Text>
                     </View>
                   )}
                   <View style={styles.optionInfo}>
-                    <Text style={styles.optionName}>
-                      {getPlayerFullName(player)}
-                    </Text>
+                    <Text style={styles.optionName}>{getPlayerFullName(player)}</Text>
                     <Text style={styles.optionDetails}>
                       #{player.dorsal} • {player.posicion}
                     </Text>
                   </View>
                 </TouchableOpacity>
               ))}
-              
+
               {availablePlayers.length === 0 && (
                 <Text style={styles.noPlayersText}>
                   {t('matchSheet.noAvailablePlayers') || 'No hay jugadores disponibles'}
@@ -477,143 +461,143 @@ export default function LineupField({
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  fieldContainer: {
-    position: 'relative',
-    borderRadius: 8,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  playerMarker: {
-    position: 'absolute',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  playerMarkerSelected: {
-    transform: [{ scale: 1.15 }],
-  },
-  playerCircle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  playerPhoto: {
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  playerNumber: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  playerNameContainer: {
-    position: 'absolute',
-    bottom: -18,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    maxWidth: 80,
-  },
-  playerName: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  playerList: {
-    padding: 16,
-  },
-  playerOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: theme.colors.backgroundAlt,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
-  },
-  removeOption: {
-    backgroundColor: theme.colors.errorSoft,
-    marginBottom: 16,
-  },
-  removeText: {
-    color: theme.colors.error,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  optionPhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  optionInitials: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initialsText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  optionInfo: {
-    flex: 1,
-  },
-  optionName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  optionDetails: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  noPlayersText: {
-    textAlign: 'center',
-    color: theme.colors.textMuted,
-    fontSize: 16,
-    paddingVertical: 24,
-  },
-});
+const makeStyles = (theme) =>
+  StyleSheet.create({
+    container: {
+      alignItems: 'center',
+    },
+    fieldContainer: {
+      position: 'relative',
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    playerMarker: {
+      position: 'absolute',
+      alignItems: 'center',
+      zIndex: 10,
+    },
+    playerMarkerSelected: {
+      transform: [{ scale: 1.15 }],
+    },
+    playerCircle: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: '#fff',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.3,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    playerPhoto: {
+      borderWidth: 2,
+      borderColor: '#fff',
+    },
+    playerNumber: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: 14,
+    },
+    playerNameContainer: {
+      position: 'absolute',
+      bottom: -18,
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+      maxWidth: 80,
+    },
+    playerName: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      maxHeight: '70%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    playerList: {
+      padding: 16,
+    },
+    playerOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: theme.colors.backgroundAlt,
+      borderRadius: 12,
+      marginBottom: 8,
+      gap: 12,
+    },
+    removeOption: {
+      backgroundColor: theme.colors.errorSoft,
+      marginBottom: 16,
+    },
+    removeText: {
+      color: theme.colors.error,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    optionPhoto: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    optionInitials: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initialsText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    optionInfo: {
+      flex: 1,
+    },
+    optionName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    optionDetails: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    noPlayersText: {
+      textAlign: 'center',
+      color: theme.colors.textMuted,
+      fontSize: 16,
+      paddingVertical: 24,
+    },
+  });

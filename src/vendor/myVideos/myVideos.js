@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -52,6 +52,36 @@ import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
 
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
+const VIDEO_FAVORITES_STORAGE_KEY = 'xtramys.videoFavorites';
+const VIDEO_UNFAVORITES_STORAGE_KEY = 'xtramys.videoUnfavorites';
+const areStringSetsEqual = (a = new Set(), b = new Set()) => {
+  if (a.size !== b.size) return false;
+  for (const value of a) {
+    if (!b.has(value)) return false;
+  }
+  return true;
+};
+const getFavoriteValue = (item) => {
+  if (typeof item?.favorito === 'boolean') return item.favorito;
+  if (typeof item?.isFavorite === 'boolean') return item.isFavorite;
+  if (typeof item?.favorite === 'boolean') return item.favorite;
+  return false;
+};
+const normalizeVideo = (video) => video ? { ...video, favorito: getFavoriteValue(video) } : video;
+const mergeVideosById = (...groups) => {
+  const map = new Map();
+  groups.flat().filter(Boolean).forEach((video) => {
+    const id = getItemId(video);
+    if (id) {
+      const normalized = normalizeVideo(video);
+      map.set(String(id), { ...map.get(String(id)), ...normalized });
+    }
+  });
+  return Array.from(map.values());
+};
+
 export default function MyVideos() {
   const navigation = useNavigation();
   const theme = useTheme();
@@ -69,6 +99,11 @@ export default function MyVideos() {
   const [filter, setFilter] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuVideo, setMenuVideo] = useState(null);
+  const [favoriteVideoIds, setFavoriteVideoIds] = useState(new Set());
+  const [unfavoriteVideoIds, setUnfavoriteVideoIds] = useState(new Set());
+  const favoriteVideoIdsRef = useRef(new Set());
+  const unfavoriteVideoIdsRef = useRef(new Set());
+  const favoriteToggleLocksRef = useRef(new Set());
   
   // Source filter: 'all' | 'mine' | 'global' | 'favorites'
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -86,6 +121,63 @@ export default function MyVideos() {
   // User role (detectar desde AsyncStorage como en createExerciseForm)
   const [isAdmin, setIsAdmin] = useState(false);
   const lang = i18n.language;
+
+  const persistFavoriteVideoPrefs = useCallback((favoriteIds, unfavoriteIds) => {
+    favoriteVideoIdsRef.current = favoriteIds;
+    unfavoriteVideoIdsRef.current = unfavoriteIds;
+    setFavoriteVideoIds(favoriteIds);
+    setUnfavoriteVideoIds(unfavoriteIds);
+    AsyncStorage.setItem(VIDEO_FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteIds])).catch(() => {});
+    AsyncStorage.setItem(VIDEO_UNFAVORITES_STORAGE_KEY, JSON.stringify([...unfavoriteIds])).catch(() => {});
+  }, []);
+
+  const setFavoriteVideoId = useCallback((videoId, favorito) => {
+    const id = String(videoId || '');
+    if (!id) return;
+    const nextFavorites = new Set(favoriteVideoIdsRef.current);
+    const nextUnfavorites = new Set(unfavoriteVideoIdsRef.current);
+    if (favorito) {
+      nextFavorites.add(id);
+      nextUnfavorites.delete(id);
+    } else {
+      nextFavorites.delete(id);
+      nextUnfavorites.add(id);
+    }
+    persistFavoriteVideoPrefs(nextFavorites, nextUnfavorites);
+  }, [persistFavoriteVideoPrefs]);
+
+  const normalizeLoadedVideos = useCallback((items = []) => {
+    return items.filter(Boolean).map((video) => {
+      const baseVideo = normalizeVideo(video);
+      const id = getItemId(baseVideo);
+      const idKey = String(id || '');
+      const locallyFavorite = idKey && favoriteVideoIdsRef.current.has(idKey);
+      const locallyUnfavorite = idKey && unfavoriteVideoIdsRef.current.has(idKey);
+      const favorito = Boolean(idKey && !locallyUnfavorite && (baseVideo.favorito || locallyFavorite));
+      return { ...baseVideo, favorito };
+    });
+  }, []);
+
+  const syncFavoriteFlagsInState = useCallback(() => {
+    const applyFavoriteFlag = (item) => {
+      if (!item) return item;
+      const id = getItemId(item);
+      const idKey = String(id || '');
+      const favorito = Boolean(
+        idKey && !unfavoriteVideoIdsRef.current.has(idKey) && (
+          item.favorito || favoriteVideoIdsRef.current.has(idKey)
+        )
+      );
+      return { ...item, favorito };
+    };
+
+    setVideos((prev) => {
+      const next = prev.map(applyFavoriteFlag);
+      return sourceFilter === 'favorites' ? next.filter((video) => video.favorito) : next;
+    });
+    setSelectedVideo((prev) => applyFavoriteFlag(prev));
+    setMenuVideo((prev) => applyFavoriteFlag(prev));
+  }, [sourceFilter]);
 
   useEffect(() => {
     const detectAdmin = async () => {
@@ -118,6 +210,33 @@ export default function MyVideos() {
     };
     detectAdmin();
   }, []);
+
+  useEffect(() => {
+    const loadFavoriteVideoPrefs = async () => {
+      try {
+        const [favoriteRaw, unfavoriteRaw] = await Promise.all([
+          AsyncStorage.getItem(VIDEO_FAVORITES_STORAGE_KEY),
+          AsyncStorage.getItem(VIDEO_UNFAVORITES_STORAGE_KEY),
+        ]);
+        const favoriteParsed = favoriteRaw ? JSON.parse(favoriteRaw) : [];
+        const unfavoriteParsed = unfavoriteRaw ? JSON.parse(unfavoriteRaw) : [];
+        const favoriteIds = new Set(Array.isArray(favoriteParsed) ? favoriteParsed.map(String).filter(Boolean) : []);
+        const unfavoriteIds = new Set(Array.isArray(unfavoriteParsed) ? unfavoriteParsed.map(String).filter(Boolean) : []);
+        favoriteVideoIdsRef.current = favoriteIds;
+        unfavoriteVideoIdsRef.current = unfavoriteIds;
+        setFavoriteVideoIds(favoriteIds);
+        setUnfavoriteVideoIds(unfavoriteIds);
+        syncFavoriteFlagsInState();
+      } catch {
+        favoriteVideoIdsRef.current = new Set();
+        unfavoriteVideoIdsRef.current = new Set();
+        setFavoriteVideoIds(new Set());
+        setUnfavoriteVideoIds(new Set());
+        syncFavoriteFlagsInState();
+      }
+    };
+    loadFavoriteVideoPrefs();
+  }, [syncFavoriteFlagsInState]);
 
   useEffect(() => {
     if (global.pendingVideoEditSuccess) {
@@ -215,21 +334,33 @@ export default function MyVideos() {
       }
       setFolders(loadedFolders);
       
-      // Cargar videos del nivel actual
+      // Cargar videos del nivel actual. Para "all" y "favorites" pedimos los dos
+      // orígenes de forma explícita para no depender de cómo mezcle el backend.
       if (sourceFilter === 'global') {
         const videosResult = await listGlobalVideos(currentFolder || 'root');
-        setVideos(videosResult.success ? (videosResult.videos || []) : []);
+        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'mine') {
         const videosResult = await apiListVideos({ folderId: currentFolder || 'root' });
-        setVideos(videosResult.success ? (videosResult.videos || []) : []);
+        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'favorites') {
-        // Fetch all to filter favorites if not in a folder, otherwise fetch current folder
-        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', includeGlobal: 'true' });
-        setVideos(videosResult.success ? (videosResult.videos || []).filter(v => v.favorito) : []);
+        const [mineResult, globalResult] = await Promise.all([
+          apiListVideos(),
+          listGlobalVideos(),
+        ]);
+        const mergedVideos = normalizeLoadedVideos(mergeVideosById(
+          mineResult.success ? mineResult.videos || [] : [],
+          globalResult.success ? globalResult.videos || [] : []
+        ));
+        setVideos(mergedVideos.filter((video) => video.favorito));
       } else {
-        // 'all': user + global
-        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', includeGlobal: 'true' });
-        setVideos(videosResult.success ? (videosResult.videos || []) : []);
+        const [mineResult, globalResult] = await Promise.all([
+          apiListVideos({ folderId: currentFolder || 'root' }),
+          listGlobalVideos(currentFolder || 'root'),
+        ]);
+        setVideos(normalizeLoadedVideos(mergeVideosById(
+          mineResult.success ? mineResult.videos || [] : [],
+          globalResult.success ? globalResult.videos || [] : []
+        )));
       }
     } catch (error) {
       console.error('Error cargando contenido:', error);
@@ -409,7 +540,7 @@ export default function MyVideos() {
         };
       }
       
-      const videoId = menuVideo?.id || menuVideo?._id;
+      const videoId = getItemId(menuVideo);
       await updateVideo(videoId, updateData);
       showNotification(t('myVideos.saveSuccess') || 'Video actualizado correctamente', 'success');
       setEditVideoModalVisible(false);
@@ -656,7 +787,7 @@ export default function MyVideos() {
   const handleVideoLongPress = (video) => {
     if (!selectionMode) {
       setSelectionMode(true);
-      setSelectedIds(new Set([video.id || video._id]));
+      setSelectedIds(new Set([getItemId(video)]));
     }
   };
 
@@ -683,12 +814,44 @@ export default function MyVideos() {
     setSelectedIds(new Set());
   };
 
+  const applyFavoriteToVideos = useCallback((videoId, favorito) => {
+    setVideos((prev) => {
+      const next = prev.map((video) =>
+        sameId(getItemId(video), videoId) ? { ...video, favorito } : video
+      );
+      return sourceFilter === 'favorites' ? next.filter((video) => video.favorito) : next;
+    });
+    setSelectedVideo((prev) =>
+      prev && sameId(getItemId(prev), videoId) ? { ...prev, favorito } : prev
+    );
+    setMenuVideo((prev) =>
+      prev && sameId(getItemId(prev), videoId) ? { ...prev, favorito } : prev
+    );
+  }, [sourceFilter]);
+
   const handleToggleFavorite = async (videoId) => {
+    if (!videoId) return;
+    const videoIdKey = String(videoId);
+    if (favoriteToggleLocksRef.current.has(videoIdKey)) return;
+    favoriteToggleLocksRef.current.add(videoIdKey);
+    let previousFavorite = false;
     try {
+      const currentVideo = videos.find((video) => sameId(getItemId(video), videoId))
+        || (menuVideo && sameId(getItemId(menuVideo), videoId) ? menuVideo : null)
+        || (selectedVideo && sameId(getItemId(selectedVideo), videoId) ? selectedVideo : null);
+      previousFavorite = favoriteVideoIdsRef.current.has(videoIdKey)
+        || (!unfavoriteVideoIdsRef.current.has(videoIdKey) && !!currentVideo?.favorito);
+      const nextFavorite = !previousFavorite;
+
+      applyFavoriteToVideos(videoId, nextFavorite);
+      setFavoriteVideoId(videoId, nextFavorite);
       await toggleFavoriteVideo(videoId);
-      loadContent();
     } catch (err) {
+      applyFavoriteToVideos(videoId, previousFavorite);
+      setFavoriteVideoId(videoId, previousFavorite);
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(videoIdKey);
     }
   };
 
@@ -742,6 +905,15 @@ export default function MyVideos() {
   }, [folders, videos, filter, sourceFilter]);
 
   const { filteredFolders, filteredVideos } = filteredContent();
+
+  useEffect(() => {
+    if (!menuVideo) return;
+    const menuVideoId = getItemId(menuVideo);
+    const updatedVideo = videos.find((video) => sameId(getItemId(video), menuVideoId));
+    if (updatedVideo && updatedVideo !== menuVideo) {
+      setMenuVideo(updatedVideo);
+    }
+  }, [menuVideo, videos]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -799,12 +971,12 @@ export default function MyVideos() {
   );
 
   const renderVideoItem = (video) => {
-    const isSelected = selectedIds.has(video.id || video._id);
+    const isSelected = selectedIds.has(getItemId(video));
     return (
     <TouchableOpacity 
-      key={video._id || video.id} 
+      key={getItemId(video)}
       style={[styles.videoCard, isSelected && { borderColor: '#3578e5', borderWidth: 2, backgroundColor: theme?.colors?.primarySoft || '#EEF2FF' }]}
-      onPress={() => selectionMode ? handleToggleSelect(video.id || video._id) : viewVideo(video)}
+      onPress={() => selectionMode ? handleToggleSelect(getItemId(video)) : viewVideo(video)}
       onLongPress={() => handleVideoLongPress(video)}
       delayLongPress={400}
       activeOpacity={0.7}
@@ -820,7 +992,10 @@ export default function MyVideos() {
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => handleToggleSelect(video.id || video._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            handleToggleSelect(getItemId(video));
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -836,7 +1011,10 @@ export default function MyVideos() {
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => handleToggleFavorite(video.id || video._id)}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          handleToggleFavorite(getItemId(video));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -872,7 +1050,11 @@ export default function MyVideos() {
       </View>
       <TouchableOpacity
         style={styles.cardMenuButton}
-        onPress={() => { setMenuVideo(video); setMenuVisible(true); }}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          setMenuVideo(video);
+          setMenuVisible(true);
+        }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Feather name="more-vertical" size={18} color={theme.colors.textMuted} />
@@ -979,10 +1161,10 @@ export default function MyVideos() {
         style={styles.sourceFilterScroll}
       >
         {[
+          { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           { key: 'all', label: t('myVideos.allVideos') || 'Todos' },
           { key: 'mine', label: t('myVideos.myVideosOnly') || 'Míos' },
           { key: 'global', label: t('myVideos.appVideos') || 'App' },
-          { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
         ].map(tab => (
           <TouchableOpacity
             key={tab.key}
@@ -1216,7 +1398,7 @@ export default function MyVideos() {
                 style={styles.actionOption}
                 onPress={() => {
                   setMenuVisible(false);
-                  handleToggleFavorite(menuVideo?.id || menuVideo?._id);
+                  handleToggleFavorite(getItemId(menuVideo));
                 }}
               >
                 <View style={[styles.actionIcon, { backgroundColor: menuVideo?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>
@@ -1609,13 +1791,13 @@ export default function MyVideos() {
 
                   <Text style={[styles.createInputLabel, { marginTop: 16 }]}>{t('myVideos.descriptionLabel') || 'Descripción'}</Text>
                   <TextInput
-                    style={[styles.createInput, { height: 100, textAlignVertical: 'top' }]}
+                    style={[styles.createInput, { height: 100, verticalAlign: 'top' }]}
                     value={editVideoDesc}
                     onChangeText={setEditVideoDesc}
                     placeholder={t('videoRecorder.descriptionPlaceholder') || 'Escribe una descripción...'}
                     placeholderTextColor="#94A3B8"
                     multiline
-                    numberOfLines={4}
+                    rows={4}
                     maxLength={500}
                   />
                 </View>

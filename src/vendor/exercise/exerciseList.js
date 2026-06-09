@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -8,7 +8,7 @@ import CreateExerciseForm from './createExerciseForm';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, updateExerciseFolder, deleteExerciseFolder, moveExerciseToFolder, duplicateExerciseToFolder, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
-import { clearCurrentFolder } from '@/store/slices/exercise/exerciseSlice';
+import { clearCurrentFolder, setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
@@ -30,6 +30,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -40,6 +41,8 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+const getItemId = (item) => item?._id || item?.id;
+const sameId = (a, b) => String(a || '') === String(b || '');
 
 function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
   const { t, i18n } = useTranslation();
@@ -83,7 +86,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const { width, height } = useWindowDimensions();
-  
+
   // Video states
   const [exerciseVideos, setExerciseVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -93,7 +96,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingVideo, setDownloadingVideo] = useState(false);
-  
+
   // Video player hook
   const player = useVideoPlayer(videoUrl || '', player => {
     if (videoUrl) {
@@ -101,7 +104,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       player.play();
     }
   });
-  
+
   // Cargar videos del ejercicio
   useEffect(() => {
     const loadVideos = async () => {
@@ -120,7 +123,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     };
     loadVideos();
   }, [exercise?._id]);
-  
+
   // Función para reproducir video - misma lógica que myVideos
   const handlePlayVideo = async (video) => {
     setSelectedVideo(video);
@@ -140,11 +143,11 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       setIsGenerating(false);
     }
   };
-  
+
   // Función para descargar video - misma lógica que myVideos
   const handleDownloadVideo = async (video) => {
     if (downloadingVideo) return;
-    
+
     setDownloadingVideo(true);
     try {
       const videoObj = typeof video === 'object' && video ? video : { id: video };
@@ -157,10 +160,10 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       setDownloadingVideo(false);
     }
   };
-  
+
   // Desasociar video del ejercicio
   const handleUnlinkVideo = async (video) => {
-Alert.alert(
+    Alert.alert(
       t('exercise.unlinkVideoTitle'),
       t('exercise.unlinkVideoMessage'),
       [
@@ -184,7 +187,7 @@ Alert.alert(
       ]
     );
   };
-  
+
   // Cerrar modal de video
   const closeVideoModal = () => {
     if (Platform.OS === 'web' && videoUrl) {
@@ -241,12 +244,12 @@ Alert.alert(
       }
 
       let imageUri = '';
-      
+
       if (exercise.imagen.startsWith('http')) {
         // Si es URL, descargar primero
         const fileName = `exercise_${exercise.nombre || t('exercise.imageLabel')}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
-        
+
         const downloadResult = await FileSystem.downloadAsync(
           exercise.imagen,
           fileUri
@@ -256,12 +259,12 @@ Alert.alert(
         // Si es base64, convertir a archivo
         const fileName = `exercise_${exercise.nombre || t('exercise.imageLabel')}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
-        
+
         let base64Data = exercise.imagen;
         if (base64Data.startsWith('data:image')) {
           base64Data = base64Data.split(',')[1];
         }
-        
+
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -359,22 +362,22 @@ Alert.alert(
             {/* Imagen del campo */}
             {showField && (
               <View style={styles.detailSection}>
-              <TouchableOpacity 
-                onPress={() => {
-                  setSelectedImage(exercise?.imagen);
-                  setModalVisible(true);
-                }}
-                style={styles.fieldImageWrapper}
-              >
-                <Base64ImagePreview
-                  imageUrl={exercise?.imagen}
-                  forceWidth={IS_MOBILE ? DETAIL_FIELD_WIDTH_MOBILE : DETAIL_FIELD_WIDTH}
-                  forceHeight={IS_MOBILE ? DETAIL_FIELD_HEIGHT_MOBILE : DETAIL_FIELD_HEIGHT}
-                />
-                <View style={styles.zoomOverlay}>
-                  <MaterialIcons name="zoom-in" size={24} color="#fff" />
-                </View>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedImage(exercise?.imagen);
+                    setModalVisible(true);
+                  }}
+                  style={styles.fieldImageWrapper}
+                >
+                  <Base64ImagePreview
+                    imageUrl={exercise?.imagen}
+                    forceWidth={IS_MOBILE ? DETAIL_FIELD_WIDTH_MOBILE : DETAIL_FIELD_WIDTH}
+                    forceHeight={IS_MOBILE ? DETAIL_FIELD_HEIGHT_MOBILE : DETAIL_FIELD_HEIGHT}
+                  />
+                  <View style={styles.zoomOverlay}>
+                    <MaterialIcons name="zoom-in" size={24} color="#fff" />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -413,28 +416,28 @@ Alert.alert(
               {/* Información detallada con nuevo diseño */}
               <View style={styles.detailsSection}>
 
-              {exercise.objetivo && (
-                <View style={styles.detailCard}>
-                  <View style={styles.detailCardHeader}>
-                    <Ionicons name="radio-button-on" size={18} color="#2196F3" />
-                    <Text style={styles.detailCardTitle}>Objetivo</Text>
+                {exercise.objetivo && (
+                  <View style={styles.detailCard}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="radio-button-on" size={18} color="#2196F3" />
+                      <Text style={styles.detailCardTitle}>Objetivo</Text>
+                    </View>
+                    <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
                   </View>
-                  <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
-                </View>
-              )}
+                )}
 
-              {exercise.descripcion && (
-                <View style={{...styles.detailCard, marginBottom: exerciseVideos.length > 0 ? 16 : 40}}>
-                  <View style={styles.detailCardHeader}>
-                    <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
-                    <Text style={styles.detailCardTitle}>{t('exercise.description')}</Text>
+                {exercise.descripcion && (
+                  <View style={{ ...styles.detailCard, marginBottom: exerciseVideos.length > 0 ? 16 : 40 }}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="document-text-outline" size={18} color="#9C27B0" />
+                      <Text style={styles.detailCardTitle}>{t('exercise.description')}</Text>
+                    </View>
+                    <Text style={styles.detailCardContent}>{getLocalizedDescription()}</Text>
                   </View>
-                  <Text style={styles.detailCardContent}>{getLocalizedDescription()}</Text>
-                </View>
-              )}
-              
-              {/* Sección de Videos del Ejercicio */}
-              <View style={{...styles.detailCard, marginBottom: 40}}>
+                )}
+
+                {/* Sección de Videos del Ejercicio */}
+                <View style={{ ...styles.detailCard, marginBottom: 40 }}>
                   <View style={styles.detailCardHeader}>
                     <Feather name="video" size={18} color="#E91E63" />
                     <Text style={styles.detailCardTitle}>{t('exercise.videos')}</Text>
@@ -502,7 +505,7 @@ Alert.alert(
                   {!loadingVideos && exerciseVideos.length === 0 && (
                     <Text style={styles.noVideosText}>{t('exercise.noVideos')}</Text>
                   )}
-              </View>
+                </View>
               </View>
             </View>
 
@@ -530,7 +533,7 @@ Alert.alert(
                 <MaterialIcons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
-            
+
             {isGenerating ? (
               <View style={styles.videoLoadingContainer}>
                 <ActivityIndicator size="large" color="#E91E63" />
@@ -546,7 +549,7 @@ Alert.alert(
                 />
               </View>
             ) : null}
-            
+
             <View style={styles.videoModalActions}>
               <TouchableOpacity
                 style={[styles.videoModalBtn, styles.videoModalDownloadBtn]}
@@ -610,9 +613,11 @@ Alert.alert(
               maxScale={4}
             >
               <Image
-                source={{ uri: (() => {
-                  return normalizeImageSource(selectedImage);
-                })() }}
+                source={{
+                  uri: (() => {
+                    return normalizeImageSource(selectedImage);
+                  })()
+                }}
                 style={{
                   width: width * 0.95,
                   height: height * 0.8,
@@ -634,7 +639,7 @@ Alert.alert(
   );
 }
 
-function FolderManagement({ 
+function FolderManagement({
   folders,
   foldersFlat,
   onBack,
@@ -738,13 +743,15 @@ function FolderManagement({
   const handleDeleteFolder = (folder) => {
     Alert.alert(t('message.warning'), t('folders.deleteConfirmation', { name: folder.nombre }), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: async () => {
-        try {
-          await dispatch(deleteFolder(folder._id)).unwrap();
-          if (fetchFolders) dispatch(fetchFolders());
-          if (fetchFoldersFlat) dispatch(fetchFoldersFlat());
-        } catch (e) { Alert.alert(t('message.error'), e.message); }
-      }}
+      {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
+          try {
+            await dispatch(deleteFolder(folder._id)).unwrap();
+            if (fetchFolders) dispatch(fetchFolders());
+            if (fetchFoldersFlat) dispatch(fetchFoldersFlat());
+          } catch (e) { Alert.alert(t('message.error'), e.message); }
+        }
+      }
     ]);
   };
 
@@ -943,7 +950,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
     }
     return exercise.nombre;
   };
-  
+
   return (
     <View style={[
       styles.exerciseCard,
@@ -964,7 +971,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(exercise._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(exercise._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -980,7 +990,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(exercise._id)}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(exercise));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -1001,113 +1014,113 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
           pressed && styles.exerciseCardPressed,
         ]}
       >
-      {/* En modo grid: SIEMPRE mostrar contenedor de imagen arriba con tags debajo, luego info */}
-      {isGrid && (
-        <View
-          style={{
-            width: '100%',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 8,
-            minHeight: IS_MOBILE ? 120 : 150, // Altura fija total para imagen + tags
-          }}
-        >
-          <View style={{ marginBottom: 2, alignItems: 'center', justifyContent: 'center', width: '100%', height: IS_MOBILE ? 80 : 100, backgroundColor: 'transparent' }}>
-            {showField && (
-              <Base64ImagePreview
-                imageUrl={exercise?.imagen}
-                forceWidth={IS_MOBILE ? 110 : 140}
-                forceHeight={IS_MOBILE ? 66 : 84}
-              />
+        {/* En modo grid: SIEMPRE mostrar contenedor de imagen arriba con tags debajo, luego info */}
+        {isGrid && (
+          <View
+            style={{
+              width: '100%',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 8,
+              minHeight: IS_MOBILE ? 120 : 150, // Altura fija total para imagen + tags
+            }}
+          >
+            <View style={{ marginBottom: 2, alignItems: 'center', justifyContent: 'center', width: '100%', height: IS_MOBILE ? 80 : 100, backgroundColor: 'transparent' }}>
+              {showField && (
+                <Base64ImagePreview
+                  imageUrl={exercise?.imagen}
+                  forceWidth={IS_MOBILE ? 110 : 140}
+                  forceHeight={IS_MOBILE ? 66 : 84}
+                />
+              )}
+            </View>
+
+            {/* Contenedor de tags con altura fija */}
+            <View style={{ height: IS_MOBILE ? 32 : 40, justifyContent: 'center', alignItems: 'center' }}>
+              {(exercise.numeroJugadores || exercise.equipos) && (
+                <View style={[styles.infoTagsContainer, styles.infoTagsContainerGrid]}>
+                  {exercise.numeroJugadores && (
+                    <View style={[styles.infoTag, styles.infoTagGrid, { backgroundColor: '#e3f2fd' }]}>
+                      <Ionicons name="people" size={11} color="#1976d2" />
+                      <Text style={[styles.infoTagText, styles.infoTagTextGrid, { color: '#1976d2' }]}>{exercise.numeroJugadores}</Text>
+                    </View>
+                  )}
+                  {exercise.equipos && (
+                    <View style={[styles.infoTag, styles.infoTagGrid, { backgroundColor: '#f3e5f5' }]}>
+                      <Ionicons name="flag" size={11} color="#7b1fa2" />
+                      <Text style={[styles.infoTagText, styles.infoTagTextGrid, { color: '#7b1fa2' }]}>{exercise.equipos}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* En modo lista: imagen a la izquierda, info a la derecha */}
+        {!isGrid && showField && (
+          <View
+            style={{
+              width: forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH),
+              height: forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT),
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+            }}
+          >
+            <Base64ImagePreview imageUrl={exercise?.imagen} forceWidth={forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH)} forceHeight={forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT)} />
+          </View>
+        )}
+
+        <View style={[styles.cardInfo, isGrid && styles.cardInfoGrid]}>
+          {/* Titulo SIEMPRE visible */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+            <Text style={[styles.cardTitle, IS_MOBILE && styles.cardTitleMobile, isGrid && styles.cardTitleGrid, { flex: 1 }]} numberOfLines={isGrid ? 2 : 1} ellipsizeMode="tail">{getLocalizedName()}</Text>
+            {exercise.isGlobal && (
+              <Ionicons name="globe-outline" size={14} color="#16a34a" />
             )}
           </View>
+          {/* Duración SIEMPRE visible */}
+          <Text style={[styles.cardDuration, IS_MOBILE && { fontSize: 12 }, isGrid && styles.cardDurationGrid]}>{exercise.tiempo} min</Text>
 
-          {/* Contenedor de tags con altura fija */}
-          <View style={{ height: IS_MOBILE ? 32 : 40, justifyContent: 'center', alignItems: 'center' }}>
-            {(exercise.numeroJugadores || exercise.equipos) && (
-              <View style={[styles.infoTagsContainer, styles.infoTagsContainerGrid]}>
-                {exercise.numeroJugadores && (
-                  <View style={[styles.infoTag, styles.infoTagGrid, { backgroundColor: '#e3f2fd' }]}>
-                    <Ionicons name="people" size={11} color="#1976d2" />
-                    <Text style={[styles.infoTagText, styles.infoTagTextGrid, { color: '#1976d2' }]}>{exercise.numeroJugadores}</Text>
-                  </View>
-                )}
-                {exercise.equipos && (
-                  <View style={[styles.infoTag, styles.infoTagGrid, { backgroundColor: '#f3e5f5' }]}>
-                    <Ionicons name="flag" size={11} color="#7b1fa2" />
-                    <Text style={[styles.infoTagText, styles.infoTagTextGrid, { color: '#7b1fa2' }]}>{exercise.equipos}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        </View>
-      )}
+          {/* Información adicional de jugadores y equipos SOLO EN VISTA LISTA */}
+          {!isGrid && (exercise.numeroJugadores || exercise.equipos) && (
+            <View style={styles.infoTagsContainer}>
+              {exercise.numeroJugadores && (
+                <View style={[styles.infoTag, { backgroundColor: '#e3f2fd' }]}>
+                  <Ionicons name="people" size={12} color="#1976d2" />
+                  <Text style={[styles.infoTagText, { color: '#1976d2' }]}>{exercise.numeroJugadores}</Text>
+                </View>
+              )}
+              {exercise.equipos && (
+                <View style={[styles.infoTag, { backgroundColor: '#f3e5f5' }]}>
+                  <Ionicons name="flag" size={12} color="#7b1fa2" />
+                  <Text style={[styles.infoTagText, { color: '#7b1fa2' }]}>{exercise.equipos}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
-      {/* En modo lista: imagen a la izquierda, info a la derecha */}
-      {!isGrid && showField && (
-        <View
-          style={{
-            width: forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH),
-            height: forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-          }}
-        >
-          <Base64ImagePreview imageUrl={exercise?.imagen} forceWidth={forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH)} forceHeight={forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT)}/>
-        </View>
-      )}
-      
-      <View style={[styles.cardInfo, isGrid && styles.cardInfoGrid]}>
-        {/* Titulo SIEMPRE visible */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
-          <Text style={[styles.cardTitle, IS_MOBILE && styles.cardTitleMobile, isGrid && styles.cardTitleGrid, { flex: 1 }]} numberOfLines={isGrid ? 2 : 1} ellipsizeMode="tail">{getLocalizedName()}</Text>
-          {exercise.isGlobal && (
-            <Ionicons name="globe-outline" size={14} color="#16a34a" />
+          {exercise.image && (
+            <Image
+              source={{ uri: exercise.image }}
+              style={[styles.cardImage, IS_MOBILE && styles.cardImageMobile]}
+              resizeMode="cover"
+            />
           )}
         </View>
-        {/* Duración SIEMPRE visible */}
-        <Text style={[styles.cardDuration, IS_MOBILE && { fontSize: 12 }, isGrid && styles.cardDurationGrid]}>{exercise.tiempo} min</Text>
-        
-        {/* Información adicional de jugadores y equipos SOLO EN VISTA LISTA */}
-        {!isGrid && (exercise.numeroJugadores || exercise.equipos) && (
-          <View style={styles.infoTagsContainer}>
-            {exercise.numeroJugadores && (
-              <View style={[styles.infoTag, { backgroundColor: '#e3f2fd' }]}>
-                <Ionicons name="people" size={12} color="#1976d2" />
-                <Text style={[styles.infoTagText, { color: '#1976d2' }]}>{exercise.numeroJugadores}</Text>
-              </View>
-            )}
-            {exercise.equipos && (
-              <View style={[styles.infoTag, { backgroundColor: '#f3e5f5' }]}>
-                <Ionicons name="flag" size={12} color="#7b1fa2" />
-                <Text style={[styles.infoTagText, { color: '#7b1fa2' }]}>{exercise.equipos}</Text>
-              </View>
-            )}
+
+        {/* Botones de acción (solo en modo lista) */}
+        {!isGrid && (
+          <View style={styles.exerciseCardActions}>
+            <TouchableOpacity
+              style={styles.cardActionBtn}
+              onPress={(e) => { e.stopPropagation && e.stopPropagation(); onOpenOptions(exercise); }}
+            >
+              <MaterialIcons name="more-vert" size={20} color="#666" />
+            </TouchableOpacity>
           </View>
         )}
-        
-        {exercise.image && (
-          <Image
-            source={{ uri: exercise.image }}
-            style={[styles.cardImage, IS_MOBILE && styles.cardImageMobile]}
-            resizeMode="cover"
-          />
-        )}
-      </View>
-
-      {/* Botones de acción (solo en modo lista) */}
-      {!isGrid && (
-        <View style={styles.exerciseCardActions}>
-          <TouchableOpacity 
-            style={styles.cardActionBtn}
-            onPress={(e) => { e.stopPropagation && e.stopPropagation(); onOpenOptions(exercise); }}
-          >
-            <MaterialIcons name="more-vert" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-      )}
       </Pressable>
     </View>
   );
@@ -1148,15 +1161,16 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' (admin only) | 'favorites'
   const [viewMode, setViewMode] = useState("list");
   const [scrollEnabled, setScrollEnabled] = useState(true);
-  
+
   // Estados para modal de opciones
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedExerciseForOptions, setSelectedExerciseForOptions] = useState(null);
-  
+  const favoriteToggleLocksRef = useRef(new Set());
+
   // Estado de navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [folderPath, setFolderPath] = useState([]); // breadcrumb: [{_id, nombre}, ...]
-  
+
   // Estado de selección múltiple
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1173,14 +1187,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
     numeroJugadores: '',
     equipos: ''
   });
-  
+
   // Modal para crear carpeta (estilo myVideos)
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderNameEn, setNewFolderNameEn] = useState('');
   const [newFolderColor, setNewFolderColor] = useState('#3B82F6');
   const [newFolderIsGlobal, setNewFolderIsGlobal] = useState(false);
-  
+
   // Menú de carpeta (estilo myVideos)
   const [folderMenuVisible, setFolderMenuVisible] = useState(false);
   const [menuFolder, setMenuFolder] = useState(null);
@@ -1193,14 +1207,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderNameEn, setEditFolderNameEn] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#3B82F6');
-  
+
   // Notificaciones
   const [notification, setNotification] = useState({ visible: false, message: '', type: 'success' });
   const [validationErrors, setValidationErrors] = useState({});
 
   const folderColors = [
-    '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', 
-    '#F43F5E', '#F97316', '#EAB308', '#22C55E', 
+    '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899',
+    '#F43F5E', '#F97316', '#EAB308', '#22C55E',
     '#14B8A6', '#06B6D4', '#64748B', '#78716C'
   ];
 
@@ -1355,9 +1369,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const handleMoveToFolder = async (folderId) => {
     if (!exerciseToMove) return;
     try {
-      await dispatch(moveExerciseToFolder({ 
-        exerciseId: exerciseToMove._id, 
-        folderId: folderId || null 
+      await dispatch(moveExerciseToFolder({
+        exerciseId: exerciseToMove._id,
+        folderId: folderId || null
       })).unwrap();
       setShowMoveToFolder(false);
       setExerciseToMove(null);
@@ -1372,6 +1386,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Función para filtrar ejercicios
   const displayedExercises = (() => {
+    const mergeById = (items) => {
+      const map = new Map();
+      items.flat().filter(Boolean).forEach((item) => {
+        const id = item._id || item.id;
+        if (id) map.set(id, item);
+      });
+      return Array.from(map.values());
+    };
     if (listFilter === 'global') {
       // If inside a global folder, show folder exercises; else show root global exercises
       if (currentFolderId) return currentFolderExercises;
@@ -1398,21 +1420,21 @@ export default function ExerciseList({ navigation: navigationProp }) {
       : ejercicios;
     return currentFolderId ? currentFolderExercises : base.filter(ex => !ex.folder);
   })();
-  
+
   const filteredEjercicios = listFilter === 'global'
     ? displayedExercises  // already filtered above
     : displayedExercises.filter(exercise => {
-    const tituloMatch = !filters.titulo || 
-      exercise.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
-    
-    const jugadoresMatch = !filters.numeroJugadores || 
-      (exercise.numeroJugadores && exercise.numeroJugadores.toString().includes(filters.numeroJugadores));
-    
-    const equiposMatch = !filters.equipos || 
-      (exercise.equipos && exercise.equipos.toString().includes(filters.equipos));
-    
-    return tituloMatch && jugadoresMatch && equiposMatch;
-  });
+      const tituloMatch = !filters.titulo ||
+        exercise.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
+
+      const jugadoresMatch = !filters.numeroJugadores ||
+        (exercise.numeroJugadores && exercise.numeroJugadores.toString().includes(filters.numeroJugadores));
+
+      const equiposMatch = !filters.equipos ||
+        (exercise.equipos && exercise.equipos.toString().includes(filters.equipos));
+
+      return tituloMatch && jugadoresMatch && equiposMatch;
+    });
 
   const displayedSubfolders = (() => {
     if (listFilter === 'favorites') return [];
@@ -1564,12 +1586,31 @@ export default function ExerciseList({ navigation: navigationProp }) {
   };
 
   const handleToggleFavorite = useCallback(async (exerciseId) => {
+    if (!exerciseId) return;
+    const exerciseIdKey = String(exerciseId);
+    if (favoriteToggleLocksRef.current.has(exerciseIdKey)) return;
+    favoriteToggleLocksRef.current.add(exerciseIdKey);
+    const currentExercise = [
+      ...filteredEjercicios,
+      ...currentFolderExercises,
+      ...ejercicios,
+      ...globalExercises,
+    ].find((exercise) => sameId(getItemId(exercise), exerciseId));
+    const previousFavorite = !!currentExercise?.favorito;
+    const optimisticFavorite = !previousFavorite;
+
+    dispatch(setExerciseFavorite({ exerciseId, favorito: optimisticFavorite }));
+    persistFavoriteState('exercise', exerciseId, optimisticFavorite).catch(() => { });
     try {
-      await dispatch(toggleFavoriteExercise(exerciseId)).unwrap();
+      await dispatch(toggleFavoriteExercise({ exerciseId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
+      dispatch(setExerciseFavorite({ exerciseId, favorito: previousFavorite }));
+      persistFavoriteState('exercise', exerciseId, previousFavorite).catch(() => { });
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(exerciseIdKey);
     }
-  }, [dispatch, t]);
+  }, [currentFolderExercises, dispatch, ejercicios, filteredEjercicios, globalExercises, t]);
 
   const handleBatchDelete = () => {
     if (selectedIds.size === 0) return;
@@ -1622,6 +1663,26 @@ export default function ExerciseList({ navigation: navigationProp }) {
     setOptionsModalVisible(true);
   };
 
+  useEffect(() => {
+    if (!selectedExerciseForOptions) return;
+    const selectedId = selectedExerciseForOptions._id || selectedExerciseForOptions.id;
+    const updatedExercise = [
+      ...filteredEjercicios,
+      ...currentFolderExercises,
+      ...ejercicios,
+      ...globalExercises,
+    ].find((exercise) => (exercise._id || exercise.id) === selectedId);
+    if (updatedExercise && updatedExercise !== selectedExerciseForOptions) {
+      setSelectedExerciseForOptions(updatedExercise);
+    }
+  }, [
+    selectedExerciseForOptions,
+    filteredEjercicios,
+    currentFolderExercises,
+    ejercicios,
+    globalExercises,
+  ]);
+
   // Notificaciones estilo myVideos
   const showNotification = (message, type = 'success') => {
     setNotification({ visible: true, message, type });
@@ -1640,9 +1701,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
       return;
     }
     try {
-      const folderData = { 
-        nombre: newFolderName.trim(), 
-        parentFolder: currentFolderId, 
+      const folderData = {
+        nombre: newFolderName.trim(),
+        parentFolder: currentFolderId,
         color: newFolderColor,
         isGlobal: newFolderIsGlobal && userRole === 'admin'
       };
@@ -1697,21 +1758,21 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   const performDeleteFolder = async (mode) => {
     if (!folderToDelete) return;
-    
+
     try {
-      const options = mode === 'delete' 
-        ? { deleteContents: true } 
+      const options = mode === 'delete'
+        ? { deleteContents: true }
         : { moveExercisesTo: null, deleteContents: false };
-      
+
       await dispatch(deleteExerciseFolder({ id: folderToDelete._id, ...options })).unwrap();
       showNotification(t('folders.folderDeleted'), 'success');
-      
+
       dispatch(fetchExerciseFolders({ lang }));
       dispatch(fetchExerciseFoldersFlat({ lang }));
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
       if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
-      
+
       setShowDeleteFolderModal(false);
       setShowDeleteConfirmModal(false);
       setFolderToDelete(null);
@@ -1760,8 +1821,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Render folder card estilo myVideos
   const renderFolderItem = (folder) => (
-    <TouchableOpacity 
-      key={folder._id} 
+    <TouchableOpacity
+      key={folder._id}
       style={styles.mvFolderCard}
       onPress={() => navigateToFolder(folder)}
       onLongPress={() => { setMenuFolder(folder); setFolderMenuVisible(true); }}
@@ -1850,19 +1911,19 @@ export default function ExerciseList({ navigation: navigationProp }) {
     // strategyList: si tras volver del editor del campo `creating` no se
     // restauró pero sí `editingExercise`, igualmente mostramos el form.
     const formKey = editingExercise ? `edit-${editingExercise._id}` : 'create-new';
-    
+
     return (
-        <CreateExerciseForm
-          key={formKey}
-          navigation={navigation}
-          onSave={handleSave}
-          onCancel={() => {
-            setCreating(false);
-            setEditingExercise(null);
-          }}
-          editingExercise={editingExercise}
-          setScrollEnabled={setScrollEnabled}
-        />
+      <CreateExerciseForm
+        key={formKey}
+        navigation={navigation}
+        onSave={handleSave}
+        onCancel={() => {
+          setCreating(false);
+          setEditingExercise(null);
+        }}
+        editingExercise={editingExercise}
+        setScrollEnabled={setScrollEnabled}
+      />
     );
   }
 
@@ -1873,7 +1934,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
           <View style={styles.mvHeaderTop}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {folderPath.length < 2 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvAddFolderButton}
                   onPress={() => {
                     setNewFolderIsGlobal(listFilter === 'global' && userRole === 'admin');
@@ -1897,8 +1958,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
           {/* Breadcrumb estilo myVideos */}
           <View style={styles.mvBreadcrumb}>
-            <TouchableOpacity 
-              onPress={navigateToRoot} 
+            <TouchableOpacity
+              onPress={navigateToRoot}
               style={[styles.mvBreadcrumbItem, folderPath.length === 0 && styles.mvBreadcrumbItemActive]}
             >
               <Feather name="home" size={16} color={folderPath.length === 0 ? "#3578e5" : "#64748B"} />
@@ -1907,7 +1968,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
             {folderPath.map((folder, index) => (
               <React.Fragment key={folder._id}>
                 <Feather name="chevron-right" size={16} color="#CBD5E1" style={{ marginHorizontal: 2 }} />
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     if (index < folderPath.length - 1) {
                       navigateToBreadcrumb(index);
@@ -1915,8 +1976,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   }}
                   style={[styles.mvBreadcrumbItem, index === folderPath.length - 1 && styles.mvBreadcrumbItemActive]}
                 >
-                  <Text 
-                    style={[styles.mvBreadcrumbText, index === folderPath.length - 1 && styles.mvBreadcrumbTextActive]} 
+                  <Text
+                    style={[styles.mvBreadcrumbText, index === folderPath.length - 1 && styles.mvBreadcrumbTextActive]}
                     numberOfLines={1}
                   >
                     {folder.nombre}
@@ -1947,16 +2008,16 @@ export default function ExerciseList({ navigation: navigationProp }) {
           <TouchableOpacity
             style={{
               paddingHorizontal: 12, height: 42,
-              backgroundColor: selectionMode 
-                ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF') 
+              backgroundColor: selectionMode
+                ? (theme.mode === 'dark' ? '#1e3a8a' : '#EEF2FF')
                 : (theme.mode === 'dark' ? (theme.colors?.surfaceAlt || '#1e293b') : '#FFFFFF'),
               borderRadius: 10,
-              borderWidth: 1, 
-              borderColor: selectionMode 
-                ? '#3578e5' 
+              borderWidth: 1,
+              borderColor: selectionMode
+                ? '#3578e5'
                 : (theme.mode === 'dark' ? (theme.colors?.border || '#334155') : '#E2E8F0'),
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03, 
+              shadowColor: '#000', shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.03,
               shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1,
             }}
             onPress={() => {
@@ -1992,7 +2053,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   navigateToRoot();
                 }}
                 style={[
-                  styles.mvFilterTab, 
+                  styles.mvFilterTab,
                   isActive && styles.mvFilterTabActive,
                   tab.icon && { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', paddingHorizontal: 16 }
                 ]}
@@ -2006,10 +2067,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     style={{ marginRight: 6 }}
                   />
                 )}
-                <Text 
-                  numberOfLines={1} 
+                <Text
+                  numberOfLines={1}
                   style={[
-                    styles.mvFilterTabText, 
+                    styles.mvFilterTabText,
                     isActive && styles.mvFilterTabTextActive,
                     { flexShrink: 1 }
                   ]}
@@ -2036,14 +2097,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
               {filters.titulo ? t('exercise.noExercisesFiltered') : currentFolderId ? t('folders.emptyFolder') : t('exercise.noExercisesCreated')}
             </Text>
             <Text style={styles.mvEmptySubtitle}>
-              {filters.titulo 
+              {filters.titulo
                 ? t('exercise.clearFiltersText')
                 : t('exercise.createFirstExercise')
               }
             </Text>
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.mvContentList}
             contentContainerStyle={styles.mvContentListInner}
             showsVerticalScrollIndicator={false}
@@ -2063,7 +2124,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 </View>
               </View>
             )}
-            
+
             {/* Ejercicios */}
             {filteredEjercicios.length > 0 && (
               <View style={styles.mvSection}>
@@ -2108,39 +2169,39 @@ export default function ExerciseList({ navigation: navigationProp }) {
           }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, flexGrow: 1 }}>
               <View style={{ flex: 1, minWidth: 120 }}>
-              <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
-                {selectedIds.size} {t('common.selected') || 'seleccionados'}
-              </Text>
-              <TouchableOpacity onPress={handleSelectAll}>
-                <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
-                  {t('common.selectAll') || 'Seleccionar todo'}
+                <Text style={{ color: theme.colors.text || '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
+                  {selectedIds.size} {t('common.selected') || 'seleccionados'}
                 </Text>
+                <TouchableOpacity onPress={handleSelectAll}>
+                  <Text style={{ color: '#3578e5', fontSize: 12, marginTop: 2 }}>
+                    {t('common.selectAll') || 'Seleccionar todo'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowBatchMoveModal(true)}
+                disabled={selectedIds.size === 0}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: '#3578e5', borderRadius: 10,
+                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                }}
+              >
+                <Feather name="folder" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
               </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              onPress={() => setShowBatchMoveModal(true)}
-              disabled={selectedIds.size === 0}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: '#3578e5', borderRadius: 10,
-                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-              }}
-            >
-              <Feather name="folder" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleBatchDelete}
-              disabled={selectedIds.size === 0}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: '#EF4444', borderRadius: 10,
-                paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-              }}
-            >
-              <Feather name="trash-2" size={16} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleBatchDelete}
+                disabled={selectedIds.size === 0}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: '#EF4444', borderRadius: 10,
+                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                }}
+              >
+                <Feather name="trash-2" size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCancelSelection}
                 style={{
@@ -2217,9 +2278,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
           animationType="fade"
           onRequestClose={() => setOptionsModalVisible(false)}
         >
-          <TouchableOpacity 
-            style={styles.mvModalBackdrop} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.mvModalBackdrop}
+            activeOpacity={1}
             onPress={() => setOptionsModalVisible(false)}
           >
             <View style={styles.mvActionSheet}>
@@ -2227,14 +2288,14 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 <Text style={styles.mvActionSheetTitle} numberOfLines={1}>{selectedExerciseForOptions?.nombre}</Text>
                 <Text style={styles.mvActionSheetSubtitle}>{t('exercise.exerciseOptions')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 {/* Botón favorito */}
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
                     setOptionsModalVisible(false);
-                    handleToggleFavorite(selectedExerciseForOptions?._id);
+                    handleToggleFavorite(getItemId(selectedExerciseForOptions));
                   }}
                 >
                   <View style={[styles.mvActionIcon, { backgroundColor: selectedExerciseForOptions?.favorito ? '#FEF3C7' : '#F8FAFC' }]}>
@@ -2267,7 +2328,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('exercise.lookDetails')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2339,7 +2400,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('myVideos.duplicate')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2355,9 +2416,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('folders.moveToFolder')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.mvActionDivider} />
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2373,8 +2434,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </View>
                 </TouchableOpacity>
               </ScrollView>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.mvActionSheetCancel}
                 onPress={() => setOptionsModalVisible(false)}
               >
@@ -2391,9 +2452,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
           animationType="fade"
           onRequestClose={() => setFolderMenuVisible(false)}
         >
-          <TouchableOpacity 
-            style={styles.mvModalBackdrop} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.mvModalBackdrop}
+            activeOpacity={1}
             onPress={() => setFolderMenuVisible(false)}
           >
             <View style={styles.mvActionSheet}>
@@ -2401,7 +2462,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 <Text style={styles.mvActionSheetTitle} numberOfLines={1}>{menuFolder?.nombre}</Text>
                 <Text style={styles.mvActionSheetSubtitle}>{t('folders.folderOptions')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvActionSheetBody} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                   style={styles.mvActionOption}
@@ -2417,7 +2478,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('folders.openFolder')}</Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.mvActionDivider} />
 
                 {(!menuFolder?.isGlobal || userRole === 'admin') && (
@@ -2436,11 +2497,11 @@ export default function ExerciseList({ navigation: navigationProp }) {
                         <Text style={styles.mvActionTitle}>{t('folders.editFolder')}</Text>
                       </View>
                     </TouchableOpacity>
-                    
+
                     <View style={styles.mvActionDivider} />
                   </>
                 )}
-                
+
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2456,8 +2517,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </View>
                 </TouchableOpacity>
               </ScrollView>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.mvActionSheetCancel}
                 onPress={() => setFolderMenuVisible(false)}
               >
@@ -2699,7 +2760,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                         />
                       </View>
                     )}
-                    
+
                     <Text style={[styles.mvCreateInputLabel, { marginTop: 16 }]}>{t('folders.folderColorLabel')}</Text>
                     <View style={styles.mvColorGrid}>
                       {folderColors.map(color => (
@@ -2724,7 +2785,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
               {/* Footer */}
               <View style={styles.mvCreateModalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvCreateCancelButton}
                   onPress={() => {
                     setShowCreateFolderModal(false);
@@ -2737,7 +2798,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   <Feather name="x" size={18} color="#64748b" />
                   <Text style={styles.mvCreateCancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvCreateSaveButton}
                   onPress={handleCreateFolder}
                 >
@@ -2765,7 +2826,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                 <Text style={styles.mvFormModalTitle}>{t('folders.moveToFolder')}</Text>
                 <Text style={styles.mvFormModalSubtitle}>{t('folders.selectDestination')}</Text>
               </View>
-              
+
               <ScrollView style={styles.mvFolderSelectList} showsVerticalScrollIndicator={false}>
                 <TouchableOpacity
                   style={styles.mvFolderSelectItem}
@@ -2776,7 +2837,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </View>
                   <Text style={styles.mvFolderSelectText}>{t('folders.root')}</Text>
                 </TouchableOpacity>
-                
+
                 {exerciseFoldersFlat.map(folder => (
                   <TouchableOpacity
                     key={folder._id}
@@ -2793,9 +2854,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              
+
               <View style={styles.mvFormModalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.mvSecondaryButton}
                   onPress={() => { setShowMoveToFolder(false); setExerciseToMove(null); }}
                 >
@@ -2933,13 +2994,13 @@ export default function ExerciseList({ navigation: navigationProp }) {
         {notification.visible && (
           <View style={styles.mvNotificationFloatingContainer} pointerEvents="none">
             <View style={[
-              styles.mvNotification, 
+              styles.mvNotification,
               notification.type === 'success' ? styles.mvNotificationSuccess : styles.mvNotificationError
             ]}>
-              <Feather 
-                name={notification.type === 'success' ? 'check-circle' : 'alert-circle'} 
-                size={20} 
-                color="#fff" 
+              <Feather
+                name={notification.type === 'success' ? 'check-circle' : 'alert-circle'}
+                size={20}
+                color="#fff"
               />
               <Text style={styles.mvNotificationText}>{notification.message}</Text>
             </View>
@@ -3136,7 +3197,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surfaceAlt,
     padding: 24,
   },
-  
+
   // Nuevos estilos profesionales para el detalle
   detailBackground: {
     flex: 1,
@@ -3380,7 +3441,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  
+
   // Mantener estilos existentes necesarios
   detailContainer: {
     marginTop: 12,
@@ -4149,7 +4210,7 @@ const makeStyles = (theme) => StyleSheet.create({
   optionsModalOptionTextCancel: {
     color: theme.colors.textMuted,
   },
-  
+
   // --- Estilos para Videos del Ejercicio ---
   videosGrid: {
     flexDirection: 'row',
@@ -4239,7 +4300,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  
+
   // --- Modal de Video ---
   videoModalBg: {
     flex: 1,
@@ -4385,7 +4446,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  
+
   // Header
   mvHeader: {
     backgroundColor: theme.colors.surface,
@@ -4452,7 +4513,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
+
   // View mode switch
   mvViewModeSwitch: {
     flexDirection: 'row',
@@ -4470,7 +4531,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderRadius: 8,
   },
-  
+
   // Breadcrumb
   mvBreadcrumb: {
     flexDirection: 'row',
@@ -4566,7 +4627,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvFilterTabTextActive: {
     color: theme.colors.onPrimary,
   },
-  
+
   // Loading & Empty
   mvLoadingContainer: {
     flex: 1,
@@ -4608,7 +4669,7 @@ const makeStyles = (theme) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  
+
   // Content List
   mvContentList: {
     flex: 1,
@@ -4618,7 +4679,7 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
-  
+
   // Sections
   mvSection: {
     marginBottom: 24,
@@ -4650,7 +4711,7 @@ const makeStyles = (theme) => StyleSheet.create({
   mvItemsContainer: {
     gap: 10,
   },
-  
+
   // Folder Card
   mvFolderCard: {
     flexDirection: 'row',
@@ -4699,14 +4760,14 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   // Modal Backdrop
   mvModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'flex-end',
   },
-  
+
   // Action Sheet
   mvActionSheet: {
     backgroundColor: theme.colors.surfaceAlt,
@@ -4778,7 +4839,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
-  
+
   // Form Modal
   mvFormModal: {
     backgroundColor: theme.colors.surfaceAlt,
@@ -4832,7 +4893,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
-  
+
   // Folder Select List
   mvFolderSelectList: {
     maxHeight: 280,
@@ -4861,7 +4922,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.colors.text,
   },
-  
+
   // Create Folder Modal
   mvCreateModalOverlay: {
     flex: 1,
@@ -5087,7 +5148,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.onPrimary,
   },
-  
+
   // Notification
   mvNotificationFloatingContainer: {
     position: 'absolute',

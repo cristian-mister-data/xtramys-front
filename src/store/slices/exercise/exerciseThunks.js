@@ -2,8 +2,34 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToExercise } from '@/api/video';
+import {
+  applyFavoritePrefsToItem,
+  applyFavoritePrefsToItems,
+  normalizeFavoritePayload,
+  persistFavoriteState,
+  readFavoritePrefs,
+  sameId,
+  getItemId,
+} from '@/utils/favoritePersistence';
 
 const getVideoId = (video) => video?._id || video?.id || video;
+
+const applyExerciseFavoritePrefs = async (items) => {
+  const prefs = await readFavoritePrefs('exercise');
+  return Array.isArray(items)
+    ? applyFavoritePrefsToItems(items, prefs)
+    : applyFavoritePrefsToItem(items, prefs);
+};
+
+const findExerciseFavorite = (state, exerciseId) => {
+  const lists = [
+    state?.exercise?.exercises || [],
+    state?.exercise?.currentFolderExercises || [],
+    state?.exercise?.globalExercises || [],
+    state?.exercise?.exercise ? [state.exercise.exercise] : [],
+  ];
+  return lists.flat().find((item) => sameId(getItemId(item), exerciseId))?.favorito;
+};
 
 const replaceExerciseVideos = async (exerciseId, pendingVideoIds = []) => {
   if (!exerciseId || pendingVideoIds.length === 0) return;
@@ -43,14 +69,14 @@ export const fetchEjerciciosUsuario = createAsyncThunk(
   async ({ user, lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/exercise/user/${user}${params}`);
-    return res.data;
+    return applyExerciseFavoritePrefs(res.data);
   }
 );
 
 export const fetchEjercicio = createAsyncThunk('ejercicio/fetchEjercicio', async ({ id, lang } = {}) => {
   const params = lang ? `?lang=${lang}` : '';
   const res = await api.get(`/exercise/${id}${params}`);
-  return res.data;
+  return applyExerciseFavoritePrefs(res.data);
 });
 
 export const fetchGlobalExercises = createAsyncThunk(
@@ -58,7 +84,7 @@ export const fetchGlobalExercises = createAsyncThunk(
   async ({ lang } = {}) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/exercise/global${params}`);
-    return res.data;
+    return applyExerciseFavoritePrefs(res.data);
   }
 );
 
@@ -126,7 +152,11 @@ export const fetchExerciseFolderById = createAsyncThunk(
   async ({ id, lang }) => {
     const params = lang ? `?lang=${lang}` : '';
     const res = await api.get(`/exercise-folder/${id}${params}`);
-    return res.data;
+    const prefs = await readFavoritePrefs('exercise');
+    return {
+      ...res.data,
+      exercises: applyFavoritePrefsToItems(res.data?.exercises || [], prefs),
+    };
   }
 );
 
@@ -195,9 +225,15 @@ export const duplicateGlobalExercise = createAsyncThunk(
 
 export const toggleFavoriteExercise = createAsyncThunk(
   'ejercicio/toggleFavoriteExercise',
-  async (exerciseId) => {
+  async (payloadArg, { getState }) => {
+    const exerciseId = typeof payloadArg === 'object' ? payloadArg.exerciseId : payloadArg;
+    const expectedFavorite = typeof payloadArg === 'object' ? payloadArg.favorito : undefined;
     const res = await api.patch(`/exercise/${exerciseId}/favorite`);
-    return res.data; // { _id, favorito }
+    const fallbackFavorite = findExerciseFavorite(getState(), exerciseId);
+    const payload = normalizeFavoritePayload(res.data, exerciseId, expectedFavorite ?? fallbackFavorite);
+    if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
+    await persistFavoriteState('exercise', exerciseId, payload.favorito);
+    return payload; // { _id, favorito }
   }
 );
 

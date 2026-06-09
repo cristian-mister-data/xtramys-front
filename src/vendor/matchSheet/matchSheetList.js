@@ -1100,8 +1100,11 @@ export default function MatchSheetList() {
               
               <TouchableOpacity
                 style={styles.optionsModalOption}
-                onPress={() => pdfHook.handleGenerateMatchSheetPDF()}
-                disabled={pdfHook.generatingPDF}
+                onPress={() => {
+                  if (pdfHook.generatingPDF) return;
+                  pdfHook.handleGenerateMatchSheetPDF();
+                }}
+                activeOpacity={pdfHook.generatingPDF ? 1 : 0.7}
               >
                 <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.warningSoft }]}>
                   {pdfHook.generatingPDFType === 'matchsheet' ? (
@@ -2578,7 +2581,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textArea: {
     minHeight: 120,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
     paddingTop: 14,
   },
   row: {
