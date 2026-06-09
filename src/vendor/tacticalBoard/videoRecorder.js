@@ -639,6 +639,7 @@ export default function VideoRecorder({
   isGlobalStrategy = false, // Si la estrategia es global (app) - solo mostrar carpetas globales
   onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
   onGeneratingChange = null, // Callback cuando el estado de generación cambia (isGenerating)
+  onSavingChange = null,
 }) {
   const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -689,6 +690,10 @@ export default function VideoRecorder({
   const [isSaving, setIsSaving] = useState(false); // Estado de guardado (separado de generación)
 
   // Detección de admin
+  useEffect(() => {
+    onSavingChange?.(isSaving);
+  }, [isSaving, onSavingChange]);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const shouldBeGlobal = isAdmin || isGlobalExercise || isGlobalStrategy;
 

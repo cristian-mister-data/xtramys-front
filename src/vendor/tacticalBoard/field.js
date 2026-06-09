@@ -164,7 +164,7 @@ function fromRatioCoords(xRatio, yRatio, imageWidth, imageHeight, viewMode) {
   };
 }
 
-const BALL_TRAJECTORY_MIN_MOVE = 0.006;
+const BALL_POSITION_PRECISION = 1000;
 
 function clampLayoutValue(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -185,20 +185,27 @@ function didBallMove(fromBall, toBall) {
   const from = getSnapshotRatioPoint(fromBall);
   const to = getSnapshotRatioPoint(toBall);
   if (!from || !to) return false;
-  return Math.hypot(to.x - from.x, to.y - from.y) >= BALL_TRAJECTORY_MIN_MOVE;
+  const fromX = Math.round(from.x * BALL_POSITION_PRECISION);
+  const fromY = Math.round(from.y * BALL_POSITION_PRECISION);
+  const toX = Math.round(to.x * BALL_POSITION_PRECISION);
+  const toY = Math.round(to.y * BALL_POSITION_PRECISION);
+  return fromX !== toX || fromY !== toY;
 }
 
 function describeBallZone(point) {
-  if (!point) return 'zona sin ubicar';
-  const horizontal = point.x < 0.33 ? 'izquierda' : point.x > 0.67 ? 'derecha' : 'central';
-  const vertical = point.y < 0.33 ? 'alta' : point.y > 0.67 ? 'baja' : 'media';
-  return `zona ${horizontal} ${vertical}`;
+  if (!point) return i18n.t('videoRecorder.ballZoneUnlocated', 'zona sin ubicar');
+  const sideMap = { left: 'izquierda', center: 'central', right: 'derecha' };
+  const laneMap = { high: 'alta', mid: 'media', low: 'baja' };
+  const side = point.x < 0.33 ? 'left' : point.x > 0.67 ? 'right' : 'center';
+  const lane = point.y < 0.33 ? 'high' : point.y > 0.67 ? 'low' : 'mid';
+  const fallback = `zona ${sideMap[side]} ${laneMap[lane]}`;
+  return i18n.t(`videoRecorder.ballZone.${side}_${lane}`, fallback);
 }
 
 function getBallMotionTitle(fromBall, toBall) {
   const explicitLabel = toBall?.name || toBall?.label || fromBall?.name || fromBall?.label;
   if (explicitLabel) return explicitLabel;
-  return `Pase ${describeBallZone(getSnapshotRatioPoint(fromBall))} -> ${describeBallZone(getSnapshotRatioPoint(toBall))}`;
+  return `${i18n.t('videoRecorder.passPrefix', 'Pase')} ${describeBallZone(getSnapshotRatioPoint(fromBall))} -> ${describeBallZone(getSnapshotRatioPoint(toBall))}`;
 }
 
 function getBallMotionSubLabel(fromBall, toBall) {
@@ -11894,6 +11901,7 @@ export default function Field(props = {}) {
   const [zoomVisible, setZoomVisible] = useState(false);
   const [fieldImageReady, setFieldImageReady] = useState(false);
   const [isLoadingField, setIsLoadingField] = useState(true);
+  const [isSavingVideoEdit, setIsSavingVideoEdit] = useState(false);
   const [showingPlayersPalette, setShowingPlayersPalette] = useState(false);
   const [showingMaterialsPalette, setShowingMaterialsPalette] = useState(false);
   const [showingStaffPalette, setShowingStaffPalette] = useState(false);
@@ -11923,6 +11931,7 @@ export default function Field(props = {}) {
   const [fieldImageForVideo, setFieldImageForVideo] = useState(null);
   const [videoKeyframes, setVideoKeyframes] = useState([]);
   const [dismissedBallTrajectoryPrompts, setDismissedBallTrajectoryPrompts] = useState({});
+  const [loadedEditVideoKeyframeCount, setLoadedEditVideoKeyframeCount] = useState(0);
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -12025,6 +12034,9 @@ export default function Field(props = {}) {
       savedClonesOriginalRef.current = actualClonesRef.current ? [...actualClonesRef.current] : [];
     }
     keepVideoChangesRef.current = false;
+    if (!isEditingVideo) {
+      setLoadedEditVideoKeyframeCount(0);
+    }
     setVideoRecorderVisible(true);
   }, []); // Sin [clones] "� usa actualClonesRef
 
@@ -12855,29 +12867,31 @@ export default function Field(props = {}) {
           // Preservar el tipo de trayectoria del balón para el segmento que
           // sale de este keyframe (suelo por defecto, aire si así se guardó).
           ballTrajectoryType: kf.ballTrajectoryType || 'ground',
+          ballTrajectoryById: kf.ballTrajectoryById || {},
           // No incluimos fieldImageData porque se generar� al capturar
         }));
 
         setVideoKeyframes(loadedKeyframes);
+        setLoadedEditVideoKeyframeCount(loadedKeyframes.length);
 
-        // Cargar el primer keyframe en el campo
-        if (loadedKeyframes[0] && loadedKeyframes[0].elements) {
+        // Cargar la última captura en el campo para que las nuevas capturas
+        // comparen contra la posición real más reciente del video editado.
+        const lastLoadedKeyframe = loadedKeyframes[loadedKeyframes.length - 1];
+        if (lastLoadedKeyframe && lastLoadedKeyframe.elements) {
           // Pasar dimensiones originales para convertir correctamente las coordenadas absolutas a ratios
-          const firstKeyframeElements = loadedKeyframes[0].elements.map((elem) =>
+          const lastKeyframeElements = lastLoadedKeyframe.elements.map((elem) =>
             snapshotToClone(elem, originalDimensions),
           );
-          setClones(firstKeyframeElements);
+          setClones(lastKeyframeElements);
 
-          // Cargar conectores del primer keyframe si existen
-          if (loadedKeyframes[0].connectors && loadedKeyframes[0].connectors.length > 0) {
-            setConnectors(loadedKeyframes[0].connectors);
-          }
+          // Cargar conectores de la última captura si existen
+          setConnectors(lastLoadedKeyframe.connectors || []);
 
           // Guardar como estado original
           try {
-            savedClonesOriginalRef.current = JSON.parse(JSON.stringify(firstKeyframeElements));
+            savedClonesOriginalRef.current = JSON.parse(JSON.stringify(lastKeyframeElements));
           } catch (e) {
-            savedClonesOriginalRef.current = firstKeyframeElements;
+            savedClonesOriginalRef.current = lastKeyframeElements;
           }
         }
 
@@ -12886,6 +12900,7 @@ export default function Field(props = {}) {
           setVideoRecorderVisible(true);
         }, 300);
       } else {
+        setLoadedEditVideoKeyframeCount(0);
         // Si no hay keyframes, abrir VideoRecorder para empezar de cero
         setTimeout(() => {
           setVideoRecorderVisible(true);
@@ -13628,9 +13643,17 @@ export default function Field(props = {}) {
   const activeBallTrajectoryPrompts = useMemo(() => {
     if (!videoRecorderVisible) return [];
     return getKeyframeMovedBalls(videoKeyframes).filter(
-      (prompt) => !dismissedBallTrajectoryPrompts[prompt.key],
+      (prompt) =>
+        !dismissedBallTrajectoryPrompts[prompt.key] &&
+        (!isEditingVideo || prompt.segmentIndex >= Math.max(0, loadedEditVideoKeyframeCount - 1)),
     );
-  }, [videoRecorderVisible, videoKeyframes, dismissedBallTrajectoryPrompts]);
+  }, [
+    videoRecorderVisible,
+    isEditingVideo,
+    loadedEditVideoKeyframeCount,
+    videoKeyframes,
+    dismissedBallTrajectoryPrompts,
+  ]);
 
   const updateSegmentBallTrajectory = useCallback((segmentIndex, ballId, trajectory, promptKey) => {
     setVideoKeyframes((prev) =>
@@ -14646,8 +14669,11 @@ export default function Field(props = {}) {
       savedClonesOriginalRef.current = actualClonesRef.current ? [...actualClonesRef.current] : [];
     }
     keepVideoChangesRef.current = false;
+    if (!isEditingVideo) {
+      setLoadedEditVideoKeyframeCount(0);
+    }
     setVideoRecorderVisible(true);
-  }, []); // Sin [clones] "� usa actualClonesRef
+  }, [isEditingVideo]); // Sin [clones] "� usa actualClonesRef
 
   // Funci�n para cerrar el grabador de video
   const unlockOrientationAndGoBack = useCallback(async () => {
@@ -14663,6 +14689,7 @@ export default function Field(props = {}) {
   }, [navigation]);
 
   const handleEditVideoSaved = useCallback(async () => {
+    setIsSavingVideoEdit(true);
     // Cerrar primero el grabador para que la transici�n quede limpia
     setVideoRecorderVisible(false);
     setFieldImageForVideo(null);
@@ -14673,6 +14700,7 @@ export default function Field(props = {}) {
     clearBoardState();
     await new Promise((resolve) => setTimeout(resolve, 120));
     await unlockOrientationAndGoBack();
+    setIsSavingVideoEdit(false);
   }, [clearBoardState, unlockOrientationAndGoBack]);
 
   const handleCloseVideoRecorder = useCallback(() => {
@@ -21297,7 +21325,7 @@ export default function Field(props = {}) {
                             )
                           }
                           accessibilityRole="button"
-                          accessibilityLabel="Mover este balón por suelo"
+                          accessibilityLabel={t('videoRecorder.ballGround', 'Suelo')}
                         >
                           <Feather
                             name="arrow-right"
@@ -21310,7 +21338,7 @@ export default function Field(props = {}) {
                               trajectory === 'ground' && styles.ballTrajectoryOptionTextActive,
                             ]}
                           >
-                            Suelo
+                            {t('videoRecorder.ballGround', 'Suelo')}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -21327,7 +21355,7 @@ export default function Field(props = {}) {
                             )
                           }
                           accessibilityRole="button"
-                          accessibilityLabel="Mover este balón por aire"
+                          accessibilityLabel={t('videoRecorder.ballAir', 'Aire')}
                         >
                           <Feather
                             name="trending-up"
@@ -21340,7 +21368,7 @@ export default function Field(props = {}) {
                               trajectory === 'air' && styles.ballTrajectoryOptionTextActive,
                             ]}
                           >
-                            Aire
+                            {t('videoRecorder.ballAir', 'Aire')}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -21748,7 +21776,17 @@ export default function Field(props = {}) {
             isGlobalExercise={isGlobalExercise}
             isGlobalStrategy={isGlobalStrategy}
             onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
+            onSavingChange={setIsSavingVideoEdit}
           />
+        )}
+
+        {isSavingVideoEdit && (
+          <View style={styles.videoEditSavingOverlay} pointerEvents="auto">
+            <View style={styles.videoEditSavingCard}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={styles.videoEditSavingTitle}>{t('videoRecorder.savingVideoEdit')}</Text>
+            </View>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -21775,6 +21813,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#4a8c3f',
     marginBottom: 8, // Reducido de 18 para dar m�s espacio
     elevation: 2,
+  },
+  videoEditSavingOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 22000,
+    elevation: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  },
+  videoEditSavingCard: {
+    minWidth: 220,
+    maxWidth: 320,
+    borderRadius: 16,
+    paddingVertical: 22,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+  },
+  videoEditSavingTitle: {
+    marginTop: 12,
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   ballTrajectoryPrompt: {
     position: 'absolute',
