@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -30,6 +30,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -966,7 +967,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(exercise._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(exercise._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -982,7 +986,10 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(getItemId(exercise))}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(exercise));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -1154,6 +1161,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Estados para modal de opciones
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedExerciseForOptions, setSelectedExerciseForOptions] = useState(null);
+  const favoriteToggleLocksRef = useRef(new Set());
   
   // Estado de navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -1565,6 +1573,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   const handleToggleFavorite = useCallback(async (exerciseId) => {
     if (!exerciseId) return;
+    const exerciseIdKey = String(exerciseId);
+    if (favoriteToggleLocksRef.current.has(exerciseIdKey)) return;
+    favoriteToggleLocksRef.current.add(exerciseIdKey);
     const currentExercise = [
       ...filteredEjercicios,
       ...currentFolderExercises,
@@ -1575,11 +1586,15 @@ export default function ExerciseList({ navigation: navigationProp }) {
     const optimisticFavorite = !previousFavorite;
 
     dispatch(setExerciseFavorite({ exerciseId, favorito: optimisticFavorite }));
+    persistFavoriteState('exercise', exerciseId, optimisticFavorite).catch(() => {});
     try {
-      await dispatch(toggleFavoriteExercise(exerciseId)).unwrap();
+      await dispatch(toggleFavoriteExercise({ exerciseId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
       dispatch(setExerciseFavorite({ exerciseId, favorito: previousFavorite }));
+      persistFavoriteState('exercise', exerciseId, previousFavorite).catch(() => {});
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(exerciseIdKey);
     }
   }, [currentFolderExercises, dispatch, ejercicios, filteredEjercicios, globalExercises, t]);
 

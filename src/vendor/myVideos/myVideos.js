@@ -56,6 +56,13 @@ const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
 const VIDEO_FAVORITES_STORAGE_KEY = 'xtramys.videoFavorites';
 const VIDEO_UNFAVORITES_STORAGE_KEY = 'xtramys.videoUnfavorites';
+const areStringSetsEqual = (a = new Set(), b = new Set()) => {
+  if (a.size !== b.size) return false;
+  for (const value of a) {
+    if (!b.has(value)) return false;
+  }
+  return true;
+};
 const getFavoriteValue = (item) => {
   if (typeof item?.favorito === 'boolean') return item.favorito;
   if (typeof item?.isFavorite === 'boolean') return item.isFavorite;
@@ -96,6 +103,7 @@ export default function MyVideos() {
   const [unfavoriteVideoIds, setUnfavoriteVideoIds] = useState(new Set());
   const favoriteVideoIdsRef = useRef(new Set());
   const unfavoriteVideoIdsRef = useRef(new Set());
+  const favoriteToggleLocksRef = useRef(new Set());
   
   // Source filter: 'all' | 'mine' | 'global' | 'favorites'
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -139,25 +147,37 @@ export default function MyVideos() {
   }, [persistFavoriteVideoPrefs]);
 
   const normalizeLoadedVideos = useCallback((items = []) => {
-    const knownFavorites = new Set(favoriteVideoIdsRef.current);
-    const knownUnfavorites = new Set(unfavoriteVideoIdsRef.current);
-    const normalized = items.filter(Boolean).map((video) => {
+    return items.filter(Boolean).map((video) => {
       const baseVideo = normalizeVideo(video);
       const id = getItemId(baseVideo);
       const idKey = String(id || '');
-      const favorito = Boolean(
-        idKey && !knownUnfavorites.has(idKey) && (baseVideo.favorito || knownFavorites.has(idKey))
-      );
-      if (favorito && idKey) knownFavorites.add(idKey);
+      const locallyFavorite = idKey && favoriteVideoIdsRef.current.has(idKey);
+      const locallyUnfavorite = idKey && unfavoriteVideoIdsRef.current.has(idKey);
+      const favorito = Boolean(idKey && !locallyUnfavorite && (baseVideo.favorito || locallyFavorite));
       return { ...baseVideo, favorito };
     });
+  }, []);
 
-    if (knownFavorites.size !== favoriteVideoIdsRef.current.size) {
-      persistFavoriteVideoPrefs(knownFavorites, knownUnfavorites);
-    }
+  const syncFavoriteFlagsInState = useCallback(() => {
+    const applyFavoriteFlag = (item) => {
+      if (!item) return item;
+      const id = getItemId(item);
+      const idKey = String(id || '');
+      const favorito = Boolean(
+        idKey && !unfavoriteVideoIdsRef.current.has(idKey) && (
+          item.favorito || favoriteVideoIdsRef.current.has(idKey)
+        )
+      );
+      return { ...item, favorito };
+    };
 
-    return normalized;
-  }, [persistFavoriteVideoPrefs]);
+    setVideos((prev) => {
+      const next = prev.map(applyFavoriteFlag);
+      return sourceFilter === 'favorites' ? next.filter((video) => video.favorito) : next;
+    });
+    setSelectedVideo((prev) => applyFavoriteFlag(prev));
+    setMenuVideo((prev) => applyFavoriteFlag(prev));
+  }, [sourceFilter]);
 
   useEffect(() => {
     const detectAdmin = async () => {
@@ -206,39 +226,17 @@ export default function MyVideos() {
         unfavoriteVideoIdsRef.current = unfavoriteIds;
         setFavoriteVideoIds(favoriteIds);
         setUnfavoriteVideoIds(unfavoriteIds);
+        syncFavoriteFlagsInState();
       } catch {
         favoriteVideoIdsRef.current = new Set();
         unfavoriteVideoIdsRef.current = new Set();
         setFavoriteVideoIds(new Set());
         setUnfavoriteVideoIds(new Set());
+        syncFavoriteFlagsInState();
       }
     };
     loadFavoriteVideoPrefs();
-  }, []);
-
-  useEffect(() => {
-    setVideos((prev) => {
-      const next = prev.map((video) => {
-        const id = getItemId(video);
-        const idKey = String(id || '');
-        const favorito = Boolean(idKey && !unfavoriteVideoIds.has(idKey) && (video.favorito || favoriteVideoIds.has(idKey)));
-        return { ...video, favorito };
-      });
-      return sourceFilter === 'favorites' ? next.filter((video) => video.favorito) : next;
-    });
-    setSelectedVideo((prev) => {
-      if (!prev) return prev;
-      const id = getItemId(prev);
-      const idKey = String(id || '');
-      return { ...prev, favorito: Boolean(idKey && !unfavoriteVideoIds.has(idKey) && (prev.favorito || favoriteVideoIds.has(idKey))) };
-    });
-    setMenuVideo((prev) => {
-      if (!prev) return prev;
-      const id = getItemId(prev);
-      const idKey = String(id || '');
-      return { ...prev, favorito: Boolean(idKey && !unfavoriteVideoIds.has(idKey) && (prev.favorito || favoriteVideoIds.has(idKey))) };
-    });
-  }, [favoriteVideoIds, unfavoriteVideoIds, sourceFilter]);
+  }, [syncFavoriteFlagsInState]);
 
   useEffect(() => {
     if (global.pendingVideoEditSuccess) {
@@ -834,20 +832,26 @@ export default function MyVideos() {
   const handleToggleFavorite = async (videoId) => {
     if (!videoId) return;
     const videoIdKey = String(videoId);
+    if (favoriteToggleLocksRef.current.has(videoIdKey)) return;
+    favoriteToggleLocksRef.current.add(videoIdKey);
+    let previousFavorite = false;
     try {
       const currentVideo = videos.find((video) => sameId(getItemId(video), videoId))
         || (menuVideo && sameId(getItemId(menuVideo), videoId) ? menuVideo : null)
         || (selectedVideo && sameId(getItemId(selectedVideo), videoId) ? selectedVideo : null);
-      const previousFavorite = favoriteVideoIdsRef.current.has(videoIdKey)
+      previousFavorite = favoriteVideoIdsRef.current.has(videoIdKey)
         || (!unfavoriteVideoIdsRef.current.has(videoIdKey) && !!currentVideo?.favorito);
       const nextFavorite = !previousFavorite;
 
-      setFavoriteVideoId(videoId, nextFavorite);
       applyFavoriteToVideos(videoId, nextFavorite);
+      setFavoriteVideoId(videoId, nextFavorite);
       await toggleFavoriteVideo(videoId);
     } catch (err) {
-      loadContent();
+      applyFavoriteToVideos(videoId, previousFavorite);
+      setFavoriteVideoId(videoId, previousFavorite);
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(videoIdKey);
     }
   };
 

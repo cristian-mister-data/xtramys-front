@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation } from '@react-navigation/native';
@@ -51,6 +51,7 @@ import {
   clearFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { persistFavoriteState } from '@/utils/favoritePersistence';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -953,7 +954,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             alignItems: 'center', justifyContent: 'center',
             shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 4,
           }}
-          onPress={() => onToggleSelect && onToggleSelect(strategy._id)}
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onToggleSelect && onToggleSelect(strategy._id);
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           {isSelected && <Feather name="check" size={13} color="#fff" />}
@@ -969,7 +973,10 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
           alignItems: 'center', justifyContent: 'center',
           shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
         }}
-        onPress={() => onToggleFavorite && onToggleFavorite(getItemId(strategy))}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          onToggleFavorite && onToggleFavorite(getItemId(strategy));
+        }}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         activeOpacity={0.7}
       >
@@ -1100,6 +1107,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   // Estados para modal de opciones en cada tarjeta
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedStrategyForOptions, setSelectedStrategyForOptions] = useState(null);
+  const favoriteToggleLocksRef = useRef(new Set());
   const [filters, setFilters] = useState({
     titulo: ''
   });
@@ -1416,6 +1424,9 @@ const handleDelete = (strategy) => {
 
   const handleToggleFavorite = useCallback(async (strategyId) => {
     if (!strategyId) return;
+    const strategyIdKey = String(strategyId);
+    if (favoriteToggleLocksRef.current.has(strategyIdKey)) return;
+    favoriteToggleLocksRef.current.add(strategyIdKey);
     const currentStrategy = [
       ...filteredStrategies,
       ...currentFolderStrategies,
@@ -1426,11 +1437,15 @@ const handleDelete = (strategy) => {
     const optimisticFavorite = !previousFavorite;
 
     dispatch(setStrategyFavorite({ strategyId, favorito: optimisticFavorite }));
+    persistFavoriteState('strategy', strategyId, optimisticFavorite).catch(() => {});
     try {
-      await dispatch(toggleFavoriteStrategy(strategyId)).unwrap();
+      await dispatch(toggleFavoriteStrategy({ strategyId, favorito: optimisticFavorite })).unwrap();
     } catch (err) {
       dispatch(setStrategyFavorite({ strategyId, favorito: previousFavorite }));
+      persistFavoriteState('strategy', strategyId, previousFavorite).catch(() => {});
       showNotification(t('message.error'), 'error');
+    } finally {
+      favoriteToggleLocksRef.current.delete(strategyIdKey);
     }
   }, [currentFolderStrategies, dispatch, filteredStrategies, globalStrategies, strategies, t]);
 
