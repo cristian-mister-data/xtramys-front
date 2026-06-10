@@ -35,7 +35,7 @@ export const updateWellnessTemplate = (id, payload) =>
   api.put(`/wellness-template/${id}`, payload);
 export const deleteWellnessTemplate = (id) => api.delete(`/wellness-template/${id}`);
 
-// === PreWellness (montado en /prewellness, sin /api) ===
+// === PreWellness ===
 export const getPreWellnessFormDataPublic = (token) =>
   apiBase.get(`/prewellness/public/form/${token}`);
 export const getPreWellnessAvailablePlayersPublic = (token) =>
@@ -44,16 +44,16 @@ export const submitPreWellnessPublic = (token, payload) =>
   apiBase.post(`/prewellness/public/submit/${token}`, payload);
 
 export const getPreWellnessSession = (sessionId) =>
-  apiBase.get(`/prewellness/session/${sessionId}`);
+  api.get(`/prewellness/session/${sessionId}`);
 export const getPreWellnessRange = (params) =>
-  apiBase.get('/prewellness/range', { params });
+  api.get('/prewellness/range', { params });
 export const getPreWellnessByPlayer = (playerId) =>
-  apiBase.get(`/prewellness/player/${playerId}`);
+  api.get(`/prewellness/player/${playerId}`);
 export const updatePreWellnessSession = (sessionId, payload) =>
-  apiBase.put(`/prewellness/session/${sessionId}`, payload);
+  api.put(`/prewellness/session/${sessionId}`, payload);
 export const generatePreWellnessLink = (sessionId, payload) =>
-  apiBase.post(`/prewellness/session/${sessionId}/generate-link`, payload);
+  api.post(`/prewellness/session/${sessionId}/generate-link`, payload);
 export const togglePreWellnessLink = (sessionId, payload) =>
-  apiBase.post(`/prewellness/session/${sessionId}/toggle-link`, payload);
+  api.post(`/prewellness/session/${sessionId}/toggle-link`, payload);
 export const deletePreWellnessResponse = (responseId) =>
-  apiBase.delete(`/prewellness/response/${responseId}`);
+  api.delete(`/prewellness/response/${responseId}`);

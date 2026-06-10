@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { fetchTemporadasUsuario, fetchTemporadaUsuarioSeleccionada } from '@/store/slices/season/seasonThunks';
 
 const SetupFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
 );
 
-const ErrorFallback = ({ onRetry }) => (
+const ErrorFallback = ({ onRetry }) => {
+  const { t } = useTranslation();
+  return (
   <div style={{
     minHeight: '100dvh',
     background: '#f0f4f8',
@@ -21,7 +24,7 @@ const ErrorFallback = ({ onRetry }) => (
     fontFamily: 'inherit',
   }}>
     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, textAlign: 'center' }}>
-      No se pudo conectar con el servidor
+      {t('connection.apiUnavailableTitle')}
     </p>
     <button
       type="button"
@@ -37,10 +40,11 @@ const ErrorFallback = ({ onRetry }) => (
         cursor: 'pointer',
       }}
     >
-      Reintentar
+      {t('connection.retry')}
     </button>
   </div>
-);
+  );
+};
 
 export default function RequireSeason({ children }) {
   const dispatch = useDispatch();

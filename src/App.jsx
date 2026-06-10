@@ -21,7 +21,7 @@ const ApiUnavailable = ({ checking, onRetry }) => (
     fontFamily: 'inherit',
   }}>
     <p style={{ margin: 0, fontSize: 16, fontWeight: 700, textAlign: 'center' }}>
-      No se pudo conectar con el servidor
+      {i18n.t('connection.apiUnavailableTitle')}
     </p>
     <button
       type="button"
@@ -40,7 +40,7 @@ const ApiUnavailable = ({ checking, onRetry }) => (
         cursor: checking ? 'default' : 'pointer',
       }}
     >
-      {checking ? 'Conectando...' : 'Reintentar'}
+      {checking ? i18n.t('connection.reconnecting') : i18n.t('connection.retry')}
     </button>
   </div>
 );

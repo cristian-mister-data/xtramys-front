@@ -386,7 +386,7 @@ export const getSessionWellnessStats = async (sessionId) => {
 
 export const getSessionPreWellnessStats = async (sessionId) => {
   try {
-    const response = await apiBase.get(`/prewellness/session/${sessionId}`);
+    const response = await api.get(`/prewellness/session/${sessionId}`);
     return response.data;
   } catch (error) {
     console.warn('Error getting pre-wellness stats:', error);
@@ -406,7 +406,7 @@ export const getWellnessRange = async (teamId, from, to) => {
 
 export const getPreWellnessRange = async (teamId, from, to) => {
   try {
-    const response = await apiBase.get(`/prewellness/range`, { params: { teamId, from, to } });
+    const response = await api.get(`/prewellness/range`, { params: { teamId, from, to } });
     return response.data;
   } catch (error) {
     console.warn('Error getting pre-wellness range:', error);
@@ -499,7 +499,7 @@ export const generatePreWellnessLink = async (
     const body = { expiryHours };
     if (templateId) body.templateId = templateId;
     if (questions && questions.length > 0) body.questions = questions;
-    const response = await apiBase.post(`/prewellness/session/${sessionId}/generate-link`, body);
+    const response = await api.post(`/prewellness/session/${sessionId}/generate-link`, body);
     return response.data;
   } catch (error) {
     console.warn('Error generating pre-wellness link:', error);
@@ -519,7 +519,7 @@ export const toggleWellnessLink = async (sessionId, active) => {
 
 export const togglePreWellnessLink = async (sessionId, active) => {
   try {
-    const response = await apiBase.post(`/prewellness/session/${sessionId}/toggle-link`, {
+    const response = await api.post(`/prewellness/session/${sessionId}/toggle-link`, {
       active,
     });
     return response.data;
@@ -541,7 +541,7 @@ export const deleteWellnessResponse = async (responseId) => {
 
 export const deletePreWellnessResponse = async (responseId) => {
   try {
-    const response = await apiBase.delete(`/prewellness/response/${responseId}`);
+    const response = await api.delete(`/prewellness/response/${responseId}`);
     return response.data;
   } catch (error) {
     console.warn('Error deleting pre-wellness response:', error);
@@ -551,7 +551,7 @@ export const deletePreWellnessResponse = async (responseId) => {
 
 export const updateSessionPreWellness = async (sessionId, preWellnessData) => {
   try {
-    const response = await apiBase.put(`/prewellness/session/${sessionId}`, preWellnessData);
+    const response = await api.put(`/prewellness/session/${sessionId}`, preWellnessData);
     return response.data;
   } catch (error) {
     console.warn('Error updating pre-wellness:', error);
@@ -575,7 +575,7 @@ export const getPlayerWellnessHistory = async (playerId, teamId) => {
 export const getPlayerPreWellnessHistory = async (playerId, teamId) => {
   try {
     const params = teamId ? { teamId } : {};
-    const response = await apiBase.get(`/prewellness/player/${playerId}`, { params });
+    const response = await api.get(`/prewellness/player/${playerId}`, { params });
     return response.data;
   } catch (error) {
     console.warn('Error getting player pre-wellness history:', error);

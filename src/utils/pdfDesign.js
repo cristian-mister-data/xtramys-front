@@ -721,10 +721,17 @@ export function pdfDocument(pages, opts = {}) {
  * @param {string} fileName - name for the downloaded file (without .pdf)
  */
 export async function renderPdf(documentElement, fileName) {
-  const blob = await pdf(documentElement).toBlob();
-  const uri = URL.createObjectURL(blob);
-  const { savePdfToDownloads } = await import('@/utils/pdfDownload');
-  await savePdfToDownloads(uri, fileName);
+  const { savePdfToDownloads, showPdfLoading, hidePdfLoading } = await import('@/utils/pdfDownload');
+  const { default: i18n } = await import('@/i18n');
+
+  showPdfLoading(i18n.t('pdfDialog.generating', 'Generando PDF...'));
+  try {
+    const blob = await pdf(documentElement).toBlob();
+    const uri = URL.createObjectURL(blob);
+    await savePdfToDownloads(uri, fileName);
+  } finally {
+    hidePdfLoading();
+  }
 }
 
 // Re-export react-pdf primitives for convenience

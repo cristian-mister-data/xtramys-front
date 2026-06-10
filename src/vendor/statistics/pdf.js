@@ -715,7 +715,11 @@ export async function generateCombinedStatsPdf(stats, injuries, players, teamNam
 // ── Weekly Attendance PDF ──────────────────────────────────────────
 
 const WeeklyAttendancePage = ({ week, teamName, weekLabel, t, title }) => {
-  const sortedPlayers = [...week.playerAttendance].sort((a, b) => b.percentage - a.percentage);
+  const sortedPlayers = [...(week.playerAttendance || [])].sort((a, b) => b.percentage - a.percentage);
+  const avgAttendance = sortedPlayers.length
+    ? Math.round(sortedPlayers.reduce((acc, p) => acc + (p.percentage || 0), 0) / sortedPlayers.length)
+    : 0;
+  const noAbsences = t('statistics.weeklyAttendance.noDays', 'Ninguna');
 
   return (
     <Page size="A4" style={baseStyles.page}>
@@ -725,58 +729,53 @@ const WeeklyAttendancePage = ({ week, teamName, weekLabel, t, title }) => {
         right={teamName}
       />
 
-      {/* Summary Stats Grid */}
-      <View style={[s.grid3, { marginBottom: SPACING.lg }]}>
-        <View style={s.metricBox}>
-          <Text style={s.metricVal}>{week.totalSessions}</Text>
+      <View style={baseStyles.content}>
+        <View style={[s.grid3, { marginBottom: SPACING.lg }]} wrap={false}>
+        <View style={[s.metricBox, { backgroundColor: COLORS.bgCard }]}>
+          <Text style={[s.metricVal, { color: COLORS.primary }]}>{week.totalSessions}</Text>
           <Text style={s.metricLbl}>
             {week.totalSessions === 1 ? t('statistics.weeklyAttendance.training') : t('statistics.weeklyAttendance.trainings')}
           </Text>
         </View>
-        <View style={s.metricBox}>
-          <Text style={s.metricVal}>{sortedPlayers.length}</Text>
+        <View style={[s.metricBox, { backgroundColor: COLORS.bgCard }]}>
+          <Text style={[s.metricVal, { color: COLORS.primary }]}>{sortedPlayers.length}</Text>
           <Text style={s.metricLbl}>{t('statistics.playersCount') || 'Jugadores'}</Text>
         </View>
-        <View style={s.metricBox}>
-          <Text style={s.metricVal}>
-            {Math.round(sortedPlayers.reduce((acc, p) => acc + p.percentage, 0) / sortedPlayers.length)}%
-          </Text>
+        <View style={[s.metricBox, { backgroundColor: COLORS.bgCard }]}>
+          <Text style={[s.metricVal, { color: COLORS.accent }]}>{avgAttendance}%</Text>
           <Text style={s.metricLbl}>{t('statistics.weeklyAttendance.avgAttendance') || 'Media Asistencia'}</Text>
         </View>
       </View>
 
-      {/* Attendance Table */}
-      <PdfSection title={t('statistics.weeklyAttendance.pdfTitle') || 'Asistencia Semanal'}>
+        <PdfSection title={t('statistics.weeklyAttendance.pdfTitle') || 'Asistencia Semanal'}>
         <View style={s.table}>
           <View style={s.row}>
-            <View style={[s.headerCell, { width: '30%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
-            <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.attended', 'Asistidos')}</Text></View>
-            <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.percentage', 'Porcentaje')}</Text></View>
-            <View style={[s.headerCell, { width: '40%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.missedDays', 'Ausencias')}</Text></View>
+            <View style={[s.headerCell, { width: '34%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
+            <View style={[s.headerCell, { width: '14%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.attended', 'Asistidos')}</Text></View>
+            <View style={[s.headerCell, { width: '16%' }]}><Text style={s.headerText}>{t('statistics.weeklyAttendance.percentage', 'Porcentaje')}</Text></View>
+            <View style={[s.headerCell, { width: '36%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.missedDays', 'Ausencias')}</Text></View>
           </View>
           {sortedPlayers.map((pa, idx) => {
             const pctColor = pa.percentage >= 80 ? '#166534' : (pa.percentage >= 60 ? '#b45309' : '#991b1b');
+            const badgeStyle = pa.missedDates.length > 0
+              ? { color: COLORS.danger, backgroundColor: '#fee2e2', borderColor: '#fecaca' }
+              : { color: COLORS.success, backgroundColor: '#dcfce7', borderColor: '#bbf7d0' };
             return (
               <View key={idx} style={s.row} wrap={false}>
-                <View style={[s.cell, { width: '30%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{pa.playerName}</Text></View>
-                <View style={[s.cell, { width: '15%' }]}><Text style={s.cellText}>{pa.attended}/{week.totalSessions}</Text></View>
-                <View style={[s.cell, { width: '15%' }]}><Text style={[s.cellBold, { color: pctColor }]}>{pa.percentage}%</Text></View>
-                <View style={[s.cell, { width: '40%', alignItems: 'flex-start', paddingLeft: 8 }]}>
-                  {pa.missedDates.length > 0 ? (
-                    <Text style={{ fontSize: 7, color: '#b91c1c', backgroundColor: '#fee2e2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                      {pa.missedDates.join(', ')}
-                    </Text>
-                  ) : (
-                    <Text style={{ fontSize: 7, color: '#166534', backgroundColor: '#dcfce7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                      {t('statistics.weeklyAttendance.noDays') || 'Ninguna'}
-                    </Text>
-                  )}
+                <View style={[s.cell, { width: '34%', alignItems: 'flex-start', paddingLeft: 8 }]}><Text style={[s.cellBold, { textAlign: 'left', fontSize: FONT_SIZE.sm }]}>{pa.playerName}</Text></View>
+                <View style={[s.cell, { width: '14%' }]}><Text style={s.cellText}>{pa.attended}/{week.totalSessions}</Text></View>
+                <View style={[s.cell, { width: '16%' }]}><Text style={[s.cellBold, { color: pctColor, fontSize: FONT_SIZE.sm }]}>{pa.percentage}%</Text></View>
+                <View style={[s.cell, { width: '36%', alignItems: 'flex-start', paddingLeft: 8 }]}>
+                  <Text style={[s.badge, badgeStyle, { borderWidth: 1, textTransform: 'none', alignSelf: 'flex-start', lineHeight: 1.25 }]}>
+                    {pa.missedDates.length > 0 ? pa.missedDates.join(', ') : noAbsences}
+                  </Text>
                 </View>
               </View>
             );
           })}
         </View>
       </PdfSection>
+      </View>
 
       <PdfFooter text="Xtramys Performance" />
     </Page>

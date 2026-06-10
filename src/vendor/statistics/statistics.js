@@ -22,13 +22,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PieChart } from 'react-native-chart-kit';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
-import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system/legacy';
-import { savePdfToDownloads } from '@/utils/pdfDownload';
 import AppLayout from '@/vendor/shared/appLayout';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { fetchMatchSheetsByTeam } from '@/store/slices/matchSheet/matchSheetThunks';
-import { generateTeamStatsPdf, generatePlayersStatsPdf, generateInjuriesStatsPdf, generateCombinedStatsPdf } from './pdf';
+import {
+  generateTeamStatsPdf,
+  generatePlayersStatsPdf,
+  generateInjuriesStatsPdf,
+  generateCombinedStatsPdf,
+  generateWeeklyAttendancePdf,
+} from './pdf';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
@@ -741,7 +744,7 @@ export default function Statistics({ navigation: navigationProp }) {
       .slice(0, weeklyDateRange.start || weeklyDateRange.end ? 100 : 8); // Show more weeks when filtered
   }, [trainingSessions, players, weeklyDateRange, selectedPlayerIds]);
 
-  // Función para generar PDF de asistencia semanal
+  // Funci�n para generar PDF de asistencia semanal
   const generateWeeklyAttendancePDF = async (week) => {
     const weekDate = new Date(week.weekStart);
     const weekEnd = new Date(weekDate);
@@ -751,354 +754,16 @@ export default function Statistics({ navigation: navigationProp }) {
     const locale = getLocale();
     const weekLabel = `${weekDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
-    // Ordenar jugadores por porcentaje
-    const sortedPlayers = [...week.playerAttendance].sort((a, b) => b.percentage - a.percentage);
-
-    // Generar filas de la tabla con control de saltos de página
-    const rowsPerPage = 18;
-    const tableRows = sortedPlayers
-      .map((pa, index) => {
-        const isLastOfPage = (index + 1) % rowsPerPage === 0 && index < sortedPlayers.length - 1;
-        const isFirstOfPage = index % rowsPerPage === 0 && index > 0;
-        const isLastRow = index === sortedPlayers.length - 1;
-
-        let rowClasses = [];
-        if (isFirstOfPage) rowClasses.push('first-of-page');
-        if (isLastOfPage) rowClasses.push('last-of-page');
-        if (isLastRow) rowClasses.push('last-row');
-
-        const percentageClass =
-          pa.percentage >= 80
-            ? 'percentage-high'
-            : pa.percentage >= 60
-              ? 'percentage-medium'
-              : 'percentage-low';
-
-        return `
-                <tr class="${rowClasses.join(' ')}">
-                    <td><strong>${pa.playerName}</strong></td>
-                    <td>${pa.attended}/${week.totalSessions}</td>
-                    <td class="${percentageClass}">${pa.percentage}%</td>
-                    <td>${
-                      pa.missedDates.length > 0
-                        ? `<span class="missed-days-badge">${pa.missedDates.join(', ')}</span>`
-                        : `<span class="no-missed-badge">${t('statistics.weeklyAttendance.noDays')}</span>`
-                    }</td>
-                </tr>
-            `;
-      })
-      .join('');
-
-    const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${t('statistics.weeklyAttendance.pdfTitle')}</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap');
-                    
-                    * {
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
-                    }
-                    
-                    @page {
-                        size: A4;
-                        margin: 0;
-                    }
-                    
-                    body {
-                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                        font-size: 10px;
-                        line-height: 1.5;
-                        color: #334155;
-                        background: #f8fafc;
-                        padding: 0;
-                        margin: 0;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                        letter-spacing: 0.2px;
-                    }
-                    
-                    .page-wrapper {
-                        padding: 15mm 16mm 20mm 16mm;
-                        min-height: 100vh;
-                        position: relative;
-                    }
-                    
-                    /* Header del documento */
-                    .pdf-header {
-                        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-                        color: white;
-                        border-radius: 12px;
-                        padding: 20px 24px;
-                        margin-bottom: 20px;
-                        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
-                        page-break-inside: avoid;
-                    }
-                    
-                    .pdf-header h1 {
-                        font-family: 'Outfit', sans-serif;
-                        font-size: 18px;
-                        font-weight: 900;
-                        letter-spacing: 0.5px;
-                        text-transform: uppercase;
-                        margin-bottom: 4px;
-                        line-height: 1.2;
-                    }
-                    
-                    .pdf-header p {
-                        font-family: 'Outfit', sans-serif;
-                        font-size: 8.5px;
-                        color: #94a3b8;
-                        margin: 3px 0;
-                        font-weight: 800;
-                        text-transform: uppercase;
-                        letter-spacing: 1.5px;
-                    }
-                    
-                    .pdf-header .header-stats {
-                        display: flex;
-                        gap: 24px;
-                        margin-top: 16px;
-                        padding-top: 14px;
-                        border-top: 1px solid rgba(255, 255, 255, 0.15);
-                    }
-                    
-                    .pdf-header .stat-item {
-                        text-align: center;
-                    }
-                    
-                    .pdf-header .stat-value {
-                        font-family: 'Outfit', sans-serif;
-                        font-size: 20px;
-                        font-weight: 900;
-                        color: #ffffff;
-                        line-height: 1.1;
-                        letter-spacing: -0.3px;
-                    }
-                    
-                    .pdf-header .stat-label {
-                        font-family: 'Outfit', sans-serif;
-                        font-size: 8px;
-                        color: #94a3b8;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        font-weight: 850;
-                        margin-top: 3px;
-                    }
-                    
-                    /* Contenedor de la tabla */
-                    .table-container {
-                        background: #ffffff;
-                        border-radius: 8px;
-                        overflow: hidden;
-                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-                        border: 1px solid #e2e8f0;
-                    }
-                    
-                    /* Tabla principal */
-                    table {
-                        width: 100%;
-                        border-collapse: separate;
-                        border-spacing: 0;
-                        font-size: 10px;
-                    }
-                    
-                    thead {
-                        display: table-header-group;
-                    }
-                    
-                    thead th {
-                        background: #1e293b;
-                        color: white;
-                        padding: 8px 12px;
-                        text-align: left;
-                        font-family: 'Outfit', sans-serif;
-                        font-weight: 700;
-                        font-size: 8px;
-                        text-transform: uppercase;
-                        letter-spacing: 0.8px;
-                        border: none;
-                        line-height: 1.3;
-                    }
-                    
-                    tbody tr {
-                        page-break-inside: avoid;
-                    }
-                    
-                    tbody td {
-                        padding: 8px 12px;
-                        border: none;
-                        border-bottom: 1px solid #f1f5f9;
-                        vertical-align: middle;
-                        line-height: 1.4;
-                        font-size: 8.5px;
-                        color: #334155;
-                    }
-                    
-                    tbody tr:nth-child(even) td {
-                        background: #f8fafc;
-                    }
-                    
-                    tbody tr:last-child td {
-                        border-bottom: none;
-                    }
-                    
-                    /* Primera fila de nueva pagina */
-                    tbody tr.first-of-page td {
-                        border-top: 2.5px solid #0f172a;
-                        padding-top: 12px;
-                    }
-                    
-                    /* Ultima fila antes de salto de pagina */
-                    tbody tr.last-of-page td {
-                        border-bottom: 2.5px solid #0f172a;
-                        padding-bottom: 12px;
-                    }
-                    
-                    tbody tr.last-of-page {
-                        page-break-after: always;
-                    }
-                    
-                    /* Estilos de porcentajes */
-                    .percentage-high { 
-                        color: #166534; 
-                        font-weight: 800; 
-                    }
-                    
-                    .percentage-medium { 
-                        color: #b45309; 
-                        font-weight: 800; 
-                    }
-                    
-                    .percentage-low { 
-                        color: #991b1b; 
-                        font-weight: 800; 
-                    }
-                    
-                    /* Badges */
-                    .missed-days-badge {
-                        font-size: 8px;
-                        color: #991b1b;
-                        background: #fee2e2;
-                        padding: 3px 8px;
-                        border-radius: 4px;
-                        display: inline-block;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        letter-spacing: 0.4px;
-                    }
-                    
-                    .no-missed-badge {
-                        font-size: 8px;
-                        color: #166534;
-                        background: #dcfce7;
-                        padding: 3px 8px;
-                        border-radius: 4px;
-                        display: inline-block;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        letter-spacing: 0.4px;
-                    }
-                    
-                    /* Footer */
-                    .footer-logo {
-                        position: fixed;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        height: 16mm;
-                        border-top: 1.5px solid #e2e8f0;
-                        padding: 8px 16mm 6px 16mm;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        font-size: 8px;
-                        color: #64748b;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.4px;
-                        background-color: #ffffff;
-                        font-family: 'Inter', sans-serif;
-                    }
-                    
-                    .footer-logo strong {
-                        color: #0f172a;
-                        font-size: 9.5px;
-                        font-weight: 800;
-                        letter-spacing: 0.3px;
-                    }
-                    
-                    .page-number::after {
-                        content: counter(page);
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="page-wrapper">
-                    <div class="pdf-header">
-                        <h1>${t('statistics.weeklyAttendance.pdfTitle')}</h1>
-                        <p>${t('statistics.weeklyAttendance.team')}: ${teamName}</p>
-                        <p>${t('statistics.weeklyAttendance.weekOf')}: ${weekLabel}</p>
-                        <div class="header-stats">
-                            <div class="stat-item">
-                                <div class="stat-value">${week.totalSessions}</div>
-                                <div class="stat-label">${week.totalSessions === 1 ? t('statistics.weeklyAttendance.training') : t('statistics.weeklyAttendance.trainings')}</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${sortedPlayers.length}</div>
-                                <div class="stat-label">${t('statistics.playersCount')}</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${Math.round(sortedPlayers.reduce((acc, p) => acc + p.percentage, 0) / sortedPlayers.length)}%</div>
-                                <div class="stat-label">${t('statistics.weeklyAttendance.avgAttendance')}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 30%;">${t('statistics.weeklyAttendance.player')}</th>
-                                    <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.attended')}</th>
-                                    <th style="width: 15%; text-align: center;">${t('statistics.weeklyAttendance.percentage')}</th>
-                                    <th style="width: 40%;">${t('statistics.weeklyAttendance.missedDays')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="footer-logo">
-                    <div><strong>Xtramys</strong> | ${t('statistics.weeklyAttendance.pdfTitle')}</div>
-                    <div>${t('statistics.weeklyAttendance.generatedAt', 'Generado')}: ${new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} | Pagina <span class="page-number"></span></div>
-                </div>
-            </body>
-            </html>
-        `;
-
     try {
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      const prefix = t('statistics.weeklyAttendance.pdfPrefix', 'Asistencia_Semanal');
-      const fileName = `${prefix}_${week.weekStart}.pdf`;
-      await savePdfToDownloads(uri, fileName);
+      await generateWeeklyAttendancePdf(week, teamName, weekLabel, t);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error generating weekly attendance PDF:', error);
       Alert.alert(
         t('common.error'),
         t('statistics.weeklyAttendance.pdfError', 'Error al generar el PDF'),
       );
     }
   };
-
   const sharedPDFStyles = `
         * {
             margin: 0;

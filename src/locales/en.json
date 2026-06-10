@@ -80,6 +80,9 @@
     "errorTitle": "Connection error",
     "errorMessage": "A connection error occurred. Please try again.",
     "reload": "Reload",
+    "retry": "Retry",
+    "reconnecting": "Connecting...",
+    "apiUnavailableTitle": "Could not connect to the server",
     "dismiss": "Close",
     "login": "Log in",
     "startupError": "Could not start the application. Please try again.",
@@ -4969,6 +4972,7 @@
     "sessionId": "Session"
   },
   "pdfDialog": {
+    "generating": "Generating PDF...",
     "title": "PDF generated",
     "download": "Download",
     "downloadDesc": "Save to your device",

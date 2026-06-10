@@ -83,6 +83,9 @@
     "errorTitle": "Error de conexión",
     "errorMessage": "Ha ocurrido un error de conexión. Inténtalo de nuevo.",
     "reload": "Recargar",
+    "retry": "Reintentar",
+    "reconnecting": "Conectando...",
+    "apiUnavailableTitle": "No se pudo conectar con el servidor",
     "dismiss": "Cerrar",
     "login": "Iniciar sesión",
     "startupError": "No se pudo iniciar la aplicación. Inténtalo de nuevo.",
@@ -4975,6 +4978,7 @@
     "sessionId": "Sesión"
   },
   "pdfDialog": {
+    "generating": "Generando PDF...",
     "title": "PDF generado",
     "download": "Descargar",
     "downloadDesc": "Guardar en tu dispositivo",
