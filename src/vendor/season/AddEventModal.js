@@ -1595,6 +1595,7 @@ export default function AddEventModal({
       setCambios([]);
       setJugadoresEnCampo([]);
       setJugadoresExpulsados([]);
+      setGolesRival([]);
       setSessionData({
         fecha: startDate,
         horaInicio: defaultStart,
@@ -1869,7 +1870,7 @@ export default function AddEventModal({
           partidosSancion: (t.motivo === 'Doble amarilla') ? (t.partidosSancion || 1) : Math.max(1, t.partidosSancion || 1),
         })) : undefined,
         cambios: cambios.length > 0 ? cambios : undefined,
-        golesRival: golesRival.length > 0 ? golesRival : undefined,
+        golesRival: golesRival,
       });
       onClose();
     } catch (error) {

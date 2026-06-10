@@ -19,6 +19,7 @@
  * `{ type: 'set' | 'dismissed', nativeEvent: { timestamp } }`.
  */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function fmtForInput(d, type) {
   if (!d) return '';
@@ -50,6 +51,9 @@ function isDarkTheme() {
 }
 
 export default function DateTimePickerModal(props) {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'es';
+
   const {
     // API modal
     isVisible,
@@ -73,6 +77,12 @@ export default function DateTimePickerModal(props) {
   const initialDate = (isCommunityApi ? value : date) || new Date();
   const [val, setVal] = useState(fmtForInput(initialDate, inputType));
   const [dark, setDark] = useState(isDarkTheme());
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = currentLang;
+    }
+  }, [currentLang]);
 
   useEffect(() => {
     if (open) setVal(fmtForInput(initialDate, inputType));
@@ -161,6 +171,7 @@ export default function DateTimePickerModal(props) {
       >
         <input
           type={inputType}
+          lang={currentLang}
           value={val}
           min={minimumDate ? fmtForInput(minimumDate, inputType) : undefined}
           max={maximumDate ? fmtForInput(maximumDate, inputType) : undefined}
@@ -183,7 +194,7 @@ export default function DateTimePickerModal(props) {
               background: C.cancelBg, color: C.cancelText,
               cursor: 'pointer', fontWeight: 600,
             }}
-          >Cancelar</button>
+          >{currentLang.startsWith('en') ? 'Cancel' : 'Cancelar'}</button>
           <button
             type="button"
             onClick={fireConfirm}
@@ -192,7 +203,7 @@ export default function DateTimePickerModal(props) {
               background: C.primary, color: C.onPrimary, cursor: 'pointer',
               fontWeight: 700,
             }}
-          >OK</button>
+          >{currentLang.startsWith('en') ? 'OK' : 'Aceptar'}</button>
         </div>
       </div>
     </div>

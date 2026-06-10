@@ -1766,7 +1766,7 @@ export default function EditMatchSheetModal({
         tarjetasAmarillas: tarjetasAmarillasNorm,
         tarjetasRojas: tarjetasRojasNorm,
         cambios: cambiosNormalizados,
-        golesRival: golesRival.length > 0 ? golesRival : undefined,
+        golesRival: golesRival,
         descuentoPrimerTiempo: parseInt(descuentoPrimerTiempo) || 0,
         descuentoSegundoTiempo: parseInt(descuentoSegundoTiempo) || 0,
       };
