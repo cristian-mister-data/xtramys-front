@@ -40,7 +40,13 @@ import {
   toggleFavoriteExercise,
 } from '@/store/slices/exercise/exerciseThunks';
 import { setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
-import { getItemId, sameId, persistFavoriteState } from '@/utils/favoritePersistence';
+import {
+  applyFavoritePrefsToItems,
+  getItemId,
+  persistFavoriteState,
+  readFavoritePrefs,
+  sameId,
+} from '@/utils/favoritePersistence';
 
 const THEME_DEFAULT = {
   primary: '#2474E5',
@@ -115,6 +121,7 @@ export default function ExerciseSelectorModal({
   const [playersFilter, setPlayersFilter] = useState('');
   const [teamsFilter, setTeamsFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
+  const [favoritePrefs, setFavoritePrefs] = useState(null);
 
   // Navegación carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
@@ -138,6 +145,7 @@ export default function ExerciseSelectorModal({
       dispatch(fetchExerciseFolders({ lang }));
       dispatch(fetchExerciseFoldersFlat({ lang }));
       dispatch(fetchGlobalExercises({ lang }));
+      readFavoritePrefs('exercise').then(setFavoritePrefs).catch(() => setFavoritePrefs(null));
     }
   }, [visible, dispatch, i18n.language]);
 
@@ -186,10 +194,20 @@ export default function ExerciseSelectorModal({
   //  Lista combinada de ejercicios (usuario + globales sin duplicados)
   // ═══════════════════════════════════════════════
   const allExercises = useMemo(() => {
-    const userIds = new Set((ejercicios || []).map((e) => e._id));
-    const uniqueGlobals = globalExercises.filter((g) => !userIds.has(g._id));
-    return [...(ejercicios || []), ...uniqueGlobals];
-  }, [ejercicios, globalExercises]);
+    const byId = new Map();
+    [...(ejercicios || []), ...globalExercises].filter(Boolean).forEach((exercise) => {
+      const id = getItemId(exercise);
+      if (!id) return;
+      const prev = byId.get(String(id));
+      byId.set(String(id), {
+        ...prev,
+        ...exercise,
+        favorito: Boolean(prev?.favorito || exercise.favorito),
+      });
+    });
+    const merged = Array.from(byId.values());
+    return favoritePrefs ? applyFavoritePrefsToItems(merged, favoritePrefs) : merged;
+  }, [ejercicios, globalExercises, favoritePrefs]);
 
   // ═══════════════════════════════════════════════
   //  Contar ejercicios y subcarpetas por carpeta
@@ -276,6 +294,10 @@ export default function ExerciseSelectorModal({
       source = allExercises.filter((e) => e.favorito);
     } else {
       source = allExercises;
+    }
+
+    if (sourceFilter === 'favorites') {
+      return source;
     }
 
     if (!currentFolderId) {
@@ -504,6 +526,19 @@ export default function ExerciseSelectorModal({
       const previousFavorite = !!currentExercise?.favorito;
       const optimisticFavorite = !previousFavorite;
       dispatch(setExerciseFavorite({ exerciseId, favorito: optimisticFavorite }));
+      setFavoritePrefs((prev) => {
+        const favorites = new Set(prev?.favorites || []);
+        const unfavorites = new Set(prev?.unfavorites || []);
+        const id = String(exerciseId || '');
+        if (optimisticFavorite) {
+          favorites.add(id);
+          unfavorites.delete(id);
+        } else {
+          favorites.delete(id);
+          unfavorites.add(id);
+        }
+        return { favorites, unfavorites };
+      });
       persistFavoriteState('exercise', exerciseId, optimisticFavorite).catch(() => { });
       try {
         await dispatch(
@@ -511,6 +546,19 @@ export default function ExerciseSelectorModal({
         ).unwrap();
       } catch {
         dispatch(setExerciseFavorite({ exerciseId, favorito: previousFavorite }));
+        setFavoritePrefs((prev) => {
+          const favorites = new Set(prev?.favorites || []);
+          const unfavorites = new Set(prev?.unfavorites || []);
+          const id = String(exerciseId || '');
+          if (previousFavorite) {
+            favorites.add(id);
+            unfavorites.delete(id);
+          } else {
+            favorites.delete(id);
+            unfavorites.add(id);
+          }
+          return { favorites, unfavorites };
+        });
         persistFavoriteState('exercise', exerciseId, previousFavorite).catch(() => { });
       }
     },

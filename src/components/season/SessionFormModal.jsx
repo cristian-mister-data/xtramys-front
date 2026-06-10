@@ -10,7 +10,7 @@ import Modal from '@/ui/Modal';
 import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
-import { fetchEjerciciosUsuario } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import ExerciseSelectorModal from '@/features/session/ExerciseSelectorModal';
 import TeamAssignmentModal from '@/features/session/TeamAssignmentModal';
@@ -267,8 +267,24 @@ export default function SessionFormModal({
   const userId = user?._id;
   const playersRaw = useSelector((s) => s.player.players);
   const exercisesRaw = useSelector((s) => s.exercise.exercises);
+  const globalExercisesRaw = useSelector((s) => s.exercise.globalExercises);
   const players = useMemo(() => playersRaw || [], [playersRaw]);
   const exercises = useMemo(() => exercisesRaw || [], [exercisesRaw]);
+  const globalExercises = useMemo(() => globalExercisesRaw || [], [globalExercisesRaw]);
+  const selectableExercises = useMemo(() => {
+    const map = new Map();
+    [...exercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
+      const id = exercise._id || exercise.id;
+      if (!id) return;
+      const prev = map.get(String(id));
+      map.set(String(id), {
+        ...prev,
+        ...exercise,
+        favorito: Boolean(prev?.favorito || exercise.favorito),
+      });
+    });
+    return Array.from(map.values());
+  }, [exercises, globalExercises]);
 
   // Form state
   const [fecha, setFecha] = useState('');
@@ -297,7 +313,10 @@ export default function SessionFormModal({
     if (open && userId && exercises.length === 0) {
       dispatch(fetchEjerciciosUsuario({ user: userId }));
     }
-  }, [open, userId, exercises.length, dispatch]);
+    if (open && globalExercises.length === 0) {
+      dispatch(fetchGlobalExercises({}));
+    }
+  }, [open, userId, exercises.length, globalExercises.length, dispatch]);
 
   // Hydrate form when opening
   useEffect(() => {
@@ -335,9 +354,9 @@ export default function SessionFormModal({
 
   const exerciseById = useMemo(() => {
     const m = new Map();
-    exercises.forEach((e) => m.set(e._id, e));
+    selectableExercises.forEach((e) => m.set(e._id, e));
     return m;
-  }, [exercises]);
+  }, [selectableExercises]);
 
   const duration = useMemo(() => computeDuration(horaInicio, horaFin), [horaInicio, horaFin]);
 
@@ -656,7 +675,7 @@ export default function SessionFormModal({
       <ExerciseSelectorModal
         open={exerciseModalOpen}
         onClose={() => setExerciseModalOpen(false)}
-        exercises={exercises}
+        exercises={selectableExercises}
         selectedIds={selectedExerciseIds}
         onConfirm={handleExercisesPicked}
         excludeIds={selectedExerciseIds}

@@ -20,6 +20,7 @@ import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '../../utils/pdfDownload';
 import { api } from '@/api/client';
+import { cdnUrl } from '@/config';
 import {
   generateProfilePdf,
   generateAnthropometryPdf,
@@ -68,22 +69,40 @@ const blobToDataUrl = (blob) => (
   })
 );
 
+const blobToJpegDataUrl = async (blob) => {
+  if (!blob) return '';
+  try {
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close?.();
+    return canvas.toDataURL('image/jpeg', 0.9);
+  } catch {
+    return blobToDataUrl(blob);
+  }
+};
+
 const imageToBase64 = async (url) => {
   if (!url) return '';
   if (url.startsWith('data:')) return url;
   try {
     if (Platform.OS === 'web') {
       try {
-        const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
-        if (!response.ok) throw new Error(`Image fetch failed ${response.status}`);
-        return await blobToDataUrl(await response.blob());
-      } catch {
         const response = await api.get('/media/image-download', {
-          params: { url, filename: 'player-photo' },
+          params: { url, filename: 'player-photo', format: 'jpeg' },
           responseType: 'blob',
           timeout: 20000,
         });
-        return await blobToDataUrl(response.data);
+        return await blobToJpegDataUrl(response.data);
+      } catch {
+        const response = await fetch(cdnUrl(url), { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) throw new Error(`Image fetch failed ${response.status}`);
+        return await blobToJpegDataUrl(await response.blob());
       }
     } else {
       // Mobile (React Native / Expo)
@@ -98,8 +117,8 @@ const imageToBase64 = async (url) => {
       return `data:${mime};base64,${base64}`;
     }
   } catch (error) {
-    console.warn('Error converting image to base64, using original URL:', error);
-    return url;
+    console.warn('Error converting image to base64:', error);
+    return '';
   }
 };
 

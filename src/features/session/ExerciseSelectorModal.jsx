@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { MdSearch, MdCheck, MdImage } from 'react-icons/md';
+import { MdSearch, MdCheck, MdImage, MdStar, MdFolderShared, MdPerson } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
 
@@ -18,6 +18,29 @@ const List = styled.div`
   gap: 6px;
   max-height: 420px;
   overflow-y: auto;
+`;
+
+const Filters = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+`;
+
+const FilterButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
+  background: ${({ $active, theme }) => ($active ? theme.colors.primarySoft : theme.colors.surface)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.textSecondary)};
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceAlt}; }
+  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const ItemRow = styled.button`
@@ -85,11 +108,13 @@ export default function ExerciseSelectorModal({
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(selectedIds);
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   useEffect(() => {
     if (open) {
       setPicked(selectedIds);
       setSearch('');
+      setSourceFilter('all');
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -97,8 +122,14 @@ export default function ExerciseSelectorModal({
     const q = search.trim().toLowerCase();
     return exercises
       .filter((e) => !excludeIds.includes(e._id))
+      .filter((e) => {
+        if (sourceFilter === 'favorites') return e.favorito;
+        if (sourceFilter === 'mine') return !e.isGlobal;
+        if (sourceFilter === 'global') return e.isGlobal;
+        return true;
+      })
       .filter((e) => !q || (e.nombre || '').toLowerCase().includes(q));
-  }, [exercises, search, excludeIds]);
+  }, [exercises, search, excludeIds, sourceFilter]);
 
   const toggle = (id) => {
     if (!multi) {
@@ -142,6 +173,25 @@ export default function ExerciseSelectorModal({
           onChange={(e) => setSearch(e.target.value)}
         />
       </SearchBox>
+
+      <Filters>
+        {[
+          { key: 'all', label: t('common.all', 'Todos'), icon: null },
+          { key: 'favorites', label: t('common.favorites', 'Favoritos'), icon: MdStar },
+          { key: 'mine', label: t('exercise.mine', 'Mis ejercicios'), icon: MdPerson },
+          { key: 'global', label: t('exercise.appExercises', 'App'), icon: MdFolderShared },
+        ].map(({ key, label, icon: Icon }) => (
+          <FilterButton
+            key={key}
+            type="button"
+            $active={sourceFilter === key}
+            onClick={() => setSourceFilter(key)}
+          >
+            {Icon ? <Icon size={15} /> : null}
+            {label}
+          </FilterButton>
+        ))}
+      </Filters>
 
       {filtered.length === 0 ? (
         <Muted style={{ textAlign: 'center', padding: 20 }}>

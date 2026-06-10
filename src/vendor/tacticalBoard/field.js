@@ -1938,6 +1938,17 @@ const FreeTextTool = React.memo(
         textDisplayY < 0 ||
         textDisplayY > imageHeight);
     const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
+    const noTextSelectionStyle =
+      Platform.OS === 'web'
+        ? {
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            touchAction: 'none',
+          }
+        : {};
 
     return (
       <PanGestureHandler
@@ -6477,9 +6488,88 @@ function renderIconCanvas(
 
   // Determinar si mostrar foto (solo si showPhotos est� activo y hay foto)
   const shouldShowPhoto = showPhotos && photoUrl;
+  const nonSelectableWebStyle =
+    Platform.OS === 'web'
+      ? {
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
+          touchAction: 'none',
+          cursor: 'default',
+        }
+      : {};
 
   switch (icon.type) {
     case 'player':
+      if (Platform.OS === 'web' && !shouldShowPhoto) {
+        const strokeColor = '#222';
+        const strokeWidth = 1;
+        const textValue = displayText === undefined ? '' : String(displayText);
+        return (
+          <View
+            style={[
+              {
+                width: size,
+                height: size,
+                borderRadius: halfSize,
+                overflow: 'hidden',
+                ...nonSelectableWebStyle,
+              },
+              style,
+            ]}
+            onContextMenu={(e) => e?.preventDefault?.()}
+          >
+            <Svg
+              width={size}
+              height={size}
+              viewBox={`0 0 ${size} ${size}`}
+              style={nonSelectableWebStyle}
+            >
+              <Circle
+                cx={halfSize}
+                cy={halfSize}
+                r={Math.max(0, halfSize - strokeWidth / 2)}
+                fill={color}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
+              {showGoalkeeperStripes && (
+                <>
+                  {[0.1, 0.35, 0.6, 0.85].map((factor) => (
+                    <Rect
+                      key={factor}
+                      x={0}
+                      y={size * factor}
+                      width={size}
+                      height={2}
+                      fill={stripeColor}
+                      opacity={0.85}
+                    />
+                  ))}
+                </>
+              )}
+              {playersWithNumber && textValue !== '' && (
+                <SvgText
+                  x={halfSize}
+                  y={halfSize}
+                  fill={textColor}
+                  fontSize={fontSize}
+                  fontWeight={isPositionLabel ? '600' : '700'}
+                  fontFamily="Arial, Helvetica, sans-serif"
+                  textAnchor="middle"
+                  alignmentBaseline="central"
+                  dominantBaseline="central"
+                  pointerEvents="none"
+                >
+                  {textValue}
+                </SvgText>
+              )}
+            </Svg>
+          </View>
+        );
+      }
       return (
         <View
           style={[
@@ -6493,9 +6583,11 @@ function renderIconCanvas(
               borderWidth: shouldShowPhoto ? 2 : 1,
               borderColor: shouldShowPhoto ? color : '#222',
               overflow: 'hidden',
+              ...nonSelectableWebStyle,
             },
             style,
           ]}
+          onContextMenu={(e) => e?.preventDefault?.()}
         >
           {/* Foto del jugador si est� activo */}
           {shouldShowPhoto && (
@@ -6561,6 +6653,7 @@ function renderIconCanvas(
           {/* N�mero/posici�n solo si no hay foto */}
           {!shouldShowPhoto && playersWithNumber && displayText !== undefined && (
             <Text
+              selectable={false}
               style={{
                 color: textColor,
                 fontWeight: isPositionLabel ? '600' : 'bold',
@@ -6569,6 +6662,7 @@ function renderIconCanvas(
                 textAlign: 'center',
                 includeFontPadding: false,
                 verticalAlign: 'middle',
+                ...nonSelectableWebStyle,
                 ...(Platform.OS === 'web'
                   ? {
                       display: 'flex',
@@ -6579,6 +6673,7 @@ function renderIconCanvas(
                       position: 'absolute',
                       top: 0,
                       left: 0,
+                      pointerEvents: 'none',
                     }
                   : {}),
               }}
@@ -7190,7 +7285,9 @@ const DraggableIcon = React.memo(
           width: elementW,
           height: elementH,
           zIndex: icon.calculatedZIndex || (icon.locked === true ? 1 : icon.zIndex || 200),
+          ...noTextSelectionStyle,
         }}
+        onContextMenu={(e) => e?.preventDefault?.()}
       >
         {/* Indicador visual de zona de eliminacion - se renderiza FUERA del wrapper
         escalado/opacado para que sea nitido y completamente visible (mismo
@@ -7239,6 +7336,7 @@ const DraggableIcon = React.memo(
             flex: 1,
             opacity: showDeleteIndicator ? 0.5 : 1,
             transform: showDeleteIndicator ? [{ scale: 0.8 }] : [],
+            ...noTextSelectionStyle,
           }}
           pointerEvents="box-none"
         >
@@ -7248,7 +7346,7 @@ const DraggableIcon = React.memo(
             enabled={!isDrawingMode && !icon.locked}
             onHandlerStateChange={handleTap}
           >
-            <View style={{ flex: 1 }} pointerEvents="box-none">
+            <View style={{ flex: 1, ...noTextSelectionStyle }} pointerEvents="box-none">
               <PanGestureHandler
                 ref={panRef}
                 key={dragKey}
@@ -7555,6 +7653,7 @@ const DraggableIcon = React.memo(
                       height: elementH,
                       alignItems: 'center',
                       justifyContent: 'center',
+                      ...noTextSelectionStyle,
                     }}
                   >
                     {/* Indicador visual de selecci�n m�ltiple */}
@@ -7659,6 +7758,7 @@ const DraggableIcon = React.memo(
 
                     {icon.playerData && (
                       <Text
+                        selectable={false}
                         style={{
                           position: 'absolute',
                           bottom: -22,
@@ -7676,6 +7776,7 @@ const DraggableIcon = React.memo(
                           borderRadius: 4,
                           borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
                           borderColor: '#ccc',
+                          ...noTextSelectionStyle,
                         }}
                       >
                         {icon.playerData.nombre || icon.playerData.name}
@@ -20296,6 +20397,10 @@ export default function Field(props = {}) {
                         backgroundColor: FIELD_CAPTURE_BACKGROUND,
                         opacity: fieldImageReady ? 1 : 0,
                         userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
+                        MozUserSelect: 'none',
+                        msUserSelect: 'none',
                         touchAction: 'none',
                         zIndex: multiSelectMode
                           ? 9999
