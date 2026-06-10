@@ -662,6 +662,7 @@ function FolderManagement({
 
   // Navegación de subcarpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [isNavigatingFolder, setIsNavigatingFolder] = useState(false);
   const [folderPath, setFolderPath] = useState([]); // [{_id, nombre, color}]
   const currentDepth = folderPath.length; // 0 = root, 1 = subfolder (max 2 levels)
 
@@ -681,6 +682,7 @@ function FolderManagement({
 
   const navigateToFolder = (folder) => {
     setFolderPath(prev => [...prev, { _id: folder._id, nombre: folder.nombre, color: folder.color }]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(folder._id);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -689,6 +691,7 @@ function FolderManagement({
   const navigateBackFolder = () => {
     const newPath = folderPath.slice(0, -1);
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath.length > 0 ? newPath[newPath.length - 1]._id : null);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -696,6 +699,7 @@ function FolderManagement({
 
   const navigateToRoot = () => {
     setFolderPath([]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(null);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -705,6 +709,7 @@ function FolderManagement({
     if (index < 0) { navigateToRoot(); return; }
     const newPath = folderPath.slice(0, index + 1);
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath[newPath.length - 1]._id);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -1169,6 +1174,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Estado de navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [isNavigatingFolder, setIsNavigatingFolder] = useState(false);
   const [folderPath, setFolderPath] = useState([]); // breadcrumb: [{_id, nombre}, ...]
 
   // Estado de selección múltiple
@@ -1205,7 +1211,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Editar carpeta
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
   const [editFolderName, setEditFolderName] = useState('');
-  const [editFolderNameEn, setEditFolderNameEn] = useState('');
+  const [editFolderNameEn, setNewFolderNameEn] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#3B82F6');
 
   // Notificaciones
@@ -1292,8 +1298,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Navegar a carpeta: cargar contenido
   useEffect(() => {
     if (currentFolderId) {
-      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }))
+        .finally(() => setIsNavigatingFolder(false));
     } else {
+      setIsNavigatingFolder(false);
       dispatch(clearCurrentFolder());
     }
   }, [currentFolderId, dispatch, lang]);
@@ -1344,6 +1352,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {
     setFolderPath(prev => [...prev, { _id: folder._id, nombre: folder.nombre }]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(folder._id);
   };
 
@@ -1351,17 +1360,20 @@ export default function ExerciseList({ navigation: navigationProp }) {
     const newPath = [...folderPath];
     newPath.pop();
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath.length > 0 ? newPath[newPath.length - 1]._id : null);
   };
 
   const navigateToRoot = () => {
     setFolderPath([]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(null);
   };
 
   const navigateToBreadcrumb = (index) => {
     const newPath = folderPath.slice(0, index + 1);
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath[newPath.length - 1]._id);
   };
 
@@ -2083,7 +2095,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
         </ScrollView>
 
         {/* Content */}
-        {(loading || foldersLoading) ? (
+        {(loading || foldersLoading || isNavigatingFolder) ? (
           <View style={styles.mvLoadingContainer}>
             <ActivityIndicator size="large" color="#3578e5" />
             <Text style={styles.mvLoadingText}>{t('common.loading')}</Text>

@@ -14,7 +14,7 @@ import { clearCurrentAnthropometry } from '@/store/slices/anthropometry/anthropo
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const AnthropometryDetail = ({ navigation, route }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   
   const { anthropometryId } = route.params;
@@ -30,11 +30,13 @@ const AnthropometryDetail = ({ navigation, route }) => {
     };
   }, [anthropometryId]);
 
+  const getLocale = () => (i18n && i18n.language === 'en' ? 'en-US' : 'es-ES');
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(getLocale(), {
       day: '2-digit',
-      month: '2-digit',
+      month: 'short',
       year: 'numeric',
     });
   };

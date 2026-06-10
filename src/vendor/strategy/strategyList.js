@@ -661,6 +661,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
 
   // Navegación de subcarpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [isNavigatingFolder, setIsNavigatingFolder] = useState(false);
   const [folderPath, setFolderPath] = useState([]); // [{_id, nombre, color}]
   const currentDepth = folderPath.length;
 
@@ -680,6 +681,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
 
   const navigateToFolder = (folder) => {
     setFolderPath(prev => [...prev, { _id: folder._id, nombre: folder.nombre, color: folder.color }]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(folder._id);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -688,6 +690,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   const navigateBackFolder = () => {
     const newPath = folderPath.slice(0, -1);
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath.length > 0 ? newPath[newPath.length - 1]._id : null);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -695,15 +698,16 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
 
   const navigateToRoot = () => {
     setFolderPath([]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(null);
     setCreatingFolder(false);
     setEditingFolder(null);
   };
 
   const navigateToBreadcrumb = (index) => {
-    if (index < 0) { navigateToRoot(); return; }
     const newPath = folderPath.slice(0, index + 1);
     setFolderPath(newPath);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(newPath[newPath.length - 1]._id);
     setCreatingFolder(false);
     setEditingFolder(null);
@@ -1124,6 +1128,7 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   // Estados para navegación de carpetas
   const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [isNavigatingFolder, setIsNavigatingFolder] = useState(false);
   const [folderPath, setFolderPath] = useState([]);
   const [showMoveToFolder, setShowMoveToFolder] = useState(false);
   const [strategyToMove, setStrategyToMove] = useState(null);
@@ -1228,12 +1233,13 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   // Efecto para navegación de carpetas
   useEffect(() => {
-    if (currentFolderId && idUsuario) {
-      dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+    if (currentFolderId) {
+      dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }))
+        .finally(() => setIsNavigatingFolder(false));
     } else {
-      dispatch(clearCurrentFolder());
+      setIsNavigatingFolder(false);
     }
-  }, [currentFolderId, idUsuario, dispatch, lang]);
+  }, [currentFolderId, dispatch, lang]);
 
   // Persistir el modo edición/creación para sobrevivir al desmontaje en web
   // cuando el usuario navega al editor del campo táctico.
@@ -1320,23 +1326,26 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {
-    setFolderPath(prev => [...prev, { id: folder._id, name: folder.nombre }]);
+    setFolderPath(prev => [...prev, { id: folder._id, nombre: folder.nombre }]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(folder._id);
   };
 
   const navigateBack = () => {
-    if (folderPath.length > 1) {
-      const newPath = folderPath.slice(0, -1);
-      setFolderPath(newPath);
+    const newPath = [...folderPath];
+    newPath.pop();
+    setFolderPath(newPath);
+    setIsNavigatingFolder(true);
+    if (newPath.length > 0) {
       setCurrentFolderId(newPath[newPath.length - 1].id);
     } else {
-      setFolderPath([]);
       setCurrentFolderId(null);
     }
   };
 
   const navigateToRoot = () => {
     setFolderPath([]);
+    setIsNavigatingFolder(true);
     setCurrentFolderId(null);
   };
 
@@ -2023,7 +2032,7 @@ export default function StrategyList({ navigation: navigationProp }) {
         </ScrollView>
 
         {/* Content */}
-        {(loading || foldersLoading) ? (
+        {(loading || foldersLoading || isNavigatingFolder) ? (
           <View style={styles.mvLoadingContainer}>
             <ActivityIndicator size="large" color="#3578e5" />
             <Text style={styles.mvLoadingText}>{t('common.loading')}</Text>

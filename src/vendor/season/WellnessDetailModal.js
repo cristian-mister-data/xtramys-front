@@ -234,9 +234,9 @@ export default function WellnessDetailModal({
       t('session.deleteResponse'),
       t('session.deleteResponseConfirm', { name: playerName }),
       [
-        { text: t('action.cancel'), style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: t('action.delete'),
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {

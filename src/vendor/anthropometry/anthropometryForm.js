@@ -82,7 +82,8 @@ const PLIEGUES = [
 ];
 
 const AnthropometryForm = ({ navigation, route }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const getLocale = () => (i18n && i18n.language === 'en' ? 'en-US' : 'es-ES');
   const dispatch = useDispatch();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
@@ -308,8 +309,8 @@ const AnthropometryForm = ({ navigation, route }) => {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                     <Ionicons name="calendar-outline" size={16} color={c.textMuted} />
-                    <Text style={[styles.selectorText, styles.selectorTextActive]} numberOfLines={1}>
-                      {formData.fecha.toLocaleDateString('es-ES')}
+                    <Text style={styles.selectorText}>
+                      {formData.fecha.toLocaleDateString(getLocale())}
                     </Text>
                   </View>
                   <Ionicons name="chevron-down" size={18} color={c.textMuted} />
@@ -320,6 +321,7 @@ const AnthropometryForm = ({ navigation, route }) => {
                     mode="date"
                     display="default"
                     onChange={handleDateChange}
+                    locale={getLocale()}
                   />
                 )}
               </View>

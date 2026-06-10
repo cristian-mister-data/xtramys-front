@@ -49,6 +49,7 @@ function AnthropometryCard({
   t,
   styles,
   theme,
+  i18n,
 }) {
   const getPlayerName = (playerId) => {
     if (!playerId) return '-';
@@ -59,12 +60,14 @@ function AnthropometryCard({
     return player ? getPlayerFullName(player) : '-';
   };
 
+  const getLocale = () => (i18n && i18n.language === 'en' ? 'en-US' : 'es-ES');
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     if (isGrid) {
-      return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      return date.toLocaleDateString(getLocale(), { day: '2-digit', month: 'short' });
     }
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(getLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -265,7 +268,8 @@ function AnthropometryCard({
 }
 
 const Anthropometry = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const getLocale = () => (i18n && i18n.language === 'en' ? 'en-US' : 'es-ES');
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
@@ -797,6 +801,7 @@ const Anthropometry = ({ navigation }) => {
                 styles={styles}
                 theme={theme}
                 t={t}
+                i18n={i18n}
               />
             )}
             contentContainerStyle={{ padding: 16 }}
@@ -900,7 +905,7 @@ const Anthropometry = ({ navigation }) => {
                       </Text>
                       <Text style={styles.createDateValue}>
                         {tempStartDate
-                          ? tempStartDate.toLocaleDateString('es-ES', {
+                          ? tempStartDate.toLocaleDateString(getLocale(), {
                               weekday: 'long',
                               day: 'numeric',
                               month: 'long',
@@ -925,7 +930,7 @@ const Anthropometry = ({ navigation }) => {
                       </Text>
                       <Text style={styles.createDateValue}>
                         {tempEndDate
-                          ? tempEndDate.toLocaleDateString('es-ES', {
+                          ? tempEndDate.toLocaleDateString(getLocale(), {
                               weekday: 'long',
                               day: 'numeric',
                               month: 'long',
@@ -1002,7 +1007,7 @@ const Anthropometry = ({ navigation }) => {
                   setDatePickerVisibleStart(false);
                 }}
                 onCancel={() => setDatePickerVisibleStart(false)}
-                locale="es-ES"
+                locale={getLocale()}
                 confirmTextIOS={t('anthropometry.filters.confirm')}
                 cancelTextIOS={t('anthropometry.filters.cancel')}
                 headerTextIOS={t('anthropometry.filters.startDate')}
@@ -1017,7 +1022,7 @@ const Anthropometry = ({ navigation }) => {
                   setDatePickerVisibleEnd(false);
                 }}
                 onCancel={() => setDatePickerVisibleEnd(false)}
-                locale="es-ES"
+                locale={getLocale()}
                 confirmTextIOS={t('anthropometry.filters.confirm')}
                 cancelTextIOS={t('anthropometry.filters.cancel')}
                 headerTextIOS={t('anthropometry.filters.endDate')}
@@ -1365,7 +1370,7 @@ const Anthropometry = ({ navigation }) => {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Ionicons name="calendar-outline" size={20} color={iconColor} />
                         <Text style={[styles.selectorText, styles.selectorTextSelected]}>
-                          {fecha.toLocaleDateString('es-ES', {
+                          {fecha.toLocaleDateString(getLocale(), {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -2005,7 +2010,7 @@ const Anthropometry = ({ navigation }) => {
                 }}
                 onCancel={() => setShowDateTimePicker(false)}
                 date={fecha}
-                locale="es-ES"
+                locale={getLocale()}
                 confirmTextIOS={t('anthropometry.filters.confirm')}
                 cancelTextIOS={t('anthropometry.filters.cancel')}
                 headerTextIOS={t('anthropometry.filters.selectDate')}
@@ -2060,7 +2065,7 @@ const Anthropometry = ({ navigation }) => {
                     <View style={styles.detailRow}>
                       <MaterialIcons name="calendar-today" size={20} color="#64748b" />
                       <Text style={styles.detailText}>
-                        {new Date(viewingAnthropometry.fecha).toLocaleDateString('es-ES', {
+                        {new Date(viewingAnthropometry.fecha).toLocaleDateString(getLocale(), {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',

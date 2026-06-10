@@ -160,11 +160,11 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
             </View>
           )}
           
-          {/* Icono de ubicaci�n en esquina */}
+          {/* Icono de ubicación en esquina */}
           {matchSheet.ubicacion && (
             <View style={styles.gridCardUbicacionCorner}>
               <Ionicons 
-                name={matchSheet.ubicacion === 'Casa' ? 'home' : matchSheet.ubicacion === 'Fuera' ? 'airplane' : 'location'} 
+                name={['Casa', 'local'].includes(matchSheet.ubicacion) ? 'home' : ['Fuera', 'visitante'].includes(matchSheet.ubicacion) ? 'airplane' : 'location'} 
                 size={10} 
                 color="#fff" 
               />
@@ -270,8 +270,13 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
           )}
           {matchSheet.ubicacion && (
             <View style={[styles.listCardTag, { backgroundColor: theme.colors.purpleSoft }]}>
-              <Ionicons name={matchSheet.ubicacion === 'Casa' ? 'home' : matchSheet.ubicacion === 'Fuera' ? 'airplane' : 'location'} size={12} color={theme.colors.purple} />
-              <Text style={[styles.listCardTagText, { color: theme.colors.purpleSoftText }]}>{matchSheet.ubicacion}</Text>
+              <Ionicons name={['Casa', 'local'].includes(matchSheet.ubicacion) ? 'home' : ['Fuera', 'visitante'].includes(matchSheet.ubicacion) ? 'airplane' : 'location'} size={12} color={theme.colors.purple} />
+              <Text style={[styles.listCardTagText, { color: theme.colors.purpleSoftText }]}>
+                {matchSheet.ubicacion === 'local' ? t('matchSheet.modals.home') : 
+                 matchSheet.ubicacion === 'visitante' ? t('matchSheet.modals.away') : 
+                 matchSheet.ubicacion === 'neutral' ? t('matchSheet.modals.neutral') : 
+                 matchSheet.ubicacion}
+              </Text>
             </View>
           )}
           {matchSheet.torneoId && typeof matchSheet.torneoId === 'object' && matchSheet.torneoId.nombre && (
