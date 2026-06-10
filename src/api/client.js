@@ -47,6 +47,111 @@ const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 const LONG_TIMEOUT_ROUTES = ['/video-folder/move-video', '/video/proxy-upload', '/video/generate'];
+const GET_CACHE_TTL_MS = 8000;
+const getResponseCache = new Map();
+const getInflight = new Map();
+let getCacheVersion = 0;
+
+const CACHE_BYPASS_ROUTES = [
+  '/auth/',
+  '/stripe',
+  '/paypal',
+  '/payment',
+  '/video/job/',
+  '/video/stream',
+  '/video/download',
+  '/video/proxy-upload',
+  '/video/presign',
+  '/video/generate',
+  '/media/download',
+];
+
+function serializeParams(params) {
+  if (!params) return '';
+  if (params instanceof URLSearchParams) return params.toString();
+  if (typeof params === 'string') return params;
+  return Object.keys(params)
+    .sort()
+    .map((key) => {
+      const value = params[key];
+      if (value === undefined) return '';
+      const normalized = value && typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return `${encodeURIComponent(key)}=${encodeURIComponent(normalized)}`;
+    })
+    .filter(Boolean)
+    .join('&');
+}
+
+function getCacheKey(config) {
+  const method = String(config.method || 'get').toLowerCase();
+  if (method !== 'get') return null;
+  if (config.skipCache || config.cache === false || config.signal) return null;
+  if (config.responseType && config.responseType !== 'json') return null;
+
+  const url = String(config.url || '');
+  if (!url || CACHE_BYPASS_ROUTES.some(route => url.includes(route))) return null;
+
+  const params = serializeParams(config.params);
+  return `${config.baseURL || ''}${url}${params ? `?${params}` : ''}`;
+}
+
+function cloneCachedResponse(response, config) {
+  return {
+    ...response,
+    config,
+    request: response.request,
+    headers: response.headers,
+    data: response.data,
+  };
+}
+
+function clearGetCache() {
+  getCacheVersion += 1;
+  getResponseCache.clear();
+  getInflight.clear();
+}
+
+function attachGetCache(config) {
+  const cacheKey = getCacheKey(config);
+  if (!cacheKey) return config;
+
+  const now = Date.now();
+  const cached = getResponseCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    config.adapter = async () => cloneCachedResponse(cached.response, config);
+    return config;
+  }
+
+  const inflight = getInflight.get(cacheKey);
+  if (inflight) {
+    config.adapter = async () => cloneCachedResponse(await inflight, config);
+    return config;
+  }
+
+  const originalAdapter = config.adapter || axios.defaults.adapter;
+  const requestCacheVersion = getCacheVersion;
+  config.adapter = async (adapterConfig) => {
+    const adapter = axios.getAdapter(originalAdapter);
+    const request = adapter(adapterConfig)
+      .then((response) => {
+        if (requestCacheVersion === getCacheVersion) {
+          getResponseCache.set(cacheKey, {
+            expiresAt: Date.now() + GET_CACHE_TTL_MS,
+            response,
+          });
+        }
+        return response;
+      })
+      .finally(() => {
+        getInflight.delete(cacheKey);
+      });
+
+    getInflight.set(cacheKey, request);
+    return request;
+  };
+
+  return config;
+}
 
 function shouldRetryRequest(error) {
   const config = error.config || {};
@@ -65,6 +170,9 @@ function retryDelay(attempt) {
 function attachInterceptors(instance) {
   instance.interceptors.request.use(
     (config) => {
+      const method = String(config.method || 'get').toLowerCase();
+      if (!RETRYABLE_METHODS.has(method)) clearGetCache();
+
       if (!USE_COOKIE_AUTH) {
         const token = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -75,7 +183,7 @@ function attachInterceptors(instance) {
         config.timeout = 60000;
       }
       
-      return config;
+      return attachGetCache(config);
     },
     (error) => Promise.reject(error),
   );

@@ -75,16 +75,11 @@ export default function App() {
     setSubscriptionRequiredHandler(() => {
       dispatch(subscriptionRequired());
     });
-    setNetworkErrorHandler((type, ctx) => {
+    setNetworkErrorHandler((type) => {
       if (type === 'OFFLINE' || type === 'TIMEOUT') {
-        if (!apiUnavailableRef.current) {
-          console.warn('[Network]', type, ctx);
-        }
         apiUnavailableRef.current = true;
         setApiUnavailable(true);
-        return;
       }
-      console.warn('[Network]', type, ctx);
     });
   }, [dispatch]);
 

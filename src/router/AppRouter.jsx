@@ -6,8 +6,6 @@ import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
 import LangSubscribe from '@/pages/LangSubscribe';
-import MarketingHome from '@/pages/public/MarketingHome';
-import { BlogArticle, BlogIndex } from '@/pages/public/Blog';
 
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
@@ -66,16 +64,8 @@ const SubscribeRoute = (
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Public SEO pages */}
-      <Route path="/" element={<MarketingHome lang="es" />} />
-      <Route path="/es" element={<MarketingHome lang="es" />} />
-      <Route path="/en" element={<MarketingHome lang="en" />} />
-      <Route path="/blog" element={<BlogIndex lang="es" />} />
-      <Route path="/es/blog" element={<BlogIndex lang="es" />} />
-      <Route path="/en/blog" element={<BlogIndex lang="en" />} />
-      <Route path="/blog/:slug" element={<BlogArticle lang="es" />} />
-      <Route path="/es/blog/:slug" element={<BlogArticle lang="es" />} />
-      <Route path="/en/blog/:slug" element={<BlogArticle lang="en" />} />
+      {/* Root: redirect to login or app based on auth status */}
+      <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
       {/* Auth */}
       <Route element={<AuthLayout />}>

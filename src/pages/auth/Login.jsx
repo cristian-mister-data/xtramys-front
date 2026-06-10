@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -26,11 +26,17 @@ export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error } = useSelector((state) => state.usuario);
+  const { loading, error, isAuthenticated, authChecked } = useSelector((state) => state.usuario);
 
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState(null);
+
+  useEffect(() => {
+    if (authChecked && isAuthenticated) {
+      navigate('/app', { replace: true });
+    }
+  }, [authChecked, isAuthenticated, navigate]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -63,6 +69,10 @@ export default function Login() {
   };
 
   const visibleError = localError || (typeof error === 'string' ? error : error?.message);
+
+  if (authChecked && isAuthenticated) {
+    return null;
+  }
 
   return (
     <AuthFormShell maxWidth="480px">
@@ -115,7 +125,6 @@ export default function Login() {
 
       <AccentLink to="/auth/forgot-password">{t('login.forgotPassword', 'Olvidé mi contraseña')}</AccentLink>
       <SecondaryLink to="/auth/register">{t('login.createAccount', 'Crear cuenta')}</SecondaryLink>
-      <SecondaryLink to="/auth/welcome">{t('register.backToLogin', 'Atrás')}</SecondaryLink>
     </AuthFormShell>
   );
 }
