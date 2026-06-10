@@ -181,14 +181,48 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
     );
   };
 
-  const VideoBlock = ({ blockTitle, videoUrl }) => (
-    <View style={baseStyles.questionRow} wrap={false}>
-      <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
-      <Text style={[baseStyles.questionValue, { color: COLORS.accent }]}>
-        {videoUrl ? `📹 ${videoUrl}` : `📹 ${t('rivalAnalysis.actions.videoSaved')}`}
-      </Text>
-    </View>
-  );
+  const VideoBlock = ({ blockTitle, videoUrl }) => {
+    let displayText = '';
+    let isValidUrl = false;
+    
+    if (videoUrl && typeof videoUrl === 'string') {
+      const jwtPattern = /[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/;
+      const hasJwt = videoUrl.match(/\/share\/([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/);
+      
+      if (hasJwt) {
+        const token = hasJwt[1];
+        const parts = token.split('.');
+        
+        if (parts.length === 3) {
+          const isValidStructure = parts.every(p => /^[A-Za-z0-9_-]+$/.test(p));
+          
+          if (isValidStructure && token.length >= 100) {
+            isValidUrl = true;
+            displayText = '📹 Ver video: Toca para reproducir';
+          } else {
+            displayText = '⚠️ Enlace de video no disponible (corrupto)';
+          }
+        } else {
+          displayText = '⚠️ Enlace de video no disponible';
+        }
+      } else if (videoUrl.includes('api.xtramys.com')) {
+        displayText = '⚠️ Enlace de video no disponible';
+      } else {
+        displayText = `📹 ${videoUrl}`;
+      }
+    } else {
+      displayText = `📹 ${t('rivalAnalysis.actions.videoSaved')}`;
+    }
+    
+    return (
+      <View style={baseStyles.questionRow} wrap={false}>
+        <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
+        <Text style={[baseStyles.questionValue, { color: isValidUrl ? COLORS.accent : '#ef4444' }]}>
+          {displayText}
+        </Text>
+      </View>
+    );
+  };
 
   // ── Content blocks ───────────────────────────────────────────────
   const renderContent = () => {
