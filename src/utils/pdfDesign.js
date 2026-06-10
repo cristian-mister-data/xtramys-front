@@ -12,6 +12,7 @@ import {
   pdf,
   Svg,
   Line as SvgLine,
+  Link,
 } from '@react-pdf/renderer';
 
 // ── Design Tokens ──────────────────────────────────────────────────
@@ -727,4 +728,4 @@ export async function renderPdf(documentElement, fileName) {
 }
 
 // Re-export react-pdf primitives for convenience
-export { Document, Page, Text, View, Image, StyleSheet, pdf, Svg, SvgLine };
+export { Document, Page, Text, View, Image, StyleSheet, pdf, Svg, SvgLine, Link };

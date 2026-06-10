@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Document, Page, Text, View, Image,
+  Document, Page, Text, View, Image, Link,
   baseStyles, COLORS, SPACING, FONT_SIZE,
   PdfHeader, PdfFooter, PdfSection, PdfQuestionRow,
   renderPdf,
@@ -182,44 +182,36 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
   };
 
   const VideoBlock = ({ blockTitle, videoUrl }) => {
-    let displayText = '';
-    let isValidUrl = false;
+    if (!videoUrl || typeof videoUrl !== 'string') {
+      return (
+        <View style={baseStyles.questionRow} wrap={false}>
+          <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
+          <Text style={[baseStyles.questionValue, { color: '#64748b' }]}>
+            📹 Video en la app
+          </Text>
+        </View>
+      );
+    }
     
-    if (videoUrl && typeof videoUrl === 'string') {
-      const jwtPattern = /[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/;
-      const hasJwt = videoUrl.match(/\/share\/([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/);
-      
-      if (hasJwt) {
-        const token = hasJwt[1];
-        const parts = token.split('.');
-        
-        if (parts.length === 3) {
-          const isValidStructure = parts.every(p => /^[A-Za-z0-9_-]+$/.test(p));
-          
-          if (isValidStructure && token.length >= 100) {
-            isValidUrl = true;
-            displayText = '📹 Ver video: Toca para reproducir';
-          } else {
-            displayText = '⚠️ Enlace de video no disponible (corrupto)';
-          }
-        } else {
-          displayText = '⚠️ Enlace de video no disponible';
-        }
-      } else if (videoUrl.includes('api.xtramys.com')) {
-        displayText = '⚠️ Enlace de video no disponible';
-      } else {
-        displayText = `📹 ${videoUrl}`;
-      }
-    } else {
-      displayText = `📹 ${t('rivalAnalysis.actions.videoSaved')}`;
+    const hasValidUrl = videoUrl.includes('/share?id=') && videoUrl.includes('&t=');
+    
+    if (!hasValidUrl) {
+      return (
+        <View style={baseStyles.questionRow} wrap={false}>
+          <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
+          <Text style={[baseStyles.questionValue, { color: '#ef4444' }]}>
+            ⚠️ URL no válida
+          </Text>
+        </View>
+      );
     }
     
     return (
       <View style={baseStyles.questionRow} wrap={false}>
         <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
-        <Text style={[baseStyles.questionValue, { color: isValidUrl ? COLORS.accent : '#ef4444' }]}>
-          {displayText}
-        </Text>
+        <Link href={videoUrl} style={{ color: COLORS.accent, fontSize: FONT_SIZE.sm }}>
+          Ver video
+        </Link>
       </View>
     );
   };
@@ -456,8 +448,13 @@ export async function generateRivalAnalysisPdf(
         let resolvedUrl = value.url || '';
         if (value.videoId) {
           try {
+            console.log('[generateRivalAnalysisPdf] Solicitando share link para videoId:', value.videoId);
             const response = await getVideoShareLink(value.videoId);
             resolvedUrl = response?.data?.url || resolvedUrl;
+            console.log('[generateRivalAnalysisPdf] Share link obtenido:', { 
+              resolvedUrlLength: resolvedUrl?.length,
+              resolvedUrlStart: resolvedUrl?.substring(0, 50)
+            });
           } catch (err) {
             console.error('Error resolving video url for pdf', err);
           }
