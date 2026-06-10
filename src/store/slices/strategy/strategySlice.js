@@ -105,10 +105,16 @@ const strategySlice = createSlice({
       .addCase(fetchStrategyFolders.fulfilled, (s, a) => { s.foldersLoading = false; s.folders = a.payload; })
       .addCase(fetchStrategyFolders.rejected, (s, a) => { s.foldersLoading = false; s.error = a.error.message; })
 
+      .addCase(fetchStrategyFolderById.pending, (s) => { s.loading = true; })
       .addCase(fetchStrategyFolderById.fulfilled, (s, a) => {
+        s.loading = false;
         s.currentFolder = a.payload.folder;
         s.currentFolderStrategies = a.payload.strategies;
         s.currentFolderSubfolders = a.payload.subfolders;
+      })
+      .addCase(fetchStrategyFolderById.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.error.message;
       })
 
       .addCase(fetchStrategyFoldersFlat.fulfilled, (s, a) => { s.foldersFlat = a.payload; })

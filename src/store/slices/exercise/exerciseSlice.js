@@ -128,10 +128,16 @@ const exerciseSlice = createSlice({
         state.error = action.error.message;
       })
 
+      .addCase(fetchExerciseFolderById.pending, (state) => { state.loading = true; })
       .addCase(fetchExerciseFolderById.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentFolder = action.payload.folder;
         state.currentFolderExercises = action.payload.exercises;
         state.currentFolderSubfolders = action.payload.subfolders;
+      })
+      .addCase(fetchExerciseFolderById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
       })
 
       .addCase(fetchExerciseFoldersFlat.fulfilled, (state, action) => {

@@ -379,12 +379,18 @@ export default function MyVideos() {
 
   const openFolder = async (folder) => {
     const fid = folder.id || folder._id;
+    setLoading(true);
+    setVideos([]);
+    setFolders([]);
     setFolderPath(prev => [...prev, { id: fid, nombre: folder.nombre }]);
     setCurrentFolder(fid);
   };
 
   const goBack = () => {
     if (folderPath.length > 0) {
+      setLoading(true);
+      setVideos([]);
+      setFolders([]);
       const newPath = [...folderPath];
       newPath.pop();
       setFolderPath(newPath);
@@ -393,6 +399,9 @@ export default function MyVideos() {
   };
 
   const goToRoot = () => {
+    setLoading(true);
+    setVideos([]);
+    setFolders([]);
     setFolderPath([]);
     setCurrentFolder(null);
   };
@@ -1092,6 +1101,9 @@ export default function MyVideos() {
               <Feather name="chevron-right" size={16} color="#CBD5E1" style={styles.breadcrumbSeparator} />
               <TouchableOpacity 
                 onPress={() => {
+                  setLoading(true);
+                  setVideos([]);
+                  setFolders([]);
                   const newPath = folderPath.slice(0, index + 1);
                   setFolderPath(newPath);
                   setCurrentFolder(folder.id);
@@ -1173,7 +1185,14 @@ export default function MyVideos() {
               sourceFilter === tab.key && styles.sourceTabActive,
               tab.icon && { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', paddingHorizontal: 16 }
             ]}
-            onPress={() => { setSourceFilter(tab.key); setCurrentFolder(null); setFolderPath([]); }}
+            onPress={() => {
+              setLoading(true);
+              setVideos([]);
+              setFolders([]);
+              setSourceFilter(tab.key);
+              setCurrentFolder(null);
+              setFolderPath([]);
+            }}
             activeOpacity={0.8}
           >
             {tab.icon && (
