@@ -33,7 +33,7 @@ export function getNavSections(t) {
     {
       items: [
         {
-          to: '/', label: t('menu.home', 'Inicio'), end: true, Icon: MdHome,
+          to: '/app', label: t('menu.home', 'Inicio'), end: true, Icon: MdHome,
           keywords: ['inicio', 'home', 'dashboard', 'panel']
         },
         {

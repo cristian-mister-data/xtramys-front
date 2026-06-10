@@ -96,6 +96,17 @@ const FIELD_CAPTURE_OPTIONS = {
   pixelRatio: 3,
 };
 const REFERENCE_WIDTH = 1280;
+const noTextSelectionStyle =
+  Platform.OS === 'web'
+    ? {
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        touchAction: 'none',
+      }
+    : {};
 
 function getFieldCaptureOptions(extraOptions = {}) {
   return Platform.OS === 'web'

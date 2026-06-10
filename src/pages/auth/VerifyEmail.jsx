@@ -70,7 +70,7 @@ export default function VerifyEmail() {
         saveUser(user);
         dispatch(setUser(user));
       }
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     } catch (err) {
       const codeValue = err?.code || err?.data?.code;
       let message = err?.message || t('verify.errorGeneric', 'Error al verificar el correo');

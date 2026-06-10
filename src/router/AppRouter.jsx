@@ -6,6 +6,8 @@ import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
 import LangSubscribe from '@/pages/LangSubscribe';
+import MarketingHome from '@/pages/public/MarketingHome';
+import { BlogArticle, BlogIndex } from '@/pages/public/Blog';
 
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
@@ -64,6 +66,17 @@ const SubscribeRoute = (
 export default function AppRouter() {
   return (
     <Routes>
+      {/* Public SEO pages */}
+      <Route path="/" element={<MarketingHome lang="es" />} />
+      <Route path="/es" element={<MarketingHome lang="es" />} />
+      <Route path="/en" element={<MarketingHome lang="en" />} />
+      <Route path="/blog" element={<BlogIndex lang="es" />} />
+      <Route path="/es/blog" element={<BlogIndex lang="es" />} />
+      <Route path="/en/blog" element={<BlogIndex lang="en" />} />
+      <Route path="/blog/:slug" element={<BlogArticle lang="es" />} />
+      <Route path="/es/blog/:slug" element={<BlogArticle lang="es" />} />
+      <Route path="/en/blog/:slug" element={<BlogArticle lang="en" />} />
+
       {/* Auth */}
       <Route element={<AuthLayout />}>
         <Route path="/auth/welcome" element={<Welcome />} />
@@ -137,7 +150,8 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={lazy_(<Home />)} />
+        <Route path="/app" element={lazy_(<Home />)} />
+        <Route path="/dashboard" element={<Navigate to="/app" replace />} />
         <Route path="/season" element={lazy_(<Season />)} />
         <Route path="/tournaments" element={lazy_(<Tournaments />)} />
         <Route path="/players" element={lazy_(<Players />)} />
