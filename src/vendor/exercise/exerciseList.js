@@ -1211,7 +1211,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   // Editar carpeta
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
   const [editFolderName, setEditFolderName] = useState('');
-  const [editFolderNameEn, setNewFolderNameEn] = useState('');
+  const [editFolderNameEn, setEditFolderNameEn] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#3B82F6');
 
   // Notificaciones

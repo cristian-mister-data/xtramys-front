@@ -3874,17 +3874,5 @@ const makeStyles = (theme) => StyleSheet.create({
       gap: 4,
     }
   }),
-  createButtonText: Platform.select({
-    web: {
-      color: theme.colors.onPrimary,
-      fontWeight: '600',
-      fontSize: 14,
-    },
-    default: {
-      color: theme.colors.onPrimary,
-      fontWeight: 'bold',
-      fontSize: 16,
-      letterSpacing: 0.25,
-    }
-  }),
+
 });
