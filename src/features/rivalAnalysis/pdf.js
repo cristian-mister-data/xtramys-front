@@ -448,15 +448,9 @@ export async function generateRivalAnalysisPdf(
         let resolvedUrl = value.url || '';
         if (value.videoId) {
           try {
-            console.log('[generateRivalAnalysisPdf] Solicitando share link para videoId:', value.videoId);
             const response = await getVideoShareLink(value.videoId);
             resolvedUrl = response?.data?.url || resolvedUrl;
-            console.log('[generateRivalAnalysisPdf] Share link obtenido:', { 
-              resolvedUrlLength: resolvedUrl?.length,
-              resolvedUrlStart: resolvedUrl?.substring(0, 50)
-            });
           } catch (err) {
-            console.error('Error resolving video url for pdf', err);
           }
         }
         clonedAnalysis.customAnswers[key] = {

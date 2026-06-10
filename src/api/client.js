@@ -25,7 +25,7 @@ let _lastWarning = { key: '', at: 0 };
 
 function shouldLogWarning(key) {
   const now = Date.now();
-  if (_lastWarning.key === key && now - _lastWarning.at < 2000) return false;
+  if (_lastWarning.key === key && now - _lastWarning.at < 5000) return false;
   _lastWarning = { key, at: now };
   return true;
 }
@@ -46,6 +46,8 @@ function classifyNetworkError(error) {
 const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 
+const LONG_TIMEOUT_ROUTES = ['/video-folder/move-video', '/video/proxy-upload', '/video/generate'];
+
 function shouldRetryRequest(error) {
   const config = error.config || {};
   const method = String(config.method || 'get').toLowerCase();
@@ -57,7 +59,7 @@ function shouldRetryRequest(error) {
 }
 
 function retryDelay(attempt) {
-  return 350 * (2 ** Math.max(0, attempt - 1));
+  return 300 * (2 ** Math.max(0, attempt - 1));
 }
 
 function attachInterceptors(instance) {
@@ -67,6 +69,12 @@ function attachInterceptors(instance) {
         const token = localStorage.getItem(TOKEN_STORAGE_KEY);
         if (token) config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      const isLongTimeout = LONG_TIMEOUT_ROUTES.some(route => config.url?.includes(route));
+      if (isLongTimeout && !config.timeout) {
+        config.timeout = 60000;
+      }
+      
       return config;
     },
     (error) => Promise.reject(error),
@@ -85,16 +93,6 @@ function attachInterceptors(instance) {
       const url = error.config?.url || 'unknown';
       const method = (error.config?.method || 'unknown').toUpperCase();
       const errorType = classifyNetworkError(error);
-      const warningKey = `${method} ${url} ${error.response?.status || errorType || error.message}`;
-
-      if (error.response && shouldLogWarning(warningKey)) {
-        console.warn(
-          `[API ${method} ${url}] ${error.response.status}:`,
-          error.response.data?.mensaje || error.response.data?.message || error.response.statusText,
-        );
-      } else if (!error.response && shouldLogWarning(warningKey)) {
-        console.warn(`[API ${method} ${url}] ${error.message}`);
-      }
 
       if (errorType && _networkErrorHandler) _networkErrorHandler(errorType, `${method} ${url}`);
       if (errorType === 'SESSION_EXPIRED' && _onUnauthorized) _onUnauthorized();
@@ -143,13 +141,13 @@ function attachInterceptors(instance) {
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 22000,
+  timeout: 30000,
   withCredentials: USE_COOKIE_AUTH,
 });
 
 const apiBase = axios.create({
   baseURL: BACKEND_URL,
-  timeout: 22000,
+  timeout: 30000,
   withCredentials: USE_COOKIE_AUTH,
 });
 
@@ -170,7 +168,7 @@ export const pollJobUntilDone = async (
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (signal?.aborted) throw new Error('Video generation cancelled');
     try {
-      const { data } = await api.get(`/video/job/${currentJobId}/status`, { timeout: 10000 });
+      const { data } = await api.get(`/video/job/${currentJobId}/status`, { timeout: 15000 });
       if (data.status === 'completed') return data;
       if (data.status === 'failed') throw new Error(data.error || 'Error generando video');
       if (data.status === 'expired') throw new Error('Video expirado, intente de nuevo');
