@@ -43,6 +43,23 @@ function classifyNetworkError(error) {
   return null;
 }
 
+const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
+const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+function shouldRetryRequest(error) {
+  const config = error.config || {};
+  const method = String(config.method || 'get').toLowerCase();
+  if (!RETRYABLE_METHODS.has(method)) return false;
+  if (config.__retryCount >= 2) return false;
+  if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') return false;
+  if (!error.response) return true;
+  return RETRYABLE_STATUS.has(error.response.status);
+}
+
+function retryDelay(attempt) {
+  return 350 * (2 ** Math.max(0, attempt - 1));
+}
+
 function attachInterceptors(instance) {
   instance.interceptors.request.use(
     (config) => {
@@ -57,7 +74,14 @@ function attachInterceptors(instance) {
 
   instance.interceptors.response.use(
     (r) => r,
-    (error) => {
+    async (error) => {
+      if (shouldRetryRequest(error)) {
+        const config = error.config;
+        config.__retryCount = (config.__retryCount || 0) + 1;
+        await new Promise((resolve) => setTimeout(resolve, retryDelay(config.__retryCount)));
+        return instance.request(config);
+      }
+
       const url = error.config?.url || 'unknown';
       const method = (error.config?.method || 'unknown').toUpperCase();
       const errorType = classifyNetworkError(error);
@@ -119,13 +143,13 @@ function attachInterceptors(instance) {
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 22000,
   withCredentials: USE_COOKIE_AUTH,
 });
 
 const apiBase = axios.create({
   baseURL: BACKEND_URL,
-  timeout: 15000,
+  timeout: 22000,
   withCredentials: USE_COOKIE_AUTH,
 });
 

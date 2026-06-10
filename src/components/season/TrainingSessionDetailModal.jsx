@@ -259,7 +259,8 @@ const ZoomOverlay = styled.div`
   background: rgba(2, 6, 23, 0.92);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  padding: 18px;
+  padding: clamp(10px, 2vw, 20px);
+  gap: 12px;
 
   @media (max-width: 640px) {
     padding: 12px;
@@ -273,7 +274,9 @@ const ZoomHeader = styled.div`
   justify-content: space-between;
   gap: 14px;
   color: #ffffff;
-  padding: 0 0 14px;
+  width: min(1180px, 100%);
+  justify-self: center;
+  padding: 0;
 `;
 
 const ZoomTitle = styled.div`
@@ -305,19 +308,23 @@ const ZoomClose = styled.button`
 
 const ZoomStage = styled.div`
   min-height: 0;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.68);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  display: grid;
-  place-items: center;
-  overflow: auto;
+  width: min(1180px, 100%);
+  height: 100%;
+  justify-self: center;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   overscroll-behavior: contain;
   touch-action: pan-x pan-y pinch-zoom;
 `;
 
 const ZoomImage = styled.img`
   display: block;
-  max-width: min(1180px, 100%);
+  max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
@@ -328,7 +335,7 @@ const ZoomImage = styled.img`
 
   @media (max-width: 760px) {
     max-width: 100%;
-    max-height: calc(100dvh - 92px);
+    max-height: 100%;
   }
 `;
 

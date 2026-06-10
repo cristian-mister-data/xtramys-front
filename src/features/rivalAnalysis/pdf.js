@@ -7,7 +7,7 @@ import {
 } from '@/utils/pdfDesign';
 import { normalizeFormation } from './rivalAnalysisData';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { getVideoShareLink } from '@/utils/api';
 
 // ── Styles ─────────────────────────────────────────────────────────
 const s = {
@@ -422,7 +422,8 @@ export async function generateRivalAnalysisPdf(
         let resolvedUrl = value.url || '';
         if (value.videoId) {
           try {
-            resolvedUrl = await resolvePlayableVideoUrl(value.videoId, { objectUrl: false });
+            const response = await getVideoShareLink(value.videoId);
+            resolvedUrl = response?.data?.url || resolvedUrl;
           } catch (err) {
             console.error('Error resolving video url for pdf', err);
           }

@@ -8,6 +8,7 @@ import { API_URL, BACKEND_URL } from '@/config';
 export {
   generateVideo,
   getJobStatus,
+  getVideoShareLink,
   presignVideo,
   proxyUploadVideo,
   linkVideoToExercise,

@@ -19,6 +19,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import { savePdfToDownloads } from '../../utils/pdfDownload';
+import { api } from '@/api/client';
 import {
   generateProfilePdf,
   generateAnthropometryPdf,
@@ -58,19 +59,32 @@ const getWellnessColor = (value, isDark = false) => {
 };
 
 // Helper para convertir URL de imagen a base64
+const blobToDataUrl = (blob) => (
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  })
+);
+
 const imageToBase64 = async (url) => {
   if (!url) return '';
   if (url.startsWith('data:')) return url;
   try {
     if (Platform.OS === 'web') {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      try {
+        const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) throw new Error(`Image fetch failed ${response.status}`);
+        return await blobToDataUrl(await response.blob());
+      } catch {
+        const response = await api.get('/media/image-download', {
+          params: { url, filename: 'player-photo' },
+          responseType: 'blob',
+          timeout: 20000,
+        });
+        return await blobToDataUrl(response.data);
+      }
     } else {
       // Mobile (React Native / Expo)
       const filename = url.split('/').pop().split('?')[0] || 'photo.jpg';

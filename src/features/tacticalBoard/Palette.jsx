@@ -35,6 +35,9 @@ const Bar = styled.div`
   position: relative;
   min-height: 52px;
   box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 
   @media (max-width: 1280px) {
     padding-left: 8px;
@@ -69,9 +72,20 @@ const Btn = styled.button`
   transition: background 0.12s, border 0.12s;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   &:hover { background: rgba(255,255,255,0.14); }
   &:active { background: rgba(255,255,255,0.2); }
+
+  svg,
+  svg *,
+  img {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
 `;
 
 const SubPalette = styled.div`

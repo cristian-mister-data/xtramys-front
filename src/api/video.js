@@ -3,6 +3,7 @@ import api from './client';
 // === Video (preview server-side desde keyframes + R2 upload) ===
 export const generateVideo = (payload) => api.post('/video/generate', payload);
 export const getJobStatus = (jobId) => api.get(`/video/job/${jobId}/status`);
+export const getVideoShareLink = (videoId) => api.get(`/video/${videoId}/share-link`);
 export const presignVideo = (payload) => api.post('/video/presign', payload);
 export const proxyUploadVideo = (formData, onUploadProgress) =>
   api.post('/video/proxy-upload', formData, {
