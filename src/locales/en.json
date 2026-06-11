@@ -2013,7 +2013,12 @@
       "dotSpacing": "Spacing",
       "preview": "Preview",
       "goalkeeperLabel": "Goalkeeper",
-      "goalkeeperStripeColorLabel": "Stripe color:"
+      "goalkeeperStripeColorLabel": "Stripe color:",
+      "shapeLabel": "Shape",
+      "circle": "Circle",
+      "jersey": "Jersey",
+      "jerseyStripes": "Jersey stripes",
+      "stripeColor": "Stripe color"
     },
     "elements": {
       "straightArrow": "straight arrow",

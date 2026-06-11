@@ -232,6 +232,50 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose, is
         </Field>
       )}
 
+      {/* Forma (jugadores) */}
+      {isPlayer && (
+        <Field>
+          <Label>{t('tacticalBoard.editPanel.shape', 'Forma')}</Label>
+          <Row>
+            <ToggleBtn type="button" $active={el.shape !== 'jersey'} onClick={() => update({ shape: 'circle' })}>
+              {t('tacticalBoard.editPanel.shapeCircle', 'Círculo')}
+            </ToggleBtn>
+            <ToggleBtn type="button" $active={el.shape === 'jersey'} onClick={() => update({ shape: 'jersey' })}>
+              {t('tacticalBoard.editPanel.shapeJersey', 'Camiseta')}
+            </ToggleBtn>
+          </Row>
+        </Field>
+      )}
+
+      {/* Rayas (jugadores) */}
+      {isPlayer && !el.isGoalkeeper && (
+        <Field>
+          <Label>{t('tacticalBoard.editPanel.stripes', 'Rayas')}</Label>
+          <Row>
+            <ToggleBtn type="button" $active={!el.hasStripes} onClick={() => update({ hasStripes: false })}>
+              {t('tacticalBoard.editPanel.no', 'No')}
+            </ToggleBtn>
+            <ToggleBtn type="button" $active={!!el.hasStripes} onClick={() => update({ hasStripes: true })}>
+              {t('tacticalBoard.editPanel.yes', 'Sí')}
+            </ToggleBtn>
+          </Row>
+        </Field>
+      )}
+
+      {/* Color de rayas (jugadores no porteros con rayas) */}
+      {isPlayer && !el.isGoalkeeper && el.hasStripes && (
+        <Field>
+          <Label>{t('tacticalBoard.editPanel.stripeColor', 'Color de rayas')}</Label>
+          <Swatches>
+            {PRESET_COLORS.map((c) => (
+              <Swatch key={c} type="button" $color={c} $active={(el.stripeColor || '#ffffff') === c}
+                onClick={() => update({ stripeColor: c })} title={c} />
+            ))}
+          </Swatches>
+        </Field>
+      )}
+
+
       {/* Trayectoria (balón) */}
       {el.type === 'ball' && (
         <Field>

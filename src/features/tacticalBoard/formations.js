@@ -169,5 +169,6 @@ export function buildFormation({ count = 11, name, color = '#1a237e', prefix = '
     label: i === 0 ? 'GK' : String(i),
     position: p.pos,
     rotation: 0,
+    paletteIconId: prefix === 'H' ? 'icon1' : 'icon2',
   }));
 }

@@ -135,7 +135,14 @@ const PopoverTitle = styled.div`
   margin-bottom: 4px;
 `;
 
-export default function Palette({ activeTool, onSelectTool, paletteColors = {}, onPaletteColorChange, onLongPressPaletteItem }) {
+export default function Palette({
+  activeTool,
+  activePaletteIconId,
+  onSelectTool,
+  paletteColors = {},
+  onPaletteColorChange,
+  onLongPressPaletteItem
+}) {
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [colorPickerFor, setColorPickerFor] = useState(null);
   const popoverRef = useRef(null);
@@ -179,46 +186,49 @@ export default function Palette({ activeTool, onSelectTool, paletteColors = {}, 
     }
   }, []);
 
-  const renderBtn = (icon) => (
-    <Btn
-      key={icon.id}
-      type="button"
-      title={icon.label}
-      $active={activeTool === icon.type}
-      onClick={() => {
-        if (icon.type === 'materials-button') { setMaterialsOpen((v) => !v); return; }
-        onSelectTool(icon.type, icon);
-        setMaterialsOpen(false);
-      }}
-      onPointerDown={() => handlePointerDown(icon)}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        setColorPickerFor(icon.id);
-      }}
-      style={{ position: 'relative' }}
-    >
-      <PaletteIcon icon={{ ...icon, color: getEffectiveColor(icon) }} size={icon.type === 'goal-large' || icon.type === 'goal-small' ? 32 : 30} />
-      {colorPickerFor === icon.id && (
-        <ColorPopover ref={popoverRef} onClick={(e) => e.stopPropagation()}>
-          <PopoverTitle>{t('tacticalBoard.paletteColor', 'Color de paleta')}</PopoverTitle>
-          {PRESET_COLORS.map((c) => (
-            <ColorSwatch
-              key={c}
-              type="button"
-              $color={c}
-              $sel={getEffectiveColor(icon) === c}
-              onClick={() => {
-                onPaletteColorChange(icon.id, c);
-                setColorPickerFor(null);
-              }}
-            />
-          ))}
-        </ColorPopover>
-      )}
-    </Btn>
-  );
+  const renderBtn = (icon) => {
+    const isActive = activeTool === icon.type && (icon.type !== 'player' || activePaletteIconId === icon.id);
+    return (
+      <Btn
+        key={icon.id}
+        type="button"
+        title={icon.label}
+        $active={isActive}
+        onClick={() => {
+          if (icon.type === 'materials-button') { setMaterialsOpen((v) => !v); return; }
+          onSelectTool(icon.type, icon);
+          setMaterialsOpen(false);
+        }}
+        onPointerDown={() => handlePointerDown(icon)}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setColorPickerFor(icon.id);
+        }}
+        style={{ position: 'relative' }}
+      >
+        <PaletteIcon icon={{ ...icon, color: getEffectiveColor(icon) }} size={icon.type === 'goal-large' || icon.type === 'goal-small' ? 32 : 30} />
+        {colorPickerFor === icon.id && (
+          <ColorPopover ref={popoverRef} onClick={(e) => e.stopPropagation()}>
+            <PopoverTitle>{t('tacticalBoard.paletteColor', 'Color de paleta')}</PopoverTitle>
+            {PRESET_COLORS.map((c) => (
+              <ColorSwatch
+                key={c}
+                type="button"
+                $color={c}
+                $sel={getEffectiveColor(icon) === c}
+                onClick={() => {
+                  onPaletteColorChange(icon.id, c);
+                  setColorPickerFor(null);
+                }}
+              />
+            ))}
+          </ColorPopover>
+        )}
+      </Btn>
+    );
+  };
 
   return (
     <Bar>

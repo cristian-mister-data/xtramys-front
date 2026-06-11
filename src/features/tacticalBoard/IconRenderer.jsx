@@ -103,23 +103,112 @@ export default function IconRenderer({ el, scale, x, y, selected, onDragStart, o
   if (el.type === 'player') {
     const number = el.number ?? el.label ?? '';
     const fontSize = String(number).length > 2 ? size * 0.4 : size * 0.6;
-    const showGoalkeeperStripes = el.isGoalkeeper && el.differentiateGoalkeeper !== false && !showPhoto;
+    const isJersey = el.shape === 'jersey';
+    const jerseyScale = size / 100;
+
+    const sColor = el.isGoalkeeper
+      ? (el.goalkeeperStripeColor || '#ffffff')
+      : (el.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff'));
+    const drawVerticalStripes = el.hasStripes || (el.isGoalkeeper && isJersey);
+    const drawGoalkeeperHorizontal = el.isGoalkeeper && !isJersey && !el.hasStripes;
+
     return (
       <Group {...groupProps}>
-        {deleteIndicator()}
-        <Circle radius={half} fill={showPhoto ? 'transparent' : color} stroke={showPhoto ? color : selected ? '#fbbf24' : '#222'} strokeWidth={showPhoto ? 2 : selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
-        {showPhoto && (
-          <Group clipFunc={(ctx) => { ctx.arc(0, 0, half - 2, 0, Math.PI * 2); ctx.closePath(); }}>
-            <PlayerPhoto fotoUrl={el.playerData.foto} size={photoSize} />
-          </Group>
+        {isJersey ? (
+          <>
+            {deleteIndicator({ x: -half - 8, y: -half - 8, width: size + 16, height: size + 16 })}
+            <Group scaleX={jerseyScale} scaleY={jerseyScale}>
+              <Path
+                data="M -15 -45 Q 0 -35 15 -45 L 35 -35 L 50 -10 L 35 10 L 25 0 L 25 45 L -25 45 L -25 0 L -35 10 L -50 -10 L -35 -35 Z"
+                fill={showPhoto ? 'transparent' : color}
+                stroke={showPhoto ? color : selected ? '#fbbf24' : '#222'}
+                strokeWidth={selected ? 2.5 : 1.5}
+                shadowBlur={selected ? 6 : 2}
+              />
+              {showPhoto && (
+                <Group clipFunc={(ctx) => {
+                  ctx.beginPath();
+                  ctx.moveTo(-15, -45);
+                  ctx.quadraticCurveTo(0, -35, 15, -45);
+                  ctx.lineTo(35, -35);
+                  ctx.lineTo(50, -10);
+                  ctx.lineTo(35, 10);
+                  ctx.lineTo(25, 0);
+                  ctx.lineTo(25, 45);
+                  ctx.lineTo(-25, 45);
+                  ctx.lineTo(-25, 0);
+                  ctx.lineTo(-35, 10);
+                  ctx.lineTo(-50, -10);
+                  ctx.lineTo(-35, -35);
+                  ctx.closePath();
+                }}>
+                  <PlayerPhoto fotoUrl={el.playerData.foto} size={90} />
+                </Group>
+              )}
+              {drawVerticalStripes && (
+                <Group clipFunc={(ctx) => {
+                  ctx.beginPath();
+                  ctx.moveTo(-15, -45);
+                  ctx.quadraticCurveTo(0, -35, 15, -45);
+                  ctx.lineTo(35, -35);
+                  ctx.lineTo(50, -10);
+                  ctx.lineTo(35, 10);
+                  ctx.lineTo(25, 0);
+                  ctx.lineTo(25, 45);
+                  ctx.lineTo(-25, 45);
+                  ctx.lineTo(-25, 0);
+                  ctx.lineTo(-35, 10);
+                  ctx.lineTo(-50, -10);
+                  ctx.lineTo(-35, -35);
+                  ctx.closePath();
+                }}>
+                  <Rect x={-25} y={-50} width={10} height={100} fill={sColor} listening={false} />
+                  <Rect x={-5} y={-50} width={10} height={100} fill={sColor} listening={false} />
+                  <Rect x={15} y={-50} width={10} height={100} fill={sColor} listening={false} />
+                </Group>
+              )}
+              {!showPhoto && String(number) !== '' && (
+                <Text
+                  text={String(number)}
+                  fontSize={String(number).length > 2 ? 35 : 45}
+                  fontStyle="bold"
+                  fill={el.numberColor || '#fff'}
+                  align="center"
+                  verticalAlign="middle"
+                  width={80}
+                  height={80}
+                  x={-40}
+                  y={-32}
+                  listening={false}
+                />
+              )}
+            </Group>
+          </>
+        ) : (
+          <>
+            {deleteIndicator()}
+            <Circle radius={half} fill={showPhoto ? 'transparent' : color} stroke={showPhoto ? color : selected ? '#fbbf24' : '#222'} strokeWidth={showPhoto ? 2 : selected ? 2 : 1} shadowBlur={selected ? 6 : 2} />
+            {showPhoto && (
+              <Group clipFunc={(ctx) => { ctx.beginPath(); ctx.arc(0, 0, half - 2, 0, Math.PI * 2); ctx.closePath(); }}>
+                <PlayerPhoto fotoUrl={el.playerData.foto} size={photoSize} />
+              </Group>
+            )}
+            {drawVerticalStripes && (
+              <Group clipFunc={(ctx) => { ctx.beginPath(); ctx.arc(0, 0, half - 1, 0, Math.PI * 2); ctx.closePath(); }}>
+                {[-0.5, -0.1, 0.3].map((f, i) => (
+                  <Rect key={i} x={size * f} y={-half} width={size * 0.15} height={size} fill={sColor} listening={false} />
+                ))}
+              </Group>
+            )}
+            {drawGoalkeeperHorizontal && [0.1, 0.35, 0.6, 0.85].map((f, i) => (
+              <Rect key={i} x={-half} y={-half + size * f} width={size} height={2} fill={sColor} opacity={0.85} listening={false} />
+            ))}
+            {!showPhoto && String(number) !== '' && (
+              <Text text={String(number)} fontSize={fontSize} fontStyle="bold" fill={el.numberColor || '#fff'} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
+            )}
+            {selected && <Circle radius={half} stroke="#fbbf24" strokeWidth={2} listening={false} />}
+          </>
         )}
-        {showGoalkeeperStripes && [0.1, 0.35, 0.6, 0.85].map((f, i) => (
-          <Rect key={i} x={-half} y={-half + size * f} width={size} height={2} fill={stripeColor} opacity={0.85} listening={false} />
-        ))}
-        {!showPhoto && String(number) !== '' && (
-          <Text text={String(number)} fontSize={fontSize} fontStyle="bold" fill={el.numberColor || '#fff'} align="center" verticalAlign="middle" width={size} height={size} offsetX={half} offsetY={half} listening={false} />
-        )}
-        {selected && <Circle radius={half} stroke="#fbbf24" strokeWidth={2} listening={false} />}
       </Group>
     );
   }

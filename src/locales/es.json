@@ -2018,7 +2018,12 @@
       "dotSpacing": "Espaciado",
       "preview": "Vista previa",
       "goalkeeperLabel": "Portero",
-      "goalkeeperStripeColorLabel": "Color de las rayas:"
+      "goalkeeperStripeColorLabel": "Color de las rayas:",
+      "shapeLabel": "Forma",
+      "circle": "Circulo",
+      "jersey": "Camiseta",
+      "jerseyStripes": "Rayas de camiseta",
+      "stripeColor": "Color de rayas"
     },
     "elements": {
       "straightArrow": "flecha recta",

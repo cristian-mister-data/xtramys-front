@@ -43,6 +43,25 @@ function applyRotation(ctx, x, y, rotation) {
   }
 }
 
+function drawJerseyPath(ctx, cx, cy, size) {
+  const s = size / 100;
+  ctx.beginPath();
+  ctx.moveTo(cx - 15 * s, cy - 45 * s);
+  ctx.quadraticCurveTo(cx, cy - 35 * s, cx + 15 * s, cy - 45 * s);
+  ctx.lineTo(cx + 35 * s, cy - 35 * s);
+  ctx.lineTo(cx + 50 * s, cy - 10 * s);
+  ctx.lineTo(cx + 35 * s, cy + 10 * s);
+  ctx.lineTo(cx + 25 * s, cy);
+  ctx.lineTo(cx + 25 * s, cy + 45 * s);
+  ctx.lineTo(cx - 25 * s, cy + 45 * s);
+  ctx.lineTo(cx - 25 * s, cy);
+  ctx.lineTo(cx - 35 * s, cy + 10 * s);
+  ctx.lineTo(cx - 50 * s, cy - 10 * s);
+  ctx.lineTo(cx - 35 * s, cy - 35 * s);
+  ctx.closePath();
+}
+
+
 function setLineDash(ctx, elem, scale) {
   if (elem.lineType === 'dotted') {
     const ds = (elem.dotSize || 2) * scale;
@@ -81,19 +100,53 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     ctx.lineWidth = 2;
     ctx.stroke();
   } else {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    const isJersey = elem.shape === 'jersey';
+
+    if (isJersey) {
+      drawJerseyPath(ctx, p.x, p.y, size);
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    }
     ctx.fillStyle = color;
     ctx.fill();
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    if (elem.isGoalkeeper && elem.differentiateGoalkeeper) {
-      const sc = elem.goalkeeperStripeColor || '#ffffff';
+    const sColor = elem.isGoalkeeper
+      ? (elem.goalkeeperStripeColor || '#ffffff')
+      : (elem.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff'));
+    const drawVerticalStripes = elem.hasStripes || (elem.isGoalkeeper && isJersey);
+    const drawGoalkeeperHorizontal = elem.isGoalkeeper && !isJersey && !elem.hasStripes;
+
+    if (drawVerticalStripes) {
+      ctx.save();
+      if (isJersey) {
+        drawJerseyPath(ctx, p.x, p.y, size);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      }
+      ctx.clip();
+      ctx.fillStyle = sColor;
+      if (isJersey) {
+        const s = size / 100;
+        ctx.fillRect(p.x - 25 * s, p.y - 50 * s, 10 * s, 100 * s);
+        ctx.fillRect(p.x - 5 * s, p.y - 50 * s, 10 * s, 100 * s);
+        ctx.fillRect(p.x + 15 * s, p.y - 50 * s, 10 * s, 100 * s);
+      } else {
+        for (const f of [-0.5, -0.1, 0.3]) {
+          ctx.fillRect(p.x + size * f, p.y - r, size * 0.15, size);
+        }
+      }
+      ctx.restore();
+    }
+
+    if (drawGoalkeeperHorizontal) {
       ctx.save();
       ctx.globalAlpha = 0.85;
-      ctx.strokeStyle = sc;
+      ctx.strokeStyle = sColor;
       ctx.lineWidth = 2;
       for (const off of [0.1, 0.35, 0.6, 0.85]) {
         const y = p.y - r + size * off;
@@ -114,16 +167,17 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
           : true;
     if (displayText !== undefined && showNumbers !== false) {
       const isLabel = elem.displayLabel !== undefined;
-      const fs = isLabel
+      const baseFs = isLabel
         ? Math.max(10, size * 0.45)
         : String(displayText).length > 2
           ? size * 0.4
           : size * 0.6;
+      const fs = isJersey ? Math.max(8, baseFs * 0.72) : baseFs;
       ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px ${FONT_STACK}`;
       ctx.fillStyle = numberColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(displayText), p.x, p.y);
+      ctx.fillText(String(displayText), p.x, isJersey ? p.y + size * 0.08 : p.y);
     }
   }
 

@@ -155,9 +155,26 @@ export default function TacticalBoard({
   const [lineDashed, setLineDashed] = useState(false);
   const [paletteColor, setPaletteColor] = useState({});
   const [editingPaletteItem, setEditingPaletteItem] = useState(null);
+  const [activePaletteIconId, setActivePaletteIconId] = useState('icon1');
 
   const handlePaletteColorChange = (iconId, newColor) => {
     setPaletteColor((prev) => ({ ...prev, [iconId]: newColor }));
+
+    // Update corresponding elements on the canvas (placed/selected)
+    applyChange((prevElements) =>
+      prevElements.map((el) => {
+        const isMatch = el.paletteIconId === iconId || 
+          (iconId === 'icon1' && el.type === 'player' && el.color === (paletteColor['icon1'] || PALETTE_PLAYERS[0].color)) ||
+          (iconId === 'icon2' && el.type === 'player' && el.color === (paletteColor['icon2'] || PALETTE_PLAYERS[1].color)) ||
+          (iconId === 'icon3' && el.type === 'player' && el.color === (paletteColor['icon3'] || PALETTE_PLAYERS[2].color)) ||
+          (el.type === iconId);
+        
+        if (isMatch) {
+          return { ...el, color: newColor };
+        }
+        return el;
+      })
+    );
   };
 
   const handleLongPressPaletteItem = (icon) => {
@@ -167,16 +184,58 @@ export default function TacticalBoard({
   const handlePaletteItemChange = (patch) => {
     if (!editingPaletteItem) return;
     setEditingPaletteItem((prev) => ({ ...prev, ...patch }));
+    
+    const iconId = editingPaletteItem.id;
     // Also apply the color change to the palette defaults
     if (patch.color !== undefined) {
-      setPaletteColor((prev) => ({ ...prev, [editingPaletteItem.id]: patch.color }));
+      setPaletteColor((prev) => ({ ...prev, [iconId]: patch.color }));
     }
+
+    // Update corresponding elements on the canvas (placed/selected)
+    applyChange((prevElements) =>
+      prevElements.map((el) => {
+        const isMatch = el.paletteIconId === iconId || 
+          (iconId === 'icon1' && el.type === 'player' && el.color === (paletteColor['icon1'] || PALETTE_PLAYERS[0].color)) ||
+          (iconId === 'icon2' && el.type === 'player' && el.color === (paletteColor['icon2'] || PALETTE_PLAYERS[1].color)) ||
+          (iconId === 'icon3' && el.type === 'player' && el.color === (paletteColor['icon3'] || PALETTE_PLAYERS[2].color)) ||
+          (el.type === iconId);
+        
+        if (isMatch) {
+          return { ...el, ...patch };
+        }
+        return el;
+      })
+    );
   };
 
   const getPaletteProto = (type) => {
-    const proto = PALETTE_BY_TYPE[type] ? { ...PALETTE_BY_TYPE[type] } : { type };
+    const iconId = type === 'player' ? activePaletteIconId : type;
+    const allPaletteItems = [...PALETTE_PLAYERS, ...PALETTE_GROUPS, ...MATERIALS_ICONS];
+    const found = allPaletteItems.find((p) => p.id === iconId) || PALETTE_BY_TYPE[type];
+    const proto = found ? { ...found } : { type };
     if (paletteColor[proto.id]) proto.color = paletteColor[proto.id];
     return proto;
+  };
+
+  const handleColorChange = (newColor) => {
+    setColor(newColor);
+    if (selectedId) {
+      applyChange((prev) =>
+        prev.map((el) => (el.id === selectedId ? { ...el, color: newColor } : el))
+      );
+    }
+  };
+
+  const handleToggleDashed = () => {
+    setLineDashed((v) => {
+      const next = !v;
+      if (selectedId) {
+        applyChange((prev) =>
+          prev.map((el) => (el.id === selectedId ? { ...el, dashed: next } : el))
+        );
+      }
+      return next;
+    });
   };
 
   const [drawing, setDrawing] = useState(null);
@@ -314,6 +373,7 @@ export default function TacticalBoard({
       const next = {
         id: newId(activeTool),
         type: activeTool,
+        paletteIconId: activeTool === 'player' ? activePaletteIconId : activeTool,
         x: p.x,
         y: p.y,
         color: proto.color,
@@ -688,9 +748,9 @@ export default function TacticalBoard({
         activeTool={activeTool}
         onToolChange={(t) => { setActiveTool(t); setDrawing(null); }}
         color={color}
-        onColorChange={setColor}
+        onColorChange={handleColorChange}
         lineDashed={lineDashed}
-        onToggleDashed={() => setLineDashed((v) => !v)}
+        onToggleDashed={handleToggleDashed}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}
@@ -897,7 +957,14 @@ export default function TacticalBoard({
 
       <Palette
         activeTool={activeTool}
-        onSelectTool={(type) => { setActiveTool(type); setDrawing(null); }}
+        activePaletteIconId={activePaletteIconId}
+        onSelectTool={(type, icon) => {
+          setActiveTool(type);
+          if (icon) {
+            setActivePaletteIconId(icon.id);
+          }
+          setDrawing(null);
+        }}
         paletteColors={paletteColor}
         onPaletteColorChange={handlePaletteColorChange}
         onLongPressPaletteItem={handleLongPressPaletteItem}

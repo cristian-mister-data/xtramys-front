@@ -897,6 +897,9 @@ export default function VideoRecorder({
               snapshot.color = elem.color;
               snapshot.number = elem.playerNumber || elem.number;
               if (elem.numberColor) snapshot.numberColor = elem.numberColor;
+              if (elem.shape) snapshot.shape = elem.shape;
+              if (elem.hasStripes !== undefined) snapshot.hasStripes = elem.hasStripes;
+              if (elem.stripeColor) snapshot.stripeColor = elem.stripeColor;
               if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
               if (elem.ownerType) snapshot.ownerType = elem.ownerType;
               // Añadir datos de texto para jugadores con nombre
