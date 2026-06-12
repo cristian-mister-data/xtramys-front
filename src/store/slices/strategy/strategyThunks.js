@@ -66,8 +66,11 @@ const replaceStrategyVideos = async (strategyId, pendingVideoIds = []) => {
 
 export const fetchEstrategiasUsuario = createAsyncThunk(
   'strategy/fetchEstrategiasUsuario',
-  async ({ user, lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ user, lang, filterType } = {}) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (filterType) queryParams.push(`filterType=${filterType}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/strategy/user/${user}${params}`);
     return applyStrategyFavoritePrefs(res.data);
   }

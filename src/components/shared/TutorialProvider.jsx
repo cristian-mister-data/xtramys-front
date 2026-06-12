@@ -23,10 +23,14 @@ export function TutorialProvider({ children }) {
       autoShownForUserRef.current = user._id;
       return;
     }
+    if (user.role === 'club_admin') {
+      autoShownForUserRef.current = user._id;
+      return;
+    }
 
     autoShownForUserRef.current = user._id;
     setVisible(true);
-  }, [user?._id, user?.tutorialCompleto]);
+  }, [user?._id, user?.tutorialCompleto, user?.role]);
 
   const openTutorial = useCallback(() => {
     setVisible(true);

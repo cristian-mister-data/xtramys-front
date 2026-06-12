@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as authApi from '@/api/auth';
+import { useDispatch } from 'react-redux';
+import { setUser } from '@/store/slices/user/userSlice';
+import { saveUser, saveToken } from '@/auth/storage';
+import api from '@/api/client';
 import {
   AuthFormShell,
   ErrorMessage,
@@ -19,6 +23,8 @@ import {
 export default function ResetPassword() {
   const { t } = useTranslation();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [token, setToken] = useState(params.get('token') || '');
   const [email, setEmail] = useState(params.get('email') || '');
   const [password, setPassword] = useState('');
@@ -46,12 +52,25 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      await authApi.resetPassword({
+      const res = await authApi.resetPassword({
         correo: normalizeEmail(email),
         token: token.trim(),
         nuevaContraseña: password,
       });
       setDone(true);
+      const user = res?.data?.usuario;
+      const jwtToken = res?.data?.token;
+      if (jwtToken && user) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+        saveToken(jwtToken);
+        saveUser(user);
+        dispatch(setUser(user));
+        if (user.clubId && user.nombre === 'Entrenador' && !user.apellido) {
+          navigate('/coach-setup', { replace: true });
+        } else {
+          navigate('/app', { replace: true });
+        }
+      }
     } catch (err) {
       const code = err?.code || err?.data?.code;
       setError(
@@ -72,18 +91,17 @@ export default function ResetPassword() {
           <FormSubtitle>{t('reset.subtitle', 'Introduce tu nueva contraseña.')}</FormSubtitle>
 
           <Form onSubmit={onSubmit} noValidate>
-            {!params.get('email') && (
-              <Field>
-                <InputLabel htmlFor="reset-email">{t('login.email', 'Correo')}</InputLabel>
-                <TextInput
-                  id="reset-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </Field>
-            )}
+            <Field>
+              <InputLabel htmlFor="reset-email">{t('login.email', 'Correo')}</InputLabel>
+              <TextInput
+                id="reset-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                disabled={Boolean(params.get('email'))}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </Field>
 
             {!params.get('token') && (
               <Field>

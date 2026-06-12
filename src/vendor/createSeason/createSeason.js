@@ -22,7 +22,7 @@ import { useTheme } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { createTemporadaEquipo } from '@/store/slices/season/seasonThunks';
 import { useTranslation } from 'react-i18next';
-import { logoutThunk } from '@/store/slices/user/userThunks';
+import { logoutThunk, fetchMe } from '@/store/slices/user/userThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import CustomAlertModal from '@/vendor/shared/customAlert';
 
@@ -95,6 +95,16 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const { loading: loadingTeam } = useSelector(state => state.team);
   const user = useSelector(state => state.usuario.user);
 
+  const [roleReady, setRoleReady] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchMe()).unwrap().then(() => {
+      setRoleReady(true);
+    }).catch(() => {
+      setRoleReady(true);
+    });
+  }, [dispatch]);
+
   useEffect(() => {
     if (user?._id) {
       setIdUsuario(user._id);
@@ -104,7 +114,9 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
       const u = JSON.parse(str);
       setIdUsuario(u?._id);
     });
-  }, [user?._id]);
+  }, [user]);
+
+  const isClubAdmin = user?.role === 'club_admin';
 
   const [loading, setLoading] = useState(false);
 
@@ -138,24 +150,26 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
       Alert.alert(t('message.error'), t('login.sessionExpired', 'La sesión ha caducado. Vuelve a iniciar sesión.'));
       return;
     }
-    if (!categoriaKey) {
-      Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.category') }));
-      return;
-    }
-    if (categoriaKey === 'otro' && !categoriaCustom?.trim()) {
-      Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.customCategory') }));
-      return;
+    if (!isClubAdmin) {
+      if (!categoriaKey) {
+        Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.category') }));
+        return;
+      }
+      if (categoriaKey === 'otro' && !categoriaCustom?.trim()) {
+        Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.customCategory') }));
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      const categoriaLegacy = categoriaKey === 'otro' ? categoriaCustom : categoriaKey;
+      const categoriaLegacy = categoriaKey === 'otro' ? categoriaCustom : (categoriaKey || '');
       await dispatch(
         createTemporadaEquipo({
           año,
           usuario: idUsuario,
           nombre: teamName,
-          categoriaKey,
+          categoriaKey: categoriaKey || '',
           categoriaCustom: categoriaCustom || '',
           categoria: categoriaLegacy,
           tiempoPorParte,
@@ -165,7 +179,12 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
         })
       ).unwrap();
       Alert.alert(t('message.success'), t('season.createSeasonSuccess'));
-      navigate('/', { replace: true });
+      // club_admin goes to the club dashboard to invite users and supervise coaches
+      if (isClubAdmin) {
+        navigate('/club/dashboard', { replace: true });
+      } else {
+        navigate('/app', { replace: true });
+      }
     } catch (err) {
       console.warn('Error en creación encadenada:', err);
       Alert.alert(t('message.error'), t('season.createSeasonError'));
@@ -179,7 +198,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
     setToken(null);
   };
 
-  if (loadingSeason || loadingTeam || loading) {
+  if (loadingSeason || loadingTeam || loading || !user || !roleReady) {
     return (
       <AppLayout backgroundColor={theme.colors.background}>
         <View style={[styles.fullBg, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -197,7 +216,48 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
 
   const chevronColor = theme.colors.textSecondary || '#94a3b8';
   const primaryColor = theme.colors.primary || '#2176ff';
-  const orangeGradient = ['#FF6B00', '#E55A00'];
+
+  const isCoach = user?.role === 'user' && !!user?.clubId;
+
+  if (isCoach) {
+    return (
+      <AppLayout backgroundColor={theme.colors.background}>
+        <ScrollView style={styles.fullBg} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <View style={[styles.headerIconWrap, { backgroundColor: '#EF4444' }]}>
+              <Ionicons name="lock-closed-outline" size={28} color="#fff" />
+            </View>
+            <Text style={styles.headerTitle}>{t("season.coachPlaceholderTitle")}</Text>
+            <Text style={[styles.headerSubtitle, { marginTop: 12 }]}>
+              {t("season.coachPlaceholderMessage")}
+            </Text>
+          </View>
+
+          {/* Logout */}
+          <TouchableOpacity onPress={() => setLogoutConfirm(true)} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+            <Text style={styles.logoutText}>{t("menu.logout")}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Logout Confirmation Modal */}
+        <CustomAlertModal
+          visible={logoutConfirm}
+          title={t('menu.logout')}
+          message={t('profile.logoutConfirm')}
+          type="warning"
+          confirmText="OK"
+          cancelText={t('edition.cancel')}
+          onCancel={() => setLogoutConfirm(false)}
+          onClose={() => {
+            setLogoutConfirm(false);
+            handleLogout();
+          }}
+        />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout backgroundColor={theme.colors.background}>
@@ -268,7 +328,8 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
               </View>
             </View>
 
-            {/* Category */}
+            {/* Category - hidden for club_admin */}
+            {!isClubAdmin && (
             <View style={styles.fieldGroup}>
               <Text style={styles.inputLabel}>
                 {t("team.category")}
@@ -293,10 +354,14 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 </View>
               )}
             </View>
+            )}
 
-            {/* Divider */}
-            <View style={styles.divider} />
+            {/* Divider - only for non-admin */}
+            {!isClubAdmin && <View style={styles.divider} />}
 
+            {/* Game config - hidden for club_admin */}
+            {!isClubAdmin && (
+            <>
             {/* Step label */}
             <View style={styles.stepBadge}>
               <View style={[styles.stepDot, { backgroundColor: '#FF6B00' }]} />
@@ -326,6 +391,8 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
+            </>
+            )}
 
             {/* Divider */}
             <View style={styles.divider} />

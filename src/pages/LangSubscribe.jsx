@@ -1,9 +1,14 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
+/**
+ * LangSubscribe: switches the app language and redirects to /subscribe,
+ * preserving all existing query parameters (e.g. ?plan=club&quantity=5).
+ */
 export default function LangSubscribe({ lang }) {
   const { i18n } = useTranslation();
+  const location = useLocation();
 
   useEffect(() => {
     if (lang === 'en') {
@@ -13,5 +18,7 @@ export default function LangSubscribe({ lang }) {
     }
   }, [lang, i18n]);
 
-  return <Navigate to="/subscribe" replace />;
+  // Preserve any existing search params when redirecting
+  const to = `/subscribe${location.search}`;
+  return <Navigate to={to} replace />;
 }

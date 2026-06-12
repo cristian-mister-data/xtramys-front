@@ -1137,6 +1137,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const navigationFromHook = useNavigation();
   const navigation = navigationProp || navigationFromHook;
   const { t, i18n } = useTranslation();
+  const user = useSelector(state => state.usuario.user);
   const ejercicios = useSelector(state => state.exercise.exercises) || [];
   const globalExercises = useSelector(state => state.exercise.globalExercises) || [];
   const globalFolders = useSelector(state => state.exercise.globalFolders) || [];
@@ -1427,9 +1428,15 @@ export default function ExerciseList({ navigation: navigationProp }) {
       });
       return Array.from(favsById.values()).filter((exercise) => exercise.favorito);
     }
-    const base = listFilter === 'mine'
-      ? ejercicios.filter(ex => !ex.isGlobal)
-      : ejercicios;
+    const base = (() => {
+      if (listFilter === 'mine') {
+        return ejercicios.filter(ex => sameId(ex.usuario, idUsuario));
+      }
+      if (listFilter === 'club') {
+        return ejercicios.filter(ex => ex.visibility === 'CLUB' && !sameId(ex.usuario, idUsuario));
+      }
+      return ejercicios;
+    })();
     return currentFolderId ? currentFolderExercises : base.filter(ex => !ex.folder);
   })();
 
@@ -1452,7 +1459,8 @@ export default function ExerciseList({ navigation: navigationProp }) {
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
-    if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal);
+    if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
+    if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
     return exerciseFolders.filter(f => !f.parentFolder); // 'all' shows both
   })();
 
@@ -2054,6 +2062,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
             { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('exercise.allExercises') },
             { key: 'mine', label: t('exercise.myExercises') },
+            ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
             { key: 'global', label: t('exercise.appExercises') },
           ].map(tab => {
             const isActive = listFilter === tab.key;

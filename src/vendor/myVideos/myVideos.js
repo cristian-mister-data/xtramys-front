@@ -107,6 +107,7 @@ export default function MyVideos() {
   
   // Source filter: 'all' | 'mine' | 'global' | 'favorites'
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [user, setUser] = useState(null);
 
   // Estado de selección múltiple
   const [selectionMode, setSelectionMode] = useState(false);
@@ -185,6 +186,7 @@ export default function MyVideos() {
         const str = await AsyncStorage.getItem('usuario');
         if (str) {
           const parsed = JSON.parse(str);
+          setUser(parsed);
           if (parsed?.role === 'admin') { setIsAdmin(true); return; }
         }
         const token = await AsyncStorage.getItem('token');
@@ -276,6 +278,7 @@ export default function MyVideos() {
   const [editVideoName, setEditVideoName] = useState('');
   const [editVideoNameEn, setEditVideoNameEn] = useState('');
   const [editVideoDesc, setEditVideoDesc] = useState('');
+  const [editVideoVisibility, setEditVideoVisibility] = useState('PRIVATE');
 
   // Modal para asociar video a ejercicio/estrategia
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -330,7 +333,9 @@ export default function MyVideos() {
       if (sourceFilter === 'global') {
         loadedFolders = loadedFolders.filter(f => f.isGlobal);
       } else if (sourceFilter === 'mine') {
-        loadedFolders = loadedFolders.filter(f => !f.isGlobal);
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal && sameId(f.usuario, user?._id));
+      } else if (sourceFilter === 'club') {
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB' && !sameId(f.usuario, user?._id));
       }
       setFolders(loadedFolders);
       
@@ -340,7 +345,10 @@ export default function MyVideos() {
         const videosResult = await listGlobalVideos(currentFolder || 'root');
         setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'mine') {
-        const videosResult = await apiListVideos({ folderId: currentFolder || 'root' });
+        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', filterType: 'mine' });
+        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
+      } else if (sourceFilter === 'club') {
+        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' });
         setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'favorites') {
         const [mineResult, globalResult] = await Promise.all([
@@ -524,6 +532,7 @@ export default function MyVideos() {
     setEditVideoName(getLocalizedVideoName(video));
     setEditVideoNameEn(video.translations?.en?.nombre || '');
     setEditVideoDesc(video.descripcion || '');
+    setEditVideoVisibility(video.visibility || 'PRIVATE');
     setEditVideoModalVisible(true);
   };
 
@@ -538,7 +547,8 @@ export default function MyVideos() {
     try {
       const updateData = {
         nombre: editVideoName.trim(),
-        descripcion: editVideoDesc.trim()
+        descripcion: editVideoDesc.trim(),
+        visibility: editVideoVisibility
       };
       if (menuVideo?.isGlobal && isAdmin) {
         updateData.translations = {
@@ -1176,6 +1186,7 @@ export default function MyVideos() {
           { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           { key: 'all', label: t('myVideos.allVideos') || 'Todos' },
           { key: 'mine', label: t('myVideos.myVideosOnly') || 'Míos' },
+          ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
           { key: 'global', label: t('myVideos.appVideos') || 'App' },
         ].map(tab => (
           <TouchableOpacity
@@ -1819,6 +1830,57 @@ export default function MyVideos() {
                     rows={4}
                     maxLength={500}
                   />
+
+                  {/* Selector de visibilidad para club */}
+                  {user?.clubId && !isAdmin && (
+                    <View style={{ marginTop: 16 }}>
+                      <Text style={[styles.createInputLabel, { marginBottom: 8 }]}>{t('club.videoVisibility', 'Visibilidad del video')}</Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            paddingVertical: 10,
+                            paddingHorizontal: 12,
+                            borderRadius: 10,
+                            backgroundColor: editVideoVisibility === 'PRIVATE' ? '#2563eb' : '#1e2937',
+                            borderWidth: 1,
+                            borderColor: editVideoVisibility === 'PRIVATE' ? '#2563eb' : '#334155'
+                          }}
+                          onPress={() => setEditVideoVisibility('PRIVATE')}
+                        >
+                          <Ionicons name="lock-closed-outline" size={16} color={editVideoVisibility === 'PRIVATE' ? '#fff' : '#94a3b8'} />
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: editVideoVisibility === 'PRIVATE' ? '#fff' : '#94a3b8' }}>
+                            {t('club.private', 'Privado')}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            paddingVertical: 10,
+                            paddingHorizontal: 12,
+                            borderRadius: 10,
+                            backgroundColor: editVideoVisibility === 'CLUB' ? '#16a34a' : '#1e2937',
+                            borderWidth: 1,
+                            borderColor: editVideoVisibility === 'CLUB' ? '#16a34a' : '#334155'
+                          }}
+                          onPress={() => setEditVideoVisibility('CLUB')}
+                        >
+                          <Ionicons name="people-outline" size={16} color={editVideoVisibility === 'CLUB' ? '#fff' : '#94a3b8'} />
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: editVideoVisibility === 'CLUB' ? '#fff' : '#94a3b8' }}>
+                            {t('club.shareWithClub', 'Compartir con mi club')}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
             </KeyboardAwareScrollView>

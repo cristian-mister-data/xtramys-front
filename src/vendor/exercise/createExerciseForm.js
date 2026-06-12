@@ -114,6 +114,8 @@ export default function CreateExerciseForm({
   // Estado para admin: ejercicio global
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGlobal, setIsGlobal] = useState(editingExercise?.isGlobal || false);
+  const [visibility, setVisibility] = useState(editingExercise?.visibility || 'PRIVATE');
+  const [userClubId, setUserClubId] = useState(null);
 
   // Traducciones para ejercicios globales (admin)
   const [nameEn, setNameEn] = useState(editingExercise?.translations?.en?.nombre || '');
@@ -144,6 +146,9 @@ export default function CreateExerciseForm({
         const str = await AsyncStorage.getItem('usuario');
         if (str) {
           const parsed = JSON.parse(str);
+          if (parsed?.clubId) {
+            setUserClubId(parsed.clubId);
+          }
           if (parsed?.role === 'admin') {
             setIsAdmin(true);
             // Default new exercises to global when admin creates (not editing)
@@ -168,6 +173,9 @@ export default function CreateExerciseForm({
               if (e4 !== 64) decoded += String.fromCharCode(((e3 & 3) << 6) | e4);
             }
             const payload = JSON.parse(decoded);
+            if (payload?.clubId) {
+              setUserClubId(payload.clubId);
+            }
             if (payload?.role === 'admin') {
               setIsAdmin(true);
               if (!editingExercise) setIsGlobal(true);
@@ -225,6 +233,7 @@ export default function CreateExerciseForm({
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
+      if (typeof draft.visibility === 'string') setVisibility(draft.visibility);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
@@ -258,7 +267,7 @@ export default function CreateExerciseForm({
       kind: 'exercise',
       editingId,
       name, duration, description, objective, dimensions, folderId,
-      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
@@ -370,6 +379,7 @@ export default function CreateExerciseForm({
         tipoCampo: fieldType || '',
         pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
+        visibility: !isAdmin && userClubId ? visibility : (editingExercise?.visibility || 'PRIVATE'),
         // Traducciones para ejercicios globales
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
@@ -576,6 +586,29 @@ export default function CreateExerciseForm({
             )}
           </View>
         </View>
+
+        {/* Selector de visibilidad para miembros del club (solo si no es admin y pertenece a un club) */}
+        {!isAdmin && userClubId && (
+          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.textMuted || '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t('club.exerciseVisibility', 'Visibilidad del ejercicio')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
+                onPress={() => setVisibility('PRIVATE')}
+              >
+                <Ionicons name="lock-closed-outline" size={16} color={visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.private', 'Privado')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
+                onPress={() => setVisibility('CLUB')}
+              >
+                <Ionicons name="people-outline" size={16} color={visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.shareWithClub', 'Compartir con mi club')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Toggle para ejercicio global (solo admin) */}
         {isAdmin && (

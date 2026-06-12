@@ -29,7 +29,7 @@ export const loginThunk = createAsyncThunk(
       const data = await authApi.login(credentials);
       // Backend returns { token, user } or similar; store regardless of mode
       // Bearer mode: persist token; cookie mode: token cookie set by backend
-      if (data?.token && !USE_COOKIE_AUTH) {
+      if (data?.token) {
         saveToken(data.token);
       }
       const user = data?.usuario || data?.user || data;
@@ -51,6 +51,9 @@ export const fetchMe = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const data = await authApi.me();
+      if (data?.token) {
+        saveToken(data.token);
+      }
       const user = data?.usuario || data?.user || data;
       if (user) saveUser(user);
       return user;

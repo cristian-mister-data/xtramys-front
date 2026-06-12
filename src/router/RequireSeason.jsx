@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { fetchTemporadasUsuario, fetchTemporadaUsuarioSeleccionada } from '@/store/slices/season/seasonThunks';
+import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 
 const SetupFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
@@ -49,11 +50,15 @@ const ErrorFallback = ({ onRetry }) => {
 export default function RequireSeason({ children }) {
   const dispatch = useDispatch();
   const location = useLocation();
-  const userId = useSelector((state) => state.usuario.user?._id);
+  const user = useSelector((state) => state.usuario.user);
+  const userId = user?._id;
+  const isClubAdmin = user?.role === 'club_admin';
+  const isClubCoach = user?.role === 'user' && !!user?.clubId;
   const season = useSelector((state) => state.season.season);
   const seasons = useSelector((state) => state.season.seasons || []);
+  const teams = useSelector((state) => state.team.teams || []);
   const loading = useSelector((state) => state.season.loading);
-  // 'idle' | 'loading' | 'ok' | 'empty' | 'error'
+  // 'idle' | 'loading' | 'ok' | 'empty' | 'error' | 'coach-setup'
   const [status, setStatus] = useState('idle');
   const requestedUserRef = useRef(null);
   const latestRequestRef = useRef(0);
@@ -74,11 +79,17 @@ export default function RequireSeason({ children }) {
     setStatus('loading');
     dispatch(fetchTemporadasUsuario({ usuario: userId }))
       .unwrap()
-      .then((data) => {
+      .then(async (data) => {
         if (latestRequestRef.current !== requestId) return;
         // Fetch selected season after getting all seasons
         if (data && data.length > 0) {
-          dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: userId }));
+          await dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: userId }));
+          if (isClubCoach) {
+            const sel = data.find(s => s.seleccionada) || data[0];
+            if (sel) {
+              await dispatch(fetchEquiposTemporada({ season: sel._id }));
+            }
+          }
         }
         setStatus(data && data.length > 0 ? 'ok' : 'empty');
       })
@@ -89,11 +100,30 @@ export default function RequireSeason({ children }) {
         // Show a retry screen so we don't loop on connectivity issues.
         setStatus('error');
       });
-  }, [dispatch, userId]);
+  }, [dispatch, userId, isClubCoach]);
 
   useEffect(() => {
     runCheck(false);
   }, [runCheck]);
+
+  // For club_admin: check if they have created their initial season yet
+  // If not, redirect them to /season/create for the first-time setup
+  if (isClubAdmin) {
+    // Still loading season info
+    if (status === 'idle' || status === 'loading' || loading) {
+      return <SetupFallback />;
+    }
+    const hasSeason = Boolean(season?._id) || seasons.length > 0;
+    if (!hasSeason && status === 'empty') {
+      return <Navigate to="/season/create" state={{ from: location }} replace />;
+    }
+    return children;
+  }
+
+  // For club coaches: check if they need to complete the setup flow
+  if (isClubCoach && status === 'ok' && teams.length === 0 && !loading) {
+    return <Navigate to="/coach-setup" state={{ from: location }} replace />;
+  }
 
   const hasSeason = Boolean(season?._id) || seasons.length > 0;
 

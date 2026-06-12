@@ -173,10 +173,11 @@ function attachInterceptors(instance) {
       const method = String(config.method || 'get').toLowerCase();
       if (!RETRYABLE_METHODS.has(method)) clearGetCache();
 
-      if (!USE_COOKIE_AUTH) {
-        const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-        if (token) config.headers.Authorization = `Bearer ${token}`;
-      }
+      // Send token in Authorization header as a fallback/additional option,
+      // even if cookie auth is enabled. This ensures authentication works
+      // if cookies are blocked by browser settings or privacy extensions.
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (token) config.headers.Authorization = `Bearer ${token}`;
       
       const isLongTimeout = LONG_TIMEOUT_ROUTES.some(route => config.url?.includes(route));
       if (isLongTimeout && !config.timeout) {

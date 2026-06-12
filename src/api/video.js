@@ -11,7 +11,7 @@ export const proxyUploadVideo = (formData, onUploadProgress) =>
     onUploadProgress,
   });
 export const saveVideo = (payload) => api.post('/video/save', payload);
-export const getMyVideos = () => api.get('/video/list');
+export const getMyVideos = (params) => api.get('/video/list', { params });
 export const getGlobalVideos = () => api.get('/video/global');
 export const linkVideoToExercise = (payload) => api.post('/video/link-exercise', payload);
 export const linkVideoToStrategy = (payload) => api.post('/video/link-strategy', payload);

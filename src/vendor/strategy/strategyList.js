@@ -1074,6 +1074,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
   const navigation = navigationProp || navigationFromHook;
+  const user = useSelector(state => state.usuario.user);
   const strategies = useSelector(state => state.strategy.strategies) || [];
   const globalStrategies = useSelector(state => state.strategy.globalStrategies) || [];
   const globalFolders = useSelector(state => state.strategy.globalFolders) || [];
@@ -1302,9 +1303,15 @@ export default function StrategyList({ navigation: navigationProp }) {
       const favs = mergeById([strategies, globalStrategies]).filter((st) => st.favorito);
       return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
-    const base = listFilter === 'mine'
-      ? strategies.filter((st) => !st.isGlobal)
-      : strategies;
+    const base = (() => {
+      if (listFilter === 'mine') {
+        return strategies.filter(st => sameId(st.usuario, idUsuario));
+      }
+      if (listFilter === 'club') {
+        return strategies.filter(st => st.visibility === 'CLUB' && !sameId(st.usuario, idUsuario));
+      }
+      return strategies;
+    })();
     return currentFolderId ? currentFolderStrategies : base.filter((st) => !hasFolder(st));
   })();
 
@@ -1320,7 +1327,8 @@ export default function StrategyList({ navigation: navigationProp }) {
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
-    if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal);
+    if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario));
+    if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
     return strategyFolders.filter((f) => !f.parentFolder);
   })();
 
@@ -1991,6 +1999,7 @@ export default function StrategyList({ navigation: navigationProp }) {
             { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('strategy.allStrategies') || 'Todas' },
             { key: 'mine', label: t('strategy.myStrategies') || 'Mías' },
+            ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
             { key: 'global', label: t('strategy.appStrategies') || 'App' },
           ].map(tab => {
             const isActive = listFilter === tab.key;

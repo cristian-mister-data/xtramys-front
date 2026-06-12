@@ -68,7 +68,7 @@ function useTutorialPersistence() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ tutorialCompleto: true }),
-      }).catch(() => {});
+      }).catch(() => { });
       await AsyncStorage.setItem('usuario', JSON.stringify({ ...user, tutorialCompleto: true }));
     } catch {
       // never block app
@@ -782,7 +782,7 @@ export default function OnboardingTutorial({ visible, onComplete }) {
                 <View style={styles.spotFakeMenuBtn}>
                   <MaterialIcons name="menu" size={22} color="#fff" />
                 </View>
-                <Text style={styles.spotFakeTitle}>MisterData</Text>
+                <Text style={styles.spotFakeTitle}>Xtramys</Text>
                 <View style={styles.spotFakeProfileBtn}>
                   <Ionicons name="person" size={16} color={THEME.primary} />
                 </View>

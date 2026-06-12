@@ -6,6 +6,7 @@ import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequired
 import { setUser, clearUserState, subscriptionRequired } from './store/slices/user/userSlice';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
+import { saveToken } from './auth/storage';
 
 const ApiUnavailable = ({ checking, onRetry }) => (
   <div style={{
@@ -87,21 +88,58 @@ export default function App() {
     if (bootstrapped.current) return;
     bootstrapped.current = true;
 
-    dispatch(fetchMe())
-      .unwrap()
-      .then(() => {
-        apiUnavailableRef.current = false;
-        setApiUnavailable(false);
-      })
-      .catch((error) => {
-        if (isConnectivityError(error)) {
-          apiUnavailableRef.current = true;
-          setApiUnavailable(true);
-          return;
-        }
-        apiUnavailableRef.current = false;
-        setApiUnavailable(false);
-      });
+    // Check for token in URL query parameter on startup
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      saveToken(urlToken);
+      // Remove token from URL without reloading/re-routing
+      params.delete('token');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    const checkSession = () => {
+      dispatch(fetchMe())
+        .unwrap()
+        .then(() => {
+          apiUnavailableRef.current = false;
+          setApiUnavailable(false);
+        })
+        .catch((error) => {
+          if (isConnectivityError(error)) {
+            apiUnavailableRef.current = true;
+            setApiUnavailable(true);
+            return;
+          }
+          apiUnavailableRef.current = false;
+          setApiUnavailable(false);
+        });
+    };
+
+    checkSession();
+
+    let lastChecked = Date.now();
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastChecked < 2000) return; // limit sync checking to once every 2 seconds
+      lastChecked = now;
+      checkSession();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        handleFocus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [dispatch]);
 
   const retryConnection = async () => {

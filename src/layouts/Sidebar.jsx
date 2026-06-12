@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { MdLogout } from 'react-icons/md';
+import { MdLogout, MdShield, MdPerson } from 'react-icons/md';
 import { logoutThunk } from '@/store/slices/user/userThunks';
 import { preloadRoute } from '@/router/preload';
 import { useThemeMode } from '@/theme/ThemeContext';
@@ -251,10 +251,29 @@ export default function Sidebar({ open, onClose }) {
   const user = useSelector((s) => s.usuario.user);
   const { mode } = useThemeMode();
 
-  const sections = useMemo(
-    () => getNavSections(t).filter((s) => !s.hiddenInSidebar),
-    [t]
-  );
+  const sections = useMemo(() => {
+    if (user?.role === 'club_admin') {
+      return [
+        {
+          items: [
+            {
+              to: '/club/dashboard',
+              label: t('menu.myClub', 'Mi Club'),
+              Icon: MdShield,
+              end: true
+            },
+            {
+              to: '/profile',
+              label: t('menu.profile', 'Perfil'),
+              Icon: MdPerson,
+              end: true
+            }
+          ]
+        }
+      ];
+    }
+    return getNavSections(t).filter((s) => !s.hiddenInSidebar);
+  }, [t, user?.role]);
 
   const handleLogout = async () => {
     onClose && onClose();

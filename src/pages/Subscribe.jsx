@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
 import { checkSubscription } from '@/store/slices/user/userThunks';
@@ -382,6 +382,98 @@ const ActionButton = styled.button`
   }
 `;
 
+const QtyContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+`;
+
+const QtyLabel = styled.label`
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const QtySelectorRow = styled.div`
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 4px;
+`;
+
+const QtyButton = styled.button`
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+`;
+
+const QtyInput = styled.input`
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  outline: none;
+`;
+
+const QtyNotice = styled.p`
+  margin: 0;
+  font-size: 11px;
+  color: #ff6b00;
+  font-weight: 500;
+`;
+
+const SwitchPlanLink = styled.button`
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+
+  &:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.2);
+    color: #fff;
+  }
+`;
+
 const CheckIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
@@ -392,6 +484,23 @@ export default function Subscribe() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isClubPlan = searchParams.get('plan') === 'club';
+  const initialQty = parseInt(searchParams.get('quantity') || '2', 10);
+
+  const [quantity, setQuantity] = useState(initialQty >= 2 ? initialQty : 2);
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get('quantity');
+    if (q) {
+      const val = parseInt(q, 10);
+      if (!isNaN(val) && val >= 2) {
+        setQuantity(val);
+      }
+    }
+  }, [location.search]);
+
   const user = useSelector((s) => s.usuario.user);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
   const [loading, setLoading] = useState(false);
@@ -410,7 +519,9 @@ export default function Subscribe() {
     setError(null);
     try {
       const baseUrl = window.location.origin;
-      const data = await createCheckoutSession(baseUrl);
+      const data = isClubPlan
+        ? await createCheckoutSession(baseUrl, { priceType: 'club', quantity })
+        : await createCheckoutSession(baseUrl);
       if (data.url) window.location.href = data.url;
     } catch (err) {
       setError(err?.message || t('subscription.error', 'Error al iniciar el proceso de pago'));
@@ -441,6 +552,16 @@ export default function Subscribe() {
     t('subscription.features.methodology', 'Metodología de juego'),
   ];
 
+  const clubFeatures = [
+    t('subscription.clubFeatures.coaches', 'Cuentas de entrenador individuales'),
+    t('subscription.clubFeatures.library', 'Biblioteca de ejercicios compartida'),
+    t('subscription.clubFeatures.tactics', 'Recursos y videos tácticos compartidos'),
+    t('subscription.clubFeatures.supervision', 'Panel de supervisión del club (modo lectura)'),
+    t('subscription.clubFeatures.billing', 'Facturación centralizada'),
+  ];
+
+  const displayFeatures = isClubPlan ? clubFeatures : features;
+
   return (
     <Page>
       <Card>
@@ -466,20 +587,69 @@ export default function Subscribe() {
           </StatusCard>
         ) : (
           <>
-            <Badge>{t('subscription.planBadge', 'Pro')}</Badge>
-            <Title>{t('subscription.title', 'Suscripción requerida')}</Title>
+            <Badge>
+              {isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Pro')}
+            </Badge>
+            <Title>
+              {isClubPlan ? t('subscription.clubTitle', 'Plan Club') : t('subscription.title', 'Suscripción requerida')}
+            </Title>
             <Subtitle>
-              {t('subscription.subtitle', 'Activa tu suscripción para acceder a todas las funcionalidades de Xtramys')}
+              {isClubPlan
+                ? t('subscription.clubSubtitle', 'Administra a tus entrenadores bajo una única organización')
+                : t('subscription.subtitle', 'Activa tu suscripción para acceder a todas las funcionalidades de Xtramys')}
             </Subtitle>
 
-            <PriceRow>
-              <Amount>{isEs ? '59€' : '€59'}</Amount>
-              <Period>/{t('subscription.year', 'año')}</Period>
-            </PriceRow>
-            <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
+            {isClubPlan ? (
+              <>
+                <PriceRow>
+                  <Amount>49€</Amount>
+                  <Period>/{t('subscription.userYear', 'usuario/año')}</Period>
+                </PriceRow>
+                <PriceSub>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
+
+                <QtyContainer>
+                  <QtyLabel>{t('subscription.qtyLabel', 'Número de Licencias (Entrenadores)')}</QtyLabel>
+                  <QtySelectorRow>
+                    <QtyButton
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(2, q - 1))}
+                      disabled={quantity <= 2}
+                    >
+                      -
+                    </QtyButton>
+                    <QtyInput
+                      type="number"
+                      min={2}
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val >= 2) setQuantity(val);
+                      }}
+                    />
+                    <QtyButton
+                      type="button"
+                      onClick={() => setQuantity((q) => q + 1)}
+                    >
+                      +
+                    </QtyButton>
+                  </QtySelectorRow>
+                  <QtyNotice style={{ marginTop: 6, fontSize: '13px', color: '#ff6b00', fontWeight: 'bold' }}>
+                    {t('subscription.totalAnnual', 'Total anual:')} {quantity * 49}€
+                  </QtyNotice>
+                </QtyContainer>
+              </>
+            ) : (
+              <>
+                <PriceRow>
+                  <Amount>{isEs ? '59€' : '€59'}</Amount>
+                  <Period>/{t('subscription.year', 'año')}</Period>
+                </PriceRow>
+                <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
+              </>
+            )}
 
             <FeatureList>
-              {features.map((f) => (
+              {displayFeatures.map((f) => (
                 <FeatureItem key={f}>
                   <CheckCircle><CheckIcon /></CheckCircle>
                   <span>{f}</span>
@@ -490,7 +660,16 @@ export default function Subscribe() {
             {error && <ErrorBox>{error}</ErrorBox>}
 
             <PaymentSection>
-              {PAYPAL_CLIENT_ID ? (
+              {isClubPlan ? (
+                <>
+                  <ActionButton onClick={handleStripeSubscribe} disabled={loading}>
+                    {loading ? t('subscription.loading', 'Procesando...') : t('subscription.subscribe', 'Suscribirme ahora')}
+                  </ActionButton>
+                  <PaymentNote style={{ marginTop: 12 }}>
+                    {t('subscription.paymentNote', 'Tras el pago, tu acceso se activará automáticamente.')}
+                  </PaymentNote>
+                </>
+              ) : PAYPAL_CLIENT_ID ? (
                 <PayPalScriptProvider key={`paypal-${locale}-${paypalMountKey}`} options={{
                   clientId: PAYPAL_CLIENT_ID,
                   vault: true,
@@ -544,6 +723,17 @@ export default function Subscribe() {
               <ActionButton onClick={handleManage} disabled={loading} style={{ marginTop: 12 }}>
                 {t('subscription.updatePayment', 'Actualizar método de pago')}
               </ActionButton>
+            )}
+
+            {!isClubPlan && (
+              <SwitchPlanLink onClick={() => navigate('/subscribe-club')}>
+                {t('subscription.switchToClub', '¿Gestionas un club? Conoce el Plan Club →')}
+              </SwitchPlanLink>
+            )}
+            {isClubPlan && (
+              <SwitchPlanLink onClick={() => navigate('/subscribe')}>
+                {t('subscription.switchToPro', '¿Entrenas solo? Conoce el Plan Pro →')}
+              </SwitchPlanLink>
             )}
           </>
         )}

@@ -65,7 +65,7 @@ export default function VerifyEmail() {
       const data = await authApi.verifyEmail(normalizeEmail(correo), fullCode);
       const token = data?.token;
       const user = data?.usuario || data?.user;
-      if (token && !USE_COOKIE_AUTH) saveToken(token);
+      if (token) saveToken(token);
       if (user) {
         saveUser(user);
         dispatch(setUser(user));

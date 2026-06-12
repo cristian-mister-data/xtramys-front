@@ -1,7 +1,7 @@
 import api from './client';
 
-export const createCheckoutSession = (successBaseUrl) =>
-  api.post('/stripe/create-checkout-session', { successBaseUrl }).then((res) => res.data);
+export const createCheckoutSession = (successBaseUrl, extraData = {}) =>
+  api.post('/stripe/create-checkout-session', { successBaseUrl, ...extraData }).then((res) => res.data);
 
 export const createPortalSession = () =>
   api.post('/stripe/create-portal-session').then((res) => res.data);

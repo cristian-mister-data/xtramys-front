@@ -66,8 +66,11 @@ const replaceExerciseVideos = async (exerciseId, pendingVideoIds = []) => {
 
 export const fetchEjerciciosUsuario = createAsyncThunk(
   'ejercicio/fetchEjerciciosUsuario',
-  async ({ user, lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ user, lang, filterType } = {}) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (filterType) queryParams.push(`filterType=${filterType}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/exercise/user/${user}${params}`);
     return applyExerciseFavoritePrefs(res.data);
   }

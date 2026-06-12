@@ -922,6 +922,7 @@ export default function Profile() {
             <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
           </CardHeader>
           <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+            {user?.role !== 'club_admin' && (
             <AccountBtn type="button" onClick={openTutorial}>
               <MdPlayCircleOutline size={20} />
               <div style={{ flex: 1, textAlign: 'left' }}>
@@ -932,6 +933,7 @@ export default function Profile() {
               </div>
               <span style={{ color: '#cbd5e1' }}>›</span>
             </AccountBtn>
+            )}
             <DangerBtn type="button" onClick={handleLogout}>
               <span>🚪</span>
               <div style={{ flex: 1, textAlign: 'left' }}>
@@ -1045,6 +1047,7 @@ export default function Profile() {
             </Stack>
         </FormCard>
 
+        {user?.role !== 'club_admin' && !user?.clubId && (
         <FormCard>
           <CardHeader>
             <CardTitle>💳 {t('subscription.titleProfile', 'Suscripción')}</CardTitle>
@@ -1153,6 +1156,7 @@ export default function Profile() {
             )}
           </SubscriptionCard>
         </FormCard>
+        )}
 
         {!isSocialAuth && (
           <FormCard>

@@ -100,6 +100,8 @@ export default function CreateStrategyForm({
   // Estado para admin: estrategia global
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGlobal, setIsGlobal] = useState(editingStrategy?.isGlobal || false);
+  const [visibility, setVisibility] = useState(editingStrategy?.visibility || 'PRIVATE');
+  const [userClubId, setUserClubId] = useState(null);
 
   const [saving, setSaving] = useState(false);
   const [nameEn, setNameEn] = useState(editingStrategy?.translations?.en?.nombre || '');
@@ -138,6 +140,9 @@ export default function CreateStrategyForm({
         const str = await AsyncStorage.getItem('usuario');
         if (str) {
           const parsed = JSON.parse(str);
+          if (parsed?.clubId) {
+            setUserClubId(parsed.clubId);
+          }
           if (parsed?.role === 'admin') {
             setIsAdmin(true);
             if (!editingStrategy) setIsGlobal(true);
@@ -161,6 +166,9 @@ export default function CreateStrategyForm({
               if (e4 !== 64) decoded += String.fromCharCode(((e3 & 3) << 6) | e4);
             }
             const payload = JSON.parse(decoded);
+            if (payload?.clubId) {
+              setUserClubId(payload.clubId);
+            }
             if (payload?.role === 'admin') {
               setIsAdmin(true);
               if (!editingStrategy) setIsGlobal(true);
@@ -214,6 +222,7 @@ export default function CreateStrategyForm({
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
+      if (typeof draft.visibility === 'string') setVisibility(draft.visibility);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
@@ -250,7 +259,7 @@ export default function CreateStrategyForm({
       kind: 'strategy',
       editingId,
       name, description, objective, folderId,
-      nameEn, descriptionEn, objectiveEn, isGlobal,
+      nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
@@ -354,6 +363,7 @@ export default function CreateStrategyForm({
         tipoCampo: fieldType || '',
         pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
+        visibility: !isAdmin && userClubId ? visibility : (editingStrategy?.visibility || 'PRIVATE'),
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
           : undefined,
@@ -480,6 +490,29 @@ export default function CreateStrategyForm({
           </View>
 
         </View>
+
+        {/* Selector de visibilidad para miembros del club (solo si no es admin y pertenece a un club) */}
+        {!isAdmin && userClubId && (
+          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.textMuted || '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t('club.strategyVisibility', 'Visibilidad de la estrategia')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
+                onPress={() => setVisibility('PRIVATE')}
+              >
+                <Ionicons name="lock-closed-outline" size={16} color={visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.private', 'Privado')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
+                onPress={() => setVisibility('CLUB')}
+              >
+                <Ionicons name="people-outline" size={16} color={visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.shareWithClub', 'Compartir con mi club')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Toggle para estrategia global (solo admin) */}
         {isAdmin && (

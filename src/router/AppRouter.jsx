@@ -39,15 +39,19 @@ const GoalkeeperMethodology = lazy(() => import('@/pages/GoalkeeperMethodology')
 const WellnessTemplates = lazy(() => import('@/pages/WellnessTemplates'));
 const WellnessManagement = lazy(() => import('@/pages/WellnessManagement'));
 const Profile = lazy(() => import('@/pages/Profile'));
+const ClubDashboard = lazy(() => import('@/pages/club/Dashboard'));
+const CoachView = lazy(() => import('@/pages/club/CoachView'));
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
 const Subscribe = lazy(() => import('@/pages/Subscribe'));
+const SubscribeClub = lazy(() => import('@/pages/SubscribeClub'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
+const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
 
 const RouteFallback = () => (
   <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }} />
@@ -58,6 +62,12 @@ const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 const SubscribeRoute = (
   <ProtectedRoute>
     {lazy_(<Subscribe />)}
+  </ProtectedRoute>
+);
+
+const SubscribeClubRoute = (
+  <ProtectedRoute>
+    {lazy_(<SubscribeClub />)}
   </ProtectedRoute>
 );
 
@@ -87,6 +97,9 @@ export default function AppRouter() {
       <Route path="/en/subscribe" element={<LangSubscribe lang="en" />} />
       <Route path="/es/subscribe" element={<Navigate to="/suscripcion" replace />} />
       <Route path="/es/suscripcion" element={<Navigate to="/suscripcion" replace />} />
+      {/* Club plan dedicated checkout */}
+      <Route path="/subscribe-club" element={SubscribeClubRoute} />
+      <Route path="/en/subscribe-club" element={SubscribeClubRoute} />
       <Route
         path="/payment/success"
         element={(
@@ -130,6 +143,16 @@ export default function AppRouter() {
         )}
       />
 
+      {/* Coach setup (after invitation reset password) */}
+      <Route
+        path="/coach-setup"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<CoachSetup />)}
+          </ProtectedRoute>
+        )}
+      />
+
       {/* App (protegidas) */}
       <Route
         element={
@@ -166,6 +189,8 @@ export default function AppRouter() {
         <Route path="/statistics" element={lazy_(<Statistics />)} />
         <Route path="/nutrition" element={lazy_(<Nutrition />)} />
         <Route path="/profile" element={lazy_(<Profile />)} />
+        <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
+        <Route path="/club/coach/:id" element={lazy_(<CoachView />)} />
       </Route>
 
       {/* Tactical Board: layout fullscreen sin sidebar */}

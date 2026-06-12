@@ -102,6 +102,7 @@
     "statistics": "Statistics",
     "anthropometry": "Skinfolds & Weights",
     "profile": "Profile",
+    "myClub": "My Club",
     "logout": "Log Out",
     "greeting": "Hello {{name}}",
     "players": "Players",
@@ -438,6 +439,8 @@
     "matchSheetDeleted": "Match sheet deleted successfully",
     "matchSheetDeleteError": "Could not delete match sheet",
     "seasonCreateError": "Could not create season",
+    "coachPlaceholderTitle": "Awaiting configuration",
+    "coachPlaceholderMessage": "Your coordinator or sports director (the club admin) has not created the season or the team yet. Please contact them to set them up and grant you access.",
     "galleryPermissionRequired": "Gallery access permissions required",
     "imageSelectError": "Error selecting image",
     "match": "Match",
@@ -4776,7 +4779,7 @@
     },
     "steps": {
       "welcome": {
-        "title": "Welcome to MisterData!",
+        "title": "Welcome to Xtramys!",
         "description": "Your all-in-one assistant to manage your team like a professional. Let's walk through every tool together.",
         "b1": "Manage tournaments, players and training sessions",
         "b2": "Create exercises with videos from the tactical board",
@@ -4886,7 +4889,7 @@
       },
       "ready": {
         "title": "All set to start!",
-        "description": "You now know every tool in MisterData. Start by creating a season and registering your players. Your team is in great hands!"
+        "description": "You now know every tool in Xtramys. Start by creating a season and registering your players. Your team is in great hands!"
       }
     }
   },
@@ -4996,5 +4999,67 @@
     "share": "Download & share",
     "shareDesc": "Save and open sharing options",
     "cancel": "Cancel"
+  },
+  "club": {
+    "title": "Club Dashboard",
+    "description": "Manage members and monitor club activity.",
+    "activeUsers": "Active Members",
+    "maxUsers": "Purchased Licenses",
+    "availableSlots": "Available Slots",
+    "subscriptionStatus": "Subscription Status",
+    "trainings": "Trainings",
+    "exercises": "Exercises",
+    "strategies": "Strategies",
+    "videos": "Videos",
+    "recentActivity": "Recent Activity",
+    "recentTrainings": "Latest Trainings",
+    "recentExercises": "Latest Exercises",
+    "recentStrategies": "Latest Strategies",
+    "recentVideos": "Latest Videos",
+    "recentUsers": "Latest Members",
+    "membersTable": {
+      "name": "Name",
+      "email": "Email",
+      "status": "Status",
+      "lastAccess": "Last Access",
+      "createdAt": "Joined Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    },
+    "actions": {
+      "invite": "Invite Member",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "remove": "Remove from club",
+      "viewProfile": "Supervise",
+      "confirmRemove": "Are you sure you want to remove this user from the club?",
+      "confirmDeactivate": "Are you sure you want to deactivate this user?",
+      "confirmActivate": "Are you sure you want to activate this user?"
+    },
+    "inviteModal": {
+      "title": "Invite new member to the club",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "email@example.com",
+      "send": "Send Invitation",
+      "success": "Invitation sent successfully.",
+      "error": "Error sending invitation. Make sure you have free licenses."
+    },
+    "supervision": {
+      "title": "Coach Supervision",
+      "backToDashboard": "Back to Dashboard",
+      "noData": "This user has not created this type of resource yet.",
+      "readOnlyMode": "Read-Only Mode - Supervision",
+      "readOnlyNotice": "You are viewing this workspace in read-only mode. All editing and creation options are disabled."
+    },
+    "sharedLibrary": "Shared by my club",
+    "exerciseVisibility": "Exercise visibility",
+    "strategyVisibility": "Strategy visibility",
+    "videoVisibility": "Video visibility",
+    "private": "Private",
+    "shareWithClub": "Share with my club"
   }
 }

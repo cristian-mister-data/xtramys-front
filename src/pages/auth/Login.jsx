@@ -50,7 +50,9 @@ export default function Login() {
     const correoNorm = normalizeEmail(correo);
     try {
       await dispatch(loginThunk({ correo: correoNorm, contraseña: password })).unwrap();
-      const from = location.state?.from?.pathname || '/app';
+      const fromPath = location.state?.from?.pathname || '/app';
+      const fromSearch = location.state?.from?.search || '';
+      const from = fromPath + fromSearch;
       navigate(from, { replace: true });
     } catch (err) {
       const code = err?.code || err?.data?.code;
@@ -64,7 +66,9 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
-    const from = location.state?.from?.pathname || '/app';
+    const fromPath = location.state?.from?.pathname || '/app';
+    const fromSearch = location.state?.from?.search || '';
+    const from = fromPath + fromSearch;
     window.location.href = getGoogleOAuthURL(lang, from);
   };
 

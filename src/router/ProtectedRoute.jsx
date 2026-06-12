@@ -4,6 +4,8 @@ import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 
 const SUBSCRIBE_PATHS = [
   '/subscribe',
+  '/subscribe-club',
+  '/en/subscribe-club',
   '/suscripcion',
   '/en/subscribe',
   '/es/subscribe',
@@ -41,7 +43,26 @@ export default function ProtectedRoute({ children }) {
 
   const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
 
-  if (user?.role !== 'admin' && !hasAccess) {
+  if (user?.role === 'club_admin') {
+    const allowedPrefixes = [
+      '/club',
+      '/profile',
+      '/subscribe',
+      '/subscribe-club',
+      '/suscripcion',
+      '/payment',
+      '/season/create',   // initial setup: create season, team and shield
+      '/auth/verify-email',
+      '/auth/reset-password',
+    ];
+    const currentPath = location.pathname;
+    const isAllowed = allowedPrefixes.some((p) => currentPath.startsWith(p)) || currentPath === '/';
+    if (!isAllowed) {
+      return <Navigate to="/club/dashboard" replace />;
+    }
+  }
+
+  if (user?.role !== 'admin' && user?.role !== 'club_admin' && !hasAccess) {
     if (!SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p))) {
       return <Navigate to="/subscribe" state={{ from: location }} replace />;
     }

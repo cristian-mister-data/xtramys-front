@@ -206,6 +206,8 @@ export default function GestionEquipos() {
   };
 
   const [idUsuario, setIdUsuario] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [userClubId, setUserClubId] = useState(null);
   const [ready, setReady] = useState(false);
   const [loadingTemporada, setLoadingTemporada] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
@@ -214,9 +216,13 @@ export default function GestionEquipos() {
     AsyncStorage.getItem('usuario').then(str => {
       const u = JSON.parse(str);
       setIdUsuario(u?._id ?? null);
+      setUserRole(u?.role ?? null);
+      setUserClubId(u?.clubId ?? null);
       setReady(true);
     });
   }, []);
+
+  const isCoach = userRole === 'user' && userClubId;
 
   // Reiniciar estado de nueva temporada cuando se abre el modal
   useEffect(() => {
@@ -932,13 +938,15 @@ export default function GestionEquipos() {
                     <Text style={styles.emptyStateSubtitle}>
                       {t('season.noSelectedTeamSubtitle')}
                     </Text>
-                    <TouchableOpacity
-                      style={styles.createTeamButton}
-                      onPress={() => handleOpenCreateTeamModal()}
-                    >
-                      <Ionicons name="add-circle" size={20} color="#ffffff" />
-                      <Text style={styles.createTeamButtonText}>{t('team.createTeam')}</Text>
-                    </TouchableOpacity>
+                    {!isCoach && (
+                      <TouchableOpacity
+                        style={styles.createTeamButton}
+                        onPress={() => handleOpenCreateTeamModal()}
+                      >
+                        <Ionicons name="add-circle" size={20} color="#ffffff" />
+                        <Text style={styles.createTeamButtonText}>{t('team.createTeam')}</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               ) : (
@@ -1179,13 +1187,15 @@ export default function GestionEquipos() {
                         )}
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={styles.seasonItemDeleteButton}
-                        onPress={() => handlePromptDeleteSeason(season)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="trash" size={20} color={theme.colors.error} />
-                      </TouchableOpacity>
+                      {!isCoach && (
+                        <TouchableOpacity
+                          style={styles.seasonItemDeleteButton}
+                          onPress={() => handlePromptDeleteSeason(season)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="trash" size={20} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))
                 ) : (
@@ -1198,16 +1208,18 @@ export default function GestionEquipos() {
               
               {/* Botón crear temporada dentro del modal */}
               <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={styles.createSeasonInModalButton}
-                  onPress={() => {
-                    setSeasonSelectorVisible(false);
-                    setCreateSeasonModalVisible(true);
-                  }}
-                >
-                  <Ionicons name="add-circle" size={20} color="#ffffff" />
-                  <Text style={styles.createSeasonInModalButtonText}>{t('season.createNewSeason')}</Text>
-                </TouchableOpacity>
+                {!isCoach && (
+                  <TouchableOpacity
+                    style={styles.createSeasonInModalButton}
+                    onPress={() => {
+                      setSeasonSelectorVisible(false);
+                      setCreateSeasonModalVisible(true);
+                    }}
+                  >
+                    <Ionicons name="add-circle" size={20} color="#ffffff" />
+                    <Text style={styles.createSeasonInModalButtonText}>{t('season.createNewSeason')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </View>
@@ -2026,91 +2038,95 @@ export default function GestionEquipos() {
                     </View>
 
                     {/* Botón editar */}
-                    <TouchableOpacity
-                      style={styles.teamDetailEditButton}
-                      onPress={() => {
-                        setTeamDetailModalVisible(false);
-                        openEditTeamModal(equipoSeleccionado);
-                      }}
-                    >
-                      <Ionicons name="pencil" size={20} color={theme.colors.primary} />
-                      <Text style={styles.teamDetailEditButtonText}>{t('team.editTeam')}</Text>
-                    </TouchableOpacity>
+                    {!isCoach && (
+                      <TouchableOpacity
+                        style={styles.teamDetailEditButton}
+                        onPress={() => {
+                          setTeamDetailModalVisible(false);
+                          openEditTeamModal(equipoSeleccionado);
+                        }}
+                      >
+                        <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+                        <Text style={styles.teamDetailEditButtonText}>{t('team.editTeam')}</Text>
+                      </TouchableOpacity>
+                    )}
 
                     {/* Sección de eliminación */}
-                    <View style={styles.dangerZone}>
-                      <View style={styles.dangerZoneHeader}>
-                        <Ionicons name="warning" size={24} color={theme.colors.error} />
-                        <Text style={styles.dangerZoneTitle}>{t('team.dangerZone')}</Text>
-                      </View>
-                      
-                      {!showDeleteConfirmation ? (
-                        <TouchableOpacity
-                          style={styles.deleteTeamButton}
-                          onPress={() => setShowDeleteConfirmation(true)}
-                        >
-                          <Ionicons name="trash" size={20} color={theme.colors.error} />
-                          <Text style={styles.deleteTeamButtonText}>{t('team.deleteTeam')}</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.deleteConfirmationContainer}>
-                          <View style={styles.deleteWarningBox}>
-                            <Ionicons name="alert-circle" size={32} color={theme.colors.error} />
-                            <Text style={styles.deleteWarningTitle}>{t('team.deleteWarningTitle')}</Text>
-                            <Text style={styles.deleteWarningText}>{t('team.deleteWarningMessage')}</Text>
-                            <Text style={styles.deleteWarningList}>
-                              • {t('team.deleteWarningPlayers')}{'\n'}
-                              • {t('team.deleteWarningMatches')}{'\n'}
-                              • {t('team.deleteWarningSessions')}{'\n'}
-                              • {t('team.deleteWarningInjuries')}{'\n'}
-                              • {t('team.deleteWarningStats')}{'\n'}
-                              • {t('team.deleteWarningRivals')}
-                            </Text>
-                          </View>
-                          
-                          <Text style={styles.deleteConfirmationLabel}>
-                            {t('team.deleteConfirmationInstruction', { teamName: equipoSeleccionado.nombre })}
-                          </Text>
-                          <TextInput
-                            style={styles.deleteConfirmationInput}
-                            placeholder={equipoSeleccionado.nombre}
-                            placeholderTextColor={theme.colors.inputPlaceholder}
-                            value={deleteConfirmationText}
-                            onChangeText={setDeleteConfirmationText}
-                          />
-                          
-                          <View style={styles.deleteConfirmationButtons}>
-                            <TouchableOpacity
-                              style={styles.deleteCancelButton}
-                              onPress={() => {
-                                setShowDeleteConfirmation(false);
-                                setDeleteConfirmationText('');
-                              }}
-                            >
-                              <Text style={styles.deleteCancelButtonText}>{t('message.cancel')}</Text>
-                            </TouchableOpacity>
-                            
-                            <TouchableOpacity
-                              style={[
-                                styles.deleteConfirmButton,
-                                deleteConfirmationText.trim() !== equipoSeleccionado.nombre.trim() && styles.deleteConfirmButtonDisabled
-                              ]}
-                              onPress={handleDeleteTeamWithData}
-                              disabled={deleteConfirmationText.trim() !== equipoSeleccionado.nombre.trim() || deletingTeam}
-                            >
-                              {deletingTeam ? (
-                                <ActivityIndicator size="small" color={theme.colors.error} />
-                              ) : (
-                                <>
-                                  <Ionicons name="trash" size={16} color={theme.colors.error} style={{ marginRight: 6 }} />
-                                  <Text style={styles.deleteConfirmButtonText}>{t('edition.delete')}</Text>
-                                </>
-                              )}
-                            </TouchableOpacity>
-                          </View>
+                    {!isCoach && (
+                      <View style={styles.dangerZone}>
+                        <View style={styles.dangerZoneHeader}>
+                          <Ionicons name="warning" size={24} color={theme.colors.error} />
+                          <Text style={styles.dangerZoneTitle}>{t('team.dangerZone')}</Text>
                         </View>
-                      )}
-                    </View>
+                        
+                        {!showDeleteConfirmation ? (
+                          <TouchableOpacity
+                            style={styles.deleteTeamButton}
+                            onPress={() => setShowDeleteConfirmation(true)}
+                          >
+                            <Ionicons name="trash" size={20} color={theme.colors.error} />
+                            <Text style={styles.deleteTeamButtonText}>{t('team.deleteTeam')}</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={styles.deleteConfirmationContainer}>
+                            <View style={styles.deleteWarningBox}>
+                              <Ionicons name="alert-circle" size={32} color={theme.colors.error} />
+                              <Text style={styles.deleteWarningTitle}>{t('team.deleteWarningTitle')}</Text>
+                              <Text style={styles.deleteWarningText}>{t('team.deleteWarningMessage')}</Text>
+                              <Text style={styles.deleteWarningList}>
+                                • {t('team.deleteWarningPlayers')}{'\n'}
+                                • {t('team.deleteWarningMatches')}{'\n'}
+                                • {t('team.deleteWarningSessions')}{'\n'}
+                                • {t('team.deleteWarningInjuries')}{'\n'}
+                                • {t('team.deleteWarningStats')}{'\n'}
+                                • {t('team.deleteWarningRivals')}
+                              </Text>
+                            </View>
+                            
+                            <Text style={styles.deleteConfirmationLabel}>
+                              {t('team.deleteConfirmationInstruction', { teamName: equipoSeleccionado.nombre })}
+                            </Text>
+                            <TextInput
+                              style={styles.deleteConfirmationInput}
+                              placeholder={equipoSeleccionado.nombre}
+                              placeholderTextColor={theme.colors.inputPlaceholder}
+                              value={deleteConfirmationText}
+                              onChangeText={setDeleteConfirmationText}
+                            />
+                            
+                            <View style={styles.deleteConfirmationButtons}>
+                              <TouchableOpacity
+                                style={styles.deleteCancelButton}
+                                onPress={() => {
+                                  setShowDeleteConfirmation(false);
+                                  setDeleteConfirmationText('');
+                                }}
+                              >
+                                <Text style={styles.deleteCancelButtonText}>{t('message.cancel')}</Text>
+                              </TouchableOpacity>
+                              
+                              <TouchableOpacity
+                                style={[
+                                  styles.deleteConfirmButton,
+                                  deleteConfirmationText.trim() !== equipoSeleccionado.nombre.trim() && styles.deleteConfirmButtonDisabled
+                                ]}
+                                onPress={handleDeleteTeamWithData}
+                                disabled={deleteConfirmationText.trim() !== equipoSeleccionado.nombre.trim() || deletingTeam}
+                              >
+                                {deletingTeam ? (
+                                  <ActivityIndicator size="small" color={theme.colors.error} />
+                                ) : (
+                                  <>
+                                    <Ionicons name="trash" size={16} color={theme.colors.error} style={{ marginRight: 6 }} />
+                                    <Text style={styles.deleteConfirmButtonText}>{t('edition.delete')}</Text>
+                                  </>
+                                )}
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </>
                 )}
               </ScrollView>

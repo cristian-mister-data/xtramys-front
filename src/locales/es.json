@@ -105,6 +105,7 @@
     "statistics": "Estadísticas",
     "anthropometry": "Pliegues y Pesos",
     "profile": "Perfil",
+    "myClub": "Mi Club",
     "logout": "Cerrar Sesión",
     "greeting": "Hola {{name}}",
     "players": "Jugadores",
@@ -441,6 +442,8 @@
     "matchSheetDeleted": "Ficha de partido eliminada correctamente",
     "matchSheetDeleteError": "No se pudo eliminar la ficha de partido",
     "seasonCreateError": "No se pudo crear la temporada",
+    "coachPlaceholderTitle": "Esperando configuración",
+    "coachPlaceholderMessage": "Tu coordinador o director deportivo (el administrador del club) aún no ha creado la temporada ni el equipo. Ponte en contacto con él para que los cree y te dé acceso.",
     "galleryPermissionRequired": "Se necesitan permisos para acceder a la galería",
     "imageSelectError": "Error al seleccionar la imagen",
     "match": "Partido",
@@ -5002,5 +5005,67 @@
     "share": "Descargar y compartir",
     "shareDesc": "Guardar y abrir opciones para enviar",
     "cancel": "Cancelar"
+  },
+  "club": {
+    "title": "Panel del Club",
+    "description": "Gestiona los miembros y visualiza la actividad del club.",
+    "activeUsers": "Miembros Activos",
+    "maxUsers": "Licencias Contratadas",
+    "availableSlots": "Plazas Disponibles",
+    "subscriptionStatus": "Estado de Suscripción",
+    "trainings": "Entrenamientos",
+    "exercises": "Ejercicios",
+    "strategies": "Estrategias",
+    "videos": "Vídeos",
+    "recentActivity": "Actividad Reciente",
+    "recentTrainings": "Últimos Entrenamientos",
+    "recentExercises": "Últimos Ejercicios",
+    "recentStrategies": "Últimas Estrategias",
+    "recentVideos": "Últimos Vídeos",
+    "recentUsers": "Últimos Miembros",
+    "membersTable": {
+      "name": "Nombre",
+      "email": "Email",
+      "status": "Estado",
+      "lastAccess": "Último Acceso",
+      "createdAt": "Fecha Creación",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "pending": "Pendiente"
+    },
+    "actions": {
+      "invite": "Invitar Miembro",
+      "deactivate": "Desactivar",
+      "activate": "Activar",
+      "remove": "Eliminar del club",
+      "viewProfile": "Supervisar",
+      "confirmRemove": "¿Estás seguro de que deseas eliminar a este usuario del club?",
+      "confirmDeactivate": "¿Estás seguro de que deseas desactivar a este usuario?",
+      "confirmActivate": "¿Estás seguro de que deseas activar a este usuario?"
+    },
+    "inviteModal": {
+      "title": "Invitar nuevo miembro al club",
+      "emailLabel": "Dirección de correo electrónico",
+      "emailPlaceholder": "correo@ejemplo.com",
+      "send": "Enviar Invitación",
+      "success": "Invitación enviada con éxito.",
+      "error": "Error al enviar la invitación. Asegúrate de tener licencias libres."
+    },
+    "supervision": {
+      "title": "Supervisión de Coach",
+      "backToDashboard": "Volver al Panel",
+      "noData": "Este usuario aún no ha creado este tipo de recurso.",
+      "readOnlyMode": "Modo Lectura - Supervisión",
+      "readOnlyNotice": "Estás visualizando este espacio de trabajo en modo lectura. Todas las acciones de edición están deshabilitadas."
+    },
+    "sharedLibrary": "Compartido por mi club",
+    "exerciseVisibility": "Visibilidad del ejercicio",
+    "strategyVisibility": "Visibilidad de la estrategia",
+    "videoVisibility": "Visibilidad del video",
+    "private": "Privado",
+    "shareWithClub": "Compartir con mi club"
   }
 }
