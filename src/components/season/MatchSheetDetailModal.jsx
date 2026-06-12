@@ -249,16 +249,20 @@ export default function MatchSheetDetailModal({
       width={760}
       footer={
         <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Button type="button" $variant="danger" onClick={() => onDelete?.(data)}>
-            <MdDelete /> {t('edition.delete', 'Eliminar')}
-          </Button>
+          {onDelete && (
+            <Button type="button" $variant="danger" onClick={() => onDelete(data)}>
+              <MdDelete /> {t('edition.delete', 'Eliminar')}
+            </Button>
+          )}
           <Row style={{ gap: 8 }}>
             <Button type="button" $variant="ghost" onClick={onClose}>
               {t('common.close', 'Cerrar')}
             </Button>
-            <Button type="button" onClick={() => onEdit?.(data)}>
-              <MdEdit /> {t('edition.edit', 'Editar')}
-            </Button>
+            {onEdit && (
+              <Button type="button" onClick={() => onEdit(data)}>
+                <MdEdit /> {t('edition.edit', 'Editar')}
+              </Button>
+            )}
           </Row>
         </Row>
       }

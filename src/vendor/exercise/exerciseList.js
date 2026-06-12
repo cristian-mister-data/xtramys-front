@@ -44,7 +44,7 @@ const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
 
-function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
+function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -330,13 +330,15 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                   </TouchableOpacity>
                 </>
               )}
-              <TouchableOpacity
-                style={styles.modalEditButton}
-                onPress={() => onEdit(exercise)}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons name="edit" size={20} color={theme.colors.warningSoftText} />
-              </TouchableOpacity>
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.modalEditButton}
+                  onPress={() => onEdit(exercise)}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="edit" size={20} color={theme.colors.warningSoftText} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onBack}
@@ -448,7 +450,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                       {visibleVideos.map((video) => (
                         <View key={video._id} style={[styles.videoCard, IS_MOBILE && styles.videoCardMobile]}>
                           {/* Botón de desasociar */}
-                          {!(exercise?.isGlobal && userRole !== 'admin') && (
+                          {canMutate !== false && !(exercise?.isGlobal && userRole !== 'admin') && (
                             <TouchableOpacity
                               style={styles.videoUnlinkBtn}
                               onPress={() => handleUnlinkVideo(video)}
@@ -469,6 +471,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                             )}
                           </View>
                           <View style={styles.videoCardActions}>
+                            {canMutate !== false && (
                             <TouchableOpacity
                               style={[styles.videoActionBtn, styles.videoEditBtn]}
                               onPress={() => onEditVideo && onEditVideo(video, exercise)}
@@ -476,6 +479,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                               <Feather name="edit-3" size={16} color="#fff" />
                               <Text style={styles.videoActionText}>{t('edition.edit')}</Text>
                             </TouchableOpacity>
+                          )}
                             <TouchableOpacity
                               style={[styles.videoActionBtn, styles.videoPlayBtn]}
                               onPress={() => handlePlayVideo(video)}
@@ -651,6 +655,7 @@ function FolderManagement({
   fetchFoldersFlat,
   idUsuario,
   IS_MOBILE,
+  canMutate,
 }) {
   const { t } = useTranslation();
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -716,6 +721,7 @@ function FolderManagement({
   };
 
   const handleCreate = async () => {
+    if (canMutate === false) return;
     if (!newFolderName.trim()) {
       Alert.alert(t('message.error'), t('folders.nameRequired'));
       return;
@@ -732,6 +738,7 @@ function FolderManagement({
   };
 
   const handleUpdate = async () => {
+    if (canMutate === false) return;
     if (!editingFolderName.trim()) {
       Alert.alert(t('message.error'), t('folders.nameRequired'));
       return;
@@ -746,6 +753,7 @@ function FolderManagement({
   };
 
   const handleDeleteFolder = (folder) => {
+    if (canMutate === false) return;
     Alert.alert(t('message.warning'), t('folders.deleteConfirmation', { name: folder.nombre }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -780,7 +788,7 @@ function FolderManagement({
             {t('folders.manageFolders')}
           </Text>
           {/* Ocultar botón crear subcarpeta si estamos en depth >= 2 (max 2 niveles) */}
-          {currentDepth < 2 && (
+          {canMutate !== false && currentDepth < 2 && (
             <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
               <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
               <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
@@ -916,20 +924,22 @@ function FolderManagement({
                     </View>
                     {currentDepth < 2 && <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} style={{ marginRight: 8 }} />}
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={(e) => { e.stopPropagation(); setEditingFolder(folder); setEditingFolderName(folder.nombre); setEditingFolderColor(folder.color || '#2196F3'); }}
-                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <Ionicons name="pencil" size={16} color={theme.mode === 'dark' ? '#94a3b8' : '#475569'} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }}
-                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <Ionicons name="trash" size={16} color="#ef4444" />
-                    </TouchableOpacity>
-                  </View>
+                  {canMutate !== false && (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation(); setEditingFolder(folder); setEditingFolderName(folder.nombre); setEditingFolderColor(folder.color || '#2196F3'); }}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Ionicons name="pencil" size={16} color={theme.mode === 'dark' ? '#94a3b8' : '#475569'} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }}
+                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Ionicons name="trash" size={16} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </TouchableOpacity>
               )}
             </View>
@@ -1131,7 +1141,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
   );
 }
 
-export default function ExerciseList({ navigation: navigationProp }) {
+export default function ExerciseList({ navigation: navigationProp, canMutate }) {
   // Fallback: en web la pantalla se renderiza desde una page wrapper que no
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
@@ -1320,6 +1330,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   }, [creating, editingExercise]);
 
   const handleSave = async (exercise) => {
+    if (canMutate === false) return;
     if (!exercise._id) {
       // Es un nuevo ejercicio
       const { _id, ...exerciseSinId } = exercise;
@@ -1380,6 +1391,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Funciones para mover ejercicio a carpeta
   const handleMoveToFolder = async (folderId) => {
+    if (canMutate === false) return;
     if (!exerciseToMove) return;
     try {
       await dispatch(moveExerciseToFolder({
@@ -1465,6 +1477,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   })();
 
   const handleDelete = (exercise) => {
+    if (canMutate === false) return;
     // No permitir eliminar ejercicios globales a usuarios no-admin
     if (exercise.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('exercise.cannotDeleteGlobal'));
@@ -1633,6 +1646,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   }, [currentFolderExercises, dispatch, ejercicios, filteredEjercicios, globalExercises, t]);
 
   const handleBatchDelete = () => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     Alert.alert(
       t('message.warning'),
@@ -1660,6 +1674,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   };
 
   const handleBatchMove = async (folderId) => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     setBatchMoving(true);
     try {
@@ -1713,6 +1728,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
   // Crear carpeta estilo myVideos
   const handleCreateFolder = async () => {
+    if (canMutate === false) return;
     if (!newFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -1753,6 +1769,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const handleDeleteFolder = (folder) => {
+    if (canMutate === false) return;
     if (folder.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('folders.cannotDeleteGlobal'));
       return;
@@ -1803,6 +1820,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   };
 
   const handleEditFolder = (folder) => {
+    if (canMutate === false) return;
     if (folder.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('folders.cannotEditGlobal'));
       return;
@@ -1815,6 +1833,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
   };
 
   const handleUpdateFolder = async () => {
+    if (canMutate === false) return;
     if (!editFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -1898,8 +1917,10 @@ export default function ExerciseList({ navigation: navigationProp }) {
         onBack={() => setViewingExercise(null)}
         navigation={navigation}
         userRole={userRole}
+        canMutate={canMutate}
         onEditVideo={handleEditAssociatedVideo}
         onEdit={async (exercise) => {
+          if (canMutate === false) return;
           // Si el ejercicio es global y el usuario no es admin, duplicar primero
           if (exercise.isGlobal && userRole !== 'admin') {
             try {
@@ -1952,28 +1973,30 @@ export default function ExerciseList({ navigation: navigationProp }) {
       <View style={styles.mvContainer}>
         <View style={styles.mvHeader}>
           <View style={styles.mvHeaderTop}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              {folderPath.length < 2 && (
-                <TouchableOpacity
-                  style={styles.mvAddFolderButton}
-                  onPress={() => {
-                    setNewFolderIsGlobal(listFilter === 'global' && userRole === 'admin');
-                    setShowCreateFolderModal(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
-                </TouchableOpacity>
+            {canMutate !== false && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  {folderPath.length < 2 && (
+                    <TouchableOpacity
+                      style={styles.mvAddFolderButton}
+                      onPress={() => {
+                        setNewFolderIsGlobal(listFilter === 'global' && userRole === 'admin');
+                        setShowCreateFolderModal(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => { setCreating(true); setEditingExercise(null); }}
+                    style={styles.mvCreateButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
+                    {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('exercise.exercise')}</Text>}
+                  </TouchableOpacity>
+                </View>
               )}
-              <TouchableOpacity
-                onPress={() => { setCreating(true); setEditingExercise(null); }}
-                style={styles.mvCreateButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
-                {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('exercise.exercise')}</Text>}
-              </TouchableOpacity>
-            </View>
           </View>
 
           {/* Breadcrumb estilo myVideos */}
@@ -2199,30 +2222,34 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                onPress={() => setShowBatchMoveModal(true)}
-                disabled={selectedIds.size === 0}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 6,
-                  backgroundColor: '#3578e5', borderRadius: 10,
-                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-                }}
-              >
-                <Feather name="folder" size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleBatchDelete}
-                disabled={selectedIds.size === 0}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 6,
-                  backgroundColor: '#EF4444', borderRadius: 10,
-                  paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
-                }}
-              >
-                <Feather name="trash-2" size={16} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
-              </TouchableOpacity>
+              {canMutate !== false && (
+                <TouchableOpacity
+                  onPress={() => setShowBatchMoveModal(true)}
+                  disabled={selectedIds.size === 0}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    backgroundColor: '#3578e5', borderRadius: 10,
+                    paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                  }}
+                >
+                  <Feather name="folder" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
+                </TouchableOpacity>
+              )}
+              {canMutate !== false && (
+                <TouchableOpacity
+                  onPress={handleBatchDelete}
+                  disabled={selectedIds.size === 0}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    backgroundColor: '#EF4444', borderRadius: 10,
+                    paddingHorizontal: 14, paddingVertical: 8, opacity: selectedIds.size === 0 ? 0.4 : 1,
+                  }}
+                >
+                  <Feather name="trash-2" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={handleCancelSelection}
                 style={{
@@ -2350,6 +2377,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </View>
                 </TouchableOpacity>
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2381,7 +2409,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('edition.edit')}</Text>
                   </View>
                 </TouchableOpacity>
+              )}
 
+              {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2421,7 +2451,9 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('myVideos.duplicate')}</Text>
                   </View>
                 </TouchableOpacity>
+              )}
 
+              {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2437,9 +2469,13 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('folders.moveToFolder')}</Text>
                   </View>
                 </TouchableOpacity>
+              )}
 
+              {canMutate !== false && (
                 <View style={styles.mvActionDivider} />
+              )}
 
+              {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2454,6 +2490,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('edition.delete')}</Text>
                   </View>
                 </TouchableOpacity>
+              )}
               </ScrollView>
 
               <TouchableOpacity
@@ -2502,7 +2539,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
 
                 <View style={styles.mvActionDivider} />
 
-                {(!menuFolder?.isGlobal || userRole === 'admin') && (
+                {canMutate !== false && (!menuFolder?.isGlobal || userRole === 'admin') && (
                   <>
                     <TouchableOpacity
                       style={styles.mvActionOption}
@@ -2523,6 +2560,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                   </>
                 )}
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2537,6 +2575,7 @@ export default function ExerciseList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('folders.deleteFolder')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
               </ScrollView>
 
               <TouchableOpacity

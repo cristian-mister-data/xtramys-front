@@ -4,12 +4,15 @@ import { useSelector } from 'react-redux';
 import RNWebPage from './_RNWebPage';
 import MatchSheetList from '@/vendor/matchSheet/matchSheetList';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
+import CanMutate from '@/components/shared/CanMutate';
+import useSupervision from '@/hooks/useSupervision';
 import { Button, Row } from '@/ui/primitives';
 
 export default function MatchSheets() {
   const { t } = useTranslation();
   const teams = useSelector((s) => s.team?.teams ?? []);
   const selectedTeam = teams.find((e) => e.seleccionado) || null;
+  const { canMutate } = useSupervision();
 
   return (
     <RNWebPage
@@ -18,15 +21,17 @@ export default function MatchSheets() {
       subtitle={t('sectionHeaders.matchSheets', 'Prepara convocatorias, alineaciones y registros de cada encuentro.')}
       icon={MdDescription}
       actions={selectedTeam ? (
-        <Button $variant="primary" onClick={() => window.dispatchEvent(new CustomEvent('matchsheets:create'))}>
-          <Row $gap={6}>
-            <MdAdd size={18} />
-            {t('matchSheet.actions.createMatchSheet', 'Crear ficha')}
-          </Row>
-        </Button>
+        <CanMutate>
+          <Button $variant="primary" onClick={() => window.dispatchEvent(new CustomEvent('matchsheets:create'))}>
+            <Row $gap={6}>
+              <MdAdd size={18} />
+              {t('matchSheet.actions.createMatchSheet', 'Crear ficha')}
+            </Row>
+          </Button>
+        </CanMutate>
       ) : null}
     >
-      {selectedTeam ? <MatchSheetList /> : <TeamRequiredCard />}
+      {selectedTeam ? <MatchSheetList canMutate={canMutate} /> : <TeamRequiredCard />}
     </RNWebPage>
   );
 }

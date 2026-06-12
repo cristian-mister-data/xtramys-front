@@ -79,7 +79,7 @@ const selectRivals = state => state.rival?.rivals || EMPTY_ARRAY;
 const selectInjuries = state => state.injury?.injuries || EMPTY_ARRAY;
 
 /* ================== Tournament Card ================== */
-function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOBILE }) {
+function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOBILE, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -127,13 +127,15 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
                 {tournament.estado === 'activo' ? t('tournaments.active') : t('tournaments.finished')}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={(e) => { e.stopPropagation?.(); onOpenOptions(tournament); }}
-              style={styles.optionsBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
+            {canMutate !== false && (
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation?.(); onOpenOptions(tournament); }}
+                style={styles.optionsBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -167,7 +169,7 @@ function TournamentCard({ tournament, onPress, onOpenOptions, matchCount, IS_MOB
 }
 
 /* ================== Create/Edit Tournament Modal ================== */
-function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS_MOBILE }) {
+function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS_MOBILE, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -674,22 +676,24 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.saveButton, loading && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <MaterialIcons name={isEditing ? 'save' : 'add'} size={20} color="#fff" />
-                  <Text style={styles.saveButtonText}>
-                    {isEditing ? t('common.save') : t('tournaments.create')}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {canMutate !== false && (
+              <TouchableOpacity
+                style={[styles.saveButton, loading && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <MaterialIcons name={isEditing ? 'save' : 'add'} size={20} color="#fff" />
+                    <Text style={styles.saveButtonText}>
+                      {isEditing ? t('common.save') : t('tournaments.create')}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <DateTimePickerModal
@@ -710,7 +714,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
 }
 
 /* ================== Tournament Detail Modal ================== */
-function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete, IS_MOBILE, onViewMatch, onCreateMatch, visible, sanctions, loadingSanctions }) {
+function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete, IS_MOBILE, onViewMatch, onCreateMatch, visible, sanctions, loadingSanctions, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -865,10 +869,12 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
         )}
       </View>
       {/* Create match button */}
-      <TouchableOpacity style={styles.createMatchBtn} onPress={() => onCreateMatch()}>
-        <MaterialIcons name="add-circle" size={20} color={theme.colors.primary} />
-        <Text style={styles.createMatchBtnText}>{t('tournaments.createMatch')}</Text>
-      </TouchableOpacity>
+      {canMutate !== false && (
+        <TouchableOpacity style={styles.createMatchBtn} onPress={() => onCreateMatch()}>
+          <MaterialIcons name="add-circle" size={20} color={theme.colors.primary} />
+          <Text style={styles.createMatchBtnText}>{t('tournaments.createMatch')}</Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 
@@ -1178,14 +1184,18 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
 
               {/* Footer actions */}
               <View style={[styles.modalFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-                <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(tournament)}>
-                  <MaterialIcons name="delete-outline" size={20} color={theme.colors.error} />
-                  <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={() => onEdit(tournament)}>
-                  <MaterialIcons name="edit" size={20} color="#fff" />
-                  <Text style={styles.saveButtonText}>{t('common.edit')}</Text>
-                </TouchableOpacity>
+                {canMutate !== false && (
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(tournament)}>
+                    <MaterialIcons name="delete-outline" size={20} color={theme.colors.error} />
+                    <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+                  </TouchableOpacity>
+                )}
+                {canMutate !== false && (
+                  <TouchableOpacity style={styles.saveButton} onPress={() => onEdit(tournament)}>
+                    <MaterialIcons name="edit" size={20} color="#fff" />
+                    <Text style={styles.saveButtonText}>{t('common.edit')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
         </View>
       </View>
@@ -1194,7 +1204,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
 }
 
 /* ================== Options Modal ================== */
-function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggleStatus }) {
+function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggleStatus, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
@@ -1210,52 +1220,58 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
           {/* Title */}
           <Text style={styles.optionsModalTitle}>{tournament.nombre}</Text>
 
-          <TouchableOpacity
-            style={styles.optionsModalOption}
-            onPress={() => {
-              onClose();
-              onEdit(tournament);
-            }}
-          >
-            <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
-              <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
-            </View>
-            <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
-          </TouchableOpacity>
+          {canMutate !== false && (
+            <TouchableOpacity
+              style={styles.optionsModalOption}
+              onPress={() => {
+                onClose();
+                onEdit(tournament);
+              }}
+            >
+              <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
+                <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
+            </TouchableOpacity>
+          )}
           
-          <TouchableOpacity
-            style={styles.optionsModalOption}
-            onPress={() => {
-              onClose();
-              onToggleStatus(tournament);
-            }}
-          >
-            <View style={[styles.optionsModalIconBox, { backgroundColor: tournament.estado === 'activo' ? theme.colors.backgroundAlt : theme.colors.successSoft }]}>
-              <MaterialIcons
-                name={tournament.estado === 'activo' ? 'check-circle' : 'play-circle-filled'}
-                size={20}
-                color={tournament.estado === 'activo' ? theme.colors.textSecondary : theme.colors.success}
-              />
-            </View>
-            <Text style={styles.optionsModalOptionText}>
-              {tournament.estado === 'activo' ? t('tournaments.markFinished') : t('tournaments.markActive')}
-            </Text>
-          </TouchableOpacity>
+          {canMutate !== false && (
+            <TouchableOpacity
+              style={styles.optionsModalOption}
+              onPress={() => {
+                onClose();
+                onToggleStatus(tournament);
+              }}
+            >
+              <View style={[styles.optionsModalIconBox, { backgroundColor: tournament.estado === 'activo' ? theme.colors.backgroundAlt : theme.colors.successSoft }]}>
+                <MaterialIcons
+                  name={tournament.estado === 'activo' ? 'check-circle' : 'play-circle-filled'}
+                  size={20}
+                  color={tournament.estado === 'activo' ? theme.colors.textSecondary : theme.colors.success}
+                />
+              </View>
+              <Text style={styles.optionsModalOptionText}>
+                {tournament.estado === 'activo' ? t('tournaments.markFinished') : t('tournaments.markActive')}
+              </Text>
+            </TouchableOpacity>
+          )}
           
-          <TouchableOpacity
-            style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
-            onPress={() => {
-              onClose();
-              onDelete(tournament);
-            }}
-          >
-            <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}>
-              <MaterialIcons name="delete" size={20} color={theme.colors.error} />
-            </View>
-            <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
-              {t('common.delete')}
-            </Text>
-          </TouchableOpacity>
+          {canMutate !== false && (
+            <TouchableOpacity
+              style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
+              onPress={() => {
+                onClose();
+                onDelete(tournament);
+              }}
+            >
+              <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}>
+                <MaterialIcons name="delete" size={20} color={theme.colors.error} />
+              </View>
+              <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
+                {t('common.delete')}
+              </Text>
+            </TouchableOpacity>
+          )}
           
           <TouchableOpacity
             style={styles.optionsModalCancelButton}
@@ -1270,7 +1286,7 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
 }
 
 /* ================== Main Tournaments Component ================== */
-export default function Tournaments() {
+export default function Tournaments({ canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t } = useTranslation();
@@ -1441,6 +1457,7 @@ export default function Tournaments() {
       onOpenOptions={setOptionsTournament}
       matchCount={getMatchesForTournament(item._id).length}
       IS_MOBILE={IS_MOBILE}
+      canMutate={canMutate}
     />
   );
 
@@ -1449,10 +1466,12 @@ export default function Tournaments() {
       <MaterialIcons name="emoji-events" size={64} color={theme.colors.border} />
       <Text style={styles.emptyTitle}>{t('tournaments.emptyTitle')}</Text>
       <Text style={styles.emptySubtitle}>{t('tournaments.emptySubtitle')}</Text>
-      <TouchableOpacity style={styles.emptyButton} onPress={handleCreate}>
-        <MaterialIcons name="add" size={20} color="#fff" />
-        <Text style={styles.emptyButtonText}>{t('tournaments.createFirst')}</Text>
-      </TouchableOpacity>
+      {canMutate !== false && (
+        <TouchableOpacity style={styles.emptyButton} onPress={handleCreate}>
+          <MaterialIcons name="add" size={20} color="#fff" />
+          <Text style={styles.emptyButtonText}>{t('tournaments.createFirst')}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -1476,10 +1495,12 @@ export default function Tournaments() {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={handleCreate}>
-            <MaterialIcons name="add" size={22} color="#fff" />
-            {!IS_MOBILE && <Text style={styles.addButtonText}>{t('tournaments.new')}</Text>}
-          </TouchableOpacity>
+          {canMutate !== false && (
+            <TouchableOpacity style={styles.addButton} onPress={handleCreate}>
+              <MaterialIcons name="add" size={22} color="#fff" />
+              {!IS_MOBILE && <Text style={styles.addButtonText}>{t('tournaments.new')}</Text>}
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Loading */}
@@ -1502,7 +1523,7 @@ export default function Tournaments() {
         )}
 
         {/* FAB for mobile */}
-        {IS_MOBILE && tournaments.length > 0 && (
+        {IS_MOBILE && canMutate !== false && tournaments.length > 0 && (
           <TouchableOpacity style={[styles.fab, { bottom: Math.max(insets.bottom, 20) }]} onPress={handleCreate} activeOpacity={0.8}>
             <LinearGradient colors={[theme.colors.primary, theme.colors.primaryHover]} style={styles.fabGradient}>
               <MaterialIcons name="add" size={28} color="#fff" />
@@ -1518,6 +1539,7 @@ export default function Tournaments() {
           tournament={editingTournament}
           loading={saving}
           IS_MOBILE={IS_MOBILE}
+          canMutate={canMutate}
         />
 
         {detailTournament && (
@@ -1533,6 +1555,7 @@ export default function Tournaments() {
             visible={!selectedMatch && !editingMatch && !creatingMatch}
             sanctions={sanctions}
             loadingSanctions={loadingSanctions}
+            canMutate={canMutate}
           />
         )}
 
@@ -1543,6 +1566,7 @@ export default function Tournaments() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onToggleStatus={handleToggleStatus}
+          canMutate={canMutate}
         />
 
         <MatchSheetDetailModal

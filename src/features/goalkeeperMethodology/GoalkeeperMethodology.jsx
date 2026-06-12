@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { MdLock, MdAdd, MdDelete, MdEdit, MdPictureAsPdf, MdSportsHandball } from 'react-icons/md';
 import { generateGoalkeeperMethodologyPdf } from './pdf';
+import useSupervision from '../../hooks/useSupervision';
 
 import {
   getDefaultGoalkeeperMethodologyData,
@@ -338,6 +339,7 @@ export default function GoalkeeperMethodology() {
   const { t } = useTranslation();
   const theme = useTheme();
   const userId = useSelector((s) => s.usuario.user?._id);
+  const { canMutate } = useSupervision();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState('recommended');
@@ -359,7 +361,7 @@ export default function GoalkeeperMethodology() {
     return () => { alive = false; };
   }, [userId]);
 
-  const isEditable = selectedId !== 'recommended';
+  const isEditable = selectedId !== 'recommended' && canMutate;
   const current = useMemo(() => {
     if (!isEditable) return getDefaultGoalkeeperMethodologyData(t);
     const m = list.find((x) => x._id === selectedId);
@@ -487,7 +489,7 @@ export default function GoalkeeperMethodology() {
         {list.map((m) => (
           <Chip key={m._id} $active={selectedId === m._id} onClick={() => setSelectedId(m._id)}>{m.name}</Chip>
         ))}
-        <Chip onClick={() => setCreateOpen(true)}><MdAdd /> {t('common.new', 'Nueva')}</Chip>
+        {canMutate && <Chip onClick={() => setCreateOpen(true)}><MdAdd /> {t('common.new', 'Nueva')}</Chip>}
         {isEditable && <Chip onClick={handleDelete} style={{ color: '#ef4444', borderColor: '#ef4444' }}><MdDelete /> {t('common.delete', 'Eliminar')}</Chip>}
       </SelectorRow>
 

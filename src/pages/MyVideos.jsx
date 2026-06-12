@@ -2,9 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { MdVideoLibrary } from 'react-icons/md';
 import RNWebPage from './_RNWebPage';
 import MyVideosView from '@/vendor/myVideos/myVideos';
+import useSupervision from '@/hooks/useSupervision';
 
 export default function MyVideos() {
   const { t } = useTranslation();
+  const { canMutate } = useSupervision();
 
   return (
     <RNWebPage themed
@@ -12,7 +14,7 @@ export default function MyVideos() {
       subtitle={t('sectionHeaders.myVideos', 'Clasifica clips, carpetas y material audiovisual del cuerpo técnico.')}
       icon={MdVideoLibrary}
     >
-      <MyVideosView />
+      <MyVideosView canMutate={canMutate} />
     </RNWebPage>
   );
 }

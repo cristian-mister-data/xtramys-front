@@ -308,7 +308,7 @@ function MatchSheetCard({ matchSheet, onPress, onOpenOptions, IS_MOBILE, selecte
   );
 }
 
-export default function MatchSheetList() {
+export default function MatchSheetList({ canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -578,14 +578,16 @@ export default function MatchSheetList() {
   useEffect(() => {
     if (Platform.OS === 'web') {
       const handleCreateEvent = () => {
-        openCreateModal();
+        if (canMutate !== false) {
+          openCreateModal();
+        }
       };
       window.addEventListener('matchsheets:create', handleCreateEvent);
       return () => {
         window.removeEventListener('matchsheets:create', handleCreateEvent);
       };
     }
-  }, []);
+  }, [canMutate]);
   
   const selectedTeam = teams.find(e => e.seleccionado === true);
   
@@ -709,7 +711,7 @@ export default function MatchSheetList() {
                 )}
               </TouchableOpacity>
               {/* Botn crear ficha */}
-              {Platform.OS !== 'web' && (
+              {canMutate !== false && Platform.OS !== 'web' && (
                 <TouchableOpacity
                   onPress={openCreateModal}
                   style={styles.headerCreateBtn}
@@ -1024,7 +1026,7 @@ export default function MatchSheetList() {
                 <Text style={styles.emptyText}>
                   {activeFiltersCount > 0 ? t('matchSheet.noMatchesFiltered') : t('matchSheet.noMatchSheets')}
                 </Text>
-                {!activeFiltersCount && (
+                {!activeFiltersCount && canMutate !== false && (
                   <TouchableOpacity
                     style={[styles.createButton, { marginTop: 20 }]}
                     onPress={openCreateModal}
@@ -1070,18 +1072,20 @@ export default function MatchSheetList() {
               {/* Title */}
               <Text style={styles.optionsModalTitle}>{t('matchSheet.actions.options') || 'Opciones'}</Text>
 
-              <TouchableOpacity
-                style={styles.optionsModalOption}
-                onPress={() => {
-                  setOptionsModalVisible(false);
-                  openEditModal(selectedMatchSheetForOptions);
-                }}
-              >
-                <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
-                  <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.optionsModalOptionText}>{t('matchSheet.actions.edit')}</Text>
-              </TouchableOpacity>
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.optionsModalOption}
+                  onPress={() => {
+                    setOptionsModalVisible(false);
+                    openEditModal(selectedMatchSheetForOptions);
+                  }}
+                >
+                  <View style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.primarySoft }]}>
+                    <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.optionsModalOptionText}>{t('matchSheet.actions.edit')}</Text>
+                </TouchableOpacity>
+              )}
               
               <TouchableOpacity
                 style={styles.optionsModalOption}
@@ -1121,6 +1125,7 @@ export default function MatchSheetList() {
                 <Text style={styles.optionsModalOptionText}>{t('matchSheet.pdf.matchSheetTitle')}</Text>
               </TouchableOpacity>
               
+              {canMutate !== false && (
               <TouchableOpacity
                 style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
                 onPress={() => handleDelete(selectedMatchSheetForOptions)}
@@ -1132,6 +1137,7 @@ export default function MatchSheetList() {
                   {t('matchSheet.actions.delete')}
                 </Text>
               </TouchableOpacity>
+              )}
               
               <TouchableOpacity
                 style={styles.optionsModalCancelButton}
@@ -1175,6 +1181,7 @@ export default function MatchSheetList() {
           matchSheets={matchSheets}
           trainingSessions={trainingSessions}
           sanctionedPlayerIds={sanctions.filter(s => s.sancionado).map(s => s.playerId)}
+          canMutate={canMutate}
         />
 
         {/* Secci�n de Filtros M�vil */}
@@ -1496,14 +1503,15 @@ export default function MatchSheetList() {
         team={selectedTeam}
         players={players}
         onClose={() => setViewingMatchSheet(null)}
-        onEdit={(ms) => {
+        onEdit={canMutate !== false ? (ms) => {
           setViewingMatchSheet(null);
           openEditModal(ms);
-        }}
-        onDelete={(ms) => {
+        } : undefined}
+        onDelete={canMutate !== false ? (ms) => {
           dispatch(deleteMatchSheet(ms._id));
           setViewingMatchSheet(null);
-        }}
+        } : undefined}
+        canMutate={canMutate}
       />
     </AppLayout>
   );

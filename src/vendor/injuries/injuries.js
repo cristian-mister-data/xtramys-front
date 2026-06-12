@@ -49,7 +49,7 @@ const getPositionColor = (position) => {
   }
 };
 
-export default function InjuriesManagement({ navigation }) {
+export default function InjuriesManagement({ navigation, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -157,14 +157,16 @@ export default function InjuriesManagement({ navigation }) {
   useEffect(() => {
     if (Platform.OS === 'web') {
       const handleCreateEvent = () => {
-        openCreateModal();
+        if (canMutate !== false) {
+          openCreateModal();
+        }
       };
       window.addEventListener('injuries:create', handleCreateEvent);
       return () => {
         window.removeEventListener('injuries:create', handleCreateEvent);
       };
     }
-  }, [openCreateModal]);
+  }, [openCreateModal, canMutate]);
 
   const openCreateModal = () => {
     const selectedTeam = equipos?.find(team => team.seleccionado === true);
@@ -498,7 +500,7 @@ export default function InjuriesManagement({ navigation }) {
                   </Text>
                 </View>
               </View>
-              {Platform.OS !== 'web' && (
+              {Platform.OS !== 'web' && canMutate !== false && (
                 <View style={styles.headerButtons}>
                   <TouchableOpacity style={styles.addButton} onPress={openCreateModal} activeOpacity={0.7}>
                     <Ionicons name="add" size={24} color={theme.colors.primary} />
@@ -671,7 +673,7 @@ export default function InjuriesManagement({ navigation }) {
                     <Text style={styles.emptyStateButtonText}>{t('injury.clearFilters')}</Text>
                   </TouchableOpacity>
                 )}
-                {injuries?.length === 0 && (
+                {injuries?.length === 0 && canMutate !== false && (
                   <TouchableOpacity style={styles.emptyStateButton} onPress={openCreateModal}>
                     <Ionicons name="add-circle" size={20} color="#ffffff" />
                     <Text style={styles.emptyStateButtonText}>{t('injury.registerInjury')}</Text>
@@ -688,7 +690,7 @@ export default function InjuriesManagement({ navigation }) {
                   <TouchableOpacity
                     key={injury._id}
                     style={styles.injuryCard}
-                    onPress={() => openEditModal(injury)}
+                    onPress={canMutate !== false ? () => openEditModal(injury) : undefined}
                   >
                     <LinearGradient colors={posColor} style={styles.injuryCardColorBar} />
                     <View style={styles.injuryCardInner}>
@@ -717,6 +719,7 @@ export default function InjuriesManagement({ navigation }) {
                             </View>
                           </View>
                         </View>
+                        {canMutate !== false && (
                         <TouchableOpacity
                           style={styles.deleteButton}
                           onPress={(e) => {
@@ -726,6 +729,7 @@ export default function InjuriesManagement({ navigation }) {
                         >
                           <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                         </TouchableOpacity>
+                      )}
                       </View>
 
                     <View style={styles.injuryDetails}>

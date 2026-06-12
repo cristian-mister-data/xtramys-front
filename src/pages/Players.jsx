@@ -8,6 +8,8 @@ import { Card, Button, Input, Row, Stack, Muted } from '@/ui/primitives';
 import SectionHeader from '@/ui/SectionHeader';
 import { toast } from '@/ui/toast';
 import { confirmAction } from '@/ui/confirm';
+import CanMutate from '@/components/shared/CanMutate';
+import useSupervision from '@/hooks/useSupervision';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
 import PlayerCard from '@/components/player/PlayerCard';
 import PlayerFormModal from '@/components/player/PlayerFormModal';
@@ -285,6 +287,7 @@ export default function Players() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { canMutate } = useSupervision();
   const equipos = useSelector((s) => s.team?.teams ?? EMPTY);
   const players = useSelector((s) => s.player?.players ?? EMPTY);
   const loading = useSelector((s) => s.player?.loading);
@@ -397,7 +400,7 @@ export default function Players() {
         title={t('player.players', 'Jugadores')}
         subtitle={selectedTeam?.nombre || t('player.noTeamSelected', 'Selecciona un equipo')}
         icon={MdPeople}
-        actions={selectedTeam ? (
+        actions={selectedTeam && canMutate ? (
           <Button onClick={() => setCreateOpen(true)}>
             <MdAdd size={18} />
             {t('player.createPlayer', 'Nuevo jugador')}
@@ -552,7 +555,7 @@ export default function Players() {
                   ? t('player.createFirstPlayer', 'Crea tu primer jugador para empezar.')
                   : t('player.tryDifferentFilters', 'Prueba con otros filtros.')}
               </Muted>
-              {players.length === 0 ? (
+              {players.length === 0 && canMutate ? (
                 <Button onClick={() => setCreateOpen(true)}>+ {t('player.createPlayer', 'Crear jugador')}</Button>
               ) : null}
             </EmptyCard>
@@ -601,8 +604,8 @@ export default function Players() {
         open={!!detailPlayer}
         player={detailPlayer}
         onClose={() => setDetailPlayer(null)}
-        onEdit={(p) => { setDetailPlayer(null); setEditPlayer(p); }}
-        onDelete={handleDelete}
+        onEdit={canMutate ? (p) => { setDetailPlayer(null); setEditPlayer(p); } : undefined}
+        onDelete={canMutate ? handleDelete : undefined}
         onViewProfile={(p) => { setDetailPlayer(null); navigate(`/players/${p._id}`); }}
       />
     </Stack>

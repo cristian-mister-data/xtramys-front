@@ -65,7 +65,7 @@ const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
 
-function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole }) {
+function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -362,6 +362,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                   </TouchableOpacity>
                 </>
               )}
+              {canMutate !== false && (
               <TouchableOpacity
                 style={styles.modalEditButton}
                 onPress={() => onEdit(strategy)}
@@ -369,6 +370,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
               >
                 <MaterialIcons name="edit" size={20} color={theme.colors.warningSoftText} />
               </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onBack}
@@ -455,14 +457,16 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                     <View style={styles.videosGrid}>
                       {strategyVideos.map((video) => (
                         <View key={video._id} style={styles.videoCard}>
-                          {/* Botón de desasociar */}
-                          <TouchableOpacity
-                            style={styles.videoUnlinkBtn}
-                            onPress={() => handleUnlinkVideo(video)}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <Feather name="x" size={16} color="#EF4444" />
-                          </TouchableOpacity>
+{/* Botón de desasociar */}
+                           {canMutate !== false && (
+                           <TouchableOpacity
+                             style={styles.videoUnlinkBtn}
+                             onPress={() => handleUnlinkVideo(video)}
+                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                           >
+                             <Feather name="x" size={16} color="#EF4444" />
+                           </TouchableOpacity>
+                           )}
                           <View style={styles.videoCardContent}>
                             <Feather name="film" size={28} color="#E91E63" />
                             <Text style={styles.videoCardTitle} numberOfLines={1}>
@@ -482,6 +486,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                               <Feather name="play" size={16} color="#fff" />
                               <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
                             </TouchableOpacity>
+                            {canMutate !== false && (
                             <TouchableOpacity
                               style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
                               onPress={() => onEditVideo && onEditVideo(video, strategy)}
@@ -489,6 +494,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                               <Feather name="edit-3" size={14} color="#fff" />
                               <Text style={styles.videoActionText}>{t('edition.edit') || 'Editar'}</Text>
                             </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                               style={[styles.videoActionBtn, styles.videoDownloadBtn]}
                               onPress={() => handleDownloadVideo(video)}
@@ -650,7 +656,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   );
 }
 
-function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder, updateFolder, deleteFolder, idUsuario, IS_MOBILE }) {
+function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder, updateFolder, deleteFolder, idUsuario, IS_MOBILE, canMutate }) {
   const { t } = useTranslation();
   const [editingFolder, setEditingFolder] = useState(null);
   const [editingFolderName, setEditingFolderName] = useState('');
@@ -714,6 +720,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   };
 
   const handleCreate = async () => {
+    if (canMutate === false) return;
     if (!newFolderName.trim()) { Alert.alert(t('message.error'), t('folders.nameRequired')); return; }
     try {
       await dispatch(createFolder({ nombre: newFolderName.trim(), parentFolder: currentFolderId, color: newFolderColor })).unwrap();
@@ -724,6 +731,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   };
 
   const handleUpdate = async () => {
+    if (canMutate === false) return;
     if (!editingFolderName.trim()) { Alert.alert(t('message.error'), t('folders.nameRequired')); return; }
     try {
       await dispatch(updateFolder({ id: editingFolder._id, nombre: editingFolderName.trim(), color: editingFolderColor })).unwrap();
@@ -734,6 +742,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
   };
 
   const handleDeleteFolder = (folder) => {
+    if (canMutate === false) return;
     Alert.alert(t('message.warning'), t('folders.deleteConfirmation', { name: folder.nombre }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -765,7 +774,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.text, flex: 1 }}>{t('folders.manageFolders')}</Text>
-          {currentDepth < 2 && (
+          {canMutate !== false && currentDepth < 2 && (
             <TouchableOpacity onPress={() => setCreatingFolder(true)} style={{ backgroundColor: theme.colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 2 }}>
               <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
               <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: IS_MOBILE ? 14 : 16 }}>
@@ -898,18 +907,22 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
                     {currentDepth < 2 && <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} style={{ marginRight: 8 }} />}
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {canMutate !== false && (
                     <TouchableOpacity
                       onPress={(e) => { e.stopPropagation(); setEditingFolder(folder); setEditingFolderName(folder.nombre); setEditingFolderColor(folder.color || '#2196F3'); }}
                       style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Ionicons name="pencil" size={16} color={theme.mode === 'dark' ? '#94a3b8' : '#475569'} />
                     </TouchableOpacity>
+                    )}
+                    {canMutate !== false && (
                     <TouchableOpacity
                       onPress={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }}
                       style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.backgroundAlt, alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Ionicons name="trash" size={16} color="#ef4444" />
                     </TouchableOpacity>
+                    )}
                   </View>
                 </TouchableOpacity>
               )}
@@ -1069,7 +1082,7 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
   );
 }
 
-export default function StrategyList({ navigation: navigationProp }) {
+export default function StrategyList({ navigation: navigationProp, canMutate }) {
   // Fallback: en web la pantalla se renderiza desde una page wrapper que no
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
@@ -1253,6 +1266,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   }, [creating, editingStrategy]);
 
   const handleSave = async (strategy) => {
+    if (canMutate === false) return;
     if (!strategy._id) {
       const { _id, ...strategySinId } = strategy;
       await dispatch(createEstrategia(strategySinId));
@@ -1390,6 +1404,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   };
 
   const handleDelete = (strategy) => {
+    if (canMutate === false) return;
     if (strategy.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('strategy.cannotDeleteGlobal'));
       return;
@@ -1471,6 +1486,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   }, [currentFolderStrategies, dispatch, filteredStrategies, globalStrategies, strategies, t]);
 
   const handleBatchDelete = () => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     Alert.alert(
       t('message.warning'),
@@ -1498,6 +1514,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   };
 
   const handleBatchMove = async (folderId) => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     setBatchMoving(true);
     try {
@@ -1659,6 +1676,7 @@ export default function StrategyList({ navigation: navigationProp }) {
 
   // Crear carpeta estilo myVideos
   const handleCreateFolder = async () => {
+    if (canMutate === false) return;
     if (!newFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -1699,6 +1717,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const handleDeleteFolder = (folder) => {
+    if (canMutate === false) return;
     if (folder.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('folders.cannotDeleteGlobal'));
       return;
@@ -1749,6 +1768,7 @@ export default function StrategyList({ navigation: navigationProp }) {
   };
 
   const handleEditFolder = (folder) => {
+    if (canMutate === false) return;
     if (folder.isGlobal && userRole !== 'admin') {
       Alert.alert(t('message.info'), t('folders.cannotEditGlobal'));
       return;
@@ -1868,6 +1888,7 @@ export default function StrategyList({ navigation: navigationProp }) {
         onDelete={handleDelete}
         onEditVideo={handleEditAssociatedVideo}
         userRole={userRole}
+        canMutate={canMutate}
       />
     );
   }
@@ -1890,7 +1911,7 @@ export default function StrategyList({ navigation: navigationProp }) {
         <View style={styles.mvHeader}>
           <View style={styles.mvHeaderTop}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              {folderPath.length < 2 && (
+              {canMutate !== false && folderPath.length < 2 && (
                 <TouchableOpacity
                   style={styles.mvAddFolderButton}
                   onPress={() => {
@@ -1902,6 +1923,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                   <Feather name="folder-plus" size={20} color={theme.colors.onPrimary} />
                 </TouchableOpacity>
               )}
+              {canMutate !== false && (
               <TouchableOpacity
                 onPress={() => { setCreating(true); setEditingStrategy(null); }}
                 style={styles.mvCreateButton}
@@ -1910,6 +1932,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                 <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                 {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('strategy.createStrategy')}</Text>}
               </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -2139,6 +2162,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                   </Text>
                 </TouchableOpacity>
               </View>
+              {canMutate !== false && (
               <TouchableOpacity
                 onPress={() => setShowBatchMoveModal(true)}
                 disabled={selectedIds.size === 0}
@@ -2151,6 +2175,8 @@ export default function StrategyList({ navigation: navigationProp }) {
                 <Feather name="folder" size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('folders.moveToFolder') || 'Mover'}</Text>
               </TouchableOpacity>
+              )}
+              {canMutate !== false && (
               <TouchableOpacity
                 onPress={handleBatchDelete}
                 disabled={selectedIds.size === 0}
@@ -2163,6 +2189,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                 <Feather name="trash-2" size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>{t('edition.delete')}</Text>
               </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={handleCancelSelection}
                 style={{
@@ -2290,6 +2317,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                   </View>
                 </TouchableOpacity>
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2321,7 +2349,9 @@ export default function StrategyList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('edition.edit')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2361,7 +2391,9 @@ export default function StrategyList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('myVideos.duplicate')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2377,9 +2409,11 @@ export default function StrategyList({ navigation: navigationProp }) {
                     <Text style={styles.mvActionTitle}>{t('folders.moveToFolder')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
 
                 <View style={styles.mvActionDivider} />
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2394,6 +2428,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('edition.delete')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
               </ScrollView>
 
               <TouchableOpacity
@@ -2442,7 +2477,7 @@ export default function StrategyList({ navigation: navigationProp }) {
 
                 <View style={styles.mvActionDivider} />
 
-                {(!menuFolder?.isGlobal || userRole === 'admin') && (
+                {canMutate !== false && (!menuFolder?.isGlobal || userRole === 'admin') && (
                   <>
                     <TouchableOpacity
                       style={styles.mvActionOption}
@@ -2463,6 +2498,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                   </>
                 )}
 
+                {canMutate !== false && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2477,6 +2513,7 @@ export default function StrategyList({ navigation: navigationProp }) {
                     <Text style={[styles.mvActionTitle, { color: '#EF4444' }]}>{t('folders.deleteFolder')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
               </ScrollView>
 
               <TouchableOpacity

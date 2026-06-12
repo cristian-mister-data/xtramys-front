@@ -54,6 +54,7 @@ export default function RequireSeason({ children }) {
   const userId = user?._id;
   const isClubAdmin = user?.role === 'club_admin';
   const isClubCoach = user?.role === 'user' && !!user?.clubId;
+  const supervising = useSelector((state) => state.usuario.supervising);
   const season = useSelector((state) => state.season.season);
   const seasons = useSelector((state) => state.season.seasons || []);
   const teams = useSelector((state) => state.team.teams || []);
@@ -116,6 +117,14 @@ export default function RequireSeason({ children }) {
     const hasSeason = Boolean(season?._id) || seasons.length > 0;
     if (!hasSeason && status === 'empty') {
       return <Navigate to="/season/create" state={{ from: location }} replace />;
+    }
+    return children;
+  }
+
+  // When supervising a coach, skip the coach-setup redirect
+  if (supervising) {
+    if (status === 'idle' || status === 'loading' || loading) {
+      return <SetupFallback />;
     }
     return children;
   }

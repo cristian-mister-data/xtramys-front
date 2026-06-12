@@ -100,6 +100,8 @@ export default function SeasonCalendar({
   onMatchPress,
   onSessionPress,
   loading = false,
+  canMutate = true,
+  isCoach = false,
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -719,7 +721,7 @@ export default function SeasonCalendar({
               </Text>
               
               {/* Botón de añadir evento en el día */}
-              {isCurrentMonth && onAddEvent && !hasEvents && (
+              {canMutate !== false && isCurrentMonth && onAddEvent && !hasEvents && (
                 <TouchableOpacity
                   style={styles.addDayEventButton}
                   onPress={handleAddEventOnDay}
@@ -916,7 +918,7 @@ export default function SeasonCalendar({
                   {', '}
                   {selectedMobileDate?.getDate()} {MONTHS[selectedMobileDate?.getMonth()]}
                 </Text>
-                {onAddEvent && (
+                {canMutate !== false && onAddEvent && (
                   <TouchableOpacity
                     style={mobileStyles.addBtn}
                     onPress={() => onAddEvent(selectedMobileDate)}
@@ -934,7 +936,7 @@ export default function SeasonCalendar({
                 <View style={mobileStyles.emptyState}>
                   <Ionicons name="calendar-outline" size={48} color={THEME.textMuted} />
                   <Text style={mobileStyles.emptyText}>{t('season.noEvents') || 'Sin eventos'}</Text>
-                  {onAddEvent && (
+                  {canMutate !== false && onAddEvent && (
                     <TouchableOpacity
                       style={mobileStyles.emptyAddBtn}
                       onPress={() => onAddEvent(selectedMobileDate)}
@@ -1132,11 +1134,10 @@ export default function SeasonCalendar({
           <View style={[styles.legendDot, { backgroundColor: THEME.success }]} />
           <Text style={styles.legendText}>{t('season.training')}</Text>
         </View>
-        {onAddEvent && (
+        {canMutate !== false && onAddEvent && (
           <TouchableOpacity
             style={styles.addEventButton}
             onPress={() => {
-              // Pasar la fecha seleccionada o el día actual
               const dateToAdd = selectedDate 
                 ? new Date(selectedDate.year, selectedDate.month, selectedDate.day)
                 : new Date();

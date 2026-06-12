@@ -40,7 +40,7 @@ const WellnessTemplates = lazy(() => import('@/pages/WellnessTemplates'));
 const WellnessManagement = lazy(() => import('@/pages/WellnessManagement'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const ClubDashboard = lazy(() => import('@/pages/club/Dashboard'));
-const CoachView = lazy(() => import('@/pages/club/CoachView'));
+
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
 const Subscribe = lazy(() => import('@/pages/Subscribe'));
@@ -190,7 +190,7 @@ export default function AppRouter() {
         <Route path="/nutrition" element={lazy_(<Nutrition />)} />
         <Route path="/profile" element={lazy_(<Profile />)} />
         <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
-        <Route path="/club/coach/:id" element={lazy_(<CoachView />)} />
+        
       </Route>
 
       {/* Tactical Board: layout fullscreen sin sidebar */}

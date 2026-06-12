@@ -32,6 +32,7 @@ import {
 } from '../../store/slices/rival/rivalThunks';
 import { fetchMatchSheetsByTeam } from '../../store/slices/matchSheet/matchSheetThunks';
 import { fetchRivalAnalysesByTeam } from '../../store/slices/rivalAnalysis/rivalAnalysisThunks';
+import useSupervision from '../../hooks/useSupervision';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -316,6 +317,7 @@ export default function Rivals() {
   const fileInputRef = useRef(null);
   const theme = useTheme();
   const navigate = useNavigate();
+  const { canMutate } = useSupervision();
 
   const rivals = useSelector((s) => s.rival.rivals || []);
   const loading = useSelector((s) => s.rival.loading);
@@ -487,7 +489,7 @@ export default function Rivals() {
         title={t('rivals.title', 'Rivales')}
         subtitle={selectedTeam?.nombre || t('rivals.subtitle', 'Gestión de equipos rivales')}
         icon={MdShield}
-        actions={(
+        actions={canMutate ? (
           <Row $gap={8}>
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
@@ -496,7 +498,7 @@ export default function Rivals() {
               </Row>
             </Button>
           </Row>
-        )}
+        ) : null}
       />
 
       <Row $gap={8} $wrap>
@@ -524,7 +526,7 @@ export default function Rivals() {
               ? t('rivals.empty', 'Aún no has añadido rivales')
               : t('rivals.noResults', 'Sin resultados para esa búsqueda')}
           </div>
-          {rivals.length === 0 && (
+          {rivals.length === 0 && canMutate && (
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
@@ -549,27 +551,31 @@ export default function Rivals() {
               }}
             >
               <CardActions>
-                <IconBtn
-                  type="button"
-                  title={t('common.edit', 'Editar')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEdit(rival);
-                  }}
-                >
-                  <MdEdit size={16} />
-                </IconBtn>
-                <IconBtn
-                  type="button"
-                  $danger
-                  title={t('common.delete', 'Eliminar')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(rival);
-                  }}
-                >
-                  <MdDelete size={16} />
-                </IconBtn>
+                {canMutate && (
+                  <>
+                    <IconBtn
+                      type="button"
+                      title={t('common.edit', 'Editar')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(rival);
+                      }}
+                    >
+                      <MdEdit size={16} />
+                    </IconBtn>
+                    <IconBtn
+                      type="button"
+                      $danger
+                      title={t('common.delete', 'Eliminar')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(rival);
+                      }}
+                    >
+                      <MdDelete size={16} />
+                    </IconBtn>
+                  </>
+                )}
               </CardActions>
               <EscudoBox>
                 {rival.escudo ? (
@@ -599,7 +605,7 @@ export default function Rivals() {
             <Button $variant="secondary" onClick={closeModal} disabled={saving}>
               {t('common.cancel', 'Cancelar')}
             </Button>
-            <Button $variant="primary" onClick={handleSave} disabled={saving}>
+            <Button $variant="primary" onClick={handleSave} disabled={saving || !canMutate}>
               {saving
                 ? t('common.saving', 'Guardando…')
                 : t('common.save', 'Guardar')}
@@ -678,7 +684,7 @@ export default function Rivals() {
                 {t('common.close', 'Cerrar')}
               </Row>
             </Button>
-            {viewing && (
+{viewing && canMutate && (
               <>
                 <Button $variant="danger" onClick={() => handleDelete(viewing)}>
                   <Row $gap={6}>

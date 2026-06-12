@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { MdSportsSoccer, MdPerson, MdCategory } from 'react-icons/md';
+import { MdSportsSoccer, MdPerson, MdTimer, MdPeople } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Muted, PageTitle } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -78,6 +78,88 @@ const categoryOptions = [
   { value: 'otro', label: 'Otra' },
 ];
 
+const timeOptions = [
+  { value: 10, label: '10 min' },
+  { value: 15, label: '15 min' },
+  { value: 20, label: '20 min' },
+  { value: 25, label: '25 min' },
+  { value: 30, label: '30 min' },
+  { value: 35, label: '35 min' },
+  { value: 40, label: '40 min' },
+  { value: 45, label: '45 min' },
+];
+
+const playersOptions = [
+  { value: 7, label: '7' },
+  { value: 8, label: '8' },
+  { value: 11, label: '11' },
+];
+
+const OptionCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.primarySoft : theme.colors.surface};
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+  }
+`;
+
+const OptionLabel = styled.div`
+  font-size: 14px;
+  font-weight: ${({ $active }) => $active ? 600 : 400};
+  color: ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.text};
+`;
+
+const ConfigRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ConfigCard = styled.div`
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+`;
+
+const ConfigLabel = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-bottom: 6px;
+`;
+
+const ConfigValue = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 export default function CoachSetup() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -88,6 +170,8 @@ export default function CoachSetup() {
   const [nombre, setNombre] = useState(user?.nombre || '');
   const [apellido, setApellido] = useState(user?.apellido || '');
   const [categoriaKey, setCategoriaKey] = useState('');
+  const [tiempoPorParte, setTiempoPorParte] = useState(45);
+  const [jugadoresPorEquipo, setJugadoresPorEquipo] = useState(11);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -122,13 +206,15 @@ export default function CoachSetup() {
         categoriaKey,
         nombre: nombre.trim(),
         apellido: apellido.trim(),
+        tiempoPorParte,
+        jugadoresPorEquipo,
       });
 
       const updatedUser = { ...user, nombre: nombre.trim(), apellido: apellido.trim() };
       saveUser(updatedUser);
       dispatch(setUser(updatedUser));
 
-      toast.success('¡Bienvenido! Tu equipo ha sido creado.');
+      toast.success(t('coachSetup.success', 'Your team has been created. Welcome!'));
       navigate('/app', { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Error al configurar tu perfil');
@@ -141,87 +227,143 @@ export default function CoachSetup() {
     <Page>
       <SetupCard>
         <StepIndicator>
-          <StepDot $active={step === 1} />
-          <StepDot $active={step === 2} />
+          <StepDot $active={step >= 1} />
+          <StepDot $active={step >= 2} />
+          <StepDot $active={step >= 3} />
         </StepIndicator>
 
         {step === 1 && (
           <>
             <IconWrap><MdPerson size={28} /></IconWrap>
             <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>
-              {t('coachSetup.title', 'Bienvenido al club')}
+              {t('coachSetup.title', 'Welcome to the club')}
             </PageTitle>
             <Muted style={{ textAlign: 'center', display: 'block', marginBottom: 24 }}>
-              {t('coachSetup.subtitle', 'Cuéntanos quién eres para personalizar tu experiencia')}
+              {t('coachSetup.subtitle', 'Tell us who you are to personalize your experience')}
             </Muted>
             <Stack $gap={14}>
               <Field>
-                <Label>{t('coachSetup.name', 'Nombre')}</Label>
+<Label>{t('coachSetup.name', 'Name')}</Label>
                 <Input
-                  placeholder={t('coachSetup.namePlaceholder', 'Tu nombre')}
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  autoFocus
+                  placeholder={t('coachSetup.namePlaceholder', 'Your name')}
                 />
               </Field>
               <Field>
-                <Label>{t('coachSetup.surname', 'Apellidos')}</Label>
+                <Label>{t('coachSetup.surname', 'Surname')}</Label>
                 <Input
-                  placeholder={t('coachSetup.surnamePlaceholder', 'Tus apellidos')}
+                  placeholder={t('coachSetup.surnamePlaceholder', 'Your surname')}
                   value={apellido}
                   onChange={(e) => setApellido(e.target.value)}
                 />
               </Field>
               <Row style={{ justifyContent: 'flex-end', marginTop: 8 }}>
                 <Button onClick={() => setStep(2)} disabled={!nombre.trim()}>
-                  {t('common.continue', 'Continuar')}
-                </Button>
-              </Row>
+{t('common.continue', 'Continue')}
+              </Button>
+            </Row>
             </Stack>
           </>
         )}
 
         {step === 2 && (
           <>
-            <IconWrap><MdCategory size={28} /></IconWrap>
+            <IconWrap><MdSportsSoccer size={28} /></IconWrap>
             <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>
-              {t('coachSetup.categoryTitle', '¿Qué categoría entrenas?')}
+              {t('coachSetup.categoryTitle', 'What category do you train?')}
             </PageTitle>
             <Muted style={{ textAlign: 'center', display: 'block', marginBottom: 24 }}>
-              {t('coachSetup.categorySubtitle', 'Selecciona la categoría de tu equipo')}
+              {t('coachSetup.categorySubtitle', 'Select your team category')}
             </Muted>
             <Stack $gap={8}>
               {categoryOptions.map((opt) => (
-                <Card
+                <OptionCard
                   key={opt.value}
-                  style={{
-                    padding: '12px 16px',
-                    cursor: 'pointer',
-                    borderRadius: 10,
-                    border: categoriaKey === opt.value ? '2px solid' : '1px solid',
-                    borderColor: categoriaKey === opt.value
-                      ? ({ theme }) => theme.colors.primary
-                      : ({ theme }) => theme.colors.border,
-                    background: categoriaKey === opt.value
-                      ? ({ theme }) => theme.colors.primarySoft
-                      : ({ theme }) => theme.colors.surface,
-                    transition: 'all 0.15s',
-                  }}
-                  onClick={() => { setCategoriaKey(opt.value); }}
+                  $active={categoriaKey === opt.value}
+                  onClick={() => setCategoriaKey(opt.value)}
                 >
-                  <Row $gap={10}>
-                    <MdSportsSoccer size={20} />
-                    <span style={{ fontWeight: categoriaKey === opt.value ? 600 : 400 }}>{opt.label}</span>
-                  </Row>
-                </Card>
+                  <MdSportsSoccer size={20} />
+                  <OptionLabel $active={categoriaKey === opt.value}>{opt.label}</OptionLabel>
+                </OptionCard>
               ))}
             </Stack>
             <Row style={{ justifyContent: 'space-between', marginTop: 16 }}>
               <Button $variant="secondary" onClick={() => setStep(1)}>
-                {t('common.back', 'Atrás')}
+                {t('common.back', 'Back')}
               </Button>
-              <Button onClick={handleSubmit} disabled={loading || !categoriaKey}>
-                {loading ? '...' : t('coachSetup.start', 'Comenzar')}
+              <Button onClick={() => setStep(3)} disabled={!categoriaKey}>
+                {t('common.continue', 'Continue')}
+              </Button>
+            </Row>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <IconWrap><MdTimer size={28} /></IconWrap>
+            <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>
+              {t('coachSetup.configTitle', 'Game configuration')}
+            </PageTitle>
+            <Muted style={{ textAlign: 'center', display: 'block', marginBottom: 24 }}>
+              {t('coachSetup.configSubtitle', 'Adjust your match parameters')}
+            </Muted>
+
+            <Stack $gap={20}>
+              <div>
+                <ConfigLabel>{t('team.timePerHalf', 'Time per half')}</ConfigLabel>
+                <Stack $gap={6}>
+                  {timeOptions.map((opt) => (
+                    <OptionCard
+                      key={opt.value}
+                      $active={tiempoPorParte === opt.value}
+                      onClick={() => setTiempoPorParte(opt.value)}
+                    >
+                      <MdTimer size={18} />
+                      <OptionLabel $active={tiempoPorParte === opt.value}>{opt.label}</OptionLabel>
+                    </OptionCard>
+                  ))}
+                </Stack>
+              </div>
+
+              <div>
+                <ConfigLabel>{t('team.playersPerTeam', 'Players per team')}</ConfigLabel>
+                <Stack $gap={6}>
+                  {playersOptions.map((opt) => (
+                    <OptionCard
+                      key={opt.value}
+                      $active={jugadoresPorEquipo === opt.value}
+                      onClick={() => setJugadoresPorEquipo(opt.value)}
+                    >
+                      <MdPeople size={18} />
+                      <OptionLabel $active={jugadoresPorEquipo === opt.value}>{opt.label}</OptionLabel>
+                    </OptionCard>
+                  ))}
+                </Stack>
+              </div>
+            </Stack>
+
+            <ConfigRow style={{ marginTop: 20 }}>
+              <ConfigCard>
+<ConfigLabel>{t('team.timePerHalf', 'Time per half')}</ConfigLabel>
+              <ConfigValue>
+                  <MdTimer size={16} />
+                  {tiempoPorParte} min
+                </ConfigValue>
+              </ConfigCard>
+              <ConfigCard>
+                <ConfigLabel>{t('team.playersPerTeam', 'Players')}</ConfigLabel>
+                <ConfigValue>
+                  <MdPeople size={16} />
+                  {jugadoresPorEquipo}
+                </ConfigValue>
+              </ConfigCard>
+            </ConfigRow>
+
+            <Row style={{ justifyContent: 'space-between', marginTop: 20 }}>
+              <Button $variant="secondary" onClick={() => setStep(2)}>
+                {t('common.back', 'Back')}
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? '...' : t('coachSetup.start', 'Start')}
               </Button>
             </Row>
           </>

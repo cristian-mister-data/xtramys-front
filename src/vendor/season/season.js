@@ -209,6 +209,8 @@ export default function GestionEquipos() {
   const [userRole, setUserRole] = useState(null);
   const [userClubId, setUserClubId] = useState(null);
   const [ready, setReady] = useState(false);
+  const supervising = useSelector((s) => s.usuario.supervising);
+  const canMutate = !supervising;
   const [loadingTemporada, setLoadingTemporada] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
@@ -302,6 +304,7 @@ export default function GestionEquipos() {
 
   // Handler para crear ficha de partido desde calendario
   const handleCreateMatchFromCalendar = async (matchData) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id) return;
     
     await dispatch(createMatchSheet({
@@ -316,6 +319,7 @@ export default function GestionEquipos() {
 
   // Handler para crear sesión de entrenamiento desde calendario
   const handleCreateSessionFromCalendar = async (sessionData) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id) return;
     
     // Extraer IDs de ejercicios y construir ejerciciosDetalle
@@ -360,6 +364,7 @@ export default function GestionEquipos() {
 
   // Handler para guardar edición de ficha de partido
   const handleSaveMatchEdit = async (matchData) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id || !matchData._id) return;
     
     await dispatch(updateMatchSheet({
@@ -380,6 +385,7 @@ export default function GestionEquipos() {
 
   // Handler para guardar edición de sesión de entrenamiento
   const handleSaveSessionEdit = async (sessionData) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id || !sessionData._id) return;
     
     // Extraer IDs de ejercicios si vienen en formato complejo
@@ -432,6 +438,7 @@ export default function GestionEquipos() {
 
   // Handler para eliminar sesión de entrenamiento
   const handleDeleteSession = async (sessionId) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id || !sessionId) return;
     
     try {
@@ -457,6 +464,7 @@ export default function GestionEquipos() {
 
   // Handler para eliminar ficha de partido
   const handleDeleteMatch = async (matchId) => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado?._id || !matchId) return;
     
     try {
@@ -526,6 +534,7 @@ export default function GestionEquipos() {
 
   // Add this function to create a new season
   const handleCreateSeason = async () => {
+    if (isCoach || canMutate === false) return;
     try {
       if (!newSeason.año) {
         Alert.alert(t('message.error'), t('season.yearRequired'));
@@ -577,6 +586,7 @@ export default function GestionEquipos() {
 
   // Confirmar y procesar borrado de temporada en cascada
   const handleDeleteSeasonConfirm = async () => {
+    if (canMutate === false) return;
     if (!seasonToDelete) return;
     
     // Verificar que el texto de confirmación coincida con el año formateado de la temporada
@@ -677,6 +687,7 @@ export default function GestionEquipos() {
 
   // Función para actualizar un equipo
   const handleUpdateTeam = async () => {
+    if (canMutate === false) return;
     try {
       if (!teamToEdit?.nombre || teamToEdit.nombre.trim() === '') {
         Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.teamName') }));
@@ -726,6 +737,7 @@ export default function GestionEquipos() {
 
   // Función para eliminar equipo con todos sus datos
   const handleDeleteTeamWithData = async () => {
+    if (canMutate === false) return;
     if (!equipoSeleccionado) return;
     
     // Verificar que el texto de confirmación sea correcto
@@ -821,6 +833,7 @@ export default function GestionEquipos() {
 
   // Función para crear un nuevo equipo
   const handleCreateTeam = async () => {
+    if (canMutate === false) return;
     try {
       if (!newTeam.nombre || newTeam.nombre.trim() === '') {
         Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.teamName') }));
@@ -938,7 +951,7 @@ export default function GestionEquipos() {
                     <Text style={styles.emptyStateSubtitle}>
                       {t('season.noSelectedTeamSubtitle')}
                     </Text>
-                    {!isCoach && (
+                    {!isCoach && canMutate && (
                       <TouchableOpacity
                         style={styles.createTeamButton}
                         onPress={() => handleOpenCreateTeamModal()}
@@ -998,6 +1011,8 @@ export default function GestionEquipos() {
                   matchSheets={matchSheets}
                   trainingSessions={trainingSessions}
                   team={equipoSeleccionado}
+                  canMutate={canMutate}
+                  isCoach={isCoach}
                   onDayPress={handleDayPress}
                   onMatchPress={(match) => {
                     setSelectedMatch(match);
@@ -1187,7 +1202,7 @@ export default function GestionEquipos() {
                         )}
                       </TouchableOpacity>
 
-                      {!isCoach && (
+                      {!isCoach && canMutate && (
                         <TouchableOpacity
                           style={styles.seasonItemDeleteButton}
                           onPress={() => handlePromptDeleteSeason(season)}
@@ -1208,7 +1223,7 @@ export default function GestionEquipos() {
               
               {/* Botón crear temporada dentro del modal */}
               <View style={styles.modalFooter}>
-                {!isCoach && (
+                {!isCoach && canMutate && (
                   <TouchableOpacity
                     style={styles.createSeasonInModalButton}
                     onPress={() => {
@@ -1883,13 +1898,13 @@ export default function GestionEquipos() {
             setMatchDetailVisible(false);
             setSelectedMatch(null);
           }}
-          onEdit={(match) => {
+          onEdit={(!isCoach && canMutate !== false) ? (matchSheet) => {
             // Cerrar modal de detalle y abrir modal de edición
             setMatchDetailVisible(false);
             // No poner selectedMatch a null para que el modal de edición lo use
             setEditMatchModalVisible(true);
-          }}
-          onDelete={() => handleDeleteMatch(selectedMatch?._id)}
+          } : undefined}
+          onDelete={(!isCoach && canMutate !== false) ? () => handleDeleteMatch(selectedMatch?._id) : undefined}
         />
 
         {/* Training Session Detail Modal */}
@@ -1904,13 +1919,13 @@ export default function GestionEquipos() {
             setSessionDetailVisible(false);
             setSelectedSession(null);
           }}
-          onEdit={(session) => {
+          onEdit={(!isCoach && canMutate !== false) ? (session) => {
             // Cerrar modal de detalle y abrir modal de edición
             setSessionDetailVisible(false);
             // No poner selectedSession a null para que el modal de edición lo use
             setEditSessionModalVisible(true);
-          }}
-          onDelete={() => handleDeleteSession(selectedSession?._id)}
+          } : undefined}
+          onDelete={(!isCoach && canMutate !== false) ? () => handleDeleteSession(selectedSession?._id) : undefined}
           onWellnessUpdate={() => {
             // Recargar sesiones cuando se actualice el wellness
             if (equipoSeleccionado?._id) {
@@ -1928,6 +1943,7 @@ export default function GestionEquipos() {
           }}
           onCreateMatchSheet={handleCreateMatchFromCalendar}
           onCreateTrainingSession={handleCreateSessionFromCalendar}
+          canMutate={!isCoach && canMutate}
           rivals={rivals}
           selectedDate={addEventSelectedDate}
           players={players}
@@ -2038,7 +2054,7 @@ export default function GestionEquipos() {
                     </View>
 
                     {/* Botón editar */}
-                    {!isCoach && (
+                    {!isCoach && canMutate && (
                       <TouchableOpacity
                         style={styles.teamDetailEditButton}
                         onPress={() => {
@@ -2052,7 +2068,7 @@ export default function GestionEquipos() {
                     )}
 
                     {/* Sección de eliminación */}
-                    {!isCoach && (
+                    {!isCoach && canMutate && (
                       <View style={styles.dangerZone}>
                         <View style={styles.dangerZoneHeader}>
                           <Ionicons name="warning" size={24} color={theme.colors.error} />

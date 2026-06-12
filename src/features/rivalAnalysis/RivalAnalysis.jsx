@@ -39,6 +39,8 @@ import AnalysisFormModal from './AnalysisFormModal';
 import AnalysisDetailModal from './AnalysisDetailModal';
 import TemplateManagerModal from './TemplateManagerModal';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
+import CanMutate from '@/components/shared/CanMutate';
+import useSupervision from '@/hooks/useSupervision';
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -215,6 +217,7 @@ const EmptyState = styled.div`
 export default function RivalAnalysis() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
+  const { canMutate } = useSupervision();
 
   const analyses = useSelector((s) => s.rivalAnalysis.rivalAnalyses || []);
   const loading = useSelector((s) => s.rivalAnalysis.loading);
@@ -334,7 +337,7 @@ export default function RivalAnalysis() {
         title={t('rivalAnalysis.title', 'Análisis del Rival')}
         subtitle={selectedTeam?.nombre || t('rivalAnalysis.subtitle', 'Scouting y seguimiento del oponente')}
         icon={MdAnalytics}
-        actions={(
+        actions={canMutate ? (
           <Row $gap={8}>
             <Button $variant="secondary" onClick={() => setShowTemplates(true)}>
               <Row $gap={6}>
@@ -349,7 +352,7 @@ export default function RivalAnalysis() {
               </Row>
             </Button>
           </Row>
-        )}
+        ) : null}
       />
 
       <Toolbar>
@@ -402,7 +405,7 @@ export default function RivalAnalysis() {
               ? t('rivalAnalysis.empty', 'Aún no hay análisis')
               : t('rivalAnalysis.noResults', 'Sin resultados con esos filtros')}
           </div>
-          {analyses.length === 0 && (
+          {analyses.length === 0 && canMutate && (
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
@@ -457,8 +460,9 @@ export default function RivalAnalysis() {
         analysis={viewing}
         template={templateForView}
         selectedTeam={selectedTeam}
-        onEdit={openEdit}
-        onDeleted={handleSaved}
+        onEdit={canMutate ? openEdit : undefined}
+        onDeleted={canMutate ? handleSaved : undefined}
+        canMutate={canMutate}
       />
 
       {/* Plantillas */}

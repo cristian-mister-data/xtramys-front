@@ -507,6 +507,7 @@ export default function AnalysisDetailModal({
   selectedTeam,
   onEdit,
   onDeleted,
+  canMutate,
 }) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -787,10 +788,12 @@ export default function AnalysisDetailModal({
       width={820}
       footer={
         <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Button $variant="danger" onClick={handleDelete}>
-            <MdDelete size={16} />
-            {t('common.delete', 'Eliminar')}
-          </Button>
+          {canMutate !== false && (
+            <Button $variant="danger" onClick={handleDelete}>
+              <MdDelete size={16} />
+              {t('common.delete', 'Eliminar')}
+            </Button>
+          )}
           <Row $gap={8}>
             <Button $variant="ghost" onClick={onClose}>
               <MdClose size={16} />
@@ -800,10 +803,12 @@ export default function AnalysisDetailModal({
               <MdPictureAsPdf size={16} />
               {t('common.pdf', 'PDF')}
             </Button>
-            <Button $variant="primary" onClick={() => onEdit?.(analysis)}>
-              <MdEdit size={16} />
-              {t('common.edit', 'Editar')}
-            </Button>
+            {canMutate !== false && (
+              <Button $variant="primary" onClick={() => onEdit?.(analysis)}>
+                <MdEdit size={16} />
+                {t('common.edit', 'Editar')}
+              </Button>
+            )}
           </Row>
         </Row>
       }

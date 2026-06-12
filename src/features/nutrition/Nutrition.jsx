@@ -50,6 +50,7 @@ import { confirmAction } from '../../ui/confirm';
 import { generateNutritionPdf } from './pdf';
 import EditPlanModal from './EditPlanModal';
 import PlanManagerModal from './PlanManagerModal';
+import useSupervision from '../../hooks/useSupervision';
 
 // ---------- styles ----------
 const GRAD_BLUE = 'linear-gradient(135deg, #1a237e, #3949ab, #5c6bc0)';
@@ -938,6 +939,7 @@ function MealDetailModal({ open, onClose, mealKey, mealData, t }) {
 export default function Nutrition() {
   const { t } = useTranslation();
   const userId = useSelector((s) => s.usuario.user?._id);
+  const { canMutate } = useSupervision();
 
   const [activeTab, setActiveTab] = useState('preseason');
   const [viewMode, setViewMode] = useState('recommended');
@@ -1276,11 +1278,11 @@ export default function Nutrition() {
         viewMode={viewMode}
         onSelectRecommended={handleSelectRecommended}
         onSelectPlan={handleSelectPlan}
-        onEditPlan={handleEditPlan}
-        onDuplicatePlan={handleDuplicatePlan}
-        onDeletePlan={handleDeletePlan}
-        onCreateFromRecommended={handleCreateFromRecommended}
-        onCreateEmpty={handleCreateEmpty}
+        onEditPlan={canMutate ? handleEditPlan : undefined}
+        onDuplicatePlan={canMutate ? handleDuplicatePlan : undefined}
+        onDeletePlan={canMutate ? handleDeletePlan : undefined}
+        onCreateFromRecommended={canMutate ? handleCreateFromRecommended : undefined}
+        onCreateEmpty={canMutate ? handleCreateEmpty : undefined}
       />
 
       <EditPlanModal

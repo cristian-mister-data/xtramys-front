@@ -78,6 +78,7 @@ export default function TeamDetailModal({
   onEdit,
   onDelete,
   deleting,
+  canMutate = true,
 }) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -133,14 +134,18 @@ export default function TeamDetailModal({
 
         {!confirmOpen ? (
           <Row $gap={8} style={{ justifyContent: 'space-between' }}>
-            <Button $variant="danger" onClick={() => setConfirmOpen(true)}>
-              {t('team.delete', 'Eliminar equipo')}
-            </Button>
+            {canMutate !== false && (
+              <Button $variant="danger" onClick={() => setConfirmOpen(true)}>
+                {t('team.delete', 'Eliminar equipo')}
+              </Button>
+            )}
             <Row $gap={8}>
               <Button $variant="secondary" onClick={close}>
                 {t('common.close', 'Cerrar')}
               </Button>
-              <Button onClick={onEdit}>{t('team.editTeam', 'Editar')}</Button>
+              {canMutate !== false && (
+                <Button onClick={onEdit}>{t('team.editTeam', 'Editar')}</Button>
+              )}
             </Row>
           </Row>
         ) : (

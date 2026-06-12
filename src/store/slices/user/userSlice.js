@@ -14,6 +14,8 @@ const userSlice = createSlice({
     error: null,
     subscriptionStatus: cachedUser?.subscriptionStatus || null,
     plan: cachedUser?.plan || 'free',
+    backupUser: null,
+    supervising: false,
   },
   reducers: {
     setUser: (state, action) => {
@@ -38,6 +40,18 @@ const userSlice = createSlice({
         state.user.plan = 'free';
       }
       state.plan = 'free';
+    },
+    startSupervision: (state, action) => {
+      state.backupUser = state.user;
+      state.user = { ...action.payload };
+      state.supervising = true;
+    },
+    stopSupervision: (state) => {
+      if (state.backupUser) {
+        state.user = state.backupUser;
+        state.backupUser = null;
+      }
+      state.supervising = false;
     },
   },
   extraReducers: (builder) => {
@@ -120,5 +134,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { setUser, clearUserState, subscriptionRequired } = userSlice.actions;
+export const { setUser, clearUserState, subscriptionRequired, startSupervision, stopSupervision } = userSlice.actions;
 export default userSlice.reducer;

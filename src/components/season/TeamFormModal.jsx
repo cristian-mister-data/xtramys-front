@@ -76,6 +76,7 @@ export default function TeamFormModal({
   onSubmit,
   loading,
   previousSeasonInfo,
+  canMutate = true,
 }) {
   const { t } = useTranslation();
   const fileRef = useRef(null);
@@ -270,7 +271,7 @@ export default function TeamFormModal({
           <Button $variant="secondary" onClick={onClose} disabled={loading}>
             {t('common.cancel', 'Cancelar')}
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading || canMutate === false}>
             {loading ? '...' : (mode === 'edit'
               ? t('common.save', 'Guardar')
               : t('common.create', 'Crear'))}

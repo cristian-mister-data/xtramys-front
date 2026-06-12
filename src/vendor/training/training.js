@@ -805,7 +805,7 @@ function CategoryPage({ catPageItems, onOpenCategory }) {
 }
 
 /* ---------------- Componente principal Training ---------------- */
-export default function Training() {
+export default function Training({ canMutate }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -1584,14 +1584,16 @@ export default function Training() {
               <Text style={[styles.proHeaderTeamPillText, { color: theme.colors.primary }]} numberOfLines={1}>{selectedTeam.nombre}</Text>
             </View>
           ) : <View style={styles.proHeaderTeamPillSpacer} />}
-          <TouchableOpacity
-            style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
-            onPress={openCrearModal}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
-            {!isMobile && <Text style={[styles.proCreateButtonText, { color: theme.colors.onPrimary }]}>{t('session.new')}</Text>}
-          </TouchableOpacity>
+          {canMutate !== false && (
+            <TouchableOpacity
+              style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
+              onPress={openCrearModal}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
+              {!isMobile && <Text style={[styles.proCreateButtonText, { color: theme.colors.onPrimary }]}>{t('session.new')}</Text>}
+            </TouchableOpacity>
+          )}
         </View>
         
         {/* Tabs mejorados */}
@@ -1645,14 +1647,16 @@ export default function Training() {
 
       {/* Barra de filtros */}
       <View style={styles.proFiltersBar}>
-        <TouchableOpacity
-          style={[styles.proFilterButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-          onPress={() => setShowOrgModal(true)}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="auto-fix-high" size={18} color={theme.colors.primary} />
-          <Text style={[styles.proFilterButtonText, { color: theme.colors.text }]}>{t('session.planTrainings')}</Text>
-        </TouchableOpacity>
+{canMutate !== false && (
+          <TouchableOpacity
+            style={[styles.proFilterButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            onPress={() => setShowOrgModal(true)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="auto-fix-high" size={18} color={theme.colors.primary} />
+            <Text style={[styles.proFilterButtonText, { color: theme.colors.text }]}>{t('session.planTrainings')}</Text>
+          </TouchableOpacity>
+          )}
         
         <TouchableOpacity
           style={[
@@ -1709,10 +1713,12 @@ export default function Training() {
                 <Text style={styles.proEmptyText}>
                   {t('session.noUpcomingSessionsSubtitle')}
                 </Text>
+                {canMutate !== false && (
                 <TouchableOpacity style={styles.proEmptyButton} onPress={openCrearModal}>
                   <MaterialIcons name="add" size={20} color="#fff" />
                   <Text style={styles.proEmptyButtonText}>{t('session.createFirst')}</Text>
                 </TouchableOpacity>
+              )}
               </View>
             </ScrollView>
           ) : (
@@ -2059,7 +2065,7 @@ export default function Training() {
 
               <View style={styles.mobileMenuDivider} />
 
-              {/* Planificar entrenamientos */}
+              {canMutate !== false && (
               <TouchableOpacity
                 style={styles.mobileMenuItem}
                 onPress={() => {
@@ -2070,10 +2076,12 @@ export default function Training() {
                 <MaterialIcons name="calendar-today" size={24} color={theme.colors.primary} />
                 <Text style={styles.mobileMenuItemText}>{t('session.planTrainings')}</Text>
               </TouchableOpacity>
+            )}
 
               <View style={styles.mobileMenuDivider} />
 
               {/* Crear sesión */}
+              {canMutate !== false && (
               <TouchableOpacity
                 style={styles.mobileMenuItem}
                 onPress={() => {
@@ -2084,6 +2092,7 @@ export default function Training() {
                 <MaterialIcons name="add" size={24} color={theme.colors.primary} />
                 <Text style={styles.mobileMenuItemText}>{t('session.createSession')}</Text>
               </TouchableOpacity>
+              )}
             </View>
             {/* Espacio adicional con fondo blanco para cubrir área segura */}
             <View style={[styles.mobileMenuSafeArea, { height: Math.max(insets.bottom, 16) + 8 }]} />
@@ -2109,13 +2118,14 @@ export default function Training() {
         visible={addEventModalVisible}
         onClose={() => setAddEventModalVisible(false)}
         onCreateTrainingSession={handleCreateFromAddEventModal}
-        onCreateMatchSheet={() => {}} // No usado en entrenamientos
+        onCreateMatchSheet={() => {}}
         players={jugadoresDisponibles}
         exercises={ejerciciosDisponibles}
         team={equipos.find(e => e.seleccionado === true)}
         matchSheets={matchSheets}
         injuries={injuries}
         defaultEventType="session"
+        canMutate={canMutate}
       />
 
       {/* Modal para ver detalles de sesión (igual que en calendario) */}
@@ -2132,6 +2142,7 @@ export default function Training() {
         onEdit={handleEditSession}
         onDelete={handleDeleteSession}
         onWellnessUpdate={handleWellnessUpdate}
+        canMutate={canMutate}
       />
 
       {/* Modal para editar sesión (igual que en calendario) */}
@@ -2146,6 +2157,7 @@ export default function Training() {
           setSelectedSession(null);
         }}
         onSave={handleSaveSession}
+        canMutate={canMutate}
       />
 
     </View>

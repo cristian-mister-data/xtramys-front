@@ -82,7 +82,7 @@ const mergeVideosById = (...groups) => {
   return Array.from(map.values());
 };
 
-export default function MyVideos() {
+export default function MyVideos({ canMutate = true } = {}) {
   const navigation = useNavigation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -415,6 +415,7 @@ export default function MyVideos() {
   };
 
   const handleCreateFolder = async () => {
+    if (canMutate === false) return;
     if (!newFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -458,6 +459,7 @@ export default function MyVideos() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const handleDeleteFolder = async (folder) => {
+    if (canMutate === false) return;
     setFolderToDelete(folder);
     setShowDeleteFolderModal(true);
   };
@@ -498,6 +500,7 @@ export default function MyVideos() {
   };
 
   const handleEditFolder = (folder) => {
+    if (canMutate === false) return;
     setMenuFolder(folder);
     setEditFolderName(folder.nombreEs || folder.nombre);
     setEditFolderNameEn(folder.translations?.en?.nombre || '');
@@ -506,6 +509,7 @@ export default function MyVideos() {
   };
 
   const handleUpdateFolder = async () => {
+    if (canMutate === false) return;
     if (!editFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -528,6 +532,7 @@ export default function MyVideos() {
   };
 
   const handleEditVideoDetails = (video) => {
+    if (canMutate === false) return;
     setMenuVideo(video);
     setEditVideoName(getLocalizedVideoName(video));
     setEditVideoNameEn(video.translations?.en?.nombre || '');
@@ -537,6 +542,7 @@ export default function MyVideos() {
   };
 
   const handleUpdateVideoDetails = async () => {
+    if (canMutate === false) return;
     if (!editVideoName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
@@ -570,6 +576,7 @@ export default function MyVideos() {
   };
 
   const openMoveModal = async (action) => {
+    if (canMutate === false) return;
     setMoveAction(action);
     setMenuVisible(false);
     
@@ -619,6 +626,7 @@ export default function MyVideos() {
 
   // Asociar video a ejercicio/estrategia
   const handleLinkVideo = async (itemId) => {
+    if (canMutate === false) return;
     if (!menuVideo || !itemId) return;
     
     try {
@@ -641,6 +649,7 @@ export default function MyVideos() {
   };
 
   const toggleVideoGlobal = async (video) => {
+    if (canMutate === false) return;
     try {
       setIsGenerating(true);
       const nextGlobal = !video.isGlobal;
@@ -661,6 +670,7 @@ export default function MyVideos() {
   };
 
   const toggleFolderGlobal = async (folder) => {
+    if (canMutate === false) return;
     try {
       setIsGenerating(true);
       const nextGlobal = !folder.isGlobal;
@@ -683,6 +693,7 @@ export default function MyVideos() {
   // Función para editar video - navega a Field con los datos del video
   // Para videos globales y usuario no-admin: duplica primero (consistente con ejercicios)
   const editVideo = async (video) => {
+    if (canMutate === false) return;
     try {
       setIsGenerating(true);
       setMenuVisible(false);
@@ -779,6 +790,7 @@ export default function MyVideos() {
   };
 
   const deleteVideo = async (videoId) => {
+    if (canMutate === false) return;
     Alert.alert(
       t('myVideos.deleteVideoConfirm'),
       t('myVideos.deleteVideoMessage'),
@@ -804,6 +816,7 @@ export default function MyVideos() {
 
   // ---- Selecci\u00f3n m\u00faltiple ----
   const handleVideoLongPress = (video) => {
+    if (canMutate === false) return;
     if (!selectionMode) {
       setSelectionMode(true);
       setSelectedIds(new Set([getItemId(video)]));
@@ -875,6 +888,7 @@ export default function MyVideos() {
   };
 
   const handleBatchDelete = () => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     Alert.alert(
       t('message.warning'),
@@ -900,6 +914,7 @@ export default function MyVideos() {
   };
 
   const handleBatchMove = async (folderId) => {
+    if (canMutate === false) return;
     if (selectedIds.size === 0) return;
     setBatchMoving(true);
     try {
@@ -1085,7 +1100,7 @@ export default function MyVideos() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {folderPath.length < 2 && !(sourceFilter === 'global' && !isAdmin) && (
+        {folderPath.length < 2 && !(sourceFilter === 'global' && !isAdmin) && canMutate !== false && (
           <View style={styles.headerTop}>
             <TouchableOpacity 
               style={styles.addFolderButton}
@@ -1149,6 +1164,7 @@ export default function MyVideos() {
             </TouchableOpacity>
           )}
         </View>
+        {canMutate !== false && (
         <TouchableOpacity
           style={{
             paddingHorizontal: 12, height: 42,
@@ -1173,6 +1189,7 @@ export default function MyVideos() {
           <Feather name={selectionMode ? "check-square" : "square"} size={16} color={selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B')} />
           {(!theme.IS_MOBILE && screenWidth >= 430) && <Text style={{ color: selectionMode ? (theme.mode === 'dark' ? '#60a5fa' : '#3578e5') : (theme.mode === 'dark' ? '#94A3B8' : '#64748B'), fontWeight: '600', fontSize: 13 }}>{selectionMode ? (t('common.cancelSelection') || 'Cancelar selección') : (t('common.select') || 'Seleccionar')}</Text>}
         </TouchableOpacity>
+        )}
       </View>
 
       {/* Source Filter Tabs */}
@@ -1289,8 +1306,7 @@ export default function MyVideos() {
         </ScrollView>
       )}
 
-      {/* ---- Barra flotante de selección múltiple ---- */}
-      {selectionMode && (
+      {selectionMode && canMutate !== false && (
         <View style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
           backgroundColor: theme.colors.surface || '#1E293B',
@@ -1464,6 +1480,7 @@ export default function MyVideos() {
               </TouchableOpacity>
               
               {/* Editar: siempre visible. Non-admin en video global duplica primero (consistente con ejercicios) */}
+              {canMutate !== false && (
               <TouchableOpacity
                 style={styles.actionOption}
                 onPress={() => {
@@ -1482,6 +1499,7 @@ export default function MyVideos() {
                   </Text>
                 </View>
               </TouchableOpacity>
+              )}
               
               <TouchableOpacity
                 style={styles.actionOption}
@@ -1499,7 +1517,7 @@ export default function MyVideos() {
                 </View>
               </TouchableOpacity>
               
-              {!(menuVideo?.isGlobal && !isAdmin) && (
+              {canMutate !== false && !(menuVideo?.isGlobal && !isAdmin) && (
                 <>
                   <TouchableOpacity
                     style={styles.actionOption}
@@ -1664,7 +1682,7 @@ export default function MyVideos() {
                 </View>
               </TouchableOpacity>
               
-              {!(menuFolder?.isGlobal && !isAdmin) && (
+              {canMutate !== false && !(menuFolder?.isGlobal && !isAdmin) && (
                 <>
                   <View style={styles.actionDivider} />
 

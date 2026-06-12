@@ -68,7 +68,7 @@ const getWellnessColor = (value) => {
   return '#276e15';
 };
 
-export default function WellnessManagement({ navigation }) {
+export default function WellnessManagement({ navigation, canMutate }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -715,12 +715,14 @@ export default function WellnessManagement({ navigation }) {
       </View>
 
       {/* Botón crear plantilla */}
-      <TouchableOpacity style={styles.createBtn} onPress={openCreateTemplateModal}>
-        <Ionicons name="add-circle" size={20} color="#fff" />
-        <Text style={styles.createBtnText}>
-          {t('wellnessTemplates.createNew')}
-        </Text>
-      </TouchableOpacity>
+      {canMutate !== false && (
+        <TouchableOpacity style={styles.createBtn} onPress={openCreateTemplateModal}>
+          <Ionicons name="add-circle" size={20} color="#fff" />
+          <Text style={styles.createBtnText}>
+            {t('wellnessTemplates.createNew')}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Lista de plantillas */}
       {loading ? (
@@ -764,12 +766,14 @@ export default function WellnessManagement({ navigation }) {
               </View>
               
               <View style={styles.templateActions}>
-                <TouchableOpacity 
-                  style={styles.templateActionBtn}
-                  onPress={() => openEditTemplateModal(template)}
-                >
-                  <Feather name="edit-2" size={16} color={THEME.primary} />
-                </TouchableOpacity>
+                {canMutate !== false && (
+                  <TouchableOpacity 
+                    style={styles.templateActionBtn}
+                    onPress={() => openEditTemplateModal(template)}
+                  >
+                    <Feather name="edit-2" size={16} color={THEME.primary} />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                   style={styles.templateActionBtn}
                   onPress={() => handleDuplicate(template)}
@@ -784,12 +788,14 @@ export default function WellnessManagement({ navigation }) {
                     <Ionicons name="star-outline" size={16} color="#f59e0b" />
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity 
-                  style={styles.templateActionBtn}
-                  onPress={() => handleDeleteTemplate(template)}
-                >
-                  <Feather name="trash-2" size={16} color={THEME.danger} />
-                </TouchableOpacity>
+                {canMutate !== false && (
+                  <TouchableOpacity 
+                    style={styles.templateActionBtn}
+                    onPress={() => handleDeleteTemplate(template)}
+                  >
+                    <Feather name="trash-2" size={16} color={THEME.danger} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}
@@ -850,9 +856,11 @@ export default function WellnessManagement({ navigation }) {
               <View key={index} style={styles.questionItem}>
                 <Text style={styles.questionNumber}>{index + 1}.</Text>
                 <Text style={styles.questionText}>{q.question}</Text>
+                {canMutate !== false && (
                 <TouchableOpacity onPress={() => removeTemplateQuestion(index)}>
                   <Ionicons name="close-circle" size={20} color={THEME.danger} />
                 </TouchableOpacity>
+              )}
               </View>
             ))}
 
@@ -866,9 +874,11 @@ export default function WellnessManagement({ navigation }) {
                 placeholderTextColor={THEME.textMuted}
                 onSubmitEditing={addTemplateQuestion}
               />
+              {canMutate !== false && (
               <TouchableOpacity style={styles.addQuestionBtn} onPress={addTemplateQuestion}>
                 <Ionicons name="add" size={24} color="#fff" />
               </TouchableOpacity>
+            )}
             </View>
           </KeyboardAwareScrollView>
 
@@ -879,17 +889,19 @@ export default function WellnessManagement({ navigation }) {
             >
               <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.saveBtn, savingTemplate && styles.saveBtnDisabled]}
-              onPress={handleSaveTemplate}
-              disabled={savingTemplate}
-            >
-              {savingTemplate ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.saveBtnText}>{t('common.save')}</Text>
-              )}
-            </TouchableOpacity>
+            {canMutate !== false && (
+              <TouchableOpacity 
+                style={[styles.saveBtn, savingTemplate && styles.saveBtnDisabled]}
+                onPress={handleSaveTemplate}
+                disabled={savingTemplate}
+              >
+                {savingTemplate ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveBtnText}>{t('common.save')}</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -1067,15 +1079,17 @@ export default function WellnessManagement({ navigation }) {
                   <View style={styles.questionsSection}>
                     <View style={styles.questionsHeader}>
                       <Text style={styles.configLabel}>{t('session.customQuestions')}</Text>
-                      <TouchableOpacity
-                        style={styles.sessionAddBtn}
-                        onPress={() => {
-                          setShowAddQuestion(!showAddQuestion);
-                          setNewQuestion('');
-                        }}
-                      >
-                        <Ionicons name={showAddQuestion ? 'close' : 'add'} size={20} color={THEME.primary} />
-                      </TouchableOpacity>
+                      {canMutate !== false && (
+                        <TouchableOpacity
+                          style={styles.sessionAddBtn}
+                          onPress={() => {
+                            setShowAddQuestion(!showAddQuestion);
+                            setNewQuestion('');
+                          }}
+                        >
+                          <Ionicons name={showAddQuestion ? 'close' : 'add'} size={20} color={THEME.primary} />
+                        </TouchableOpacity>
+                      )}
                     </View>
 
                     {showAddQuestion && (
@@ -1104,15 +1118,17 @@ export default function WellnessManagement({ navigation }) {
                             <Text style={styles.sessionQuestionNumber}>{index + 1}.</Text>
                             <Text style={styles.sessionQuestionText}>{q.question}</Text>
                           </View>
+                          {canMutate !== false ? (
                           <TouchableOpacity onPress={() => handleRemoveQuestion(index)} style={styles.removeQuestionBtn}>
                             <Ionicons name="trash-outline" size={16} color={THEME.danger} />
                           </TouchableOpacity>
+                        ) : <View style={styles.removeQuestionBtn} />}
                         </View>
                       ))
                     )}
                   </View>
 
-                  {/* Save button */}
+                  {canMutate !== false && (
                   <TouchableOpacity
                     style={[styles.saveConfigBtn, savingConfig && { opacity: 0.6 }]}
                     onPress={handleSaveConfig}
@@ -1127,6 +1143,7 @@ export default function WellnessManagement({ navigation }) {
                       </>
                     )}
                   </TouchableOpacity>
+                )}
                 </View>
 
                 {/* Modal selector de plantillas */}
@@ -1341,11 +1358,13 @@ export default function WellnessManagement({ navigation }) {
                                 minute: '2-digit'
                               })}
                             </Text>
-                            <TouchableOpacity
-                              onPress={() => handleDeleteResponse(response._id, response.playerName)}
-                            >
-                              <Ionicons name="trash-outline" size={18} color={THEME.danger} />
-                            </TouchableOpacity>
+                            {canMutate !== false && (
+                              <TouchableOpacity
+                                onPress={() => handleDeleteResponse(response._id, response.playerName)}
+                              >
+                                <Ionicons name="trash-outline" size={18} color={THEME.danger} />
+                              </TouchableOpacity>
+                            )}
                           </View>
                         </View>
                       );

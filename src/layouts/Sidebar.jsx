@@ -3,8 +3,9 @@ import styled, { css } from 'styled-components';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { MdLogout, MdShield, MdPerson } from 'react-icons/md';
+import { MdLogout, MdShield, MdPerson, MdVisibilityOff } from 'react-icons/md';
 import { logoutThunk } from '@/store/slices/user/userThunks';
+import { stopSupervision } from '@/store/slices/user/userSlice';
 import { preloadRoute } from '@/router/preload';
 import { useThemeMode } from '@/theme/ThemeContext';
 import xtramysLogo from '@/images/xtramys.webp';
@@ -249,6 +250,7 @@ export default function Sidebar({ open, onClose }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((s) => s.usuario.user);
+  const supervising = useSelector((s) => s.usuario.supervising);
   const { mode } = useThemeMode();
 
   const sections = useMemo(() => {
@@ -279,6 +281,12 @@ export default function Sidebar({ open, onClose }) {
     onClose && onClose();
     await dispatch(logoutThunk());
     navigate('/auth/welcome', { replace: true });
+  };
+
+  const handleStopSupervising = () => {
+    dispatch(stopSupervision());
+    onClose && onClose();
+    navigate('/club/dashboard', { replace: true });
   };
 
   const logoImage = mode === 'dark' ? xtramysWhiteLogo : xtramysLogo;
@@ -325,6 +333,17 @@ export default function Sidebar({ open, onClose }) {
               <UserHint>{user?.email || ''}</UserHint>
             </UserMeta>
           </UserCard>
+          {supervising ? (
+            <LogoutBtn onClick={handleStopSupervising} style={{ color: '#f59e0b', borderColor: '#f59e0b' }}>
+              <MdVisibilityOff size={16} />
+              {t('supervision.stop', 'Salir de supervisión')}
+            </LogoutBtn>
+          ) : (
+            <LogoutBtn onClick={handleLogout}>
+              <MdLogout size={16} />
+              {t('auth.logout', 'Cerrar sesión')}
+            </LogoutBtn>
+          )}
           <Version>Xtramys v1.0.0</Version>
         </Footer>
       </Aside>

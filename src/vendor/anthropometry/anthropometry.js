@@ -50,6 +50,7 @@ function AnthropometryCard({
   styles,
   theme,
   i18n,
+  canMutate,
 }) {
   const getPlayerName = (playerId) => {
     if (!playerId) return '-';
@@ -259,15 +260,17 @@ function AnthropometryCard({
         <TouchableOpacity style={styles.listCardActionBtn} onPress={() => onPress(item)}>
           <Ionicons name="eye-outline" size={18} color="#667eea" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.listCardActionBtn} onPress={() => onOpenOptions(item)}>
-          <Ionicons name="ellipsis-vertical" size={18} color="#94a3b8" />
-        </TouchableOpacity>
+        {canMutate !== false && (
+          <TouchableOpacity style={styles.listCardActionBtn} onPress={() => onOpenOptions(item)}>
+            <Ionicons name="ellipsis-vertical" size={18} color="#94a3b8" />
+          </TouchableOpacity>
+        )}
       </View>
     </Pressable>
   );
 }
 
-const Anthropometry = ({ navigation }) => {
+const Anthropometry = ({ navigation, canMutate }) => {
   const { t, i18n } = useTranslation();
   const getLocale = () => (i18n && i18n.language === 'en' ? 'en-US' : 'es-ES');
   const dispatch = useDispatch();
@@ -361,7 +364,7 @@ const Anthropometry = ({ navigation }) => {
   }, [filterPlayer]);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && canMutate !== false) {
       const handleCreateEvent = () => {
         openCreateModal();
       };
@@ -370,7 +373,7 @@ const Anthropometry = ({ navigation }) => {
         window.removeEventListener('anthropometry:create', handleCreateEvent);
       };
     }
-  }, [openCreateModal]);
+  }, [openCreateModal, canMutate]);
 
   const clearDateFilter = () => {
     setDateFilter(null);
@@ -740,7 +743,7 @@ const Anthropometry = ({ navigation }) => {
               </TouchableOpacity>
 
               {/* Botón primario: Nueva medición */}
-              {Platform.OS !== 'web' && (
+              {Platform.OS !== 'web' && canMutate !== false && (
                 <TouchableOpacity
                   onPress={openCreateModal}
                   style={[styles.headerPrimaryBtn, IS_MOBILE && styles.headerPrimaryBtnMobile]}
@@ -777,7 +780,7 @@ const Anthropometry = ({ navigation }) => {
                 ? t('anthropometry.noFilteredResults')
                 : t('anthropometry.noMeasurementsCreated')}
             </Text>
-            {!activeFiltersCount && (
+            {!activeFiltersCount && canMutate !== false && (
               <TouchableOpacity
                 style={[styles.createButton, { marginTop: 20 }]}
                 onPress={openCreateModal}
@@ -802,6 +805,7 @@ const Anthropometry = ({ navigation }) => {
                 theme={theme}
                 t={t}
                 i18n={i18n}
+                canMutate={canMutate}
               />
             )}
             contentContainerStyle={{ padding: 16 }}
@@ -831,37 +835,41 @@ const Anthropometry = ({ navigation }) => {
               {/* Title */}
               <Text style={styles.optionsModalTitle}>{t('common.options') || 'Opciones'}</Text>
 
-              <TouchableOpacity
-                style={styles.optionsModalOption}
-                onPress={() => {
-                  setOptionsModalVisible(false);
-                  openEditModal(selectedAnthropometryForOptions);
-                }}
-              >
-                <View
-                  style={[
-                    styles.optionsModalIconBox,
-                    { backgroundColor: theme.colors.primarySoft },
-                  ]}
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.optionsModalOption}
+                  onPress={() => {
+                    setOptionsModalVisible(false);
+                    openEditModal(selectedAnthropometryForOptions);
+                  }}
                 >
-                  <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
-              </TouchableOpacity>
+                  <View
+                    style={[
+                      styles.optionsModalIconBox,
+                      { backgroundColor: theme.colors.primarySoft },
+                    ]}
+                  >
+                    <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.optionsModalOptionText}>{t('common.edit')}</Text>
+                </TouchableOpacity>
+              )}
 
-              <TouchableOpacity
-                style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
-                onPress={() => handleDelete(selectedAnthropometryForOptions)}
-              >
-                <View
-                  style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={[styles.optionsModalOption, styles.optionsModalOptionDanger]}
+                  onPress={() => handleDelete(selectedAnthropometryForOptions)}
                 >
-                  <MaterialIcons name="delete" size={20} color={theme.colors.error} />
-                </View>
-                <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
-                  {t('common.delete')}
-                </Text>
-              </TouchableOpacity>
+                  <View
+                    style={[styles.optionsModalIconBox, { backgroundColor: theme.colors.errorSoft }]}
+                  >
+                    <MaterialIcons name="delete" size={20} color={theme.colors.error} />
+                  </View>
+                  <Text style={[styles.optionsModalOptionText, styles.optionsModalOptionTextDanger]}>
+                    {t('common.delete')}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.optionsModalCancelButton}
@@ -1245,16 +1253,18 @@ const Anthropometry = ({ navigation }) => {
                 </View>
 
                 {/* Crear medición */}
-                <TouchableOpacity
-                  style={styles.mobileMenuItem}
-                  onPress={() => {
-                    setMobileMenuVisible(false);
-                    openCreateModal();
-                  }}
-                >
-                  <MaterialIcons name="add-circle" size={24} color="#2474E5" />
-                  <Text style={styles.mobileMenuItemText}>{t('anthropometry.newMeasurement')}</Text>
-                </TouchableOpacity>
+                {canMutate !== false && (
+                  <TouchableOpacity
+                    style={styles.mobileMenuItem}
+                    onPress={() => {
+                      setMobileMenuVisible(false);
+                      openCreateModal();
+                    }}
+                  >
+                    <MaterialIcons name="add-circle" size={24} color="#2474E5" />
+                    <Text style={styles.mobileMenuItemText}>{t('anthropometry.newMeasurement')}</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Limpiar todos los filtros */}
                 {(dateFilter || filterPlayer !== 'all') && (
@@ -2032,15 +2042,17 @@ const Anthropometry = ({ navigation }) => {
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{t('anthropometry.modal.detailTitle')}</Text>
                   <View style={{ flexDirection: 'row', gap: IS_MOBILE ? 8 : 12 }}>
-                    <TouchableOpacity
-                      style={[styles.modalEditButton, IS_MOBILE && { padding: 6 }]}
-                      onPress={() => {
-                        openEditModal(viewingAnthropometry);
-                        setViewingAnthropometry(null);
-                      }}
-                    >
-                      <MaterialIcons name="edit" size={IS_MOBILE ? 18 : 24} color="#3578e5" />
-                    </TouchableOpacity>
+                    {canMutate !== false && (
+                      <TouchableOpacity
+                        style={[styles.modalEditButton, IS_MOBILE && { padding: 6 }]}
+                        onPress={() => {
+                          openEditModal(viewingAnthropometry);
+                          setViewingAnthropometry(null);
+                        }}
+                      >
+                        <MaterialIcons name="edit" size={IS_MOBILE ? 18 : 24} color="#3578e5" />
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={[styles.modalCloseBtn, IS_MOBILE && { padding: 6 }]}
                       onPress={() => setViewingAnthropometry(null)}

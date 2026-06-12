@@ -38,6 +38,7 @@ import Modal from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import { generateMethodologyPdf } from './pdf';
+import useSupervision from '../../hooks/useSupervision';
 
 // ---------- helpers ----------
 const getEmptyMethodologyStructure = () => ({
@@ -232,7 +233,7 @@ const Empty = styled.div`
 `;
 
 // ---------- subcomponents ----------
-function MethodologySelector({ methodologies, selectedId, onSelect, onCreateNew, onDelete, isEditable }) {
+function MethodologySelector({ methodologies, selectedId, onSelect, onCreateNew, onDelete, isEditable, canCreate }) {
   const { t } = useTranslation();
   return (
     <SelectorRow>
@@ -244,9 +245,11 @@ function MethodologySelector({ methodologies, selectedId, onSelect, onCreateNew,
           {m.name}
         </Chip>
       ))}
-      <Chip onClick={onCreateNew} title={t('methodology.newMethodology', 'Nueva metodología')}>
-        <MdAdd /> {t('methodology.newMethodology', 'Nueva')}
-      </Chip>
+      {canCreate !== false && (
+        <Chip onClick={onCreateNew} title={t('methodology.newMethodology', 'Nueva metodología')}>
+          <MdAdd /> {t('methodology.newMethodology', 'Nueva')}
+        </Chip>
+      )}
       {isEditable && (
         <Chip onClick={onDelete} style={{ color: '#ef4444', borderColor: '#ef4444' }}>
           <MdDelete /> {t('common.delete', 'Eliminar')}
@@ -516,6 +519,7 @@ export default function Methodology() {
   const themeMode = theme?.mode || 'light';
   const user = useSelector((s) => s.usuario.user);
   const userId = user?._id;
+  const { canMutate } = useSupervision();
 
   const [methodologies, setMethodologies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -542,7 +546,7 @@ export default function Methodology() {
     return () => { alive = false; };
   }, [userId]);
 
-  const isEditable = selectedId !== 'recommended';
+  const isEditable = selectedId !== 'recommended' && canMutate;
   const currentData = useMemo(() => {
     if (selectedId === 'recommended') return getDefaultMethodologyData(t);
     const custom = methodologies.find((m) => m._id === selectedId);
@@ -691,6 +695,7 @@ export default function Methodology() {
         onCreateNew={() => setCreateOpen(true)}
         onDelete={handleDeleteMethodology}
         isEditable={isEditable}
+        canCreate={canMutate}
       />
 
       <ExpandBar>

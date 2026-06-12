@@ -1212,6 +1212,7 @@ export default function AddEventModal({
   matchSheets = [],
   injuries = [],
   defaultEventType = null, // 'match', 'session' o null para mostrar selector
+  canMutate = true,
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -1729,6 +1730,7 @@ export default function AddEventModal({
 
   // Crear nuevo rival
   const handleCreateRival = async () => {
+    if (!canMutate) return;
     if (!newRivalName.trim()) {
       Alert.alert(t('common.error'), t('rivals.nameRequired'));
       return;
@@ -1806,6 +1808,7 @@ export default function AddEventModal({
 
   // Crear ficha de partido
   const handleCreateMatch = async () => {
+    if (!canMutate) return;
     let hasError = false;
     const errors = {};
 
@@ -1892,6 +1895,7 @@ export default function AddEventModal({
 
   // Crear sesión de entrenamiento
   const handleCreateSession = async () => {
+    if (!canMutate) return;
     // Validar que la hora de fin no sea anterior a la hora de inicio
     const [startHours, startMinutes] = sessionData.horaInicio.split(':').map(Number);
     const [endHours, endMinutes] = sessionData.horaFin.split(':').map(Number);
@@ -2054,7 +2058,16 @@ export default function AddEventModal({
   const renderTypeSelector = () => (
     <View style={styles.typeSelector}>
       <Text style={styles.typeSelectorTitle}>{t('schedule.whatToAdd')}</Text>
-      
+
+      {!canMutate && (
+        <View style={[styles.matchWarning, { backgroundColor: theme.colors.error + '15', borderColor: theme.colors.error + '40' }]}>
+          <Ionicons name="lock-closed" size={24} color={theme.colors.error} />
+          <Text style={[styles.matchWarningText, { color: theme.colors.error }]}>
+            {t('schedule.readOnlyMode') || 'You do not have permission to create events in this season.'}
+          </Text>
+        </View>
+      )}
+
       {/* Advertencia si ya hay partido en la fecha */}
       {hasMatchOnSelectedDate && (
         <View style={styles.matchWarning}>
@@ -2068,9 +2081,10 @@ export default function AddEventModal({
       <TouchableOpacity
         style={[
           styles.typeOption,
-          hasMatchOnSelectedDate && styles.typeOptionDisabled
+          (hasMatchOnSelectedDate || !canMutate) && styles.typeOptionDisabled
         ]}
         onPress={() => {
+          if (!canMutate) return;
           if (hasMatchOnSelectedDate) {
             Alert.alert(
               t('schedule.notAvailable'),
@@ -2081,22 +2095,26 @@ export default function AddEventModal({
           }
           setEventType('match');
         }}
-        activeOpacity={hasMatchOnSelectedDate ? 1 : 0.7}
+        activeOpacity={!canMutate || hasMatchOnSelectedDate ? 1 : 0.7}
       >
-        <View style={[styles.typeOptionIcon, { backgroundColor: theme.colors.primary + '15' }]}>
-          <Ionicons name="football" size={32} color={hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.primary} />
+        <View style={[styles.typeOptionIcon, { backgroundColor: (!canMutate || hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.primary) + '15' }]}>
+          <Ionicons name="football" size={32} color={!canMutate || hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.primary} />
         </View>
         <View style={styles.typeOptionContent}>
-          <Text style={[styles.typeOptionTitle, hasMatchOnSelectedDate && styles.typeOptionTitleDisabled]}>
+          <Text style={[styles.typeOptionTitle, (!canMutate || hasMatchOnSelectedDate) && styles.typeOptionTitleDisabled]}>
             {t('schedule.matchSheet')}
           </Text>
           <Text style={styles.typeOptionDescription}>
-            {hasMatchOnSelectedDate 
+            {!canMutate
+              ? (t('schedule.readOnlyMode') || 'You do not have permission to create events.')
+              : hasMatchOnSelectedDate 
               ? t('schedule.notAvailableMatchDay')
               : t('schedule.matchSheetDesc')}
           </Text>
         </View>
-        {hasMatchOnSelectedDate ? (
+        {!canMutate ? (
+          <Ionicons name="lock-closed" size={24} color={theme.colors.textMuted} />
+        ) : hasMatchOnSelectedDate ? (
           <Ionicons name="close-circle" size={24} color={theme.colors.error} />
         ) : (
           <Ionicons name="chevron-forward" size={24} color={theme.colors.textMuted} />
@@ -2106,9 +2124,10 @@ export default function AddEventModal({
       <TouchableOpacity
         style={[
           styles.typeOption,
-          hasMatchOnSelectedDate && styles.typeOptionDisabled
+          (hasMatchOnSelectedDate || !canMutate) && styles.typeOptionDisabled
         ]}
         onPress={() => {
+          if (!canMutate) return;
           if (hasMatchOnSelectedDate) {
             Alert.alert(
               t('schedule.notAvailable'),
@@ -2119,22 +2138,26 @@ export default function AddEventModal({
           }
           setEventType('session');
         }}
-        activeOpacity={hasMatchOnSelectedDate ? 1 : 0.7}
+        activeOpacity={!canMutate || hasMatchOnSelectedDate ? 1 : 0.7}
       >
-        <View style={[styles.typeOptionIcon, { backgroundColor: theme.colors.success + '15' }]}>
-          <Ionicons name="fitness" size={32} color={hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.success} />
+        <View style={[styles.typeOptionIcon, { backgroundColor: (!canMutate || hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.success) + '15' }]}>
+          <Ionicons name="fitness" size={32} color={!canMutate || hasMatchOnSelectedDate ? theme.colors.textMuted : theme.colors.success} />
         </View>
         <View style={styles.typeOptionContent}>
-          <Text style={[styles.typeOptionTitle, hasMatchOnSelectedDate && styles.typeOptionTitleDisabled]}>
+          <Text style={[styles.typeOptionTitle, (!canMutate || hasMatchOnSelectedDate) && styles.typeOptionTitleDisabled]}>
             {t('schedule.trainingSession')}
           </Text>
           <Text style={styles.typeOptionDescription}>
-            {hasMatchOnSelectedDate 
+            {!canMutate
+              ? (t('schedule.readOnlyMode') || 'You do not have permission to create events.')
+              : hasMatchOnSelectedDate 
               ? t('schedule.notAvailableMatchDay')
               : t('schedule.trainingSessionDesc')}
           </Text>
         </View>
-        {hasMatchOnSelectedDate ? (
+        {!canMutate ? (
+          <Ionicons name="lock-closed" size={24} color={theme.colors.textMuted} />
+        ) : hasMatchOnSelectedDate ? (
           <Ionicons name="close-circle" size={24} color={theme.colors.error} />
         ) : (
           <Ionicons name="chevron-forward" size={24} color={theme.colors.textMuted} />
@@ -2993,19 +3016,19 @@ export default function AddEventModal({
           <Text style={styles.footerCancelBtnText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.footerSaveBtn, loading && styles.footerSaveBtnDisabled]}
+          style={[styles.footerSaveBtn, (loading || !canMutate) && styles.footerSaveBtnDisabled]}
           onPress={() => {
-            if (loading) return;
+            if (loading || !canMutate) return;
             handleCreateMatch();
           }}
-          activeOpacity={loading ? 1 : 0.8}
+          activeOpacity={loading || !canMutate ? 1 : 0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color="#ffffff" />
-              <Text style={styles.footerSaveBtnText}>{t('schedule.createMatchSheet')}</Text>
+              <Ionicons name={!canMutate ? "lock-closed" : "add-circle"} size={20} color="#ffffff" />
+              <Text style={styles.footerSaveBtnText}>{!canMutate ? (t('schedule.readOnlyMode') || 'Read-only') : t('schedule.createMatchSheet')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -3284,12 +3307,12 @@ export default function AddEventModal({
                 <Text style={styles.createRivalCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createRivalSaveButton, savingRival && styles.createRivalSaveButtonDisabled]}
+                style={[styles.createRivalSaveButton, (savingRival || !canMutate) && styles.createRivalSaveButtonDisabled]}
                 onPress={() => {
-                  if (savingRival) return;
+                  if (savingRival || !canMutate) return;
                   handleCreateRival();
                 }}
-                activeOpacity={savingRival ? 1 : 0.8}
+                activeOpacity={savingRival || !canMutate ? 1 : 0.8}
               >
                 {savingRival ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -4354,19 +4377,19 @@ export default function AddEventModal({
           <Text style={styles.footerCancelBtnText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.footerSaveBtn, loading && styles.footerSaveBtnDisabled]}
+          style={[styles.footerSaveBtn, (loading || !canMutate) && styles.footerSaveBtnDisabled]}
           onPress={() => {
-            if (loading) return;
+            if (loading || !canMutate) return;
             handleCreateSession();
           }}
-          activeOpacity={loading ? 1 : 0.8}
+          activeOpacity={loading || !canMutate ? 1 : 0.8}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color="#ffffff" />
-              <Text style={styles.footerSaveBtnText}>{t('schedule.createSessionBtn')}</Text>
+              <Ionicons name={!canMutate ? "lock-closed" : "add-circle"} size={20} color="#ffffff" />
+              <Text style={styles.footerSaveBtnText}>{!canMutate ? (t('schedule.readOnlyMode') || 'Read-only') : t('schedule.createSessionBtn')}</Text>
             </>
           )}
         </TouchableOpacity>

@@ -128,10 +128,12 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
       width={560}
       footer={
         <FooterContainer>
-          <FooterButton type="button" $variant="danger" onClick={() => onDelete?.(player)}>
-            <MdDelete size={16} />
-            {t('edition.delete', 'Eliminar')}
-          </FooterButton>
+          {onDelete && (
+            <FooterButton type="button" $variant="danger" onClick={() => onDelete(player)}>
+              <MdDelete size={16} />
+              {t('edition.delete', 'Eliminar')}
+            </FooterButton>
+          )}
           <ActionsGroup>
             <FooterButton type="button" $variant="ghost" onClick={onClose}>
               <MdClose size={16} />
@@ -143,10 +145,12 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
                 {t('player.viewProfile', 'Ver perfil')}
               </FooterButton>
             ) : null}
-            <FooterButton type="button" onClick={() => onEdit?.(player)}>
-              <MdEdit size={16} />
-              {t('edition.edit', 'Editar')}
-            </FooterButton>
+            {onEdit && (
+              <FooterButton type="button" onClick={() => onEdit(player)}>
+                <MdEdit size={16} />
+                {t('edition.edit', 'Editar')}
+              </FooterButton>
+            )}
           </ActionsGroup>
         </FooterContainer>
       }

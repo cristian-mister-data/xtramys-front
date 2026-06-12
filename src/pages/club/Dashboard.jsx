@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
+import { startSupervision } from '@/store/slices/user/userSlice';
 import Modal from '@/ui/Modal';
 
 const StatsGrid = styled.div`
@@ -267,6 +269,7 @@ const InfoNotice = styled.div`
 export default function ClubDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
@@ -494,11 +497,38 @@ export default function ClubDashboard() {
                         {/* View coach data (read-only) */}
                         <ActionBtn
                           title="Ver actividad"
-                          onClick={() => navigate(`/club/coach/${member._id}`)}
+                          onClick={async () => {
+                            try {
+                              const res = await api.get(`/user/${member._id}`);
+                              const coachUser = res.data?.usuario || res.data;
+                              dispatch(startSupervision(coachUser));
+                              navigate('/app', { replace: true });
+                            } catch {
+                              toast.error(t('connection.loadError', 'Error al cargar los datos del entrenador'));
+                            }
+                          }}
                         >
                           <MdVisibility size={14} />
                           Ver
                         </ActionBtn>
+                        {/* Resend invite for pending members */}
+                        {isPending && (
+                          <ActionBtn
+                            title="Reenviar invitación"
+                            onClick={async () => {
+                              try {
+                                const res = await api.post('/club/resend-invite', { targetUserId: member._id });
+                                toast.success(res.data?.mensaje || 'Invitación reenviada');
+                                fetchClubData();
+                              } catch (err) {
+                                toast.error(err.response?.data?.mensaje || 'Error al reenviar invitación');
+                              }
+                            }}
+                          >
+                            <MdMail size={14} />
+                            Reenviar
+                          </ActionBtn>
+                        )}
                         {/* Suspend / Reactivate access */}
                         {isActive ? (
                           <ActionBtn

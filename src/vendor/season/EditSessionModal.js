@@ -55,6 +55,7 @@ export default function EditSessionModal({
   injuries = [],
   onClose,
   onSave,
+  canMutate = true,
 }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'es';
@@ -1062,9 +1063,9 @@ export default function EditSessionModal({
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
+                style={[styles.saveBtn, (loading || canMutate === false) && styles.saveBtnDisabled]}
                 onPress={handleSave}
-                disabled={loading}
+                disabled={loading || canMutate === false}
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
