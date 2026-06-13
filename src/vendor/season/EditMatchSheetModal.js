@@ -29,7 +29,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
-import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
+import { fetchTournamentSanctions, fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
 import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -1129,6 +1129,12 @@ export default function EditMatchSheetModal({
       dispatch(clearSanctions());
     }
   }, [torneoId, competicion, dispatch]);
+
+  useEffect(() => {
+    if (visible && team?._id) {
+      dispatch(fetchTournamentsByTeam(team._id));
+    }
+  }, [visible, team, dispatch]);
 
   const localSanctionedPlayerIds = useMemo(() => 
     sanctions.filter(s => s.sancionado).map(s => s.playerId),

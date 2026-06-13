@@ -181,13 +181,23 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
     );
   };
 
-  const VideoBlock = ({ blockTitle, videoUrl }) => {
+  const VideoBlock = ({ blockTitle, videoUrl, isInline }) => {
+    if (isInline || (videoUrl && typeof videoUrl === 'string' && videoUrl.startsWith('data:'))) {
+      return (
+        <View style={baseStyles.questionRow} wrap={false}>
+          <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
+          <Text style={[baseStyles.questionValue, { color: '#64748b' }]}>
+            📹 {t('rivalAnalysis.pdf.uploadedVideo', 'Video subido')}
+          </Text>
+        </View>
+      );
+    }
     if (!videoUrl || typeof videoUrl !== 'string') {
       return (
         <View style={baseStyles.questionRow} wrap={false}>
           <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
           <Text style={[baseStyles.questionValue, { color: '#64748b' }]}>
-            📹 Video en la app
+            📹 {t('rivalAnalysis.pdf.videoInApp', 'Video en la app')}
           </Text>
         </View>
       );
@@ -199,8 +209,8 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       return (
         <View style={baseStyles.questionRow} wrap={false}>
           <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
-          <Text style={[baseStyles.questionValue, { color: '#ef4444' }]}>
-            ⚠️ URL no válida
+          <Text style={[baseStyles.questionValue, { color: '#64748b' }]}>
+            📹 {t('rivalAnalysis.pdf.videoInApp', 'Video en la app')}
           </Text>
         </View>
       );
@@ -210,7 +220,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       <View style={baseStyles.questionRow} wrap={false}>
         <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
         <Link href={videoUrl} style={{ color: COLORS.accent, fontSize: FONT_SIZE.sm }}>
-          Ver video
+          {t('rivalAnalysis.pdf.viewVideo', 'Ver video')}
         </Link>
       </View>
     );
@@ -260,7 +270,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       if (rivalAnalysis.customAnswers) {
         Object.entries(rivalAnalysis.customAnswers).forEach(([, v]) => {
           if (v?.videoId || v?.url)
-            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} key={key++} />);
+            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} isInline={v.isInline} key={key++} />);
           if (v?.imageBase64)
             blocks.push(
               <GraphicBlock imageBase64={v.imageBase64} blockTitle={t('rivalAnalysis.actions.graphic')} key={key++} />,
@@ -348,6 +358,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
               <VideoBlock
                 blockTitle={questionText}
                 videoUrl={videoAnswer.resolvedUrl || videoAnswer.url}
+                isInline={videoAnswer.isInline}
                 key={key++}
               />,
             );
@@ -392,7 +403,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
         Object.entries(rivalAnalysis.customAnswers).forEach(([k, v]) => {
           if (coveredKeys.includes(k)) return;
           if (v?.videoId || v?.url)
-            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} key={key++} />);
+            blocks.push(<VideoBlock blockTitle={t('rivalAnalysis.actions.video')} videoUrl={v.resolvedUrl || v.url} isInline={v.isInline} key={key++} />);
           if (v?.imageBase64)
             blocks.push(
               <GraphicBlock
@@ -413,7 +424,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       <Page size="A4" style={baseStyles.page}>
         <PdfHeader
           title={title}
-          subtitle="Xtramys Performance Report"
+          subtitle={t('rivalAnalysis.pdf.reportTitle', 'Xtramys Performance Report')}
         />
 
         <View style={baseStyles.sectionHeader}>
@@ -446,6 +457,7 @@ export async function generateRivalAnalysisPdf(
     for (const [key, value] of Object.entries(clonedAnalysis.customAnswers)) {
       if (value && (value.videoId || value.url)) {
         let resolvedUrl = value.url || '';
+        const isInline = !!value.url && value.url.startsWith('data:');
         if (value.videoId) {
           try {
             const response = await getVideoShareLink(value.videoId);
@@ -456,6 +468,7 @@ export async function generateRivalAnalysisPdf(
         clonedAnalysis.customAnswers[key] = {
           ...value,
           resolvedUrl,
+          isInline,
         };
       }
     }

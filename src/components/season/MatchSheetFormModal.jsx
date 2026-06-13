@@ -11,7 +11,7 @@ import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
-import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
+import { fetchTournamentSanctions, fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
 import { ALINEACIONES_BY_PLAYER_COUNT, getDefaultFormation } from '@/features/matchSheet/formations';
 import LineupEditor from '@/features/matchSheet/LineupEditor';
 import RivalSelector from '@/features/matchSheet/RivalSelector';
@@ -239,6 +239,13 @@ export default function MatchSheetFormModal({
       dispatch(fetchTournamentSanctions(form.torneoId));
     }
   }, [form.torneoId, form.competicion, dispatch]);
+
+  // Fetch tournaments when modal opens
+  useEffect(() => {
+    if (open && teamId) {
+      dispatch(fetchTournamentsByTeam(teamId));
+    }
+  }, [open, teamId, dispatch]);
 
   const sanctionedPlayerIds = useMemo(() => 
     sanctions.filter(s => s.sancionado).map(s => s.playerId),

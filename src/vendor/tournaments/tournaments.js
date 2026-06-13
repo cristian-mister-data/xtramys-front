@@ -33,14 +33,13 @@ import {
   fetchTournamentSanctions,
 } from '@/store/slices/tournament/tournamentThunks';
 import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
+import { fetchMatchSheetsByTeam, createMatchSheet, updateMatchSheet } from '@/store/slices/matchSheet/matchSheetThunks';
+import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
+import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
+import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
-import {
-  createMatchSheet,
-  updateMatchSheet,
-  fetchMatchSheetsByTeam,
-} from '@/store/slices/matchSheet/matchSheetThunks';
 
 const TOURNAMENT_TYPES = [
   { value: 'liga', label: 'tournaments.league', icon: 'format-list-numbered', color: '#3B82F6' },
@@ -1321,6 +1320,10 @@ export default function Tournaments({ canMutate }) {
   useEffect(() => {
     if (selectedTeam?._id) {
       dispatch(fetchTournamentsByTeam(selectedTeam._id));
+      dispatch(fetchMatchSheetsByTeam(selectedTeam._id));
+      dispatch(fetchJugadoresEquipo({ team: selectedTeam._id }));
+      dispatch(fetchRivalsByTeam(selectedTeam._id));
+      dispatch(fetchInjuriesByTeam({ team: selectedTeam._id }));
     }
   }, [selectedTeam?._id, dispatch]);
 

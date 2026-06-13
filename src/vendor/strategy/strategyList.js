@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '@/vendor/shared/appLayout';
 import CreateStrategyForm from './createStrategyForm';
@@ -1098,6 +1098,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   const currentFolderSubfolders = useSelector(state => state.strategy.currentFolderSubfolders) || [];
   const loading = useSelector(state => state.strategy.loading);
   const foldersLoading = useSelector(state => state.strategy.foldersLoading);
+  const [loadingData, setLoadingData] = useState(true);
   const dispatch = useDispatch();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -1214,19 +1215,27 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 
   useEffect(() => {
     const loadUser = async () => {
-      const usuario = await AsyncStorage.getItem('usuario');
-      const parsed = JSON.parse(usuario);
-      const u = parsed?._id;
-      setIdUsuario(u);
-      setUserRole(parsed?.role || 'user');
+      try {
+        const usuario = await AsyncStorage.getItem('usuario');
+        if (!usuario) return;
+        const parsed = JSON.parse(usuario);
+        const u = parsed?._id;
+        setIdUsuario(u);
+        setUserRole(parsed?.role || 'user');
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
     }
     loadUser();
   }, []);
 
   const lang = i18n.language;
 
+  const initialLoadDoneRef = useRef(false);
+
   useEffect(() => {
     if (idUsuario) {
+      initialLoadDoneRef.current = true;
       dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
       dispatch(fetchStrategyFolders({ lang }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
@@ -1234,6 +1243,27 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchGlobalFolders({ lang }));
     }
   }, [idUsuario, dispatch, lang]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (idUsuario && initialLoadDoneRef.current) {
+        dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+        dispatch(fetchStrategyFolders({ lang }));
+        dispatch(fetchStrategyFoldersFlat({ lang }));
+        dispatch(fetchGlobalStrategies({ lang }));
+        dispatch(fetchGlobalFolders({ lang }));
+      }
+    }, [idUsuario, dispatch, lang])
+  );
+
+  useEffect(() => {
+    if (!loading && strategies.length > 0) {
+      setLoadingData(false);
+    } else if (!loading && !foldersLoading) {
+      const timer = setTimeout(() => setLoadingData(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, foldersLoading, strategies.length, globalStrategies.length]);
 
   useEffect(() => {
     if (global.pendingVideoEditSuccess) {
@@ -1295,26 +1325,28 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
   };
 
-  const displayedStrategies = (() => {
+  const displayedStrategies = useMemo(() => {
     const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
-    const mergeById = (items) => {
-      const map = new Map();
-      items.flat().filter(Boolean).forEach((item) => {
-        const id = item._id || item.id;
-        if (id) map.set(id, item);
-      });
-      return Array.from(map.values());
-    };
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderStrategies;
       const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
-      const q = filters.titulo
+      return filters.titulo
         ? rootGlobal.filter((s) => s.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
         : rootGlobal;
-      return q;
     }
     if (listFilter === 'favorites') {
-      const favs = mergeById([strategies, globalStrategies]).filter((st) => st.favorito);
+      const favsById = new Map();
+      [...strategies, ...globalStrategies].filter(Boolean).forEach((strategy) => {
+        const id = strategy._id || strategy.id;
+        if (!id) return;
+        const prev = favsById.get(String(id));
+        favsById.set(String(id), {
+          ...prev,
+          ...strategy,
+          favorito: Boolean(prev?.favorito || strategy.favorito),
+        });
+      });
+      const favs = Array.from(favsById.values()).filter((st) => st.favorito);
       return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
     const base = (() => {
@@ -1327,24 +1359,25 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       return strategies;
     })();
     return currentFolderId ? currentFolderStrategies : base.filter((st) => !hasFolder(st));
-  })();
+  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo]);
 
-  const filteredStrategies = listFilter === 'global'
-    ? displayedStrategies
-    : displayedStrategies.filter((strategy) => {
+  const filteredStrategies = useMemo(() => {
+    if (listFilter === 'global') return displayedStrategies;
+    return displayedStrategies.filter((strategy) => {
       const tituloMatch = !filters.titulo
         || strategy.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
       return tituloMatch;
     });
+  }, [displayedStrategies, listFilter, filters.titulo]);
 
-  const displayedSubfolders = (() => {
+  const displayedSubfolders = useMemo(() => {
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
     if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario));
     if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
     return strategyFolders.filter((f) => !f.parentFolder);
-  })();
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario]);
 
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {
@@ -1846,7 +1879,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (loadingData) {
     return (
       <AppLayout>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>

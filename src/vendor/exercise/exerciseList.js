@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Dimensions } from 'react-native';
 import { useTheme } from 'styled-components';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '@/vendor/shared/appLayout';
 import CreateExerciseForm from './createExerciseForm';
@@ -703,6 +703,13 @@ function FolderManagement({
   };
 
   const navigateToRoot = () => {
+    if (currentFolderId === null) {
+      setFolderPath([]);
+      setIsNavigatingFolder(false);
+      setCreatingFolder(false);
+      setEditingFolder(null);
+      return;
+    }
     setFolderPath([]);
     setIsNavigatingFolder(true);
     setCurrentFolderId(null);
@@ -1158,6 +1165,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const currentFolderSubfolders = useSelector(state => state.exercise.currentFolderSubfolders) || [];
   const loading = useSelector(state => state.exercise.loading);
   const foldersLoading = useSelector(state => state.exercise.foldersLoading);
+  const [loadingData, setLoadingData] = useState(true);
   const dispatch = useDispatch();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -1273,11 +1281,16 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   useEffect(() => {
     const loadUser = async () => {
-      const usuario = await AsyncStorage.getItem('usuario');
-      const parsed = JSON.parse(usuario);
-      const u = parsed?._id;
-      setIdUsuario(u);
-      setUserRole(parsed?.role || 'user');
+      try {
+        const usuario = await AsyncStorage.getItem('usuario');
+        if (!usuario) return;
+        const parsed = JSON.parse(usuario);
+        const u = parsed?._id;
+        setIdUsuario(u);
+        setUserRole(parsed?.role || 'user');
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
     }
     loadUser();
   }, []);
@@ -1296,8 +1309,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const lang = i18n.language;
 
+  const initialLoadDoneRef = useRef(false);
+
   useEffect(() => {
     if (idUsuario) {
+      initialLoadDoneRef.current = true;
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       dispatch(fetchExerciseFolders({ lang }));
       dispatch(fetchExerciseFoldersFlat({ lang }));
@@ -1305,6 +1321,27 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchGlobalFolders({ lang }));
     }
   }, [idUsuario, dispatch, lang]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (idUsuario && initialLoadDoneRef.current) {
+        dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
+        dispatch(fetchExerciseFolders({ lang }));
+        dispatch(fetchExerciseFoldersFlat({ lang }));
+        dispatch(fetchGlobalExercises({ lang }));
+        dispatch(fetchGlobalFolders({ lang }));
+      }
+    }, [idUsuario, dispatch, lang])
+  );
+
+  useEffect(() => {
+    if (!loading && ejercicios.length > 0) {
+      setLoadingData(false);
+    } else if (!loading && !foldersLoading) {
+      const timer = setTimeout(() => setLoadingData(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, foldersLoading, ejercicios.length, globalExercises.length]);
 
   // Navegar a carpeta: cargar contenido
   useEffect(() => {
@@ -1377,6 +1414,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   };
 
   const navigateToRoot = () => {
+    if (currentFolderId === null) {
+      setFolderPath([]);
+      setIsNavigatingFolder(false);
+      dispatch(clearCurrentFolder());
+      return;
+    }
     setFolderPath([]);
     setIsNavigatingFolder(true);
     setCurrentFolderId(null);
@@ -1409,22 +1452,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
   };
 
-  // Función para filtrar ejercicios
-  const displayedExercises = (() => {
-    const mergeById = (items) => {
-      const map = new Map();
-      items.flat().filter(Boolean).forEach((item) => {
-        const id = item._id || item.id;
-        if (id) map.set(id, item);
-      });
-      return Array.from(map.values());
-    };
+  const displayedExercises = useMemo(() => {
     if (listFilter === 'global') {
-      // If inside a global folder, show folder exercises; else show root global exercises
       if (currentFolderId) return currentFolderExercises;
       const rootGlobal = globalExercises.filter(e => !e.folder);
-      const q = filters.titulo ? rootGlobal.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase())) : rootGlobal;
-      return q;
+      return filters.titulo ? rootGlobal.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase())) : rootGlobal;
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
@@ -1450,11 +1482,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       return ejercicios;
     })();
     return currentFolderId ? currentFolderExercises : base.filter(ex => !ex.folder);
-  })();
+  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo]);
 
-  const filteredEjercicios = listFilter === 'global'
-    ? displayedExercises  // already filtered above
-    : displayedExercises.filter(exercise => {
+  const filteredEjercicios = useMemo(() => {
+    if (listFilter === 'global') return displayedExercises;
+    return displayedExercises.filter(exercise => {
       const tituloMatch = !filters.titulo ||
         exercise.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
 
@@ -1466,15 +1498,16 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
       return tituloMatch && jugadoresMatch && equiposMatch;
     });
+  }, [displayedExercises, listFilter, filters.titulo, filters.numeroJugadores, filters.equipos]);
 
-  const displayedSubfolders = (() => {
+  const displayedSubfolders = useMemo(() => {
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
     if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
     if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
-    return exerciseFolders.filter(f => !f.parentFolder); // 'all' shows both
-  })();
+    return exerciseFolders.filter(f => !f.parentFolder);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario]);
 
   const handleDelete = (exercise) => {
     if (canMutate === false) return;
@@ -1493,7 +1526,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
           style: 'destructive',
           onPress: async () => {
             await dispatch(deleteEjercicio(exercise._id));
-            showNotification(t('exercise.exerciseDeleted', 'Ejercicio eliminado'), 'success');
+            showNotification(t('exercise.deleteExerciseSuccess', 'Ejercicio eliminado'), 'success');
             // Recargar datos para reflejar cambios
             dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
             dispatch(fetchExerciseFolders({ lang }));
@@ -1659,7 +1692,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
           onPress: async () => {
             try {
               await dispatch(batchDeleteExercises([...selectedIds])).unwrap();
-              showNotification(t('exercise.exerciseDeleted') || 'Eliminados', 'success');
+              showNotification(t('exercise.deleteExerciseSuccess') || 'Eliminados', 'success');
               dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
               dispatch(fetchExerciseFolders({ lang }));
               if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
@@ -1899,7 +1932,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (loadingData) {
     return (
       <AppLayout>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>

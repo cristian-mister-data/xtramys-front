@@ -14,6 +14,7 @@ import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
 import { fetchEntrenamientosPorEquipo } from '@/store/slices/session/sessionThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import { fetchTournamentSanctions } from '@/store/slices/tournament/tournamentThunks';
+import { fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
 import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -330,6 +331,7 @@ export default function MatchSheetList({ canMutate }) {
   const trainingSessions = useSelector(state => state.session.session) || [];
   const injuries = useSelector(state => state.injury.injuries) || [];
   const sanctions = useSelector(state => state.tournament?.sanctions) || [];
+  const tournaments = useSelector(state => state.tournament?.tournaments) || [];
   const rivals = useSelector(state => state.rival.rivals) || [];
   const dispatch = useDispatch();
   const [crearModalVisible, setCrearModalVisible] = useState(false);
@@ -569,6 +571,7 @@ export default function MatchSheetList({ canMutate }) {
       if (selectedTeam?._id) {
         dispatch(fetchMatchSheetsByTeam(selectedTeam._id));
         dispatch(fetchRivalsByTeam(selectedTeam._id));
+        dispatch(fetchTournamentsByTeam(selectedTeam._id));
         dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id })); // Para validacin
         dispatch(fetchInjuriesByTeam({ team: selectedTeam._id })); // Para mostrar lesionados
       }

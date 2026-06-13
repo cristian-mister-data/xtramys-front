@@ -42,7 +42,6 @@ import {
   MdBrush,
   MdPlayCircle,
   MdDownload,
-  MdCheckCircle,
   MdArrowForward,
   MdLocalFireDepartment,
   MdCallSplit,
@@ -146,21 +145,6 @@ function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }
             alt={label}
           />
         </VideoPreviewButton>
-        <VideoStatusRow style={{ flexWrap: 'wrap', wordBreak: 'break-all' }}>
-          <MdCheckCircle size={18} style={{ flexShrink: 0 }} />
-          {(meta.resolvedUrl || inlineUrl) ? (
-            <a
-              href={meta.resolvedUrl || inlineUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#22c55e', textDecoration: 'underline', fontSize: '13px' }}
-            >
-              {meta.resolvedUrl || inlineUrl}
-            </a>
-          ) : (
-            <span>{t('rivalAnalysis.actions.videoSaved', 'Vídeo guardado')}</span>
-          )}
-        </VideoStatusRow>
         {videoId ? (
           <VideoActions>
             <VideoBtn type="button" onClick={() => onPlay(videoId)}>
@@ -446,15 +430,6 @@ const VideoBtn = styled.button`
     outline: none;
     box-shadow: ${({ theme }) => theme.shadows.focus};
   }
-`;
-
-const VideoStatusRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #22c55e;
-  font-size: 13px;
-  font-weight: 600;
 `;
 
 const VideoPlayer = styled.video`

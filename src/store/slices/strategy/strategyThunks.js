@@ -238,12 +238,22 @@ export const toggleFavoriteStrategy = createAsyncThunk(
   async (payloadArg, { getState }) => {
     const strategyId = typeof payloadArg === 'object' ? payloadArg.strategyId : payloadArg;
     const expectedFavorite = typeof payloadArg === 'object' ? payloadArg.favorito : undefined;
-    const res = await api.patch(`/strategy/${strategyId}/favorite`);
     const fallbackFavorite = findStrategyFavorite(getState(), strategyId);
-    const payload = normalizeFavoritePayload(res.data, strategyId, expectedFavorite ?? fallbackFavorite);
-    if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
-    await persistFavoriteState('strategy', strategyId, payload.favorito);
-    return payload; // { _id, favorito }
+    const optimisticFavorite = expectedFavorite ?? !fallbackFavorite;
+
+    try {
+      const res = await api.patch(`/strategy/${strategyId}/favorite`);
+      const payload = normalizeFavoritePayload(res.data, strategyId, optimisticFavorite);
+      if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
+      await persistFavoriteState('strategy', strategyId, payload.favorito);
+      return payload;
+    } catch (error) {
+      const isPermissionFallback = error?.status === 403 || error?.status === 404;
+      if (!isPermissionFallback) throw error;
+
+      await persistFavoriteState('strategy', strategyId, optimisticFavorite);
+      return { _id: strategyId, favorito: optimisticFavorite };
+    }
   }
 );
 
