@@ -124,7 +124,19 @@ function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }
       }
       
       setMeta({ posterUrl: posterUrl || '', videoName: name, resolvedUrl: directUrl });
-    }).catch(() => {});
+    }).catch(async () => {
+      let directUrl = '';
+      try {
+        directUrl = await resolvePlayableVideoUrl(videoId, { objectUrl: false });
+      } catch (err) {
+        console.error('Error resolving fallback video url for UI', err);
+      }
+      setMeta((m) => ({
+        ...m,
+        resolvedUrl: directUrl || inlineUrl || '',
+        videoName: label || '',
+      }));
+    });
   }, [videoId, inlineUrl]);
 
   const displayPoster = meta.posterUrl || poster || '';
@@ -156,8 +168,6 @@ function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }
               {t('rivalAnalysis.actions.saveToGallery', 'Descargar')}
             </VideoBtn>
           </VideoActions>
-        ) : inlineUrl ? (
-          <VideoPlayer src={inlineUrl} controls preload="metadata" />
         ) : null}
       </AnswerSlot>
     </QBlock>

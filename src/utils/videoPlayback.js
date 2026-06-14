@@ -1,4 +1,4 @@
-import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
+import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, regenerateVideoWithField, getTacticalVideo } from '@/utils/api';
 import { ensureMp4Blob } from '@/utils/videoUtils';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
@@ -88,7 +88,11 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   if (!videoId) return '';
 
   const metadata = await getVideoById(videoId).catch(() => null);
-  const directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
+  let directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
+  if (!directUrl) {
+    const tacMetadata = await getTacticalVideo(videoId).catch(() => null);
+    directUrl = tacMetadata?.video?.videoUrl || tacMetadata?.data?.video?.videoUrl;
+  }
   if (directUrl) return maybeObjectUrl(directUrl, options);
   if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), options);
 

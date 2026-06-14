@@ -418,11 +418,14 @@ export default function RivalAnalysis() {
         <Grid>
           {filtered.map((a) => {
             const formation = normalizeFormation(a.alineacion);
+            const currentRival = rivals.find((r) => r._id === a.rivalId);
+            const computedEscudo = currentRival?.escudo || a.rivalEscudo;
+
             return (
-              <Card key={a._id} type="button" onClick={() => setViewing(a)}>
+              <Card key={a._id} type="button" onClick={() => setViewing({ ...a, rivalEscudo: computedEscudo })}>
                 <EscudoBox>
-                  {a.rivalEscudo ? (
-                    <img src={a.rivalEscudo} alt={a.rival} />
+                  {computedEscudo ? (
+                    <img src={computedEscudo} alt={a.rival} />
                   ) : (
                     <MdShield size={48} color="#94a3b8" />
                   )}

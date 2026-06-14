@@ -42,7 +42,8 @@ import {
 } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
-import { getVideoById } from '@/utils/api';
+import { getVideoById, saveTacticalVideo } from '@/utils/api';
+import api from '@/api/client';
 import VideoPoster from '@/components/shared/VideoPoster';
 import ImageCropper from '@/components/season/ImageCropper';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
@@ -445,6 +446,7 @@ export default function AnalysisFormModal({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingVideos, setUploadingVideos] = useState({});
 
   // hidratar al abrir
   useEffect(() => {
@@ -685,6 +687,41 @@ export default function AnalysisFormModal({
     toast.error(msg);
   };
 
+  const uploadVideoFile = async (file, qid) => {
+    setUploadingVideos((prev) => ({ ...prev, [qid]: true }));
+    try {
+      const contentType = file.type || 'video/mp4';
+      const uploadResponse = await api.post('/video/proxy-upload', file, {
+        timeout: 180000,
+        headers: { 'Content-Type': contentType },
+        transformRequest: [(data) => data],
+      });
+      const r2Key = uploadResponse.data?.r2Key;
+      if (!r2Key) {
+        throw new Error(t('rivalAnalysis.video.uploadFailed', 'No se pudo subir el archivo de vídeo'));
+      }
+      const saveResponse = await saveTacticalVideo({
+        title: file.name || 'Video subido',
+        r2Key: r2Key,
+      });
+      const savedVideo = saveResponse.data?.video || saveResponse.video;
+      if (!savedVideo?._id) {
+        throw new Error(t('rivalAnalysis.video.saveFailed', 'No se pudo registrar el vídeo en el sistema'));
+      }
+      setAnswer(qid, {
+        videoId: savedVideo._id,
+        url: savedVideo.videoUrl,
+      });
+      toast.success(t('rivalAnalysis.video.uploadSuccess', 'Vídeo subido y guardado correctamente'));
+    } catch (err) {
+      console.error('Error uploading video:', err);
+      const msg = err?.response?.data?.message || err?.message || t('rivalAnalysis.video.uploadError', 'Error al subir el vídeo');
+      toast.error(msg);
+    } finally {
+      setUploadingVideos((prev) => ({ ...prev, [qid]: false }));
+    }
+  };
+
   const handleVideoChange = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -693,15 +730,7 @@ export default function AnalysisFormModal({
       toast.error(t('rivalAnalysis.video.tooLarge', 'El vídeo es demasiado grande (máx 50MB)'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAnswer(videoQuestionId, {
-        name: file.name,
-        size: file.size,
-        url: reader.result,
-      });
-    };
-    reader.readAsDataURL(file);
+    uploadVideoFile(file, videoQuestionId);
   };
 
   const handleSave = async () => {
@@ -836,13 +865,18 @@ export default function AnalysisFormModal({
         </Stack>
       );
     } else if (q.type === 'video') {
+      const isUploading = !!uploadingVideos[q.id];
       const hasVideoId = !!value?.videoId;
       const hasInlineUrl = !!value?.url;
       const hasAny = hasVideoId || hasInlineUrl;
       const playUrl = hasInlineUrl ? value.url : '';
       body = (
         <Stack $gap={6}>
-          {hasAny ? (
+          {isUploading ? (
+            <SnapshotPreview>
+              <Muted>{t('rivalAnalysis.video.uploadingText', 'Subiendo vídeo a la nube...')}</Muted>
+            </SnapshotPreview>
+          ) : hasAny ? (
             <VideoPreviewThumb
               value={value}
               fallback={<MdMovieFilter size={48} color={theme.colors.textMuted} aria-hidden="true" />}
@@ -856,7 +890,7 @@ export default function AnalysisFormModal({
             </SnapshotPreview>
           )}
           <Row $gap={6}>
-            <Button $variant="secondary" type="button" onClick={() => triggerVideoUpload(q.id)}>
+            <Button $variant="secondary" type="button" onClick={() => triggerVideoUpload(q.id)} disabled={isUploading}>
               <Row $gap={6}>
                 <MdVideocam size={16} />
                 {hasAny
@@ -864,7 +898,7 @@ export default function AnalysisFormModal({
                   : t('rivalAnalysis.form.uploadVideo', 'Subir vídeo')}
               </Row>
             </Button>
-            <Button $variant="secondary" type="button" onClick={() => openVideoRecorder(q.id)}>
+            <Button $variant="secondary" type="button" onClick={() => openVideoRecorder(q.id)} disabled={isUploading}>
               <Row $gap={6}>
                 <MdMovieFilter size={16} />
                 {hasVideoId
@@ -873,7 +907,7 @@ export default function AnalysisFormModal({
               </Row>
             </Button>
             {hasAny && (
-              <Button $variant="ghost" type="button" onClick={() => setAnswer(q.id, null)}>
+              <Button $variant="ghost" type="button" onClick={() => setAnswer(q.id, null)} disabled={isUploading}>
                 <MdDelete size={14} />
               </Button>
             )}
@@ -901,7 +935,7 @@ export default function AnalysisFormModal({
     <>
       <Modal
         open={open}
-        onClose={onClose}
+        onClose={saving || Object.values(uploadingVideos).some(Boolean) ? undefined : onClose}
         title={
           editing
             ? t('rivalAnalysis.form.editTitle', 'Editar análisis')
@@ -910,11 +944,11 @@ export default function AnalysisFormModal({
         width={760}
         footer={
           <Row $gap={8}>
-            <Button $variant="secondary" onClick={onClose} disabled={saving}>
+            <Button $variant="secondary" onClick={onClose} disabled={saving || Object.values(uploadingVideos).some(Boolean)}>
               {t('common.cancel', 'Cancelar')}
             </Button>
-            <Button $variant="primary" onClick={handleSave} disabled={saving}>
-              {saving ? t('common.saving', 'Guardando…') : t('common.save', 'Guardar')}
+            <Button $variant="primary" onClick={handleSave} disabled={saving || Object.values(uploadingVideos).some(Boolean)}>
+              {saving ? t('common.saving', 'Guardando…') : Object.values(uploadingVideos).some(Boolean) ? t('rivalAnalysis.video.uploading', 'Subiendo vídeo…') : t('common.save', 'Guardar')}
             </Button>
           </Row>
         }

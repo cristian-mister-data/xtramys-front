@@ -7,7 +7,9 @@ import {
 } from '@/utils/pdfDesign';
 import { normalizeFormation } from './rivalAnalysisData';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { getVideoShareLink } from '@/utils/api';
+import { getVideoShareLink, getTacticalVideo, saveTacticalVideo } from '@/utils/api';
+import api from '@/api/client';
+import { updateRivalAnalysis } from '@/api/rival';
 
 // ── Styles ─────────────────────────────────────────────────────────
 const s = {
@@ -203,7 +205,7 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
       );
     }
     
-    const hasValidUrl = videoUrl.includes('/share?id=') && videoUrl.includes('&t=');
+    const hasValidUrl = videoUrl.startsWith('http');
     
     if (!hasValidUrl) {
       return (
@@ -219,8 +221,8 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
     return (
       <View style={baseStyles.questionRow} wrap={false}>
         <Text style={baseStyles.questionLabel}>{blockTitle}</Text>
-        <Link href={videoUrl} style={{ color: COLORS.accent, fontSize: FONT_SIZE.sm }}>
-          {t('rivalAnalysis.pdf.viewVideo', 'Ver video')}
+        <Link href={videoUrl} style={{ color: COLORS.accent, fontSize: FONT_SIZE.xs }}>
+          {videoUrl}
         </Link>
       </View>
     );
@@ -441,6 +443,18 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
   );
 };
 
+function dataURLtoBlob(dataurl) {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
 // ── Public API ─────────────────────────────────────────────────────
 export async function generateRivalAnalysisPdf(
   rivalAnalysis,
@@ -457,12 +471,64 @@ export async function generateRivalAnalysisPdf(
     for (const [key, value] of Object.entries(clonedAnalysis.customAnswers)) {
       if (value && (value.videoId || value.url)) {
         let resolvedUrl = value.url || '';
-        const isInline = !!value.url && value.url.startsWith('data:');
-        if (value.videoId) {
+        let isInline = !!value.url && value.url.startsWith('data:');
+        let videoId = value.videoId;
+
+        if (isInline && value.url) {
           try {
-            const response = await getVideoShareLink(value.videoId);
-            resolvedUrl = response?.data?.url || resolvedUrl;
+            const blob = dataURLtoBlob(value.url);
+            const uploadResponse = await api.post('/video/proxy-upload', blob, {
+              timeout: 180000,
+              headers: { 'Content-Type': blob.type || 'video/mp4' },
+              transformRequest: [(data) => data],
+            });
+            const r2Key = uploadResponse.data?.r2Key;
+            if (r2Key) {
+              const saveResponse = await saveTacticalVideo({
+                title: value.name || 'Video subido',
+                r2Key,
+              });
+              const savedVideo = saveResponse.data?.video || saveResponse.video;
+              if (savedVideo?._id) {
+                videoId = savedVideo._id;
+                resolvedUrl = savedVideo.videoUrl;
+                isInline = false;
+                
+                clonedAnalysis.customAnswers[key] = {
+                  ...value,
+                  videoId,
+                  url: resolvedUrl,
+                };
+                
+                await updateRivalAnalysis(clonedAnalysis._id, {
+                  customAnswers: clonedAnalysis.customAnswers
+                }).catch((err) => {
+                  console.error('Failed to update rival analysis DB customAnswers:', err);
+                });
+              }
+            }
+          } catch (uploadErr) {
+            console.error('Failed to auto-upload base64 video during PDF generation:', uploadErr);
+          }
+        }
+
+        if (videoId) {
+          try {
+            const response = await getVideoShareLink(videoId);
+            if (response?.data?.url || response?.url) {
+                resolvedUrl = response?.data?.url || response?.url;
+                isInline = false;
+            }
           } catch (err) {
+            try {
+              const tacResponse = await getTacticalVideo(videoId);
+              if (tacResponse?.data?.video?.videoUrl || tacResponse?.video?.videoUrl) {
+                  resolvedUrl = tacResponse?.data?.video?.videoUrl || tacResponse?.video?.videoUrl;
+                  isInline = false;
+              }
+            } catch (err2) {
+              console.warn('Failed to get video URL for PDF:', err2);
+            }
           }
         }
         clonedAnalysis.customAnswers[key] = {

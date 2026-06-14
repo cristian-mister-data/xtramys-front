@@ -9,12 +9,13 @@ const s = StyleSheet.create({
   summaryGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: SPACING.md,
+    gap: SPACING.sm,
     marginBottom: SPACING.lg,
   },
   summaryItem: {
     flex: 1,
-    padding: SPACING.base,
+    paddingVertical: SPACING.base,
+    paddingHorizontal: SPACING.xs,
     backgroundColor: COLORS.bgCard,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -23,11 +24,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   summaryLabel: {
-    fontSize: FONT_SIZE.xs,
+    fontSize: 6.5,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 4,
+    textAlign: 'center',
   },
   summaryVal: {
     fontSize: 20,
@@ -35,11 +37,12 @@ const s = StyleSheet.create({
     color: COLORS.primary,
   },
   summarySub: {
-    fontSize: FONT_SIZE.xs,
+    fontSize: 6,
     color: COLORS.textSecondary,
     marginTop: 2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   table: {
     width: '100%',
@@ -171,45 +174,51 @@ const WellnessSessionDocument = ({ session, expectedScore, data, t, lang, isPreW
         />
 
         {/* Metrics Grid */}
-        <View style={s.summaryGrid}>
-          <View style={s.summaryItem}>
-            <Text style={s.summaryLabel}>{t('session.expectedWellness') || 'Esperado'}</Text>
-            <Text style={s.summaryVal}>{expectedScore || '-'}</Text>
-            <Text style={s.summarySub}>{t('session.coachObjective') || 'Objetivo Entrenador'}</Text>
+        {!isPreWellness && (
+          <View style={s.summaryGrid}>
+            <View style={s.summaryItem}>
+              <Text style={s.summaryLabel}>{t('session.expectedWellness') || 'Esperado'}</Text>
+              <Text style={s.summaryVal}>{expectedScore || '-'}</Text>
+              <Text style={s.summarySub}>{t('session.coachObjective') || 'Objetivo Entrenador'}</Text>
+            </View>
+            <View style={s.summaryItem}>
+              <Text style={s.summaryLabel}>{t('session.averageObtained') || 'Media'}</Text>
+              <Text style={s.summaryVal}>{data.averageWellness?.toFixed(1) || '-'}</Text>
+              <Text style={s.summarySub}>{t('session.averageResponses') || 'Media Respuestas'}</Text>
+            </View>
+            <View style={s.summaryItem}>
+              <Text style={s.summaryLabel}>{t('session.totalResponses') || 'Respuestas'}</Text>
+              <Text style={s.summaryVal}>{data.totalResponses || 0}</Text>
+              <Text style={s.summarySub}>{t('session.players') || 'Jugadores'}</Text>
+            </View>
+            <View style={s.summaryItem}>
+              <Text style={s.summaryLabel}>{t('session.difference') || 'Diferencia'}</Text>
+              <Text style={s.summaryVal}>{diffScore ? `${parseFloat(diffScore) > 0 ? '+' : ''}${diffScore}` : '-'}</Text>
+              <Text style={s.summarySub}>{diffLabel}</Text>
+            </View>
           </View>
-          <View style={s.summaryItem}>
-            <Text style={s.summaryLabel}>{t('session.averageObtained') || 'Media'}</Text>
-            <Text style={s.summaryVal}>{data.averageWellness?.toFixed(1) || '-'}</Text>
-            <Text style={s.summarySub}>{t('session.averageResponses') || 'Media Respuestas'}</Text>
-          </View>
-          <View style={s.summaryItem}>
-            <Text style={s.summaryLabel}>{t('session.totalResponses') || 'Respuestas'}</Text>
-            <Text style={s.summaryVal}>{data.totalResponses || 0}</Text>
-            <Text style={s.summarySub}>{t('session.players') || 'Jugadores'}</Text>
-          </View>
-          <View style={s.summaryItem}>
-            <Text style={s.summaryLabel}>{t('session.difference') || 'Diferencia'}</Text>
-            <Text style={s.summaryVal}>{diffScore ? `${parseFloat(diffScore) > 0 ? '+' : ''}${diffScore}` : '-'}</Text>
-            <Text style={s.summarySub}>{diffLabel}</Text>
-          </View>
-        </View>
+        )}
 
         {/* Responses Table */}
         <PdfSection title={t('session.responses') || 'RESPUESTAS DE JUGADORES'}>
           <View style={s.table}>
             <View style={s.tableHeader}>
-              <Text style={[s.th, { width: '25%' }]}>{t('session.player') || 'JUGADOR'}</Text>
-              <Text style={[s.th, { width: '15%', textAlign: 'center' }]}>{isPreWellness ? 'PRE-WELLNESS' : 'WELLNESS'}</Text>
-              <Text style={[s.th, { width: '45%' }]}>{t('session.responses') || 'RESPUESTAS'}</Text>
+              <Text style={[s.th, { width: isPreWellness ? '30%' : '25%' }]}>{t('session.player') || 'JUGADOR'}</Text>
+              {!isPreWellness && (
+                <Text style={[s.th, { width: '15%', textAlign: 'center' }]}>WELLNESS</Text>
+              )}
+              <Text style={[s.th, { width: isPreWellness ? '55%' : '45%' }]}>{t('session.responses') || 'RESPUESTAS'}</Text>
               <Text style={[s.th, { width: '15%', textAlign: 'right' }]}>{t('session.date') || 'FECHA'}</Text>
             </View>
             {(data.responses || []).map((r, idx) => (
               <View key={idx} style={s.tableRow} wrap={false}>
-                <Text style={[s.td, { width: '25%', fontFamily: 'Helvetica-Bold' }]}>{r.playerName}</Text>
-                <View style={[s.scoreCell, { width: '15%' }]}>
-                  <Text style={s.scoreText}>{r.preWellnessScore ?? r.wellness ?? '-'}</Text>
-                </View>
-                <View style={[s.td, { width: '45%' }]}>
+                <Text style={[s.td, { width: isPreWellness ? '30%' : '25%', fontFamily: 'Helvetica-Bold' }]}>{r.playerName}</Text>
+                {!isPreWellness && (
+                  <View style={[s.scoreCell, { width: '15%' }]}>
+                    <Text style={s.scoreText}>{r.wellness ?? '-'}</Text>
+                  </View>
+                )}
+                <View style={[s.td, { width: isPreWellness ? '55%' : '45%' }]}>
                   {r.questionResponses && r.questionResponses.length > 0 ? (
                     <View style={s.qaList}>
                       {r.questionResponses.filter(qr => qr.answer).map((qr, qIdx) => (
