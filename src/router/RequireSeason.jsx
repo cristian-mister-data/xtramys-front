@@ -57,16 +57,17 @@ export default function RequireSeason({ children }) {
   const supervising = useSelector((state) => state.usuario.supervising);
   const season = useSelector((state) => state.season.season);
   const seasons = useSelector((state) => state.season.seasons || []);
-  const teams = useSelector((state) => state.team.teams || []);
   const loading = useSelector((state) => state.season.loading);
   // 'idle' | 'loading' | 'ok' | 'empty' | 'error' | 'coach-setup'
   const [status, setStatus] = useState('idle');
+  const [needsCoachSetup, setNeedsCoachSetup] = useState(false);
   const requestedUserRef = useRef(null);
   const latestRequestRef = useRef(0);
 
   const runCheck = useCallback((force = false) => {
     if (!userId) {
       requestedUserRef.current = null;
+      setNeedsCoachSetup(false);
       setStatus('idle');
       return;
     }
@@ -77,6 +78,7 @@ export default function RequireSeason({ children }) {
     const requestId = latestRequestRef.current + 1;
     latestRequestRef.current = requestId;
 
+    setNeedsCoachSetup(false);
     setStatus('loading');
     dispatch(fetchTemporadasUsuario({ usuario: userId }))
       .unwrap()
@@ -88,7 +90,9 @@ export default function RequireSeason({ children }) {
           if (isClubCoach) {
             const sel = selectedSeason || data.find(s => s.seleccionada) || data[0];
             if (sel) {
-              await dispatch(fetchEquiposTemporada({ season: sel._id }));
+              const loadedTeams = await dispatch(fetchEquiposTemporada({ season: sel._id })).unwrap();
+              if (latestRequestRef.current !== requestId) return;
+              setNeedsCoachSetup(Boolean(sel.isCurrentClubSeason && (!loadedTeams || loadedTeams.length === 0)));
             }
           }
         }
@@ -130,7 +134,7 @@ export default function RequireSeason({ children }) {
   }
 
   // For club coaches: check if they need to complete the setup flow
-  if (isClubCoach && status === 'ok' && teams.length === 0 && !loading) {
+  if (isClubCoach && status === 'ok' && needsCoachSetup && !loading) {
     return <Navigate to="/coach-setup" state={{ from: location }} replace />;
   }
 

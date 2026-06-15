@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Image, useWindowDimensions, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Image, useWindowDimensions, Text, ActivityIndicator } from 'react-native';
+import { prefetchAndCacheImage, getVersionedUrl } from '@/utils/imageCache';
 
-export function normalizeImageSource(imageSource, { cacheBust = true } = {}) {
+export function normalizeImageSource(imageSource, { cacheBust = false } = {}) {
   const normalizedSource = typeof imageSource === 'string' ? imageSource.trim() : imageSource;
   if (!normalizedSource) return '';
   if (typeof normalizedSource === 'object') {
@@ -49,6 +50,48 @@ export default function Base64ImagePreview({
   style,
 }) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const [displayUri, setDisplayUri] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const imageSource = imageUrl || base64;
+
+  useEffect(() => {
+    let active = true;
+    if (!imageSource) {
+      setDisplayUri('');
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      // Si ya es base64 o local, renderizar directo
+      if (!imageSource.startsWith('http://') && !imageSource.startsWith('https://')) {
+        setDisplayUri(normalizeImageSource(imageSource));
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const versionedUrl = getVersionedUrl(imageSource);
+      try {
+        const cachedUri = await prefetchAndCacheImage(versionedUrl);
+        if (active) {
+          setDisplayUri(cachedUri);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (active) {
+          setDisplayUri(normalizeImageSource(versionedUrl));
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [imageSource]);
 
   const verticalMargin = 24;
   const horizontalMargin = horizontalInset ?? 32;
@@ -71,7 +114,7 @@ export default function Base64ImagePreview({
     alignSelf: 'center',
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'green',
+    backgroundColor: '#1e293b', // Color premium gris pizarra en lugar de verde
     elevation: 3,
     justifyContent: 'center',
     alignItems: 'center',
@@ -87,23 +130,34 @@ export default function Base64ImagePreview({
     ? Array.isArray(style) ? style : [style]
     : [];
 
-  const imageSource = imageUrl || base64;
   if (!imageSource) {
     return (
       <View style={[computedStyle, ...baseStyle]}>
-        <Text style={{ color: '#888' }}>No hay imagen disponible</Text>
+        <Text style={{ color: '#64748b', fontSize: 12 }}>No hay imagen disponible</Text>
       </View>
     );
   }
 
-  const uri = normalizeImageSource(imageSource);
-
   return (
     <View style={[computedStyle, ...baseStyle]}>
-      <Image
-        source={{ uri }}
-        style={imageStyle}
-      />
+      {displayUri ? (
+        <Image
+          source={{ uri: displayUri }}
+          style={imageStyle}
+        />
+      ) : null}
+
+      {loading && (
+        <View style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(30, 41, 59, 0.6)'
+        }}>
+          <ActivityIndicator size="small" color="#3578e5" />
+        </View>
+      )}
     </View>
   );
 }

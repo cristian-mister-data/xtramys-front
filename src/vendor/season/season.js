@@ -512,13 +512,18 @@ export default function GestionEquipos() {
       await AsyncStorage.setItem('selectedSeason', selectedSeason._id);
       
       // Update the selected season
-      await dispatch(updateTemporadaSeleccionada({
+      const updatedSeason = await dispatch(updateTemporadaSeleccionada({
         id: selectedSeason._id, 
         usuario: idUsuario
-      }));
+      })).unwrap();
       
       // Cargar los equipos de la nueva temporada
-      await dispatch(fetchEquiposTemporada({ season: selectedSeason._id }));
+      const teamsResult = await dispatch(fetchEquiposTemporada({ season: selectedSeason._id })).unwrap();
+      if (isCoach && updatedSeason?.isCurrentClubSeason && (!teamsResult || teamsResult.length === 0)) {
+        if (typeof window !== 'undefined') {
+          window.location.assign('/coach-setup');
+        }
+      }
     } catch (error) {
       console.error('Error selecting season:', error);
       Alert.alert(

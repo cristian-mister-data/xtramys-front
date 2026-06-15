@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions, Animated } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -32,6 +32,7 @@ import { clearCurrentFolder, setStrategyFavorite } from '@/store/slices/strategy
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { bumpUrlVersion } from '@/utils/imageCache';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { generateStrategyPdf } from '@/vendor/strategy/pdf';
 import * as Sharing from 'expo-sharing';
@@ -1082,6 +1083,80 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
   );
 }
 
+function SkeletonCard({ isGrid, IS_MOBILE, theme, styles }) {
+  const animatedValue = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 0.8,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  const pulseStyle = {
+    opacity: animatedValue,
+    backgroundColor: theme?.colors?.border || '#334155',
+    borderRadius: 8,
+  };
+
+  if (isGrid) {
+    return (
+      <View style={[styles.exerciseCard, styles.exerciseCardGrid, IS_MOBILE && styles.exerciseCardGridMobile, { height: IS_MOBILE ? 140 : 160, padding: 12 }]}>
+        <Animated.View style={[pulseStyle, { width: '90%', height: IS_MOBILE ? 60 : 80, marginBottom: 8 }]} />
+        <Animated.View style={[pulseStyle, { width: '80%', height: 14, marginBottom: 6 }]} />
+        <Animated.View style={[pulseStyle, { width: '50%', height: 10 }]} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.exerciseCard, IS_MOBILE && styles.exerciseCardMobile, { minHeight: IS_MOBILE ? 60 : 74, flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 1, borderColor: theme?.colors?.border || '#334155', borderRadius: 12, backgroundColor: theme?.colors?.surfaceAlt || '#111827', marginBottom: 12 }]}>
+      {/* Image skeleton */}
+      <Animated.View style={[pulseStyle, { width: IS_MOBILE ? 70 : 100, height: IS_MOBILE ? 42 : 60, marginRight: 12 }]} />
+      
+      {/* Text skeleton */}
+      <View style={{ flex: 1, gap: 8 }}>
+        <Animated.View style={[pulseStyle, { width: '70%', height: 16 }]} />
+        <Animated.View style={[pulseStyle, { width: '40%', height: 12 }]} />
+      </View>
+    </View>
+  );
+}
+
+function SkeletonList({ isGrid, IS_MOBILE, theme, styles }) {
+  return (
+    <ScrollView style={{ flex: 1, padding: 16 }} showsVerticalScrollIndicator={false}>
+      {/* Folder skeletons (if in list mode) */}
+      {!isGrid && (
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={{ width: 100, height: 36, borderRadius: 8, backgroundColor: theme?.colors?.surfaceAlt || '#111827', opacity: 0.4, borderWidth: 1, borderColor: theme?.colors?.border || '#334155' }} />
+          ))}
+        </View>
+      )}
+      
+      {/* Cards skeletons */}
+      <View style={isGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12 } : { gap: 4 }}>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <SkeletonCard key={i} isGrid={isGrid} IS_MOBILE={IS_MOBILE} theme={theme} styles={styles} />
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
 export default function StrategyList({ navigation: navigationProp, canMutate }) {
   // Fallback: en web la pantalla se renderiza desde una page wrapper que no
   // pasa `navigation`, así que tomamos el del shim cuando falta.
@@ -1260,8 +1335,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     if (!loading && strategies.length > 0) {
       setLoadingData(false);
     } else if (!loading && !foldersLoading) {
-      const timer = setTimeout(() => setLoadingData(false), 3000);
-      return () => clearTimeout(timer);
+      setLoadingData(false);
     }
   }, [loading, foldersLoading, strategies.length, globalStrategies.length]);
 
@@ -1297,6 +1371,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 
   const handleSave = async (strategy) => {
     if (canMutate === false) return;
+    if (strategy.imagen) {
+      bumpUrlVersion(strategy.imagen);
+    }
     if (!strategy._id) {
       const { _id, ...strategySinId } = strategy;
       await dispatch(createEstrategia(strategySinId));
@@ -1882,10 +1959,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   if (loadingData) {
     return (
       <AppLayout>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
-          <ActivityIndicator color={theme.colors.primary} size="large" />
-          <Text style={{ marginTop: 16, color: theme.colors.text, fontWeight: 'bold', fontSize: 16 }}>{t('strategy.loadingStrategies')}</Text>
-        </View>
+        <SkeletonList isGrid={viewMode === 'grid'} IS_MOBILE={IS_MOBILE} theme={theme} styles={styles} />
       </AppLayout>
     );
   }

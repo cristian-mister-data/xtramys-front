@@ -48,10 +48,10 @@ export default function CreateExerciseForm({
   const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
   const onWarningColor = theme?.colors?.onWarning || '#fff';
   
-  const [name, setName] = useState(editingExercise ? editingExercise.nombre : '');
-  const [duration, setDuration] = useState(editingExercise ? String(editingExercise.tiempo) : '');
-  const [description, setDescription] = useState(editingExercise ? editingExercise.descripcion : '');
-  const [objective, setObjective] = useState(editingExercise ? editingExercise.objetivo : '');
+  const [name, setName] = useState(editingExercise ? editingExercise.nombre || '' : '');
+  const [duration, setDuration] = useState(editingExercise ? String(editingExercise.tiempo ?? '') : '');
+  const [description, setDescription] = useState(editingExercise ? editingExercise.descripcion || '' : '');
+  const [objective, setObjective] = useState(editingExercise ? editingExercise.objetivo || '' : '');
   const [dimensions, setDimensions] = useState(editingExercise ? editingExercise.dimensiones || '' : '');
   const [folderId, setFolderId] = useState(editingExercise?.folder?._id || editingExercise?.folder || '');
   const [folderName, setFolderName] = useState('');
@@ -130,6 +130,7 @@ export default function CreateExerciseForm({
   // Estados para carpeta de ejercicio
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [loadingField, setLoadingField] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   // Efecto para encontrar el nombre de la carpeta cuando se carga la edición
@@ -256,6 +257,10 @@ export default function CreateExerciseForm({
         global.fieldCallbacks = null;
       },
       onCancel: () => {
+        saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
+          kind: 'exercise',
+          editingId,
+        });
         try { setLoadingField(false); } catch {}
         global.fieldCallbacks = null;
       },
@@ -299,12 +304,14 @@ export default function CreateExerciseForm({
 
   const handleSave = async () => {
     const errors = {};
-    if (!name.trim()) {
+    const trimmedName = String(name || '').trim();
+    const trimmedDuration = String(duration || '').trim();
+    if (!trimmedName) {
       errors.name = editingExercise
         ? t('common.validationErrorEdit', { field: t('exercise.name') })
         : t('common.validationErrorCreate', { field: t('exercise.name') });
     }
-    if (!duration.trim()) {
+    if (!trimmedDuration) {
       errors.duration = editingExercise
         ? t('common.validationErrorEdit', { field: t('exercise.duration') })
         : t('common.validationErrorCreate', { field: t('exercise.duration') });
@@ -321,12 +328,14 @@ export default function CreateExerciseForm({
         return;
       }
 
+      setSaving(true);
+
       const newExercise = {
-        nombre: name,
-        tiempo: duration,
-        descripcion: description,
-        objetivo: objective,
-        dimensiones: dimensions || undefined,
+        nombre: trimmedName,
+        tiempo: trimmedDuration,
+        descripcion: String(description || ''),
+        objetivo: String(objective || ''),
+        dimensiones: dimensions ? String(dimensions) : undefined,
         folder: folderId || undefined,
         numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
         equipos: teams ? Number(teams) : undefined,
@@ -347,7 +356,7 @@ export default function CreateExerciseForm({
       };
       
       if (onSave) {
-        onSave(newExercise);
+        await onSave(newExercise);
         // Limpiar videos pendientes después de guardar
         pendingVideoIds.current = [];
         clearFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT);
@@ -356,6 +365,8 @@ export default function CreateExerciseForm({
     } catch (error) {
       console.error('Error al guardar:', error);
       Alert.alert(t('message.error'), t('exercise.saveError', { msg: error.message || '' }));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -515,11 +526,7 @@ export default function CreateExerciseForm({
 
         <View style={styles.formCard}>
           <View style={styles.graphicSection}>
-            {loadingField ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>{t('exercise.loadingField')}</Text>
-              </View>
-            ) : (fieldElements && fieldElements.length > 0) || imagen ? (
+            {(fieldElements && fieldElements.length > 0) || imagen ? (
               <>
                 <Text style={styles.subTitle}>{t('exercise.graphicSaved')}</Text>
                 <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
@@ -632,13 +639,13 @@ export default function CreateExerciseForm({
           <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.saveButton, exerciseLoading && styles.buttonDisabled]} 
+          style={[styles.saveButton, saving && styles.buttonDisabled]} 
           onPress={handleSave}
-          disabled={exerciseLoading}
+          disabled={saving}
         >
           <Ionicons name="save-outline" size={18} color={onPrimaryColor} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
-            {exerciseLoading ? t('exercise.saving') : (editingExercise ? t('exercise.saveChanges') : t('exercise.saveExercise'))}
+            {saving ? t('exercise.saving') : (editingExercise ? t('exercise.saveChanges') : t('exercise.saveExercise'))}
           </Text>
         </TouchableOpacity>
       </View>

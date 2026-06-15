@@ -52,6 +52,13 @@ const seasonSlice = createSlice({
         if (action.payload && !state.seasons.some((e) => e._id === action.payload._id)) {
           state.seasons.push(action.payload);
         }
+        if (action.payload) {
+          state.seasons = state.seasons.map((season) => ({
+            ...season,
+            seleccionada: season._id === action.payload._id,
+            selectedForUser: season._id === action.payload._id,
+          }));
+        }
       })
       .addCase(fetchTemporadaUsuarioSeleccionada.rejected, (state, action) => {
         state.loading = false;
@@ -83,6 +90,13 @@ const seasonSlice = createSlice({
         state.season = action.payload;
         if (action.payload && !state.seasons.some((e) => e._id === action.payload._id)) {
           state.seasons.push(action.payload);
+        }
+        if (action.payload) {
+          state.seasons = state.seasons.map((season) => ({
+            ...season,
+            seleccionada: season._id === action.payload._id,
+            selectedForUser: season._id === action.payload._id,
+          }));
         }
       })
 

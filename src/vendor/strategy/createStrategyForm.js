@@ -48,10 +48,10 @@ export default function CreateStrategyForm({
   const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
   const onWarningColor = theme?.colors?.onWarning || '#fff';
   
-  const [name, setName] = useState(editingStrategy ? editingStrategy.nombre : '');
+  const [name, setName] = useState(editingStrategy ? editingStrategy.nombre || '' : '');
   const [folderId, setFolderId] = useState(editingStrategy?.folder?._id || editingStrategy?.folder || '');
   const [folderName, setFolderName] = useState('');
-  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion : '');
+  const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion || '' : '');
   const [objective, setObjective] = useState(editingStrategy ? editingStrategy.objetivo || '' : '');
   // En web el componente puede remontarse después de volver del editor de campo.
   // Inicializamos imagen/fieldElements/fieldType desde FIELD_RESULT si existe,
@@ -290,6 +290,10 @@ export default function CreateStrategyForm({
         global.fieldCallbacks = null;
       },
       onCancel: () => {
+        saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
+          kind: 'strategy',
+          editingId,
+        });
         try { setLoadingField(false); } catch {}
         global.fieldCallbacks = null;
       },
@@ -332,7 +336,8 @@ export default function CreateStrategyForm({
 
   const handleSave = async () => {
     const errors = {};
-    if (!name.trim()) {
+    const trimmedName = String(name || '').trim();
+    if (!trimmedName) {
       errors.name = editingStrategy
         ? t('common.validationErrorEdit', { field: t('strategy.name') })
         : t('common.validationErrorCreate', { field: t('strategy.name') });
@@ -351,10 +356,12 @@ export default function CreateStrategyForm({
         return;
       }
 
+      setSaving(true);
+
       const newStrategy = {
-        nombre: name,
-        descripcion: description,
-        objetivo: objective,
+        nombre: trimmedName,
+        descripcion: String(description || ''),
+        objetivo: String(objective || ''),
         folder: folderId || undefined,
         usuario: idUsuario,
         _id: editingStrategy ? editingStrategy._id : undefined,
@@ -371,7 +378,7 @@ export default function CreateStrategyForm({
       };
       
       if (onSave) {
-        onSave(newStrategy);
+        await onSave(newStrategy);
         // Limpiar videos pendientes después de guardar
         pendingVideoIds.current = [];
         clearFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT);
@@ -379,7 +386,9 @@ export default function CreateStrategyForm({
       }
     } catch (error) {
       console.error('Error al guardar:', error);
-      Alert.alert(t('message.error'), t('strategy.saveError', { msg: error.message }));
+      Alert.alert(t('message.error'), t('strategy.saveError', { msg: error.message || '' }));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -465,11 +474,7 @@ export default function CreateStrategyForm({
 
         <View style={styles.formCard}>
           <View style={styles.graphicSection}>
-            {loadingField ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>{t('strategy.loadingField')}</Text>
-              </View>
-            ) : stableFieldElements && stableFieldElements.length > 0 ? (
+            {(stableFieldElements && stableFieldElements.length > 0) || stableImagen ? (
               <>
                 <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
                 <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
@@ -578,13 +583,13 @@ export default function CreateStrategyForm({
           <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.saveButton, strategyLoading && styles.buttonDisabled]} 
+          style={[styles.saveButton, saving && styles.buttonDisabled]} 
           onPress={handleSave}
-          disabled={strategyLoading}
+          disabled={saving}
         >
           <Ionicons name="save-outline" size={18} color={onPrimaryColor} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
-            {strategyLoading ? t('strategy.saving') : (editingStrategy ? t('edition.saveChanges') : t('strategy.saveStrategy'))}
+            {saving ? t('strategy.saving') : (editingStrategy ? t('edition.saveChanges') : t('strategy.saveStrategy'))}
           </Text>
         </TouchableOpacity>
       </View>
