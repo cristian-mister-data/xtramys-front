@@ -519,7 +519,6 @@ const SocialBadge = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.3px;
 `;
-
 export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -554,6 +553,8 @@ export default function Profile() {
   const [emailResending, setEmailResending] = useState(false);
   const [emailVerifyError, setEmailVerifyError] = useState('');
 
+
+
   useEffect(() => {
     if (!user) return;
     setNombre(user.nombre || '');
@@ -574,6 +575,8 @@ export default function Profile() {
     // Cargar estado de suscripción siempre para tener datos frescos
     dispatch(checkSubscription());
   }, [dispatch]);
+
+
 
   useEffect(() => {
     return () => {
@@ -648,7 +651,7 @@ export default function Profile() {
 
   const handleConfirmEmailCode = async () => {
     const code = String(emailVerifyCode || '').trim();
-    if (!/^\d{6}$/.test(code)) {
+    if (!/^d{6}$/.test(code)) {
       setEmailVerifyError(t('profile.emailChangeCodeRequired', 'Introduce el código de verificación'));
       return;
     }
@@ -787,9 +790,12 @@ export default function Profile() {
     try {
       const baseUrl = window.location.origin;
       const data = await createCheckoutSession(baseUrl);
-      if (data?.url) window.location.href = data.url;
+      if (data?.url) {
+        sessionStorage.setItem('xtramys:postCheckoutPath', '/season/create');
+        window.location.href = data.url;
+      }
     } catch (err) {
-      toast.error(err?.response?.data?.mensaje || 'Error al iniciar suscripción');
+            toast.error(err?.response?.data?.mensaje || t('subscription.startError', 'Error al iniciar suscripción'));
     } finally {
       setPortalLoading(false);
     }
@@ -801,14 +807,14 @@ export default function Profile() {
       const data = await reactivateSubscription(user.paymentProvider);
       if (data) {
         dispatch(setUser({ ...user, subscriptionCancelAtPeriodEnd: false, subscriptionStatus: data.subscriptionStatus }));
-        toast.success(data.mensaje || 'Suscripción reactivada correctamente');
+                toast.success(data.mensaje || t('subscription.reactivateSuccess', 'Suscripción reactivada correctamente'));
       }
     } catch (err) {
       if (err?.code === 'PAYPAL_REACTIVATE_REQUIRES_APPROVAL') {
         navigate('/subscribe');
         return;
       }
-      toast.error(err?.response?.data?.mensaje || 'Error al reactivar suscripción');
+            toast.error(err?.response?.data?.mensaje || t('subscription.reactivateError', 'Error al reactivar suscripción'));
     } finally {
       setPortalLoading(false);
     }
@@ -880,7 +886,7 @@ export default function Profile() {
           ) : null}
           <HeroName>{user.nombre} {user.apellido}</HeroName>
           <HeroEmail>{user.correo}</HeroEmail>
-          {isAdmin ? <div><RoleBadge>🛡 Admin</RoleBadge></div> : null}
+                    {isAdmin ? <div><RoleBadge>🛡 {t('profile.roleAdmin', 'Admin')}</RoleBadge></div> : null}
         </Hero>
 
         <FormCard>
@@ -1022,9 +1028,9 @@ export default function Profile() {
                     <Flag>
                       <FlagImage src={flagEs} alt="Español" />
                     </Flag>
-                    <div style={{ flex: 1 }}>
+                                        <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>Español</div>
-                      <Muted style={{ fontSize: 12 }}>Spanish</Muted>
+                      <Muted style={{ fontSize: 12 }}>{t('profile.langSpanishSecondary', 'Spanish')}</Muted>
                     </div>
                     {language === 'es' ? <span style={{ color: '#10b981' }}>✓</span> : null}
                   </LangBtn>
@@ -1036,9 +1042,9 @@ export default function Profile() {
                     <Flag>
                       <FlagImage src={flagEn} alt="English" />
                     </Flag>
-                    <div style={{ flex: 1 }}>
+                                        <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>English</div>
-                      <Muted style={{ fontSize: 12 }}>Inglés</Muted>
+                      <Muted style={{ fontSize: 12 }}>{t('profile.langEnglishSecondary', 'Inglés')}</Muted>
                     </div>
                     {language === 'en' ? <span style={{ color: '#10b981' }}>✓</span> : null}
                   </LangBtn>
@@ -1046,6 +1052,68 @@ export default function Profile() {
               </Field>
             </Stack>
         </FormCard>
+
+        {user?.role === 'club_admin' && (
+          <FormCard>
+                        <CardHeader>
+              <CardTitle>💳 {t('profile.clubSubscriptionTitle', 'Suscripción de Club')}</CardTitle>
+            </CardHeader>
+            <SubscriptionCard $plan="pro" $cancelled={user.subscriptionCancelAtPeriodEnd}>
+              <SubHeader>
+                <div>
+                                    <SubBadge $status={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'active'}>
+                    {user.subscriptionCancelAtPeriodEnd
+                      ? '⚠️ ' + t('clubDashboard.scheduledCancellation', 'Cancelación programada')
+                      : '✓ ' + t('clubDashboard.active', 'Activa')}
+                  </SubBadge>
+                </div>
+                <SubIcon $plan="pro">🛡️</SubIcon>
+              </SubHeader>
+
+                            <SubPlanName $plan="pro">{t('subscription.clubPlan', 'Plan Club')}</SubPlanName>
+
+                            {user.clubMaxUsers !== undefined && user.clubMaxUsers !== null && (
+                <div style={{ margin: '12px 0 6px', fontSize: '14px', lineHeight: '1.5' }}>
+                  {t('profile.clubLicensesTextPrefix', 'Tienes')} <strong>{t('profile.clubLicensesCount', '{{count}} licencias', { count: user.clubMaxUsers })}</strong> {t('profile.clubLicensesTextSuffix', 'contratadas ({{used}} usadas).', { used: user.clubActiveUsers || 0 })}
+                </div>
+              )}
+
+              {user.subscriptionCurrentPeriodEnd && (
+                <SubInfoRow $type={user.subscriptionCancelAtPeriodEnd ? 'cancelled' : 'renew'}>
+                  <SubInfoIcon>
+                    {user.subscriptionCancelAtPeriodEnd ? '⏰' : '🔄'}
+                  </SubInfoIcon>
+                  <SubInfoText $plan="pro">
+                    {user.subscriptionCancelAtPeriodEnd
+                      ? t('subscription.accessUntil', 'Acceso hasta')
+                      : t('subscription.renewsOn', 'Se renueva el')}: {' '}
+                    <SubInfoDate $plan="pro">
+                      {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </SubInfoDate>
+                  </SubInfoText>
+                </SubInfoRow>
+              )}
+
+                            <div style={{ marginTop: '16px', fontSize: '13px', opacity: 0.8, lineHeight: '1.5' }}>
+                {t('profile.clubManageNotice', 'Para cambiar el plan (añadir o reducir licencias), dar de baja a entrenadores o cancelar/reactivar la suscripción de tu club, accede al panel de manejo de club.')}
+              </div>
+
+                            <SubActions>
+                <SubBtn
+                  type="button"
+                  $variant="primary"
+                  onClick={() => navigate('/club/dashboard')}
+                >
+                  ⚙️ {t('profile.goToClubDashboard', 'Ir al Panel de Manejo de Club')}
+                </SubBtn>
+              </SubActions>
+            </SubscriptionCard>
+          </FormCard>
+        )}
 
         {user?.role !== 'club_admin' && !user?.clubId && (
         <FormCard>
@@ -1199,7 +1267,10 @@ export default function Profile() {
             </ActionRow>
           </FormCard>
         )}
+
+
       </RightColumn>
+
 
       <Modal
         open={cancellingModal}
@@ -1219,9 +1290,9 @@ export default function Profile() {
               type="button"
               onClick={handleCancelSubscription}
               disabled={cancelling}
-              style={{ background: '#ef4444', borderColor: '#ef4444' }}
+                            style={{ background: '#ef4444', borderColor: '#ef4444' }}
             >
-              {cancelling ? t('common.saving', 'Cancelando...') : t('subscription.confirmCancel', 'Sí, cancelar')}
+              {cancelling ? t('subscription.cancelling', 'Cancelando...') : t('subscription.confirmCancel', 'Sí, cancelar')}
             </Button>
           </>
         }
@@ -1255,13 +1326,13 @@ export default function Profile() {
             >
               {t('edition.cancel', 'Cancelar')}
             </Button>
-            <Button
+                        <Button
               type="button"
               onClick={handleConfirmEmailCode}
               disabled={emailVerifying || !emailVerifyCode}
             >
               {emailVerifying
-                ? t('common.saving', 'Verificando...')
+                ? t('profile.verifying', 'Verificando...')
                 : t('verify.verify', 'Verificar')}
             </Button>
           </>
@@ -1296,14 +1367,14 @@ export default function Profile() {
             </div>
           ) : null}
           <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-            <Button
+                        <Button
               type="button"
               $variant="ghost"
               onClick={handleResendEmailCode}
               disabled={emailResending || emailVerifying}
             >
               {emailResending
-                ? t('common.saving', 'Enviando...')
+                ? t('profile.sending', 'Enviando...')
                 : t('verify.resend', 'Reenviar código')}
             </Button>
             <Button

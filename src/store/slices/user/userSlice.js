@@ -128,6 +128,8 @@ const userSlice = createSlice({
           s.user.paymentProvider = a.payload?.paymentProvider || null;
           s.user.subscriptionStartedAt = a.payload?.startedAt || null;
           s.user.subscriptionCanceledAt = a.payload?.canceledAt || null;
+          s.user.clubMaxUsers = a.payload?.maxUsers || null;
+          s.user.clubActiveUsers = a.payload?.activeUsers || null;
           s.user.invoices = a.payload?.invoices || [];
         }
       });

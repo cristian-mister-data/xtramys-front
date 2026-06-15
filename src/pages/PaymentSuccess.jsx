@@ -120,9 +120,11 @@ export default function PaymentSuccess() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const user = useSelector((s) => s.usuario.user);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
 
   const sessionId = searchParams.get('session_id');
+  const checkoutContext = searchParams.get('context') || searchParams.get('plan');
   const [step, setStep] = useState('polling');
   const [pollAttempts, setPollAttempts] = useState(0);
   const [activateAttempts, setActivateAttempts] = useState(0);
@@ -130,6 +132,13 @@ export default function PaymentSuccess() {
 
   const MAX_POLL = 5;
   const MAX_ACTIVATE = 3;
+
+  const getReturnPath = useCallback(() => {
+    const storedPath = sessionStorage.getItem('xtramys:postCheckoutPath');
+    if (storedPath?.startsWith('/')) return storedPath;
+    if (checkoutContext === 'club' || user?.role === 'club_admin') return '/club/dashboard';
+    return '/season/create';
+  }, [checkoutContext, user?.role]);
 
   const tryManualActivate = useCallback(async () => {
     if (!sessionId) {
@@ -186,13 +195,20 @@ export default function PaymentSuccess() {
   useEffect(() => {
     if (step === 'success') {
       window.history.pushState(null, '', window.location.href);
-      window.addEventListener('popstate', () => {
+      const lockHistory = () => {
         window.history.pushState(null, '', window.location.href);
-      });
-      const timer = setTimeout(() => navigate('/season/create', { replace: true }), 3000);
-      return () => clearTimeout(timer);
+      };
+      window.addEventListener('popstate', lockHistory);
+      const timer = setTimeout(() => {
+        sessionStorage.removeItem('xtramys:postCheckoutPath');
+        navigate(getReturnPath(), { replace: true });
+      }, 1800);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('popstate', lockHistory);
+      };
     }
-  }, [step, navigate]);
+  }, [step, navigate, getReturnPath]);
 
   const handleRetry = () => {
     setActivateAttempts(0);
@@ -247,7 +263,7 @@ export default function PaymentSuccess() {
             <Button $variant="primary" onClick={handleRetry}>
               {t('payment.retry', 'Reintentar verificación')}
             </Button>
-            <Button $variant="ghost" onClick={() => navigate('/', { replace: true })}>
+            <Button $variant="ghost" onClick={() => navigate(getReturnPath(), { replace: true })}>
               {t('payment.goToAppAnyway', 'Ir a la app de todos modos')}
             </Button>
           </>

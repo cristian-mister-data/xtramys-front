@@ -298,7 +298,7 @@ const CheckIcon = () => (
   </svg>
 );
 
-const MIN_QUANTITY = 2;
+const MIN_QUANTITY = 5;
 const MAX_QUANTITY = 500;
 const PRICE_PER_USER = 49;
 
@@ -348,6 +348,7 @@ export default function SubscribeClub() {
         quantity,
       });
       if (data?.url) {
+        sessionStorage.setItem('xtramys:postCheckoutPath', '/club/dashboard');
         window.location.href = data.url;
       } else {
         throw new Error(data?.mensaje || 'No checkout URL returned');

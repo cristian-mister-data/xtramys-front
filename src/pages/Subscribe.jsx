@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
-import { checkSubscription } from '@/store/slices/user/userThunks';
+import { checkSubscription, logoutThunk } from '@/store/slices/user/userThunks';
 import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 import styled, { keyframes } from 'styled-components';
@@ -474,11 +474,39 @@ const SwitchPlanLink = styled.button`
   }
 `;
 
+const LogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
 const CheckIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
+
+const CLUB_MIN_QUANTITY = 5;
 
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
@@ -487,15 +515,15 @@ export default function Subscribe() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const isClubPlan = searchParams.get('plan') === 'club';
-  const initialQty = parseInt(searchParams.get('quantity') || '2', 10);
+  const initialQty = parseInt(searchParams.get('quantity') || String(CLUB_MIN_QUANTITY), 10);
 
-  const [quantity, setQuantity] = useState(initialQty >= 2 ? initialQty : 2);
+  const [quantity, setQuantity] = useState(initialQty >= CLUB_MIN_QUANTITY ? initialQty : CLUB_MIN_QUANTITY);
 
   useEffect(() => {
     const q = new URLSearchParams(location.search).get('quantity');
     if (q) {
       const val = parseInt(q, 10);
-      if (!isNaN(val) && val >= 2) {
+      if (!isNaN(val) && val >= CLUB_MIN_QUANTITY) {
         setQuantity(val);
       }
     }
@@ -522,7 +550,10 @@ export default function Subscribe() {
       const data = isClubPlan
         ? await createCheckoutSession(baseUrl, { priceType: 'club', quantity })
         : await createCheckoutSession(baseUrl);
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        sessionStorage.setItem('xtramys:postCheckoutPath', isClubPlan ? '/club/dashboard' : '/season/create');
+        window.location.href = data.url;
+      }
     } catch (err) {
       setError(err?.message || t('subscription.error', 'Error al iniciar el proceso de pago'));
     } finally {
@@ -537,6 +568,13 @@ export default function Subscribe() {
   const handleRefresh = async () => {
     try {
       await dispatch(checkSubscription()).unwrap();
+    } catch { /* ignore */ }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutThunk()).unwrap();
+      navigate('/auth/login');
     } catch { /* ignore */ }
   };
 
@@ -612,18 +650,18 @@ export default function Subscribe() {
                   <QtySelectorRow>
                     <QtyButton
                       type="button"
-                      onClick={() => setQuantity((q) => Math.max(2, q - 1))}
-                      disabled={quantity <= 2}
+                      onClick={() => setQuantity((q) => Math.max(CLUB_MIN_QUANTITY, q - 1))}
+                      disabled={quantity <= CLUB_MIN_QUANTITY}
                     >
                       -
                     </QtyButton>
                     <QtyInput
                       type="number"
-                      min={2}
+                      min={CLUB_MIN_QUANTITY}
                       value={quantity}
                       onChange={(e) => {
                         const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= 2) setQuantity(val);
+                        if (!isNaN(val) && val >= CLUB_MIN_QUANTITY) setQuantity(val);
                       }}
                     />
                     <QtyButton
@@ -738,6 +776,14 @@ export default function Subscribe() {
           </>
         )}
       </Card>
+      <LogoutButton onClick={handleLogout}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        {t('menu.logout', 'Cerrar sesión')}
+      </LogoutButton>
     </Page>
   );
 }

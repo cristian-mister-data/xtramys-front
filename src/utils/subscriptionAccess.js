@@ -5,15 +5,34 @@ export function hasPaidSubscriptionAccess(user, subscriptionStatus) {
   if (user.clubId && user.clubMemberStatus === 'active') return true;
 
   const status = subscriptionStatus || user.subscriptionStatus;
-  if (status === 'active') return true;
+  const activeStatuses = new Set(['active', 'trialing']);
+  if (activeStatuses.has(status)) return true;
 
   const periodEnd = user.subscriptionCurrentPeriodEnd;
   if (!periodEnd) return false;
 
-  const hasFuturePeriod = new Date() < new Date(periodEnd);
-  return hasFuturePeriod && (
+  const periodEndTime = new Date(periodEnd).getTime();
+  if (!Number.isFinite(periodEndTime)) return false;
+
+  const hasFuturePeriod = Date.now() < periodEndTime;
+  const cancelledButStillPaid =
     user.subscriptionCancelAtPeriodEnd ||
     status === 'canceled' ||
-    status === 'cancelled'
+    status === 'cancelled';
+
+  return hasFuturePeriod && cancelledButStillPaid;
+}
+
+export function isSubscriptionScheduledToCancel(user, subscriptionStatus) {
+  if (!user) return false;
+
+  const status = subscriptionStatus || user.subscriptionStatus;
+  const periodEnd = user.subscriptionCurrentPeriodEnd;
+  const periodEndTime = periodEnd ? new Date(periodEnd).getTime() : NaN;
+  const hasFuturePeriod = Number.isFinite(periodEndTime) && Date.now() < periodEndTime;
+
+  return Boolean(
+    hasFuturePeriod &&
+    (user.subscriptionCancelAtPeriodEnd || status === 'canceled' || status === 'cancelled')
   );
 }

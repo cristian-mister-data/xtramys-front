@@ -15,6 +15,15 @@ export const cancelSubscription = (paymentProvider) =>
 export const getSubscriptionStatus = () =>
   api.get('/stripe/subscription-status').then((res) => res.data);
 
+export const updateLicenses = (quantity) =>
+  api.post('/stripe/update-licenses', { quantity }).then((res) => res.data);
+
+export const cancelLicenses = (quantity) =>
+  api.post('/stripe/cancel-licenses', { quantity }).then((res) => res.data);
+
+export const previewLicenses = (quantity) =>
+  api.post('/stripe/preview-licenses', { quantity }).then((res) => res.data);
+
 export const verifyPayPalSubscription = (subscriptionId) =>
   api.post('/paypal/verify-subscription', { subscriptionId }).then((res) => res.data);
 
