@@ -1354,7 +1354,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         return strategies.filter(st => sameId(st.usuario, idUsuario));
       }
       if (listFilter === 'club') {
-        return strategies.filter(st => st.visibility === 'CLUB' && !sameId(st.usuario, idUsuario));
+        return strategies.filter(st => st.visibility === 'CLUB');
       }
       return strategies;
     })();
@@ -1375,7 +1375,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
     if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario));
-    if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
+    if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB');
     return strategyFolders.filter((f) => !f.parentFolder);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario]);
 

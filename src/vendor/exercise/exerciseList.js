@@ -1180,8 +1180,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     return fieldResult?.kind === 'exercise' ? (s?.editingExercise || null) : null;
   });
   const [viewingExercise, setViewingExercise] = useState(null);
-  const [idUsuario, setIdUsuario] = useState("");
-  const [userRole, setUserRole] = useState('user');
+  const idUsuario = user?._id || "";
+  const userRole = user?.role || "user";
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' (admin only) | 'favorites'
   const [viewMode, setViewMode] = useState("list");
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -1279,21 +1279,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     };
   }, [viewingExercise, currentFolderId]);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const usuario = await AsyncStorage.getItem('usuario');
-        if (!usuario) return;
-        const parsed = JSON.parse(usuario);
-        const u = parsed?._id;
-        setIdUsuario(u);
-        setUserRole(parsed?.role || 'user');
-      } catch (e) {
-        console.error('Error loading user data:', e);
-      }
-    }
-    loadUser();
-  }, []);
+  // El usuario y rol se obtienen de forma reactiva a partir del estado de Redux
 
   // Mostrar notificación de éxito cuando se regresa tras editar un video en la pizarra
   useEffect(() => {
@@ -1315,8 +1301,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (idUsuario) {
       initialLoadDoneRef.current = true;
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-      dispatch(fetchExerciseFolders({ lang }));
-      dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       dispatch(fetchGlobalExercises({ lang }));
       dispatch(fetchGlobalFolders({ lang }));
     }
@@ -1326,8 +1312,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     useCallback(() => {
       if (idUsuario && initialLoadDoneRef.current) {
         dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-        dispatch(fetchExerciseFolders({ lang }));
-        dispatch(fetchExerciseFoldersFlat({ lang }));
+        dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+        dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
         dispatch(fetchGlobalExercises({ lang }));
         dispatch(fetchGlobalFolders({ lang }));
       }
@@ -1346,13 +1332,13 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   // Navegar a carpeta: cargar contenido
   useEffect(() => {
     if (currentFolderId) {
-      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }))
+      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }))
         .finally(() => setIsNavigatingFolder(false));
     } else {
       setIsNavigatingFolder(false);
       dispatch(clearCurrentFolder());
     }
-  }, [currentFolderId, dispatch, lang]);
+  }, [currentFolderId, idUsuario, dispatch, lang]);
 
   // Persistir el modo edición/creación para sobrevivir al desmontaje en web
   // cuando el usuario navega al editor del campo táctico. Persistimos
@@ -1385,9 +1371,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
     dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-    dispatch(fetchExerciseFolders({ lang }));
-    dispatch(fetchExerciseFoldersFlat({ lang }));
-    if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+    dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+    dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
+    if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
   };
 
   const handleCancel = () => {
@@ -1439,14 +1425,15 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     try {
       await dispatch(moveExerciseToFolder({
         exerciseId: exerciseToMove._id,
-        folderId: folderId || null
+        folderId: folderId || null,
+        user: idUsuario
       })).unwrap();
       setShowMoveToFolder(false);
       setExerciseToMove(null);
       // Recargar datos
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-      dispatch(fetchExerciseFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
     } catch (error) {
       Alert.alert(t('message.error'), t('folders.moveError'));
     }
@@ -1477,11 +1464,13 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         return ejercicios.filter(ex => sameId(ex.usuario, idUsuario));
       }
       if (listFilter === 'club') {
-        return ejercicios.filter(ex => ex.visibility === 'CLUB' && !sameId(ex.usuario, idUsuario));
+        return ejercicios.filter(ex => ex.visibility === 'CLUB');
       }
       return ejercicios;
     })();
-    return currentFolderId ? currentFolderExercises : base.filter(ex => !ex.folder);
+    if (currentFolderId) return currentFolderExercises;
+    if (listFilter === 'club') return base;
+    return base.filter(ex => !ex.folder);
   }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo]);
 
   const filteredEjercicios = useMemo(() => {
@@ -1505,7 +1494,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
     if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
-    if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB' && !sameId(f.usuario, idUsuario));
+    if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB');
     return exerciseFolders.filter(f => !f.parentFolder);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario]);
 
@@ -1529,9 +1518,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
             showNotification(t('exercise.deleteExerciseSuccess', 'Ejercicio eliminado'), 'success');
             // Recargar datos para reflejar cambios
             dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-            dispatch(fetchExerciseFolders({ lang }));
-            dispatch(fetchExerciseFoldersFlat({ lang }));
-            if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+            dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+            dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
+            if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
           }
         }
       ]
@@ -1550,10 +1539,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         folderId: null,
         duplicateName,
         lang: i18n.language,
+        user: idUsuario,
       })
     ).unwrap();
     return duplicated;
-  }, [dispatch, buildDuplicateName, i18n.language, t]);
+  }, [dispatch, buildDuplicateName, i18n.language, t, idUsuario]);
 
   const handleEditAssociatedVideo = useCallback(async (video, parentExercise) => {
     try {
@@ -1691,11 +1681,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(batchDeleteExercises([...selectedIds])).unwrap();
+              await dispatch(batchDeleteExercises({ ids: [...selectedIds], user: idUsuario })).unwrap();
               showNotification(t('exercise.deleteExerciseSuccess') || 'Eliminados', 'success');
               dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-              dispatch(fetchExerciseFolders({ lang }));
-              if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+              dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+              if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
               handleCancelSelection();
             } catch (err) {
               showNotification(t('message.error'), 'error');
@@ -1711,11 +1701,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (selectedIds.size === 0) return;
     setBatchMoving(true);
     try {
-      await dispatch(batchMoveExercises({ ids: [...selectedIds], folderId: folderId || null })).unwrap();
+      await dispatch(batchMoveExercises({ ids: [...selectedIds], folderId: folderId || null, user: idUsuario })).unwrap();
       showNotification(t('folders.moveToFolder') || 'Movidos', 'success');
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
-      dispatch(fetchExerciseFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
       setShowBatchMoveModal(false);
       handleCancelSelection();
     } catch (err) {
@@ -1774,7 +1764,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         nombre: newFolderName.trim(),
         parentFolder: currentFolderId,
         color: newFolderColor,
-        isGlobal: newFolderIsGlobal && userRole === 'admin'
+        isGlobal: newFolderIsGlobal && userRole === 'admin',
+        user: idUsuario
       };
       if (newFolderIsGlobal && userRole === 'admin' && newFolderNameEn.trim()) {
         folderData.translations = { en: { nombre: newFolderNameEn.trim() } };
@@ -1786,10 +1777,10 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       setNewFolderNameEn('');
       setNewFolderColor('#3B82F6');
       setNewFolderIsGlobal(false);
-      dispatch(fetchExerciseFolders({ lang }));
-      dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       if (folderData.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
     } catch (error) {
       const errorMsg = error?.message || t('folders.createError');
       showNotification(errorMsg, 'error');
@@ -1834,14 +1825,14 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         ? { deleteContents: true }
         : { moveExercisesTo: null, deleteContents: false };
 
-      await dispatch(deleteExerciseFolder({ id: folderToDelete._id, ...options })).unwrap();
+      await dispatch(deleteExerciseFolder({ id: folderToDelete._id, ...options, user: idUsuario })).unwrap();
       showNotification(t('folders.folderDeleted'), 'success');
 
-      dispatch(fetchExerciseFolders({ lang }));
-      dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
 
       setShowDeleteFolderModal(false);
       setShowDeleteConfirmModal(false);
@@ -1882,10 +1873,10 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       await dispatch(updateExerciseFolder(updateData)).unwrap();
       showNotification(t('folders.folderUpdated'), 'success');
       setEditFolderModalVisible(false);
-      dispatch(fetchExerciseFolders({ lang }));
-      dispatch(fetchExerciseFoldersFlat({ lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       if (menuFolder.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
     } catch (error) {
       showNotification(t('folders.updateError'), 'error');
     }

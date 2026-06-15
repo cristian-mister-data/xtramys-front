@@ -138,10 +138,11 @@ export const deleteEstrategia = createAsyncThunk('strategy/deleteEstrategia', as
 
 export const fetchStrategyFolders = createAsyncThunk(
   'strategy/fetchStrategyFolders',
-  async ({ parentFolder, lang } = {}) => {
+  async ({ parentFolder, lang, user } = {}) => {
     const queryParams = [];
     if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
     if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
     const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/strategy-folder${params}`);
     return res.data.folders;
@@ -159,8 +160,11 @@ export const fetchGlobalFolders = createAsyncThunk(
 
 export const fetchStrategyFolderById = createAsyncThunk(
   'strategy/fetchStrategyFolderById',
-  async ({ id, lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ id, lang, user } = {}) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/strategy-folder/${id}${params}`);
     const prefs = await readFavoritePrefs('strategy');
     return {
@@ -172,8 +176,11 @@ export const fetchStrategyFolderById = createAsyncThunk(
 
 export const fetchStrategyFoldersFlat = createAsyncThunk(
   'strategy/fetchStrategyFoldersFlat',
-  async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ lang, user } = {}) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/strategy-folder/flat${params}`);
     return res.data.folders;
   }
@@ -181,9 +188,9 @@ export const fetchStrategyFoldersFlat = createAsyncThunk(
 
 export const createStrategyFolder = createAsyncThunk(
   'strategy/createStrategyFolder',
-  async ({ nombre, parentFolder, color, isGlobal, translations }) => {
+  async ({ nombre, parentFolder, color, isGlobal, translations, user }) => {
     const res = await api.post('/strategy-folder', {
-      nombre, parentFolder, color, isGlobal, translations,
+      nombre, parentFolder, color, isGlobal, translations, usuario: user,
     });
     return res.data.folder;
   }
@@ -191,33 +198,33 @@ export const createStrategyFolder = createAsyncThunk(
 
 export const updateStrategyFolder = createAsyncThunk(
   'strategy/updateStrategyFolder',
-  async ({ id, nombre, color, translations }) => {
-    const res = await api.put(`/strategy-folder/${id}`, { nombre, color, translations });
+  async ({ id, nombre, color, translations, user }) => {
+    const res = await api.put(`/strategy-folder/${id}`, { nombre, color, translations, user });
     return res.data.folder;
   }
 );
 
 export const deleteStrategyFolder = createAsyncThunk(
   'strategy/deleteStrategyFolder',
-  async ({ id, moveStrategiesTo, deleteContents }) => {
-    await api.delete(`/strategy-folder/${id}`, { data: { moveStrategiesTo, deleteContents } });
+  async ({ id, moveStrategiesTo, deleteContents, user }) => {
+    await api.delete(`/strategy-folder/${id}`, { data: { moveStrategiesTo, deleteContents, user } });
     return id;
   }
 );
 
 export const moveStrategyToFolder = createAsyncThunk(
   'strategy/moveStrategyToFolder',
-  async ({ strategyId, folderId }) => {
-    await api.post('/strategy-folder/move-strategy', { strategyId, folderId });
+  async ({ strategyId, folderId, user }) => {
+    await api.post('/strategy-folder/move-strategy', { strategyId, folderId, user });
     return { strategyId, folderId };
   }
 );
 
 export const duplicateStrategyToFolder = createAsyncThunk(
   'strategy/duplicateStrategyToFolder',
-  async ({ strategyId, folderId, duplicateName, lang }) => {
+  async ({ strategyId, folderId, duplicateName, lang, user }) => {
     const res = await api.post('/strategy-folder/duplicate-strategy', {
-      strategyId, folderId, duplicateName, lang,
+      strategyId, folderId, duplicateName, lang, user,
     });
     return res.data.strategy;
   }
@@ -225,9 +232,9 @@ export const duplicateStrategyToFolder = createAsyncThunk(
 
 export const duplicateGlobalStrategy = createAsyncThunk(
   'strategy/duplicateGlobalStrategy',
-  async ({ strategyId, folderId, duplicateName, lang }) => {
+  async ({ strategyId, folderId, duplicateName, lang, user }) => {
     const res = await api.post('/strategy-folder/duplicate-global', {
-      strategyId, folderId, duplicateName, lang,
+      strategyId, folderId, duplicateName, lang, user,
     });
     return res.data.strategy;
   }
@@ -259,16 +266,17 @@ export const toggleFavoriteStrategy = createAsyncThunk(
 
 export const batchDeleteStrategies = createAsyncThunk(
   'strategy/batchDeleteStrategies',
-  async (ids) => {
-    const res = await api.post('/strategy/batch-delete', { ids });
+  async (payload) => {
+    const body = Array.isArray(payload) ? { ids: payload } : payload;
+    const res = await api.post('/strategy/batch-delete', body);
     return res.data; // { deleted, ids }
   }
 );
 
 export const batchMoveStrategies = createAsyncThunk(
   'strategy/batchMoveStrategies',
-  async ({ ids, folderId }) => {
-    const res = await api.post('/strategy/batch-move', { ids, folderId });
+  async ({ ids, folderId, user }) => {
+    const res = await api.post('/strategy/batch-move', { ids, folderId, user });
     return res.data; // { moved, folderId }
   }
 );

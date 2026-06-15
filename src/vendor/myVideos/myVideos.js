@@ -335,7 +335,7 @@ export default function MyVideos({ canMutate = true } = {}) {
       } else if (sourceFilter === 'mine') {
         loadedFolders = loadedFolders.filter(f => !f.isGlobal && sameId(f.usuario, user?._id));
       } else if (sourceFilter === 'club') {
-        loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB' && !sameId(f.usuario, user?._id));
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB');
       }
       setFolders(loadedFolders);
       

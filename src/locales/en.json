@@ -167,6 +167,25 @@
     "langSpanishSecondary": "Spanish",
     "langEnglishSecondary": "English"
   },
+  "supervision": {
+    "supervising": "Supervising",
+    "readOnly": "Read-only mode",
+    "stop": "Exit supervision"
+  },
+  "payment": {
+    "verifyingTitle": "Verifying your payment...",
+    "verifyingMessage": "Confirming your subscription. This will take a few seconds.",
+    "activatingTitle": "Activating your subscription...",
+    "activatingMessage": "Confirming payment with Stripe.",
+    "successTitle": "Subscription active!",
+    "successMessage": "Redirecting to the application...",
+    "failedTitle": "Could not verify automatically",
+    "failedMessage": "Your payment may have been processed. Try verifying again.",
+    "noSessionId": "Session ID not found",
+    "activateError": "Error activating subscription",
+    "retry": "Retry verification",
+    "goToAppAnyway": "Go to the app anyway"
+  },
   "sectionHeaders": {
     "myVideos": "Organize clips, duplicate templates, and link videos to exercises or strategies.",
     "tournaments": "Manage competitions, statuses, and competitive calendar tracking.",
@@ -5251,5 +5270,23 @@
     "cancelLicenseBtn": "Cancel license",
     "removeBtn": "Remove",
     "inviteNoticeText": "The coach will receive an email with a link to set their password and activate their account. If they already have an account in Xtramys, it will link automatically."
+  },
+  "coachSetup": {
+    "title": "Welcome to the club",
+    "subtitle": "Tell us who you are to personalize your experience",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "surname": "Surname",
+    "surnamePlaceholder": "Your surname",
+    "categoryTitle": "What category do you train?",
+    "categorySubtitle": "Select your team category",
+    "configTitle": "Game configuration",
+    "configSubtitle": "Adjust your match parameters",
+    "start": "Start",
+    "success": "Your team has been created. Welcome!",
+    "nameRequired": "Name is required",
+    "categoryRequired": "Select a category",
+    "noActiveSeason": "No active season found. Contact the club administrator.",
+    "errorConfig": "Error setting up your profile"
   }
 }

@@ -84,9 +84,9 @@ export default function RequireSeason({ children }) {
         if (latestRequestRef.current !== requestId) return;
         // Fetch selected season after getting all seasons
         if (data && data.length > 0) {
-          await dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: userId }));
+          const selectedSeason = await dispatch(fetchTemporadaUsuarioSeleccionada({ usuario: userId })).unwrap();
           if (isClubCoach) {
-            const sel = data.find(s => s.seleccionada) || data[0];
+            const sel = selectedSeason || data.find(s => s.seleccionada) || data[0];
             if (sel) {
               await dispatch(fetchEquiposTemporada({ season: sel._id }));
             }

@@ -183,25 +183,37 @@ export default function CoachSetup() {
 
   const handleSubmit = async () => {
     if (!nombre.trim()) {
-      toast.error('El nombre es obligatorio');
+      toast.error(t('coachSetup.nameRequired', 'El nombre es obligatorio'));
       return;
     }
     if (!categoriaKey) {
-      toast.error('Selecciona una categoría');
+      toast.error(t('coachSetup.categoryRequired', 'Selecciona una categoría'));
       return;
     }
 
     setLoading(true);
     try {
-      const sRes = await api.get(`/season/user/${user._id}`);
-      const seasons = sRes.data || [];
-      const seasonId = seasons[0]?._id;
+      let selectedSeason = null;
+      try {
+        const selectedRes = await api.get(`/season/selected/${user._id}`);
+        selectedSeason = selectedRes.data?.[0] || null;
+      } catch (_) {
+        selectedSeason = null;
+      }
+
+      if (!selectedSeason) {
+        const sRes = await api.get(`/season/user/${user._id}`);
+        const seasons = sRes.data || [];
+        selectedSeason = seasons.find((season) => season.seleccionada) || seasons[0] || null;
+      }
+
+      const seasonId = selectedSeason?._id;
       if (!seasonId) {
-        toast.error('No se encontró una temporada activa. Contacta al administrador del club.');
+        toast.error(t('coachSetup.noActiveSeason', 'No se encontró una temporada activa. Contacta al administrador del club.'));
         return;
       }
 
-      const res = await api.post('/team/coach-setup', {
+      await api.post('/team/coach-setup', {
         seasonId,
         categoriaKey,
         nombre: nombre.trim(),
@@ -217,7 +229,7 @@ export default function CoachSetup() {
       toast.success(t('coachSetup.success', 'Your team has been created. Welcome!'));
       navigate('/app', { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Error al configurar tu perfil');
+      toast.error(err?.response?.data?.message || t('coachSetup.errorConfig', 'Error al configurar tu perfil'));
     } finally {
       setLoading(false);
     }
@@ -243,9 +255,11 @@ export default function CoachSetup() {
             </Muted>
             <Stack $gap={14}>
               <Field>
-<Label>{t('coachSetup.name', 'Name')}</Label>
+                <Label>{t('coachSetup.name', 'Name')}</Label>
                 <Input
                   placeholder={t('coachSetup.namePlaceholder', 'Your name')}
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
                 />
               </Field>
               <Field>
@@ -282,7 +296,9 @@ export default function CoachSetup() {
                   onClick={() => setCategoriaKey(opt.value)}
                 >
                   <MdSportsSoccer size={20} />
-                  <OptionLabel $active={categoriaKey === opt.value}>{opt.label}</OptionLabel>
+                  <OptionLabel $active={categoriaKey === opt.value}>
+                    {t(`team.categories.${opt.value}`, opt.label)}
+                  </OptionLabel>
                 </OptionCard>
               ))}
             </Stack>
@@ -318,7 +334,9 @@ export default function CoachSetup() {
                       onClick={() => setTiempoPorParte(opt.value)}
                     >
                       <MdTimer size={18} />
-                      <OptionLabel $active={tiempoPorParte === opt.value}>{opt.label}</OptionLabel>
+                      <OptionLabel $active={tiempoPorParte === opt.value}>
+                        {t('team.timePerHalfMinutes', { minutes: opt.value })}
+                      </OptionLabel>
                     </OptionCard>
                   ))}
                 </Stack>
@@ -343,17 +361,17 @@ export default function CoachSetup() {
 
             <ConfigRow style={{ marginTop: 20 }}>
               <ConfigCard>
-<ConfigLabel>{t('team.timePerHalf', 'Time per half')}</ConfigLabel>
-              <ConfigValue>
+                <ConfigLabel>{t('team.timePerHalf', 'Time per half')}</ConfigLabel>
+                <ConfigValue>
                   <MdTimer size={16} />
-                  {tiempoPorParte} min
+                  {t('team.timePerHalfMinutes', { minutes: tiempoPorParte })}
                 </ConfigValue>
               </ConfigCard>
               <ConfigCard>
                 <ConfigLabel>{t('team.playersPerTeam', 'Players')}</ConfigLabel>
                 <ConfigValue>
                   <MdPeople size={16} />
-                  {jugadoresPorEquipo}
+                  {t('team.playersPerTeamCount', { count: jugadoresPorEquipo })}
                 </ConfigValue>
               </ConfigCard>
             </ConfigRow>

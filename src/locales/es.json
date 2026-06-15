@@ -170,6 +170,25 @@
     "langSpanishSecondary": "Spanish",
     "langEnglishSecondary": "Inglés"
   },
+  "supervision": {
+    "supervising": "Supervisando a",
+    "readOnly": "Modo solo lectura",
+    "stop": "Salir de supervisión"
+  },
+  "payment": {
+    "verifyingTitle": "Verificando tu pago...",
+    "verifyingMessage": "Confirmando tu suscripción. Esto tomará unos segundos.",
+    "activatingTitle": "Activando tu suscripción...",
+    "activatingMessage": "Confirmando el pago con Stripe.",
+    "successTitle": "¡Suscripción activa!",
+    "successMessage": "Redirigiendo a la aplicación...",
+    "failedTitle": "No se pudo verificar automáticamente",
+    "failedMessage": "Tu pago puede haberse procesado. Intenta verificar de nuevo.",
+    "noSessionId": "No se encontró el ID de sesión",
+    "activateError": "Error activando suscripción",
+    "retry": "Reintentar verificación",
+    "goToAppAnyway": "Ir a la app de todos modos"
+  },
   "sectionHeaders": {
     "myVideos": "Clasifica clips, duplica plantillas y enlaza videos con ejercicios o estrategias.",
     "tournaments": "Gestiona competiciones, estados y seguimiento del calendario competitivo.",
@@ -5258,5 +5277,23 @@
     "cancelLicenseBtn": "Cancelar licencia",
     "removeBtn": "Eliminar",
     "inviteNoticeText": "El entrenador recibirá un correo con un enlace para establecer su contraseña y activar su cuenta. Si ya tiene cuenta en Xtramys, se vinculará automáticamente."
+  },
+  "coachSetup": {
+    "title": "Bienvenido al club",
+    "subtitle": "Cuéntanos quién eres para personalizar tu experiencia",
+    "name": "Nombre",
+    "namePlaceholder": "Tu nombre",
+    "surname": "Apellido",
+    "surnamePlaceholder": "Tu apellido",
+    "categoryTitle": "¿Qué categoría entrenas?",
+    "categorySubtitle": "Selecciona la categoría de tu equipo",
+    "configTitle": "Configuración de partido",
+    "configSubtitle": "Ajusta los parámetros de tu partido",
+    "start": "Comenzar",
+    "success": "Tu equipo ha sido creado. ¡Bienvenido!",
+    "nameRequired": "El nombre es obligatorio",
+    "categoryRequired": "Selecciona una categoría",
+    "noActiveSeason": "No se encontró una temporada activa. Contacta al administrador del club.",
+    "errorConfig": "Error al configurar tu perfil"
   }
 }

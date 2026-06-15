@@ -131,10 +131,11 @@ export const deleteEjercicio = createAsyncThunk('ejercicio/deleteEjercicio', asy
 
 export const fetchExerciseFolders = createAsyncThunk(
   'ejercicio/fetchExerciseFolders',
-  async ({ parentFolder, lang } = {}) => {
+  async ({ parentFolder, lang, user } = {}) => {
     const queryParams = [];
     if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
     if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
     const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/exercise-folder${params}`);
     return res.data.folders;
@@ -152,8 +153,11 @@ export const fetchGlobalFolders = createAsyncThunk(
 
 export const fetchExerciseFolderById = createAsyncThunk(
   'ejercicio/fetchExerciseFolderById',
-  async ({ id, lang }) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ id, lang, user }) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/exercise-folder/${id}${params}`);
     const prefs = await readFavoritePrefs('exercise');
     return {
@@ -165,8 +169,11 @@ export const fetchExerciseFolderById = createAsyncThunk(
 
 export const fetchExerciseFoldersFlat = createAsyncThunk(
   'ejercicio/fetchExerciseFoldersFlat',
-  async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
+  async ({ lang, user } = {}) => {
+    const queryParams = [];
+    if (lang) queryParams.push(`lang=${lang}`);
+    if (user) queryParams.push(`user=${user}`);
+    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
     const res = await api.get(`/exercise-folder/flat${params}`);
     return res.data.folders;
   }
@@ -174,9 +181,9 @@ export const fetchExerciseFoldersFlat = createAsyncThunk(
 
 export const createExerciseFolder = createAsyncThunk(
   'ejercicio/createExerciseFolder',
-  async ({ nombre, parentFolder, color, isGlobal, translations }) => {
+  async ({ nombre, parentFolder, color, isGlobal, translations, user }) => {
     const res = await api.post('/exercise-folder', {
-      nombre, parentFolder, color, isGlobal, translations,
+      nombre, parentFolder, color, isGlobal, translations, usuario: user,
     });
     return res.data.folder;
   }
@@ -184,33 +191,33 @@ export const createExerciseFolder = createAsyncThunk(
 
 export const updateExerciseFolder = createAsyncThunk(
   'ejercicio/updateExerciseFolder',
-  async ({ id, nombre, color, translations }) => {
-    const res = await api.put(`/exercise-folder/${id}`, { nombre, color, translations });
+  async ({ id, nombre, color, translations, user }) => {
+    const res = await api.put(`/exercise-folder/${id}`, { nombre, color, translations, user });
     return res.data.folder;
   }
 );
 
 export const deleteExerciseFolder = createAsyncThunk(
   'ejercicio/deleteExerciseFolder',
-  async ({ id, moveExercisesTo, deleteContents }) => {
-    await api.delete(`/exercise-folder/${id}`, { data: { moveExercisesTo, deleteContents } });
+  async ({ id, moveExercisesTo, deleteContents, user }) => {
+    await api.delete(`/exercise-folder/${id}`, { data: { moveExercisesTo, deleteContents, user } });
     return id;
   }
 );
 
 export const moveExerciseToFolder = createAsyncThunk(
   'ejercicio/moveExerciseToFolder',
-  async ({ exerciseId, folderId }) => {
-    await api.post('/exercise-folder/move-exercise', { exerciseId, folderId });
+  async ({ exerciseId, folderId, user }) => {
+    await api.post('/exercise-folder/move-exercise', { exerciseId, folderId, user });
     return { exerciseId, folderId };
   }
 );
 
 export const duplicateExerciseToFolder = createAsyncThunk(
   'ejercicio/duplicateExerciseToFolder',
-  async ({ exerciseId, folderId, duplicateName, lang }) => {
+  async ({ exerciseId, folderId, duplicateName, lang, user }) => {
     const res = await api.post('/exercise-folder/duplicate-exercise', {
-      exerciseId, folderId, duplicateName, lang,
+      exerciseId, folderId, duplicateName, lang, user,
     });
     return res.data.exercise;
   }
@@ -218,9 +225,9 @@ export const duplicateExerciseToFolder = createAsyncThunk(
 
 export const duplicateGlobalExercise = createAsyncThunk(
   'ejercicio/duplicateGlobalExercise',
-  async ({ exerciseId, folderId, duplicateName, lang }) => {
+  async ({ exerciseId, folderId, duplicateName, lang, user }) => {
     const res = await api.post('/exercise-folder/duplicate-global', {
-      exerciseId, folderId, duplicateName, lang,
+      exerciseId, folderId, duplicateName, lang, user,
     });
     return res.data.exercise;
   }
@@ -252,16 +259,17 @@ export const toggleFavoriteExercise = createAsyncThunk(
 
 export const batchDeleteExercises = createAsyncThunk(
   'ejercicio/batchDeleteExercises',
-  async (ids) => {
-    const res = await api.post('/exercise/batch-delete', { ids });
+  async (payload) => {
+    const body = Array.isArray(payload) ? { ids: payload } : payload;
+    const res = await api.post('/exercise/batch-delete', body);
     return res.data; // { deleted, ids }
   }
 );
 
 export const batchMoveExercises = createAsyncThunk(
   'ejercicio/batchMoveExercises',
-  async ({ ids, folderId }) => {
-    const res = await api.post('/exercise/batch-move', { ids, folderId });
+  async ({ ids, folderId, user }) => {
+    const res = await api.post('/exercise/batch-move', { ids, folderId, user });
     return res.data; // { moved, folderId }
   }
 );

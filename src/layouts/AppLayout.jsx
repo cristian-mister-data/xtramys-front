@@ -7,6 +7,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { TutorialProvider } from '@/components/shared/TutorialProvider';
+import { useTranslation } from 'react-i18next';
 
 const Shell = styled.div`
   height: 100dvh;
@@ -73,6 +74,7 @@ const SupervisionBanner = styled.div`
 `;
 
 export default function AppLayout() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const seasonId = useSelector((s) => s.season.season?._id);
   const supervising = useSelector((s) => s.usuario.supervising);
@@ -107,9 +109,9 @@ export default function AppLayout() {
           <SupervisionBanner>
             <MdVisibility size={18} />
             <span>
-              Supervisando a <strong>{supervisedUser?.nombre || ''}</strong>
+              {t('supervision.supervising', 'Supervisando a')} <strong>{supervisedUser?.nombre || ''}</strong>
               {supervisedUser?.apellido ? ` ${supervisedUser.apellido}` : ''}
-              {' — '}Modo solo lectura
+              {' — '}{t('supervision.readOnly', 'Modo solo lectura')}
             </span>
             <button
               onClick={() => setBannerDismissed(true)}

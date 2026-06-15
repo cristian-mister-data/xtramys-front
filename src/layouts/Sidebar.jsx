@@ -341,7 +341,7 @@ export default function Sidebar({ open, onClose }) {
           ) : (
             <LogoutBtn onClick={handleLogout}>
               <MdLogout size={16} />
-              {t('auth.logout', 'Cerrar sesión')}
+              {t('menu.logout', 'Cerrar sesión')}
             </LogoutBtn>
           )}
           <Version>Xtramys v1.0.0</Version>

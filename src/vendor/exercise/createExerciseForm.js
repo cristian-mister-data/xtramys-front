@@ -112,10 +112,15 @@ export default function CreateExerciseForm({
   const pendingVideoIds = useRef([]);
 
   // Estado para admin: ejercicio global
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isGlobal, setIsGlobal] = useState(editingExercise?.isGlobal || false);
+  const user = useSelector(state => state.usuario.user);
+  const idUsuario = user?._id || "";
+  const isAdmin = user?.role === 'admin';
+  const userClubId = user?.clubId || null;
+  const [isGlobal, setIsGlobal] = useState(() => {
+    if (editingExercise) return editingExercise.isGlobal || false;
+    return user?.role === 'admin';
+  });
   const [visibility, setVisibility] = useState(editingExercise?.visibility || 'PRIVATE');
-  const [userClubId, setUserClubId] = useState(null);
 
   // Traducciones para ejercicios globales (admin)
   const [nameEn, setNameEn] = useState(editingExercise?.translations?.en?.nombre || '');
@@ -139,53 +144,8 @@ export default function CreateExerciseForm({
 
   // Cargar carpetas de ejercicio
   useEffect(() => {
-    dispatch(fetchExerciseFoldersFlat({ lang: i18n.language }));
-    // Verificar si el usuario es admin: primero desde usuario, luego desde JWT como fallback
-    const detectAdmin = async () => {
-      try {
-        const str = await AsyncStorage.getItem('usuario');
-        if (str) {
-          const parsed = JSON.parse(str);
-          if (parsed?.clubId) {
-            setUserClubId(parsed.clubId);
-          }
-          if (parsed?.role === 'admin') {
-            setIsAdmin(true);
-            // Default new exercises to global when admin creates (not editing)
-            if (!editingExercise) setIsGlobal(true);
-            return;
-          }
-        }
-        // Fallback: decodificar JWT manualmente (atob no disponible en todas las versiones de RN)
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-              + '='.repeat((4 - parts[1].length % 4) % 4);
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-            let decoded = ''; let i = 0;
-            while (i < b64.length) {
-              const e1 = chars.indexOf(b64[i++]), e2 = chars.indexOf(b64[i++]);
-              const e3 = chars.indexOf(b64[i++]), e4 = chars.indexOf(b64[i++]);
-              decoded += String.fromCharCode((e1 << 2) | (e2 >> 4));
-              if (e3 !== 64) decoded += String.fromCharCode(((e2 & 15) << 4) | (e3 >> 2));
-              if (e4 !== 64) decoded += String.fromCharCode(((e3 & 3) << 6) | e4);
-            }
-            const payload = JSON.parse(decoded);
-            if (payload?.clubId) {
-              setUserClubId(payload.clubId);
-            }
-            if (payload?.role === 'admin') {
-              setIsAdmin(true);
-              if (!editingExercise) setIsGlobal(true);
-            }
-          }
-        }
-      } catch {}
-    };
-    detectAdmin();
-  }, [dispatch]);
+    dispatch(fetchExerciseFoldersFlat({ lang: i18n.language, user: idUsuario }));
+  }, [dispatch, i18n.language, idUsuario]);
 
   useFocusEffect(
     useCallback(() => {
@@ -356,8 +316,6 @@ export default function CreateExerciseForm({
     }
     
     try {
-      const usuario = await AsyncStorage.getItem('usuario');
-      const idUsuario = JSON.parse(usuario)?._id;
       if (!idUsuario) {
         Alert.alert(t('message.error'), t('exercise.cannotFindUser'));
         return;
@@ -698,8 +656,8 @@ export default function CreateExerciseForm({
         isAdmin={isAdmin}
         defaultIsGlobal={isGlobal}
         onCreateFolder={async ({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations }) => {
-          await dispatch(createExerciseFolder({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations })).unwrap();
-          dispatch(fetchExerciseFoldersFlat({ lang: i18n.language }));
+          await dispatch(createExerciseFolder({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations, user: idUsuario })).unwrap();
+          dispatch(fetchExerciseFoldersFlat({ lang: i18n.language, user: idUsuario }));
           if (folderIsGlobal) dispatch(fetchGlobalFolders({ lang: i18n.language }));
         }}
       />
