@@ -40,14 +40,14 @@ export default function Register() {
     contraseña: '',
     confirmar: '',
   });
-  const [language, setLanguage] = useState(i18n.language || 'en');
+  const [language, setLanguage] = useState(i18n.language || 'es');
   const [errors, setErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLanguage(i18n.language || 'en');
+    setLanguage(i18n.language || 'es');
   }, [i18n.language]);
 
   const update = (key) => (event) => {

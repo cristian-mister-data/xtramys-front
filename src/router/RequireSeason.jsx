@@ -54,6 +54,7 @@ export default function RequireSeason({ children }) {
   const userId = user?._id;
   const isClubAdmin = user?.role === 'club_admin';
   const isClubCoach = user?.role === 'user' && !!user?.clubId;
+  const hasPendingCoachSetup = isClubCoach && user?.coachSetupCompleted === false;
   const supervising = useSelector((state) => state.usuario.supervising);
   const season = useSelector((state) => state.season.season);
   const seasons = useSelector((state) => state.season.seasons || []);
@@ -92,7 +93,7 @@ export default function RequireSeason({ children }) {
             if (sel) {
               const loadedTeams = await dispatch(fetchEquiposTemporada({ season: sel._id })).unwrap();
               if (latestRequestRef.current !== requestId) return;
-              setNeedsCoachSetup(Boolean(sel.isCurrentClubSeason && (!loadedTeams || loadedTeams.length === 0)));
+              setNeedsCoachSetup(Boolean(hasPendingCoachSetup || (sel.isCurrentClubSeason && (!loadedTeams || loadedTeams.length === 0))));
             }
           }
         }
@@ -105,7 +106,7 @@ export default function RequireSeason({ children }) {
         // Show a retry screen so we don't loop on connectivity issues.
         setStatus('error');
       });
-  }, [dispatch, userId, isClubCoach]);
+  }, [dispatch, userId, isClubCoach, hasPendingCoachSetup]);
 
   useEffect(() => {
     runCheck(false);
@@ -134,7 +135,7 @@ export default function RequireSeason({ children }) {
   }
 
   // For club coaches: check if they need to complete the setup flow
-  if (isClubCoach && status === 'ok' && needsCoachSetup && !loading) {
+  if (isClubCoach && status === 'ok' && (needsCoachSetup || hasPendingCoachSetup) && !loading) {
     return <Navigate to="/coach-setup" state={{ from: location }} replace />;
   }
 

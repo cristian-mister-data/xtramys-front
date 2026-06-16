@@ -36,7 +36,7 @@ export default function AcceptClubInvite() {
         saveUser(res.usuario);
         dispatch(setUser(res.usuario));
       }
-      navigate('/app', { replace: true });
+      navigate(res.usuario?.coachSetupCompleted === false ? '/coach-setup' : '/app', { replace: true });
     } catch (err) {
       const expired = err?.code === 'INVALID_TOKEN' || err?.code === 'TOKEN_EXPIRED';
       setError(expired ? 'La invitacion ha expirado o ya no es valida.' : err.message || 'No se pudo aceptar la invitacion.');

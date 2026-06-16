@@ -222,7 +222,12 @@ export default function CoachSetup() {
         jugadoresPorEquipo,
       });
 
-      const updatedUser = { ...user, nombre: nombre.trim(), apellido: apellido.trim() };
+      const updatedUser = {
+        ...user,
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        coachSetupCompleted: true,
+      };
       saveUser(updatedUser);
       dispatch(setUser(updatedUser));
 
