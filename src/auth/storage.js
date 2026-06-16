@@ -2,6 +2,7 @@
 // (perfil, preferencias). El JWT vive en cookie httpOnly cuando AUTH_MODE=cookie.
 
 export const TOKEN_STORAGE_KEY = 'token'; // solo si AUTH_MODE=bearer
+export const MARKETING_TOKEN_STORAGE_KEY = 'auth_token';
 export const USER_STORAGE_KEY = 'usuario';
 
 export const saveUser = (user) => {
@@ -25,6 +26,7 @@ export const clearUser = () => {
   try {
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(MARKETING_TOKEN_STORAGE_KEY);
   } catch (_e) {
     // ignore
   }
@@ -32,7 +34,10 @@ export const clearUser = () => {
 
 export const saveToken = (token) => {
   try {
-    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(MARKETING_TOKEN_STORAGE_KEY, token);
+    }
   } catch (_e) {
     // ignore
   }
@@ -40,7 +45,7 @@ export const saveToken = (token) => {
 
 export const loadToken = () => {
   try {
-    return localStorage.getItem(TOKEN_STORAGE_KEY);
+    return localStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(MARKETING_TOKEN_STORAGE_KEY);
   } catch (_e) {
     return null;
   }

@@ -4,7 +4,7 @@
 import axios from 'axios';
 import i18n from '../i18n';
 import { API_URL, BACKEND_URL, USE_COOKIE_AUTH } from '../config';
-import { TOKEN_STORAGE_KEY } from '../auth/storage';
+import { loadToken } from '../auth/storage';
 
 let _networkErrorHandler = null;
 export const setNetworkErrorHandler = (h) => {
@@ -176,7 +176,7 @@ function attachInterceptors(instance) {
       // Send token in Authorization header as a fallback/additional option,
       // even if cookie auth is enabled. This ensures authentication works
       // if cookies are blocked by browser settings or privacy extensions.
-      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const token = loadToken();
       if (token) config.headers.Authorization = `Bearer ${token}`;
       
       const isLongTimeout = LONG_TIMEOUT_ROUTES.some(route => config.url?.includes(route));
