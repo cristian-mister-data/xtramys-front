@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff } from 'react-icons/md';
+import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -236,6 +236,17 @@ const ClubBanner = styled.div`
     align-items: stretch;
     gap: 14px;
     margin-bottom: 16px;
+  }
+`;
+
+const BannerActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+
+  @media (max-width: 480px) {
+    width: 100%;
   }
 `;
 
@@ -627,6 +638,11 @@ export default function ClubDashboard() {
   const [reactivatingBatchId, setReactivatingBatchId] = useState(null);
   const [reactivationQtyByBatch, setReactivationQtyByBatch] = useState({});
   const [licenseScheduleOverrides, setLicenseScheduleOverrides] = useState({});
+  const [isTeamEditorOpen, setIsTeamEditorOpen] = useState(false);
+  const [clubTeam, setClubTeam] = useState(null);
+  const [teamForm, setTeamForm] = useState({ nombre: '', escudo: null });
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamSaving, setTeamSaving] = useState(false);
 
   const handleOpenQtyModal = () => {
     const currentMax = data?.club?.maxUsers || CLUB_MIN_LICENSES;
@@ -679,6 +695,83 @@ export default function ClubDashboard() {
       setSubStatus(response.data);
     } catch (error) {
       console.error('Error fetching subscription status:', error);
+    }
+  };
+
+  const handleOpenTeamEditor = async () => {
+    const ownerUserId = data?.club?.ownerUserId;
+    if (!ownerUserId) {
+      toast.error('No se pudo identificar el equipo del club.');
+      return;
+    }
+
+    setIsTeamEditorOpen(true);
+    setTeamLoading(true);
+    try {
+      const seasonsResponse = await api.get(`/season/user/${ownerUserId}`);
+      const seasons = Array.isArray(seasonsResponse.data) ? seasonsResponse.data : [];
+      const clubSeason = seasons.find((season) => season.seleccionada) || seasons[0];
+      if (!clubSeason?._id) {
+        throw new Error('No hay temporada del club disponible.');
+      }
+
+      const teamsResponse = await api.get(`/team/season/${clubSeason._id}`);
+      const teams = Array.isArray(teamsResponse.data) ? teamsResponse.data : [];
+      const ownerTeam = teams.find((team) => String(team.usuario) === String(ownerUserId)) || teams[0];
+      if (!ownerTeam?._id) {
+        throw new Error('No se encontrÃ³ el equipo asociado a la temporada del club.');
+      }
+
+      setClubTeam(ownerTeam);
+      setTeamForm({
+        nombre: ownerTeam.nombre || '',
+        escudo: ownerTeam.escudo || null,
+      });
+    } catch (error) {
+      setIsTeamEditorOpen(false);
+      toast.error(error.message || 'No se pudo cargar el equipo del club.');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const handleTeamBadgeChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTeamForm((prev) => ({ ...prev, escudo: reader.result }));
+    };
+    reader.onerror = () => {
+      toast.error('No se pudo leer el escudo seleccionado.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveClubTeam = async (event) => {
+    event.preventDefault();
+    if (!clubTeam?._id) return;
+
+    const nombre = teamForm.nombre.trim();
+    if (!nombre) {
+      toast.error('El nombre del equipo es obligatorio.');
+      return;
+    }
+
+    setTeamSaving(true);
+    try {
+      await api.post(`/team/${clubTeam._id}`, {
+        nombre,
+        escudo: teamForm.escudo || null,
+      });
+      toast.success('Equipo del club actualizado.');
+      setIsTeamEditorOpen(false);
+      setClubTeam(null);
+    } catch (error) {
+      toast.error(error.response?.data?.mensaje || error.message || 'No se pudo guardar el equipo del club.');
+    } finally {
+      setTeamSaving(false);
     }
   };
 
@@ -1257,6 +1350,27 @@ export default function ClubDashboard() {
             <div style={{ width: `${pct}%` }} />
           </LicenseBar>
         </div>
+        <BannerActions>
+        <Button
+          type="button"
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)',
+            padding: '12px 18px',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontWeight: 700,
+            fontSize: 14,
+            justifyContent: 'center',
+          }}
+          onClick={handleOpenTeamEditor}
+        >
+          <MdEdit size={18} />
+          Editar equipo
+        </Button>
         <Button
           style={{
             background: isFull || isSubscriptionEnding ? 'rgba(255,255,255,0.15)' : '#10b981',
@@ -1272,7 +1386,6 @@ export default function ClubDashboard() {
             gap: 8,
             fontWeight: 700,
             fontSize: 14,
-            width: '100%',
             justifyContent: 'center',
           }}
           onClick={() => !isFull && !isSubscriptionEnding && setIsInviteOpen(true)}
@@ -1282,6 +1395,7 @@ export default function ClubDashboard() {
           <MdPersonAdd size={18} />
                     {isFull ? t('clubDashboard.limitReached', 'Límite alcanzado') : t('club.actions.invite', 'Invitar Miembro')}
         </Button>
+        </BannerActions>
       </ClubBanner>
 
       {/* Stats */}
@@ -1621,8 +1735,12 @@ export default function ClubDashboard() {
                               const coachUser = res.data?.usuario || res.data;
                               dispatch(startSupervision(coachUser));
                               navigate('/app', { replace: true });
-                            } catch {
-                              toast.error(t('connection.loadError', 'Error al cargar los datos del entrenador'));
+                            } catch (err) {
+                              toast.error(
+                                err?.status === 403
+                                  ? t('clubDashboard.pendingInviteAccessDenied', 'El entrenador aun no ha aceptado la invitacion del club.')
+                                  : t('connection.loadError', 'Error al cargar los datos del entrenador')
+                              );
                             }
                           }}
                         >
@@ -1657,7 +1775,7 @@ export default function ClubDashboard() {
                             <MdLock size={14} />
                             {t('clubDashboard.suspendBtn', 'Suspender')}
                           </ActionBtn>
-                        ) : (
+                        ) : !isPending ? (
                                                     <ActionBtn
                             $type="success"
                             title={t('clubDashboard.reactivateAccessTitle', 'Reactivar acceso')}
@@ -1667,7 +1785,7 @@ export default function ClubDashboard() {
                             <MdLockOpen size={14} />
                             {t('clubDashboard.reactivateBtn', 'Reactivar')}
                           </ActionBtn>
-                        )}
+                        ) : null}
                         {/* Cancel license (suspend + reduce Stripe by 1) ? only if > 5 licenses */}
                         {(isActive || member.clubMemberStatus === 'inactive') && maxCount > 5 && subStatus?.stripeSubscriptionId && !subStatus?.cancelAtPeriodEnd && (
                                                     <ActionBtn
@@ -1697,6 +1815,87 @@ export default function ClubDashboard() {
           )}
         </TableContainer>
       </Card>
+
+      {/* TEAM EDITOR MODAL */}
+      <Modal
+        open={isTeamEditorOpen}
+        onClose={() => { if (!teamSaving) setIsTeamEditorOpen(false); }}
+        title="Editar equipo del club"
+      >
+        {teamLoading ? (
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            <Muted>{t('message.loading', 'Cargando...')}</Muted>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveClubTeam}>
+            <Stack $gap={16}>
+              <InfoNotice>
+                Al guardar, el nombre y el escudo se actualizarÃ¡n en todos los equipos asociados a esta temporada del club.
+              </InfoNotice>
+              <Field>
+                <Label>Nombre del equipo</Label>
+                <Input
+                  value={teamForm.nombre}
+                  onChange={(event) => setTeamForm((prev) => ({ ...prev, nombre: event.target.value }))}
+                  placeholder="Nombre del equipo"
+                  disabled={teamSaving}
+                  required
+                  autoFocus
+                />
+              </Field>
+              <Field>
+                <Label>Escudo</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 12,
+                      border: '1px solid rgba(148,163,184,0.35)',
+                      background: teamForm.escudo ? `center / cover no-repeat url(${teamForm.escudo})` : 'rgba(148,163,184,0.12)',
+                    }}
+                    aria-hidden="true"
+                  />
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleTeamBadgeChange}
+                    disabled={teamSaving}
+                    style={{ maxWidth: 260 }}
+                  />
+                  {teamForm.escudo && (
+                    <Button
+                      type="button"
+                      $variant="secondary"
+                      onClick={() => setTeamForm((prev) => ({ ...prev, escudo: null }))}
+                      disabled={teamSaving}
+                    >
+                      Quitar escudo
+                    </Button>
+                  )}
+                </div>
+              </Field>
+              <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
+                <Button
+                  type="button"
+                  $variant="secondary"
+                  onClick={() => setIsTeamEditorOpen(false)}
+                  disabled={teamSaving}
+                >
+                  {t('message.cancel', 'Cancelar')}
+                </Button>
+                <Button
+                  type="submit"
+                  $variant="primary"
+                  disabled={teamSaving || !teamForm.nombre.trim()}
+                >
+                  {teamSaving ? t('message.loading', 'Guardando...') : 'Guardar equipo'}
+                </Button>
+              </Row>
+            </Stack>
+          </form>
+        )}
+      </Modal>
 
       {/* INVITE MODAL */}
       <Modal

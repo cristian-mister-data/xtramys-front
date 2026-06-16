@@ -59,3 +59,6 @@ export const apple = (payload) => api.post('/auth/apple', payload);
 
 export const me = () => api.get('/auth/me').then((res) => res.data);
 export const logout = () => api.post('/auth/logout').then((res) => res.data);
+
+export const acceptClubInvite = ({ correo, token }) =>
+  api.post('/auth/accept-club-invite', { correo, token }).then((res) => res.data);

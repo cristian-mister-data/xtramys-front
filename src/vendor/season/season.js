@@ -210,7 +210,11 @@ export default function GestionEquipos() {
   const [userClubId, setUserClubId] = useState(null);
   const [ready, setReady] = useState(false);
   const supervising = useSelector((s) => s.usuario.supervising);
-  const canMutate = !supervising;
+  const readOnlyClubSeason = Boolean(
+    (temporada?.isClubSeason || (temporada?.usuario && idUsuario && String(temporada.usuario) !== String(idUsuario))) &&
+    !temporada?.isActiveClubSeason
+  );
+  const canMutate = !supervising && !readOnlyClubSeason;
   const [loadingTemporada, setLoadingTemporada] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
@@ -263,10 +267,12 @@ export default function GestionEquipos() {
   // Auto-select the team marked as seleccionado in the database
   useEffect(() => {
     if (equipos && equipos.length > 0) {
-      const selectedTeam = equipos.find(e => e.seleccionado === true);
+      const selectedTeam = equipos.find(e => e.seleccionado === true) || equipos[0];
       if (selectedTeam) {
         setEquipoSeleccionado(selectedTeam);
       }
+    } else {
+      setEquipoSeleccionado(null);
     }
   }, [equipos]);
 
@@ -694,11 +700,6 @@ export default function GestionEquipos() {
   const handleUpdateTeam = async () => {
     if (canMutate === false) return;
     try {
-      if (!teamToEdit?.nombre || teamToEdit.nombre.trim() === '') {
-        Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.teamName') }));
-        return;
-      }
-
       if (!teamToEdit.categoriaKey) {
         Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.category') }));
         return;
@@ -713,18 +714,13 @@ export default function GestionEquipos() {
         ? teamToEdit.categoriaCustom
         : teamToEdit.categoriaKey;
 
-      const escudoVal = teamToEdit?.escudo;
-
       await dispatch(updateEquipo({
         id: teamToEdit._id,
         data: {
-          nombre: teamToEdit.nombre,
           categoriaKey: teamToEdit.categoriaKey,
           categoriaCustom: teamToEdit.categoriaCustom || '',
           categoria: categoriaLegacy,
-          tiempoPorParte: teamToEdit.tiempoPorParte,
-          jugadoresPorEquipo: teamToEdit.jugadoresPorEquipo,
-          escudo: teamToEdit.escudo
+          tiempoPorParte: teamToEdit.tiempoPorParte
         }
       })).unwrap();
 
@@ -1199,7 +1195,9 @@ export default function GestionEquipos() {
                             styles.seasonItemSubtext,
                             temporada?._id === season._id && styles.seasonItemSubtextActive
                           ]}>
-                            {season.nombre || t("season.season")}
+                            {season.isClubSeason
+                              ? `${t('season.clubSeason', 'Temporada del club')}${season.teamName ? ` - ${season.teamName}` : ''}`
+                              : (season.nombre || t("season.season"))}
                           </Text>
                         </View>
                         {temporada?._id === season._id && (
@@ -1207,7 +1205,7 @@ export default function GestionEquipos() {
                         )}
                       </TouchableOpacity>
 
-                      {!isCoach && canMutate && (
+                      {!isCoach && canMutate && !season.isClubSeason && (
                         <TouchableOpacity
                           style={styles.seasonItemDeleteButton}
                           onPress={() => handlePromptDeleteSeason(season)}
@@ -1416,15 +1414,6 @@ export default function GestionEquipos() {
               </View>
 
               <KeyboardAwareScrollView style={[styles.modalBody, IS_MOBILE && { padding: 14 }]} showsVerticalScrollIndicator={false}>
-                {/* Nombre del equipo */}
-                <TextInput
-                  style={styles.teamNameInput}
-                  placeholder={t('team.teamName')}
-                  placeholderTextColor={theme.colors.inputPlaceholder}
-                  value={teamToEdit?.nombre || ''}
-                  onChangeText={(text) => setTeamToEdit(prev => ({ ...prev, nombre: text }))}
-                />
-
                 {/* Selector de categoría */}
                 <Text style={styles.inputLabel}>{t('team.category')}</Text>
                 <TouchableOpacity
@@ -1525,74 +1514,6 @@ export default function GestionEquipos() {
                     </ScrollView>
                   </View>
                 )}
-
-                {/* Selector de jugadores por equipo */}
-                <Text style={styles.inputLabel}>{t('team.playersPerTeam')}</Text>
-                <TouchableOpacity
-                  style={styles.teamNameInput}
-                  onPress={() => setShowEditPlayersPerTeamOptions(!showEditPlayersPerTeamOptions)}
-                >
-                  <View style={styles.selectContent}>
-                    <Text style={styles.selectText}>
-                      {t('team.playersPerTeamCount', { count: teamToEdit?.jugadoresPorEquipo || 11 })}
-                    </Text>
-                    <Ionicons name={showEditPlayersPerTeamOptions ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textMuted} />
-                  </View>
-                </TouchableOpacity>
-
-                {showEditPlayersPerTeamOptions && (
-                  <View style={styles.optionsContainer}>
-                    <ScrollView style={styles.optionsScroll} nestedScrollEnabled={true}>
-                      {playersPerTeamOptions.map(count => (
-                        <TouchableOpacity
-                          key={count}
-                          style={[
-                            styles.optionItem,
-                            teamToEdit?.jugadoresPorEquipo === count && styles.optionItemSelected
-                          ]}
-                          onPress={() => {
-                            setTeamToEdit(prev => ({ ...prev, jugadoresPorEquipo: count }));
-                            setShowEditPlayersPerTeamOptions(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.optionText,
-                            teamToEdit?.jugadoresPorEquipo === count && styles.optionTextSelected
-                          ]}>
-                            {t('team.playersPerTeamCount', { count })}
-                          </Text>
-                          {teamToEdit?.jugadoresPorEquipo === count && (
-                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
-                {/* Selector de escudo */}
-                <Text style={styles.inputLabel}>{t('team.badge')}</Text>
-                <TouchableOpacity
-                  style={styles.badgeContainer}
-                  onPress={pickBadgeImage}
-                >
-                  {teamToEdit?.escudo ? (
-                    <View style={styles.badgePreview}>
-                      <Image source={{ uri: teamToEdit.escudo }} style={styles.badgeImage} />
-                      <TouchableOpacity
-                        style={styles.removeBadgeButton}
-                        onPress={() => setTeamToEdit(prev => ({ ...prev, escudo: null }))}
-                      >
-                        <Ionicons name="close-circle" size={24} color={theme.colors.error} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.badgePlaceholder}>
-                      <Ionicons name="image-outline" size={40} color={theme.colors.inputPlaceholder} />
-                      <Text style={styles.badgePlaceholderText}>{t('team.tapToUpload')}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
 
                 <View style={[styles.modalActions, { marginBottom: 32 }]}>
                   <TouchableOpacity
@@ -1903,13 +1824,13 @@ export default function GestionEquipos() {
             setMatchDetailVisible(false);
             setSelectedMatch(null);
           }}
-          onEdit={(!isCoach && canMutate !== false) ? (matchSheet) => {
+          onEdit={(canMutate !== false) ? (matchSheet) => {
             // Cerrar modal de detalle y abrir modal de edición
             setMatchDetailVisible(false);
             // No poner selectedMatch a null para que el modal de edición lo use
             setEditMatchModalVisible(true);
           } : undefined}
-          onDelete={(!isCoach && canMutate !== false) ? () => handleDeleteMatch(selectedMatch?._id) : undefined}
+          onDelete={(canMutate !== false) ? () => handleDeleteMatch(selectedMatch?._id) : undefined}
         />
 
         {/* Training Session Detail Modal */}
@@ -1924,13 +1845,13 @@ export default function GestionEquipos() {
             setSessionDetailVisible(false);
             setSelectedSession(null);
           }}
-          onEdit={(!isCoach && canMutate !== false) ? (session) => {
+          onEdit={(canMutate !== false) ? (session) => {
             // Cerrar modal de detalle y abrir modal de edición
             setSessionDetailVisible(false);
             // No poner selectedSession a null para que el modal de edición lo use
             setEditSessionModalVisible(true);
           } : undefined}
-          onDelete={(!isCoach && canMutate !== false) ? () => handleDeleteSession(selectedSession?._id) : undefined}
+          onDelete={(canMutate !== false) ? () => handleDeleteSession(selectedSession?._id) : undefined}
           onWellnessUpdate={() => {
             // Recargar sesiones cuando se actualice el wellness
             if (equipoSeleccionado?._id) {
@@ -1948,7 +1869,7 @@ export default function GestionEquipos() {
           }}
           onCreateMatchSheet={handleCreateMatchFromCalendar}
           onCreateTrainingSession={handleCreateSessionFromCalendar}
-          canMutate={!isCoach && canMutate}
+          canMutate={canMutate}
           rivals={rivals}
           selectedDate={addEventSelectedDate}
           players={players}
@@ -2059,7 +1980,7 @@ export default function GestionEquipos() {
                     </View>
 
                     {/* Botón editar */}
-                    {!isCoach && canMutate && (
+                    {canMutate && (
                       <TouchableOpacity
                         style={styles.teamDetailEditButton}
                         onPress={() => {
@@ -2073,7 +1994,7 @@ export default function GestionEquipos() {
                     )}
 
                     {/* Sección de eliminación */}
-                    {!isCoach && canMutate && (
+                    {canMutate && (
                       <View style={styles.dangerZone}>
                         <View style={styles.dangerZoneHeader}>
                           <Ionicons name="warning" size={24} color={theme.colors.error} />

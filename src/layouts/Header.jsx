@@ -350,7 +350,7 @@ function HighlightedLabel({ text, query }) {
 
 /* ---------- Component ---------- */
 
-export default function Header({ onMenu }) {
+export default function Header({ onMenu, hideSearch = false }) {
   const { t } = useTranslation();
   const user = useSelector((s) => s.usuario.user);
   const navigate = useNavigate();
@@ -380,6 +380,7 @@ export default function Header({ onMenu }) {
 
   // Atajo `/` o Cmd/Ctrl+K para enfocar
   useEffect(() => {
+    if (hideSearch) return;
     const onKey = (e) => {
       const target = e.target;
       const isTyping =
@@ -393,7 +394,7 @@ export default function Header({ onMenu }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [hideSearch]);
 
   const goTo = useCallback((to) => {
     setOpen(false);
@@ -436,7 +437,8 @@ export default function Header({ onMenu }) {
         <MobileLogo src={mode === 'dark' ? xtramysWhiteLogo : xtramysLogo} alt="" />
       </MobileCenter>
 
-      <SearchWrap ref={wrapRef}>
+      {!hideSearch && (
+        <SearchWrap ref={wrapRef}>
         <SearchBox>
           <MdSearch size={18} aria-hidden />
           <input
@@ -495,7 +497,8 @@ export default function Header({ onMenu }) {
             </HintBar>
           </Dropdown>
         )}
-      </SearchWrap>
+        </SearchWrap>
+      )}
 
       <RightActions>
         <Profile onClick={() => navigate('/profile')} aria-label={t('menu.profile', 'Perfil')}>

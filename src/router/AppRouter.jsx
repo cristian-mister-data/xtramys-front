@@ -13,6 +13,7 @@ import Register from '@/pages/auth/Register';
 import VerifyEmail from '@/pages/auth/VerifyEmail';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import ResetPassword from '@/pages/auth/ResetPassword';
+import AcceptClubInvite from '@/pages/auth/AcceptClubInvite';
 import NotFound from '@/pages/NotFound';
 
 const Home = lazy(() => import('@/pages/Home'));
@@ -85,6 +86,7 @@ export default function AppRouter() {
         <Route path="/auth/verify-email" element={<VerifyEmail />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/accept-club-invite" element={<AcceptClubInvite />} />
       </Route>
 
       {/* Public forms (sin auth) */}

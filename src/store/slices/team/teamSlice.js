@@ -9,6 +9,11 @@ import {
   selectEquipo,
 } from './teamThunks';
 
+const ensureSelectedTeam = (teams) => {
+  if (!Array.isArray(teams) || teams.length === 0 || teams.some((team) => team.seleccionado)) return teams;
+  return teams.map((team, index) => ({ ...team, seleccionado: index === 0 }));
+};
+
 const teamSlice = createSlice({
   name: 'equipo',
   initialState: {
@@ -28,7 +33,7 @@ const teamSlice = createSlice({
       .addCase(fetchEquiposTemporada.pending, (state) => { state.loading = true; })
       .addCase(fetchEquiposTemporada.fulfilled, (state, action) => {
         state.loading = false;
-        state.teams = action.payload;
+        state.teams = ensureSelectedTeam(action.payload);
       })
       .addCase(fetchEquiposTemporada.rejected, (state, action) => {
         state.loading = false;
@@ -49,7 +54,7 @@ const teamSlice = createSlice({
       .addCase(createEquipo.fulfilled, (state, action) => {
         state.loading = false;
         if (Array.isArray(action.payload)) {
-          state.teams = action.payload;
+          state.teams = ensureSelectedTeam(action.payload);
         } else {
           state.teams.push(action.payload);
         }
@@ -69,7 +74,7 @@ const teamSlice = createSlice({
       })
 
       .addCase(selectEquipo.fulfilled, (state, action) => {
-        state.teams = action.payload;
+        state.teams = ensureSelectedTeam(action.payload);
       });
   },
 });

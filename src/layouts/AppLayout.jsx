@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -75,6 +75,7 @@ const SupervisionBanner = styled.div`
 
 export default function AppLayout() {
   const { t } = useTranslation();
+  const location = useLocation();
   const dispatch = useDispatch();
   const seasonId = useSelector((s) => s.season.season?._id);
   const supervising = useSelector((s) => s.usuario.supervising);
@@ -82,6 +83,7 @@ export default function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const requestedTeamsSeasonRef = useRef(null);
+  const hideSearch = location.pathname.startsWith('/club/dashboard');
 
   // Cargar equipos de la temporada actual a nivel global.
   // Antes cada página lo hacía por su cuenta (training, injuries, home,
@@ -104,7 +106,7 @@ export default function AppLayout() {
     <TutorialProvider>
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-        <Header onMenu={() => setDrawerOpen((v) => !v)} />
+        <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
         {supervising && !bannerDismissed && (
           <SupervisionBanner>
             <MdVisibility size={18} />
