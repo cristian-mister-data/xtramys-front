@@ -29,6 +29,7 @@ export default function OpsDashboard() {
   const [error, setError] = useState('');
   const [sort, setSort] = useState(['requests', 'desc']);
   const [lastErrorAt, setLastErrorAt] = useState('');
+  const [reports, setReports] = useState([]);
 
   useEffect(() => {
     if (!key) return;
@@ -40,8 +41,11 @@ export default function OpsDashboard() {
         const res = await fetch(`${API_URL}/ops/summary`, { headers: { 'x-ops-key': key } });
         if (!res.ok) throw new Error(res.status === 401 ? 'Clave incorrecta' : `HTTP ${res.status}`);
         const json = await res.json();
+        const reportsRes = await fetch(`${API_URL}/ops/reports`, { headers: { 'x-ops-key': key } });
+        const reportsJson = reportsRes.ok ? await reportsRes.json() : [];
         if (!alive) return;
         setData(json);
+        setReports(reportsJson);
         setError('');
         const newest = json.errors?.find((e) => e.status >= 500)?.at;
         if (newest && lastErrorAt && newest !== lastErrorAt && Notification.permission === 'granted') {
@@ -74,6 +78,13 @@ export default function OpsDashboard() {
     e.preventDefault();
     setKey(inputKey.trim());
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  }
+
+  async function openReport(date) {
+    const res = await fetch(`${API_URL}/ops/reports/${date}.md`, { headers: { 'x-ops-key': key } });
+    if (!res.ok) return setError(`No se pudo abrir el informe ${date}`);
+    const blob = new Blob([await res.text()], { type: 'text/markdown' });
+    window.open(URL.createObjectURL(blob), '_blank', 'noopener,noreferrer');
   }
 
   if (!key) {
@@ -154,6 +165,22 @@ export default function OpsDashboard() {
                 ))}</tbody>
               </table>
             </div>
+          </section>
+
+          <section className="ops-section">
+            <h2>Informes diarios</h2>
+            <table>
+              <thead><tr><th>Dia</th><th>Peticiones</th><th>Errores</th><th>Generado</th><th></th></tr></thead>
+              <tbody>{reports.map((r) => (
+                <tr key={r.date}>
+                  <td>{r.date}</td>
+                  <td>{r.totalRequests}</td>
+                  <td>{r.totalErrors}</td>
+                  <td>{r.generatedAt || r.updatedAt}</td>
+                  <td><button onClick={() => openReport(r.date)}>Ver .md</button></td>
+                </tr>
+              ))}</tbody>
+            </table>
           </section>
 
           <section className="ops-section">
