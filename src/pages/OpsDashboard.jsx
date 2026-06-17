@@ -4,6 +4,23 @@ import { API_URL } from '@/config';
 const money = new Intl.NumberFormat('es-ES');
 const savedKey = () => localStorage.getItem('xtramys:ops:key') || '';
 const isoDay = (date) => date.toISOString().slice(0, 10);
+const monthOf = (date = '') => String(date).slice(0, 7) || 'Sin fecha';
+const normalizeReports = (items = []) => {
+  if (!Array.isArray(items)) return [];
+  if (items.some((item) => Array.isArray(item?.reports))) {
+    return items.map((item) => ({ month: item.month || 'Sin fecha', reports: item.reports || [] }));
+  }
+  return items.reduce((months, report) => {
+    const month = monthOf(report.date);
+    let group = months.find((x) => x.month === month);
+    if (!group) {
+      group = { month, reports: [] };
+      months.push(group);
+    }
+    group.reports.push(report);
+    return months;
+  }, []);
+};
 
 function fmtBytes(bytes = 0) {
   if (bytes < 1024) return `${bytes} B`;
@@ -48,7 +65,7 @@ export default function OpsDashboard() {
         const reportsJson = reportsRes.ok ? await reportsRes.json() : [];
         if (!alive) return;
         setData(json);
-        setReports(reportsJson);
+        setReports(normalizeReports(reportsJson));
         setError('');
         const newest = json.errors?.find((e) => e.status >= 500)?.at;
         if (newest && lastErrorAt && newest !== lastErrorAt && Notification.permission === 'granted') {
@@ -118,7 +135,7 @@ export default function OpsDashboard() {
     const res = await fetch(`${API_URL}/ops/reports/${date}`, { method: 'DELETE', headers: { 'x-ops-key': key } });
     if (!res.ok) return setError(`No se pudo eliminar ${date}`);
     setReports((months) => months
-      .map((m) => ({ ...m, reports: m.reports.filter((r) => r.date !== date) }))
+      .map((m) => ({ ...m, reports: (m.reports || []).filter((r) => r.date !== date) }))
       .filter((m) => m.reports.length));
   }
 
@@ -238,10 +255,10 @@ export default function OpsDashboard() {
             </div>
             {reports.map((month) => (
               <details key={month.month} open className="ops-month">
-                <summary>{month.month} ({month.reports.length})</summary>
+                <summary>{month.month} ({(month.reports || []).length})</summary>
                 <table>
                   <thead><tr><th>Dia</th><th>Peticiones</th><th>Errores</th><th>Generado</th><th></th></tr></thead>
-                  <tbody>{month.reports.map((r) => (
+                  <tbody>{(month.reports || []).map((r) => (
                     <tr key={r.date}>
                       <td>{r.date}</td>
                       <td>{r.totalRequests}</td>
