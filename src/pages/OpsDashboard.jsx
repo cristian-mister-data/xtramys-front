@@ -3,6 +3,7 @@ import { API_URL } from '@/config';
 
 const money = new Intl.NumberFormat('es-ES');
 const savedKey = () => localStorage.getItem('xtramys:ops:key') || '';
+const isoDay = (date) => date.toISOString().slice(0, 10);
 
 function fmtBytes(bytes = 0) {
   if (bytes < 1024) return `${bytes} B`;
@@ -30,6 +31,8 @@ export default function OpsDashboard() {
   const [sort, setSort] = useState(['requests', 'desc']);
   const [lastErrorAt, setLastErrorAt] = useState('');
   const [reports, setReports] = useState([]);
+  const [from, setFrom] = useState(isoDay(new Date()));
+  const [to, setTo] = useState(isoDay(new Date()));
 
   useEffect(() => {
     if (!key) return;
@@ -85,6 +88,46 @@ export default function OpsDashboard() {
     if (!res.ok) return setError(`No se pudo abrir el informe ${date}`);
     const blob = new Blob([await res.text()], { type: 'text/markdown' });
     window.open(URL.createObjectURL(blob), '_blank', 'noopener,noreferrer');
+  }
+
+  function openMd(text) {
+    const blob = new Blob([text], { type: 'text/markdown' });
+    window.open(URL.createObjectURL(blob), '_blank', 'noopener,noreferrer');
+  }
+
+  async function generateReportNow() {
+    const res = await fetch(`${API_URL}/ops/reports/generate-now`, { method: 'POST', headers: { 'x-ops-key': key } });
+    if (!res.ok) return setError('No se pudo generar el informe');
+    const report = await res.json();
+    openMd(report.reportMd || '');
+  }
+
+  async function generateRange() {
+    const res = await fetch(`${API_URL}/ops/reports/generate-range`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-ops-key': key },
+      body: JSON.stringify({ from, to }),
+    });
+    if (!res.ok) return setError('No se pudo generar el informe de la franja');
+    const report = await res.json();
+    openMd(report.reportMd || '');
+  }
+
+  async function deleteDaily(date) {
+    if (!confirm(`Eliminar informe ${date}?`)) return;
+    const res = await fetch(`${API_URL}/ops/reports/${date}`, { method: 'DELETE', headers: { 'x-ops-key': key } });
+    if (!res.ok) return setError(`No se pudo eliminar ${date}`);
+    setReports((months) => months
+      .map((m) => ({ ...m, reports: m.reports.filter((r) => r.date !== date) }))
+      .filter((m) => m.reports.length));
+  }
+
+  function preset(days) {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days + 1);
+    setFrom(isoDay(start));
+    setTo(isoDay(end));
   }
 
   if (!key) {
@@ -168,19 +211,48 @@ export default function OpsDashboard() {
           </section>
 
           <section className="ops-section">
-            <h2>Informes diarios</h2>
+            <h2>Queries por usuario</h2>
             <table>
-              <thead><tr><th>Dia</th><th>Peticiones</th><th>Errores</th><th>Generado</th><th></th></tr></thead>
-              <tbody>{reports.map((r) => (
-                <tr key={r.date}>
-                  <td>{r.date}</td>
-                  <td>{r.totalRequests}</td>
-                  <td>{r.totalErrors}</td>
-                  <td>{r.generatedAt || r.updatedAt}</td>
-                  <td><button onClick={() => openReport(r.date)}>Ver .md</button></td>
+              <thead><tr><th>Usuario</th><th>Queries</th></tr></thead>
+              <tbody>{data.users.slice(0, 30).map((u) => (
+                <tr key={`queries-${u.key}`}>
+                  <td>{userLabel(u)}</td>
+                  <td>{(u.routes || []).slice(0, 10).map((r) => `${r.route} (${r.requests})`).join(', ')}</td>
                 </tr>
               ))}</tbody>
             </table>
+          </section>
+
+          <section className="ops-section">
+            <h2>Informes diarios</h2>
+            <div className="ops-actions">
+              <button onClick={generateReportNow}>Generar hoy ahora</button>
+              <button onClick={() => preset(1)}>Hoy</button>
+              <button onClick={() => preset(30)}>Mes</button>
+              <button onClick={() => preset(183)}>6 meses</button>
+              <button onClick={() => preset(365)}>Año</button>
+              <button onClick={() => { setFrom('2000-01-01'); setTo(isoDay(new Date())); }}>Todo histórico</button>
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <button onClick={generateRange}>Generar franja</button>
+            </div>
+            {reports.map((month) => (
+              <details key={month.month} open className="ops-month">
+                <summary>{month.month} ({month.reports.length})</summary>
+                <table>
+                  <thead><tr><th>Dia</th><th>Peticiones</th><th>Errores</th><th>Generado</th><th></th></tr></thead>
+                  <tbody>{month.reports.map((r) => (
+                    <tr key={r.date}>
+                      <td>{r.date}</td>
+                      <td>{r.totalRequests}</td>
+                      <td>{r.totalErrors}</td>
+                      <td>{r.generatedAt || r.updatedAt}</td>
+                      <td><button onClick={() => openReport(r.date)}>Ver .md</button> <button onClick={() => deleteDaily(r.date)}>Eliminar</button></td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </details>
+            ))}
           </section>
 
           <section className="ops-section">
@@ -213,6 +285,9 @@ const css = `
   .ops-section { margin-top: 18px; overflow: auto; }
   .ops-split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .ops-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ops-actions input { border: 1px solid #385158; border-radius: 999px; background: #0f1518; color: white; padding: 10px 12px; }
+  .ops-month { margin-top: 12px; }
+  .ops-month summary { cursor: pointer; color: #bef264; font-weight: 800; margin-bottom: 8px; }
   .ops-error { margin-bottom: 16px; color: #fecaca; border-color: #7f1d1d; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { padding: 10px; border-bottom: 1px solid #29383d; text-align: left; white-space: nowrap; }
