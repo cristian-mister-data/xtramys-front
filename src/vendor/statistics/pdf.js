@@ -130,10 +130,10 @@ const s = {
     textAlign: 'center',
   },
   badge: {
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    paddingVertical: 1,
+    paddingHorizontal: 3,
     borderRadius: 4,
-    fontSize: 7,
+    fontSize: 6,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     alignSelf: 'center',
@@ -614,12 +614,12 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
         {injuryHistory.length > 0 ? (
           <View style={s.table}>
             <View style={s.row}>
-              <View style={[s.headerCell, { width: '24%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
+              <View style={[s.headerCell, { width: '23%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
               <View style={[s.headerCell, { width: '20%' }]}><Text style={s.headerText}>{t('injury.type', 'Tipo')}</Text></View>
-              <View style={[s.headerCell, { width: '16%' }]}><Text style={s.headerText}>{t('injury.zone', 'Zona')}</Text></View>
+              <View style={[s.headerCell, { width: '15%' }]}><Text style={s.headerText}>{t('injury.zone', 'Zona')}</Text></View>
               <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.startDateShort', 'Inicio')}</Text></View>
               <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.forecast', 'Pronost.')}</Text></View>
-              <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.status', 'Estado')}</Text></View>
+              <View style={[s.headerCell, { width: '12%' }]}><Text style={s.headerText}>{t('injury.status', 'Estado')}</Text></View>
               <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.relapse', 'Recaída')}</Text></View>
             </View>
             
@@ -636,12 +636,12 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
 
               return (
                 <View style={s.row} key={idx} wrap={false}>
-                  <View style={[s.cell, { width: '24%' }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{playerName}</Text></View>
+                  <View style={[s.cell, { width: '23%' }]}><Text style={[s.cellBold, { textAlign: 'left' }]}>{playerName}</Text></View>
                   <View style={[s.cell, { width: '20%' }]}><Text style={[s.cellText, { fontSize: 7 }]}>{type}</Text></View>
-                  <View style={[s.cell, { width: '16%' }]}><Text style={[s.cellText, { color: COLORS.textSecondary, fontSize: 7 }]}>{zone}</Text></View>
+                  <View style={[s.cell, { width: '15%' }]}><Text style={[s.cellText, { color: COLORS.textSecondary, fontSize: 7 }]}>{zone}</Text></View>
                   <View style={[s.cell, { width: '10%' }]}><Text style={s.cellBold}>{startDateStr}</Text></View>
                   <View style={[s.cell, { width: '10%' }]}><Text style={s.cellBold}>{endDateStr}</Text></View>
-                  <View style={[s.cell, { width: '10%' }]}><Text style={[s.badge, { backgroundColor: inj.fechaFin ? '#fef3c7' : '#fee2e2', color: inj.fechaFin ? '#b45309' : '#b91c1c' }]}>{statusLabel}</Text></View>
+                  <View style={[s.cell, { width: '12%' }]}><Text style={[s.badge, { backgroundColor: inj.fechaFin ? '#fef3c7' : '#fee2e2', color: inj.fechaFin ? '#b45309' : '#b91c1c' }]}>{statusLabel}</Text></View>
                   <View style={[s.cell, { width: '10%' }]}><Text style={[s.badge, { backgroundColor: inj.recaida ? '#fef3c7' : '#dcfce3', color: inj.recaida ? '#b45309' : '#166534' }]}>{relapseLabel}</Text></View>
                 </View>
               );
