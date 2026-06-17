@@ -1,23 +1,28 @@
 // store/slices/player/playerThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
+import { createReadCache } from '@/utils/readCache';
+
+const playerCache = createReadCache({ ttlMs: 60000 });
+const playerKey = (scope, payload) => playerCache.key(`player:${scope}`, payload);
+const clearPlayerCache = () => playerCache.clear();
 
 export const fetchJugadoresEquipo = createAsyncThunk(
   'jugador/fetchJugadoresEquipo',
-  async ({ team }) => {
+  async ({ team }) => playerCache.read(playerKey('team', { team }), async () => {
     const res = await api.get(`/player/team/${team}`);
     return res.data;
-  }
+  })
 );
 
 export const fetchJugadorEquipo = createAsyncThunk(
   'jugador/fetchJugadorEquipo',
   async ({ id }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/player/${id}`);
-      // Algunos endpoints devuelven { player: {...} } o { jugador: {...} } en lugar del objeto raíz.
-      const payload = res?.data?.player || res?.data?.jugador || res?.data;
-      return payload;
+      return await playerCache.read(playerKey('detail', { id }), async () => {
+        const res = await api.get(`/player/${id}`);
+        return res?.data?.player || res?.data?.jugador || res?.data;
+      });
     } catch (err) {
       console.error('[fetchJugadorEquipo] FAIL', err?.response?.status, err?.response?.data || err?.message);
       return rejectWithValue(err?.response?.data || err?.message);
@@ -27,26 +32,29 @@ export const fetchJugadorEquipo = createAsyncThunk(
 
 export const fetchPlayerStats = createAsyncThunk(
   'jugador/fetchPlayerStats',
-  async ({ playerId, teamId }) => {
+  async ({ playerId, teamId }) => playerCache.read(playerKey('stats', { playerId, teamId }), async () => {
     const url = teamId
       ? `/player/stats/${playerId}?team=${teamId}`
       : `/player/stats/${playerId}`;
     const res = await api.get(url);
     return res.data;
-  }
+  })
 );
 
 export const createJugador = createAsyncThunk('jugador/createJugador', async (nuevoJugador) => {
   const res = await api.post('/player/create', nuevoJugador);
+  clearPlayerCache();
   return res.data;
 });
 
 export const updateJugador = createAsyncThunk('jugador/updateJugador', async ({ id, data }) => {
   const res = await api.post(`/player/${id}`, data);
+  clearPlayerCache();
   return res.data;
 });
 
 export const deleteJugador = createAsyncThunk('jugador/deleteJugador', async (id) => {
   await api.delete(`/player/${id}`);
+  clearPlayerCache();
   return id;
 });

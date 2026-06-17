@@ -15,7 +15,7 @@ const Page = styled.div`
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 32px 24px;
+  padding: 24px 20px;
   background: linear-gradient(135deg, #0B0F19 0%, #1a2744 50%, #0B0F19 100%);
   position: relative;
   overflow: hidden;
@@ -32,13 +32,18 @@ const Page = styled.div`
     transform: translate(-50%, -50%);
     pointer-events: none;
   }
+
+  @media (max-width: 480px) {
+    padding: 14px;
+    place-items: start center;
+  }
 `;
 
 const Card = styled.div`
   position: relative;
   width: 100%;
   max-width: 440px;
-  padding: 40px 32px 32px;
+  padding: 36px 28px 28px;
   border-radius: 24px;
   background: rgba(18, 26, 45, 0.85);
   border: 1px solid rgba(255,255,255,0.08);
@@ -53,6 +58,12 @@ const Card = styled.div`
     border-radius: 24px;
     background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(229,90,0,0.08));
     z-index: -1;
+  }
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+    padding: 24px 18px 20px;
+    border-radius: 20px;
   }
 `;
 
@@ -73,10 +84,14 @@ const Badge = styled.div`
 
 const Title = styled.h1`
   margin: 0 0 6px;
-  font-size: 28px;
+  font-size: clamp(24px, 7vw, 28px);
   font-weight: 800;
   color: #fff;
   line-height: 1.2;
+
+  @media (max-width: 480px) {
+    margin-bottom: 8px;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -90,19 +105,20 @@ const PriceRow = styled.div`
   display: flex;
   align-items: baseline;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 4px;
 `;
 
 const Amount = styled.span`
-  font-size: 48px;
+  font-size: clamp(40px, 11vw, 48px);
   font-weight: 900;
   color: #fff;
   line-height: 1;
 `;
 
 const Period = styled.span`
-  font-size: 18px;
+  font-size: clamp(15px, 4.5vw, 18px);
   color: rgba(255,255,255,0.4);
 `;
 
@@ -118,6 +134,11 @@ const FeatureList = styled.div`
   gap: 12px;
   margin-bottom: 28px;
   text-align: left;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+    margin-bottom: 22px;
+  }
 `;
 
 const FeatureItem = styled.div`
@@ -126,6 +147,12 @@ const FeatureItem = styled.div`
   gap: 12px;
   font-size: 14px;
   color: rgba(255,255,255,0.8);
+  line-height: 1.4;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+    font-size: 13px;
+  }
 `;
 
 const CheckCircle = styled.div`
@@ -147,6 +174,10 @@ const CheckCircle = styled.div`
 
 const PaymentSection = styled.div`
   margin-top: 24px;
+
+  @media (max-width: 480px) {
+    margin-top: 20px;
+  }
 `;
 
 function PayPalButtonWrapper({ planId, locale, onApprove, onError, createSubscription }) {
@@ -274,6 +305,11 @@ const StripeButton = styled.button`
   }
 
   svg { width: 18px; height: 18px; }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
 `;
 
 const PaymentNote = styled.p`
@@ -322,6 +358,12 @@ const VerifyButton = styled.button`
   svg {
     width: 16px;
     height: 16px;
+  }
+
+  @media (max-width: 480px) {
+    margin-top: 14px;
+    padding: 11px 14px;
+    font-size: 12px;
   }
 `;
 
@@ -379,6 +421,11 @@ const ActionButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+    font-size: 14px;
   }
 `;
 
@@ -471,6 +518,12 @@ const SwitchPlanLink = styled.button`
     background: rgba(255,255,255,0.04);
     border-color: rgba(255,255,255,0.2);
     color: #fff;
+  }
+
+  @media (max-width: 480px) {
+    margin-top: 16px;
+    padding: 12px 14px;
+    font-size: 13px;
   }
 `;
 

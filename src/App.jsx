@@ -53,6 +53,8 @@ const isConnectivityError = (error) => (
   error?.message === 'La petición ha tardado demasiado'
 );
 
+const SESSION_RECHECK_INTERVAL_MS = 5 * 60 * 1000;
+
 export default function App() {
   const dispatch = useDispatch();
   const bootstrapped = useRef(false);
@@ -100,8 +102,8 @@ export default function App() {
       window.history.replaceState({}, '', newUrl);
     }
 
-    const checkSession = () => {
-      dispatch(fetchMe())
+    const checkSession = (force = false) => {
+      dispatch(fetchMe({ force }))
         .unwrap()
         .then(() => {
           apiUnavailableRef.current = false;
@@ -118,12 +120,12 @@ export default function App() {
         });
     };
 
-    checkSession();
+    checkSession(Boolean(urlToken));
 
     let lastChecked = Date.now();
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastChecked < 2000) return; // limit sync checking to once every 2 seconds
+      if (now - lastChecked < SESSION_RECHECK_INTERVAL_MS) return;
       lastChecked = now;
       checkSession();
     };
@@ -145,7 +147,7 @@ export default function App() {
   const retryConnection = async () => {
     setCheckingApi(true);
     try {
-      await dispatch(fetchMe()).unwrap();
+      await dispatch(fetchMe({ force: true })).unwrap();
       apiUnavailableRef.current = false;
       setApiUnavailable(false);
     } catch (error) {

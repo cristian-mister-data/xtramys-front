@@ -2,6 +2,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToStrategy } from '@/api/video';
+import { createReadCache } from '@/utils/readCache';
 import {
   applyFavoritePrefsToItem,
   applyFavoritePrefsToItems,
@@ -13,6 +14,9 @@ import {
 } from '@/utils/favoritePersistence';
 
 const getVideoId = (video) => video?._id || video?.id || video;
+const strategyReadCache = createReadCache({ ttlMs: 60000 });
+const strategyCacheKey = (scope, payload) => strategyReadCache.key(`strategy:${scope}`, payload);
+const invalidateStrategyReads = () => strategyReadCache.clear();
 
 const applyStrategyFavoritePrefs = async (items) => {
   const prefs = await readFavoritePrefs('strategy');
@@ -67,36 +71,48 @@ const replaceStrategyVideos = async (strategyId, pendingVideoIds = []) => {
 export const fetchEstrategiasUsuario = createAsyncThunk(
   'strategy/fetchEstrategiasUsuario',
   async ({ user, lang, filterType } = {}) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (filterType) queryParams.push(`filterType=${filterType}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/strategy/user/${user}${params}`);
-    return applyStrategyFavoritePrefs(res.data);
+    const cacheKey = strategyCacheKey('user', { user, lang, filterType });
+    return strategyReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (filterType) queryParams.push(`filterType=${filterType}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/strategy/user/${user}${params}`);
+      return applyStrategyFavoritePrefs(res.data);
+    });
   }
 );
 
 export const fetchEstrategiasTemporada = createAsyncThunk(
   'strategy/fetchEstrategiasTemporada',
   async ({ season, lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
-    const res = await api.get(`/strategy/season/${season}${params}`);
-    return applyStrategyFavoritePrefs(res.data);
+    const cacheKey = strategyCacheKey('season', { season, lang });
+    return strategyReadCache.read(cacheKey, async () => {
+      const params = lang ? `?lang=${lang}` : '';
+      const res = await api.get(`/strategy/season/${season}${params}`);
+      return applyStrategyFavoritePrefs(res.data);
+    });
   }
 );
 
 export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', async ({ id, lang } = {}) => {
-  const params = lang ? `?lang=${lang}` : '';
-  const res = await api.get(`/strategy/${id}${params}`);
-  return applyStrategyFavoritePrefs(res.data);
+  const cacheKey = strategyCacheKey('detail', { id, lang });
+  return strategyReadCache.read(cacheKey, async () => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/strategy/${id}${params}`);
+    return applyStrategyFavoritePrefs(res.data);
+  });
 });
 
 export const fetchGlobalStrategies = createAsyncThunk(
   'strategy/fetchGlobalStrategies',
   async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
-    const res = await api.get(`/strategy/global${params}`);
-    return applyStrategyFavoritePrefs(res.data);
+    const cacheKey = strategyCacheKey('global', { lang });
+    return strategyReadCache.read(cacheKey, async () => {
+      const params = lang ? `?lang=${lang}` : '';
+      const res = await api.get(`/strategy/global${params}`);
+      return applyStrategyFavoritePrefs(res.data);
+    });
   }
 );
 
@@ -115,6 +131,7 @@ export const createEstrategia = createAsyncThunk(
         }
       }
     }
+    invalidateStrategyReads();
     return created;
   }
 );
@@ -125,12 +142,14 @@ export const updateEstrategia = createAsyncThunk(
     const { pendingVideoIds, ...strategyData } = strategy || {};
     const res = await api.post(`/strategy/${strategyData?._id}`, strategyData);
     await replaceStrategyVideos(strategyData?._id, pendingVideoIds);
+    invalidateStrategyReads();
     return res.data;
   }
 );
 
 export const deleteEstrategia = createAsyncThunk('strategy/deleteEstrategia', async (id) => {
   await api.delete(`/strategy/${id}`);
+  invalidateStrategyReads();
   return id;
 });
 
@@ -139,50 +158,62 @@ export const deleteEstrategia = createAsyncThunk('strategy/deleteEstrategia', as
 export const fetchStrategyFolders = createAsyncThunk(
   'strategy/fetchStrategyFolders',
   async ({ parentFolder, lang, user } = {}) => {
-    const queryParams = [];
-    if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/strategy-folder${params}`);
-    return res.data.folders;
+    const cacheKey = strategyCacheKey('folders', { parentFolder, lang, user });
+    return strategyReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/strategy-folder${params}`);
+      return res.data.folders;
+    });
   }
 );
 
 export const fetchGlobalFolders = createAsyncThunk(
   'strategy/fetchGlobalFolders',
   async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
-    const res = await api.get(`/strategy-folder/global${params}`);
-    return res.data.folders;
+    const cacheKey = strategyCacheKey('global-folders', { lang });
+    return strategyReadCache.read(cacheKey, async () => {
+      const params = lang ? `?lang=${lang}` : '';
+      const res = await api.get(`/strategy-folder/global${params}`);
+      return res.data.folders;
+    });
   }
 );
 
 export const fetchStrategyFolderById = createAsyncThunk(
   'strategy/fetchStrategyFolderById',
   async ({ id, lang, user } = {}) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/strategy-folder/${id}${params}`);
-    const prefs = await readFavoritePrefs('strategy');
-    return {
-      ...res.data,
-      strategies: applyFavoritePrefsToItems(res.data?.strategies || [], prefs),
-    };
+    const cacheKey = strategyCacheKey('folder-detail', { id, lang, user });
+    return strategyReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/strategy-folder/${id}${params}`);
+      const prefs = await readFavoritePrefs('strategy');
+      return {
+        ...res.data,
+        strategies: applyFavoritePrefsToItems(res.data?.strategies || [], prefs),
+      };
+    });
   }
 );
 
 export const fetchStrategyFoldersFlat = createAsyncThunk(
   'strategy/fetchStrategyFoldersFlat',
   async ({ lang, user } = {}) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/strategy-folder/flat${params}`);
-    return res.data.folders;
+    const cacheKey = strategyCacheKey('folders-flat', { lang, user });
+    return strategyReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/strategy-folder/flat${params}`);
+      return res.data.folders;
+    });
   }
 );
 
@@ -192,6 +223,7 @@ export const createStrategyFolder = createAsyncThunk(
     const res = await api.post('/strategy-folder', {
       nombre, parentFolder, color, isGlobal, translations, usuario: user,
     });
+    invalidateStrategyReads();
     return res.data.folder;
   }
 );
@@ -200,6 +232,7 @@ export const updateStrategyFolder = createAsyncThunk(
   'strategy/updateStrategyFolder',
   async ({ id, nombre, color, translations, user }) => {
     const res = await api.put(`/strategy-folder/${id}`, { nombre, color, translations, user });
+    invalidateStrategyReads();
     return res.data.folder;
   }
 );
@@ -208,6 +241,7 @@ export const deleteStrategyFolder = createAsyncThunk(
   'strategy/deleteStrategyFolder',
   async ({ id, moveStrategiesTo, deleteContents, user }) => {
     await api.delete(`/strategy-folder/${id}`, { data: { moveStrategiesTo, deleteContents, user } });
+    invalidateStrategyReads();
     return id;
   }
 );
@@ -216,6 +250,7 @@ export const moveStrategyToFolder = createAsyncThunk(
   'strategy/moveStrategyToFolder',
   async ({ strategyId, folderId, user }) => {
     await api.post('/strategy-folder/move-strategy', { strategyId, folderId, user });
+    invalidateStrategyReads();
     return { strategyId, folderId };
   }
 );
@@ -226,6 +261,7 @@ export const duplicateStrategyToFolder = createAsyncThunk(
     const res = await api.post('/strategy-folder/duplicate-strategy', {
       strategyId, folderId, duplicateName, lang, user,
     });
+    invalidateStrategyReads();
     return res.data.strategy;
   }
 );
@@ -236,6 +272,7 @@ export const duplicateGlobalStrategy = createAsyncThunk(
     const res = await api.post('/strategy-folder/duplicate-global', {
       strategyId, folderId, duplicateName, lang, user,
     });
+    invalidateStrategyReads();
     return res.data.strategy;
   }
 );
@@ -253,12 +290,14 @@ export const toggleFavoriteStrategy = createAsyncThunk(
       const payload = normalizeFavoritePayload(res.data, strategyId, optimisticFavorite);
       if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
       await persistFavoriteState('strategy', strategyId, payload.favorito);
+      invalidateStrategyReads();
       return payload;
     } catch (error) {
       const isPermissionFallback = error?.status === 403 || error?.status === 404;
       if (!isPermissionFallback) throw error;
 
       await persistFavoriteState('strategy', strategyId, optimisticFavorite);
+      invalidateStrategyReads();
       return { _id: strategyId, favorito: optimisticFavorite };
     }
   }
@@ -269,6 +308,7 @@ export const batchDeleteStrategies = createAsyncThunk(
   async (payload) => {
     const body = Array.isArray(payload) ? { ids: payload } : payload;
     const res = await api.post('/strategy/batch-delete', body);
+    invalidateStrategyReads();
     return res.data; // { deleted, ids }
   }
 );
@@ -277,6 +317,7 @@ export const batchMoveStrategies = createAsyncThunk(
   'strategy/batchMoveStrategies',
   async ({ ids, folderId, user }) => {
     const res = await api.post('/strategy/batch-move', { ids, folderId, user });
+    invalidateStrategyReads();
     return res.data; // { moved, folderId }
   }
 );

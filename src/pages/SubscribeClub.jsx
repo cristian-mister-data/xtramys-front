@@ -29,6 +29,11 @@ const Page = styled.div`
     transform: translate(-50%, -50%);
     pointer-events: none;
   }
+
+  @media (max-width: 480px) {
+    padding: 14px;
+    place-items: start center;
+  }
 `;
 
 const Card = styled.div`
@@ -51,6 +56,12 @@ const Card = styled.div`
     background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(229,90,0,0.08));
     z-index: -1;
   }
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+    padding: 24px 18px 20px;
+    border-radius: 20px;
+  }
 `;
 
 const Badge = styled.div`
@@ -70,10 +81,14 @@ const Badge = styled.div`
 
 const Title = styled.h1`
   margin: 0 0 6px;
-  font-size: 28px;
+  font-size: clamp(24px, 7vw, 28px);
   font-weight: 800;
   color: #fff;
   line-height: 1.2;
+
+  @media (max-width: 480px) {
+    margin-bottom: 8px;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -81,6 +96,11 @@ const Subtitle = styled.p`
   font-size: 14px;
   color: rgba(255,255,255,0.5);
   line-height: 1.5;
+
+  @media (max-width: 480px) {
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
 `;
 
 const PriceBlock = styled.div`
@@ -90,15 +110,25 @@ const PriceBlock = styled.div`
   padding: 20px;
   margin-bottom: 24px;
   text-align: left;
+
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
 `;
 
 const PriceRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   font-size: 14px;
   color: rgba(255,255,255,0.6);
   margin-bottom: 8px;
+
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
 `;
 
 const PriceValue = styled.span`
@@ -113,6 +143,10 @@ const TotalRow = styled.div`
   border-top: 1px solid rgba(255,255,255,0.08);
   padding-top: 12px;
   margin-top: 4px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const TotalLabel = styled.span`
@@ -124,7 +158,7 @@ const TotalLabel = styled.span`
 `;
 
 const TotalAmount = styled.span`
-  font-size: 28px;
+  font-size: clamp(22px, 6vw, 28px);
   font-weight: 900;
   color: #FF6B00;
 `;
@@ -135,6 +169,10 @@ const QtyContainer = styled.div`
   gap: 8px;
   margin-bottom: 24px;
   text-align: left;
+
+  @media (max-width: 480px) {
+    margin-bottom: 20px;
+  }
 `;
 
 const QtyLabel = styled.label`
@@ -152,6 +190,10 @@ const QtySelectorRow = styled.div`
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 14px;
   padding: 4px;
+
+  @media (max-width: 480px) {
+    padding: 3px;
+  }
 `;
 
 const QtyButton = styled.button`
@@ -178,6 +220,11 @@ const QtyButton = styled.button`
     opacity: 0.3;
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    width: 34px;
+    height: 34px;
+  }
 `;
 
 const QtyInput = styled.input`
@@ -189,6 +236,10 @@ const QtyInput = styled.input`
   font-size: 16px;
   font-weight: 700;
   outline: none;
+
+  @media (max-width: 480px) {
+    font-size: 15px;
+  }
 `;
 
 const FeatureList = styled.div`
@@ -197,6 +248,11 @@ const FeatureList = styled.div`
   gap: 10px;
   margin-bottom: 28px;
   text-align: left;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+    margin-bottom: 22px;
+  }
 `;
 
 const FeatureItem = styled.div`
@@ -205,6 +261,11 @@ const FeatureItem = styled.div`
   gap: 10px;
   font-size: 13px;
   color: rgba(255,255,255,0.75);
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    line-height: 1.35;
+  }
 `;
 
 const CheckDot = styled.div`
@@ -243,6 +304,11 @@ const ActionButton = styled.button`
     cursor: not-allowed;
     transform: none;
   }
+
+  @media (max-width: 480px) {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
 `;
 
 const Note = styled.p`
@@ -250,6 +316,10 @@ const Note = styled.p`
   font-size: 12px;
   color: rgba(255,255,255,0.3);
   line-height: 1.5;
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+  }
 `;
 
 const AdminNotice = styled.div`
@@ -262,6 +332,11 @@ const AdminNotice = styled.div`
   margin-bottom: 20px;
   text-align: left;
   line-height: 1.5;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
 `;
 
 const ErrorBox = styled.div`
@@ -273,6 +348,10 @@ const ErrorBox = styled.div`
   font-size: 13px;
   line-height: 1.4;
   margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+  }
 `;
 
 const AlreadySubscribed = styled.div`

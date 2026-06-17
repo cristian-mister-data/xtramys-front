@@ -53,6 +53,7 @@ const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
+const OpsDashboard = lazy(() => import('@/pages/OpsDashboard'));
 
 const RouteFallback = () => (
   <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }} />
@@ -92,6 +93,7 @@ export default function AppRouter() {
       {/* Public forms (sin auth) */}
       <Route path="/public/wellness/:token" element={lazy_(<WellnessForm />)} />
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
+      <Route path="/ops" element={lazy_(<OpsDashboard />)} />
 
       {/* Subscription (auth required, no app layout) */}
       <Route path="/subscribe" element={SubscribeRoute} />

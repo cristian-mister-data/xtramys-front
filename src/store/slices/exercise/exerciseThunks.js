@@ -2,6 +2,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { linkVideoToExercise } from '@/api/video';
+import { createReadCache } from '@/utils/readCache';
 import {
   applyFavoritePrefsToItem,
   applyFavoritePrefsToItems,
@@ -13,6 +14,9 @@ import {
 } from '@/utils/favoritePersistence';
 
 const getVideoId = (video) => video?._id || video?.id || video;
+const exerciseReadCache = createReadCache({ ttlMs: 60000 });
+const exerciseCacheKey = (scope, payload) => exerciseReadCache.key(`exercise:${scope}`, payload);
+const invalidateExerciseReads = () => exerciseReadCache.clear();
 
 const applyExerciseFavoritePrefs = async (items) => {
   const prefs = await readFavoritePrefs('exercise');
@@ -67,27 +71,36 @@ const replaceExerciseVideos = async (exerciseId, pendingVideoIds = []) => {
 export const fetchEjerciciosUsuario = createAsyncThunk(
   'ejercicio/fetchEjerciciosUsuario',
   async ({ user, lang, filterType } = {}) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (filterType) queryParams.push(`filterType=${filterType}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/exercise/user/${user}${params}`);
-    return applyExerciseFavoritePrefs(res.data);
+    const cacheKey = exerciseCacheKey('user', { user, lang, filterType });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (filterType) queryParams.push(`filterType=${filterType}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/exercise/user/${user}${params}`);
+      return applyExerciseFavoritePrefs(res.data);
+    });
   }
 );
 
 export const fetchEjercicio = createAsyncThunk('ejercicio/fetchEjercicio', async ({ id, lang } = {}) => {
-  const params = lang ? `?lang=${lang}` : '';
-  const res = await api.get(`/exercise/${id}${params}`);
-  return applyExerciseFavoritePrefs(res.data);
+  const cacheKey = exerciseCacheKey('detail', { id, lang });
+  return exerciseReadCache.read(cacheKey, async () => {
+    const params = lang ? `?lang=${lang}` : '';
+    const res = await api.get(`/exercise/${id}${params}`);
+    return applyExerciseFavoritePrefs(res.data);
+  });
 });
 
 export const fetchGlobalExercises = createAsyncThunk(
   'ejercicio/fetchGlobalExercises',
   async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
-    const res = await api.get(`/exercise/global${params}`);
-    return applyExerciseFavoritePrefs(res.data);
+    const cacheKey = exerciseCacheKey('global', { lang });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const params = lang ? `?lang=${lang}` : '';
+      const res = await api.get(`/exercise/global${params}`);
+      return applyExerciseFavoritePrefs(res.data);
+    });
   }
 );
 
@@ -106,6 +119,7 @@ export const createEjercicio = createAsyncThunk(
         }
       }
     }
+    invalidateExerciseReads();
     return createdExercise;
   }
 );
@@ -115,6 +129,7 @@ export const updateEjercicio = createAsyncThunk('ejercicio/updateEjercicio', asy
     const { pendingVideoIds, ...exerciseData } = exercise || {};
     const res = await api.post(`/exercise/${exerciseData?._id}`, exerciseData);
     await replaceExerciseVideos(exerciseData?._id, pendingVideoIds);
+    invalidateExerciseReads();
     return res.data;
   } catch (err) {
     console.error('[updateEjercicio] FAIL', err?.response?.status, err?.response?.data || err?.message);
@@ -124,6 +139,7 @@ export const updateEjercicio = createAsyncThunk('ejercicio/updateEjercicio', asy
 
 export const deleteEjercicio = createAsyncThunk('ejercicio/deleteEjercicio', async (id) => {
   await api.delete(`/exercise/${id}`);
+  invalidateExerciseReads();
   return id;
 });
 
@@ -132,50 +148,62 @@ export const deleteEjercicio = createAsyncThunk('ejercicio/deleteEjercicio', asy
 export const fetchExerciseFolders = createAsyncThunk(
   'ejercicio/fetchExerciseFolders',
   async ({ parentFolder, lang, user } = {}) => {
-    const queryParams = [];
-    if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/exercise-folder${params}`);
-    return res.data.folders;
+    const cacheKey = exerciseCacheKey('folders', { parentFolder, lang, user });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/exercise-folder${params}`);
+      return res.data.folders;
+    });
   }
 );
 
 export const fetchGlobalFolders = createAsyncThunk(
   'ejercicio/fetchGlobalFolders',
   async ({ lang } = {}) => {
-    const params = lang ? `?lang=${lang}` : '';
-    const res = await api.get(`/exercise-folder/global${params}`);
-    return res.data.folders;
+    const cacheKey = exerciseCacheKey('global-folders', { lang });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const params = lang ? `?lang=${lang}` : '';
+      const res = await api.get(`/exercise-folder/global${params}`);
+      return res.data.folders;
+    });
   }
 );
 
 export const fetchExerciseFolderById = createAsyncThunk(
   'ejercicio/fetchExerciseFolderById',
   async ({ id, lang, user }) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/exercise-folder/${id}${params}`);
-    const prefs = await readFavoritePrefs('exercise');
-    return {
-      ...res.data,
-      exercises: applyFavoritePrefsToItems(res.data?.exercises || [], prefs),
-    };
+    const cacheKey = exerciseCacheKey('folder-detail', { id, lang, user });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/exercise-folder/${id}${params}`);
+      const prefs = await readFavoritePrefs('exercise');
+      return {
+        ...res.data,
+        exercises: applyFavoritePrefsToItems(res.data?.exercises || [], prefs),
+      };
+    });
   }
 );
 
 export const fetchExerciseFoldersFlat = createAsyncThunk(
   'ejercicio/fetchExerciseFoldersFlat',
   async ({ lang, user } = {}) => {
-    const queryParams = [];
-    if (lang) queryParams.push(`lang=${lang}`);
-    if (user) queryParams.push(`user=${user}`);
-    const params = queryParams.length ? `?${queryParams.join('&')}` : '';
-    const res = await api.get(`/exercise-folder/flat${params}`);
-    return res.data.folders;
+    const cacheKey = exerciseCacheKey('folders-flat', { lang, user });
+    return exerciseReadCache.read(cacheKey, async () => {
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (user) queryParams.push(`user=${user}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
+      const res = await api.get(`/exercise-folder/flat${params}`);
+      return res.data.folders;
+    });
   }
 );
 
@@ -185,6 +213,7 @@ export const createExerciseFolder = createAsyncThunk(
     const res = await api.post('/exercise-folder', {
       nombre, parentFolder, color, isGlobal, translations, usuario: user,
     });
+    invalidateExerciseReads();
     return res.data.folder;
   }
 );
@@ -193,6 +222,7 @@ export const updateExerciseFolder = createAsyncThunk(
   'ejercicio/updateExerciseFolder',
   async ({ id, nombre, color, translations, user }) => {
     const res = await api.put(`/exercise-folder/${id}`, { nombre, color, translations, user });
+    invalidateExerciseReads();
     return res.data.folder;
   }
 );
@@ -201,6 +231,7 @@ export const deleteExerciseFolder = createAsyncThunk(
   'ejercicio/deleteExerciseFolder',
   async ({ id, moveExercisesTo, deleteContents, user }) => {
     await api.delete(`/exercise-folder/${id}`, { data: { moveExercisesTo, deleteContents, user } });
+    invalidateExerciseReads();
     return id;
   }
 );
@@ -209,6 +240,7 @@ export const moveExerciseToFolder = createAsyncThunk(
   'ejercicio/moveExerciseToFolder',
   async ({ exerciseId, folderId, user }) => {
     await api.post('/exercise-folder/move-exercise', { exerciseId, folderId, user });
+    invalidateExerciseReads();
     return { exerciseId, folderId };
   }
 );
@@ -219,6 +251,7 @@ export const duplicateExerciseToFolder = createAsyncThunk(
     const res = await api.post('/exercise-folder/duplicate-exercise', {
       exerciseId, folderId, duplicateName, lang, user,
     });
+    invalidateExerciseReads();
     return res.data.exercise;
   }
 );
@@ -229,6 +262,7 @@ export const duplicateGlobalExercise = createAsyncThunk(
     const res = await api.post('/exercise-folder/duplicate-global', {
       exerciseId, folderId, duplicateName, lang, user,
     });
+    invalidateExerciseReads();
     return res.data.exercise;
   }
 );
@@ -246,12 +280,14 @@ export const toggleFavoriteExercise = createAsyncThunk(
       const payload = normalizeFavoritePayload(res.data, exerciseId, optimisticFavorite);
       if (typeof expectedFavorite === 'boolean') payload.favorito = expectedFavorite;
       await persistFavoriteState('exercise', exerciseId, payload.favorito);
+      invalidateExerciseReads();
       return payload; // { _id, favorito }
     } catch (error) {
       const isPermissionFallback = error?.status === 403 || error?.status === 404;
       if (!isPermissionFallback) throw error;
 
       await persistFavoriteState('exercise', exerciseId, optimisticFavorite);
+      invalidateExerciseReads();
       return { _id: exerciseId, favorito: optimisticFavorite };
     }
   }
@@ -262,6 +298,7 @@ export const batchDeleteExercises = createAsyncThunk(
   async (payload) => {
     const body = Array.isArray(payload) ? { ids: payload } : payload;
     const res = await api.post('/exercise/batch-delete', body);
+    invalidateExerciseReads();
     return res.data; // { deleted, ids }
   }
 );
@@ -270,6 +307,7 @@ export const batchMoveExercises = createAsyncThunk(
   'ejercicio/batchMoveExercises',
   async ({ ids, folderId, user }) => {
     const res = await api.post('/exercise/batch-move', { ids, folderId, user });
+    invalidateExerciseReads();
     return res.data; // { moved, folderId }
   }
 );

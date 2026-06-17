@@ -98,12 +98,16 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const [roleReady, setRoleReady] = useState(false);
 
   useEffect(() => {
+    if (user?._id) {
+      setRoleReady(true);
+      return;
+    }
     dispatch(fetchMe()).unwrap().then(() => {
       setRoleReady(true);
     }).catch(() => {
       setRoleReady(true);
     });
-  }, [dispatch]);
+  }, [dispatch, user?._id]);
 
   useEffect(() => {
     if (user?._id) {

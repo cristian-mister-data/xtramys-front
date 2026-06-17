@@ -47,7 +47,7 @@ const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
 const RETRYABLE_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 const LONG_TIMEOUT_ROUTES = ['/video-folder/move-video', '/video/proxy-upload', '/video/generate'];
-const GET_CACHE_TTL_MS = 8000;
+const GET_CACHE_TTL_MS = 30000;
 const getResponseCache = new Map();
 const getInflight = new Map();
 let getCacheVersion = 0;

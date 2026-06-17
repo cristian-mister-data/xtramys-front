@@ -5,16 +5,25 @@ import * as subscriptionApi from '@/api/subscription';
 import { saveUser, saveToken, clearUser } from '@/auth/storage';
 import { USE_COOKIE_AUTH } from '@/config';
 import { RESET_STORE } from '@/store/actionTypes';
+import { createReadCache } from '@/utils/readCache';
+
+const userCache = createReadCache({ ttlMs: 60000 });
+const userKey = (scope, payload) => userCache.key(`user:${scope}`, payload);
+const clearUserCache = () => userCache.clear();
 
 export const fetchUsuario = createAsyncThunk('usuario/Usuario', async ({ usuario }) => {
-  const res = await api.get(`/user/${usuario}`);
-  return res.data;
+  return userCache.read(userKey('detail', { usuario }), async () => {
+    const res = await api.get(`/user/${usuario}`);
+    return res.data;
+  });
 });
 
 export const updateUsuario = createAsyncThunk(
   'usuario/updateUsuario',
   async ({ id, updatedUser }) => {
     const res = await api.post(`/user/${id}`, updatedUser);
+    authApi.clearMeCache();
+    clearUserCache();
     if (res.data) saveUser(res.data);
     return res.data;
   }
@@ -27,6 +36,7 @@ export const loginThunk = createAsyncThunk(
   async (credentials, { dispatch, rejectWithValue }) => {
     try {
       const data = await authApi.login(credentials);
+      clearUserCache();
       dispatch({ type: RESET_STORE });
       // Backend returns { token, user } or similar; store regardless of mode
       // Bearer mode: persist token; cookie mode: token cookie set by backend
@@ -49,9 +59,9 @@ export const loginThunk = createAsyncThunk(
 
 export const fetchMe = createAsyncThunk(
   'usuario/me',
-  async (_, { rejectWithValue }) => {
+  async (options = {}, { rejectWithValue }) => {
     try {
-      const data = await authApi.me();
+      const data = await authApi.me(options);
       if (data?.token) {
         saveToken(data.token);
       }
@@ -80,6 +90,8 @@ export const logoutThunk = createAsyncThunk(
     } catch {
       // ignore network errors on logout
     }
+    authApi.clearMeCache();
+    clearUserCache();
     clearUser();
     dispatch({ type: RESET_STORE });
     return true;
