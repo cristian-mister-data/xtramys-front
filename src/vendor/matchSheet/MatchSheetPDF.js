@@ -58,6 +58,12 @@ const resolvePhotos = async (players, team) => {
   return { resolvedPlayers, resolvedTeam };
 };
 
+const sortByMinute = (items = []) => [...items].sort((a, b) => {
+  const minA = parseInt(String(a?.minuto).replace(/\+.*/, ''), 10) || 0;
+  const minB = parseInt(String(b?.minuto).replace(/\+.*/, ''), 10) || 0;
+  return minA - minB;
+});
+
 export const generateLineupPDF = async ({ matchSheet, team, players, lineup, formation, showPhotos = true, showNames = true, translations = {} }) => {
   try {
     const { resolvedPlayers, resolvedTeam } = await resolvePhotos(players, team);
@@ -85,10 +91,10 @@ export const generateMatchSheetPDF = async ({ matchSheet, team, players, showPho
     const titulares = matchSheet.alineacionTitulares || [];
     const suplentes = matchSheet.alineacionSuplentes || [];
     const goles = matchSheet.goles || [];
-    const golesRival = matchSheet.golesRival || [];
-    const tarjetasAmarillas = matchSheet.tarjetasAmarillas || [];
-    const tarjetasRojas = matchSheet.tarjetasRojas || [];
-    const cambios = matchSheet.cambios || [];
+    const golesRival = sortByMinute(matchSheet.golesRival || []);
+    const tarjetasAmarillas = sortByMinute(matchSheet.tarjetasAmarillas || []);
+    const tarjetasRojas = sortByMinute(matchSheet.tarjetasRojas || []);
+    const cambios = sortByMinute(matchSheet.cambios || []);
     const { resolvedPlayers, resolvedTeam } = await resolvePhotos(players, team);
     await generateMatchSheetPdf({ matchSheet, team: resolvedTeam, players: resolvedPlayers, titulares, suplentes, goles, golesRival, tarjetasAmarillas, tarjetasRojas, cambios, showPhotos, translations });
   } catch (error) {

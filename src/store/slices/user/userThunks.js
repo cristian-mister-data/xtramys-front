@@ -24,9 +24,10 @@ export const updateUsuario = createAsyncThunk(
 
 export const loginThunk = createAsyncThunk(
   'usuario/login',
-  async (credentials, { rejectWithValue }) => {
+  async (credentials, { dispatch, rejectWithValue }) => {
     try {
       const data = await authApi.login(credentials);
+      dispatch({ type: RESET_STORE });
       // Backend returns { token, user } or similar; store regardless of mode
       // Bearer mode: persist token; cookie mode: token cookie set by backend
       if (data?.token) {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import * as authApi from '@/api/auth';
 import { useDispatch } from 'react-redux';
 import { setUser } from '@/store/slices/user/userSlice';
+import { RESET_STORE } from '@/store/actionTypes';
 import { saveUser, saveToken } from '@/auth/storage';
 import api from '@/api/client';
 import {
@@ -64,6 +65,7 @@ export default function ResetPassword() {
         api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
         saveToken(jwtToken);
         saveUser(user);
+        dispatch({ type: RESET_STORE });
         dispatch(setUser(user));
         if (user.clubId && user.nombre === 'Entrenador' && !user.apellido) {
           navigate('/coach-setup', { replace: true });

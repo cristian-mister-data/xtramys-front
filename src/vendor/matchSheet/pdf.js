@@ -338,6 +338,15 @@ const resolvePlayer = (playerField, playersList) => {
   return playersList?.find(p => p._id === id || p.id === id) || null;
 };
 
+const parseMinute = (value) => {
+  const raw = String(value ?? '').trim();
+  const normal = raw.replace(/\+.*/, '');
+  const parsed = parseInt(normal, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const sortByMinute = (items = []) => [...items].sort((a, b) => parseMinute(a?.minuto) - parseMinute(b?.minuto));
+
 const renderEventIcon = (tipo) => {
   if (tipo === 'gol' || tipo === 'golRival') {
     return (
@@ -370,14 +379,13 @@ const renderEventIcon = (tipo) => {
 };
 
 const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes = [], noConvocados = [], goles = [], golesRival = [], tarjetasAmarillas = [], tarjetasRojas = [], cambios = [], showPhotos }) => {
-  const parseMinuto = (m) => typeof m === 'number' ? m : parseInt(String(m).replace(/\D/g, '') || 0, 10);
   const eventos = [
-    ...goles.map(g => ({ ...g, tipo: 'gol' })),
-    ...golesRival.map(g => ({ ...g, tipo: 'golRival', isRival: true })),
-    ...tarjetasAmarillas.map(t => ({ ...t, tipo: 'amarilla' })),
-    ...tarjetasRojas.map(t => ({ ...t, tipo: 'roja' })),
-    ...cambios.map(c => ({ ...c, tipo: 'cambio' }))
-  ].sort((a, b) => parseMinuto(a.minuto) - parseMinuto(b.minuto));
+    ...sortByMinute(goles).map(g => ({ ...g, tipo: 'gol' })),
+    ...sortByMinute(golesRival).map(g => ({ ...g, tipo: 'golRival', isRival: true })),
+    ...sortByMinute(tarjetasAmarillas).map(t => ({ ...t, tipo: 'amarilla' })),
+    ...sortByMinute(tarjetasRojas).map(t => ({ ...t, tipo: 'roja' })),
+    ...sortByMinute(cambios).map(c => ({ ...c, tipo: 'cambio' }))
+  ].sort((a, b) => parseMinute(a.minuto) - parseMinute(b.minuto));
   return (
     <Page size="A4" style={baseStyles.page}>
       <PdfHeader title="FICHA DE PARTIDO" subtitle={`${team?.nombre || 'Local'} vs ${matchSheet.rival}`} />

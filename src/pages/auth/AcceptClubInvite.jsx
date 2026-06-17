@@ -5,6 +5,7 @@ import * as authApi from '@/api/auth';
 import api from '@/api/client';
 import { saveToken, saveUser } from '@/auth/storage';
 import { setUser } from '@/store/slices/user/userSlice';
+import { RESET_STORE } from '@/store/actionTypes';
 import {
   AuthFormShell,
   ErrorMessage,
@@ -34,6 +35,7 @@ export default function AcceptClubInvite() {
         api.defaults.headers.common.Authorization = `Bearer ${res.token}`;
         saveToken(res.token);
         saveUser(res.usuario);
+        dispatch({ type: RESET_STORE });
         dispatch(setUser(res.usuario));
       }
       navigate(res.usuario?.coachSetupCompleted === false ? '/coach-setup' : '/app', { replace: true });

@@ -6,6 +6,7 @@ import * as authApi from '@/api/auth';
 import { saveUser, saveToken } from '@/auth/storage';
 import { USE_COOKIE_AUTH } from '@/config';
 import { setUser } from '@/store/slices/user/userSlice';
+import { RESET_STORE } from '@/store/actionTypes';
 import {
   AuthFormShell,
   CodeInput,
@@ -68,6 +69,7 @@ export default function VerifyEmail() {
       if (token) saveToken(token);
       if (user) {
         saveUser(user);
+        dispatch({ type: RESET_STORE });
         dispatch(setUser(user));
       }
       navigate('/app', { replace: true });

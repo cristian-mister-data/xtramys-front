@@ -1685,10 +1685,11 @@ export default function ClubDashboard() {
             </EmptyState>
           ) : (
             <Table>
-                            <thead>
+              <thead>
                 <tr>
                   <Th>{t('clubDashboard.coachColumn', 'Entrenador')}</Th>
                   <Th>{t('clubDashboard.emailColumn', 'Correo')}</Th>
+                  <Th>{t('clubDashboard.categoryColumn', 'Categoría')}</Th>
                   <Th>{t('clubDashboard.statusColumn', 'Estado')}</Th>
                   <Th>{t('clubDashboard.actionsColumn', 'Acciones')}</Th>
                 </tr>
@@ -1720,6 +1721,17 @@ export default function ClubDashboard() {
                         </MemberNameSection>
                       </Td>
                       <Td style={{ fontSize: 13, color: 'inherit', opacity: 0.8 }}>{member.correo}</Td>
+                      <Td>
+                        {member.categoriaKey ? (
+                          <Badge $tone="neutral">
+                            {member.categoriaKey === 'otro'
+                              ? (member.categoriaCustom || member.categoria || t('team.categories.otro', 'Otro'))
+                              : t(`team.categories.${member.categoriaKey}`, member.categoria || member.categoriaKey)}
+                          </Badge>
+                        ) : (
+                          <span style={{ opacity: 0.45 }}>-</span>
+                        )}
+                      </Td>
                       <Td>
                         <Badge $tone={statusTone}>
                           {isActive ? t('clubDashboard.statusActive', 'Activo') : isPending ? t('clubDashboard.statusPending', 'Invitado') : t('clubDashboard.statusSuspended', 'Suspendido')}
