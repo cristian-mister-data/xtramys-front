@@ -140,11 +140,12 @@ async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
 
 function loadCanvasImage(src) {
   return new Promise((resolve, reject) => {
-    if (!src || typeof Image === 'undefined') {
+    const NativeImage = globalThis?.Image;
+    if (!src || typeof NativeImage !== 'function') {
       resolve(null);
       return;
     }
-    const img = new Image();
+    const img = new NativeImage();
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src.startsWith('data:') ? src : `data:image/png;base64,${src}`;

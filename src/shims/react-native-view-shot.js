@@ -1,5 +1,4 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { toPng, toJpeg, toBlob } from 'html-to-image';
 import html2canvas from 'html2canvas';
 
 function resolveNode(refOrNode) {
@@ -21,10 +20,10 @@ function suppressAncestorTransforms(node) {
   const saved = [];
   let el = node.parentElement;
   while (el && el !== document.body) {
-    const t = el.style.transform;
-    const to = el.style.transformOrigin;
-    if (t && t !== 'none') {
-      saved.push({ el, transform: t, transformOrigin: to });
+    const transform = el.style.transform;
+    const transformOrigin = el.style.transformOrigin;
+    if (transform && transform !== 'none') {
+      saved.push({ el, transform, transformOrigin });
       el.style.transform = 'none';
       el.style.transformOrigin = 'top left';
     }
@@ -38,21 +37,6 @@ function restoreAncestorTransforms(saved) {
     el.style.transform = transform;
     el.style.transformOrigin = transformOrigin;
   }
-}
-
-function captureHtmlToImage(node, options) {
-  const pixelRatio = options.pixelRatio || Math.max(window.devicePixelRatio || 1, 2);
-  const isJpeg = options.format === 'jpg' || options.format === 'jpeg';
-  const commonOpts = {
-    pixelRatio,
-    cacheBust: options.cacheBust ?? true,
-    backgroundColor: options.backgroundColor || undefined,
-    width: node.offsetWidth,
-    height: node.offsetHeight,
-  };
-
-  if (options.result === 'blob') return toBlob(node, { ...commonOpts, type: isJpeg ? 'image/jpeg' : 'image/png', quality: isJpeg ? (options.quality ?? 0.92) : 1 });
-  return isJpeg ? toJpeg(node, { ...commonOpts, quality: isJpeg ? (options.quality ?? 0.92) : undefined }) : toPng(node, commonOpts);
 }
 
 function captureHtml2Canvas(node, options) {
@@ -89,18 +73,12 @@ export async function captureRef(refOrNode, options = {}) {
   if (!node) throw new Error('view-shot shim: no DOM node resolved');
 
   const savedTransforms = suppressAncestorTransforms(node);
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  try {
-    return await captureHtmlToImage(node, options);
-  } catch (e) {
-    console.warn('[view-shot] html-to-image falló, intentando con html2canvas:', e.message);
-  }
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
   try {
     return await captureHtml2Canvas(node, options);
-  } catch (e) {
-    console.warn('[view-shot] html2canvas también falló:', e.message);
+  } catch (error) {
+    console.warn('[view-shot] html2canvas capture failed:', error?.message || error);
     throw new Error('view-shot shim: no se pudo capturar el nodo');
   } finally {
     restoreAncestorTransforms(savedTransforms);
@@ -119,6 +97,7 @@ export default forwardRef(function ViewShot({ children, style, options: defaultO
     capture: (opts) => captureRef(innerRef.current, { ...(defaultOptions || {}), ...(opts || {}) }),
     getBoundingClientRect: () => innerRef.current?.getBoundingClientRect?.(),
   }), [defaultOptions]);
+
   return (
     <div ref={innerRef} style={style}>
       {children}
