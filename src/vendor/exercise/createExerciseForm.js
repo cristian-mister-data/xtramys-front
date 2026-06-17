@@ -22,6 +22,7 @@ import { linkVideoToExercise } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTheme } from 'styled-components';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -304,21 +305,21 @@ export default function CreateExerciseForm({
 
   const handleSave = async () => {
     const errors = {};
+    const missingFields = [];
     const trimmedName = String(name || '').trim();
     const trimmedDuration = String(duration || '').trim();
     if (!trimmedName) {
-      errors.name = editingExercise
-        ? t('common.validationErrorEdit', { field: t('exercise.name') })
-        : t('common.validationErrorCreate', { field: t('exercise.name') });
+      errors.name = true;
+      missingFields.push(t('exercise.name'));
     }
     if (!trimmedDuration) {
-      errors.duration = editingExercise
-        ? t('common.validationErrorEdit', { field: t('exercise.duration') })
-        : t('common.validationErrorCreate', { field: t('exercise.duration') });
+      errors.duration = true;
+      missingFields.push(t('exercise.duration'));
     }
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      showMissingFieldsToast(t, missingFields);
       return;
     }
     
@@ -407,12 +408,6 @@ export default function CreateExerciseForm({
               }
             }}
           />
-          {validationErrors.name && (
-            <Text style={{ color: '#ef4444', fontSize: 13, marginTop: -10, marginBottom: 16, fontWeight: '500' }}>
-              {validationErrors.name}
-            </Text>
-          )}
-          
           {/* Selector de carpeta */}
           <TouchableOpacity 
             style={styles.typeSelector} 
@@ -451,11 +446,6 @@ export default function CreateExerciseForm({
                   maxLength={3}
                 />
               </View>
-              {validationErrors.duration && (
-                <Text style={{ color: '#ef4444', fontSize: 12, marginTop: -10, marginBottom: 10, fontWeight: '500' }}>
-                  {validationErrors.duration}
-                </Text>
-              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inputLabel}>{t('exercise.players')}</Text>

@@ -51,6 +51,7 @@ import VideoPoster from '@/components/shared/VideoPoster';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
@@ -419,8 +420,9 @@ export default function MyVideos({ canMutate = true } = {}) {
     if (!newFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
-        newFolder: t('common.validationErrorCreate', { field: t('myVideos.folderNameLabel') })
+        newFolder: true
       }));
+      showMissingFieldsToast(t, [t('myVideos.folderNameLabel')]);
       return;
     }
 
@@ -513,8 +515,9 @@ export default function MyVideos({ canMutate = true } = {}) {
     if (!editFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
-        editFolder: t('common.validationErrorEdit', { field: t('myVideos.folderNameLabel') })
+        editFolder: true
       }));
+      showMissingFieldsToast(t, [t('myVideos.folderNameLabel')]);
       return;
     }
     try {
@@ -546,8 +549,9 @@ export default function MyVideos({ canMutate = true } = {}) {
     if (!editVideoName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
-        editVideo: t('common.validationErrorEdit', { field: t('myVideos.videoNameLabel') || 'Nombre del video' })
+        editVideo: true
       }));
+      showMissingFieldsToast(t, [t('myVideos.videoNameLabel') || 'Nombre del video']);
       return;
     }
     try {
@@ -1813,11 +1817,6 @@ export default function MyVideos({ canMutate = true } = {}) {
                     autoFocus
                     maxLength={100}
                   />
-                  {validationErrors.editVideo && (
-                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
-                      {validationErrors.editVideo}
-                    </Text>
-                  )}
 
                   {/* Traducción inglés (admin + video global) */}
                   {menuVideo?.isGlobal && isAdmin && (
@@ -1977,11 +1976,6 @@ export default function MyVideos({ canMutate = true } = {}) {
                     autoFocus
                     maxLength={50}
                   />
-                  {validationErrors.editFolder && (
-                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
-                      {validationErrors.editFolder}
-                    </Text>
-                  )}
 
                   {/* Traducción inglés (admin + carpeta global) */}
                   {menuFolder?.isGlobal && isAdmin && (
@@ -2109,11 +2103,6 @@ export default function MyVideos({ canMutate = true } = {}) {
                     }}
                     maxLength={50}
                   />
-                  {validationErrors.newFolder && (
-                    <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
-                      {validationErrors.newFolder}
-                    </Text>
-                  )}
 
                   {/* Traducción inglés (admin) */}
                   {isAdmin && (

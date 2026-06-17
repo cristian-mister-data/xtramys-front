@@ -270,13 +270,6 @@ const CallUpPage = ({ matchSheet, team, players, convocados = [], noConvocados =
           <View style={s.statCard}><Text style={s.statLabel}>Lugar</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{lugarQuedada || matchSheet.ubicacion || '-'}</Text></View>
         </View>
 
-        {observaciones && (
-          <View style={[s.card, { backgroundColor: COLORS.bgHeader }]}>
-            <Text style={s.cardTitle}>Observaciones</Text>
-            <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.text }}>{observaciones}</Text>
-          </View>
-        )}
-
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.md }}>
           <View style={{ flex: 2 }}>
             <PdfSection title={`CONVOCADOS (${convocados.length})`}>
@@ -301,6 +294,13 @@ const CallUpPage = ({ matchSheet, team, players, convocados = [], noConvocados =
                 </View>
               ))}
             </PdfSection>
+
+            {observaciones && (
+              <View style={[s.card, { backgroundColor: COLORS.bgHeader, marginTop: SPACING.sm }]}>
+                <Text style={s.cardTitle}>Observaciones</Text>
+                <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.text }}>{observaciones}</Text>
+              </View>
+            )}
           </View>
           
           {noConvocados && noConvocados.length > 0 && (

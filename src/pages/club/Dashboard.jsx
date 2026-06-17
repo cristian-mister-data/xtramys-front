@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit } from 'react-icons/md';
+import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit, MdCalendarMonth } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -643,6 +643,9 @@ export default function ClubDashboard() {
   const [teamForm, setTeamForm] = useState({ nombre: '', escudo: null });
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamSaving, setTeamSaving] = useState(false);
+  const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+  const [clubSeasonYear, setClubSeasonYear] = useState('');
+  const [seasonSaving, setSeasonSaving] = useState(false);
 
   const handleOpenQtyModal = () => {
     const currentMax = data?.club?.maxUsers || CLUB_MIN_LICENSES;
@@ -772,6 +775,29 @@ export default function ClubDashboard() {
       toast.error(error.response?.data?.mensaje || error.message || 'No se pudo guardar el equipo del club.');
     } finally {
       setTeamSaving(false);
+    }
+  };
+
+  const handleCreateClubSeason = async (event) => {
+    event.preventDefault();
+    const year = clubSeasonYear.trim();
+    if (!year) {
+      toast.error('La temporada es obligatoria.');
+      return;
+    }
+    try {
+      setSeasonSaving(true);
+      const response = await api.post('/club/season', { año: year });
+      toast.success(response.data?.createdForUsers > 1
+        ? `Temporada creada para ${response.data.createdForUsers} usuarios.`
+        : 'Temporada creada.');
+      setIsSeasonOpen(false);
+      setClubSeasonYear('');
+      fetchClubData();
+    } catch (error) {
+      toast.error(error.response?.data?.mensaje || error.message || 'No se pudo crear la temporada.');
+    } finally {
+      setSeasonSaving(false);
     }
   };
 
@@ -1372,6 +1398,26 @@ export default function ClubDashboard() {
           Editar equipo
         </Button>
         <Button
+          type="button"
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)',
+            padding: '12px 18px',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontWeight: 700,
+            fontSize: 14,
+            justifyContent: 'center',
+          }}
+          onClick={() => setIsSeasonOpen(true)}
+        >
+          <MdCalendarMonth size={18} />
+          Nueva temporada
+        </Button>
+        <Button
           style={{
             background: isFull || isSubscriptionEnding ? 'rgba(255,255,255,0.15)' : '#10b981',
             color: '#fff',
@@ -1907,6 +1953,48 @@ export default function ClubDashboard() {
             </Stack>
           </form>
         )}
+      </Modal>
+
+      {/* SEASON MODAL */}
+      <Modal
+        open={isSeasonOpen}
+        onClose={() => { if (!seasonSaving) setIsSeasonOpen(false); }}
+        title="Nueva temporada"
+      >
+        <form onSubmit={handleCreateClubSeason}>
+          <Stack $gap={16}>
+            <InfoNotice>
+              Se creará para el club y aparecerá en el selector de temporadas de los usuarios activos. Las temporadas anteriores se mantienen.
+            </InfoNotice>
+            <Field>
+              <Label>Temporada</Label>
+              <Input
+                value={clubSeasonYear}
+                onChange={(event) => setClubSeasonYear(event.target.value)}
+                placeholder="2026-2027"
+                disabled={seasonSaving}
+                autoFocus
+              />
+            </Field>
+            <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
+              <Button
+                type="button"
+                $variant="secondary"
+                onClick={() => setIsSeasonOpen(false)}
+                disabled={seasonSaving}
+              >
+                {t('message.cancel', 'Cancelar')}
+              </Button>
+              <Button
+                type="submit"
+                $variant="primary"
+                disabled={seasonSaving || !clubSeasonYear.trim()}
+              >
+                {seasonSaving ? t('message.loading', 'Guardando...') : 'Crear temporada'}
+              </Button>
+            </Row>
+          </Stack>
+        </form>
       </Modal>
 
       {/* INVITE MODAL */}

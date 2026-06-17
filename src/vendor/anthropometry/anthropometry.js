@@ -36,6 +36,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { toast } from '@/ui/toast';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -466,12 +468,12 @@ const Anthropometry = ({ navigation, canMutate }) => {
 
   const handleCreateAnthropometry = async () => {
     if (!selectedPlayer) {
-      Alert.alert(t('common.error'), t('anthropometry.selectPlayerRequired'));
+      showMissingFieldsToast(t, [t('player.player', 'Jugador')]);
       return;
     }
 
     if (!selectedTeam?._id) {
-      Alert.alert(t('common.error'), t('anthropometry.noTeamSelected'));
+      toast.error(t('anthropometry.noTeamSelected'));
       return;
     }
 
@@ -617,10 +619,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
         dispatch(fetchAnthropometriesByTeam({ team: selectedTeam._id }));
       }
     } catch (error) {
-      Alert.alert(
-        t('common.error'),
-        t('anthropometry.saveError') + ': ' + (error.response?.data?.message || error.message),
-      );
+      toast.error(t('anthropometry.saveError') + ': ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -774,15 +773,20 @@ const Anthropometry = ({ navigation, canMutate }) => {
           </View>
         ) : filteredAnthropometries.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="fitness-outline" size={80} color="#b5d6fa" />
+            <Ionicons name="fitness-outline" size={56} color={theme.colors.textSecondary} />
             <Text style={styles.emptyText}>
               {activeFiltersCount > 0
                 ? t('anthropometry.noFilteredResults')
                 : t('anthropometry.noMeasurementsCreated')}
             </Text>
+            <Text style={styles.emptySubtitle}>
+              {activeFiltersCount > 0
+                ? t('anthropometry.tryDifferentFilters', 'Prueba con otros filtros.')
+                : t('anthropometry.createFirstHint', 'Crea tu primera medición para comenzar')}
+            </Text>
             {!activeFiltersCount && canMutate !== false && (
               <TouchableOpacity
-                style={[styles.createButton, { marginTop: 20 }]}
+                style={styles.createButton}
                 onPress={openCreateModal}
               >
                 <MaterialIcons name="add" size={20} color="#fff" />
@@ -2415,15 +2419,25 @@ const makeStyles = (theme) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.background,
-      padding: 24,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: theme.colors.border,
+      borderRadius: 16,
+      padding: 60,
+      gap: 12,
     },
     emptyText: {
       fontSize: 16,
-      color: theme.colors.text,
-      marginTop: 16,
+      color: theme.colors.textSecondary,
       textAlign: 'center',
-      fontStyle: 'italic',
+      fontWeight: '600',
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
     },
     topBar: {
       backgroundColor: theme.colors.surface,
@@ -2492,15 +2506,10 @@ const makeStyles = (theme) =>
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.primary,
-        paddingVertical: Platform.OS === 'ios' ? 8 : 7,
+        paddingVertical: 10,
         paddingHorizontal: 16,
-        borderRadius: 22,
-        shadowColor: '#2856a2',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.16,
-        shadowRadius: 8,
-        elevation: 3,
-        gap: 4,
+        borderRadius: 8,
+        gap: 6,
       },
     }),
     createButtonText: Platform.select({
@@ -2511,9 +2520,8 @@ const makeStyles = (theme) =>
       },
       default: {
         color: theme.colors.onPrimary,
-        fontWeight: 'bold',
-        fontSize: 16,
-        letterSpacing: 0.25,
+        fontWeight: '600',
+        fontSize: 14,
       },
     }),
     mobileMenuButton: {

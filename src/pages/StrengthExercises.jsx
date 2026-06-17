@@ -138,22 +138,22 @@ export default function StrengthExercises() {
               ...STRENGTH_CATEGORIES.map(c => ({ key: c.id, label: `${c.icon} ${t(c.i18nKey)}`, color: c.color })),
             ].map(item => {
               const active = selectedCategory === item.key;
-              const activeColor = item.color || theme.colors.primary;
+              const activeColor = theme.colors.primary;
               return (
                 <TouchableOpacity
                   key={item.key || '__all'}
                   style={{
                     paddingHorizontal: 16,
                     paddingVertical: 10,
-                    borderRadius: 12,
-                    backgroundColor: active ? activeColor : theme.colors.surfaceAlt,
+                    borderRadius: 10,
+                    backgroundColor: active ? activeColor : theme.colors.surface,
                     borderWidth: 1,
                     borderColor: active ? activeColor : theme.colors.border,
-                    shadowColor: active ? activeColor : '#000',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: active ? 0.25 : 0.03,
-                    shadowRadius: 5,
-                    elevation: active ? 4 : 1,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 3,
+                    elevation: 1,
                   }}
                   onPress={() => {
                     setSelectedCategory(item.key);
@@ -163,7 +163,7 @@ export default function StrengthExercises() {
                   <Text style={{
                     fontSize: 14,
                     fontWeight: active ? '700' : '600',
-                    color: active ? '#fff' : theme.colors.textSecondary
+                    color: active ? (theme.colors.onPrimary || '#fff') : theme.colors.textSecondary
                   }}>
                     {item.label}
                   </Text>
@@ -188,7 +188,7 @@ export default function StrengthExercises() {
               >
                 {sectionOptions.map(item => {
                   const active = selectedSection === item.key;
-                  const activeColor = item.color || theme.colors.primary;
+                  const activeColor = theme.colors.primary;
                   return (
                     <TouchableOpacity
                       key={item.key || '__all'}
@@ -196,21 +196,21 @@ export default function StrengthExercises() {
                         paddingHorizontal: 14,
                         paddingVertical: 8,
                         borderRadius: 10,
-                        backgroundColor: active ? activeColor : theme.colors.surfaceAlt,
+                        backgroundColor: active ? activeColor : theme.colors.surface,
                         borderWidth: 1,
                         borderColor: active ? activeColor : theme.colors.border,
-                        shadowColor: active ? activeColor : '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: active ? 0.2 : 0.02,
-                        shadowRadius: 3,
-                        elevation: active ? 2 : 1,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.04,
+                        shadowRadius: 2,
+                        elevation: 1,
                       }}
                       onPress={() => setSelectedSection(active ? null : item.key)}
                     >
                       <Text style={{
                         fontSize: 12,
                         fontWeight: active ? '700' : '600',
-                        color: active ? '#fff' : theme.colors.textMuted,
+                        color: active ? (theme.colors.onPrimary || '#fff') : theme.colors.textMuted,
                       }}>
                         {item.label}
                       </Text>
@@ -246,7 +246,7 @@ export default function StrengthExercises() {
                           backgroundColor: theme.colors.surface,
                           borderColor: theme.colors.border,
                           borderWidth: 1,
-                          borderRadius: 12,
+                          borderRadius: 10,
                           padding: 8,
                           alignItems: 'center',
                           shadowColor: '#000',
@@ -295,8 +295,8 @@ export default function StrengthExercises() {
                               {t(ex.i18nKey)}
                             </Text>
                             {si && (
-                              <View style={{ backgroundColor: si.section.color, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>N{ex.level}</Text>
+                              <View style={{ backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                                <Text style={{ color: theme.colors.text, fontSize: 9, fontWeight: '800' }}>N{ex.level}</Text>
                               </View>
                             )}
                           </View>
@@ -344,8 +344,8 @@ export default function StrengthExercises() {
                           </View>
                         )}
                         {si && (
-                          <View style={[ss.lvl, { backgroundColor: si.section.color, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }]}>
-                            <Text style={{ color: '#fff', fontSize: cfg.lvl, fontWeight: '800' }}>N{ex.level}</Text>
+                          <View style={[ss.lvl, { backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }]}>
+                            <Text style={{ color: theme.colors.text, fontSize: cfg.lvl, fontWeight: '800' }}>N{ex.level}</Text>
                           </View>
                         )}
                       </View>

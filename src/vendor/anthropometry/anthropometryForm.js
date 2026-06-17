@@ -25,6 +25,8 @@ import {
 } from '@/store/slices/anthropometry/anthropometryThunks';
 import { clearCurrentAnthropometry } from '@/store/slices/anthropometry/anthropometrySlice';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { toast } from '@/ui/toast';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 // ---- Paletas (light / dark) -----------------------------------------------
 const LIGHT = {
@@ -162,11 +164,11 @@ const AnthropometryForm = ({ navigation, route }) => {
 
   const handleSubmit = async () => {
     if (!formData.jugador) {
-      Alert.alert(t('message.error'), t('anthropometry.selectPlayer'));
+      showMissingFieldsToast(t, [t('player.player', 'Jugador')]);
       return;
     }
     if (!formData.equipo || !selectedTeam?._id) {
-      Alert.alert(t('message.error'), 'Por favor selecciona un equipo');
+      toast.error(t('anthropometry.noTeamSelected', 'Por favor selecciona un equipo'));
       return;
     }
 
@@ -192,18 +194,15 @@ const AnthropometryForm = ({ navigation, route }) => {
     try {
       if (isEditMode) {
         await dispatch(updateAnthropometry({ id: anthropometryId, data: dataToSend })).unwrap();
-        Alert.alert(t('message.success'), t('anthropometry.updateSuccess'));
+        toast.success(t('anthropometry.updateSuccess'));
       } else {
         await dispatch(createAnthropometry(dataToSend)).unwrap();
-        Alert.alert(t('message.success'), t('anthropometry.createSuccess'));
+        toast.success(t('anthropometry.createSuccess'));
       }
       navigation.goBack();
     } catch (error) {
       console.error('Error submitting anthropometry:', error);
-      Alert.alert(
-        t('message.error'),
-        isEditMode ? t('anthropometry.updateError') : t('anthropometry.createError')
-      );
+      toast.error(isEditMode ? t('anthropometry.updateError') : t('anthropometry.createError'));
     }
   };
 

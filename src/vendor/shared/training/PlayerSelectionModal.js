@@ -402,8 +402,8 @@ export default function PlayerSelectionModal({
                         </View>
                       )}
                       {status && (
-                        <View style={[styles.statusBadgeMobile, { backgroundColor: status.color }]}>
-                          <Text style={styles.statusTextMobile}>{t(`common.${status.status}`, status.status)}</Text>
+                        <View style={[styles.statusBadgeMobile, status.status === 'injured' ? { backgroundColor: THEME.errorSoft } : { backgroundColor: status.color }]}>
+                          <Text style={[styles.statusTextMobile, status.status === 'injured' ? { color: THEME.errorSoftText } : null]}>{t(`common.${status.status}`, status.status)}</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -446,8 +446,8 @@ export default function PlayerSelectionModal({
                             </View>
                           )}
                           {status && (
-                            <View style={[styles.statusBadge, { backgroundColor: status.color }]}>
-                              <Text style={styles.statusText}>{t(`common.${status.status}`, status.status)}</Text>
+                            <View style={[styles.statusBadge, status.status === 'injured' ? { backgroundColor: THEME.errorSoft } : { backgroundColor: status.color }]}>
+                              <Text style={[styles.statusText, status.status === 'injured' ? { color: THEME.errorSoftText } : null]}>{t(`common.${status.status}`, status.status)}</Text>
                             </View>
                           )}
                         </View>
@@ -497,8 +497,8 @@ export default function PlayerSelectionModal({
                           </View>
                         )}
                         {status && (
-                          <View style={[styles.cardStatusBadge, { backgroundColor: status.color }]}>
-                            <Text style={styles.cardStatusText}>{t(`common.${status.status}`, status.status)}</Text>
+                          <View style={[styles.cardStatusBadge, status.status === 'injured' ? { backgroundColor: THEME.errorSoft } : { backgroundColor: status.color }]}>
+                            <Text style={[styles.cardStatusText, status.status === 'injured' ? { color: THEME.errorSoftText } : null]}>{t(`common.${status.status}`, status.status)}</Text>
                           </View>
                         )}
                       </TouchableOpacity>

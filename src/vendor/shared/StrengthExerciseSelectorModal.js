@@ -109,7 +109,7 @@ const ExerciseCard = ({ exercise, isSelected, onToggle, onView, t, cardWidth, st
         {/* Badge de selección */}
         {isSelected && (
           <View style={styles.selectedBadge}>
-            <Ionicons name="checkmark-circle" size={24} color={THEME.success} />
+            <Ionicons name="checkmark-circle" size={24} color={THEME.primary} />
           </View>
         )}
         {/* Badge de nivel */}
@@ -274,7 +274,7 @@ export default function StrengthExerciseSelectorModal({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerCloseBtn}>
-            <Ionicons name="close" size={26} color={THEME.onPrimary} />
+            <Ionicons name="close" size={26} color={THEME.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerTitleArea}>
             <Text style={styles.headerTitle}>{t('strengthExercises.selectExercises')}</Text>
@@ -328,8 +328,8 @@ export default function StrengthExerciseSelectorModal({
                 style={[
                   styles.filterChip,
                   selectedCategory === item.id && {
-                    backgroundColor: item.color || THEME.primary,
-                    borderColor: item.color || THEME.primary,
+                    backgroundColor: THEME.primary,
+                    borderColor: THEME.primary,
                   },
                 ]}
                 onPress={() => {
@@ -371,8 +371,8 @@ export default function StrengthExerciseSelectorModal({
                   style={[
                     styles.sectionChip,
                     selectedSection === item.id && {
-                      backgroundColor: item.color || THEME.primary,
-                      borderColor: item.color || THEME.primary,
+                      backgroundColor: THEME.primary,
+                      borderColor: THEME.primary,
                     },
                   ]}
                   onPress={() => setSelectedSection(item.id === selectedSection ? null : item.id)}
@@ -405,7 +405,7 @@ export default function StrengthExerciseSelectorModal({
               <Ionicons
                 name={showSelectedOnly ? 'checkmark-circle' : 'checkmark-circle-outline'}
                 size={16}
-                color={showSelectedOnly ? THEME.onPrimary : THEME.success}
+                color={showSelectedOnly ? THEME.onPrimary : THEME.primary}
               />
               <Text
                 style={[
@@ -464,33 +464,41 @@ const makeStyles = (THEME) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
+    backgroundColor: THEME.surface,
     paddingTop: Platform.OS === 'ios' ? 54 : 36,
     paddingBottom: 14,
     paddingHorizontal: 16,
     gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
   },
   headerCloseBtn: {
-    padding: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.background,
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
   headerTitleArea: {
     flex: 1,
   },
   headerTitle: {
-    color: THEME.onPrimary,
+    color: THEME.textPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   headerSubtitle: {
-    color: THEME.onPrimary,
-    opacity: 0.75,
+    color: THEME.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
   confirmBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.success,
+    backgroundColor: THEME.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -537,16 +545,16 @@ const makeStyles = (THEME) => StyleSheet.create({
     borderRadius: 20,
     backgroundColor: THEME.surface,
     borderWidth: 1.5,
-    borderColor: THEME.success,
+    borderColor: THEME.primary,
     gap: 6,
   },
   selectedFilterChipActive: {
-    backgroundColor: THEME.success,
-    borderColor: THEME.success,
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
   },
   selectedFilterChipText: {
     fontSize: 13,
-    color: THEME.success,
+    color: THEME.primary,
     fontWeight: '600',
   },
   selectedFilterChipTextActive: {
@@ -604,19 +612,19 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   card: {
     backgroundColor: THEME.surface,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 3,
   },
   cardSelected: {
-    borderColor: THEME.success,
-    backgroundColor: THEME.success + '1A', // 10% opacity for dark/light mode compatibility
+    borderColor: THEME.primary,
+    backgroundColor: THEME.primarySoft,
   },
   cardImageContainer: {
     position: 'relative',
@@ -648,7 +656,7 @@ const makeStyles = (THEME) => StyleSheet.create({
     borderRadius: 8,
   },
   levelBadgeText: {
-    color: THEME.surface,
+    color: '#ffffff',
     fontSize: 10,
     fontWeight: '800',
   },
@@ -656,7 +664,7 @@ const makeStyles = (THEME) => StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     right: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: THEME.primary,
     borderRadius: 14,
     padding: 4,
   },

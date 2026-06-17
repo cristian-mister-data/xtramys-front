@@ -7,6 +7,7 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const daysList = [
   { label: 'weekdays.monday', value: 1 },
@@ -72,7 +73,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
     if (!fechaFin) missing.push(t('session.endDate'));
     if (diasSemana.length === 0) missing.push(t('session.trainingDays'));
     if (missing.length > 0) {
-      Alert.alert(t('message.error'), t('message.missingFields', { fields: missing.join(', ') }));
+      showMissingFieldsToast(t, missing);
       return;
     }
     onSubmit({

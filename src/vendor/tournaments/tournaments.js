@@ -40,6 +40,7 @@ import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const TOURNAMENT_TYPES = [
   { value: 'liga', label: 'tournaments.league', icon: 'format-list-numbered', color: '#3B82F6' },
@@ -243,7 +244,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
 
   const handleSave = () => {
     if (!nombre.trim()) {
-      Alert.alert(t('common.error'), t('tournaments.nameRequired'));
+      showMissingFieldsToast(t, [t('tournaments.name')]);
       return;
     }
     const data = {
@@ -1466,7 +1467,7 @@ export default function Tournaments({ canMutate }) {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="emoji-events" size={64} color={theme.colors.border} />
+      <MaterialIcons name="emoji-events" size={56} color={theme.colors.textSecondary} />
       <Text style={styles.emptyTitle}>{t('tournaments.emptyTitle')}</Text>
       <Text style={styles.emptySubtitle}>{t('tournaments.emptySubtitle')}</Text>
       {canMutate !== false && (
@@ -1754,14 +1755,18 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 60,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.border,
+    borderRadius: 16,
     gap: 12,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
   },
   emptySubtitle: {
     fontSize: 14,
@@ -1774,10 +1779,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    marginTop: 8,
   },
   emptyButtonText: {
     color: '#fff',

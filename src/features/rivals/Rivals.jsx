@@ -42,7 +42,6 @@ import {
   Stack,
   Row,
   Muted,
-  ErrorText,
 } from '../../ui/primitives';
 import SectionHeader from '../../ui/SectionHeader';
 import Modal from '../../ui/Modal';
@@ -50,6 +49,7 @@ import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import ImageCropper from '../../components/season/ImageCropper';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -332,7 +332,6 @@ export default function Rivals() {
   const [nombre, setNombre] = useState('');
   const [escudo, setEscudo] = useState('');
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
   const [viewing, setViewing] = useState(null);
   const [cropperSrc, setCropperSrc] = useState(null);
 
@@ -375,7 +374,6 @@ export default function Rivals() {
     setEditing(null);
     setNombre('');
     setEscudo('');
-    setFormError('');
     setModalOpen(true);
   };
 
@@ -383,7 +381,6 @@ export default function Rivals() {
     setEditing(rival);
     setNombre(rival.nombre || '');
     setEscudo(rival.escudo || '');
-    setFormError('');
     setModalOpen(true);
     setViewing(null);
   };
@@ -393,7 +390,6 @@ export default function Rivals() {
     setEditing(null);
     setNombre('');
     setEscudo('');
-    setFormError('');
   };
 
   const handlePickImage = () => {
@@ -424,7 +420,7 @@ export default function Rivals() {
 
   const handleSave = async () => {
     if (!nombre.trim()) {
-      setFormError(t('rivals.nameRequired', 'El nombre es obligatorio'));
+      showMissingFieldsToast(t, [t('rivals.name', 'Nombre')]);
       return;
     }
     if (!selectedTeam?._id) {
@@ -432,7 +428,6 @@ export default function Rivals() {
       return;
     }
     setSaving(true);
-    setFormError('');
     try {
       const payload = {
         nombre: nombre.trim(),
@@ -523,14 +518,19 @@ export default function Rivals() {
           <MdShield size={56} />
           <div style={{ fontWeight: 600, fontSize: 16 }}>
             {rivals.length === 0
-              ? t('rivals.empty', 'Aún no has añadido rivales')
+              ? t('rivals.empty', 'No hay rivales')
               : t('rivals.noResults', 'Sin resultados para esa búsqueda')}
           </div>
+          <Muted>
+            {rivals.length === 0
+              ? t('rivals.createFirstHint', 'Crea tu primer rival para comenzar')
+              : t('rivals.tryDifferentFilters', 'Prueba con otros filtros.')}
+          </Muted>
           {rivals.length === 0 && canMutate && (
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
-                {t('rivals.addFirst', 'Añadir el primero')}
+                {t('rivals.createFirst', 'Crear rival')}
               </Row>
             </Button>
           )}
@@ -623,7 +623,6 @@ export default function Rivals() {
               placeholder={t('rivals.namePlaceholder', 'Nombre del equipo rival')}
               autoFocus
             />
-            {formError && <ErrorText>{formError}</ErrorText>}
           </Field>
 
           <Field>

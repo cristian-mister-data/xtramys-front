@@ -514,8 +514,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
   });
   const totalWithDuration = durationCounts.corta + durationCounts.media + durationCounts.larga || 1;
 
-  // Active Injuries list
-  const activeInjuries = injuries.filter((inj) => !inj.fechaFin || new Date(inj.fechaFin) > today);
+  const injuryHistory = injuries;
 
   const getLocale = () => 'es-ES'; // Can be improved
 
@@ -612,7 +611,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
           </View>
         </View>
 
-        {activeInjuries.length > 0 ? (
+        {injuryHistory.length > 0 ? (
           <View style={s.table}>
             <View style={s.row}>
               <View style={[s.headerCell, { width: '24%' }]}><Text style={[s.headerText, { textAlign: 'left' }]}>{t('statistics.weeklyAttendance.player', 'Jugador')}</Text></View>
@@ -624,7 +623,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
               <View style={[s.headerCell, { width: '10%' }]}><Text style={s.headerText}>{t('injury.relapse', 'Recaída')}</Text></View>
             </View>
             
-            {activeInjuries.map((inj, idx) => {
+            {injuryHistory.map((inj, idx) => {
               const playerId = inj.jugador?._id || inj.jugador;
               const player = players.find((p) => p._id === playerId);
               const playerName = player ? getPlayerFullName(player, t) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
@@ -650,7 +649,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
           </View>
         ) : (
           <View style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', borderWidth: 1, borderRadius: 6, padding: SPACING.md, marginTop: SPACING.sm }}>
-            <Text style={{ textAlign: 'center', color: '#15803d', fontFamily: 'Helvetica-Bold', fontSize: FONT_SIZE.sm }}>✓ {t('injuryStats.noActiveInjuries', 'No hay lesiones activas en la plantilla.')}</Text>
+            <Text style={{ textAlign: 'center', color: '#15803d', fontFamily: 'Helvetica-Bold', fontSize: FONT_SIZE.sm }}>✓ {t('injuryStats.noInjuries', 'No hay lesiones registradas en la plantilla.')}</Text>
           </View>
         )}
       </PdfSection>

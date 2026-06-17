@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { logoutThunk, fetchMe } from '@/store/slices/user/userThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import CustomAlertModal from '@/vendor/shared/customAlert';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -156,11 +157,11 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
     }
     if (!isClubAdmin) {
       if (!categoriaKey) {
-        Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.category') }));
+        showMissingFieldsToast(t, [t('team.category')]);
         return;
       }
       if (categoriaKey === 'otro' && !categoriaCustom?.trim()) {
-        Alert.alert(t('message.error'), t('message.missingFields', { fields: t('team.customCategory') }));
+        showMissingFieldsToast(t, [t('team.customCategory')]);
         return;
       }
     }

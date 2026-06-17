@@ -30,6 +30,7 @@ import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -243,7 +244,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
     if (!formData.tipo.value) missing.push(t('injury.type'));
     if (!formData.fechaInicio) missing.push(t('injury.startDate'));
     if (missing.length > 0) {
-      Alert.alert(t('message.error'), t('message.missingFields', { fields: missing.join(', ') }));
+      showMissingFieldsToast(t, missing);
       return;
     }
 
@@ -657,7 +658,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
           {getFilteredInjuries() && getFilteredInjuries().length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <View style={styles.emptyStateCard}>
-                <MaterialIcons name="medical-services" size={64} color={theme.colors.border} />
+                <MaterialIcons name="medical-services" size={56} color={theme.colors.textSecondary} />
                 <Text style={styles.emptyStateTitle}>
                   {injuries?.length === 0 ? t('injury.noInjuries') : t('injury.noResults')}
                 </Text>
@@ -1297,29 +1298,24 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emptyStateCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    padding: 36,
+    borderRadius: 16,
+    padding: 60,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
     borderWidth: 1,
+    borderStyle: 'dashed',
     borderColor: theme.colors.border,
+    gap: 12,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     textAlign: 'center',
-    marginTop: 8,
     lineHeight: 20,
   },
   emptyStateButton: Platform.select({
@@ -1330,22 +1326,16 @@ const makeStyles = (theme) => StyleSheet.create({
       paddingVertical: 10,
       paddingHorizontal: 16,
       borderRadius: 8,
-      marginTop: 20,
       gap: 6,
     },
     default: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 14,
-      marginTop: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-      elevation: 2,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      gap: 6,
     }
   }),
   emptyStateButtonText: Platform.select({
@@ -1359,7 +1349,7 @@ const makeStyles = (theme) => StyleSheet.create({
       color: '#ffffff',
       fontWeight: '600',
       fontSize: 14,
-      marginLeft: 8,
+      marginLeft: 0,
     }
   }),
   injuriesList: {

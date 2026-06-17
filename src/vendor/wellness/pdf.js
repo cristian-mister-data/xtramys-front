@@ -111,7 +111,6 @@ const s = StyleSheet.create({
     fontSize: FONT_SIZE.md,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.primary,
-    textTransform: 'uppercase',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     paddingBottom: 4,
@@ -286,7 +285,14 @@ const WellnessRangeDocument = ({ sessions, fromStr, toStr, teamName, totalRespon
         {sessions.map((session, sIdx) => {
           const sessionDateStr = getLocaleDateString(session.fecha, lang);
           const avg = isPreWellness ? session.averageScore : session.averageWellness;
-          const sectionTitle = `📅 ${sessionDateStr} ${session.horaInicio ? `(${session.horaInicio}${session.horaFin ? ' - ' + session.horaFin : ''})` : ''} ${avg ? ` — ${t('session.average') || 'Media'}: ${avg}` : ''}`;
+          const timeRange = session.horaInicio
+            ? ` (${session.horaInicio}${session.horaFin ? ` - ${session.horaFin}` : ''})`
+            : '';
+          const averageLabel = t('session.average') || 'Media';
+          const averageValue = avg !== undefined && avg !== null && avg !== ''
+            ? ` - ${averageLabel}: ${avg}`
+            : '';
+          const sectionTitle = `${sessionDateStr}${timeRange}${averageValue}`;
           
           return (
             <View key={sIdx} wrap={false} style={{ marginBottom: SPACING.md }}>

@@ -32,6 +32,8 @@ import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks
 import { fetchTournamentSanctions, fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
 import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toast } from '@/ui/toast';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
@@ -1594,12 +1596,12 @@ export default function EditMatchSheetModal({
   // Crear nuevo rival
   const handleCreateRival = async () => {
     if (!newRivalName.trim()) {
-      Alert.alert(t('common.error'), t('rivals.nameRequired'));
+      showMissingFieldsToast(t, [t('rivals.name')]);
       return;
     }
 
     if (!team?._id) {
-      Alert.alert(t('common.error'), t('rivals.noTeamSelected'));
+      toast.error(t('rivals.noTeamSelected'));
       return;
     }
 
@@ -1616,7 +1618,7 @@ export default function EditMatchSheetModal({
     }
 
     if (!userId) {
-      Alert.alert(t('common.error'), t('message.noUserIdentified'));
+      toast.error(t('message.noUserIdentified'));
       return;
     }
 
@@ -1646,10 +1648,10 @@ export default function EditMatchSheetModal({
       setNewRivalEscudo('');
       setSearchRivalText('');
       
-      Alert.alert(t('common.success'), t('rivals.createSuccess'));
+      toast.success(t('rivals.createSuccess'));
     } catch (error) {
       console.error('Error creating rival:', error);
-      Alert.alert(t('common.error'), error.message || t('rivals.saveError'));
+      toast.error(error.message || t('rivals.saveError'));
     } finally {
       setSavingRival(false);
     }
@@ -1668,12 +1670,12 @@ export default function EditMatchSheetModal({
   // Guardar cambios
   const handleSave = async () => {
     if (!rival.trim()) {
-      Alert.alert(t('common.error'), t('matchSheet.rivalRequired'));
+      showMissingFieldsToast(t, [t('matchSheet.fields.rival', 'Rival')]);
       return;
     }
 
     if (competicion !== 'amistoso' && !torneoId) {
-      Alert.alert(t('common.error'), t('tournaments.tournamentRequired'));
+      showMissingFieldsToast(t, [t('matchSheet.fields.tournament', 'Torneo')]);
       return;
     }
 
@@ -1904,7 +1906,7 @@ export default function EditMatchSheetModal({
 
             {/* Rival - Usando componente reutilizable */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>{t('matchSheet.fields.rivalRequired')}</Text>
+              <Text style={styles.label}>{t('matchSheet.fields.rival')}</Text>
               <RivalSelector
                 selectedRivalId={rivalId}
                 selectedRivalName={rival}

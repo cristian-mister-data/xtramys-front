@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 // Alineaciones de fútbol 11 (incluyen portero con prefijo 1-)
 export const ALINEACIONES = [
@@ -368,7 +369,7 @@ export default function useMatchSheetForm({
   // Validar formulario
   const validateForm = useCallback(() => {
     if (!rival.trim()) {
-      Alert.alert(t('message.error'), t('matchSheet.errors.rivalRequired'));
+      showMissingFieldsToast(t, [t('matchSheet.rival', 'Rival')]);
       return false;
     }
     return true;

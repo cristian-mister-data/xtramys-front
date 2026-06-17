@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { linkVideoToStrategy } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
 import { useTheme } from 'styled-components';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -336,15 +337,16 @@ export default function CreateStrategyForm({
 
   const handleSave = async () => {
     const errors = {};
+    const missingFields = [];
     const trimmedName = String(name || '').trim();
     if (!trimmedName) {
-      errors.name = editingStrategy
-        ? t('common.validationErrorEdit', { field: t('strategy.name') })
-        : t('common.validationErrorCreate', { field: t('strategy.name') });
+      errors.name = true;
+      missingFields.push(t('strategy.name'));
     }
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      showMissingFieldsToast(t, missingFields);
       return;
     }
     
@@ -429,12 +431,6 @@ export default function CreateStrategyForm({
               }
             }}
           />
-          {validationErrors.name && (
-            <Text style={{ color: '#ef4444', fontSize: 13, marginTop: -10, marginBottom: 16, fontWeight: '500' }}>
-              {validationErrors.name}
-            </Text>
-          )}
-          
           {/* Selector de carpeta */}
           <TouchableOpacity 
             style={styles.typeSelector} 

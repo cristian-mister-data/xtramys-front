@@ -72,6 +72,13 @@ import {
 } from './rivalAnalysisData';
 import { generateRivalAnalysisPdf } from './pdf';
 
+const sanitizeVideoQuestionName = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 // ---------- VideoBlock component ----------
 function VideoBlock({ videoId, inlineUrl, label, poster, onPlay, onDownload, t }) {
   const [meta, setMeta] = useState({ posterUrl: poster || '', videoName: '', resolvedUrl: '' });
@@ -549,9 +556,10 @@ export default function AnalysisDetailModal({
   const handleDownloadVideo = async (videoId, videoName) => {
     if (!videoId) return;
     try {
-      const name = videoName
-        ? `rival-${analysis.rival || 'video'}-${videoName}`
-        : `rival-${analysis.rival || 'video'}`;
+      const cleanName = sanitizeVideoQuestionName(videoName) || t('rivalAnalysis.video', 'video');
+      const name = cleanName.toLowerCase().endsWith('.mp4')
+        ? cleanName.slice(0, -4)
+        : cleanName;
       await downloadResolvedVideo(videoId, name);
       toast.success(t('rivalAnalysis.actions.downloadStarted', 'Descarga iniciada'));
     } catch (err) {

@@ -75,11 +75,11 @@ const Swatches = styled.div`
 const Swatch = styled.button`
   aspect-ratio: 1;
   border-radius: 5px;
-  border: 2px solid ${({ $active }) => ($active ? '#fbbf24' : 'rgba(255,255,255,0.15)')};
+  border: 2px solid ${({ $active }) => ($active ? '#fbbf24' : '#000')};
   background: ${({ $color }) => $color};
   cursor: pointer;
   padding: 0;
-  &:hover { border-color: rgba(255,255,255,0.4); }
+  &:hover { border-color: ${({ $active }) => ($active ? '#fbbf24' : '#111')}; }
 `;
 
 const NumberInput = styled.input`
@@ -166,6 +166,7 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose, is
     pole: t('tacticalBoard.editPanel.editPole', 'Palo'),
     ladder: t('tacticalBoard.editPanel.editLadder', 'Escalera'),
     ball: t('tacticalBoard.editPanel.editBall', 'Balón'),
+    'custom-shape-button': t('tacticalBoard.editPanel.editCustomShapeButton', 'Figura personalizada'),
     cone: t('tacticalBoard.editPanel.editCone', 'Cono'),
     'cone-flat': t('tacticalBoard.editPanel.editConeFlat', 'Cono bajo'),
     ring: t('tacticalBoard.editPanel.editRing', 'Aro'),

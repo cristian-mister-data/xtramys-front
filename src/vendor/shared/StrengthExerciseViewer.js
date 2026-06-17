@@ -12,8 +12,8 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  Dimensions,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
@@ -30,8 +30,6 @@ import {
   getSectionForExercise,
   checkVideoAvailability,
 } from '@/data/strengthExercises';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Caché de videos en el sistema de archivos local
 const VIDEO_CACHE_DIR = `${FileSystem.cacheDirectory}strength_videos/`;
@@ -83,6 +81,7 @@ const THEME_DEFAULT = {
   textMuted: '#94a3b8',
   background: '#f8fafc',
   surface: '#ffffff',
+  surfaceAlt: '#f1f5f9',
   border: '#e2e8f0',
   overlay: 'rgba(0,0,0,0.6)',
 };
@@ -100,6 +99,7 @@ const buildTheme = (sc) => {
     textMuted: c.textMuted || THEME_DEFAULT.textMuted,
     background: c.background || THEME_DEFAULT.background,
     surface: c.surface || THEME_DEFAULT.surface,
+    surfaceAlt: c.surfaceAlt || c.backgroundAlt || THEME_DEFAULT.surfaceAlt,
     border: c.border || THEME_DEFAULT.border,
     overlay: THEME_DEFAULT.overlay,
   };
@@ -108,8 +108,12 @@ const buildTheme = (sc) => {
 export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   const { t } = useTranslation();
   const themeSC = useTheme();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const THEME = useMemo(() => buildTheme(themeSC), [themeSC]);
-  const styles = useMemo(() => makeStyles(THEME), [THEME]);
+  const isWide = screenWidth >= 900;
+  const mediaHeight = Math.max(220, Math.min(screenHeight * 0.44, isWide ? 420 : 320));
+  const contentMaxWidth = isWide ? 1040 : undefined;
+  const styles = useMemo(() => makeStyles(THEME, mediaHeight), [THEME, mediaHeight]);
   const [showVideo, setShowVideo] = useState(false);
   const [videoUri, setVideoUri] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -401,7 +405,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={THEME.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle} numberOfLines={1}>{exerciseName}</Text>
@@ -413,12 +417,12 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={handleShareVideo} style={styles.headerBtn}>
-              <Ionicons name="share-outline" size={22} color="#fff" />
+              <Ionicons name="share-outline" size={22} color={THEME.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
 
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+        <ScrollView style={styles.body} contentContainerStyle={[styles.bodyContent, { maxWidth: contentMaxWidth }]}>
           {/* Imagen del ejercicio */}
           {!showVideo ? (
             <View style={styles.imageSection}>
@@ -540,13 +544,13 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
                 disabled={downloading}
               >
                 {downloading && downloadProgress > 0 ? (
-                  <Text style={styles.actionBtnText}>{Math.round(downloadProgress * 100)}%</Text>
+                  <Text style={[styles.actionBtnText, { color: THEME.background }]}>{Math.round(downloadProgress * 100)}%</Text>
                 ) : downloading ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={THEME.background} />
                 ) : (
                   <>
-                    <Ionicons name="download-outline" size={22} color="#fff" />
-                    <Text style={styles.actionBtnText}>{t('strengthExercises.downloadVideo')}</Text>
+                    <Ionicons name="download-outline" size={22} color={THEME.background} />
+                    <Text style={[styles.actionBtnText, { color: THEME.background }]}>{t('strengthExercises.downloadVideo')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -558,8 +562,8 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
               onPress={handleDownloadImage}
               disabled={downloading}
             >
-              <Ionicons name="image-outline" size={22} color="#fff" />
-              <Text style={styles.actionBtnText}>{t('strengthExercises.downloadImage')}</Text>
+              <Ionicons name="image-outline" size={22} color={THEME.textPrimary} />
+              <Text style={[styles.actionBtnText, styles.actionBtnTextSecondary]}>{t('strengthExercises.downloadImage')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -568,7 +572,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   );
 }
 
-const makeStyles = (THEME) => StyleSheet.create({
+const makeStyles = (THEME, mediaHeight) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.background,
@@ -576,25 +580,34 @@ const makeStyles = (THEME) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primaryDark,
+    backgroundColor: THEME.surface,
     paddingTop: Platform.OS === 'ios' ? 54 : 36,
     paddingBottom: 14,
     paddingHorizontal: 16,
     gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
   },
   headerBtn: {
-    padding: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.background,
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
   headerTitleContainer: {
     flex: 1,
   },
   headerTitle: {
-    color: '#fff',
+    color: THEME.textPrimary,
     fontSize: 17,
     fontWeight: '700',
   },
   headerSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
+    color: THEME.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
@@ -607,14 +620,18 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   bodyContent: {
     paddingBottom: 30,
+    width: '100%',
+    alignSelf: 'center',
   },
   imageSection: {
     position: 'relative',
-    backgroundColor: '#000',
-    aspectRatio: 4 / 3,
+    backgroundColor: THEME.surface,
+    height: mediaHeight,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
   },
   exerciseImage: {
     width: '100%',
@@ -637,7 +654,7 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   videoSection: {
     position: 'relative',
-    backgroundColor: '#111',
+    backgroundColor: THEME.background,
     width: '100%',
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -646,10 +663,14 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   videoWrapper: {
     width: '100%',
+    maxWidth: 860,
+    height: mediaHeight,
     aspectRatio: 16 / 9,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
   videoPlayer: {
     width: '100%',
@@ -657,8 +678,8 @@ const makeStyles = (THEME) => StyleSheet.create({
   },
   closeVideoBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 18,
+    right: 18,
   },
   infoSection: {
     padding: 16,
@@ -756,14 +777,24 @@ const makeStyles = (THEME) => StyleSheet.create({
     backgroundColor: THEME.primary,
   },
   actionBtnDownload: {
-    backgroundColor: THEME.success,
+    backgroundColor: THEME.textPrimary,
+    borderWidth: 1,
+    borderColor: THEME.textPrimary,
+  },
+  actionBtnDownloadText: {
+    color: THEME.background,
   },
   actionBtnImage: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: THEME.surfaceAlt,
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
   actionBtnText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  actionBtnTextSecondary: {
+    color: THEME.textPrimary,
   },
 });

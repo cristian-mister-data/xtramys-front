@@ -318,7 +318,7 @@ export default function TrainingSessionDetailModal({
   };
 
   const modalImageWidth = Math.round(screenWidth * 0.95);
-  const modalImageHeight = Math.round(screenHeight * 0.8);
+  const modalImageHeight = Math.round(screenHeight * 0.72);
   const modalImageCenter = {
     x: Math.round(modalImageWidth / 2),
     y: Math.round(modalImageHeight / 2),
@@ -868,11 +868,11 @@ export default function TrainingSessionDetailModal({
           </TouchableOpacity>
           {selectedImage && (
             <ImageZoom
-              cropWidth={screenWidth}
-              cropHeight={screenHeight}
+              cropWidth={modalImageWidth}
+              cropHeight={modalImageHeight}
               imageWidth={modalImageWidth}
               imageHeight={modalImageHeight}
-              style={styles.imageZoomWrapper}
+              style={[styles.imageZoomWrapper, { width: modalImageWidth, height: modalImageHeight }]}
               enableCenterFocus={true}
               centerOn={modalImageCenter}
               minScale={1}
@@ -886,7 +886,7 @@ export default function TrainingSessionDetailModal({
                     ? `${selectedImage}?t=${Date.now()}`
                     : `data:image/png;base64,${selectedImage}`
                 }}
-                style={[styles.fullImage, { alignSelf: 'center' }]}
+                style={[styles.fullImage, { width: modalImageWidth, height: modalImageHeight }]}
                 resizeMode="contain"
               />
             </ImageZoom>
@@ -1435,34 +1435,45 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
   closeImageBtn: {
     position: 'absolute',
-    top: 50,
+    top: 20,
     right: 20,
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   closeImageText: {
     color: '#fff',
-    fontSize: 28,
-    fontWeight: '300',
+    fontSize: 26,
+    fontWeight: '500',
+    lineHeight: 26,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   fullImage: {
-    width: '95%',
-    height: '80%',
-    borderRadius: 12,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   imageZoomWrapper: {
-    width: '100%',
-    height: '100%',
+    alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   
   // Estilos para botón de video en ejercicio (brand pink kept literal)

@@ -848,6 +848,9 @@ export default function Training({ canMutate }) {
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [loadingOrg, setLoadingOrg] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState(() => new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const fetchedRef = useRef({ season: false, exercises: false, user: false, teams: false, players: false });
   
   // Estados para reproducción de videos
@@ -1402,6 +1405,64 @@ export default function Training({ canMutate }) {
     })
     : eventosPasados;
   const selectedTeam = equipos.find(e => e.seleccionado === true);
+  const visibleSessions = tab === 'futuros' ? eventosFuturosFiltrados : eventosPasadosFiltrados;
+  const visibleSessionIds = visibleSessions.map((s) => s._id).filter(Boolean);
+  const selectedCount = selectedSessionIds.size;
+  const allVisibleSelected = visibleSessionIds.length > 0 && visibleSessionIds.every((id) => selectedSessionIds.has(id));
+
+  useEffect(() => {
+    setSelectionMode(false);
+    setSelectedSessionIds(new Set());
+  }, [tab, dateFilter]);
+
+  function toggleSessionSelection(id) {
+    if (!id) return;
+    setSelectionMode(true);
+    setSelectedSessionIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.size === 0) setSelectionMode(false);
+      return next;
+    });
+  }
+
+  function handleSelectAllVisible() {
+    setSelectedSessionIds(allVisibleSelected ? new Set() : new Set(visibleSessionIds));
+    setSelectionMode(!allVisibleSelected && visibleSessionIds.length > 0);
+  }
+
+  function handleCancelSelection() {
+    setSelectionMode(false);
+    setSelectedSessionIds(new Set());
+  }
+
+  function handleBulkDeleteSessions() {
+    if (selectedSessionIds.size === 0) return;
+    Alert.alert(
+      t('session.bulkDeleteTitle'),
+      t('session.bulkDeleteMessage', { count: selectedSessionIds.size }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsBulkDeleting(true);
+              await Promise.all([...selectedSessionIds].map((id) => dispatch(deleteEntrenamiento(id)).unwrap()));
+              if (selectedTeam?._id) dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
+              handleCancelSelection();
+              Alert.alert(t('message.success'), t('session.bulkDeleteSuccess', { count: selectedSessionIds.size }));
+            } catch {
+              Alert.alert(t('message.error'), t('session.bulkDeleteError'));
+            } finally {
+              setIsBulkDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   if (!selectedTeam && loading) {
     return (
@@ -1425,6 +1486,7 @@ export default function Training({ canMutate }) {
 
   function renderSession(session, type) {
     const isPast = type === 'pasado';
+    const isSelected = selectedSessionIds.has(session._id);
     const sessionDate = new Date(session.fecha);
     const formattedDate = formatFechaSesion(session.fecha, session.horaInicio, session.horaFin, t);
     
@@ -1465,9 +1527,11 @@ export default function Training({ canMutate }) {
         key={session._id}
         style={[
           styles.proSessionCard,
-          isPast ? styles.proSessionCardPast : styles.proSessionCardFuture
+          isPast ? styles.proSessionCardPast : styles.proSessionCardFuture,
+          isSelected && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primarySoft }
         ]}
-        onPress={() => handleSessionPress(session)}
+        onPress={() => selectionMode ? toggleSessionSelection(session._id) : handleSessionPress(session)}
+        onLongPress={() => canMutate !== false && toggleSessionSelection(session._id)}
         activeOpacity={0.85}
       >
         {/* Indicador lateral de estado */}
@@ -1475,6 +1539,11 @@ export default function Training({ canMutate }) {
         
         {/* Contenido principal */}
         <View style={styles.proSessionContent}>
+          {selectionMode && (
+            <View style={[styles.bulkSelectBox, { borderColor: isSelected ? theme.colors.primary : theme.colors.border, backgroundColor: isSelected ? theme.colors.primary : theme.colors.surface }]}>
+              {isSelected && <MaterialIcons name="check" size={16} color={theme.colors.onPrimary} />}
+            </View>
+          )}
           {/* Fecha destacada */}
           <View style={[styles.proDateBadge, isPast ? styles.proDateBadgePast : styles.proDateBadgeFuture]}>
             <Text style={[styles.proDateDay, isPast && styles.proDateDayPast]}>{dayNumber}</Text>
@@ -1762,6 +1831,40 @@ export default function Training({ canMutate }) {
           )
         )}
       </View>
+
+      {selectionMode && canMutate !== false && (
+        <View style={[styles.bulkActionBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+          <View style={styles.bulkActionInfo}>
+            <Text style={[styles.bulkActionTitle, { color: theme.colors.text }]}>
+              {t('session.selectedTrainings', { count: selectedCount })}
+            </Text>
+            <TouchableOpacity onPress={handleSelectAllVisible} disabled={visibleSessionIds.length === 0}>
+              <Text style={[styles.bulkSelectAllText, { color: theme.colors.primary }]}>
+                {allVisibleSelected ? t('session.deselectAll') : t('session.selectAllVisible')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.bulkDeleteButton, { opacity: selectedCount === 0 || isBulkDeleting ? 0.5 : 1 }]}
+            onPress={handleBulkDeleteSessions}
+            disabled={selectedCount === 0 || isBulkDeleting}
+          >
+            {isBulkDeleting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Feather name="trash-2" size={16} color="#fff" />
+            )}
+            <Text style={styles.bulkDeleteButtonText}>{t('common.delete')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.bulkCancelButton, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}
+            onPress={handleCancelSelection}
+            disabled={isBulkDeleting}
+          >
+            <Feather name="x" size={18} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Modal de Video - A nivel de componente principal para funcionar desde cualquier modal */}
       <Modal
@@ -2728,6 +2831,8 @@ function getStyles(theme) {
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     shadowColor: '#1e3a5a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -2754,6 +2859,68 @@ function getStyles(theme) {
     flexDirection: 'row',
     padding: isMobileDevice() ? 12 : 16,
     gap: isMobileDevice() ? 10 : 16,
+  },
+  bulkSelectBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  bulkActionBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 18,
+  },
+  bulkActionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  bulkActionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  bulkSelectAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  bulkDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#dc2626',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  bulkDeleteButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  bulkCancelButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // --- Pro Date Badge ---

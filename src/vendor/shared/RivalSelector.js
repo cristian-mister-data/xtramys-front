@@ -19,6 +19,8 @@ import { useTheme } from 'styled-components';
 import { fetchRivalsByTeam, createRival } from '@/store/slices/rival/rivalThunks';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toast } from '@/ui/toast';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -111,17 +113,17 @@ export default function RivalSelector({
 
   const handleCreateRival = async () => {
     if (!newRivalName.trim()) {
-      Alert.alert(t('common.error'), t('rivals.nameRequired'));
+      showMissingFieldsToast(t, [t('rivals.name')]);
       return;
     }
 
     if (!teamId) {
-      Alert.alert(t('common.error'), t('rivals.noTeamSelected'));
+      toast.error(t('rivals.noTeamSelected'));
       return;
     }
 
     if (!userId) {
-      Alert.alert(t('common.error'), t('rivals.userNotFound'));
+      toast.error(t('rivals.userNotFound'));
       return;
     }
 
@@ -149,10 +151,10 @@ export default function RivalSelector({
       setNewRivalEscudo('');
       setSearchText('');
       
-      Alert.alert(t('common.success'), t('rivals.createSuccess'));
+      toast.success(t('rivals.createSuccess'));
     } catch (error) {
       console.error('Error creating rival:', error);
-      Alert.alert(t('common.error'), error.message || t('rivals.saveError'));
+      toast.error(error.message || t('rivals.saveError'));
     } finally {
       setSaving(false);
     }

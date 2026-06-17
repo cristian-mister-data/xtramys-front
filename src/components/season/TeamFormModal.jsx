@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
 import Select from '@/ui/Select';
 import { Button, Field, Input, Label, Row, Stack, ErrorText, Muted } from '@/ui/primitives';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import {
   categoryOptions,
   timePerHalfOptions,
@@ -130,16 +131,18 @@ export default function TeamFormModal({
 
   const handleSubmit = () => {
     setError(null);
+    const missingFields = [];
     if (!form.nombre?.trim()) {
-      setError(t('message.missingFields', { fields: t('team.teamName', 'Nombre del equipo') }));
-      return;
+      missingFields.push(t('team.teamName', 'Nombre del equipo'));
     }
     if (!form.categoriaKey) {
-      setError(t('message.missingFields', { fields: t('team.category', 'Categoría') }));
-      return;
+      missingFields.push(t('team.category', 'Categoría'));
     }
     if (form.categoriaKey === 'otro' && !form.categoriaCustom?.trim()) {
-      setError(t('message.missingFields', { fields: t('team.customCategory', 'Categoría personalizada') }));
+      missingFields.push(t('team.customCategory', 'Categoría personalizada'));
+    }
+    if (missingFields.length > 0) {
+      showMissingFieldsToast(t, missingFields);
       return;
     }
 

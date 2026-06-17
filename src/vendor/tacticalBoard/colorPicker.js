@@ -159,7 +159,7 @@ export function MiniColorPickerModal({ visible, initialColor, onClose, onSelect 
         <View style={pickerModalStyles.modalBox}>
           {/* Color preview */}
           <View style={pickerModalStyles.previewRow}>
-            <View style={[pickerModalStyles.preview, { backgroundColor: colorHex }]} />
+            <View style={[pickerModalStyles.preview, { backgroundColor: colorHex, borderWidth: 1.5, borderColor: '#000' }]} />
             <Text style={{ fontWeight: 'bold', fontSize: 12, marginLeft: 6, color: "#fff" }}>{colorHex}</Text>
           </View>
           {/* SV panel */}
@@ -193,7 +193,7 @@ export function MiniColorPickerModal({ visible, initialColor, onClose, onSelect 
               left: sv.s * SV_SIZE - 7,
               top: (1 - sv.v) * SV_SIZE - 7,
               width: 14, height: 14,
-              borderRadius: 7, borderWidth: 2, borderColor: "#fff", backgroundColor: colorHex,
+              borderRadius: 7, borderWidth: 2, borderColor: "#000", backgroundColor: colorHex,
             }} pointerEvents="none" />
           </View>
           {/* HEX input */}

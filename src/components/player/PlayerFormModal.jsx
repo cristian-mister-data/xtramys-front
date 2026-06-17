@@ -10,6 +10,7 @@ import {
 } from './playerHelpers';
 import ImageCropper from '@/components/season/ImageCropper';
 import { cdnUrl } from '@/config';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const Grid = styled.div`
   display: grid;
@@ -174,7 +175,7 @@ export default function PlayerFormModal({
     if (!data.posicion) missing.push(t('player.position', 'Posición'));
     if (data.dorsal === '') missing.push(t('player.dorsal', 'Dorsal'));
     if (missing.length) {
-      setError(t('message.missingFields', 'Faltan campos: ') + missing.join(', '));
+      showMissingFieldsToast(t, missing);
       return;
     }
     const dorsalNum = parseInt(data.dorsal, 10);

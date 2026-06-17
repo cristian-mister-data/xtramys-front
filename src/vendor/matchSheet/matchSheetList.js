@@ -1025,13 +1025,18 @@ export default function MatchSheetList({ canMutate }) {
             ) : null}
             ListEmptyComponent={
               <View style={[styles.emptyContainer, { marginTop: 40 }]}>
-                <Ionicons name="document-text-outline" size={80} color={theme.colors.primarySoft} />
+                <Ionicons name="document-text-outline" size={56} color={theme.colors.textSecondary} />
                 <Text style={styles.emptyText}>
                   {activeFiltersCount > 0 ? t('matchSheet.noMatchesFiltered') : t('matchSheet.noMatchSheets')}
                 </Text>
+                <Text style={styles.emptySubtitle}>
+                  {activeFiltersCount > 0
+                    ? t('matchSheet.tryDifferentFilters', 'Prueba con otros filtros.')
+                    : t('matchSheet.createFirstHint', 'Crea tu primera ficha de partido para comenzar')}
+                </Text>
                 {!activeFiltersCount && canMutate !== false && (
                   <TouchableOpacity
-                    style={[styles.createButton, { marginTop: 20 }]}
+                    style={styles.createButton}
                     onPress={openCreateModal}
                   >
                     <MaterialIcons name="add" size={20} color="#fff" />
@@ -1587,14 +1592,10 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.primary,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 7,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 22,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 8,
+    gap: 6,
   },
   createButtonMobile: {
     paddingHorizontal: 12,
@@ -1602,9 +1603,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   createButtonText: {
     color: theme.colors.onPrimary,
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.25,
+    fontWeight: '600',
+    fontSize: 14,
   },
   createButtonTextMobile: {
     fontSize: 14,
@@ -1681,19 +1681,23 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: theme.colors.textMuted,
-    marginBottom: 20,
+    color: theme.colors.textSecondary,
+    marginBottom: 0,
     textAlign: 'center',
-    fontStyle: 'italic',
-    opacity: 0.7,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
     minHeight: 400,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.border,
+    borderRadius: 16,
     padding: 24,
+    gap: 12,
   },
   matchSheetCardContent: {
     flex: 1,
@@ -2967,9 +2971,15 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: theme.colors.textMuted,
-    padding: 20,
-    fontStyle: 'italic',
+    color: theme.colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptySubtitle: {
+    textAlign: 'center',
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
   playerItem: {
     paddingVertical: 12,
@@ -3879,10 +3889,10 @@ const makeStyles = (theme) => StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary,
-      paddingVertical: 8,
+      paddingVertical: 10,
       paddingHorizontal: 16,
-      borderRadius: 22,
-      gap: 4,
+      borderRadius: 8,
+      gap: 6,
     }
   }),
 

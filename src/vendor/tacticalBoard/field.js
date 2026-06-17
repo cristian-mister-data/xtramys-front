@@ -74,6 +74,10 @@ import {
 import FieldSelectorModal from './FieldSelectorModal';
 import { cdnUrl } from '@/config';
 import ballImage from '@/images/ball.png';
+import {
+  renderFrameToCanvas,
+  getVideoDimensions,
+} from '@/utils/videoCanvasRenderer';
 
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
@@ -132,6 +136,55 @@ async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
   return FileSystem.readAsStringAsync(captured, {
     encoding: FileSystem.EncodingType.Base64,
   });
+}
+
+function loadCanvasImage(src) {
+  return new Promise((resolve, reject) => {
+    if (!src || typeof Image === 'undefined') {
+      resolve(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
+  });
+}
+
+function normalizeElementsForCanvas(elements = []) {
+  return elements
+    .map((elem) => {
+      const snapshot = {
+        ...elem,
+        baseSize: elem.baseSize || elem.size,
+        baseFontSize: elem.baseFontSize || elem.fontSize || elem.size,
+        number: elem.playerNumber || elem.number,
+        text: elem.value || elem.text,
+      };
+
+      if (Array.isArray(elem.points) && !elem.pointsRatio) {
+        snapshot.pointsRatio = elem.points.map((pt) => ({ x: pt.x, y: pt.y }));
+      }
+
+      if (elem.type === 'custom-shape') {
+        snapshot.closed = elem.closed !== false;
+      }
+
+      if (elem.type === 'player') {
+        snapshot.playersWithNumber = elem.playersWithNumber;
+        snapshot.isGoalkeeper =
+          elem.isGoalkeeper ||
+          elem.playerData?.posicion === 'portero' ||
+          elem.playerData?.position === 'goalkeeper' ||
+          elem.playerData?.demarcacion === 'POR';
+      }
+
+      return snapshot;
+    })
+    .filter((elem) => {
+      if (Array.isArray(elem.pointsRatio) && elem.pointsRatio.length >= 2) return true;
+      return elem.xRatio !== undefined && elem.yRatio !== undefined;
+    });
 }
 
 // Variable de m�dulo para proteger la selecci�n de deselecci�n inmediata
@@ -3945,7 +3998,7 @@ function LeftEditPanel({
                         isMobile ? styles.proModalColorBtnMobile : styles.proModalColorBtn,
                         {
                           backgroundColor: numberColor,
-                          borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0',
+                          borderColor: '#000000',
                         },
                       ]}
                       onPress={() => setNumberColorPickerVisible(true)}
@@ -5679,7 +5732,7 @@ function FormationModal({
                         styles.proModalColorBtnMobile,
                         {
                           backgroundColor: numberColor,
-                          borderColor: numberColor === '#ffffff' ? '#ccc' : '#e0e0e0',
+                          borderColor: '#000000',
                         },
                       ]}
                     />
@@ -6717,14 +6770,12 @@ function renderIconCanvas(
               {playersWithNumber && textValue !== '' && (
                 <SvgText
                   x={halfSize}
-                  y={isJersey ? size * 0.56 : halfSize}
+                  y={(isJersey ? size * 0.56 : halfSize) + fontSize * 0.35}
                   fill={textColor}
                   fontSize={fontSize}
                   fontWeight={isPositionLabel ? '600' : '700'}
                   fontFamily="Arial, Helvetica, sans-serif"
                   textAnchor="middle"
-                  alignmentBaseline="central"
-                  dominantBaseline="central"
                   pointerEvents="none"
                 >
                   {textValue}
@@ -14977,7 +15028,37 @@ export default function Field(props = {}) {
 
     if (canvasRef.current) {
       try {
-        const imageBase64 = await captureViewShotBase64(canvasRef);
+        let imageBase64 = '';
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const aspectVal = getAspectForView(viewMode);
+          const aspect = aspectVal ? 1 / aspectVal : referenceWidth / referenceHeight;
+          const { width: exportWidth, height: exportHeight } = getVideoDimensions(aspect);
+          const canvas = document.createElement('canvas');
+          canvas.width = exportWidth;
+          canvas.height = exportHeight;
+          const ctx = canvas.getContext('2d', { alpha: false });
+
+          const fieldBase64 = await captureViewShotBase64(fieldBaseRef);
+          const fieldImage = await loadCanvasImage(fieldBase64);
+          renderFrameToCanvas(
+            ctx,
+            exportWidth,
+            exportHeight,
+            normalizeElementsForCanvas(clones),
+            connectors,
+            fieldImage,
+            {
+              playersWithNumber,
+              showPhotos: teamPlayerStyle.showPhotos,
+              viewMode,
+            },
+          );
+          imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+        }
+
+        if (!imageBase64) {
+          imageBase64 = await captureViewShotBase64(canvasRef);
+        }
 
         if (saveCallback) {
           saveCallback(clones, selectedField, imageBase64, { playersWithNumber });
@@ -23552,7 +23633,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#000000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -23564,7 +23645,7 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#000000',
   },
   proModalSwitch: {
     flexDirection: 'row',

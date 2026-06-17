@@ -6,6 +6,7 @@ import Select from '@/ui/Select';
 import {
   Button, Field, Input, Label, Row, Stack, TextArea, ErrorText, Muted,
 } from '@/ui/primitives';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import {
   TOURNAMENT_TYPES, FORMATO_OPTIONS, RONDAS_OPTIONS, TOURNAMENT_COLORS,
 } from './tournamentHelpers';
@@ -118,7 +119,7 @@ export default function TournamentFormModal({
   const handleSave = () => {
     setError(null);
     if (!form.nombre.trim()) {
-      setError(t('tournaments.nameRequired', 'El nombre es obligatorio'));
+      showMissingFieldsToast(t, [t('tournaments.name', 'Nombre')]);
       return;
     }
     const data = {

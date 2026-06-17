@@ -402,14 +402,19 @@ export default function RivalAnalysis() {
           <MdAnalytics size={56} />
           <div style={{ fontWeight: 600, fontSize: 16 }}>
             {analyses.length === 0
-              ? t('rivalAnalysis.empty', 'Aún no hay análisis')
+              ? t('rivalAnalysis.empty', 'No hay análisis de rival')
               : t('rivalAnalysis.noResults', 'Sin resultados con esos filtros')}
           </div>
+          <Muted>
+            {analyses.length === 0
+              ? t('rivalAnalysis.createFirstHint', 'Crea tu primer análisis para comenzar')
+              : t('rivalAnalysis.tryDifferentFilters', 'Prueba con otros filtros.')}
+          </Muted>
           {analyses.length === 0 && canMutate && (
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
-                {t('rivalAnalysis.addFirst', 'Crear el primero')}
+                {t('rivalAnalysis.addFirst', 'Crear análisis')}
               </Row>
             </Button>
           )}

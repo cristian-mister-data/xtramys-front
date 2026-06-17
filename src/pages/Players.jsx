@@ -271,8 +271,21 @@ const Grid = styled.div`
 `;
 
 const EmptyCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   text-align: center;
-  padding: 40px 24px;
+  padding: 60px 24px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 600px) {
+    padding: 36px 18px;
+  }
 `;
 
 const EMPTY = [];
@@ -544,19 +557,24 @@ export default function Players() {
             <EmptyCard><Muted>{t('player.loadingPlayers', 'Cargando jugadores...')}</Muted></EmptyCard>
           ) : filtered.length === 0 ? (
             <EmptyCard>
-              <div style={{ fontSize: 40 }}>👥</div>
-              <h3 style={{ margin: '8px 0 4px' }}>
+              <MdPeople size={56} />
+              <div style={{ fontWeight: 600, fontSize: 16 }}>
                 {players.length === 0
                   ? t('player.noPlayers', 'No hay jugadores')
                   : t('player.noResults', 'No se han encontrado resultados')}
-              </h3>
-              <Muted style={{ display: 'block', marginBottom: 12 }}>
+              </div>
+              <Muted>
                 {players.length === 0
-                  ? t('player.createFirstPlayer', 'Crea tu primer jugador para empezar.')
+                  ? t('player.createFirstPlayer', 'Crea tu primer jugador para comenzar')
                   : t('player.tryDifferentFilters', 'Prueba con otros filtros.')}
               </Muted>
               {players.length === 0 && canMutate ? (
-                <Button onClick={() => setCreateOpen(true)}>+ {t('player.createPlayer', 'Crear jugador')}</Button>
+                <Button $variant="primary" onClick={() => setCreateOpen(true)}>
+                  <Row $gap={6}>
+                    <MdAdd size={18} />
+                    {t('player.createPlayer', 'Crear jugador')}
+                  </Row>
+                </Button>
               ) : null}
             </EmptyCard>
           ) : viewMode === 'list' ? (

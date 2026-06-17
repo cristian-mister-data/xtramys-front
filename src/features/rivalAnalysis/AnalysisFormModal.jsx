@@ -46,6 +46,7 @@ import { getVideoById, saveTacticalVideo } from '@/utils/api';
 import api from '@/api/client';
 import VideoPoster from '@/components/shared/VideoPoster';
 import ImageCropper from '@/components/season/ImageCropper';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import TacticalSnapshotModal from './TacticalSnapshotModal';
 import TacticalVideoRecorderModal from './TacticalVideoRecorderModal';
 import { renameRivalAnalysisFolder } from './videoFolderHelpers';
@@ -735,7 +736,7 @@ export default function AnalysisFormModal({
 
   const handleSave = async () => {
     if (!rivalId) {
-      setError(t('rivalAnalysis.form.rivalRequired', 'Selecciona un rival de la lista'));
+      showMissingFieldsToast(t, [t('rivalAnalysis.form.rival', 'Rival')]);
       return;
     }
     if (!selectedTeam?._id) {
@@ -743,7 +744,7 @@ export default function AnalysisFormModal({
       return;
     }
     if (!selectedTemplate?._id) {
-      setError(t('rivalAnalysis.form.templateRequired', 'Selecciona una plantilla'));
+      showMissingFieldsToast(t, [t('rivalAnalysis.form.template', 'Plantilla')]);
       return;
     }
     // validar duplicado

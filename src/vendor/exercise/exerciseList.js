@@ -32,6 +32,7 @@ import {
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
 import { persistFavoriteState } from '@/utils/favoritePersistence';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -731,7 +732,7 @@ function FolderManagement({
   const handleCreate = async () => {
     if (canMutate === false) return;
     if (!newFolderName.trim()) {
-      Alert.alert(t('message.error'), t('folders.nameRequired'));
+      showMissingFieldsToast(t, [t('folders.folderNameLabel')]);
       return;
     }
     try {
@@ -748,7 +749,7 @@ function FolderManagement({
   const handleUpdate = async () => {
     if (canMutate === false) return;
     if (!editingFolderName.trim()) {
-      Alert.alert(t('message.error'), t('folders.nameRequired'));
+      showMissingFieldsToast(t, [t('folders.folderNameLabel')]);
       return;
     }
     try {
@@ -1831,8 +1832,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (!newFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
-        newFolder: t('common.validationErrorCreate', { field: t('folders.folderNameLabel') })
+        newFolder: true
       }));
+      showMissingFieldsToast(t, [t('folders.folderNameLabel')]);
       return;
     }
     try {
@@ -1937,8 +1939,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (!editFolderName.trim()) {
       setValidationErrors(prev => ({
         ...prev,
-        editFolder: t('common.validationErrorEdit', { field: t('folders.folderNameLabel') })
+        editFolder: true
       }));
+      showMissingFieldsToast(t, [t('folders.folderNameLabel')]);
       return;
     }
     try {
@@ -2739,11 +2742,6 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                       autoFocus
                       maxLength={50}
                     />
-                    {validationErrors.editFolder && (
-                      <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
-                        {validationErrors.editFolder}
-                      </Text>
-                    )}
 
                     {menuFolder?.isGlobal && userRole === 'admin' && (
                       <View style={{ marginTop: 10 }}>
@@ -2894,11 +2892,6 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                       }}
                       maxLength={50}
                     />
-                    {validationErrors.newFolder && (
-                      <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4, fontWeight: '500' }}>
-                        {validationErrors.newFolder}
-                      </Text>
-                    )}
 
                     {/* Traducción inglés (admin + global) */}
                     {userRole === 'admin' && newFolderIsGlobal && (

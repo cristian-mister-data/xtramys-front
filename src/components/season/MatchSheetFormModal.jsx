@@ -20,6 +20,7 @@ import JornadaModal from '@/features/matchSheet/modals/JornadaModal';
 import { generateMatchSheetPDF, generateLineupPDF, generateCallUpPDF } from '@/features/matchSheet/pdf';
 import { cdnUrl } from '@/config';
 import { getPlayerInitials } from '@/utils/playerHelpers';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const EMPTY = [];
 
@@ -349,9 +350,18 @@ export default function MatchSheetFormModal({
   const handleSubmit = (e) => {
     e?.preventDefault?.();
     setError('');
-    if (!form.rival?.trim()) return setError(t('matchSheet.rivalRequired', 'El rival es obligatorio'));
-    if (!form.fechaHora) return setError(t('matchSheet.dateRequired', 'La fecha es obligatoria'));
-    if (form.competicion === 'torneo' && !form.torneoId) return setError(t('matchSheet.tournamentRequired', 'Selecciona un torneo'));
+    if (!form.rival?.trim()) {
+      showMissingFieldsToast(t, [t('matchSheet.fields.rival', 'Rival')]);
+      return;
+    }
+    if (!form.fechaHora) {
+      showMissingFieldsToast(t, [t('matchSheet.fields.dateTime', 'Fecha y hora')]);
+      return;
+    }
+    if (form.competicion === 'torneo' && !form.torneoId) {
+      showMissingFieldsToast(t, [t('matchSheet.fields.tournament', 'Torneo')]);
+      return;
+    }
     onSubmit?.(form);
   };
 

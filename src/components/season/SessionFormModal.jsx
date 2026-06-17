@@ -10,6 +10,7 @@ import Modal from '@/ui/Modal';
 import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
+import { showMissingFieldsToast } from '@/utils/validationToast';
 import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import ExerciseSelectorModal from '@/features/session/ExerciseSelectorModal';
@@ -402,7 +403,7 @@ export default function SessionFormModal({
     e?.preventDefault?.();
     setError('');
     if (!fecha) {
-      setError(t('session.dateRequired', 'La fecha es obligatoria'));
+      showMissingFieldsToast(t, [t('session.date', 'Fecha')]);
       return;
     }
 
