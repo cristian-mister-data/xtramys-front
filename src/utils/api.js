@@ -227,6 +227,16 @@ export const duplicateVideoToFolder = async (videoId, folderId) => {
   }
 };
 
+export const copyClubVideoToMine = async (videoId, folderId = null) => {
+  try {
+    const response = await api.post('/video-folder/copy-club', { videoId, folderId });
+    return response.data;
+  } catch (error) {
+    console.warn('Error copying club video to my videos:', error);
+    throw error;
+  }
+};
+
 export const getAllVideoFoldersFlat = async (lang = null) => {
   try {
     const params = lang ? { lang } : {};

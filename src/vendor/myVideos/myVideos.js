@@ -34,6 +34,7 @@ import {
   updateVideo,
   moveVideoToFolder,
   duplicateVideoToFolder,
+  copyClubVideoToMine,
   getAllVideoFoldersFlat,
   getAllExercises,
   getAllStrategies,
@@ -1527,6 +1528,35 @@ export default function MyVideos({ canMutate = true } = {}) {
                   <Text style={styles.actionSubtitle}>{t('myVideos.downloadSubtitle')}</Text>
                 </View>
               </TouchableOpacity>
+
+              {canMutate !== false && menuVideo?.visibility === 'CLUB' && !canEditVideoItem(menuVideo) && (
+              <TouchableOpacity
+                style={styles.actionOption}
+                onPress={async () => {
+                  const videoId = getItemId(menuVideo);
+                  setMenuVisible(false);
+                  if (!videoId) return;
+                  try {
+                    setIsGenerating(true);
+                    await copyClubVideoToMine(videoId, null);
+                    showNotification(t('myVideos.copiedToMyVideos'), 'success');
+                    await loadContent();
+                  } catch (err) {
+                    showNotification(err?.message || t('message.error'), 'error');
+                  } finally {
+                    setIsGenerating(false);
+                  }
+                }}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#E0F2FE' }]}>
+                  <Feather name="copy" size={20} color="#0EA5E9" />
+                </View>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>{t('myVideos.copyToMyVideos')}</Text>
+                  <Text style={styles.actionSubtitle}>{t('myVideos.copyToMyVideosSubtitle')}</Text>
+                </View>
+              </TouchableOpacity>
+              )}
               
               {canMutate !== false && canEditVideoItem(menuVideo) && !(menuVideo?.isGlobal && !isAdmin) && (
                 <>

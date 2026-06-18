@@ -277,6 +277,17 @@ export const duplicateGlobalStrategy = createAsyncThunk(
   }
 );
 
+export const copyClubStrategyToMine = createAsyncThunk(
+  'strategy/copyClubStrategyToMine',
+  async ({ strategyId, folderId, duplicateName, lang, user }) => {
+    const res = await api.post('/strategy-folder/copy-club', {
+      strategyId, folderId, duplicateName, lang, user,
+    });
+    invalidateStrategyReads();
+    return res.data.strategy;
+  }
+);
+
 export const toggleFavoriteStrategy = createAsyncThunk(
   'strategy/toggleFavoriteStrategy',
   async (payloadArg, { getState }) => {

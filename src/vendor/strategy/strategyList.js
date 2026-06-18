@@ -12,6 +12,7 @@ import {
   updateEstrategia,
   deleteEstrategia,
   duplicateGlobalStrategy,
+  copyClubStrategyToMine,
   duplicateStrategyToFolder,
   fetchGlobalStrategies,
   fetchGlobalFolders,
@@ -2436,6 +2437,37 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                     <Text style={styles.mvActionTitle}>{t('strategy.lookDetails')}</Text>
                   </View>
                 </TouchableOpacity>
+
+                {canMutate !== false && selectedStrategyForOptions?.visibility === 'CLUB' && !canEditStrategyItem(selectedStrategyForOptions) && (
+                <TouchableOpacity
+                  style={styles.mvActionOption}
+                  onPress={async () => {
+                    const st = selectedStrategyForOptions;
+                    setOptionsModalVisible(false);
+                    if (!st) return;
+                    try {
+                      await dispatch(copyClubStrategyToMine({
+                        strategyId: st._id || st.id,
+                        folderId: null,
+                        lang: i18n.language,
+                      })).unwrap();
+                      showNotification(t('strategy.copiedToMyStrategies'), 'success');
+                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
+                      dispatch(fetchGlobalStrategies({ lang }));
+                      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+                    } catch (err) {
+                      Alert.alert(t('message.error'), err?.message || 'Error');
+                    }
+                  }}
+                >
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.infoSoft }]}>
+                    <Feather name="copy" size={20} color="#0EA5E9" />
+                  </View>
+                  <View style={styles.mvActionTextContainer}>
+                    <Text style={styles.mvActionTitle}>{t('strategy.copyToMyStrategies')}</Text>
+                  </View>
+                </TouchableOpacity>
+                )}
 
                 {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
                 <TouchableOpacity

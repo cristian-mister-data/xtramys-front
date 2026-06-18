@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '@/vendor/shared/appLayout';
 import CreateExerciseForm from './createExerciseForm';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, copyClubExerciseToMine, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, updateExerciseFolder, deleteExerciseFolder, moveExerciseToFolder, duplicateExerciseToFolder, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
 import { clearCurrentFolder, setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
@@ -2485,6 +2485,37 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                     <Text style={styles.mvActionTitle}>{t('exercise.lookDetails')}</Text>
                   </View>
                 </TouchableOpacity>
+
+                {canMutate !== false && selectedExerciseForOptions?.visibility === 'CLUB' && !canEditExerciseItem(selectedExerciseForOptions) && (
+                <TouchableOpacity
+                  style={styles.mvActionOption}
+                  onPress={async () => {
+                    const ex = selectedExerciseForOptions;
+                    setOptionsModalVisible(false);
+                    if (!ex) return;
+                    try {
+                      await dispatch(copyClubExerciseToMine({
+                        exerciseId: ex._id || ex.id,
+                        folderId: null,
+                        lang: i18n.language,
+                      })).unwrap();
+                      showNotification(t('exercise.copiedToMyExercises'), 'success');
+                      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
+                      dispatch(fetchGlobalExercises({ lang }));
+                      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+                    } catch (err) {
+                      Alert.alert(t('message.error'), err?.message || 'Error');
+                    }
+                  }}
+                >
+                  <View style={[styles.mvActionIcon, { backgroundColor: theme.colors.infoSoft }]}>
+                    <Feather name="copy" size={20} color="#0EA5E9" />
+                  </View>
+                  <View style={styles.mvActionTextContainer}>
+                    <Text style={styles.mvActionTitle}>{t('exercise.copyToMyExercises')}</Text>
+                  </View>
+                </TouchableOpacity>
+                )}
 
                 {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <TouchableOpacity

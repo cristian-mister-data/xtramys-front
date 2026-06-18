@@ -267,6 +267,17 @@ export const duplicateGlobalExercise = createAsyncThunk(
   }
 );
 
+export const copyClubExerciseToMine = createAsyncThunk(
+  'ejercicio/copyClubExerciseToMine',
+  async ({ exerciseId, folderId, duplicateName, lang, user }) => {
+    const res = await api.post('/exercise-folder/copy-club', {
+      exerciseId, folderId, duplicateName, lang, user,
+    });
+    invalidateExerciseReads();
+    return res.data.exercise;
+  }
+);
+
 export const toggleFavoriteExercise = createAsyncThunk(
   'ejercicio/toggleFavoriteExercise',
   async (payloadArg, { getState }) => {
