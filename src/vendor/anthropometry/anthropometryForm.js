@@ -597,7 +597,7 @@ const makeStyles = (c, IS_NARROW) => StyleSheet.create({
   },
   textArea: {
     minHeight: 100,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
     paddingTop: 12,
     backgroundColor: c.inputBg,
     borderWidth: 1,

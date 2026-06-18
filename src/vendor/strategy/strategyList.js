@@ -117,6 +117,14 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const [selectedImage, setSelectedImage] = useState(null);
   const { width, height } = useWindowDimensions();
 
+  const modalImageWidth = Math.round(width * 0.95);
+  const modalImageHeight = Math.round(height * 0.72);
+  const modalImageCenter = {
+    x: Math.round(modalImageWidth / 2),
+    y: Math.round(modalImageHeight / 2),
+    scale: 1,
+  };
+
   // Video states
   const [strategyVideos, setStrategyVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -532,47 +540,33 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
         </View>
       </View>
 
-      {/* Modal de imagen grande con zoom */}
+      {/* Modal de imagen ampliada con zoom */}
       <Modal
         visible={modalVisible}
-        transparent={true}
+        transparent
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.9)',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+        <View style={styles.imageModalBg}>
           <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 40,
-              right: 32,
-              zIndex: 20,
-              backgroundColor: theme.colors.surfaceAlt,
-              borderRadius: 24,
-              width: 36,
-              height: 36,
-              alignItems: 'center',
-              justifyContent: 'center',
-              elevation: 8,
-            }}
+            style={styles.closeImageBtn}
             onPress={() => setModalVisible(false)}
-            activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 26, color: theme.colors.text, fontWeight: 'bold' }}>×</Text>
+            <Text style={styles.closeImageText}>×</Text>
           </TouchableOpacity>
-          {selectedImage &&
+          {selectedImage && (
             <ImageZoom
-              cropWidth={width}
-              cropHeight={height}
-              imageWidth={width * 0.95}
-              imageHeight={height * 0.8}
+              cropWidth={modalImageWidth}
+              cropHeight={modalImageHeight}
+              imageWidth={modalImageWidth}
+              imageHeight={modalImageHeight}
+              style={[styles.imageZoomWrapper, { width: modalImageWidth, height: modalImageHeight }]}
               enableCenterFocus={true}
+              centerOn={modalImageCenter}
               minScale={1}
               maxScale={4}
+              enableSwipeDown={true}
+              onSwipeDown={() => setModalVisible(false)}
             >
               <Image
                 source={{
@@ -586,21 +580,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                     return `data:image/png;base64,${selectedImage}`;
                   })()
                 }}
-                style={{
-                  width: width * 0.95,
-                  height: height * 0.8,
-                  resizeMode: 'contain',
-                  borderRadius: 20,
-                  backgroundColor: 'transparent',
-                }}
+                style={[styles.fullImage, { width: modalImageWidth, height: modalImageHeight }]}
+                resizeMode="contain"
               />
             </ImageZoom>
-          }
-          <Text style={{
-            position: 'absolute', bottom: 24, color: theme.colors.onPrimary, textAlign: 'center', width: '100%', fontWeight: 'bold'
-          }}>
-            {t('strategy.zoomHint')}
-          </Text>
+          )}
         </View>
       </Modal>
 
@@ -5023,5 +5007,50 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  imageModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  closeImageBtn: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  closeImageText: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '500',
+    lineHeight: 26,
+    textAlign: 'center',
+    verticalAlign: 'center',
+    includeFontPadding: false,
+  },
+  fullImage: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  imageZoomWrapper: {
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
 });

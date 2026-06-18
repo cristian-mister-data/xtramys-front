@@ -5508,9 +5508,6 @@ const makeStyles = (theme) => StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
   },
-  escudoPlaceholder: {
-    alignItems: 'center',
-  },
   createRivalLabel: {
     fontSize: 14,
     fontWeight: '600',
@@ -5839,21 +5836,6 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: theme.colors.successSoftText,
-  },
-  emptyLineupMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: theme.colors.backgroundAlt,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-  },
-  emptyLineupText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.textMuted,
-    lineHeight: 17,
   },
   startersSubsContainer: {
     backgroundColor: theme.colors.surface,
@@ -6492,17 +6474,6 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  playerChip: {
-    backgroundColor: theme.colors.primarySoft,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  playerChipText: {
-    fontSize: 12,
-    color: theme.colors.primarySoftText,
-    fontWeight: '500',
   },
   eventSelector: {
     borderWidth: 1,

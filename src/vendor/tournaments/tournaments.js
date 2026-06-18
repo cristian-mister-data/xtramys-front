@@ -1876,7 +1876,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   formTextArea: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   typeSelector: {
     flexDirection: 'row',

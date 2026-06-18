@@ -3697,7 +3697,7 @@ function getStyles(theme) {
     alignItems: 'center',
     padding: 20,
   },
-  modalContent: {
+  modalContentUnused: {
     backgroundColor: '#fff',
     borderRadius: 20,
     width: '95%',
@@ -3721,7 +3721,7 @@ function getStyles(theme) {
     shadowRadius: 20,
     elevation: 10,
   },
-  modalHeader: {
+  modalHeaderUnused: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -3734,13 +3734,13 @@ function getStyles(theme) {
     alignItems: 'center',
     flex: 1,
   },
-  modalTitle: {
+  modalTitleUnused: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1e293b',
     marginLeft: 12,
   },
-  modalBody: {
+  modalBodyUnused: {
     padding: 20,
   },
   formSection: {
@@ -4495,21 +4495,6 @@ function getStyles(theme) {
     lineHeight: 20,
   },
   // NOTE: Wellness and Pre-Wellness styles removed - now in TrainingSessionDetailModal
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
-  },
   // NOTE: longPress modal styles removed - now using shared modals
   fullImage: {
     width: '95%',

@@ -1902,7 +1902,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textArea: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   questionItem: {
     flexDirection: 'row',

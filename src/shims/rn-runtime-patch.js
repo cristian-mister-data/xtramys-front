@@ -3,6 +3,14 @@
  * vienen no-op o ruidosos (Alert, BackHandler). Importar UNA SOLA VEZ
  * lo antes posible (en main.jsx, antes de cargar componentes).
  */
+import { Buffer } from 'buffer';
+if (typeof window !== 'undefined') {
+  window.Buffer = window.Buffer || Buffer;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.Buffer = globalThis.Buffer || Buffer;
+}
+
 import { Alert, BackHandler } from 'react-native';
 import i18n from '../i18n';
 

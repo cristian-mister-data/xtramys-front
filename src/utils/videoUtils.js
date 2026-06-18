@@ -291,17 +291,26 @@ async function getWebCodecsConfig(width, height, fps) {
     height,
     bitrate: getVideoBitrate(width, height),
     framerate: fps,
-    hardwareAcceleration: 'prefer-hardware',
     latencyMode: 'quality',
     avc: { format: 'avc' },
   };
-  const codecCandidates = ['avc1.640028', 'avc1.64001f', 'avc1.4d401f', 'avc1.42001f'];
 
-  for (const codec of codecCandidates) {
-    const config = { ...baseConfig, codec };
-    if (!window.VideoEncoder.isConfigSupported) return config;
-    const support = await window.VideoEncoder.isConfigSupported(config);
-    if (support.supported) return support.config || config;
+  const hardwareOptions = ['prefer-hardware', 'no-preference'];
+  const codecCandidates = [
+    'avc1.640028',
+    'avc1.64001f',
+    'avc1.4d401f',
+    'avc1.42001f',
+    'avc1.42e01f'
+  ];
+
+  for (const hw of hardwareOptions) {
+    for (const codec of codecCandidates) {
+      const config = { ...baseConfig, hardwareAcceleration: hw, codec };
+      if (!window.VideoEncoder.isConfigSupported) return config;
+      const support = await window.VideoEncoder.isConfigSupported(config);
+      if (support.supported) return support.config || config;
+    }
   }
 
   throw new Error('H.264 WebCodecs no soportado');

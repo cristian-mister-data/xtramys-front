@@ -2902,7 +2902,7 @@ export default function EditMatchSheetModal({
                     ) : (
                       <View style={styles.escudoPlaceholder}>
                         <Ionicons name="camera" size={32} color={theme.colors.textMuted} />
-                        <Text style={styles.escudoPlaceholderText}>{t('rivals.addShield')}</Text>
+                        <Text style={styles.escudoPickerPlaceholderText}>{t('rivals.addShield')}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -4064,7 +4064,7 @@ const makeStyles = (theme) => StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
   },
-  escudoPlaceholderText: {
+  escudoPickerPlaceholderText: {
     alignItems: 'center',
     textAlign: 'center',
     fontSize: 11,

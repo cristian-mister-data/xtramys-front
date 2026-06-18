@@ -1525,7 +1525,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   selectInput: {
     backgroundColor: theme.colors.inputBg,

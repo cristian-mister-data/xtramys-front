@@ -692,7 +692,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    verticalAlign: 'top',
   },
   questionItem: {
     flexDirection: 'row',

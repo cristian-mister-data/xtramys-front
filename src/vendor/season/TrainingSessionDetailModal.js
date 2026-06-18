@@ -1500,7 +1500,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     lineHeight: 26,
     textAlign: 'center',
-    textAlignVertical: 'center',
+    verticalAlign: 'center',
     includeFontPadding: false,
   },
   fullImage: {

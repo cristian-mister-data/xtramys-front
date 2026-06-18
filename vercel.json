@@ -10,5 +10,7 @@
       ]
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!assets/|api/|cdn/|prewellness/|.*\\.).*)", "destination": "/index.html" }
+  ]
 }

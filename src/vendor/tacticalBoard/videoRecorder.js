@@ -3442,48 +3442,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Estilos para selector de velocidad
-  speedSection: {
-    marginTop: 8,
-    marginBottom: 6,
-  },
-  speedSectionMobile: {
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  speedLabel: {
-    fontSize: 10,
-    color: '#666',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  speedButtons: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  speedButton: {
-    flex: 1,
-    padding: 2,
-    borderRadius: 6,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1.5,
-    borderColor: '#ddd',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 28,
-  },
-  speedButtonActive: {
-    backgroundColor: '#2196F3',
-    borderColor: '#1976D2',
-  },
-  speedButtonText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#666',
-  },
-  speedButtonTextActive: {
-    color: '#fff',
-  },
   // ── Progress modal ──
   progressOverlay: {
     flex: 1,

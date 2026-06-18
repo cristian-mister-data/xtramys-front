@@ -15,6 +15,24 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary] Error capturado:', error?.message || error);
     console.error('[ErrorBoundary] Stack:', errorInfo?.componentStack);
+
+    // Auto-reload on chunk loading/MIME type errors to recover from redeployments
+    const errorMsg = error?.message || String(error);
+    const isChunkError = 
+      /failed to fetch dynamically imported module/i.test(errorMsg) ||
+      /failed to load module script/i.test(errorMsg) ||
+      /loading chunk/i.test(errorMsg) ||
+      /MIME type/i.test(errorMsg);
+
+    if (isChunkError) {
+      const now = Date.now();
+      const lastReload = parseInt(localStorage.getItem('last_chunk_error_reload') || '0', 10);
+      if (now - lastReload > 10000) {
+        localStorage.setItem('last_chunk_error_reload', String(now));
+        console.warn('ErrorBoundary detected chunk loading error. Reloading page...', errorMsg);
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {

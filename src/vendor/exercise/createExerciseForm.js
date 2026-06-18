@@ -790,7 +790,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   textarea: {
     minHeight: 60,
-    textAlignVertical: "top",
+    verticalAlign: "top",
   },
   graphicSection: {
     alignItems: "center",

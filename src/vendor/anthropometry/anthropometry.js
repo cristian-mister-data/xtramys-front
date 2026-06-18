@@ -3483,7 +3483,7 @@ const makeStyles = (theme) =>
     },
     textArea: {
       minHeight: 120,
-      textAlignVertical: 'top',
+      verticalAlign: 'top',
       paddingTop: 14,
     },
     row: {

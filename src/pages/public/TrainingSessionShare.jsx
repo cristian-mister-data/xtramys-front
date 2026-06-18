@@ -400,15 +400,20 @@ function Panel({ title, children }) {
 function PlayerGroup({ title, players, tone = 'default' }) {
   return (
     <div className="playerGroup">
-      <h3>{title}</h3>
+      <h3 className="groupTitle">{title}</h3>
       {players.length ? (
-        <div className="players">
-          {players.map((player) => (
-            <span className={tone} key={getId(player)}>
-              {player.dorsal != null && <b>{player.dorsal}</b>}
-              {playerName(player)}
-            </span>
-          ))}
+        <div className="playerList">
+          {players.map((player) => {
+            const hasDorsal = player.dorsal != null;
+            return (
+              <div className={`playerCard ${tone} ${hasDorsal ? 'has-dorsal' : 'no-dorsal'}`} key={getId(player)}>
+                <span className="playerBadge">
+                  {hasDorsal ? player.dorsal : playerName(player).charAt(0).toUpperCase()}
+                </span>
+                <span className="playerName" title={playerName(player)}>{playerName(player)}</span>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="muted">Sin jugadores.</p>
@@ -551,7 +556,7 @@ const css = `
     box-shadow: 0 26px 70px rgba(15, 47, 100, .25);
   }
   .heroGlow { position: absolute; inset: auto -10% -45% 35%; height: 320px; background: rgba(255,255,255,.18); filter: blur(50px); transform: rotate(-10deg); }
-  .heroTop, .heroStats, .exerciseHead, .pills, .players, .teamGrid { position: relative; display: flex; gap: 14px; }
+  .heroTop, .heroStats, .exerciseHead, .pills, .teamGrid { position: relative; display: flex; gap: 14px; }
   .heroTop { align-items: center; }
   .badgeBox {
     width: clamp(68px, 10vw, 112px);
@@ -592,11 +597,48 @@ const css = `
   .panel { padding: 20px; }
   .panel h2, .sectionTitle h2 { margin: 0; color: #102449; letter-spacing: -.03em; }
   .panel h2 { font-size: 18px; }
-  .playerGroup { margin-top: 16px; }
+  .playerGroup { margin-top: 24px; }
   .playerGroup:first-of-type { margin-top: 0; }
-  .playerGroup h3 { margin: 0 0 10px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-  .players, .pills { flex-wrap: wrap; }
-  .players span, .pills span {
+  .groupTitle { margin: 0 0 12px 0; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+  .playerList { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .playerCard {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, .16);
+    box-shadow: 0 2px 4px rgba(15, 23, 42, .02);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .playerCard:hover {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, .3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(15, 23, 42, .04);
+  }
+  .playerBadge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .playerCard.default { background: #ffffff; }
+  .playerCard.default .playerBadge { background: #eef5ff; color: #1458c8; }
+  .playerCard.default.has-dorsal .playerBadge { background: #1458c8; color: #ffffff; box-shadow: 0 2px 4px rgba(20, 88, 200, .2); }
+  .playerCard.warm { background: #fffdfa; border-color: rgba(217, 119, 6, .14); }
+  .playerCard.warm .playerBadge { background: #fff7ed; color: #d97706; }
+  .playerCard.warm.has-dorsal .playerBadge { background: #d97706; color: #ffffff; box-shadow: 0 2px 4px rgba(217, 119, 6, .2); }
+  .playerCard.no-dorsal .playerBadge { background: #f1f5f9; color: #64748b; font-weight: 700; }
+  .playerName { color: #1e293b; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pills { flex-wrap: wrap; }
+  .pills span {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -607,8 +649,6 @@ const css = `
     font-size: 12px;
     font-weight: 800;
   }
-  .players span.warm { background: #fff7ed; color: #a8550d; }
-  .players b { min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: currentColor; color: #fff; font-size: 11px; }
   .muted { color: #64748b; }
   .pre { margin: 0; white-space: pre-wrap; line-height: 1.6; color: #334155; }
   .sectionTitle {
@@ -769,6 +809,15 @@ const css = `
     .sectionTitle span, .muted { color: #94a3b8; }
     .pre, .infoGrid p, .teamCard p, .strengthNote { color: #cbd5e1; }
     .exerciseMedia, .strengthMedia { background: linear-gradient(135deg, #0f172a, #111827); }
-    .players span, .pills span, .teamCard { background: rgba(30, 41, 59, .78); border-color: rgba(148,163,184,.2); }
+    .pills span, .teamCard { background: rgba(30, 41, 59, .78); border-color: rgba(148,163,184,.2); }
+    .playerCard { background: rgba(15, 23, 42, .4); border-color: rgba(148, 163, 184, .1); }
+    .playerCard:hover { background: rgba(15, 23, 42, .7); border-color: rgba(148, 163, 184, .2); }
+    .playerCard.default .playerBadge { background: rgba(30, 41, 59, .6); color: #38bdf8; }
+    .playerCard.default.has-dorsal .playerBadge { background: #0284c7; color: #ffffff; box-shadow: 0 2px 4px rgba(2, 132, 199, .3); }
+    .playerCard.warm { background: rgba(120, 53, 4, .05); border-color: rgba(217, 119, 6, .15); }
+    .playerCard.warm .playerBadge { background: rgba(120, 53, 4, .15); color: #fb923c; }
+    .playerCard.warm.has-dorsal .playerBadge { background: #ea580c; color: #ffffff; box-shadow: 0 2px 4px rgba(234, 88, 12, .3); }
+    .playerCard.no-dorsal .playerBadge { background: rgba(51, 65, 85, .5); color: #94a3b8; }
+    .playerName { color: #e2e8f0; }
   }
 `;
