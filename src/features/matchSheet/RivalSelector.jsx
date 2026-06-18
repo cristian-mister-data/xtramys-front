@@ -3,7 +3,7 @@ import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { MdSearch, MdAdd, MdClose, MdCheck, MdShield, MdImage } from 'react-icons/md';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import ImageCropper from '@/components/season/ImageCropper';
 import { Button, Field, Label, Input, Row, Stack, Muted } from '@/ui/primitives';
 import { fetchRivalsByTeam, createRival } from '@/store/slices/rival/rivalThunks';
@@ -244,7 +244,7 @@ export default function RivalSelector({
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title={t('matchSheet.newRival', 'Nuevo rival')}
-        width={420}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button type="button" $variant="ghost" onClick={() => setCreateOpen(false)}>

@@ -227,6 +227,16 @@ export const duplicateVideoToFolder = async (videoId, folderId) => {
   }
 };
 
+export const createTrainingSessionShareLink = async (sessionId) => {
+  const response = await api.post(`/session/${sessionId}/share-link`);
+  return response.data;
+};
+
+export const getPublicTrainingSession = async (token) => {
+  const response = await api.get(`/session/public/${token}`);
+  return response.data;
+};
+
 export const copyClubVideoToMine = async (videoId, folderId = null) => {
   try {
     const response = await api.post('/video-folder/copy-club', { videoId, folderId });

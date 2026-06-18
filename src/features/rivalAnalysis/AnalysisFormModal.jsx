@@ -28,7 +28,7 @@ import {
   updateRivalAnalysis,
 } from '@/store/slices/rivalAnalysis/rivalAnalysisThunks';
 import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import {
   Button,
   Input,
@@ -942,7 +942,7 @@ export default function AnalysisFormModal({
             ? t('rivalAnalysis.form.editTitle', 'Editar análisis')
             : t('rivalAnalysis.form.createTitle', 'Nuevo análisis')
         }
-        width={760}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button $variant="secondary" onClick={onClose} disabled={saving || Object.values(uploadingVideos).some(Boolean)}>
@@ -1107,7 +1107,7 @@ export default function AnalysisFormModal({
         open={showCreateRival}
         onClose={() => setShowCreateRival(false)}
         title={t('matchSheet.newRival', 'Nuevo rival')}
-        width={420}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button type="button" $variant="ghost" onClick={() => setShowCreateRival(false)}>

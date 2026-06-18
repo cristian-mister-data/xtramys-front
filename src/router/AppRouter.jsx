@@ -51,6 +51,7 @@ const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
+const TrainingSessionShare = lazy(() => import('@/pages/public/TrainingSessionShare'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
 const OpsDashboard = lazy(() => import('@/pages/OpsDashboard'));
@@ -93,6 +94,7 @@ export default function AppRouter() {
       {/* Public forms (sin auth) */}
       <Route path="/public/wellness/:token" element={lazy_(<WellnessForm />)} />
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
+      <Route path="/public/training-session/:token" element={lazy_(<TrainingSessionShare />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
 
       {/* Subscription (auth required, no app layout) */}

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import { Button, Field, Label, Input, Row, Stack, ErrorText } from '@/ui/primitives';
 import {
   getPositionOptions,
@@ -218,7 +218,7 @@ export default function PlayerFormModal({
       open={open}
       onClose={onClose}
       title={mode === 'edit' ? t('player.editPlayer', 'Editar jugador') : t('player.createPlayer', 'Crear jugador')}
-      width={620}
+      width={FORM_MODAL_WIDTH}
       footer={
         <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
           <Button type="button" $variant="ghost" onClick={onClose}>

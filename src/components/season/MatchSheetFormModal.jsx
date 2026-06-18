@@ -6,7 +6,7 @@ import {
   MdHome, MdFlight, MdLocationOn, MdAdd, MdDelete, MdPictureAsPdf,
   MdGroups, MdSportsSoccer, MdEdit,
 } from 'react-icons/md';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
@@ -382,7 +382,7 @@ export default function MatchSheetFormModal({
       open={open}
       onClose={onClose}
       title={mode === 'edit' ? t('matchSheet.edit', 'Editar partido') : t('matchSheet.create', 'Nuevo partido')}
-      width={920}
+      width={FORM_MODAL_WIDTH}
       footer={
         <Row style={{ justifyContent: 'space-between', width: '100%' }}>
           <Row $gap={6}>

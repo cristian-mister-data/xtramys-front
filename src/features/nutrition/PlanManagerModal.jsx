@@ -12,7 +12,7 @@ import {
   MdLayers,
   MdAutoAwesome,
 } from 'react-icons/md';
-import Modal from '../../ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '../../ui/Modal';
 import { Button, Stack, Row, Muted } from '../../ui/primitives';
 
 const ModeRow = styled.button`
@@ -78,7 +78,7 @@ export default function PlanManagerModal({
       open={open}
       onClose={onClose}
       title={t('nutrition.modeSelector.title', 'Mis planes de nutrición')}
-      width={620}
+      width={FORM_MODAL_WIDTH}
     >
       <Stack $gap={8}>
         <ModeRow $active={viewMode === 'recommended'} onClick={onSelectRecommended}>

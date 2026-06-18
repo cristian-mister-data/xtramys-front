@@ -24,7 +24,7 @@ import {
 } from '../../api/nutritionMethodology';
 import { Button, Input, Stack, Row, Muted, TextArea } from '../../ui/primitives';
 import SectionHeader from '../../ui/SectionHeader';
-import Modal from '../../ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 
@@ -166,7 +166,7 @@ function AddPlanModal({ open, onClose, onSave }) {
       open={open}
       onClose={onClose}
       title={t('goalkeeperMethodology.addTrainingPlan', 'Añadir plan de entrenamiento')}
-      width={400}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
@@ -205,7 +205,7 @@ function EditDayModal({ open, onClose, day, onSave }) {
       open={open}
       onClose={onClose}
       title={t('goalkeeperMethodology.editDay', 'Editar día')}
-      width={520}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
@@ -298,7 +298,7 @@ function CreateModal({ open, onClose, onSave }) {
       open={open}
       onClose={onClose}
       title={t('goalkeeperMethodology.newMethodology', 'Nueva metodología')}
-      width={460}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>

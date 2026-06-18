@@ -34,7 +34,7 @@ import {
 } from '../../api/nutritionMethodology';
 import { Button, Input, Stack, Row, Muted } from '../../ui/primitives';
 import SectionHeader from '../../ui/SectionHeader';
-import Modal from '../../ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import { generateMethodologyPdf } from './pdf';
@@ -357,7 +357,7 @@ function EditDayModal({ open, onClose, day, onSave }) {
       open={open}
       onClose={onClose}
       title={t('methodology.editDay', 'Editar día')}
-      width={620}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
@@ -443,7 +443,7 @@ function AddPlanModal({ open, onClose, onSave }) {
       open={open}
       onClose={onClose}
       title={t('methodology.addPlan', 'Añadir plan')}
-      width={400}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>
@@ -482,7 +482,7 @@ function CreateMethodologyModal({ open, onClose, onSave }) {
       open={open}
       onClose={onClose}
       title={t('methodology.newMethodology', 'Nueva metodología')}
-      width={480}
+      width={FORM_MODAL_WIDTH}
       footer={
         <>
           <Button $variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancelar')}</Button>

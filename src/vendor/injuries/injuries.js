@@ -1475,9 +1475,9 @@ const makeStyles = (theme) => StyleSheet.create({
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 16 : 20,
-    width: '100%',
-    maxWidth: isMobileDevice() ? 400 : 500,
-    maxHeight: isMobileDevice() ? '95%' : '90%',
+    width: isMobileDevice() ? '100%' : '94%',
+    maxWidth: isMobileDevice() ? 400 : 1120,
+    maxHeight: isMobileDevice() ? '95%' : '92%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.25,
@@ -1503,7 +1503,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBody: {
     padding: isMobileDevice() ? 16 : 20,
-    maxHeight: isMobileDevice() ? 400 : 500,
+    maxHeight: isMobileDevice() ? 400 : 620,
   },
   inputLabel: {
     fontSize: 14,

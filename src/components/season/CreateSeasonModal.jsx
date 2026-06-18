@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import Select from '@/ui/Select';
 import { Button, Field, Label, Row } from '@/ui/primitives';
 import { formatSeasonYear, yearOptions } from './seasonHelpers';
@@ -23,7 +23,7 @@ export default function CreateSeasonModal({ open, onClose, onCreate, loading }) 
       open={open}
       onClose={onClose}
       title={t('season.createNewSeason')}
-      width={420}
+      width={FORM_MODAL_WIDTH}
     >
       <Field>
         <Label>{t('season.year', 'Año')}</Label>

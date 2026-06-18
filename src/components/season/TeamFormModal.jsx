@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import Select from '@/ui/Select';
 import { Button, Field, Input, Label, Row, Stack, ErrorText, Muted } from '@/ui/primitives';
 import { showMissingFieldsToast } from '@/utils/validationToast';
@@ -163,7 +163,7 @@ export default function TeamFormModal({
       title={mode === 'edit'
         ? t('team.editTeam', 'Editar equipo')
         : t('team.createTeam', 'Crear nuevo equipo')}
-      width={520}
+      width={FORM_MODAL_WIDTH}
     >
       <Stack $gap={12}>
         <Field>

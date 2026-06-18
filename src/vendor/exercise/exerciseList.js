@@ -98,7 +98,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const [exerciseVideos, setExerciseVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const visibleVideos = exerciseVideos.slice(0, 1);
+  const visibleVideos = exerciseVideos;
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -446,11 +446,16 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                 )}
 
                 {/* Sección de Videos del Ejercicio */}
-                <View style={{ ...styles.detailCard, marginBottom: 40 }}>
+                <View style={[styles.detailCard, styles.videoSectionCard, { marginBottom: 40 }]}>
                   <View style={styles.detailCardHeader}>
-                    <Feather name="video" size={18} color="#E91E63" />
+                    <View style={styles.videoSectionIcon}>
+                      <Feather name="video" size={18} color={theme.colors.primary} />
+                    </View>
                     <Text style={styles.detailCardTitle}>{t('exercise.videos')}</Text>
-                    {loadingVideos && <ActivityIndicator size="small" color="#E91E63" style={{ marginLeft: 8 }} />}
+                    {!loadingVideos && exerciseVideos.length > 0 && (
+                      <Text style={styles.videoCountBadge}>{exerciseVideos.length}</Text>
+                    )}
+                    {loadingVideos && <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginLeft: 8 }} />}
                   </View>
                   {!loadingVideos && exerciseVideos.length > 0 && (
                     <View style={styles.videosGrid}>
@@ -467,7 +472,9 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                             </TouchableOpacity>
                           )}
                           <View style={styles.videoCardContent}>
-                            <Feather name="film" size={28} color="#E91E63" />
+                            <View style={styles.videoThumb}>
+                              <Feather name="film" size={26} color={theme.colors.primary} />
+                            </View>
                             <Text style={styles.videoCardTitle} numberOfLines={1}>
                               {getLocalizedVideoName(video)}
                             </Text>
@@ -2063,17 +2070,28 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     const formKey = editingExercise ? `edit-${editingExercise._id}` : 'create-new';
 
     return (
-      <CreateExerciseForm
-        key={formKey}
-        navigation={navigation}
-        onSave={handleSave}
-        onCancel={() => {
+      <AppLayout>
+        <Modal visible transparent animationType="fade" onRequestClose={() => {
           setCreating(false);
           setEditingExercise(null);
-        }}
-        editingExercise={editingExercise}
-        setScrollEnabled={setScrollEnabled}
-      />
+        }}>
+          <View style={styles.entityFormBackdrop}>
+            <View style={[styles.entityFormModal, IS_MOBILE && styles.entityFormModalMobile]}>
+              <CreateExerciseForm
+                key={formKey}
+                navigation={navigation}
+                onSave={handleSave}
+                onCancel={() => {
+                  setCreating(false);
+                  setEditingExercise(null);
+                }}
+                editingExercise={editingExercise}
+                setScrollEnabled={setScrollEnabled}
+              />
+            </View>
+          </View>
+        </Modal>
+      </AppLayout>
     );
   }
 
@@ -3203,6 +3221,35 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
 const isWeb = Platform.OS === 'web';
 const makeStyles = (theme) => StyleSheet.create({
+  entityFormBackdrop: {
+    flex: 1,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(2,6,23,0.88)' : 'rgba(15,23,42,0.48)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: isWeb ? 24 : 12,
+  },
+  entityFormModal: {
+    width: '94%',
+    maxWidth: 1120,
+    height: '92%',
+    maxHeight: 920,
+    overflow: 'hidden',
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundAlt,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.22,
+    shadowRadius: 30,
+    elevation: 16,
+  },
+  entityFormModalMobile: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4402,44 +4449,78 @@ const makeStyles = (theme) => StyleSheet.create({
   },
 
   // --- Estilos para Videos del Ejercicio ---
+  videoSectionCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+  },
+  videoSectionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoCountBadge: {
+    marginLeft: 'auto',
+    minWidth: 26,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.primarySoft,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   videosGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     gap: 12,
-    marginTop: 12,
+    marginTop: 16,
   },
   videoCard: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 18,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : theme.colors.surfaceAlt,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.colors.errorSoft,
-    padding: 18,
-    flexBasis: '48%',
-    maxWidth: '48%',
-    minWidth: 240,
+    borderColor: theme.colors.border,
+    padding: 16,
+    flexBasis: 280,
     flexGrow: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.08,
+    shadowRadius: 18,
+    elevation: 3,
   },
   videoCardMobile: {
     flexBasis: '100%',
     maxWidth: '100%',
   },
   videoCardContent: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 14,
   },
+  videoThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
   videoCardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '800',
     color: theme.colors.text,
-    marginTop: 8,
-    textAlign: 'center',
   },
   videoCardDescription: {
     fontSize: 12,
-    color: theme.colors.textMuted,
-    marginTop: 4,
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+    lineHeight: 17,
   },
   videoCardActions: {
     flexDirection: 'row',
@@ -4453,13 +4534,13 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 999,
     gap: 6,
   },
   videoPlayBtn: {
-    backgroundColor: theme.colors.error,
+    backgroundColor: theme.colors.primary,
   },
   videoEditBtn: {
     backgroundColor: theme.colors.warning,
@@ -4474,17 +4555,20 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   noVideosText: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textMuted,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: theme.colors.backgroundAlt,
   },
   videoUnlinkBtn: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: theme.colors.errorSoft,
     justifyContent: 'center',
     alignItems: 'center',

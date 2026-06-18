@@ -6,7 +6,7 @@ import {
   MdAdd, MdArrowUpward, MdArrowDownward, MdDelete, MdGroups, MdImage, MdCheckCircle,
 } from 'react-icons/md';
 
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
@@ -444,7 +444,7 @@ export default function SessionFormModal({
         title={mode === 'edit'
           ? t('session.edit', 'Editar entrenamiento')
           : t('session.create', 'Nuevo entrenamiento')}
-        width={760}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row style={{ justifyContent: 'space-between', width: '100%' }}>
             {mode === 'edit' ? (

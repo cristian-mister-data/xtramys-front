@@ -44,7 +44,7 @@ import {
   Muted,
 } from '../../ui/primitives';
 import SectionHeader from '../../ui/SectionHeader';
-import Modal from '../../ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '../../ui/Modal';
 import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import ImageCropper from '../../components/season/ImageCropper';
@@ -599,7 +599,7 @@ export default function Rivals() {
             ? t('rivals.editTitle', 'Editar rival')
             : t('rivals.createTitle', 'Nuevo rival')
         }
-        width={460}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button $variant="secondary" onClick={closeModal} disabled={saving}>

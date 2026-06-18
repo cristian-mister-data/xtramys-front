@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdDelete, MdSave, MdClose } from 'react-icons/md';
-import Modal from '../../ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '../../ui/Modal';
 import { Button, Input, TextArea, Stack, Row, Label, Muted } from '../../ui/primitives';
 import { updateNutritionPlan } from '../../api/nutritionMethodology';
 import { toast } from '../../ui/toast';
@@ -572,7 +572,7 @@ export default function EditPlanModal({ open, onClose, plan, onSaved }) {
       open={open}
       onClose={onClose}
       title={t('nutrition.edit.title', 'Editar plan')}
-      width={900}
+      width={FORM_MODAL_WIDTH}
       footer={
         <Row $gap={8}>
           <Button $variant="secondary" onClick={onClose} disabled={saving}>

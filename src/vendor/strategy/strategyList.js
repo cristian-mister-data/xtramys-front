@@ -2016,13 +2016,21 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 
   if (creating || editingStrategy) {
     return (
-      <CreateStrategyForm
-        navigation={navigation}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        editingStrategy={editingStrategy}
-        setScrollEnabled={setScrollEnabled}
-      />
+      <AppLayout>
+        <Modal visible transparent animationType="fade" onRequestClose={handleCancel}>
+          <View style={styles.entityFormBackdrop}>
+            <View style={[styles.entityFormModal, IS_MOBILE && styles.entityFormModalMobile]}>
+              <CreateStrategyForm
+                navigation={navigation}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                editingStrategy={editingStrategy}
+                setScrollEnabled={setScrollEnabled}
+              />
+            </View>
+          </View>
+        </Modal>
+      </AppLayout>
     );
   }
 
@@ -3152,6 +3160,35 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 }
 
 const makeStyles = (theme) => StyleSheet.create({
+  entityFormBackdrop: {
+    flex: 1,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(2,6,23,0.88)' : 'rgba(15,23,42,0.48)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Platform.OS === 'web' ? 24 : 12,
+  },
+  entityFormModal: {
+    width: '94%',
+    maxWidth: 1120,
+    height: '92%',
+    maxHeight: 920,
+    overflow: 'hidden',
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundAlt,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.22,
+    shadowRadius: 30,
+    elevation: 16,
+  },
+  entityFormModalMobile: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.surfaceAlt,

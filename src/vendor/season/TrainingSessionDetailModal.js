@@ -23,7 +23,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getSessionWellnessStats, getSessionPreWellnessStats } from '@/utils/api';
+import { createTrainingSessionShareLink, getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getSessionWellnessStats, getSessionPreWellnessStats } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { getFieldById } from '@/utils/fieldTypes';
 import ImageZoom from 'react-native-image-pan-zoom';
@@ -65,6 +65,7 @@ export default function TrainingSessionDetailModal({
   const IS_TABLET = screenWidth > 700;
   
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [sharingSession, setSharingSession] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   
@@ -276,6 +277,36 @@ export default function TrainingSessionDetailModal({
     }
   };
 
+  const handleShareSession = async () => {
+    if (!session?._id || sharingSession) return;
+    try {
+      setSharingSession(true);
+      const data = await createTrainingSessionShareLink(session._id);
+      const url = data?.url;
+      if (!url) throw new Error('No share URL');
+
+      if (Platform.OS === 'web') {
+        await navigator.clipboard?.writeText(url);
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: t('session.shareTraining'),
+              text: t('session.shareTrainingText'),
+              url,
+            });
+          } catch {}
+        }
+      }
+
+      Alert.alert(t('session.linkCopiedTitle'), t('session.linkCopiedMessage'));
+    } catch (error) {
+      console.error('Error sharing session:', error);
+      Alert.alert(t('message.error'), t('session.shareTrainingError'));
+    } finally {
+      setSharingSession(false);
+    }
+  };
+
   const handleImagePress = (imagen) => {
     setSelectedImage(imagen);
     setImageModalVisible(true);
@@ -356,6 +387,17 @@ export default function TrainingSessionDetailModal({
             <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 16 }]}>{t('session.detailsTitle')}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {/* Botón PDF */}
+              <TouchableOpacity
+                style={styles.headerSecondaryButton}
+                onPress={handleShareSession}
+                disabled={sharingSession}
+              >
+                {sharingSession ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <Feather name="share-2" size={20} color={theme.colors.primary} />
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerSecondaryButton}
                 onPress={handleGeneratePDF}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import Select from '@/ui/Select';
 import {
   Button, Field, Input, Label, Row, Stack, TextArea, ErrorText, Muted,
@@ -166,7 +166,7 @@ export default function TournamentFormModal({
       open={open}
       onClose={onClose}
       title={isEdit ? t('tournaments.editTitle', 'Editar torneo') : t('tournaments.createTitle', 'Nuevo torneo')}
-      width={620}
+      width={FORM_MODAL_WIDTH}
     >
       <Stack $gap={14}>
         <Field>

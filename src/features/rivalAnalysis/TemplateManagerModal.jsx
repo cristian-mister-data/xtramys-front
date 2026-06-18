@@ -26,7 +26,7 @@ import {
   updateQuestionInTemplate,
   removeQuestionFromTemplate,
 } from '@/store/slices/rivalAnalysis/rivalAnalysisThunks';
-import Modal from '@/ui/Modal';
+import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import {
   Button,
   Input,
@@ -612,7 +612,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
         open={open}
         onClose={handleClose}
         title={t('rivalAnalysis.template.title', 'Gestionar plantillas')}
-        width={720}
+        width={FORM_MODAL_WIDTH}
       >
         {templateLoading ? (
           <Muted>{t('common.loading', 'Cargando…')}</Muted>
@@ -628,7 +628,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title={t('rivalAnalysis.template.createTitle', 'Nueva plantilla')}
-        width={460}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button $variant="secondary" onClick={() => setShowCreateModal(false)} disabled={creating}>
@@ -686,7 +686,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
             ? t('rivalAnalysis.template.editQuestion', 'Editar pregunta')
             : t('rivalAnalysis.template.addQuestion', 'Añadir pregunta')
         }
-        width={560}
+        width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
             <Button

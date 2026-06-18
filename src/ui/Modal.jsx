@@ -12,6 +12,8 @@ const pop = keyframes`
   to   { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
+export const FORM_MODAL_WIDTH = 1120;
+
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -20,7 +22,7 @@ const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   z-index: ${({ theme }) => theme.zIndex.modal};
-  padding: 16px;
+  padding: 24px;
   overflow-y: auto;
   /* Aseguramos que el overlay sea interactivo aunque algún ancestro
      (por ejemplo, un portal RN-web mal posicionado) tenga
@@ -43,15 +45,19 @@ const Content = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
+  border-radius: 24px;
   width: 100%;
-  max-width: ${({ $width = 520 }) => `${$width}px`};
-  max-height: calc(100dvh - 32px);
+  max-width: ${({ $width = 760 }) => `${$width}px`};
+  max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
   box-shadow: ${({ theme }) => theme.shadows.xl};
   overflow: hidden;
   animation: ${pop} 180ms cubic-bezier(0.2, 0, 0, 1);
+
+  @media (max-width: 900px) {
+    max-width: min(100%, 92vw);
+  }
 
   @media (max-width: 600px) {
     max-width: 100%;
@@ -68,7 +74,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 18px 22px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
 
@@ -79,8 +85,8 @@ const Header = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
   line-height: 1.3;
   flex: 1;
@@ -118,7 +124,7 @@ const Close = styled.button`
 `;
 
 const Body = styled.div`
-  padding: 20px;
+  padding: 22px;
   overflow-y: auto;
   flex: 1;
   color: ${({ theme }) => theme.colors.text};

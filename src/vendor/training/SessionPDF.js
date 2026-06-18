@@ -354,7 +354,6 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
   const horaInicio = formatTimeStr(session.horaInicio);
   const horaFin = formatTimeStr(session.horaFin);
-  const lugar = session.lugar || '';
   const startMinutes = parseClock(horaInicio);
   const endMinutes = parseClock(horaFin);
   const computedDurationMinutes = (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes) ? endMinutes - startMinutes : null;
@@ -367,7 +366,7 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     jugadoresNombres, jugadoresExtrasNombres,
     generalObservationsText, exerciseObservationItems,
     ejerciciosOrdenados, detalleMap,
-    horaInicio, horaFin, lugar, duracionLabel,
+    horaInicio, horaFin, duracionLabel,
     teamName: team?.nombre || 'Equipo',
     teamLogo: team?.escudo || null,
   };
@@ -376,7 +375,7 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 // ── Components ─────────────────────────────────────────────────────
 
 const SessionCoverPage = ({ data, title }) => {
-  const { t, fechaFormateada, jugadoresNombres, jugadoresExtrasNombres, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, lugar, duracionLabel, teamName } = data;
+  const { t, fechaFormateada, jugadoresNombres, jugadoresExtrasNombres, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, duracionLabel, teamName } = data;
 
   const generalObservationsPreview = generalObservationsText ? truncateText(generalObservationsText, 520) : '';
   const exerciseObservationsPreview = exerciseObservationItems.slice(0, 5).map(item => ({ title: item.title, text: truncateText(item.text, 140) }));
@@ -399,10 +398,6 @@ const SessionCoverPage = ({ data, title }) => {
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{jugadoresNombres.length + jugadoresExtrasNombres.length}</Text>
             <Text style={s.metricLbl}>{t('session.totalPlayers', 'Jugadores Totales')}</Text>
-          </View>
-          <View style={s.metricBox}>
-            <Text style={s.metricVal}>{lugar || '---'}</Text>
-            <Text style={s.metricLbl}>{t('session.trainingLocation', 'Lugar de Entreno')}</Text>
           </View>
         </View>
 

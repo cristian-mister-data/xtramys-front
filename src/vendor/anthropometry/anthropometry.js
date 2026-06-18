@@ -3285,9 +3285,9 @@ const makeStyles = (theme) =>
     createModalContainer: {
       backgroundColor: theme.colors.surface,
       borderRadius: 20,
-      width: '95%',
-      maxWidth: 500,
-      maxHeight: '90%',
+      width: '94%',
+      maxWidth: 1120,
+      maxHeight: '92%',
       flex: 1,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 20 },
