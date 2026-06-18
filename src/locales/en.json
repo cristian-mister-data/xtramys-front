@@ -4940,6 +4940,7 @@
   },
   "errors": {
     "UNAUTHORIZED": "Unauthorized access",
+    "CURRENT_PASSWORD_INCORRECT": "The current password is incorrect",
     "INVALID_TOKEN": "Invalid or expired token",
     "FORBIDDEN_ADMIN": "Access denied: admin role required",
     "USER_NOT_FOUND": "User not found",

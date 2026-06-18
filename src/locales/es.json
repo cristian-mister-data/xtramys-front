@@ -4946,6 +4946,7 @@
   },
   "errors": {
     "UNAUTHORIZED": "Acceso no autorizado",
+    "CURRENT_PASSWORD_INCORRECT": "La contraseña actual no es correcta",
     "INVALID_TOKEN": "Token inválido o expirado",
     "FORBIDDEN_ADMIN": "Acceso denegado: se requiere rol de administrador",
     "USER_NOT_FOUND": "Usuario no encontrado",

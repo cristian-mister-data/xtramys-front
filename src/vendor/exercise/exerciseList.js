@@ -45,8 +45,13 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const canEditClubOwnedItem = (item, userId, userRole) => {
+  if (!item) return false;
+  if (userRole === 'admin') return true;
+  return sameId(item.usuario, userId);
+};
 
-function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate }) {
+function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -332,7 +337,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                   </TouchableOpacity>
                 </>
               )}
-              {canMutate !== false && (
+              {canMutate !== false && canEditItem?.(exercise) && (
                 <TouchableOpacity
                   style={styles.modalEditButton}
                   onPress={() => onEdit(exercise)}
@@ -452,7 +457,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                       {visibleVideos.map((video) => (
                         <View key={video._id} style={[styles.videoCard, IS_MOBILE && styles.videoCardMobile]}>
                           {/* Botón de desasociar */}
-                          {canMutate !== false && !(exercise?.isGlobal && userRole !== 'admin') && (
+                          {canMutate !== false && canEditItem?.(exercise) && !(exercise?.isGlobal && userRole !== 'admin') && (
                             <TouchableOpacity
                               style={styles.videoUnlinkBtn}
                               onPress={() => handleUnlinkVideo(video)}
@@ -473,7 +478,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                             )}
                           </View>
                           <View style={styles.videoCardActions}>
-                            {canMutate !== false && (
+                            {canMutate !== false && canEditItem?.(exercise) && (
                             <TouchableOpacity
                               style={[styles.videoActionBtn, styles.videoEditBtn]}
                               onPress={() => onEditVideo && onEditVideo(video, exercise)}
@@ -1257,6 +1262,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const [viewingExercise, setViewingExercise] = useState(null);
   const idUsuario = user?._id || "";
   const userRole = user?.role || "user";
+  const canEditExerciseItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' (admin only) | 'favorites'
   const [viewMode, setViewMode] = useState("list");
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -1624,6 +1630,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const handleEditAssociatedVideo = useCallback(async (video, parentExercise) => {
     try {
+      if (!canEditExerciseItem(parentExercise) || !canEditExerciseItem(video)) return;
       let editableVideoId = video?._id || video?.id;
 
       if (!editableVideoId) {
@@ -1689,7 +1696,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     } catch (error) {
       Alert.alert(t('message.error'), error?.message || t('myVideos.couldNotLoadVideo'));
     }
-  }, [buildDuplicateName, i18n.language, navigation, t, userRole]);
+  }, [buildDuplicateName, canEditExerciseItem, i18n.language, navigation, t, userRole]);
 
   // ---- Selecci\u00f3n m\u00faltiple ----
   const handleExerciseLongPress = (exercise) => {
@@ -2018,9 +2025,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         navigation={navigation}
         userRole={userRole}
         canMutate={canMutate}
+        canEditItem={canEditExerciseItem}
         onEditVideo={handleEditAssociatedVideo}
         onEdit={async (exercise) => {
           if (canMutate === false) return;
+          if (!canEditExerciseItem(exercise)) return;
           // Si el ejercicio es global y el usuario no es admin, duplicar primero
           if (exercise.isGlobal && userRole !== 'admin') {
             try {
@@ -2477,7 +2486,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                   </View>
                 </TouchableOpacity>
 
-                {canMutate !== false && (
+                {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2511,7 +2520,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
               )}
 
-              {canMutate !== false && (
+              {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2553,7 +2562,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
               )}
 
-              {canMutate !== false && (
+              {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2571,11 +2580,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
               )}
 
-              {canMutate !== false && (
+              {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <View style={styles.mvActionDivider} />
               )}
 
-              {canMutate !== false && (
+              {canMutate !== false && canEditExerciseItem(selectedExerciseForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {

@@ -38,7 +38,8 @@ function classifyNetworkError(error) {
   const status = error.response.status;
   const url = error.config?.url || '';
   const isAuthRoute = url.includes('/auth/');
-  if (status === 401 && !isAuthRoute) return 'SESSION_EXPIRED';
+  const isPasswordChangeRoute = /\/user\/[^/]+\/password(?:\?|$)/.test(url);
+  if (status === 401 && !isAuthRoute && !isPasswordChangeRoute) return 'SESSION_EXPIRED';
   if (status >= 500) return 'SERVER_ERROR';
   return null;
 }
@@ -209,8 +210,11 @@ function attachInterceptors(instance) {
 
       const errorCode = error.response?.data?.code;
       let translatedMessage;
+      const isPasswordChangeRoute = /\/user\/[^/]+\/password(?:\?|$)/.test(url);
 
-      if (errorCode) {
+      if (isPasswordChangeRoute && error.response?.status === 401) {
+        translatedMessage = i18n.t('errors.CURRENT_PASSWORD_INCORRECT');
+      } else if (errorCode) {
         const key = `errors.${errorCode}`;
         translatedMessage = i18n.exists(key) ? i18n.t(key) : null;
       }

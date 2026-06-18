@@ -417,6 +417,76 @@ export default function CreateStrategyForm({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Selector de visibilidad y global (Arriba del todo) */}
+        {((!isAdmin && userClubId) || isAdmin) && (
+          <View style={styles.formCard}>
+            <Text style={styles.subTitle}>{isAdmin ? t('visibility', 'Visibilidad') : t('club.strategyVisibility', 'Visibilidad de la estrategia')}</Text>
+            
+            {!isAdmin && userClubId && (
+              <View style={styles.visibilityContainer}>
+                <TouchableOpacity
+                  style={[styles.visibilityOption, visibility === 'PRIVATE' && styles.visibilityOptionSelectedPrivate]}
+                  onPress={() => setVisibility('PRIVATE')}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.visibilityIconContainer, visibility === 'PRIVATE' && styles.visibilityIconContainerSelectedPrivate]}>
+                    <Ionicons name="lock-closed" size={20} color={visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  </View>
+                  <View style={styles.visibilityTextContainer}>
+                    <Text style={[styles.visibilityTitle, visibility === 'PRIVATE' && styles.visibilityTitleSelected]}>{t('club.private', 'Privado')}</Text>
+                    <Text style={styles.visibilityDesc}>{t('club.privateDesc', 'Solo tú puedes verlo')}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.visibilityOption, visibility === 'CLUB' && styles.visibilityOptionSelectedClub]}
+                  onPress={() => setVisibility('CLUB')}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.visibilityIconContainer, visibility === 'CLUB' && styles.visibilityIconContainerSelectedClub]}>
+                    <Ionicons name="people" size={20} color={visibility === 'CLUB' ? (theme?.colors?.success || '#10b981') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  </View>
+                  <View style={styles.visibilityTextContainer}>
+                    <Text style={[styles.visibilityTitle, visibility === 'CLUB' && styles.visibilityTitleSelected]}>{t('club.shareWithClub', 'Compartir con mi club')}</Text>
+                    <Text style={styles.visibilityDesc}>{t('club.shareDesc', 'Visible para tu club')}</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {isAdmin && (
+              <View style={styles.visibilityContainer}>
+                <TouchableOpacity
+                  style={[styles.visibilityOption, !isGlobal && styles.visibilityOptionSelectedPrivate]}
+                  onPress={() => setIsGlobal(false)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.visibilityIconContainer, !isGlobal && styles.visibilityIconContainerSelectedPrivate]}>
+                    <Ionicons name="person" size={20} color={!isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  </View>
+                  <View style={styles.visibilityTextContainer}>
+                    <Text style={[styles.visibilityTitle, !isGlobal && styles.visibilityTitleSelected]}>{t('strategy.myStrategies')}</Text>
+                    <Text style={styles.visibilityDesc}>Privado</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.visibilityOption, isGlobal && styles.visibilityOptionSelectedClub]}
+                  onPress={() => setIsGlobal(true)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.visibilityIconContainer, isGlobal && styles.visibilityIconContainerSelectedClub]}>
+                    <Ionicons name="globe" size={20} color={isGlobal ? (theme?.colors?.success || '#10b981') : (theme?.colors?.textMuted || '#94a3b8')} />
+                  </View>
+                  <View style={styles.visibilityTextContainer}>
+                    <Text style={[styles.visibilityTitle, isGlobal && styles.visibilityTitleSelected]}>{t('strategy.appStrategies')}</Text>
+                    <Text style={styles.visibilityDesc}>Público</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
         <View style={styles.formCard}>
           <Text style={styles.subTitle}>{t('strategy.generalData')}</Text>
           <TextInput
@@ -492,51 +562,7 @@ export default function CreateStrategyForm({
 
         </View>
 
-        {/* Selector de visibilidad para miembros del club (solo si no es admin y pertenece a un club) */}
-        {!isAdmin && userClubId && (
-          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.textMuted || '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t('club.strategyVisibility', 'Visibilidad de la estrategia')}</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'PRIVATE' ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
-                onPress={() => setVisibility('PRIVATE')}
-              >
-                <Ionicons name="lock-closed-outline" size={16} color={visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'PRIVATE' ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.private', 'Privado')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: visibility === 'CLUB' ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
-                onPress={() => setVisibility('CLUB')}
-              >
-                <Ionicons name="people-outline" size={16} color={visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: visibility === 'CLUB' ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('club.shareWithClub', 'Compartir con mi club')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
 
-        {/* Toggle para estrategia global (solo admin) */}
-        {isAdmin && (
-          <View style={{ paddingVertical: 10, paddingHorizontal: 16, backgroundColor: theme?.colors?.surface || '#111827', borderTopWidth: 1, borderTopColor: theme?.colors?.border || '#334155', marginTop: 10 }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: theme?.colors?.textMuted || '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Visibilidad de la estrategia</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: !isGlobal ? (theme?.colors?.primary || '#3b82f6') : 'transparent' }}
-                onPress={() => setIsGlobal(false)}
-              >
-                <Ionicons name="person-outline" size={16} color={!isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: !isGlobal ? (theme?.colors?.onPrimary || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.myStrategies')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: isGlobal ? (theme?.colors?.success || '#16a34a') : (theme?.colors?.surfaceAlt || '#111827'), borderWidth: 2, borderColor: isGlobal ? (theme?.colors?.success || '#16a34a') : 'transparent' }}
-                onPress={() => setIsGlobal(true)}
-              >
-                <Ionicons name="globe-outline" size={16} color={isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8')} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: isGlobal ? (theme?.colors?.onSuccess || '#fff') : (theme?.colors?.textMuted || '#94a3b8') }}>{t('strategy.appStrategies')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
 
         {/* Traducciones al inglés (solo admin + estrategia global) */}
         {isAdmin && isGlobal && (
@@ -913,5 +939,57 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     color: theme?.colors?.primary || '#1976d2',
     fontWeight: '600',
+  },
+  visibilityContainer: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  visibilityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
+  },
+  visibilityOptionSelectedPrivate: {
+    borderColor: theme?.colors?.primary || '#3b82f6',
+    backgroundColor: (theme?.colors?.primary || '#3b82f6') + '10',
+  },
+  visibilityOptionSelectedClub: {
+    borderColor: theme?.colors?.success || '#10b981',
+    backgroundColor: (theme?.colors?.success || '#10b981') + '10',
+  },
+  visibilityIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  visibilityIconContainerSelectedPrivate: {
+    backgroundColor: (theme?.colors?.primary || '#3b82f6') + '20',
+  },
+  visibilityIconContainerSelectedClub: {
+    backgroundColor: (theme?.colors?.success || '#10b981') + '20',
+  },
+  visibilityTextContainer: {
+    flex: 1,
+  },
+  visibilityTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme?.colors?.text || '#e2e8f0',
+    marginBottom: 2,
+  },
+  visibilityTitleSelected: {
+    color: theme?.colors?.text || '#fff',
+  },
+  visibilityDesc: {
+    fontSize: 13,
+    color: theme?.colors?.textMuted || '#94a3b8',
   },
 });

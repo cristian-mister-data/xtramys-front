@@ -71,6 +71,11 @@ const getFavoriteValue = (item) => {
   return false;
 };
 const normalizeVideo = (video) => video ? { ...video, favorito: getFavoriteValue(video) } : video;
+const canEditClubOwnedItem = (item, user, isAdmin) => {
+  if (!item) return false;
+  if (isAdmin) return true;
+  return sameId(item.usuario, user?._id);
+};
 const mergeVideosById = (...groups) => {
   const map = new Map();
   groups.flat().filter(Boolean).forEach((video) => {
@@ -123,6 +128,7 @@ export default function MyVideos({ canMutate = true } = {}) {
   // User role (detectar desde AsyncStorage como en createExerciseForm)
   const [isAdmin, setIsAdmin] = useState(false);
   const lang = i18n.language;
+  const canEditVideoItem = useCallback((item) => canEditClubOwnedItem(item, user, isAdmin), [user, isAdmin]);
 
   const persistFavoriteVideoPrefs = useCallback((favoriteIds, unfavoriteIds) => {
     favoriteVideoIdsRef.current = favoriteIds;
@@ -698,6 +704,7 @@ export default function MyVideos({ canMutate = true } = {}) {
   // Para videos globales y usuario no-admin: duplica primero (consistente con ejercicios)
   const editVideo = async (video) => {
     if (canMutate === false) return;
+    if (!canEditVideoItem(video)) return;
     try {
       setIsGenerating(true);
       setMenuVisible(false);
@@ -1484,7 +1491,7 @@ export default function MyVideos({ canMutate = true } = {}) {
               </TouchableOpacity>
               
               {/* Editar: siempre visible. Non-admin en video global duplica primero (consistente con ejercicios) */}
-              {canMutate !== false && (
+              {canMutate !== false && canEditVideoItem(menuVideo) && (
               <TouchableOpacity
                 style={styles.actionOption}
                 onPress={() => {
@@ -1521,7 +1528,7 @@ export default function MyVideos({ canMutate = true } = {}) {
                 </View>
               </TouchableOpacity>
               
-              {canMutate !== false && !(menuVideo?.isGlobal && !isAdmin) && (
+              {canMutate !== false && canEditVideoItem(menuVideo) && !(menuVideo?.isGlobal && !isAdmin) && (
                 <>
                   <TouchableOpacity
                     style={styles.actionOption}

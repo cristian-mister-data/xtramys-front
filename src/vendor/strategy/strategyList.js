@@ -66,8 +66,13 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const canEditClubOwnedItem = (item, userId, userRole) => {
+  if (!item) return false;
+  if (userRole === 'admin') return true;
+  return sameId(item.usuario, userId);
+};
 
-function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate }) {
+function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -364,7 +369,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                   </TouchableOpacity>
                 </>
               )}
-              {canMutate !== false && (
+              {canMutate !== false && canEditItem?.(strategy) && (
               <TouchableOpacity
                 style={styles.modalEditButton}
                 onPress={() => onEdit(strategy)}
@@ -460,7 +465,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                       {strategyVideos.map((video) => (
                         <View key={video._id} style={styles.videoCard}>
 {/* Botón de desasociar */}
-                           {canMutate !== false && (
+                           {canMutate !== false && canEditItem?.(strategy) && (
                            <TouchableOpacity
                              style={styles.videoUnlinkBtn}
                              onPress={() => handleUnlinkVideo(video)}
@@ -488,7 +493,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                               <Feather name="play" size={16} color="#fff" />
                               <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
                             </TouchableOpacity>
-                            {canMutate !== false && (
+                            {canMutate !== false && canEditItem?.(strategy) && (
                             <TouchableOpacity
                               style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
                               onPress={() => onEditVideo && onEditVideo(video, strategy)}
@@ -1200,6 +1205,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
+  const canEditStrategyItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [viewMode, setViewMode] = useState("list");
@@ -1684,6 +1690,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 
   const handleEditAssociatedVideo = useCallback(async (video, parentStrategy) => {
     try {
+      if (!canEditStrategyItem(parentStrategy) || !canEditStrategyItem(video)) return;
       let editableVideoId = video?._id || video?.id;
 
       if (!editableVideoId) {
@@ -1775,7 +1782,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       console.error('Error editando video:', error);
       Alert.alert(t('message.error'), error.message || t('myVideos.couldNotLoadVideo'));
     }
-  }, [userRole, buildDuplicateName, i18n.language, t, navigation]);
+  }, [userRole, buildDuplicateName, canEditStrategyItem, i18n.language, t, navigation]);
 
   // Notificaciones estilo myVideos
   const showNotification = (message, type = 'success') => {
@@ -1974,6 +1981,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         onBack={() => setViewingStrategy(null)}
         navigation={navigation}
         onEdit={async (strategy) => {
+          if (canMutate === false) return;
+          if (!canEditStrategyItem(strategy)) return;
 
           if (strategy.isGlobal && userRole !== 'admin') {
             try {
@@ -1999,6 +2008,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         onEditVideo={handleEditAssociatedVideo}
         userRole={userRole}
         canMutate={canMutate}
+        canEditItem={canEditStrategyItem}
       />
     );
   }
@@ -2427,7 +2437,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                   </View>
                 </TouchableOpacity>
 
-                {canMutate !== false && (
+                {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2461,7 +2471,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
                 )}
 
-                {canMutate !== false && (
+                {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={async () => {
@@ -2503,7 +2513,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
                 )}
 
-                {canMutate !== false && (
+                {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
@@ -2521,9 +2531,11 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                 </TouchableOpacity>
                 )}
 
-                <View style={styles.mvActionDivider} />
+                {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
+                  <View style={styles.mvActionDivider} />
+                )}
 
-                {canMutate !== false && (
+                {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
                 <TouchableOpacity
                   style={styles.mvActionOption}
                   onPress={() => {
