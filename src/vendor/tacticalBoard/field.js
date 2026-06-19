@@ -172,12 +172,12 @@ function normalizeElementsForCanvas(elements = []) {
       }
 
       if (elem.type === 'player') {
-        snapshot.playersWithNumber = elem.playersWithNumber;
-        snapshot.isGoalkeeper =
-          elem.isGoalkeeper ||
+        const inferredGoalkeeper =
           elem.playerData?.posicion === 'portero' ||
           elem.playerData?.position === 'goalkeeper' ||
           elem.playerData?.demarcacion === 'POR';
+        snapshot.playersWithNumber = elem.playersWithNumber;
+        snapshot.isGoalkeeper = elem.preserveVisualStyle ? elem.isGoalkeeper === true : elem.isGoalkeeper || inferredGoalkeeper;
       }
 
       return snapshot;
@@ -7973,11 +7973,13 @@ const DraggableIcon = React.memo(
                       displayLabel={icon.displayLabel}
                       numberColor={icon.numberColor}
                       isGoalkeeper={
-                        icon.isGoalkeeper ||
-                        icon.playerData?.posicion === 'portero' ||
-                        icon.playerData?.posicion === 'goalkeeper' ||
-                        icon.playerData?.position === 'goalkeeper' ||
-                        icon.playerData?.demarcacion === 'POR'
+                        icon.preserveVisualStyle
+                          ? icon.isGoalkeeper === true
+                          : icon.isGoalkeeper ||
+                            icon.playerData?.posicion === 'portero' ||
+                            icon.playerData?.posicion === 'goalkeeper' ||
+                            icon.playerData?.position === 'goalkeeper' ||
+                            icon.playerData?.demarcacion === 'POR'
                       }
                       differentiateGoalkeeper={differentiateGoalkeeper}
                       goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
@@ -14534,17 +14536,19 @@ export default function Field(props = {}) {
       const updatedClones = clones.map((c) => {
         if (c.id === targetCloneId) {
           const number = player.dorsal || player.number || '';
-          const isGoalkeeper = player.posicion && ['portero', 'goalkeeper', 'gk', 'pt'].includes(player.posicion.toLowerCase());
-          const color = isGoalkeeper && teamPlayerStyle.differentiateGoalkeeper
-            ? teamPlayerStyle.goalkeeperColor || '#ff4a4a'
-            : teamPlayerStyle.color || '#2176ff';
+          const keepsGoalkeeperStyle =
+            c.isGoalkeeper ||
+            c.playerData?.posicion === 'portero' ||
+            c.playerData?.position === 'goalkeeper' ||
+            c.playerData?.demarcacion === 'POR';
           return {
             ...c,
             number,
-            color,
-            playerData: player,
-            isGoalkeeper,
-            displayLabel: teamPlayerStyle.showPosition ? getPositionAbbreviation(player.posicion) : undefined,
+            playerData: { ...player, uniqueId: player.uniqueId },
+            photoUrl: player.foto ? cdnUrl(player.foto) : c.photoUrl,
+            preserveVisualStyle: true,
+            isGoalkeeper: keepsGoalkeeperStyle === true,
+            displayLabel: c.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : c.displayLabel,
           };
         }
         return c;
@@ -14560,23 +14564,25 @@ export default function Field(props = {}) {
             elements: kf.elements.map((elem) => {
               if (elem.id === targetCloneId) {
                 const number = player.dorsal || player.number || '';
-                const isGoalkeeper = player.posicion && ['portero', 'goalkeeper', 'gk', 'pt'].includes(player.posicion.toLowerCase());
-                const color = isGoalkeeper && teamPlayerStyle.differentiateGoalkeeper
-                  ? teamPlayerStyle.goalkeeperColor || '#ff4a4a'
-                  : teamPlayerStyle.color || '#2176ff';
+                const keepsGoalkeeperStyle =
+                  elem.isGoalkeeper ||
+                  elem.playerData?.posicion === 'portero' ||
+                  elem.playerData?.position === 'goalkeeper' ||
+                  elem.playerData?.demarcacion === 'POR';
                 return {
                   ...elem,
                   number,
-                  color,
                   playerData: {
                     nombre: player.nombre,
                     demarcacion: player.demarcacion,
                     posicion: player.posicion,
                     foto: player.foto,
+                    uniqueId: player.uniqueId,
                   },
-                  isGoalkeeper,
-                  displayLabel: teamPlayerStyle.showPosition ? getPositionAbbreviation(player.posicion) : undefined,
-                  photoUrl: player.foto ? cdnUrl(player.foto) : undefined,
+                  photoUrl: player.foto ? cdnUrl(player.foto) : elem.photoUrl,
+                  preserveVisualStyle: true,
+                  isGoalkeeper: keepsGoalkeeperStyle === true,
+                  displayLabel: elem.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : elem.displayLabel,
                 };
               }
               return elem;

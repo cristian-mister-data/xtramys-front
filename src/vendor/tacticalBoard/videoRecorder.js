@@ -902,6 +902,7 @@ export default function VideoRecorder({
               if (elem.stripeColor) snapshot.stripeColor = elem.stripeColor;
               if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
               if (elem.ownerType) snapshot.ownerType = elem.ownerType;
+              if (elem.preserveVisualStyle !== undefined) snapshot.preserveVisualStyle = elem.preserveVisualStyle;
               // Añadir datos de texto para jugadores con nombre
               if (elem.playerData) {
                 snapshot.playerData = {
@@ -920,11 +921,11 @@ export default function VideoRecorder({
               snapshot.showPhotos = showPhotos;
               snapshot.playersWithNumber = playersWithNumber;
               // Añadir datos del portero
-              snapshot.isGoalkeeper =
-                elem.isGoalkeeper ||
+              const inferredGoalkeeper =
                 elem.playerData?.posicion === 'portero' ||
                 elem.playerData?.position === 'goalkeeper' ||
                 elem.playerData?.demarcacion === 'POR';
+              snapshot.isGoalkeeper = elem.preserveVisualStyle ? elem.isGoalkeeper === true : elem.isGoalkeeper || inferredGoalkeeper;
               if (elem.differentiateGoalkeeper !== undefined)
                 snapshot.differentiateGoalkeeper = elem.differentiateGoalkeeper;
               if (elem.goalkeeperStripeColor)
@@ -1316,10 +1317,12 @@ export default function VideoRecorder({
       };
 
       const disableStreamingEncoder = (streamingErrorToReport) => {
-        console.info(
-          '[videoRecorder] Streaming WebCodecs falló, se usara fallback al final',
-          streamingErrorToReport,
-        );
+        if (!String(streamingErrorToReport?.message || '').includes('H.264 WebCodecs no soportado')) {
+          console.info(
+            '[videoRecorder] Streaming WebCodecs falló, se usara fallback al final',
+            streamingErrorToReport,
+          );
+        }
         streamingEncoder?.abort?.();
         streamingEncoder = null;
         encodedFrames = 0;

@@ -7,7 +7,7 @@ import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
 
-export default function SetPiecePreview({ setPiece, players = [], height = 240, onSlotPress, selectedSlotId }) {
+export default function SetPiecePreview({ setPiece, players = [], height = 240, onSlotPress, selectedSlotId, showAssignments = false }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme, height), [theme, height]);
   const elements = Array.isArray(setPiece?.customElements) && setPiece.customElements.length
@@ -16,7 +16,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
   const assignments = Array.isArray(setPiece?.assignments) ? setPiece.assignments : [];
   const image = normalizeImageSource(setPiece?.customImage || setPiece?.imagen || '');
 
-  const markers = assignments.map((assignment) => {
+  const markers = showAssignments ? assignments.map((assignment) => {
     const element = elements.find((item) => String(item.id || item._id || '') === String(assignment.slotId));
     const playerId = getId(assignment.player);
     const player = players.find((p) => String(p._id) === String(playerId)) || assignment.player;
@@ -27,7 +27,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       x: element?.xRatio ?? (typeof element?.x === 'number' ? element.x / 1280 : undefined),
       y: element?.yRatio ?? (typeof element?.y === 'number' ? element.y / 832 : undefined),
     };
-  });
+  }) : [];
   const positioned = markers.filter((item) => item.x !== undefined && item.y !== undefined);
   const fallback = markers.filter((item) => item.x === undefined || item.y === undefined);
   const MarkerRoot = onSlotPress ? TouchableOpacity : View;

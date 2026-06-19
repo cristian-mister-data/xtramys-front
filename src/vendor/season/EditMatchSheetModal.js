@@ -2164,47 +2164,6 @@ export default function EditMatchSheetModal({
                 <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver vídeo'}</Text>
               </TouchableOpacity>
             )}
-            {(sp.assignments || []).length === 0 ? (
-              <Text style={styles.setPiecesHint}>{t('setPieces.noNumberedPlayers', 'Esta ABP no tiene jugadores numerados en el gráfico.')}</Text>
-            ) : false && activeSetPieceSlot?.setPieceIndex === setPieceIndex ? (
-              <View style={styles.playerPickerPanel}>
-                <Text style={styles.playerPickerTitle}>
-                  {t('setPieces.selectPlayerForSlot', { number: (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId)?.number || '' })}
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assignmentPlayers}>
-                  {(() => {
-                    const assignment = (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId);
-                    return (
-                      <TouchableOpacity
-                        style={[styles.assignmentChip, !assignment?.player && styles.assignmentChipSelected]}
-                        onPress={() => assignSetPiecePlayer(setPieceIndex, activeSetPieceSlot.slotId, null)}
-                      >
-                        <Text style={[styles.assignmentChipText, !assignment?.player && styles.assignmentChipTextSelected]}>
-                          {t('common.none', 'Sin asignar')}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })()}
-                  {players.map((player) => {
-                    const assignment = (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId);
-                    const selected = String(assignment?.player || '') === String(player._id);
-                    return (
-                      <TouchableOpacity
-                        key={player._id}
-                        style={[styles.assignmentChip, selected && styles.assignmentChipSelected]}
-                        onPress={() => assignSetPiecePlayer(setPieceIndex, activeSetPieceSlot.slotId, player._id)}
-                      >
-                        <Text style={[styles.assignmentChipText, selected && styles.assignmentChipTextSelected]} numberOfLines={1}>
-                          {player.dorsal ? `#${player.dorsal} ` : ''}{getPlayerFullName(player)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            ) : (
-              <Text style={styles.setPiecesHint}>{t('setPieces.openBoard')}</Text>
-            )}
           </View>
         ))}
       </View>
@@ -3101,7 +3060,13 @@ export default function EditMatchSheetModal({
           >
             <SafeAreaProvider style={{ flex: 1 }}>
               <GestureHandlerRootView style={{ flex: 1 }}>
-                {boardParams ? <Field key={`match-set-piece-${boardParams.estrategiaId || 'new'}`} {...boardParams} /> : null}
+                {boardParams ? (
+                  <Field
+                    key={`match-set-piece-${boardParams.estrategiaId || 'new'}`}
+                    {...boardParams}
+                    navigation={{ goBack: () => {}, navigate: () => {} }}
+                  />
+                ) : null}
               </GestureHandlerRootView>
             </SafeAreaProvider>
           </Modal>

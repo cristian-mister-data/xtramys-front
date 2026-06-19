@@ -679,7 +679,9 @@ export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress
   try {
     return await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);
   } catch (webCodecsError) {
-    console.info('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
+    if (!String(webCodecsError?.message || '').includes('H.264 WebCodecs no soportado')) {
+      console.info('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
+    }
     if (isMobileBrowser()) {
       console.info('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
       return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);

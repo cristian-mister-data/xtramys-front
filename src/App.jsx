@@ -54,6 +54,20 @@ const isConnectivityError = (error) => (
 );
 
 const SESSION_RECHECK_INTERVAL_MS = 5 * 60 * 1000;
+const IGNORED_WARNINGS = [
+  'accessibilityDisabled is deprecated',
+  'keyboardType is deprecated. Use inputMode',
+];
+
+if (typeof console !== 'undefined' && !console.__xtramysWarnFilter) {
+  const warn = console.warn.bind(console);
+  console.warn = (...args) => {
+    const message = String(args[0] || '');
+    if (IGNORED_WARNINGS.some((ignored) => message.includes(ignored))) return;
+    warn(...args);
+  };
+  console.__xtramysWarnFilter = true;
+}
 
 export default function App() {
   const dispatch = useDispatch();
