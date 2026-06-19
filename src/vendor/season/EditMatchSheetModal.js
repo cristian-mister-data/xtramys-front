@@ -16,6 +16,8 @@ import {
   Dimensions,
   useWindowDimensions,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -26,6 +28,7 @@ import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
 import { createRival, fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
@@ -34,13 +37,20 @@ import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { toast } from '@/ui/toast';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { api } from '@/api/client';
 import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
+import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
+import Field from '@/vendor/tacticalBoard/field';
 import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { getPositionColor } from '@/components/player/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
+import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import { cdnUrl } from '@/config';
+
+const MATCH_SET_PIECE_FIELD_RESULT = 'matchSetPieceFieldResult';
 
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
@@ -1043,6 +1053,19 @@ export default function EditMatchSheetModal({
   const { width: windowWidth } = useWindowDimensions();
   const isCreateMode = !matchSheet?._id;
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('data');
+  const [availableSetPieces, setAvailableSetPieces] = useState([]);
+  const [loadingSetPieces, setLoadingSetPieces] = useState(false);
+  const [selectedSetPieces, setSelectedSetPieces] = useState([]);
+  const [activeSetPieceSlot, setActiveSetPieceSlot] = useState(null);
+  const [boardParams, setBoardParams] = useState(null);
+  const [setPieceVideoUrl, setSetPieceVideoUrl] = useState(null);
+  const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
+  const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
+  const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
+    if (setPieceVideoUrl) player.play();
+  });
+  const isMobile = windowWidth < 430;
   
   // Estados del formulario básico
   const [rival, setRival] = useState('');
@@ -1067,6 +1090,13 @@ export default function EditMatchSheetModal({
   
   // Estados para jugadores
   const [convocados, setConvocados] = useState([]);
+  const convocadosPlayers = useMemo(() => {
+    if (!convocados || convocados.length === 0) return players;
+    return convocados.map(id => {
+      const pId = typeof id === 'object' ? (id._id || id.id) : id;
+      return players.find(p => String(p._id || p.id) === String(pId));
+    }).filter(Boolean);
+  }, [convocados, players]);
   const [noConvocados, setNoConvocados] = useState([]);
   const [alineacionTitulares, setAlineacionTitulares] = useState([]);
   const [alineacionSuplentes, setAlineacionSuplentes] = useState([]);
@@ -1346,6 +1376,7 @@ export default function EditMatchSheetModal({
       setTarjetasRojas(matchSheet.tarjetasRojas || []);
       setCambios(matchSheet.cambios || []);
       setGolesRival(matchSheet.golesRival || []);
+      setSelectedSetPieces(matchSheet.setPieces || []);
       
       // Descuento (tiempo añadido)
       setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo !== undefined ? String(matchSheet.descuentoPrimerTiempo) : '0');
@@ -1389,12 +1420,62 @@ export default function EditMatchSheetModal({
       setTarjetasRojas([]);
       setCambios([]);
       setGolesRival([]);
+      setSelectedSetPieces([]);
       setJugadoresEnCampo([]);
       setJugadoresExpulsados([]);
       setDescuentoPrimerTiempo('0');
       setDescuentoSegundoTiempo('0');
     }
   }, [visible, matchSheet]);
+
+  useEffect(() => {
+    if (!visible || typeof sessionStorage === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem(MATCH_SET_PIECE_FIELD_RESULT);
+      if (!raw) return;
+      sessionStorage.removeItem(MATCH_SET_PIECE_FIELD_RESULT);
+      const result = JSON.parse(raw);
+      if (result?.setPieceIndex == null) return;
+
+      const playerElements = (result.updatedElements || []).filter(el => el.type === 'player' && el.playerData);
+      const newAssignments = playerElements.map((el, idx) => ({
+        slotId: String(el.id || el._id || `slot-${idx}`),
+        number: String(el.number || el.playerNumber || el.numero || el.text || el.label || ''),
+        player: el.playerData?._id || el.playerData?.id || null,
+        playerName: getPlayerFullName(el.playerData),
+      }));
+
+      setSelectedSetPieces((prev) => prev.map((sp, index) => index === result.setPieceIndex ? {
+        ...sp,
+        customImage: result.imageBase64 || sp.customImage || '',
+        customElements: result.updatedElements || sp.customElements || [],
+        customFieldType: result.updatedFieldType || sp.customFieldType || '',
+        pizarraConfig: { ...(result.updatedConfig || sp.pizarraConfig || {}), setPieceMode: true },
+        assignments: newAssignments,
+      } : sp));
+    } catch {}
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    let mounted = true;
+    const loadSetPieces = async () => {
+      setLoadingSetPieces(true);
+      try {
+        const res = await api.get(`/strategy/all?kind=setPiece&lang=${i18n.language || 'es'}`);
+        if (mounted) setAvailableSetPieces(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        console.error('Error loading set pieces for match sheet:', error);
+        if (mounted) setAvailableSetPieces([]);
+      } finally {
+        if (mounted) setLoadingSetPieces(false);
+      }
+    };
+    loadSetPieces();
+    return () => {
+      mounted = false;
+    };
+  }, [visible, i18n.language]);
 
   // Recalcular jugadores en campo siempre que cambien titulares, cambios o tarjetas rojas
   useEffect(() => {
@@ -1415,6 +1496,55 @@ export default function EditMatchSheetModal({
     const player = players.find(p => p._id === playerId);
     // fallback text should also be localizable
     return player ? getPlayerFullName(player) : t('common.player');
+  };
+
+  const getAssignedPlayer = (assignment) => {
+    if (assignment?.player && typeof assignment.player === 'object') return assignment.player;
+    return players.find(p => String(p._id) === String(assignment?.player));
+  };
+
+  const buildSetPiecePlayerOverlays = (setPiece) => {
+    const boardPlayers = (setPiece?.customElements || [])
+      .filter((element) => element?.type === 'player' && element.playerData)
+      .map((element, index) => {
+        const player = element.playerData;
+        const name = getPlayerFullName(player);
+        return {
+          slotId: String(element.id || element._id || `slot-${index}`),
+          number: String(element.number || element.playerNumber || element.numero || element.text || element.label || ''),
+          exactSlot: true,
+          playerData: {
+            _id: player._id || player.id || '',
+            nombre: name,
+            name,
+            demarcacion: player.demarcacion || player.posicion || player.position || '',
+            posicion: player.posicion || player.position || '',
+            foto: player.foto || '',
+          },
+          photoUrl: player.foto ? cdnUrl(player.foto) : '',
+        };
+      });
+    if (boardPlayers.length) return boardPlayers;
+
+    return (setPiece?.assignments || []).map((assignment) => {
+      const player = getAssignedPlayer(assignment);
+      if (!player) return null;
+      const name = getPlayerFullName(player);
+      return {
+        slotId: assignment.slotId,
+        number: assignment.number,
+        playerData: {
+          _id: player._id,
+          nombre: name,
+          name,
+          demarcacion: player.demarcacion || player.posicion || player.position || '',
+          posicion: player.posicion || player.position || '',
+          foto: player.foto || '',
+        },
+        photoUrl: player.foto ? cdnUrl(player.foto) : '',
+      };
+    })
+    .filter(Boolean);
   };
 
   // Jugadores de la convocatoria para eventos (goles, tarjetas)
@@ -1745,6 +1875,28 @@ export default function EditMatchSheetModal({
         motivo: t.motivo,
         partidosSancion: (t.motivo === 'Doble amarilla') ? (t.partidosSancion || 1) : Math.max(1, t.partidosSancion || 1),
       }));
+      const setPiecesNorm = selectedSetPieces.map((sp) => ({
+        strategyId: sp.strategyId || sp._id || sp.id,
+        nombre: sp.nombre,
+        descripcion: sp.descripcion || '',
+        imagen: sp.imagen || '',
+        customImage: sp.customImage || '',
+        elementosCampo: sp.elementosCampo || [],
+        customElements: sp.customElements || [],
+        customFieldType: sp.customFieldType || '',
+        pizarraConfig: sp.pizarraConfig || null,
+        videoId: typeof sp.videoId === 'object' ? sp.videoId?._id : (sp.videoId || (Array.isArray(sp.videos) ? sp.videos[0] : undefined)),
+        assignments: (sp.assignments || []).map((assignment) => {
+          const playerId = typeof assignment.player === 'object' ? assignment.player?._id : assignment.player;
+          const player = players.find((p) => p._id === playerId) || assignment.player;
+          return {
+            slotId: assignment.slotId,
+            number: String(assignment.number || ''),
+            player: playerId || undefined,
+            playerName: player ? getPlayerFullName(player) : (assignment.playerName || ''),
+          };
+        }),
+      }));
 
       const matchData = {
         rival: rival.trim(),
@@ -1777,6 +1929,7 @@ export default function EditMatchSheetModal({
         golesRival: golesRival,
         descuentoPrimerTiempo: parseInt(descuentoPrimerTiempo) || 0,
         descuentoSegundoTiempo: parseInt(descuentoSegundoTiempo) || 0,
+        setPieces: setPiecesNorm,
       };
 
       if (isCreateMode && onCreate) {
@@ -1811,6 +1964,252 @@ export default function EditMatchSheetModal({
   // Solo número
   const filterNumeric = (text) => text.replace(/[^0-9]/g, '');
 
+  const getSetPieceSlots = (setPiece) => {
+    const elements = Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : [];
+    return elements
+      .filter((element) => element?.type === 'player')
+      .map((element, index) => ({
+        slotId: String(element.id || element._id || `slot-${index}`),
+        number: String(element.number || element.numero || element.text || element.label || element.dorsal || index + 1),
+      }));
+  };
+
+  const addSetPieceToMatch = (setPiece) => {
+    const id = setPiece._id || setPiece.id;
+    if (!id || selectedSetPieces.some((sp) => String(sp.strategyId || sp._id || sp.id) === String(id))) return;
+    const slots = getSetPieceSlots(setPiece);
+    setSelectedSetPieces((prev) => [
+      ...prev,
+      {
+        strategyId: id,
+        nombre: setPiece.nombre,
+        descripcion: setPiece.descripcion || '',
+        imagen: setPiece.imagen || '',
+        customImage: setPiece.customImage || '',
+        elementosCampo: setPiece.elementosCampo || [],
+        customElements: setPiece.customElements || [],
+        customFieldType: setPiece.customFieldType || setPiece.tipoCampo || 'full',
+        pizarraConfig: setPiece.pizarraConfig || null,
+        videoId: Array.isArray(setPiece.videos) ? setPiece.videos[0] : undefined,
+        assignments: slots.map((slot) => ({ ...slot, player: null, playerName: '' })),
+      },
+    ]);
+  };
+
+  const assignSetPiecePlayer = (setPieceIndex, slotId, playerId) => {
+    setSelectedSetPieces((prev) => prev.map((sp, index) => {
+      if (index !== setPieceIndex) return sp;
+      return {
+        ...sp,
+        assignments: (sp.assignments || []).map((assignment) => (
+          assignment.slotId === slotId
+            ? { ...assignment, player: playerId || null, playerName: playerId ? getPlayerName(playerId) : '' }
+            : assignment
+        )),
+      };
+    }));
+    setActiveSetPieceSlot({ setPieceIndex, slotId });
+  };
+
+  const withAssignedPlayers = (setPiece) => {
+    const bySlot = new Map((setPiece.assignments || []).map((a) => [String(a.slotId), a]));
+    const source = Array.isArray(setPiece.customElements) && setPiece.customElements.length
+      ? setPiece.customElements
+      : (setPiece.elementosCampo || []);
+    return source.map((element) => {
+      if (element?.type !== 'player') return element;
+      const assignment = bySlot.get(String(element.id || element._id || ''));
+      const playerId = typeof assignment?.player === 'object' ? assignment.player?._id : assignment?.player;
+      const player = players.find((p) => String(p._id) === String(playerId)) || assignment?.player;
+      if (!player || typeof player !== 'object') return element;
+      return {
+        ...element,
+        number: element.number || assignment?.number || player.dorsal || '',
+        playerData: {
+          ...player,
+          nombre: getPlayerFullName(player),
+          fullName: getPlayerFullName(player),
+        },
+      };
+    });
+  };
+
+  const openSetPieceBoard = (setPieceIndex) => {
+    const setPiece = selectedSetPieces[setPieceIndex];
+    if (!setPiece) return;
+    global.fieldCallbacks = {
+      onSave: (updatedElements, updatedFieldType, imageBase64, updatedConfig) => {
+        const playerElements = (updatedElements || []).filter(el => el.type === 'player' && el.playerData);
+        const newAssignments = playerElements.map((el, idx) => ({
+          slotId: String(el.id || el._id || `slot-${idx}`),
+          number: String(el.number || el.playerNumber || el.numero || el.text || el.label || ''),
+          player: el.playerData?._id || el.playerData?.id || null,
+          playerName: getPlayerFullName(el.playerData),
+        }));
+
+        setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? {
+          ...sp,
+          customImage: imageBase64,
+          customElements: updatedElements,
+          customFieldType: updatedFieldType,
+          pizarraConfig: { ...(updatedConfig || sp.pizarraConfig || {}), setPieceMode: true },
+          assignments: newAssignments,
+        } : sp));
+        setBoardParams(null);
+        global.fieldCallbacks = null;
+      },
+      onCancel: () => {
+        setBoardParams(null);
+        global.fieldCallbacks = null;
+      },
+    };
+    setBoardParams({
+      initialElements: withAssignedPlayers(setPiece),
+      initialFieldType: setPiece.customFieldType || setPiece.tipoCampo || 'full',
+      initialConfig: { ...(setPiece.pizarraConfig || {}), playersWithNumber: setPiece.pizarraConfig?.playersWithNumber ?? true, setPieceMode: true },
+      isStrategyMode: true,
+      setPieceMode: true,
+      embeddedBoard: true,
+      estrategiaId: setPiece.strategyId || setPiece._id || setPiece.id,
+      presetVideoName: setPiece.nombre || t('setPieces.title'),
+      matchSheetPlayers: convocadosPlayers,
+    });
+  };
+
+  const removeSetPieceFromMatch = (setPieceIndex) => {
+    setSelectedSetPieces((prev) => prev.filter((_, index) => index !== setPieceIndex));
+  };
+
+  const playSetPieceVideo = async (setPiece) => {
+    const videoId = setPiece.videoId || (Array.isArray(setPiece.videos) ? setPiece.videos[0] : null);
+    if (!videoId) return;
+    setLoadingSetPieceVideo(true);
+    setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
+    try {
+      const url = await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) });
+      setSetPieceVideoUrl(url);
+    } catch (error) {
+      console.error('Error loading set piece video:', error);
+      Alert.alert(t('message.error'), t('strategy.videoPlayError'));
+    } finally {
+      setLoadingSetPieceVideo(false);
+    }
+  };
+
+  const closeSetPieceVideo = () => {
+    if (setPieceVideoUrl) revokeVideoObjectUrl(setPieceVideoUrl);
+    setSetPieceVideoUrl(null);
+    setSetPieceVideoTitle('');
+  };
+
+  const renderSetPiecesTab = () => {
+    const selectedIds = new Set(selectedSetPieces.map((sp) => String(sp.strategyId || sp._id || sp.id)));
+    const selectableSetPieces = availableSetPieces.filter((sp) => !selectedIds.has(String(sp._id || sp.id)));
+    return (
+      <View style={styles.setPiecesPanel}>
+        <View style={styles.resultSection}>
+          <Text style={styles.sectionTitle}>{t('setPieces.matchTab')}</Text>
+          <Text style={styles.setPiecesHint}>{t('setPieces.matchTabDescription')}</Text>
+          {loadingSetPieces ? (
+            <View style={styles.setPiecesLoading}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.setPiecesHint}>{t('setPieces.loading')}</Text>
+            </View>
+          ) : selectableSetPieces.length === 0 ? (
+            <Text style={styles.setPiecesHint}>{t('setPieces.noResults')}</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setPiecesPicker}>
+              {selectableSetPieces.map((sp) => (
+                <TouchableOpacity key={sp._id || sp.id} style={styles.setPiecePickerCard} onPress={() => addSetPieceToMatch(sp)}>
+                  {sp.imagen ? (
+                    <Image source={{ uri: sp.imagen }} style={styles.setPiecePickerImage} />
+                  ) : (
+                    <View style={styles.setPiecePickerImage}>
+                      <Ionicons name="football-outline" size={26} color={theme.colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.setPiecePickerTitle} numberOfLines={2}>{sp.nombre}</Text>
+                  <View style={styles.setPieceAddBadge}>
+                    <Ionicons name="add" size={14} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {selectedSetPieces.map((sp, setPieceIndex) => (
+          <View key={`${sp.strategyId || sp._id || setPieceIndex}`} style={styles.setPieceAssignmentCard}>
+            <View style={styles.setPieceAssignmentHeader}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.setPieceAssignmentTitle} numberOfLines={1}>{sp.nombre}</Text>
+                {!!sp.descripcion && <Text style={styles.setPieceAssignmentDesc} numberOfLines={2}>{sp.descripcion}</Text>}
+              </View>
+              <TouchableOpacity style={styles.setPieceRemoveBtn} onPress={() => removeSetPieceFromMatch(setPieceIndex)}>
+                <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
+              </TouchableOpacity>
+            </View>
+            <SetPiecePreview
+              setPiece={sp}
+              players={players}
+              height={isMobile ? 180 : 260}
+            />
+            <TouchableOpacity style={styles.setPieceBoardBtn} onPress={() => openSetPieceBoard(setPieceIndex)}>
+              <Ionicons name="expand-outline" size={17} color={theme.colors.primary} />
+              <Text style={styles.setPieceBoardBtnText}>{t('setPieces.openBoard')}</Text>
+            </TouchableOpacity>
+            {!!sp.videoId && (
+              <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(sp)}>
+                <Ionicons name="play-circle-outline" size={18} color="#fff" />
+                <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver vídeo'}</Text>
+              </TouchableOpacity>
+            )}
+            {(sp.assignments || []).length === 0 ? (
+              <Text style={styles.setPiecesHint}>{t('setPieces.noNumberedPlayers', 'Esta ABP no tiene jugadores numerados en el gráfico.')}</Text>
+            ) : false && activeSetPieceSlot?.setPieceIndex === setPieceIndex ? (
+              <View style={styles.playerPickerPanel}>
+                <Text style={styles.playerPickerTitle}>
+                  {t('setPieces.selectPlayerForSlot', { number: (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId)?.number || '' })}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assignmentPlayers}>
+                  {(() => {
+                    const assignment = (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId);
+                    return (
+                      <TouchableOpacity
+                        style={[styles.assignmentChip, !assignment?.player && styles.assignmentChipSelected]}
+                        onPress={() => assignSetPiecePlayer(setPieceIndex, activeSetPieceSlot.slotId, null)}
+                      >
+                        <Text style={[styles.assignmentChipText, !assignment?.player && styles.assignmentChipTextSelected]}>
+                          {t('common.none', 'Sin asignar')}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
+                  {players.map((player) => {
+                    const assignment = (sp.assignments || []).find(a => a.slotId === activeSetPieceSlot.slotId);
+                    const selected = String(assignment?.player || '') === String(player._id);
+                    return (
+                      <TouchableOpacity
+                        key={player._id}
+                        style={[styles.assignmentChip, selected && styles.assignmentChipSelected]}
+                        onPress={() => assignSetPiecePlayer(setPieceIndex, activeSetPieceSlot.slotId, player._id)}
+                      >
+                        <Text style={[styles.assignmentChipText, selected && styles.assignmentChipTextSelected]} numberOfLines={1}>
+                          {player.dorsal ? `#${player.dorsal} ` : ''}{getPlayerFullName(player)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : (
+              <Text style={styles.setPiecesHint}>{t('setPieces.openBoard')}</Text>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  };
   return (
     <Modal
       visible={visible}
@@ -1828,11 +2227,32 @@ export default function EditMatchSheetModal({
             </TouchableOpacity>
           </View>
 
+          <View style={styles.matchSheetTabs}>
+            {[
+              { key: 'data', label: t('matchSheet.sections.data', 'Datos'), icon: 'document-text-outline' },
+              { key: 'setPieces', label: t('setPieces.matchTab'), icon: 'football-outline' },
+            ].map((tab) => {
+              const selected = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.matchSheetTab, selected && styles.matchSheetTabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Ionicons name={tab.icon} size={16} color={selected ? '#fff' : theme.colors.textSecondary} />
+                  <Text style={[styles.matchSheetTabText, selected && styles.matchSheetTabTextActive]}>{tab.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <KeyboardAwareScrollView
             style={styles.modalBody}
             contentContainerStyle={styles.modalBodyContent}
             showsVerticalScrollIndicator={false}
           >
+            {activeTab === 'data' ? (
+            <>
             {/* Fila de escudos - orden según ubicación */}
             <View style={styles.escudosRow}>
               {/* Primer escudo - mi equipo si local, rival si visitante */}
@@ -2639,6 +3059,10 @@ export default function EditMatchSheetModal({
             </View>
 
             {/* Botones */}
+            </>
+            ) : (
+              renderSetPiecesTab()
+            )}
           </KeyboardAwareScrollView>
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -2666,6 +3090,49 @@ export default function EditMatchSheetModal({
                 )}
               </TouchableOpacity>
             </View>
+
+          <Modal
+            visible={!!boardParams}
+            animationType="fade"
+            onRequestClose={() => {
+              setBoardParams(null);
+              global.fieldCallbacks = null;
+            }}
+          >
+            <SafeAreaProvider style={{ flex: 1 }}>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                {boardParams ? <Field key={`match-set-piece-${boardParams.estrategiaId || 'new'}`} {...boardParams} /> : null}
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </Modal>
+
+          <Modal
+            visible={!!setPieceVideoUrl || loadingSetPieceVideo}
+            transparent
+            animationType="fade"
+            onRequestClose={closeSetPieceVideo}
+          >
+            <View style={styles.videoModalBg}>
+              <View style={styles.videoModalContent}>
+                <View style={styles.videoModalHeader}>
+                  <Text style={styles.videoModalTitle} numberOfLines={1}>{setPieceVideoTitle}</Text>
+                  <TouchableOpacity onPress={closeSetPieceVideo} style={styles.videoModalCloseBtn}>
+                    <Ionicons name="close" size={22} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                {loadingSetPieceVideo ? (
+                  <View style={styles.videoGeneratingContainer}>
+                    <ActivityIndicator color="#fff" />
+                    <Text style={styles.videoGeneratingText}>{t('common.loading', 'Cargando...')}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.videoPlayerContainer}>
+                    <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
+                  </View>
+                )}
+              </View>
+            </View>
+          </Modal>
 
           {/* Date/Time Pickers */}
           {Platform.OS === 'ios' ? (
@@ -3580,6 +4047,38 @@ const makeStyles = (theme) => StyleSheet.create({
   closeBtn: {
     padding: 4,
   },
+  matchSheetTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: isMobileDevice() ? 12 : 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  matchSheetTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  matchSheetTabActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  matchSheetTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  matchSheetTabTextActive: {
+    color: '#fff',
+  },
   modalBody: {
     flex: 1,
     padding: isMobileDevice() ? 10 : 16,
@@ -3779,6 +4278,235 @@ const makeStyles = (theme) => StyleSheet.create({
   resultBadgeText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  setPiecesPanel: {
+    gap: 14,
+  },
+  setPiecesHint: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 18,
+  },
+  setPiecesLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  setPiecesPicker: {
+    gap: 12,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  setPiecePickerCard: {
+    width: 154,
+    minHeight: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    padding: 10,
+    position: 'relative',
+  },
+  setPiecePickerImage: {
+    width: '100%',
+    height: 84,
+    borderRadius: 8,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setPiecePickerTitle: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  setPieceAddBadge: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setPieceAssignmentCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    padding: isMobileDevice() ? 10 : 14,
+    gap: 12,
+  },
+  setPieceAssignmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  setPieceAssignmentTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  setPieceAssignmentDesc: {
+    marginTop: 3,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
+  setPieceRemoveBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.errorSoft,
+  },
+  setPieceAssignmentImage: {
+    width: '100%',
+    height: isMobileDevice() ? 180 : 260,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+  },
+  setPieceVideoBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: theme.colors.primary,
+  },
+  setPieceVideoBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  setPieceBoardBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  setPieceBoardBtnText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  playerPickerPanel: {
+    gap: 10,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  playerPickerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  assignmentRow: {
+    gap: 8,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  assignmentNumber: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: theme.colors.primary,
+  },
+  assignmentNumberText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  assignmentPlayers: {
+    gap: 8,
+    paddingRight: 12,
+  },
+  assignmentChip: {
+    maxWidth: 190,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+  },
+  assignmentChipSelected: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  assignmentChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  assignmentChipTextSelected: {
+    color: '#fff',
+  },
+  videoModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.86)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  videoModalContent: {
+    width: '100%',
+    maxWidth: 900,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
+  },
+  videoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
+  },
+  videoModalTitle: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  videoModalCloseBtn: {
+    padding: 4,
+  },
+  videoGeneratingContainer: {
+    height: 360,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  videoGeneratingText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  videoPlayerContainer: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
   },
   
   // Descuento styles

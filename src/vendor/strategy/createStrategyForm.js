@@ -35,12 +35,15 @@ export default function CreateStrategyForm({
   onSave, 
   onCancel, 
   editingStrategy, 
+  kind = 'strategy',
 }) {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const isSetPiece = kind === 'setPiece';
+  const draftKind = isSetPiece ? 'setPiece' : 'strategy';
   const strategyFolders = useSelector(state => state.strategy.foldersFlat) || [];
   const strategyLoading = useSelector(state => state.strategy.loading);
   const placeholderColor = theme?.colors?.inputPlaceholder || '#94a3b8';
@@ -67,8 +70,8 @@ export default function CreateStrategyForm({
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
       const editingId = editingStrategy?._id || editingStrategy?.id || null;
-      const draftMatches = __pendingFormDraft && (__pendingFormDraft.editingId || null) === editingId && __pendingFormDraft.kind === 'strategy';
-      if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === 'strategy') return fr;
+      const draftMatches = __pendingFormDraft && (__pendingFormDraft.editingId || null) === editingId && __pendingFormDraft.kind === draftKind;
+      if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === draftKind) return fr;
     } catch {}
     return null;
   })();
@@ -134,7 +137,7 @@ export default function CreateStrategyForm({
     const loadFoldersAndRole = async () => {
       if (!foldersLoadedRef.current && strategyFolders.length === 0) {
         foldersLoadedRef.current = true;
-        dispatch(fetchStrategyFoldersFlat({ lang: i18n.language }));
+        dispatch(fetchStrategyFoldersFlat({ lang: i18n.language, kind: draftKind }));
       }
 
       try {
@@ -211,8 +214,8 @@ export default function CreateStrategyForm({
     const editingId = editingStrategy?._id || editingStrategy?.id || null;
     const draft = loadFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-    const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'strategy';
-    const resultMatches = draftMatches && fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'strategy';
+    const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === draftKind;
+    const resultMatches = draftMatches && fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === draftKind;
 
     if (draftMatches) {
       if (typeof draft.name === 'string') setName(draft.name);
@@ -257,7 +260,7 @@ export default function CreateStrategyForm({
     // estado local). El resultado del editor se persiste también desde el
     // callback `onSave` para que el remontaje pueda reaplicarlo.
     saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
-      kind: 'strategy',
+      kind: draftKind,
       editingId,
       name, description, objective, folderId,
       nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
@@ -273,26 +276,26 @@ export default function CreateStrategyForm({
         // persistimos en sessionStorage y el efecto de montaje lo aplica al
         // volver. Los setters siguen llamándose por compatibilidad nativa.
         saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
-          kind: 'strategy',
+          kind: draftKind,
           editingId,
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
-          pizarraConfig: updatedConfig,
+          pizarraConfig: isSetPiece ? { ...(updatedConfig || {}), setPieceMode: true } : updatedConfig,
           pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
         try {
           setFieldElements(updatedElements);
           setFieldType(updatedFieldType);
           setImagen(imageBase64);
-          if (updatedConfig) setPizarraConfig(updatedConfig);
+          if (updatedConfig) setPizarraConfig(isSetPiece ? { ...updatedConfig, setPieceMode: true } : updatedConfig);
           setLoadingField(false);
         } catch {}
         global.fieldCallbacks = null;
       },
       onCancel: () => {
         saveFormDraft(STORAGE_KEYS.FIELD_RESULT, {
-          kind: 'strategy',
+          kind: draftKind,
           editingId,
         });
         try { setLoadingField(false); } catch {}
@@ -304,7 +307,7 @@ export default function CreateStrategyForm({
           // Si es una estrategia nueva, guardar el ID del video para asociar después
           pendingVideoIds.current.push(videoId);
           saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
-            kind: 'strategy',
+            kind: draftKind,
             editingId,
             name, description, objective, folderId,
             nameEn, descriptionEn, objectiveEn, isGlobal,
@@ -316,7 +319,8 @@ export default function CreateStrategyForm({
       }
     };
 
-    const safeConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    const parsedConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    const safeConfig = isSetPiece ? { ...parsedConfig, setPieceMode: true } : parsedConfig;
     
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
@@ -325,6 +329,7 @@ export default function CreateStrategyForm({
       isEditing: true,
       fieldImages: [],
       isStrategyMode: true, // Nueva prop para indicar modo estrategia
+      setPieceMode: isSetPiece,
       // Forzar sandbox=false: ver nota en createExerciseForm.
       sandbox: false,
       // Pasar el ID de la estrategia si estamos editando, para poder asociar videos
@@ -372,6 +377,7 @@ export default function CreateStrategyForm({
         tipoCampo: fieldType || '',
         pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
+        kind: isSetPiece ? 'setPiece' : 'strategy',
         visibility: !isAdmin && userClubId ? visibility : (editingStrategy?.visibility || 'PRIVATE'),
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
@@ -409,7 +415,7 @@ export default function CreateStrategyForm({
         <TouchableOpacity onPress={handleCancelPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={26} color={theme?.colors?.text || '#fff'} />
         </TouchableOpacity>
-        <Text style={styles.title}>{editingStrategy ? t('strategy.editStrategy') : t('strategy.createStrategy')}</Text>
+        <Text style={styles.title}>{editingStrategy ? (isSetPiece ? t('setPieces.edit') : t('strategy.editStrategy')) : (isSetPiece ? t('setPieces.create') : t('strategy.createStrategy'))}</Text>
       </LinearGradient>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
@@ -632,8 +638,8 @@ export default function CreateStrategyForm({
         defaultIsGlobal={isGlobal}
         onCreateFolder={async ({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations }) => {
           await dispatch(createStrategyFolder({ nombre, parentFolder, color, isGlobal: folderIsGlobal, translations })).unwrap();
-          dispatch(fetchStrategyFoldersFlat({ lang: i18n.language }));
-          if (folderIsGlobal) dispatch(fetchGlobalFolders({ lang: i18n.language }));
+          dispatch(fetchStrategyFoldersFlat({ lang: i18n.language, kind: draftKind }));
+          if (folderIsGlobal) dispatch(fetchGlobalFolders({ lang: i18n.language, kind: draftKind }));
         }}
       />
     </View>

@@ -12,6 +12,7 @@ const preloaders = {
   '/players': () => import('@/pages/Players'),
   '/exercises': () => import('@/pages/Exercises'),
   '/strategies': () => import('@/pages/Strategies'),
+  '/set-pieces': () => import('@/pages/SetPieces'),
   '/training': () => import('@/pages/Training'),
   '/my-videos': () => import('@/pages/MyVideos'),
   '/video-editor': () => import('@/pages/VideoEditor'),

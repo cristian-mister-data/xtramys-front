@@ -846,7 +846,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
               placeholder={t('wellnessTemplates.descriptionPlaceholder')}
               placeholderTextColor={THEME.textMuted}
               multiline
-              numberOfLines={3}
+              rows={3}
             />
 
             {/* Preguntas */}

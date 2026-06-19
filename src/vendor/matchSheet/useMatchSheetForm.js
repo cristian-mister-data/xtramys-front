@@ -136,6 +136,7 @@ export default function useMatchSheetForm({
   // Estado para mostrar alineación visual en el formulario
   const [showVisualLineup, setShowVisualLineup] = useState(false);
   const [lineupPositions, setLineupPositions] = useState([]);
+  const [setPieces, setSetPieces] = useState([]);
 
   // Estados para modales de selección
   const [showUbicacionModal, setShowUbicacionModal] = useState(false);
@@ -227,6 +228,7 @@ export default function useMatchSheetForm({
     // Competición/torneo
     setCompeticion(matchSheet.competicion || 'liga');
     setTorneoId(matchSheet.torneoId?._id || matchSheet.torneoId || null);
+    setSetPieces(matchSheet.setPieces || []);
   }, []);
 
   // Resetear el formulario
@@ -263,6 +265,7 @@ export default function useMatchSheetForm({
     setDescuentoSegundoTiempo('0');
     setShowVisualLineup(false);
     setLineupPositions([]);
+    setSetPieces([]);
     setCompeticion('liga');
     setTorneoId(null);
   }, []);
@@ -354,6 +357,7 @@ export default function useMatchSheetForm({
       descuentoPrimerTiempo: descuentoPrimerTiempo ? Number(descuentoPrimerTiempo) : 0,
       descuentoSegundoTiempo: descuentoSegundoTiempo ? Number(descuentoSegundoTiempo) : 0,
       competicion,
+      setPieces,
       ...(competicion === 'torneo' && torneoId ? { torneoId } : {}),
     };
   }, [
@@ -363,7 +367,7 @@ export default function useMatchSheetForm({
     convocados, noConvocados, alineacionTitulares, alineacionSuplentes,
     goles, tarjetasAmarillas, tarjetasRojas, cambios, golesRival,
     posesion, tiros, tirosAPuerta, corners, faltas, fueras,
-    descuentoPrimerTiempo, descuentoSegundoTiempo
+    descuentoPrimerTiempo, descuentoSegundoTiempo, setPieces
   ]);
 
   // Validar formulario
@@ -512,6 +516,8 @@ export default function useMatchSheetForm({
     setShowVisualLineup,
     lineupPositions,
     setLineupPositions,
+    setPieces,
+    setSetPieces,
     
     // Estados de modales
     showUbicacionModal,

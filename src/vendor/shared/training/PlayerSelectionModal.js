@@ -303,7 +303,7 @@ export default function PlayerSelectionModal({
               placeholderTextColor="#7b8aa5"
               value={search}
               onChangeText={setSearch}
-              returnKeyType="search"
+              enterKeyHint="search"
             />
           </View>
 

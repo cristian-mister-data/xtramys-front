@@ -58,7 +58,7 @@ import * as FileSystem from 'expo-file-system/legacy'; // Usar la API legacy
 import { Asset } from 'expo-asset';
 import VideoRecorder from './videoRecorder';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { getPlayerFullName } from '@/components/player/playerHelpers';
+import { getPlayerFullName, getPositionColor } from '@/components/player/playerHelpers';
 import {
   FieldSVGRenderer,
   decomposeFieldId,
@@ -7361,6 +7361,8 @@ const DraggableIcon = React.memo(
     setDraggingOutside = null,
     setEditingIcon,
     setLeftPanelVisible,
+    isSetPieceMode = false,
+    onTapPlayerClone = null,
   }) => {
     const size = icon.size * scale;
     const dragKey = `icon-${icon.id}`;
@@ -7436,6 +7438,7 @@ const DraggableIcon = React.memo(
       (!multiSelectMode || (multiSelectMode && selectionInteractionMode === 'move' && isSelected));
 
     // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
+    // En multi-drag, derivar indicador de eliminacin de la posicin actual del elemento
     const isOutsideInMultiDrag =
       ALLOW_MULTI_ELEMENT_DRAG &&
       multiSelectMode &&
@@ -7444,7 +7447,7 @@ const DraggableIcon = React.memo(
       (icon.x < 0 || icon.x > imageWidth || icon.y < 0 || icon.y > imageHeight);
     const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
 
-    // Detectar si est� fuera del campo visible (zona de eliminaci�n)
+    // Detectar si est fuera del campo visible (zona de eliminacin)
     const checkDeleteZone = useCallback(
       (xRatio, yRatio) => {
         return isOutsideVisibleField(xRatio, yRatio, viewMode, imageWidth, imageHeight);
@@ -7457,7 +7460,11 @@ const DraggableIcon = React.memo(
     const handleTap = useCallback(
       (e) => {
         if (e.nativeEvent.state === State.END) {
-          // Detectar doble tap al inicio para abrir panel aunque est� bloqueado
+          if (icon.type === 'player' && isSetPieceMode && onTapPlayerClone) {
+            onTapPlayerClone(icon.id);
+            return;
+          }
+          // Detectar doble tap al inicio para abrir panel aunque esté bloqueado
           if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
             lastTapTime = 0;
             lastTapId = null;
@@ -7467,7 +7474,7 @@ const DraggableIcon = React.memo(
           }
           // Solo seleccionar si no estamos arrastrando
           if (!isDragging.current && !isDrawingMode && !multiSelectMode && !icon.locked) {
-            // Marcar el tiempo de selecci�n para proteger contra deselecci�n inmediata
+            // Marcar el tiempo de selección para proteger contra deselección inmediata
             lastIconSelectionTime = Date.now();
             setSelectedCloneId(icon.id);
             lastTapTime = Date.now();
@@ -11939,6 +11946,7 @@ export default function Field(props = {}) {
     initialConfig = {},
     fieldImages = [],
     isStrategyMode = false, // Nueva prop para modo estrategia
+    setPieceMode = false, // Nueva prop para modo ABP
     sandbox = false, // Modo sandbox: solo para crear videos, no guarda estrategias ni ejercicios
     ejercicioId = null, // ID del ejercicio para asociar videos
     estrategiaId = null, // ID de la estrategia para asociar videos
@@ -11949,6 +11957,8 @@ export default function Field(props = {}) {
     presetVideoName = '', // Nombre preseleccionado para el video (auto-naming)
     isGlobalExercise = false, // Si el ejercicio es global (admin)
     isGlobalStrategy = false, // Si la estrategia es global (admin)
+    matchSheetPlayers = null,
+    embeddedBoard = false,
     // Eliminar onSave y onCancel de los par�metros para evitar el warning
     // onSave,
     // onCancel
@@ -12217,6 +12227,7 @@ export default function Field(props = {}) {
   const [instructionMessage, setInstructionMessage] = useState(null);
   const [pendingPlacementAction, setPendingPlacementAction] = useState(null);
   const [playersModalVisible, setPlayersModalVisible] = useState(false);
+  const [assigningCloneId, setAssigningCloneId] = useState(null);
   const [availablePlayers, setAvailablePlayers] = useState([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState([]); // IDs de staff en el campo
@@ -12336,7 +12347,9 @@ export default function Field(props = {}) {
     });
   }, [paletteIcons]);
 
-  const [connectors, setConnectors] = useState([]);
+  const [connectors, setConnectors] = useState(
+    Array.isArray(initialConfig?.connectors) ? initialConfig.connectors : [],
+  );
   const [connectorsModalVisible, setConnectorsModalVisible] = useState(false);
 
   // Persistir formaci�n en Configuraci�n de usuario (debounced)
@@ -13590,15 +13603,15 @@ export default function Field(props = {}) {
   // =====================================================
   const MAX_HISTORY_SIZE = 50; // M�ximo de estados en el historial
   // El historial ahora guarda objetos con { clones, connectors }
-  const historyRef = useRef([JSON.stringify({ clones: actualClones, connectors: [] })]); // Historial de estados
+  const historyRef = useRef([JSON.stringify({ clones: actualClones, connectors })]); // Historial de estados
   const historyIndexRef = useRef(0); // Índice actual en el historial
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors: [] })); // Último estado guardado
+  const lastSavedStateRef = useRef(JSON.stringify({ clones: actualClones, connectors })); // Último estado guardado
   const debounceTimerRef = useRef(null); // Timer para debounce
   const pendingStateRef = useRef(null); // Estado pendiente de guardar
   const DEBOUNCE_DELAY = 300; // ms - tiempo para agrupar cambios de drag
-  const connectorsRef = useRef([]); // Referencia actual de conectores para undo/redo
+  const connectorsRef = useRef(connectors); // Referencia actual de conectores para undo/redo
 
   // Función para guardar estado en el historial (guarda de forma síncrona/inmediata)
   const commitToHistory = useCallback((stateStr) => {
@@ -13861,11 +13874,29 @@ export default function Field(props = {}) {
 
   // Inicializar availablePlayers con todos los jugadores no seleccionados
   useEffect(() => {
-    if (players.length > 0) {
-      const mapped = players.map((p, idx) => ({ ...p, uniqueId: `player-${p.id || idx}` }));
+    const listToMap = matchSheetPlayers && matchSheetPlayers.length > 0 ? matchSheetPlayers : players;
+    if (listToMap && listToMap.length > 0) {
+      const mapped = listToMap.map((p, idx) => ({
+        ...p,
+        uniqueId: `player-${p._id || p.id || idx}`,
+      }));
       setAvailablePlayers(mapped.filter((p) => !selectedPlayerIds.includes(p.uniqueId)));
     }
-  }, [players, selectedPlayerIds]);
+  }, [players, matchSheetPlayers, selectedPlayerIds]);
+
+  // Sincronizar selectedPlayerIds al montar o cambiar initialElements
+  useEffect(() => {
+    if (initialElements && initialElements.length > 0) {
+      const playerIds = initialElements
+        .filter((el) => el.type === 'player' && el.playerData)
+        .map((el) => {
+          const p = el.playerData;
+          return `player-${p._id || p.id}`;
+        })
+        .filter(Boolean);
+      setSelectedPlayerIds([...new Set(playerIds)]);
+    }
+  }, [initialElements]);
 
   // Cargar equipos de la temporada
   useEffect(() => {
@@ -13890,6 +13921,12 @@ export default function Field(props = {}) {
       size: standardSize,
     }));
   }, [standardSize]);
+
+  // Callback para cuando se pulsa un clon en modo set-piece
+  const handleTapPlayerClone = useCallback((cloneId) => {
+    setAssigningCloneId(cloneId);
+    setPlayersModalVisible(true);
+  }, []);
 
   const [useSmootherMovement] = useState(true); // Flag para movimientos m�s suaves
   const rafRef = useRef(null); // Referencia para requestAnimationFrame
@@ -13956,11 +13993,11 @@ export default function Field(props = {}) {
     );
   }, []);
 
-  // Funci�n para aplicar movimientos suaves con InteractionManager
+  // Funcin para aplicar movimientos suaves con InteractionManager
   const applySmootherMovement = useCallback(
     (updateFn) => {
       if (useSmootherMovement) {
-        // Usar InteractionManager para ejecutar despu�s de las animaciones
+        // Usar InteractionManager para ejecutar despus de las animaciones
         InteractionManager.runAfterInteractions(() => {
           if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
@@ -13984,13 +14021,15 @@ export default function Field(props = {}) {
   const [dotSize, setDotSize] = useState(2);
   const [dotSpacing, setDotSpacing] = useState(4);
   const [pendingLineAction, setPendingLineAction] = useState(null);
-
   const [panelVisible] = useState(true);
   const [carouselModalVisible, setCarouselModalVisible] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const hasSidebar = !!matchSheetPlayers;
+  const isSetPieceOrStrategy = !!(isStrategyMode || setPieceMode || hasSidebar);
+  const sidebarWidth = hasSidebar ? (isMobile ? 180 : 280) : 0;
   const panelAnim = useRef(new Animated.Value(0)).current;
 
-  // Ajusta el panel seg�n el tama�o de la pantalla
+  // Ajusta el panel segn el tamao de la pantalla
   const isSmallScreen = SCREEN_WIDTH < 360;
 
   useEffect(() => {
@@ -14006,7 +14045,7 @@ export default function Field(props = {}) {
     if (!iconCounters.current[icon.id]) iconCounters.current[icon.id] = 1;
   });
 
-  // Contador incremental de z-index para ordenar elementos por orden de creaci�n
+  // Contador incremental de z-index para ordenar elementos por orden de creacin
   const zIndexCounter = useRef(0);
   const getNextZIndex = useCallback((type) => {
     zIndexCounter.current += 1;
@@ -14022,7 +14061,7 @@ export default function Field(props = {}) {
   const referenceWidth = REFERENCE_WIDTH;
   const referenceHeight = REFERENCE_WIDTH * aspect;
 
-  // Calcular tama�o �ptimo para el campo (memoizado para estabilidad de referencias)
+  // Calcular tamao ptimo para el campo (memoizado para estabilidad de referencias)
   const { imageWidth, imageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
@@ -14030,7 +14069,7 @@ export default function Field(props = {}) {
       const bottomButtonsSpace = 44;
       const videoPanelW = 0;
       const sideMargin = 6;
-      const usableWidth = SCREEN_WIDTH - sideMargin * 2 - videoPanelW;
+      const usableWidth = SCREEN_WIDTH - sideMargin * 2 - videoPanelW - sidebarWidth;
       const usableHeight = SCREEN_HEIGHT - topButtonsSpace - bottomButtonsSpace;
 
       w = usableWidth;
@@ -14047,7 +14086,7 @@ export default function Field(props = {}) {
       const PANEL_HEIGHT = 150;
 
       const maxFieldHeight = SCREEN_HEIGHT - verticalMargin - PANEL_HEIGHT - 8;
-      const maxFieldWidth = SCREEN_WIDTH - horizontalMargin * 2;
+      const maxFieldWidth = SCREEN_WIDTH - horizontalMargin * 2 - sidebarWidth;
 
       w = maxFieldWidth;
       h = w * aspect;
@@ -14058,7 +14097,7 @@ export default function Field(props = {}) {
       }
     }
     return { imageWidth: w, imageHeight: h };
-  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible]);
+  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible, sidebarWidth]);
 
   const activeBallTrajectoryPrompts = useMemo(() => {
     if (!videoRecorderVisible) return [];
@@ -14470,6 +14509,85 @@ export default function Field(props = {}) {
 
   // Funcin para manejar la seleccin de un jugador del equipo
   const handleSelectPlayer = (player) => {
+    if (assigningCloneId) {
+      const targetCloneId = assigningCloneId;
+      setAssigningCloneId(null);
+      setPlayersModalVisible(false);
+
+      const targetClone = clones.find((c) => c.id === targetCloneId);
+      if (!targetClone) return;
+
+      const prevPlayer = targetClone.playerData;
+      const prevPlayerUniqueId = prevPlayer ? (prevPlayer.uniqueId || `player-${prevPlayer._id || prevPlayer.id}`) : null;
+
+      setSelectedPlayerIds((prev) => {
+        let filtered = prev;
+        if (prevPlayerUniqueId) {
+          filtered = filtered.filter((id) => id !== prevPlayerUniqueId);
+        }
+        if (!filtered.includes(player.uniqueId)) {
+          filtered = [...filtered, player.uniqueId];
+        }
+        return filtered;
+      });
+
+      const updatedClones = clones.map((c) => {
+        if (c.id === targetCloneId) {
+          const number = player.dorsal || player.number || '';
+          const isGoalkeeper = player.posicion && ['portero', 'goalkeeper', 'gk', 'pt'].includes(player.posicion.toLowerCase());
+          const color = isGoalkeeper && teamPlayerStyle.differentiateGoalkeeper
+            ? teamPlayerStyle.goalkeeperColor || '#ff4a4a'
+            : teamPlayerStyle.color || '#2176ff';
+          return {
+            ...c,
+            number,
+            color,
+            playerData: player,
+            isGoalkeeper,
+            displayLabel: teamPlayerStyle.showPosition ? getPositionAbbreviation(player.posicion) : undefined,
+          };
+        }
+        return c;
+      });
+      setClones(updatedClones);
+
+      setVideoKeyframes((prevKeyframes) => {
+        if (!prevKeyframes || prevKeyframes.length === 0) return prevKeyframes;
+        return prevKeyframes.map((kf) => {
+          if (!kf.elements) return kf;
+          return {
+            ...kf,
+            elements: kf.elements.map((elem) => {
+              if (elem.id === targetCloneId) {
+                const number = player.dorsal || player.number || '';
+                const isGoalkeeper = player.posicion && ['portero', 'goalkeeper', 'gk', 'pt'].includes(player.posicion.toLowerCase());
+                const color = isGoalkeeper && teamPlayerStyle.differentiateGoalkeeper
+                  ? teamPlayerStyle.goalkeeperColor || '#ff4a4a'
+                  : teamPlayerStyle.color || '#2176ff';
+                return {
+                  ...elem,
+                  number,
+                  color,
+                  playerData: {
+                    nombre: player.nombre,
+                    demarcacion: player.demarcacion,
+                    posicion: player.posicion,
+                    foto: player.foto,
+                  },
+                  isGoalkeeper,
+                  displayLabel: teamPlayerStyle.showPosition ? getPositionAbbreviation(player.posicion) : undefined,
+                  photoUrl: player.foto ? cdnUrl(player.foto) : undefined,
+                };
+              }
+              return elem;
+            }),
+          };
+        });
+      });
+
+      return;
+    }
+
     // Determinar la etiqueta a mostrar segn la Configuracin
     let displayLabel = undefined;
     if (teamPlayerStyle.showPosition && player.posicion) {
@@ -15029,6 +15147,9 @@ export default function Field(props = {}) {
 
     if (canvasRef.current) {
       try {
+        const savedClones = clones.map((clone) => (
+          clone?.type === 'player' ? { ...clone, playersWithNumber } : clone
+        ));
         let imageBase64 = '';
         if (Platform.OS === 'web' && typeof document !== 'undefined') {
           const aspectVal = getAspectForView(viewMode);
@@ -15045,7 +15166,7 @@ export default function Field(props = {}) {
             ctx,
             exportWidth,
             exportHeight,
-            normalizeElementsForCanvas(clones),
+            normalizeElementsForCanvas(savedClones),
             connectors,
             fieldImage,
             {
@@ -15062,7 +15183,7 @@ export default function Field(props = {}) {
         }
 
         if (saveCallback) {
-          saveCallback(clones, selectedField, imageBase64, { playersWithNumber });
+          saveCallback(savedClones, selectedField, imageBase64, { playersWithNumber, connectors });
         }
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);
@@ -15075,7 +15196,7 @@ export default function Field(props = {}) {
         } catch (e) {
           // Device may not support orientation lock
         }
-        navigation.goBack();
+        if (!embeddedBoard) navigation.goBack();
       } catch (error) {
         console.error('Error capturing field:', error);
       }
@@ -15128,7 +15249,7 @@ export default function Field(props = {}) {
   ]);
   // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG → base64 via ViewShot)
   useEffect(() => {
-    // SVG fields are instant "� mark ready immediately
+    // SVG fields are instant " mark ready immediately
     setFieldImageReady(true);
     setIsLoadingField(false);
 
@@ -15147,7 +15268,7 @@ export default function Field(props = {}) {
     return () => clearTimeout(timer);
   }, [selectedField]);
 
-  // Funci�n para abrir el grabador de video (desde otras rutas)
+  // Funcin para abrir el grabador de video (desde otras rutas)
   const handleOpenVideoRecorder = useCallback(() => {
     try {
       savedClonesOriginalRef.current = JSON.parse(JSON.stringify(actualClonesRef.current || []));
@@ -15159,9 +15280,28 @@ export default function Field(props = {}) {
       setLoadedEditVideoKeyframeCount(0);
     }
     setVideoRecorderVisible(true);
-  }, [isEditingVideo]); // Sin [clones] "� usa actualClonesRef
+  }, [isEditingVideo]); // Sin [clones] " usa actualClonesRef
 
-  // Funci�n para cerrar el grabador de video
+  const handleEditVideoSaved = useCallback(async () => {
+    setIsSavingVideoEdit(true);
+    // Cerrar primero el grabador para que la transicin quede limpia
+    setVideoRecorderVisible(false);
+    setFieldImageForVideo(null);
+    savedClonesOriginalRef.current = null;
+    keepVideoChangesRef.current = false;
+    // Seal global para que la pantalla origen muestre mensaje de xito
+    global.pendingVideoEditSuccess = true;
+    if (isSetPieceOrStrategy) {
+      await handleGuardarGrafico();
+    } else {
+      clearBoardState();
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      await unlockOrientationAndGoBack();
+    }
+    setIsSavingVideoEdit(false);
+  }, [clearBoardState, unlockOrientationAndGoBack, isSetPieceOrStrategy, handleGuardarGrafico]);
+
+  // Funcin para cerrar el grabador de video
   const unlockOrientationAndGoBack = useCallback(async () => {
     try {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
@@ -15171,10 +15311,10 @@ export default function Field(props = {}) {
     } catch (e) {
       // Device may not support orientation lock
     }
-    navigation.goBack();
-  }, [navigation]);
+    if (!embeddedBoard) navigation.goBack();
+  }, [navigation, embeddedBoard]);
 
-  const handleEditVideoSaved = useCallback(async () => {
+  const OLD_handleEditVideoSaved = useCallback(async () => {
     setIsSavingVideoEdit(true);
     // Cerrar primero el grabador para que la transici�n quede limpia
     setVideoRecorderVisible(false);
@@ -19206,6 +19346,7 @@ export default function Field(props = {}) {
     toggleSelectionInteractionMode,
     lockedCount,
     isMobile = false,
+    isSetPieceOrStrategy = false,
   }) {
     if (!visible) return null;
 
@@ -19451,7 +19592,7 @@ export default function Field(props = {}) {
           </TouchableOpacity>
         )}
 
-        {/* Bot�n para cambiar entre modo seleccionar y modo mover (solo visible cuando hay elementos seleccionados) */}
+        {/* Botn para cambiar entre modo seleccionar y modo mover (solo visible cuando hay elementos seleccionados) */}
         {multiSelectMode && selectedCloneIds.length > 0 && (
           <TouchableOpacity
             style={[
@@ -19475,7 +19616,7 @@ export default function Field(props = {}) {
           </TouchableOpacity>
         )}
 
-        {!sandbox && !isEditingVideo && (
+        {!sandbox && (!isEditingVideo || isSetPieceOrStrategy) && (
           <TouchableOpacity
             style={[
               styles.floatingButton,
@@ -19494,7 +19635,7 @@ export default function Field(props = {}) {
           </TouchableOpacity>
         )}
 
-        {!sandbox && !isEditingVideo && (
+        {!sandbox && (!isEditingVideo || isSetPieceOrStrategy) && (
           <TouchableOpacity
             style={[
               styles.floatingButton,
@@ -19514,7 +19655,7 @@ export default function Field(props = {}) {
         )}
 
         {/* Bot�n de volver para modo edici�n de video */}
-        {isEditingVideo && (
+        {isEditingVideo && !isSetPieceOrStrategy && (
           <TouchableOpacity
             style={[
               styles.floatingButton,
@@ -20820,6 +20961,7 @@ export default function Field(props = {}) {
           visible: !shouldHideFloatingButtons,
           hideBottomButtons: shouldHideBottomButtons,
           sandbox,
+          isSetPieceOrStrategy,
           onSave: handleGuardarGrafico,
           onCancel: handleCancelar,
           onSettings: () => {
@@ -20906,14 +21048,15 @@ export default function Field(props = {}) {
             left: 0,
             right: 0,
             bottom: 0,
-            alignItems: 'center',
+            flexDirection: hasSidebar ? 'row' : 'column',
+            alignItems: 'stretch',
             justifyContent: 'center',
             overflow: 'visible',
           }}
         >
           <View
             style={{
-              width: '100%',
+              flex: 1,
               height: '100%',
               alignItems: 'center',
               justifyContent: 'center',
@@ -21422,6 +21565,8 @@ export default function Field(props = {}) {
                               setDraggingOutside={setDraggingOutside}
                               setEditingIcon={setEditingIcon}
                               setLeftPanelVisible={setLeftPanelVisible}
+                              isSetPieceMode={hasSidebar}
+                              onTapPlayerClone={handleTapPlayerClone}
                             />
                           );
                         })}
@@ -22164,6 +22309,102 @@ export default function Field(props = {}) {
               </View>
             </View>
           </View>
+
+          {hasSidebar && (
+            <View style={[styles.sidebarContainer, { width: sidebarWidth }]}>
+              {/* Sidebar header */}
+              <View style={styles.sidebarHeader}>
+                <Text style={styles.sidebarTitle} numberOfLines={1}>{t('setPieces.assignedPlayers', 'Jugadores')}</Text>
+              </View>
+              
+              {/* Scrollable list */}
+              <ScrollView 
+                style={styles.sidebarScrollView} 
+                contentContainerStyle={styles.sidebarContentContainer}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Available Players Section */}
+                <Text style={styles.sidebarSectionTitle}>
+                  {t('setPieces.availablePlayersTitle', 'Jugadores Disponibles')}
+                </Text>
+                {availablePlayers.length === 0 ? (
+                  <Text style={styles.sidebarEmptyText}>
+                    {t('setPieces.noAvailablePlayers', 'No hay jugadores disponibles')}
+                  </Text>
+                ) : (
+                  availablePlayers.map((player) => {
+                    const posColor = getPositionColor(player.posicion)?.[0] || '#666';
+                    return (
+                      <View
+                        key={player.uniqueId}
+                        style={styles.sidebarPlayerCard}
+                      >
+                        <View style={[styles.sidebarPlayerDorsalBadge, { backgroundColor: posColor }]}>
+                          <Text style={styles.sidebarPlayerDorsalText}>
+                            {player.dorsal || '-'}
+                          </Text>
+                        </View>
+                        <View style={styles.sidebarPlayerInfo}>
+                          <Text style={styles.sidebarPlayerName} numberOfLines={1}>
+                            {getPlayerFullName(player)}
+                          </Text>
+                          {!!player.posicion && (
+                            <Text style={styles.sidebarPlayerPos} numberOfLines={1}>
+                              {player.posicion.toUpperCase()}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+
+                {/* Separator line */}
+                <View style={styles.sidebarDivider} />
+
+                {/* Placed/Active Players Section */}
+                <Text style={styles.sidebarSectionTitle}>
+                  {t('setPieces.onBoardPlayersTitle', 'En Pizarra')}
+                </Text>
+                {(() => {
+                  const placedPlayers = clones.filter(c => c.type === 'player' && c.playerData);
+                  if (placedPlayers.length === 0) {
+                    return (
+                      <Text style={styles.sidebarEmptyText}>
+                        {t('setPieces.noOnBoardPlayers', 'Ningún jugador en la pizarra')}
+                      </Text>
+                    );
+                  }
+                  return placedPlayers.map((clone) => {
+                    const player = clone.playerData;
+                    const posColor = getPositionColor(player.posicion)?.[0] || '#666';
+                    return (
+                      <View key={clone.id} style={styles.sidebarPlayerCard}>
+                        <View style={[styles.sidebarPlayerDorsalBadge, { backgroundColor: posColor }]}>
+                          <Text style={styles.sidebarPlayerDorsalText}>
+                            {player.dorsal || clone.number || '-'}
+                          </Text>
+                        </View>
+                        <View style={styles.sidebarPlayerInfo}>
+                          <Text style={styles.sidebarPlayerName} numberOfLines={1}>
+                            {getPlayerFullName(player)}
+                          </Text>
+                          {!!player.posicion && (
+                            <Text style={styles.sidebarPlayerPos} numberOfLines={1}>
+                              {player.posicion.toUpperCase()}
+                            </Text>
+                          )}
+                        </View>
+                        <TouchableOpacity onPress={() => eraseElementById(clone.id)}>
+                          <Ionicons name="trash-outline" size={18} color="#ff4a4a" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  });
+                })()}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {showingPlayersPalette ? (
@@ -22345,7 +22586,10 @@ export default function Field(props = {}) {
         {/* Modal de jugadores del equipo */}
         <TeamPlayersModal
           visible={playersModalVisible}
-          onClose={() => setPlayersModalVisible(false)}
+          onClose={() => {
+            setPlayersModalVisible(false);
+            setAssigningCloneId(null);
+          }}
           availablePlayers={availablePlayers}
           onSelectPlayer={handleSelectPlayer}
           isMobile={isMobile}
@@ -22515,6 +22759,94 @@ export default function Field(props = {}) {
 const { width: screenW, height: screenH } = Dimensions.get('window');
 const IS_MOBILE = Math.min(screenW, screenH) < 768;
 const styles = StyleSheet.create({
+  sidebarContainer: {
+    height: '100%',
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 16,
+    paddingBottom: 16,
+    zIndex: 1000,
+  },
+  sidebarHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 12,
+  },
+  sidebarTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  sidebarScrollView: {
+    flex: 1,
+  },
+  sidebarContentContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 24,
+  },
+  sidebarSectionTitle: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sidebarEmptyText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 12,
+  },
+  sidebarPlayerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  sidebarPlayerDorsalBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  sidebarPlayerDorsalText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  sidebarPlayerInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  sidebarPlayerName: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sidebarPlayerPos: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  sidebarDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 14,
+  },
   iconButton: {
     justifyContent: 'center',
     alignItems: 'center',

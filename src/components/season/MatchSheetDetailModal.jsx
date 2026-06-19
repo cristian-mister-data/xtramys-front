@@ -10,6 +10,7 @@ import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
 import { getPlayerInitials } from '@/utils/playerHelpers';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const HeroCard = styled.div`
   background: ${({ $color, theme }) =>
@@ -160,6 +161,29 @@ const Notes = styled.div`
   color: ${({ theme }) => theme.colors.text};
   white-space: pre-wrap;
   line-height: 1.5;
+`;
+
+const SetPieceGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+`;
+
+const SetPieceImage = styled.img`
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  display: block;
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const SetPieceTitle = styled.div`
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const PlayerAvatar = styled.div`
@@ -445,6 +469,24 @@ export default function MatchSheetDetailModal({
                 );
               })}
             </Card>
+          </Section>
+        )}
+
+        {Array.isArray(data.setPieces) && data.setPieces.length > 0 && (
+          <Section>
+            <SectionTitle>{t('setPieces.matchTab', 'ABP')}</SectionTitle>
+            <SetPieceGrid>
+              {data.setPieces.map((sp, i) => {
+                const image = normalizeImageSource(sp.customImage || sp.imagen || '');
+                return (
+                  <Card key={`${sp.strategyId || sp.nombre || i}`}>
+                    {image ? <SetPieceImage src={image} alt={sp.nombre || 'ABP'} /> : null}
+                    <SetPieceTitle>{sp.nombre || t('setPieces.title', 'ABP')}</SetPieceTitle>
+                    {sp.descripcion ? <Muted>{sp.descripcion}</Muted> : null}
+                  </Card>
+                );
+              })}
+            </SetPieceGrid>
           </Section>
         )}
 

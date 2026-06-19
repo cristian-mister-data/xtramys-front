@@ -24,6 +24,7 @@ const Players = lazy(() => import('@/pages/Players'));
 const PlayerProfile = lazy(() => import('@/pages/PlayerProfile'));
 const Exercises = lazy(() => import('@/pages/Exercises'));
 const Strategies = lazy(() => import('@/pages/Strategies'));
+const SetPieces = lazy(() => import('@/pages/SetPieces'));
 const Training = lazy(() => import('@/pages/Training'));
 const MyVideos = lazy(() => import('@/pages/MyVideos'));
 const Statistics = lazy(() => import('@/pages/Statistics'));
@@ -52,6 +53,7 @@ const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 const TrainingSessionShare = lazy(() => import('@/pages/public/TrainingSessionShare'));
+const SetPieceShare = lazy(() => import('@/pages/public/SetPieceShare'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
 const OpsDashboard = lazy(() => import('@/pages/OpsDashboard'));
@@ -95,6 +97,7 @@ export default function AppRouter() {
       <Route path="/public/wellness/:token" element={lazy_(<WellnessForm />)} />
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
       <Route path="/public/training-session/:token" element={lazy_(<TrainingSessionShare />)} />
+      <Route path="/public/set-piece/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
 
       {/* Subscription (auth required, no app layout) */}
@@ -178,6 +181,7 @@ export default function AppRouter() {
         <Route path="/exercises/*" element={lazy_(<Exercises />)} />
         <Route path="/strength-exercises" element={lazy_(<StrengthExercises />)} />
         <Route path="/strategies/*" element={lazy_(<Strategies />)} />
+        <Route path="/set-pieces/*" element={lazy_(<SetPieces />)} />
         <Route path="/training" element={lazy_(<Training />)} />
         <Route path="/my-videos" element={lazy_(<MyVideos />)} />
         <Route path="/video-editor" element={lazy_(<VideoEditor />)} />

@@ -4093,7 +4093,7 @@ export default function AddEventModal({
                       placeholder={t('schedule.notesAboutExercise')}
                       placeholderTextColor={theme.colors.textMuted}
                       multiline
-                      numberOfLines={2}
+                      rows={2}
                     />
                   </View>
                   
@@ -4308,7 +4308,7 @@ export default function AddEventModal({
                       placeholder={t('schedule.notesAboutExercise')}
                       placeholderTextColor={theme.colors.textMuted}
                       multiline
-                      numberOfLines={2}
+                      rows={2}
                     />
                   </View>
                 </View>

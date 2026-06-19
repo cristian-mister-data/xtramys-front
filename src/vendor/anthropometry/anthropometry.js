@@ -1845,7 +1845,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
                       placeholder={t('anthropometry.notesPlaceholder')}
                       placeholderTextColor="#bbb"
                       multiline
-                      numberOfLines={4}
+                      rows={4}
                       value={notas}
                       onChangeText={setNotas}
                       textAlignVertical="top"

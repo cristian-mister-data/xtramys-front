@@ -300,7 +300,7 @@ export default function StrengthExerciseSelectorModal({
             placeholderTextColor={THEME.textMuted}
             value={searchText}
             onChangeText={setSearchText}
-            returnKeyType="search"
+            enterKeyHint="search"
           />
           {searchText.length > 0 && (
             <TouchableOpacity onPress={() => setSearchText('')}>

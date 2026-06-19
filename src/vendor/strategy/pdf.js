@@ -64,6 +64,34 @@ const s = StyleSheet.create({
     maxHeight: '100%',
     objectFit: 'contain',
   },
+  fullPageDiagramWrap: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullPageDiagram: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
+  setPieceTitleBar: {
+    marginBottom: 8,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  setPieceTitle: {
+    fontSize: 18,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.text,
+  },
+  setPieceDescription: {
+    marginTop: 2,
+    fontSize: 9,
+    color: COLORS.textSecondary,
+  },
   noImageText: {
     fontSize: FONT_SIZE.md,
     color: COLORS.textMuted,
@@ -72,45 +100,64 @@ const s = StyleSheet.create({
 });
 
 const StrategyDocument = ({ strategy, folderName, imageBase64, t }) => {
+  const fullPage = strategy.kind === 'setPiece';
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={baseStyles.pageLandscape}>
-        <PdfHeader
-          title={strategy.nombre || t('strategy.strategy') || 'ESTRATEGIA'}
-          subtitle={folderName ? `${t('folders.folder') || 'Carpeta'}: ${folderName}` : ''}
-        />
-
-        <View style={s.mainContainer}>
-          {/* Left Side: Large Diagram */}
-          <View style={s.leftColumn}>
-            {imageBase64 ? (
-              <Image src={imageBase64} style={s.diagram} />
-            ) : (
-              <Text style={s.noImageText}>{t('strategy.noImage') || 'Sin Diagrama'}</Text>
-            )}
+        {fullPage ? (
+          <View style={{ flex: 1, display: 'flex', flexDirection: 'column' }} wrap={false}>
+            <View style={s.setPieceTitleBar}>
+              <Text style={s.setPieceTitle}>{strategy.nombre || t('setPieces.title') || 'ABP'}</Text>
+              {strategy.descripcion ? (
+                <Text style={s.setPieceDescription}>{strategy.descripcion}</Text>
+              ) : null}
+            </View>
+            <View style={s.fullPageDiagramWrap}>
+              {imageBase64 ? (
+                <Image src={imageBase64} style={s.fullPageDiagram} />
+              ) : (
+                <Text style={s.noImageText}>{t('strategy.noImage') || 'Sin Diagrama'}</Text>
+              )}
+            </View>
           </View>
+        ) : (
+          <>
+            <PdfHeader
+              title={strategy.nombre || t('strategy.strategy') || 'ESTRATEGIA'}
+              subtitle={folderName ? `${t('folders.folder') || 'Carpeta'}: ${folderName}` : ''}
+            />
 
-          {/* Right Side: Metadata Panel */}
-          <View style={s.rightColumn}>
-            {folderName ? (
-              <View style={s.infoCard}>
-                <Text style={s.infoCardTitle}>📁 {t('folders.folder') || 'Carpeta'}</Text>
-                <View style={{ marginTop: 4 }}>
-                  <Text style={s.badge}>{folderName}</Text>
-                </View>
+            <View style={s.mainContainer}>
+              <View style={s.leftColumn}>
+                {imageBase64 ? (
+                  <Image src={imageBase64} style={s.diagram} />
+                ) : (
+                  <Text style={s.noImageText}>{t('strategy.noImage') || 'Sin Diagrama'}</Text>
+                )}
               </View>
-            ) : null}
 
-            {strategy.descripcion ? (
-              <View style={s.infoCard}>
-                <Text style={s.infoCardTitle}>📝 {t('strategy.description') || 'Descripción'}</Text>
-                <Text style={s.infoCardContent}>{strategy.descripcion}</Text>
+              <View style={s.rightColumn}>
+                {folderName ? (
+                  <View style={s.infoCard}>
+                    <Text style={s.infoCardTitle}>{t('folders.folder') || 'Carpeta'}</Text>
+                    <View style={{ marginTop: 4 }}>
+                      <Text style={s.badge}>{folderName}</Text>
+                    </View>
+                  </View>
+                ) : null}
+
+                {strategy.descripcion ? (
+                  <View style={s.infoCard}>
+                    <Text style={s.infoCardTitle}>{t('strategy.description') || 'Descripcion'}</Text>
+                    <Text style={s.infoCardContent}>{strategy.descripcion}</Text>
+                  </View>
+                ) : null}
               </View>
-            ) : null}
-          </View>
-        </View>
+            </View>
 
-        <PdfFooter text="Xtramys Performance" />
+            <PdfFooter text="Xtramys Performance" />
+          </>
+        )}
       </Page>
     </Document>
   );

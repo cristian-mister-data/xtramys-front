@@ -79,29 +79,37 @@ const extensionFrom = (contentType, url) => {
 };
 
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
+  const { playerOverlays, ...urlOptions } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
-    return resolveWithRetry(getVideoStreamUrl(videoId), options);
+    return resolveWithRetry(getVideoStreamUrl(videoId), urlOptions);
   }
-  if (knownUrl) return maybeObjectUrl(knownUrl, options);
+  if (knownUrl && !playerOverlays) return maybeObjectUrl(knownUrl, urlOptions);
   if (!videoId) return '';
+
+  if (playerOverlays?.length) {
+    const result = await regenerateVideoWithField(videoId, null, playerOverlays);
+    if (result?.success && result?.videoId) {
+      return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
+    }
+  }
 
   const metadata = await getVideoById(videoId).catch(() => null);
   let directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
-  if (!directUrl) {
+  if (!directUrl && !metadata) {
     const tacMetadata = await getTacticalVideo(videoId).catch(() => null);
     directUrl = tacMetadata?.video?.videoUrl || tacMetadata?.data?.video?.videoUrl;
   }
-  if (directUrl) return maybeObjectUrl(directUrl, options);
-  if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), options);
+  if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
+  if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), urlOptions);
 
   const result = await regenerateVideoWithField(videoId, null);
   if (result?.success && result?.videoId) {
-    return resolveWithRetry(getVideoStreamUrl(result.videoId), options);
+    return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
   }
 
-  return maybeObjectUrl(getVideoStreamUrl(videoId), options);
+  return maybeObjectUrl(getVideoStreamUrl(videoId), urlOptions);
 }
 
 async function resolveWithRetry(url, options, attempts = 3, delayMs = 1000) {

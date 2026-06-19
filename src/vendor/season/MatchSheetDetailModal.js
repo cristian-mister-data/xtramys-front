@@ -18,11 +18,16 @@ import { cdnUrl } from '@/config';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import useMatchSheetPDF from '@/vendor/matchSheet/useMatchSheetPDF';
 import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/MatchSheetPDFModals';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
+import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import { generateStrategyPdf } from '@/vendor/strategy/pdf';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -217,6 +222,12 @@ export default function MatchSheetDetailModal({
   const lineupContainerWidth = lineupCardWidth > 0
     ? lineupCardWidth - 2 - cardPadding * 2 - 32
     : undefined;
+  const [setPieceVideoUrl, setSetPieceVideoUrl] = useState(null);
+  const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
+  const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
+  const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
+    if (setPieceVideoUrl) player.play();
+  });
   
   // Hook reutilizable para PDFs
   const {
@@ -292,6 +303,112 @@ export default function MatchSheetDetailModal({
     if (v.startsWith('1-')) return v;
     if (/^\d+-/.test(v)) return `1-${v}`;
     return v;
+  };
+
+  const getAssignedPlayer = (assignment) => {
+    if (assignment?.player && typeof assignment.player === 'object') return assignment.player;
+    return players.find(p => String(p._id) === String(assignment?.player));
+  };
+
+  const buildSetPiecePlayerOverlays = (setPiece) => {
+    const boardPlayers = (setPiece?.customElements || [])
+      .filter((element) => element?.type === 'player' && element.playerData)
+      .map((element, index) => {
+        const player = element.playerData;
+        const name = getPlayerFullName(player);
+        return {
+          slotId: String(element.id || element._id || `slot-${index}`),
+          number: String(element.number || element.playerNumber || element.numero || element.text || element.label || ''),
+          exactSlot: true,
+          playerData: {
+            _id: player._id || player.id || '',
+            nombre: name,
+            name,
+            demarcacion: player.demarcacion || player.posicion || player.position || '',
+            posicion: player.posicion || player.position || '',
+            foto: player.foto || '',
+          },
+          photoUrl: player.foto ? cdnUrl(player.foto) : '',
+        };
+      });
+    if (boardPlayers.length) return boardPlayers;
+
+    return (setPiece?.assignments || []).map((assignment) => {
+      const player = getAssignedPlayer(assignment);
+      if (!player) return null;
+      const name = getPlayerFullName(player);
+      return {
+        slotId: assignment.slotId,
+        number: assignment.number,
+        playerData: {
+          _id: player._id,
+          nombre: name,
+          name,
+          demarcacion: player.demarcacion || player.posicion || player.position || '',
+          posicion: player.posicion || player.position || '',
+          foto: player.foto || '',
+        },
+        photoUrl: player.foto ? cdnUrl(player.foto) : '',
+      };
+    })
+    .filter(Boolean);
+  };
+
+  const downloadSetPiecePdf = async (setPiece) => {
+    const image = normalizeImageSource(setPiece.customImage || setPiece.imagen || '');
+    await generateStrategyPdf({ ...setPiece, kind: 'setPiece', imagen: image }, '', image, t);
+  };
+
+  const shareSetPieceFromMatch = async (setPiece) => {
+    try {
+      const videoId = getVideoId(setPiece);
+      const videoUrl = videoId ? await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) }) : '';
+      const text = [t('setPieces.matchShareText'), setPiece.nombre, videoUrl].filter(Boolean).join('\n');
+      const image = normalizeImageSource(setPiece.customImage || setPiece.imagen || '');
+      const nav = typeof navigator !== 'undefined' ? navigator : null;
+      if (nav?.share) {
+        if (image?.startsWith('data:') && nav.canShare) {
+          const blob = await (await fetch(image)).blob();
+          const file = new File([blob], `${(setPiece.nombre || 'ABP').replace(/[\\/:*?"<>|]+/g, '-')}.png`, { type: blob.type || 'image/png' });
+          if (nav.canShare({ files: [file] })) {
+            await nav.share({ title: setPiece.nombre || t('setPieces.title'), text, files: [file] });
+            return;
+          }
+        }
+        await nav.share({ title: setPiece.nombre || t('setPieces.title'), text, url: videoUrl || undefined });
+        return;
+      }
+      await nav?.clipboard?.writeText(text);
+      Alert.alert(t('message.success'), t('common.copied', 'Copiado'));
+    } catch (error) {
+      Alert.alert(t('message.error'), t('setPieces.shareError'));
+    }
+  };
+
+  const getVideoId = (setPiece) => {
+    const video = setPiece?.videoId || (Array.isArray(setPiece?.videos) ? setPiece.videos[0] : null);
+    return typeof video === 'object' ? video?._id : video;
+  };
+
+  const playSetPieceVideo = async (setPiece) => {
+    const videoId = getVideoId(setPiece);
+    if (!videoId) return;
+    setLoadingSetPieceVideo(true);
+    setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
+    try {
+      setSetPieceVideoUrl(await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) }));
+    } catch (error) {
+      console.error('Error loading set piece video:', error);
+      Alert.alert(t('message.error'), t('strategy.videoPlayError'));
+    } finally {
+      setLoadingSetPieceVideo(false);
+    }
+  };
+
+  const closeSetPieceVideo = () => {
+    if (setPieceVideoUrl) revokeVideoObjectUrl(setPieceVideoUrl);
+    setSetPieceVideoUrl(null);
+    setSetPieceVideoTitle('');
   };
 
   return (
@@ -473,6 +590,46 @@ export default function MatchSheetDetailModal({
                       jugadoresPorEquipo={team?.jugadoresPorEquipo || 11}
                       containerWidth={lineupContainerWidth}
                     />
+                  </View>
+                )}
+
+                {matchSheet.setPieces && matchSheet.setPieces.length > 0 && (
+                  <View style={styles.detailCard}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="football-outline" size={18} color={theme.colors.primary} />
+                      <Text style={styles.detailCardTitle}>{t('setPieces.matchTab')} ({matchSheet.setPieces.length})</Text>
+                    </View>
+                    <View style={styles.setPiecesList}>
+                      {matchSheet.setPieces.map((setPiece, index) => (
+                        <View key={`${setPiece.strategyId || index}`} style={styles.setPieceDetailCard}>
+                          <View style={styles.setPieceDetailHeader}>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={styles.setPieceDetailTitle} numberOfLines={1}>{setPiece.nombre}</Text>
+                              {!!setPiece.descripcion && (
+                                <Text style={styles.setPieceDetailDesc} numberOfLines={2}>{setPiece.descripcion}</Text>
+                              )}
+                            </View>
+                            <View style={styles.setPieceActions}>
+                            {!!getVideoId(setPiece) && (
+                              <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece)}>
+                                <Ionicons name="play" size={16} color="#fff" />
+                                <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
+                              </TouchableOpacity>
+                            )}
+                              <TouchableOpacity style={styles.setPieceActionBtn} onPress={() => downloadSetPiecePdf(setPiece)}>
+                                <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
+                                <Text style={styles.setPieceActionText}>{t('setPieces.downloadPdf')}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={styles.setPieceActionBtn} onPress={() => shareSetPieceFromMatch(setPiece)}>
+                                <Ionicons name="share-social-outline" size={16} color={theme.colors.primary} />
+                                <Text style={styles.setPieceActionText}>{t('setPieces.share')}</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <SetPiecePreview setPiece={setPiece} players={players} height={IS_MOBILE ? 180 : 260} />
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 )}
 
@@ -673,6 +830,34 @@ export default function MatchSheetDetailModal({
           </ScrollView>
         </View>
       </View>
+
+      <Modal
+        visible={!!setPieceVideoUrl || loadingSetPieceVideo}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSetPieceVideo}
+      >
+        <View style={styles.videoModalBg}>
+          <View style={styles.videoModalContent}>
+            <View style={styles.videoModalHeader}>
+              <Text style={styles.videoModalTitle} numberOfLines={1}>{setPieceVideoTitle}</Text>
+              <TouchableOpacity onPress={closeSetPieceVideo} style={styles.videoModalCloseBtn}>
+                <Ionicons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {loadingSetPieceVideo ? (
+              <View style={styles.videoGeneratingContainer}>
+                <ActivityIndicator color="#fff" />
+                <Text style={styles.videoGeneratingText}>{t('common.loading', 'Cargando...')}</Text>
+              </View>
+            ) : (
+              <View style={styles.videoPlayerContainer}>
+                <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Modales de PDF - Componentes reutilizables */}
       <MatchSheetPDFModals
@@ -895,6 +1080,70 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
     lineHeight: 20,
   },
+  setPiecesList: {
+    gap: 12,
+  },
+  setPieceDetailCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    padding: 10,
+    gap: 10,
+  },
+  setPieceDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  setPieceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 8,
+    maxWidth: 260,
+  },
+  setPieceDetailTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  setPieceDetailDesc: {
+    marginTop: 2,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
+  setPieceVideoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: theme.colors.primary,
+  },
+  setPieceVideoBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  setPieceActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+  },
+  setPieceActionText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
   // Events
   eventItem: {
@@ -995,6 +1244,56 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.error,
     fontSize: 14,
     fontWeight: '600',
+  },
+  videoModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.86)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  videoModalContent: {
+    width: '100%',
+    maxWidth: 900,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
+  },
+  videoModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
+  },
+  videoModalTitle: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  videoModalCloseBtn: {
+    padding: 4,
+  },
+  videoGeneratingContainer: {
+    height: 360,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  videoGeneratingText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  videoPlayerContainer: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
   },
 
   // PDF Config Modal

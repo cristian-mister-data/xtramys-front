@@ -2325,7 +2325,7 @@ export default function VideoRecorder({
                   value={videoDescripcion}
                   onChangeText={setVideoDescripcion}
                   multiline
-                  numberOfLines={3}
+                  rows={3}
                   maxLength={500}
                 />
               </View>

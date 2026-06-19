@@ -437,7 +437,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
                 placeholder={t('tournaments.descriptionPlaceholder')}
                 placeholderTextColor={theme.colors.inputPlaceholder}
                 multiline
-                numberOfLines={3}
+                rows={3}
               />
             </View>
 

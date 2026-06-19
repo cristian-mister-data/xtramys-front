@@ -335,7 +335,7 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
               placeholderTextColor="#94a3b8"
               value={search}
               onChangeText={setSearch}
-              returnKeyType="search"
+              enterKeyHint="search"
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')}>

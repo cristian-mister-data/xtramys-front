@@ -422,7 +422,7 @@ function DraggableExerciseItem({
         value={observacion || ''}
         onChangeText={onUpdateObservacion}
         multiline
-        numberOfLines={2}
+        rows={2}
       />
     </View>
   );
@@ -478,7 +478,7 @@ function ObservacionEjercicio({ eid, nombre, value, onChange }) {
           onChangeText={txt => onChange(txt)}
           multiline
           blurOnSubmit={true}
-          returnKeyType="done"
+          enterKeyHint="done"
           onBlur={handleBlur}
           onSubmitEditing={handleBlur}
         />

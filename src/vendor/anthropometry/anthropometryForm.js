@@ -376,7 +376,7 @@ const AnthropometryForm = ({ navigation, route }) => {
               value={formData.notas}
               onChangeText={(v) => setFormData(prev => ({ ...prev, notas: v }))}
               multiline
-              numberOfLines={4}
+              rows={4}
               placeholder={t('anthropometry.notesPlaceholder')}
               placeholderTextColor={c.inputPlaceholder}
               textAlignVertical="top"

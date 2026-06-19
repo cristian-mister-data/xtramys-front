@@ -70,12 +70,13 @@ const replaceStrategyVideos = async (strategyId, pendingVideoIds = []) => {
 
 export const fetchEstrategiasUsuario = createAsyncThunk(
   'strategy/fetchEstrategiasUsuario',
-  async ({ user, lang, filterType } = {}) => {
-    const cacheKey = strategyCacheKey('user', { user, lang, filterType });
+  async ({ user, lang, filterType, kind } = {}) => {
+    const cacheKey = strategyCacheKey('user', { user, lang, filterType, kind });
     return strategyReadCache.read(cacheKey, async () => {
       const queryParams = [];
       if (lang) queryParams.push(`lang=${lang}`);
       if (filterType) queryParams.push(`filterType=${filterType}`);
+      if (kind) queryParams.push(`kind=${kind}`);
       const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy/user/${user}${params}`);
       return applyStrategyFavoritePrefs(res.data);
@@ -106,10 +107,13 @@ export const fetchEstrategia = createAsyncThunk('strategy/fetchEstrategia', asyn
 
 export const fetchGlobalStrategies = createAsyncThunk(
   'strategy/fetchGlobalStrategies',
-  async ({ lang } = {}) => {
-    const cacheKey = strategyCacheKey('global', { lang });
+  async ({ lang, kind } = {}) => {
+    const cacheKey = strategyCacheKey('global', { lang, kind });
     return strategyReadCache.read(cacheKey, async () => {
-      const params = lang ? `?lang=${lang}` : '';
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (kind) queryParams.push(`kind=${kind}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy/global${params}`);
       return applyStrategyFavoritePrefs(res.data);
     });
@@ -157,13 +161,14 @@ export const deleteEstrategia = createAsyncThunk('strategy/deleteEstrategia', as
 
 export const fetchStrategyFolders = createAsyncThunk(
   'strategy/fetchStrategyFolders',
-  async ({ parentFolder, lang, user } = {}) => {
-    const cacheKey = strategyCacheKey('folders', { parentFolder, lang, user });
+  async ({ parentFolder, lang, user, kind } = {}) => {
+    const cacheKey = strategyCacheKey('folders', { parentFolder, lang, user, kind });
     return strategyReadCache.read(cacheKey, async () => {
       const queryParams = [];
       if (parentFolder) queryParams.push(`parentFolder=${parentFolder}`);
       if (lang) queryParams.push(`lang=${lang}`);
       if (user) queryParams.push(`user=${user}`);
+      if (kind) queryParams.push(`kind=${kind}`);
       const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy-folder${params}`);
       return res.data.folders;
@@ -173,10 +178,13 @@ export const fetchStrategyFolders = createAsyncThunk(
 
 export const fetchGlobalFolders = createAsyncThunk(
   'strategy/fetchGlobalFolders',
-  async ({ lang } = {}) => {
-    const cacheKey = strategyCacheKey('global-folders', { lang });
+  async ({ lang, kind } = {}) => {
+    const cacheKey = strategyCacheKey('global-folders', { lang, kind });
     return strategyReadCache.read(cacheKey, async () => {
-      const params = lang ? `?lang=${lang}` : '';
+      const queryParams = [];
+      if (lang) queryParams.push(`lang=${lang}`);
+      if (kind) queryParams.push(`kind=${kind}`);
+      const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy-folder/global${params}`);
       return res.data.folders;
     });
@@ -185,12 +193,13 @@ export const fetchGlobalFolders = createAsyncThunk(
 
 export const fetchStrategyFolderById = createAsyncThunk(
   'strategy/fetchStrategyFolderById',
-  async ({ id, lang, user } = {}) => {
-    const cacheKey = strategyCacheKey('folder-detail', { id, lang, user });
+  async ({ id, lang, user, kind } = {}) => {
+    const cacheKey = strategyCacheKey('folder-detail', { id, lang, user, kind });
     return strategyReadCache.read(cacheKey, async () => {
       const queryParams = [];
       if (lang) queryParams.push(`lang=${lang}`);
       if (user) queryParams.push(`user=${user}`);
+      if (kind) queryParams.push(`kind=${kind}`);
       const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy-folder/${id}${params}`);
       const prefs = await readFavoritePrefs('strategy');
@@ -204,12 +213,13 @@ export const fetchStrategyFolderById = createAsyncThunk(
 
 export const fetchStrategyFoldersFlat = createAsyncThunk(
   'strategy/fetchStrategyFoldersFlat',
-  async ({ lang, user } = {}) => {
-    const cacheKey = strategyCacheKey('folders-flat', { lang, user });
+  async ({ lang, user, kind } = {}) => {
+    const cacheKey = strategyCacheKey('folders-flat', { lang, user, kind });
     return strategyReadCache.read(cacheKey, async () => {
       const queryParams = [];
       if (lang) queryParams.push(`lang=${lang}`);
       if (user) queryParams.push(`user=${user}`);
+      if (kind) queryParams.push(`kind=${kind}`);
       const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/strategy-folder/flat${params}`);
       return res.data.folders;

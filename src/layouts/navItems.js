@@ -70,6 +70,10 @@ export function getNavSections(t) {
           keywords: ['estrategias', 'strategies', 'aboc', 'jugadas']
         },
         {
+          to: '/set-pieces', label: t('menu.setPieces', 'ABP'), Icon: MdSportsSoccer,
+          keywords: ['abp', 'acciones a balon parado', 'set pieces', 'corner', 'corners', 'faltas', 'jugadas']
+        },
+        {
           to: '/my-videos', label: t('menu.myVideos', 'Mis Videos'), Icon: MdVideoLibrary,
           keywords: ['videos', 'mis videos', 'grabaciones', 'clips']
         },

@@ -237,6 +237,16 @@ export const getPublicTrainingSession = async (token) => {
   return response.data;
 };
 
+export const createSetPieceShareLink = async (setPieceId) => {
+  const response = await api.post(`/strategy/${setPieceId}/share-link`);
+  return response.data;
+};
+
+export const getPublicSetPiece = async (token) => {
+  const response = await api.get(`/strategy/public/${token}`);
+  return response.data;
+};
+
 export const copyClubVideoToMine = async (videoId, folderId = null) => {
   try {
     const response = await api.post('/video-folder/copy-club', { videoId, folderId });
@@ -321,7 +331,7 @@ export const proxyUploadToR2 = async (localVideoPath) => {
 // Regenera el MP4 server-side a partir de los keyframes guardados.
 // Mirror de misterdata: si el backend encola un job, hacemos polling.
 let _activeVideoPollController = null;
-export const regenerateVideoWithField = async (videoId, fieldImageData = null) => {
+export const regenerateVideoWithField = async (videoId, fieldImageData = null, playerOverlays = null) => {
   if (_activeVideoPollController) {
     _activeVideoPollController.abort();
   }
@@ -330,7 +340,7 @@ export const regenerateVideoWithField = async (videoId, fieldImageData = null) =
   try {
     const response = await api.post(
       `/video/${videoId}/regenerate`,
-      { fieldImageData },
+      { fieldImageData, playerOverlays },
       { timeout: 120000 },
     );
     const result = response.data;

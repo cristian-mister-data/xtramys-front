@@ -1018,7 +1018,7 @@ export default function EditSessionModal({
                 placeholder={t('session.sessionNotesPlaceholder')}
                 placeholderTextColor={theme.colors.textMuted}
                 multiline
-                numberOfLines={4}
+                rows={4}
                 textAlignVertical="top"
               />
             </View>

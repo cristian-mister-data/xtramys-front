@@ -44,7 +44,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
-import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
+import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy, getVideoForEdit, duplicateVideoForEdit, createSetPieceShareLink } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { downloadImageSource } from '@/utils/imageDownload';
 import { getFieldById } from '@/utils/fieldTypes';
@@ -82,7 +82,7 @@ const canEditClubOwnedItem = (item, userId, userRole) => {
   return sameId(item.usuario, userId);
 };
 
-function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem }) {
+function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem, isSetPiece = false }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -142,6 +142,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingVideo, setDownloadingVideo] = useState(false);
+  const [sharingSetPiece, setSharingSetPiece] = useState(false);
 
   // Video player hook
   const player = useVideoPlayer(videoUrl || '', player => {
@@ -357,6 +358,30 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
     }
   };
 
+  const shareSetPiece = async () => {
+    if (!isSetPiece || sharingSetPiece) return;
+    try {
+      setSharingSetPiece(true);
+      const data = await createSetPieceShareLink(strategy._id);
+      const url = data?.url;
+      if (!url) throw new Error('No share URL');
+      if (Platform.OS === 'web') {
+        await navigator.clipboard?.writeText(url);
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: getLocalizedName(), text: t('setPieces.shareText'), url });
+          } catch {}
+        }
+      }
+      Alert.alert(t('session.linkCopiedTitle'), t('session.linkCopiedMessage'));
+    } catch (error) {
+      console.error('Error sharing set piece:', error);
+      Alert.alert(t('message.error'), t('setPieces.shareError'));
+    } finally {
+      setSharingSetPiece(false);
+    }
+  };
+
   return (
     <Modal
       visible={true}
@@ -367,23 +392,36 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
       <View style={styles.modalBg}>
         <View style={IS_TABLET ? styles.modalContentTablet : styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('strategy.strategyDetails')}</Text>
+            <Text style={styles.modalTitle}>{isSetPiece ? t('setPieces.title') : t('strategy.strategyDetails')}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {showField && (
                 <>
                   <TouchableOpacity
-                    style={styles.modalPdfButton}
+                    style={isSetPiece ? styles.modalPillButton : styles.modalPdfButton}
                     onPress={generatePDF}
                     activeOpacity={0.7}
                   >
                     <MaterialIcons name="picture-as-pdf" size={20} color={theme.colors.errorSoftText} />
+                    {isSetPiece && <Text style={[styles.modalPillText, { color: theme.colors.errorSoftText }]}>PDF</Text>}
                   </TouchableOpacity>
+                  {isSetPiece && (
+                    <TouchableOpacity
+                      style={styles.modalPillButton}
+                      onPress={shareSetPiece}
+                      disabled={sharingSetPiece}
+                      activeOpacity={0.7}
+                    >
+                      {sharingSetPiece ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Feather name="share-2" size={18} color={theme.colors.primary} />}
+                      <Text style={[styles.modalPillText, { color: theme.colors.primary }]}>{t('setPieces.share')}</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    style={styles.modalImageButton}
+                    style={isSetPiece ? styles.modalPillButton : styles.modalImageButton}
                     onPress={saveImageToGallery}
                     activeOpacity={0.7}
                   >
                     <MaterialIcons name="image" size={20} color={theme.colors.successSoftText} />
+                    {isSetPiece && <Text style={[styles.modalPillText, { color: theme.colors.successSoftText }]}>{t('common.image', 'Imagen')}</Text>}
                   </TouchableOpacity>
                 </>
               )}
@@ -1160,7 +1198,7 @@ function SkeletonList({ isGrid, IS_MOBILE, theme, styles }) {
   );
 }
 
-export default function StrategyList({ navigation: navigationProp, canMutate }) {
+export default function StrategyList({ navigation: navigationProp, canMutate, kind = 'strategy' }) {
   // Fallback: en web la pantalla se renderiza desde una page wrapper que no
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
@@ -1181,6 +1219,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
+  const strategyKind = kind === 'setPiece' ? 'setPiece' : 'strategy';
+  const isSetPiece = strategyKind === 'setPiece';
 
   const getStrategyLocalizedName = (strategy) => {
     if (i18n.language === 'en' && strategy?.translations?.en?.nombre) {
@@ -1191,12 +1231,12 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   const [creating, setCreating] = useState(() => {
     const s = loadFormDraft(STORAGE_KEYS.STRATEGY_LIST, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-    return fieldResult?.kind === 'strategy' && !!s?.creating;
+    return fieldResult?.kind === strategyKind && !!s?.creating;
   });
   const [editingStrategy, setEditingStrategy] = useState(() => {
     const s = loadFormDraft(STORAGE_KEYS.STRATEGY_LIST, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-    return fieldResult?.kind === 'strategy' ? (s?.editingStrategy || null) : null;
+    return fieldResult?.kind === strategyKind ? (s?.editingStrategy || null) : null;
   });
 
   const [viewingStrategy, setViewingStrategy] = useState(null);
@@ -1315,24 +1355,24 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   useEffect(() => {
     if (idUsuario) {
       initialLoadDoneRef.current = true;
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-      dispatch(fetchStrategyFolders({ lang }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
       dispatch(fetchStrategyFoldersFlat({ lang }));
-      dispatch(fetchGlobalStrategies({ lang }));
-      dispatch(fetchGlobalFolders({ lang }));
+      dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
+      dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
     }
-  }, [idUsuario, dispatch, lang]);
+  }, [idUsuario, dispatch, lang, strategyKind]);
 
   useFocusEffect(
     useCallback(() => {
       if (idUsuario && initialLoadDoneRef.current) {
-        dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-        dispatch(fetchStrategyFolders({ lang }));
+        dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+        dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
         dispatch(fetchStrategyFoldersFlat({ lang }));
-        dispatch(fetchGlobalStrategies({ lang }));
-        dispatch(fetchGlobalFolders({ lang }));
+        dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
+        dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
       }
-    }, [idUsuario, dispatch, lang])
+    }, [idUsuario, dispatch, lang, strategyKind])
   );
 
   useEffect(() => {
@@ -1356,12 +1396,12 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   // Efecto para navegación de carpetas
   useEffect(() => {
     if (currentFolderId) {
-      dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }))
+      dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }))
         .finally(() => setIsNavigatingFolder(false));
     } else {
       setIsNavigatingFolder(false);
     }
-  }, [currentFolderId, dispatch, lang]);
+  }, [currentFolderId, dispatch, lang, strategyKind]);
 
   // Persistir el modo edición/creación para sobrevivir al desmontaje en web
   // cuando el usuario navega al editor del campo táctico.
@@ -1381,10 +1421,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     if (!strategy._id) {
       const { _id, ...strategySinId } = strategy;
       await dispatch(createEstrategia(strategySinId));
-      if (strategySinId.isGlobal) dispatch(fetchGlobalStrategies({ lang }));
+      if (strategySinId.isGlobal) dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
     } else {
       await dispatch(updateEstrategia(strategy));
-      if (strategy.isGlobal) dispatch(fetchGlobalStrategies({ lang }));
+      if (strategy.isGlobal) dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
     }
     setCreating(false);
     setEditingStrategy(null);
@@ -1392,10 +1432,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     clearFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT);
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
     // Recargar datos para reflejar cambios
-    dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-    dispatch(fetchStrategyFolders({ lang }));
+    dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+    dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
     dispatch(fetchStrategyFoldersFlat({ lang }));
-    if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+    if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
   };
 
   const handleCancel = () => {
@@ -1408,16 +1448,17 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
 
   const displayedStrategies = useMemo(() => {
     const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
+    const matchesKind = (st) => (st?.kind || 'strategy') === strategyKind;
     if (listFilter === 'global') {
-      if (currentFolderId) return currentFolderStrategies;
-      const rootGlobal = globalStrategies.filter((s) => !hasFolder(s));
+      if (currentFolderId) return currentFolderStrategies.filter(matchesKind);
+      const rootGlobal = globalStrategies.filter((s) => matchesKind(s) && !hasFolder(s));
       return filters.titulo
         ? rootGlobal.filter((s) => s.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
         : rootGlobal;
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
-      [...strategies, ...globalStrategies].filter(Boolean).forEach((strategy) => {
+      [...strategies, ...globalStrategies].filter(matchesKind).forEach((strategy) => {
         const id = strategy._id || strategy.id;
         if (!id) return;
         const prev = favsById.get(String(id));
@@ -1428,19 +1469,19 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         });
       });
       const favs = Array.from(favsById.values()).filter((st) => st.favorito);
-      return currentFolderId ? currentFolderStrategies.filter(e => e.favorito) : favs.filter(ex => !hasFolder(ex));
+      return currentFolderId ? currentFolderStrategies.filter(e => matchesKind(e) && e.favorito) : favs.filter(ex => !hasFolder(ex));
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return strategies.filter(st => sameId(st.usuario, idUsuario));
+        return strategies.filter(st => matchesKind(st) && sameId(st.usuario, idUsuario));
       }
       if (listFilter === 'club') {
-        return strategies.filter(st => st.visibility === 'CLUB');
+        return strategies.filter(st => matchesKind(st) && st.visibility === 'CLUB');
       }
-      return mergeById(strategies, globalStrategies);
+      return mergeById(strategies, globalStrategies).filter(matchesKind);
     })();
-    return currentFolderId ? currentFolderStrategies : base.filter((st) => !hasFolder(st));
-  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo]);
+    return currentFolderId ? currentFolderStrategies.filter(matchesKind) : base.filter((st) => !hasFolder(st));
+  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind]);
 
   const filteredStrategies = useMemo(() => {
     if (listFilter === 'global') return displayedStrategies;
@@ -1530,8 +1571,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       return;
     }
     Alert.alert(
-      t('strategy.deleteStrategy'),
-      t('strategy.deleteStrategyConfirmationName', { name: getStrategyLocalizedName(strategy) }),
+      isSetPiece ? t('setPieces.delete', 'Eliminar ABP') : t('strategy.deleteStrategy'),
+      isSetPiece
+        ? t('setPieces.deleteConfirmationName', { name: getStrategyLocalizedName(strategy) })
+        : t('strategy.deleteStrategyConfirmationName', { name: getStrategyLocalizedName(strategy) }),
       [
         { text: t('common.cancel'), style: "cancel" },
         {
@@ -1539,7 +1582,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
           style: "destructive",
           onPress: async () => {
             await dispatch(deleteEstrategia(strategy._id));
-            showNotification(t('strategy.strategyDeleted', 'Estrategia eliminada'), 'success');
+            showNotification(isSetPiece ? t('setPieces.deleteSuccess') : t('strategy.strategyDeleted', 'Estrategia eliminada'), 'success');
             // Recargar datos para reflejar cambios
             dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
             dispatch(fetchStrategyFolders({ lang }));
@@ -1742,7 +1785,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       const videoData = result.video;
 
       saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
-        kind: 'strategy',
+        kind: strategyKind,
         editingId: null,
         name: '',
         description: '',
@@ -1759,7 +1802,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       });
 
       const fieldResult = {
-        kind: 'strategy',
+        kind: strategyKind,
         editingId: null,
         fieldElements: videoData.elementosCampo || [],
         fieldType: videoData.tipoCampo || 'full',
@@ -2012,6 +2055,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         userRole={userRole}
         canMutate={canMutate}
         canEditItem={canEditStrategyItem}
+        isSetPiece={isSetPiece}
       />
     );
   }
@@ -2027,6 +2071,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                 onSave={handleSave}
                 onCancel={handleCancel}
                 editingStrategy={editingStrategy}
+                kind={strategyKind}
                 setScrollEnabled={setScrollEnabled}
               />
             </View>
@@ -2061,7 +2106,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
                 activeOpacity={0.7}
               >
                 <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
-                {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{t('strategy.createStrategy')}</Text>}
+                {!IS_MOBILE && <Text style={styles.mvCreateButtonText}>{isSetPiece ? t('setPieces.create') : t('strategy.createStrategy')}</Text>}
               </TouchableOpacity>
               )}
             </View>
@@ -2150,11 +2195,11 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
           style={styles.mvFilterScroll}
         >
           {[
-            { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
-            { key: 'all', label: t('strategy.allStrategies') || 'Todas' },
-            { key: 'mine', label: t('strategy.myStrategies') || 'Mías' },
-            ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
-            { key: 'global', label: t('strategy.appStrategies') || 'App' },
+            { key: 'favorites', label: isSetPiece ? t('setPieces.favorites') : (t('common.favorites') || 'Favoritos'), icon: 'star' },
+            { key: 'all', label: isSetPiece ? t('setPieces.all') : (t('strategy.allStrategies') || 'Todas') },
+            { key: 'mine', label: isSetPiece ? t('setPieces.mine') : (t('strategy.myStrategies') || 'Mías') },
+            ...(user?.clubId ? [{ key: 'club', label: isSetPiece ? t('setPieces.club') : t('club.sharedLibrary', 'Compartido por mi club') }] : []),
+            { key: 'global', label: isSetPiece ? t('setPieces.app') : (t('strategy.appStrategies') || 'App') },
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (
@@ -2197,7 +2242,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         {/* Content */}
         {(loading || foldersLoading || isNavigatingFolder) ? (
           <View style={styles.mvLoadingContainer}>
-            <LoadingSpinner theme={theme} text={t('common.loading', 'Cargando...')} />
+            <LoadingSpinner theme={theme} text={isSetPiece ? t('setPieces.loading') : t('common.loading', 'Cargando...')} />
           </View>
         ) : (displayedSubfolders.length === 0 && filteredStrategies.length === 0) ? (
           <View style={styles.mvEmptyContainer}>
@@ -2205,10 +2250,14 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
               <Ionicons name="football-outline" size={48} color="#CBD5E1" />
             </View>
             <Text style={styles.mvEmptyTitle}>
-              {filters.titulo ? t('strategy.noStrategiesFiltered') : currentFolderId ? t('folders.emptyFolder') : t('strategy.noStrategiesCreated')}
+              {isSetPiece
+                ? t('setPieces.noResults')
+                : (filters.titulo ? t('strategy.noStrategiesFiltered') : currentFolderId ? t('folders.emptyFolder') : t('strategy.noStrategiesCreated'))}
             </Text>
             <Text style={styles.mvEmptySubtitle}>
-              {filters.titulo
+              {isSetPiece
+                ? t('setPieces.create')
+                : filters.titulo
                 ? t('strategy.clearFiltersText')
                 : t('strategy.createFirstStrategy')
               }
@@ -2241,7 +2290,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
               <View style={styles.mvSection}>
                 <View style={styles.mvSectionHeader}>
                   <Ionicons name="football-outline" size={16} color="#64748B" />
-                  <Text style={styles.mvSectionTitle}>{t('strategy.strategies')}</Text>
+                  <Text style={styles.mvSectionTitle}>{isSetPiece ? t('setPieces.title') : t('strategy.strategies')}</Text>
                   <View style={styles.mvSectionBadge}>
                     <Text style={styles.mvSectionBadgeText}>{filteredStrategies.length}</Text>
                   </View>
@@ -3816,6 +3865,23 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.successSoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalPillButton: {
+    minWidth: 78,
+    height: 40,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  modalPillText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   modalCloseBtn: {
     width: 40,

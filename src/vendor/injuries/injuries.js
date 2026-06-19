@@ -963,7 +963,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                   value={formData.lesionEspecifica}
                   onChangeText={(text) => setFormData({ ...formData, lesionEspecifica: text })}
                   multiline
-                  numberOfLines={3}
+                  rows={3}
                 />
 
                 {/* Start Date */}

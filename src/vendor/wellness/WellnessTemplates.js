@@ -353,7 +353,7 @@ export default function WellnessTemplates({ navigation }) {
                   placeholder={t('wellnessTemplates.descriptionPlaceholder')}
                   placeholderTextColor={theme.colors.inputPlaceholder}
                   multiline
-                  numberOfLines={3}
+                  rows={3}
                 />
 
                 <Text style={styles.inputLabel}>{t('wellnessTemplates.questions')}</Text>
