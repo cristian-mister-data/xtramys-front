@@ -82,7 +82,7 @@ const canEditClubOwnedItem = (item, userId, userRole) => {
   return sameId(item.usuario, userId);
 };
 
-function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem, isSetPiece = false }) {
+function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem, canEditVideoItem, isSetPiece = false }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -404,17 +404,6 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                     <MaterialIcons name="picture-as-pdf" size={20} color={theme.colors.errorSoftText} />
                     {isSetPiece && <Text style={[styles.modalPillText, { color: theme.colors.errorSoftText }]}>PDF</Text>}
                   </TouchableOpacity>
-                  {isSetPiece && (
-                    <TouchableOpacity
-                      style={styles.modalPillButton}
-                      onPress={shareSetPiece}
-                      disabled={sharingSetPiece}
-                      activeOpacity={0.7}
-                    >
-                      {sharingSetPiece ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Feather name="share-2" size={18} color={theme.colors.primary} />}
-                      <Text style={[styles.modalPillText, { color: theme.colors.primary }]}>{t('setPieces.share')}</Text>
-                    </TouchableOpacity>
-                  )}
                   <TouchableOpacity
                     style={isSetPiece ? styles.modalPillButton : styles.modalImageButton}
                     onPress={saveImageToGallery}
@@ -549,7 +538,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                               <Feather name="play" size={16} color="#fff" />
                               <Text style={styles.videoActionText}>{t('strategy.play') || 'Ver'}</Text>
                             </TouchableOpacity>
-                            {canMutate !== false && canEditItem?.(strategy) && (
+                            {canMutate !== false && canEditVideoItem?.(video) && (
                             <TouchableOpacity
                               style={[styles.videoActionBtn, styles.videoEditBtn]}
                               onPress={() => onEditVideo && onEditVideo(video, strategy)}
@@ -1736,7 +1725,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
   const handleEditAssociatedVideo = useCallback(async (video, parentStrategy) => {
     try {
-      if (!canEditStrategyItem(parentStrategy) || !canEditStrategyItem(video)) return;
+      if (!canEditStrategyItem(video)) return;
       let editableVideoId = video?._id || video?.id;
 
       if (!editableVideoId) {
@@ -1784,46 +1773,19 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
       const videoData = result.video;
 
-      saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
-        kind: strategyKind,
-        editingId: null,
-        name: '',
-        description: '',
-        objective: '',
-        folderId: '',
-        nameEn: '',
-        descriptionEn: '',
-        objectiveEn: '',
-        isGlobal: false,
-        fieldElements: [],
-        fieldType: '',
-        imagen: '',
-        pendingVideoIds: [],
-      });
-
-      const fieldResult = {
-        kind: strategyKind,
-        editingId: null,
-        fieldElements: videoData.elementosCampo || [],
-        fieldType: videoData.tipoCampo || 'full',
-        imagen: videoData.imagen || '',
-        pendingVideoIds: [],
-        videoEditId: videoData._id || editableVideoId,
+      global.editVideoData = {
+        videoId: videoData.id || videoData._id || editableVideoId,
+        nombre: videoData.nombre,
+        descripcion: videoData.descripcion,
+        fieldType: videoData.fieldType,
+        keyframes: videoData.keyframes,
+        config: videoData.config,
+        ejercicioId: null,
+        estrategiaId: videoData.estrategia?._id || videoData.estrategia || parentStrategy?._id || parentStrategy?.id || null,
+        folderId: videoData.folder?._id || videoData.folder || null,
       };
-      saveFormDraft(STORAGE_KEYS.FIELD_RESULT, fieldResult);
 
-      navigation.navigate('Field', {
-        initialElements: videoData.elementosCampo || [],
-        initialFieldType: videoData.tipoCampo || 'full',
-        isEditing: true,
-        fieldImages: [],
-        isStrategyMode: true,
-        sandbox: false,
-        estrategiaId: null,
-        isGlobalStrategy: false,
-        videoId: videoData._id || editableVideoId,
-        isVideoEdit: true,
-      });
+      navigation.navigate('TacticalBoard');
     } catch (error) {
       console.error('Error editando video:', error);
       Alert.alert(t('message.error'), error.message || t('myVideos.couldNotLoadVideo'));
@@ -2055,6 +2017,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
         userRole={userRole}
         canMutate={canMutate}
         canEditItem={canEditStrategyItem}
+        canEditVideoItem={canEditStrategyItem}
         isSetPiece={isSetPiece}
       />
     );
