@@ -105,7 +105,7 @@ export default defineConfig(({ mode }) => {
     include: /src[\\/].*\.[jt]sx?$/,
     exclude: [],
     logOverride: {
-      'duplicate-object-key': 'warning',
+      'duplicate-object-key': 'silent',
     },
   },
   // NOTA: COEP/COOP eliminados — bloqueaban imágenes de R2 (sin header CORP).

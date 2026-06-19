@@ -1316,7 +1316,7 @@ export default function VideoRecorder({
       };
 
       const disableStreamingEncoder = (streamingErrorToReport) => {
-        console.warn(
+        console.info(
           '[videoRecorder] Streaming WebCodecs falló, se usara fallback al final',
           streamingErrorToReport,
         );
@@ -1352,7 +1352,7 @@ export default function VideoRecorder({
           },
         });
       } catch (streamingError) {
-        console.warn(
+        console.info(
           '[videoRecorder] WebCodecs streaming no disponible, se usara fallback',
           streamingError,
         );

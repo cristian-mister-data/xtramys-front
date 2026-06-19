@@ -43,6 +43,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { downloadImageSource } from '@/utils/imageDownload';
@@ -67,6 +68,14 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const mergeById = (...groups) => {
+  const map = new Map();
+  groups.flat().filter(Boolean).forEach((item) => {
+    const id = getItemId(item);
+    if (id) map.set(String(id), { ...map.get(String(id)), ...item });
+  });
+  return Array.from(map.values());
+};
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
@@ -504,7 +513,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                             </TouchableOpacity>
                             {canMutate !== false && canEditItem?.(strategy) && (
                             <TouchableOpacity
-                              style={[styles.videoActionBtn, { backgroundColor: '#F59E0B' }]}
+                              style={[styles.videoActionBtn, styles.videoEditBtn]}
                               onPress={() => onEditVideo && onEditVideo(video, strategy)}
                             >
                               <Feather name="edit-3" size={14} color="#fff" />
@@ -611,8 +620,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
 
             {isGenerating ? (
               <View style={styles.videoLoadingContainer}>
-                <ActivityIndicator size="large" color="#E91E63" />
-                <Text style={styles.videoLoadingText}>{t('strategy.generatingVideo') || 'Generando video...'}</Text>
+                <LoadingSpinner theme={theme} text={t('strategy.generatingVideo') || 'Generando video...'} />
               </View>
             ) : videoUrl ? (
               <View style={styles.videoPlayerContainer}>
@@ -627,7 +635,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
 
             <View style={styles.videoModalActions}>
               <TouchableOpacity
-                style={[styles.videoModalBtn, styles.videoModalDownloadBtn]}
+                style={[
+                  styles.videoModalBtn,
+                  styles.videoModalDownloadBtn,
+                  (downloadingVideo || isGenerating) && styles.videoModalBtnDisabled,
+                ]}
                 onPress={() => selectedVideo && handleDownloadVideo(selectedVideo)}
                 disabled={downloadingVideo || isGenerating}
               >
@@ -1425,7 +1437,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
       if (listFilter === 'club') {
         return strategies.filter(st => st.visibility === 'CLUB');
       }
-      return strategies;
+      return mergeById(strategies, globalStrategies);
     })();
     return currentFolderId ? currentFolderStrategies : base.filter((st) => !hasFolder(st));
   }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo]);
@@ -1445,7 +1457,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
     if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario));
     if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB');
-    return strategyFolders.filter((f) => !f.parentFolder);
+    return mergeById(strategyFolders, globalFolders).filter((f) => !f.parentFolder);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario]);
 
   // Funciones de navegación de carpetas
@@ -1468,6 +1480,12 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
   };
 
   const navigateToRoot = () => {
+    if (currentFolderId === null) {
+      setFolderPath([]);
+      setIsNavigatingFolder(false);
+      dispatch(clearCurrentFolder());
+      return;
+    }
     setFolderPath([]);
     setIsNavigatingFolder(true);
     setCurrentFolderId(null);
@@ -2179,8 +2197,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate }) 
         {/* Content */}
         {(loading || foldersLoading || isNavigatingFolder) ? (
           <View style={styles.mvLoadingContainer}>
-            <ActivityIndicator size="large" color="#3578e5" />
-            <Text style={styles.mvLoadingText}>{t('common.loading')}</Text>
+            <LoadingSpinner theme={theme} text={t('common.loading', 'Cargando...')} />
           </View>
         ) : (displayedSubfolders.length === 0 && filteredStrategies.length === 0) ? (
           <View style={styles.mvEmptyContainer}>
@@ -3918,15 +3935,20 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 12,
   },
   videoCard: {
-    backgroundColor: theme.colors.surfaceAlt,
-    borderRadius: 12,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : theme.colors.surfaceAlt,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: theme.colors.errorSoft,
-    padding: 12,
-    minWidth: 140,
+    borderColor: theme.colors.border,
+    padding: 16,
+    minWidth: 240,
     flex: 1,
     maxWidth: '100%',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: theme.mode === 'dark' ? 0.18 : 0.08,
+    shadowRadius: 18,
+    elevation: 3,
   },
   videoUnlinkBtn: {
     position: 'absolute',
@@ -3964,28 +3986,42 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   videoCardActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   videoActionBtn: {
     flex: 1,
+    minWidth: 90,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 11,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 999,
+    gap: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: theme.mode === 'dark' ? 0.22 : 0.1,
+    shadowRadius: 10,
+    elevation: 2,
   },
   videoPlayBtn: {
-    backgroundColor: theme.colors.error,
+    backgroundColor: theme.mode === 'dark' ? '#2563EB' : '#1D4ED8',
+    borderColor: theme.mode === 'dark' ? '#60A5FA' : '#1D4ED8',
+  },
+  videoEditBtn: {
+    backgroundColor: theme.mode === 'dark' ? '#B45309' : '#D97706',
+    borderColor: theme.mode === 'dark' ? '#FBBF24' : '#B45309',
   },
   videoDownloadBtn: {
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.mode === 'dark' ? '#047857' : '#059669',
+    borderColor: theme.mode === 'dark' ? '#34D399' : '#047857',
   },
   videoActionText: {
-    color: theme.colors.onPrimary,
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   noVideosText: {
     fontSize: 14,
@@ -4057,18 +4093,30 @@ const makeStyles = (theme) => StyleSheet.create({
   videoModalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 22,
+    minWidth: 220,
+    borderRadius: 999,
     gap: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: theme.mode === 'dark' ? 0.26 : 0.12,
+    shadowRadius: 14,
+    elevation: 3,
   },
   videoModalDownloadBtn: {
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.mode === 'dark' ? '#047857' : '#059669',
+    borderColor: theme.mode === 'dark' ? '#34D399' : '#047857',
+  },
+  videoModalBtnDisabled: {
+    opacity: 0.62,
   },
   videoModalBtnText: {
-    color: theme.colors.onPrimary,
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
   },
 
   // --- Estilos de carpetas ---

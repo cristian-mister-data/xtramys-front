@@ -25,6 +25,7 @@ import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getFieldById } from '@/utils/fieldTypes';
 import { bumpUrlVersion } from '@/utils/imageCache';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -45,6 +46,14 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const mergeById = (...groups) => {
+  const map = new Map();
+  groups.flat().filter(Boolean).forEach((item) => {
+    const id = getItemId(item);
+    if (id) map.set(String(id), { ...map.get(String(id)), ...item });
+  });
+  return Array.from(map.values());
+};
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
@@ -562,8 +571,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
             {isGenerating ? (
               <View style={styles.videoLoadingContainer}>
-                <ActivityIndicator size="large" color="#E91E63" />
-                <Text style={styles.videoLoadingText}>{t('exercise.generatingVideo')}</Text>
+                <LoadingSpinner theme={theme} text={t('exercise.generatingVideo', 'Generando video...')} />
               </View>
             ) : videoUrl ? (
               <View style={styles.videoPlayerContainer}>
@@ -578,7 +586,11 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
             <View style={styles.videoModalActions}>
               <TouchableOpacity
-                style={[styles.videoModalBtn, styles.videoModalDownloadBtn]}
+                style={[
+                  styles.videoModalBtn,
+                  styles.videoModalDownloadBtn,
+                  (downloadingVideo || isGenerating) && styles.videoModalBtnDisabled,
+                ]}
                 onPress={() => selectedVideo && handleDownloadVideo(selectedVideo)}
                 disabled={downloadingVideo || isGenerating}
               >
@@ -1512,9 +1524,10 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   };
 
   const displayedExercises = useMemo(() => {
+    const hasFolder = (ex) => ex.folder !== null && ex.folder !== undefined && ex.folder !== '';
     if (listFilter === 'global') {
       if (currentFolderId) return currentFolderExercises;
-      const rootGlobal = globalExercises.filter(e => !e.folder);
+      const rootGlobal = globalExercises.filter(e => !hasFolder(e));
       return filters.titulo ? rootGlobal.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase())) : rootGlobal;
     }
     if (listFilter === 'favorites') {
@@ -1538,11 +1551,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       if (listFilter === 'club') {
         return ejercicios.filter(ex => ex.visibility === 'CLUB');
       }
-      return ejercicios;
+      return mergeById(ejercicios, globalExercises);
     })();
     if (currentFolderId) return currentFolderExercises;
     if (listFilter === 'club') return base;
-    return base.filter(ex => !ex.folder);
+    return base.filter(ex => !hasFolder(ex));
   }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo]);
 
   const filteredEjercicios = useMemo(() => {
@@ -1567,7 +1580,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
     if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
     if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB');
-    return exerciseFolders.filter(f => !f.parentFolder);
+    return mergeById(exerciseFolders, globalFolders).filter(f => !f.parentFolder);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario]);
 
   const handleDelete = (exercise) => {
@@ -2238,8 +2251,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         {/* Content */}
         {(loading || foldersLoading || isNavigatingFolder) ? (
           <View style={styles.mvLoadingContainer}>
-            <ActivityIndicator size="large" color="#3578e5" />
-            <Text style={styles.mvLoadingText}>{t('common.loading')}</Text>
+            <LoadingSpinner theme={theme} text={t('common.loading', 'Cargando...')} />
           </View>
         ) : (displayedSubfolders.length === 0 && filteredEjercicios.length === 0) ? (
           <View style={styles.mvEmptyContainer}>
@@ -4520,20 +4532,29 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     gap: 6,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: theme.mode === 'dark' ? 0.22 : 0.1,
+    shadowRadius: 10,
+    elevation: 2,
   },
   videoPlayBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.mode === 'dark' ? '#2563EB' : '#1D4ED8',
+    borderColor: theme.mode === 'dark' ? '#60A5FA' : '#1D4ED8',
   },
   videoEditBtn: {
-    backgroundColor: theme.colors.warning,
+    backgroundColor: theme.mode === 'dark' ? '#B45309' : '#D97706',
+    borderColor: theme.mode === 'dark' ? '#FBBF24' : '#B45309',
   },
   videoDownloadBtn: {
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.mode === 'dark' ? '#047857' : '#059669',
+    borderColor: theme.mode === 'dark' ? '#34D399' : '#047857',
   },
   videoActionText: {
-    color: theme.colors.onPrimary,
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   noVideosText: {
     fontSize: 14,
@@ -4620,18 +4641,31 @@ const makeStyles = (theme) => StyleSheet.create({
   videoModalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 22,
+    minWidth: 220,
+    borderRadius: 999,
+    gap: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: theme.mode === 'dark' ? 0.26 : 0.12,
+    shadowRadius: 14,
+    elevation: 3,
   },
   videoModalDownloadBtn: {
-    backgroundColor: theme.colors.success,
+    backgroundColor: theme.mode === 'dark' ? '#047857' : '#059669',
+    borderColor: theme.mode === 'dark' ? '#34D399' : '#047857',
+  },
+  videoModalBtnDisabled: {
+    opacity: 0.62,
   },
   videoModalBtnText: {
-    color: theme.colors.onPrimary,
+    color: '#FFFFFF',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   // Folder styles
   breadcrumbContainer: {

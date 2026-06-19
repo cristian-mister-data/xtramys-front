@@ -57,7 +57,7 @@ const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
 const OpsDashboard = lazy(() => import('@/pages/OpsDashboard'));
 
 const RouteFallback = () => (
-  <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }} />
+  <div style={{ padding: 24, color: 'inherit', opacity: 0.6 }}>Cargando...</div>
 );
 
 const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;

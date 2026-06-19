@@ -679,15 +679,15 @@ export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress
   try {
     return await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);
   } catch (webCodecsError) {
-    console.warn('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
+    console.info('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
     if (isMobileBrowser()) {
-      console.warn('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
+      console.info('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
       return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
     }
     try {
       return await generateVideoWithFFmpeg(framesDir, frameCount, speed, onProgress);
     } catch (ffmpegError) {
-      console.warn('[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback', ffmpegError);
+      console.info('[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback', ffmpegError);
       return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
     }
   }

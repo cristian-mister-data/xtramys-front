@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
+import './shims/rn-runtime-patch.js';
 
 // Intercept global script/chunk loading failures to recover on redeployments
 (function() {
@@ -50,7 +51,6 @@ import { ThemeProvider } from './theme/ThemeContext.jsx';
 import { GlobalStyles } from './GlobalStyles.js';
 import './i18n.js';
 import { injectVectorIconFonts } from './shims/vector-icons-fonts.js';
-import './shims/rn-runtime-patch.js';
 
 injectVectorIconFonts();
 

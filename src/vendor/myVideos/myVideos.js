@@ -52,6 +52,7 @@ import VideoPoster from '@/components/shared/VideoPoster';
 import { getFieldById } from '@/utils/fieldTypes';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import LinkSelectorModal from '@/vendor/shared/LinkSelectorModal';
+import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const getItemId = (item) => item?._id || item?.id;
@@ -359,22 +360,26 @@ export default function MyVideos({ canMutate = true } = {}) {
         const videosResult = await apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' });
         setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'favorites') {
-        const [mineResult, globalResult] = await Promise.all([
+        const [mineResult, clubResult, globalResult] = await Promise.all([
           apiListVideos(),
+          apiListVideos({ filterType: 'club' }),
           listGlobalVideos(),
         ]);
         const mergedVideos = normalizeLoadedVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
+          clubResult.success ? clubResult.videos || [] : [],
           globalResult.success ? globalResult.videos || [] : []
         ));
         setVideos(mergedVideos.filter((video) => video.favorito));
       } else {
-        const [mineResult, globalResult] = await Promise.all([
+        const [mineResult, clubResult, globalResult] = await Promise.all([
           apiListVideos({ folderId: currentFolder || 'root' }),
+          apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' }),
           listGlobalVideos(currentFolder || 'root'),
         ]);
         setVideos(normalizeLoadedVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
+          clubResult.success ? clubResult.videos || [] : [],
           globalResult.success ? globalResult.videos || [] : []
         )));
       }
@@ -1260,8 +1265,7 @@ export default function MyVideos({ canMutate = true } = {}) {
       {/* Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>{t('myVideos.loading')}</Text>
+          <LoadingSpinner theme={theme} text={t('myVideos.loading', 'Cargando...')} />
         </View>
       ) : (filteredFolders.length === 0 && filteredVideos.length === 0) ? (
         <View style={styles.emptyContainer}>
@@ -2369,12 +2373,12 @@ export default function MyVideos({ canMutate = true } = {}) {
       <Modal visible={isGenerating} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#1d4ed8" />
-            <Text style={styles.loadingTitle}>
-              {loadingAction === 'download'
-                ? t('myVideos.downloading')
-                : t('myVideos.loadingVideo')}
-            </Text>
+            <LoadingSpinner
+              theme={theme}
+              text={loadingAction === 'download'
+                ? t('myVideos.downloading', 'Descargando...')
+                : t('myVideos.loadingVideo', 'Cargando video...')}
+            />
             <Text style={styles.loadingSubtitle}>
               {loadingAction === 'download'
                 ? t('myVideos.downloadingSubtitle')
