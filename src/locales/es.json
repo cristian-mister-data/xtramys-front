@@ -887,13 +887,15 @@
     "selectPlayerForSlot": "Jugador para el dorsal #{{number}}",
     "openBoard": "Abrir pizarra",
     "share": "Compartir",
+    "shareAll": "Compartir todas",
     "shareText": "Enlace público de ABP",
     "shareError": "No se pudo compartir la ABP",
     "delete": "Eliminar ABP",
     "deleteConfirmationName": "¿Estás seguro de que deseas eliminar la ABP \"{{name}}\"?",
     "deleteSuccess": "ABP eliminada correctamente",
     "matchShareText": "ABP de ficha de partido",
-    "downloadPdf": "PDF"
+    "downloadPdf": "PDF",
+    "downloadAllPdf": "PDF de todas"
   },
   "field": {
     "duplicate": "Duplicar",
@@ -2653,6 +2655,10 @@
     "selectTeamMessage": "Selecciona un equipo desde la sección de equipos",
     "createSubtitle": "Crea una nueva ficha de partido",
     "editSubtitle": "Modifica los datos del partido",
+    "tabs": {
+      "data": "Datos",
+      "abp": "ABP"
+    },
     "fields": {
       "rival": "Rival",
       "rivalRequired": "Rival (requerido)",

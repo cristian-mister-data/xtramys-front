@@ -98,6 +98,7 @@ export default function AppRouter() {
       <Route path="/public/pre-wellness/:token" element={lazy_(<PreWellnessForm />)} />
       <Route path="/public/training-session/:token" element={lazy_(<TrainingSessionShare />)} />
       <Route path="/public/set-piece/:token" element={lazy_(<SetPieceShare />)} />
+      <Route path="/public/match-sheet-abp/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
 
       {/* Subscription (auth required, no app layout) */}

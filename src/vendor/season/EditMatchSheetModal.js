@@ -3064,7 +3064,7 @@ export default function EditMatchSheetModal({
                   <Field
                     key={`match-set-piece-${boardParams.estrategiaId || 'new'}`}
                     {...boardParams}
-                    navigation={{ goBack: () => {}, navigate: () => {} }}
+                    navigation={{ goBack: () => {}, navigate: () => {}, addListener: () => () => {} }}
                   />
                 ) : null}
               </GestureHandlerRootView>

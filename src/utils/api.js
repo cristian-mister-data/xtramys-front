@@ -247,6 +247,16 @@ export const getPublicSetPiece = async (token) => {
   return response.data;
 };
 
+export const createMatchSheetSetPiecesShareLink = async (matchSheetId) => {
+  const response = await api.post(`/match-sheet/${matchSheetId}/share-link`);
+  return response.data;
+};
+
+export const getPublicMatchSheetSetPieces = async (token) => {
+  const response = await api.get(`/match-sheet/public/${token}/set-pieces`);
+  return response.data;
+};
+
 export const copyClubVideoToMine = async (videoId, folderId = null) => {
   try {
     const response = await api.post('/video-folder/copy-club', { videoId, folderId });

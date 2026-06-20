@@ -710,7 +710,7 @@ export default function SeasonCalendar({
         ) : (
           <>
             {/* Header con número del día y botón añadir */}
-            <View style={styles.dayCellHeader}>
+            <View style={[styles.dayCellHeader, { zIndex: 2 }]}>
               <Text style={[
                 styles.dayText,
                 !isCurrentMonth && styles.dayTextOtherMonth,
@@ -719,19 +719,30 @@ export default function SeasonCalendar({
               ]}>
                 {day}
               </Text>
-              
-              {/* Botón de añadir evento en el día */}
-              {canMutate !== false && isCurrentMonth && onAddEvent && !hasEvents && (
-                <TouchableOpacity
-                  style={styles.addDayEventButton}
-                  onPress={handleAddEventOnDay}
-                  hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
-                >
-                  <Ionicons name="add" size={10} color={THEME.primary} />
-                </TouchableOpacity>
-              )}
             </View>
             
+            {/* Botón de añadir evento en el centro si no hay eventos */}
+            {canMutate !== false && isCurrentMonth && onAddEvent && !hasEvents && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1 }} pointerEvents="box-none">
+                <TouchableOpacity
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    borderWidth: 1.5,
+                    borderColor: THEME.primary,
+                    backgroundColor: theme.colors.primarySoft || (THEME.primary + '20'),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={handleAddEventOnDay}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="add" size={22} color={THEME.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Mini-tarjetas de sesiones (solo si NO hay partidos) */}
             {hasSessions && isCurrentMonth && (
               <View style={styles.miniEventsContainer}>
@@ -1347,6 +1358,8 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surface,
     position: 'relative',
     padding: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   dayCellHeader: {
     flexDirection: 'row',

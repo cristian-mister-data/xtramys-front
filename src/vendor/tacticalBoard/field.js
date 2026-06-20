@@ -7363,6 +7363,7 @@ const DraggableIcon = React.memo(
     setLeftPanelVisible,
     isSetPieceMode = false,
     onTapPlayerClone = null,
+    onUnassignPlayerClone = null,
   }) => {
     const size = icon.size * scale;
     const dragKey = `icon-${icon.id}`;
@@ -7446,6 +7447,7 @@ const DraggableIcon = React.memo(
       isSelected &&
       (icon.x < 0 || icon.x > imageWidth || icon.y < 0 || icon.y > imageHeight);
     const showDeleteIndicator = isNearDeleteZone || isOutsideInMultiDrag;
+    const isSetPiecePlayerPicker = icon.type === 'player' && isSetPieceMode && onTapPlayerClone;
 
     // Detectar si est fuera del campo visible (zona de eliminacin)
     const checkDeleteZone = useCallback(
@@ -7460,10 +7462,6 @@ const DraggableIcon = React.memo(
     const handleTap = useCallback(
       (e) => {
         if (e.nativeEvent.state === State.END) {
-          if (icon.type === 'player' && isSetPieceMode && onTapPlayerClone) {
-            onTapPlayerClone(icon.id);
-            return;
-          }
           // Detectar doble tap al inicio para abrir panel aunque esté bloqueado
           if (icon.id === lastTapId && Date.now() - lastTapTime < 300) {
             lastTapTime = 0;
@@ -7942,9 +7940,9 @@ const DraggableIcon = React.memo(
                         }}
                         style={{
                           position: 'absolute',
-                          width: isMobile ? 20 : 28,
-                          height: isMobile ? 20 : 28,
-                          borderRadius: isMobile ? 10 : 14,
+                          width: isMobile ? 18 : 28,
+                          height: isMobile ? 18 : 28,
+                          borderRadius: isMobile ? 9 : 14,
                           backgroundColor: '#ffffff',
                           justifyContent: 'center',
                           alignItems: 'center',
@@ -7956,11 +7954,49 @@ const DraggableIcon = React.memo(
                           borderWidth: 1,
                           borderColor: '#dddddd',
                           zIndex: 100,
-                          top: isMobile ? -5 : -7,
-                          right: isMobile ? -5 : -7,
+                          top: isMobile ? -4 : -7,
+                          right: isMobile ? -4 : -7,
                         }}
                       >
-                        <Feather name="more-vertical" size={isMobile ? 12 : 16} color="#444444" />
+                        <Feather name="more-vertical" size={isMobile ? 10 : 16} color="#444444" />
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedCloneId === icon.id && !multiSelectMode && isSetPiecePlayerPicker && (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          if (icon.playerData) {
+                            onUnassignPlayerClone?.(icon.id);
+                          } else {
+                            onTapPlayerClone(icon.id);
+                          }
+                        }}
+                        style={{
+                          position: 'absolute',
+                          width: isMobile ? 18 : 28,
+                          height: isMobile ? 18 : 28,
+                          borderRadius: isMobile ? 9 : 14,
+                          backgroundColor: icon.playerData ? '#fff5f5' : '#eff6ff',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 1.5,
+                          elevation: 3,
+                          borderWidth: 1,
+                          borderColor: icon.playerData ? '#fecaca' : '#bfdbfe',
+                          zIndex: 100,
+                          top: isMobile ? -4 : -7,
+                          right: isMobile ? 14 : 25,
+                        }}
+                      >
+                        <Feather
+                          name={icon.playerData ? 'user-x' : 'user-plus'}
+                          size={isMobile ? 10 : 16}
+                          color={icon.playerData ? '#dc2626' : '#2563eb'}
+                        />
                       </TouchableOpacity>
                     )}
 
@@ -8114,8 +8150,15 @@ const DraggableIcon = React.memo(
     // Players with number setting
     if (prevProps.playersWithNumber !== nextProps.playersWithNumber) return false;
 
-    // Photo URL for player
-    if (icon.playerData?.foto !== nextIcon.playerData?.foto) return false;
+    if (
+      icon.playerData?._id !== nextIcon.playerData?._id ||
+      icon.playerData?.id !== nextIcon.playerData?.id ||
+      icon.playerData?.uniqueId !== nextIcon.playerData?.uniqueId ||
+      icon.playerData?.nombre !== nextIcon.playerData?.nombre ||
+      icon.playerData?.name !== nextIcon.playerData?.name ||
+      icon.playerData?.foto !== nextIcon.playerData?.foto
+    )
+      return false;
 
     // View mode changes affect display coordinates
     if (prevProps.viewMode !== nextProps.viewMode) return false;
@@ -14027,8 +14070,9 @@ export default function Field(props = {}) {
   const [carouselModalVisible, setCarouselModalVisible] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const hasSidebar = !!matchSheetPlayers;
+  const showPlayersSidebar = hasSidebar && !setPieceMode;
   const isSetPieceOrStrategy = !!(isStrategyMode || setPieceMode || hasSidebar);
-  const sidebarWidth = hasSidebar ? (isMobile ? 180 : 280) : 0;
+  const sidebarWidth = showPlayersSidebar ? (isMobile ? 180 : 280) : 0;
   const panelAnim = useRef(new Animated.Value(0)).current;
 
   // Ajusta el panel segn el tamao de la pantalla
@@ -14510,9 +14554,9 @@ export default function Field(props = {}) {
   );
 
   // Funcin para manejar la seleccin de un jugador del equipo
-  const handleSelectPlayer = (player) => {
-    if (assigningCloneId) {
-      const targetCloneId = assigningCloneId;
+  const handleSelectPlayer = (player, cloneIdOverride = null) => {
+    if (assigningCloneId || cloneIdOverride) {
+      const targetCloneId = cloneIdOverride || assigningCloneId;
       setAssigningCloneId(null);
       setPlayersModalVisible(false);
 
@@ -14521,6 +14565,36 @@ export default function Field(props = {}) {
 
       const prevPlayer = targetClone.playerData;
       const prevPlayerUniqueId = prevPlayer ? (prevPlayer.uniqueId || `player-${prevPlayer._id || prevPlayer.id}`) : null;
+      const defaultNumber = targetClone.defaultSetPieceNumber ?? targetClone.originalNumber ?? targetClone.number ?? '';
+
+      if (!player) {
+        setSelectedPlayerIds((prev) => prevPlayerUniqueId ? prev.filter((id) => id !== prevPlayerUniqueId) : prev);
+        setClones((prev) => prev.map((c) => c.id === targetCloneId ? {
+          ...c,
+          number: c.defaultSetPieceNumber ?? c.originalNumber ?? defaultNumber,
+          playerData: undefined,
+          photoUrl: undefined,
+          preserveVisualStyle: true,
+          displayLabel: c.defaultDisplayLabel,
+          _lastUpdate: Date.now(),
+        } : c));
+        setVideoKeyframes((prevKeyframes) => {
+          if (!prevKeyframes || prevKeyframes.length === 0) return prevKeyframes;
+          return prevKeyframes.map((kf) => ({
+            ...kf,
+            elements: (kf.elements || []).map((elem) => elem.id === targetCloneId ? {
+              ...elem,
+              number: elem.defaultSetPieceNumber ?? elem.originalNumber ?? defaultNumber,
+              playerData: undefined,
+              photoUrl: undefined,
+              preserveVisualStyle: true,
+              displayLabel: elem.defaultDisplayLabel,
+              _lastUpdate: Date.now(),
+            } : elem),
+          }));
+        });
+        return;
+      }
 
       setSelectedPlayerIds((prev) => {
         let filtered = prev;
@@ -14543,12 +14617,15 @@ export default function Field(props = {}) {
             c.playerData?.demarcacion === 'POR';
           return {
             ...c,
+            defaultSetPieceNumber: c.defaultSetPieceNumber ?? c.number,
+            defaultDisplayLabel: c.defaultDisplayLabel ?? c.displayLabel,
             number,
             playerData: { ...player, uniqueId: player.uniqueId },
             photoUrl: player.foto ? cdnUrl(player.foto) : c.photoUrl,
             preserveVisualStyle: true,
             isGoalkeeper: keepsGoalkeeperStyle === true,
             displayLabel: c.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : c.displayLabel,
+            _lastUpdate: Date.now(),
           };
         }
         return c;
@@ -14571,6 +14648,8 @@ export default function Field(props = {}) {
                   elem.playerData?.demarcacion === 'POR';
                 return {
                   ...elem,
+                  defaultSetPieceNumber: elem.defaultSetPieceNumber ?? elem.number,
+                  defaultDisplayLabel: elem.defaultDisplayLabel ?? elem.displayLabel,
                   number,
                   playerData: {
                     nombre: player.nombre,
@@ -14583,6 +14662,7 @@ export default function Field(props = {}) {
                   preserveVisualStyle: true,
                   isGoalkeeper: keepsGoalkeeperStyle === true,
                   displayLabel: elem.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : elem.displayLabel,
+                  _lastUpdate: Date.now(),
                 };
               }
               return elem;
@@ -14647,6 +14727,10 @@ export default function Field(props = {}) {
   };
 
   // Funci�n para manejar la selecci�n de un material de entrenamiento
+  const handleUnassignPlayerClone = (cloneId) => {
+    handleSelectPlayer(null, cloneId);
+  };
+
   const handleSelectMaterial = useCallback(
     (material) => {
       if (
@@ -18675,7 +18759,7 @@ export default function Field(props = {}) {
               {/* Header */}
               <View style={styles.proModalHeader}>
                 <View style={styles.proModalHeaderIcon}>
-                  <Text style={{ fontSize: 12 }}>👥</Text>
+                  <Feather name="user-plus" size={15} color="#2563eb" />
                 </View>
                 <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                   {t('tacticalBoard.teamSettings.title') || 'Ajustes de Jugadores'}
@@ -19210,7 +19294,7 @@ export default function Field(props = {}) {
               {/* Header */}
               <View style={styles.proModalHeader}>
                 <View style={styles.proModalHeaderIcon}>
-                  <Text style={{ fontSize: 12 }}>👥</Text>
+                  <Feather name="user-plus" size={15} color="#2563eb" />
                 </View>
                 <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                   {t('tacticalBoard.teamPlayersModal.title')}
@@ -21054,7 +21138,7 @@ export default function Field(props = {}) {
             left: 0,
             right: 0,
             bottom: 0,
-            flexDirection: hasSidebar ? 'row' : 'column',
+            flexDirection: showPlayersSidebar ? 'row' : 'column',
             alignItems: 'stretch',
             justifyContent: 'center',
             overflow: 'visible',
@@ -21573,6 +21657,7 @@ export default function Field(props = {}) {
                               setLeftPanelVisible={setLeftPanelVisible}
                               isSetPieceMode={hasSidebar}
                               onTapPlayerClone={handleTapPlayerClone}
+                              onUnassignPlayerClone={handleUnassignPlayerClone}
                             />
                           );
                         })}
@@ -22316,7 +22401,7 @@ export default function Field(props = {}) {
             </View>
           </View>
 
-          {hasSidebar && (
+          {showPlayersSidebar && (
             <View style={[styles.sidebarContainer, { width: sidebarWidth }]}>
               {/* Sidebar header */}
               <View style={styles.sidebarHeader}>

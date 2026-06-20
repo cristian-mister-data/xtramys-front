@@ -1,23 +1,92 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPublicSetPiece } from '@/utils/api';
+import { getPublicMatchSheetSetPieces, getPublicSetPiece } from '@/utils/api';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+
+async function resolveVideoSrc(src) {
+  if (!src) throw new Error('No hay URL de video disponible.');
+  const response = await fetch(src, { method: 'GET', redirect: 'follow' });
+  if (!response.ok) throw new Error(`No se pudo cargar el video (${response.status}).`);
+  const type = response.headers.get('content-type') || '';
+  if (!type.toLowerCase().startsWith('video/')) throw new Error('El servidor no devolvio un archivo de video.');
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('El video esta vacio.');
+  return URL.createObjectURL(blob);
+}
 
 export default function SetPieceShare() {
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
-    getPublicSetPiece(token).then(setData).catch(() => setError('No se pudo cargar la ABP.'));
+    const isMatchSheet = window.location.pathname.includes('/public/match-sheet-abp/');
+    (isMatchSheet ? getPublicMatchSheetSetPieces(token) : getPublicSetPiece(token))
+      .then(setData)
+      .catch(() => setError('No se pudo cargar la ABP.'));
   }, [token]);
+
+  const openVideo = async (video, title) => {
+    if (!video?.url) return;
+    try {
+      const url = await resolveVideoSrc(video.url);
+      setSelectedVideo({ ...video, title, url, objectUrl: url });
+    } catch {
+      setError('No se pudo cargar el video.');
+    }
+  };
+
+  useEffect(() => () => {
+    if (selectedVideo?.objectUrl) URL.revokeObjectURL(selectedVideo.objectUrl);
+  }, [selectedVideo]);
+
+  const renderVideoModal = () => selectedVideo ? (
+    <div style={styles.modal} onClick={() => setSelectedVideo(null)}>
+      <div style={styles.modalPanel} onClick={(event) => event.stopPropagation()}>
+        <button type="button" style={styles.closeButton} onClick={() => setSelectedVideo(null)}>×</button>
+        <h2 style={styles.modalTitle}>{selectedVideo.title}</h2>
+        <video key={selectedVideo.url} src={selectedVideo.url} controls autoPlay playsInline style={styles.modalVideo} />
+      </div>
+    </div>
+  ) : null;
 
   if (error) return <main style={styles.shell}><p style={styles.error}>{error}</p></main>;
   if (!data) return <main style={styles.shell}><p style={styles.muted}>Cargando ABP...</p></main>;
 
+  if (data.matchSheet) {
+    const matchSheet = data.matchSheet;
+    const setPieces = matchSheet.setPieces || [];
+    return (
+      <main style={styles.shell}>
+        <section style={styles.header}>
+          <p style={styles.kicker}>Xtramys ABP</p>
+          <h1 style={styles.title}>{matchSheet.equipo?.nombre || 'Equipo'} vs {matchSheet.rival}</h1>
+          <p style={styles.desc}>{setPieces.length} ABP</p>
+        </section>
+        <section style={styles.list}>
+          {setPieces.map((setPiece, index) => {
+            const image = normalizeImageSource(setPiece.customImage || setPiece.imagen);
+            return (
+              <article key={`${setPiece.strategyId || index}`} style={styles.boardCard}>
+                <button type="button" style={styles.boardButton} onClick={() => openVideo(setPiece.video, setPiece.nombre)}>
+                  {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <span style={styles.muted}>Sin grafico</span>}
+                  {setPiece.video?.url ? <span style={styles.playBadge}>Ver video</span> : null}
+                </button>
+                <h2 style={styles.cardTitle}>{setPiece.nombre}</h2>
+                {setPiece.descripcion ? <p style={styles.videoDesc}>{setPiece.descripcion}</p> : null}
+              </article>
+            );
+          })}
+        </section>
+        {renderVideoModal()}
+      </main>
+    );
+  }
+
   const setPiece = data.setPiece || {};
   const image = normalizeImageSource(setPiece.imagen);
-  const videos = data.videos || [];
+  const video = data.video || (data.videos || [])[0] || null;
 
   return (
     <main style={styles.shell}>
@@ -28,22 +97,13 @@ export default function SetPieceShare() {
       </section>
 
       <section style={styles.boardCard}>
-        {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <p style={styles.muted}>Sin grafico</p>}
+        <button type="button" style={styles.boardButton} onClick={() => openVideo(video, setPiece.nombre)}>
+          {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <span style={styles.muted}>Sin grafico</span>}
+          {video?.url ? <span style={styles.playBadge}>Ver video</span> : null}
+        </button>
       </section>
 
-      {videos.length > 0 && (
-        <section style={styles.videos}>
-          {videos.map((video) => (
-            <article key={video._id} style={styles.videoCard}>
-              <div>
-                <strong>{video.nombre}</strong>
-                {video.descripcion ? <p style={styles.videoDesc}>{video.descripcion}</p> : null}
-              </div>
-              {video.url ? <video src={video.url} controls style={styles.video} /> : null}
-            </article>
-          ))}
-        </section>
-      )}
+      {renderVideoModal()}
     </main>
   );
 }
@@ -51,29 +111,35 @@ export default function SetPieceShare() {
 const styles = {
   shell: {
     minHeight: '100vh',
-    padding: '32px',
-    background: '#f6f8fb',
-    color: '#101828',
+    padding: '40px 24px',
+    background: 'linear-gradient(180deg, #eef4ff 0%, #f8fafc 34%, #ffffff 100%)',
+    color: '#0f172a',
     fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
-  header: { maxWidth: 1180, margin: '0 auto 18px' },
-  kicker: { margin: 0, color: '#2563eb', fontWeight: 800, letterSpacing: 0 },
-  title: { margin: '4px 0', fontSize: 34, lineHeight: 1.1 },
-  desc: { margin: 0, maxWidth: 780, color: '#475467', fontSize: 16 },
+  header: { maxWidth: 1200, margin: '0 auto 22px' },
+  kicker: { margin: 0, color: '#2563eb', fontWeight: 900, letterSpacing: 0, textTransform: 'uppercase', fontSize: 13 },
+  title: { margin: '6px 0', fontSize: 'clamp(28px, 4vw, 48px)', lineHeight: 1.05, letterSpacing: 0 },
+  desc: { margin: 0, maxWidth: 780, color: '#475569', fontSize: 16, fontWeight: 650 },
   boardCard: {
-    maxWidth: 1180,
+    maxWidth: 1200,
     margin: '0 auto',
-    borderRadius: 10,
-    border: '1px solid #d0d5dd',
-    background: '#fff',
-    padding: 16,
-    boxShadow: '0 12px 36px rgba(16,24,40,0.08)',
+    borderRadius: 18,
+    border: '1px solid rgba(148,163,184,0.35)',
+    background: 'rgba(255,255,255,0.88)',
+    padding: 14,
+    boxShadow: '0 18px 60px rgba(15,23,42,0.12)',
   },
-  board: { width: '100%', maxHeight: '72vh', objectFit: 'contain', display: 'block' },
+  list: { maxWidth: 1200, margin: '0 auto', display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
+  cardTitle: { margin: '12px 4px 4px', fontSize: 20, lineHeight: 1.2 },
+  boardButton: { position: 'relative', width: '100%', border: 0, padding: 0, margin: 0, background: '#0b1220', borderRadius: 14, overflow: 'hidden', cursor: 'pointer', display: 'block' },
+  board: { width: '100%', aspectRatio: '16 / 9', objectFit: 'contain', display: 'block' },
+  playBadge: { position: 'absolute', right: 14, bottom: 14, padding: '9px 13px', borderRadius: 999, background: '#2563eb', color: '#fff', fontWeight: 850, boxShadow: '0 10px 30px rgba(37,99,235,0.35)' },
   muted: { color: '#667085', fontWeight: 700 },
   error: { color: '#b42318', fontWeight: 800 },
-  videos: { maxWidth: 1180, margin: '18px auto 0', display: 'grid', gap: 14 },
-  videoCard: { border: '1px solid #d0d5dd', borderRadius: 10, background: '#fff', padding: 14 },
-  videoDesc: { color: '#667085', margin: '4px 0 10px' },
-  video: { width: '100%', maxHeight: 420, borderRadius: 8, background: '#000' },
+  videoDesc: { color: '#64748b', margin: '4px', fontSize: 14 },
+  modal: { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(2,6,23,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  modalPanel: { position: 'relative', width: 'min(1100px, 96vw)', background: '#0f172a', borderRadius: 18, padding: 16, boxShadow: '0 30px 90px rgba(0,0,0,0.45)' },
+  closeButton: { position: 'absolute', top: 10, right: 12, width: 38, height: 38, borderRadius: 999, border: 0, background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 28, cursor: 'pointer', lineHeight: '38px' },
+  modalTitle: { margin: '4px 48px 14px 4px', color: '#fff', fontSize: 22 },
+  modalVideo: { width: '100%', maxHeight: '78vh', borderRadius: 12, background: '#000', display: 'block' },
 };

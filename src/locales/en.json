@@ -884,13 +884,15 @@
     "selectPlayerForSlot": "Player for marker #{{number}}",
     "openBoard": "Open board",
     "share": "Share",
+    "shareAll": "Share all",
     "shareText": "Public set-piece link",
     "shareError": "Could not share this set piece",
     "delete": "Delete set piece",
     "deleteConfirmationName": "Are you sure you want to delete the set piece \"{{name}}\"?",
     "deleteSuccess": "Set piece deleted successfully",
     "matchShareText": "Match sheet set piece",
-    "downloadPdf": "PDF"
+    "downloadPdf": "PDF",
+    "downloadAllPdf": "All PDF"
   },
   "field": {
     "duplicate": "Duplicate",
@@ -2648,6 +2650,10 @@
     "selectTeamMessage": "Select a team from the Teams section",
     "createSubtitle": "Create a new match sheet",
     "editSubtitle": "Modify match data",
+    "tabs": {
+      "data": "Data",
+      "abp": "Set Plays"
+    },
     "fields": {
       "rival": "Rival",
       "rivalRequired": "Rival (required)",

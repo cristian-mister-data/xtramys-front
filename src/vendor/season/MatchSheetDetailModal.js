@@ -26,8 +26,9 @@ import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
-import { generateStrategyPdf } from '@/vendor/strategy/pdf';
+import { generateSetPiecesPdf } from '@/vendor/strategy/pdf';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -225,6 +226,7 @@ export default function MatchSheetDetailModal({
   const [setPieceVideoUrl, setSetPieceVideoUrl] = useState(null);
   const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
   const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState('data');
   const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
     if (setPieceVideoUrl) player.play();
   });
@@ -354,28 +356,29 @@ export default function MatchSheetDetailModal({
     .filter(Boolean);
   };
 
-  const downloadSetPiecePdf = async (setPiece) => {
-    const image = normalizeImageSource(setPiece.customImage || setPiece.imagen || '');
-    await generateStrategyPdf({ ...setPiece, kind: 'setPiece', imagen: image }, '', image, t);
+  const downloadSetPiecesPdf = async () => {
+    const setPieces = matchSheet?.setPieces || [];
+    if (!setPieces.length) return;
+    await generateSetPiecesPdf(
+      setPieces.map((setPiece) => ({
+        ...setPiece,
+        kind: 'setPiece',
+        imagen: normalizeImageSource(setPiece.customImage || setPiece.imagen || ''),
+      })),
+      t,
+      `${matchSheet.rival || 'Ficha'} ABP`,
+    );
   };
 
-  const shareSetPieceFromMatch = async (setPiece) => {
+  const shareMatchSetPieces = async () => {
     try {
-      const videoId = getVideoId(setPiece);
-      const videoUrl = videoId ? await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) }) : '';
-      const text = [t('setPieces.matchShareText'), setPiece.nombre, videoUrl].filter(Boolean).join('\n');
-      const image = normalizeImageSource(setPiece.customImage || setPiece.imagen || '');
+      const data = await createMatchSheetSetPiecesShareLink(matchSheet._id);
+      const url = data?.url;
+      if (!url) throw new Error('No share URL');
+      const text = [t('setPieces.matchShareText'), matchSheet.rival, url].filter(Boolean).join('\n');
       const nav = typeof navigator !== 'undefined' ? navigator : null;
       if (nav?.share) {
-        if (image?.startsWith('data:') && nav.canShare) {
-          const blob = await (await fetch(image)).blob();
-          const file = new File([blob], `${(setPiece.nombre || 'ABP').replace(/[\\/:*?"<>|]+/g, '-')}.png`, { type: blob.type || 'image/png' });
-          if (nav.canShare({ files: [file] })) {
-            await nav.share({ title: setPiece.nombre || t('setPieces.title'), text, files: [file] });
-            return;
-          }
-        }
-        await nav.share({ title: setPiece.nombre || t('setPieces.title'), text, url: videoUrl || undefined });
+        await nav.share({ title: t('setPieces.matchTab'), text, url });
         return;
       }
       await nav?.clipboard?.writeText(text);
@@ -464,6 +467,68 @@ export default function MatchSheetDetailModal({
               </View>
             </View>
 
+            <View style={styles.detailTabs}>
+              {[
+                ['data', t('matchSheet.tabs.data', 'Datos'), 'document-text-outline'],
+                ['abp', t('matchSheet.tabs.abp'), 'football-outline'],
+              ].map(([key, label, icon]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.detailTab, activeDetailTab === key && styles.detailTabActive]}
+                  onPress={() => setActiveDetailTab(key)}
+                >
+                  <Ionicons name={icon} size={16} color={activeDetailTab === key ? '#fff' : theme.colors.textSecondary} />
+                  <Text style={[styles.detailTabText, activeDetailTab === key && styles.detailTabTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {activeDetailTab === 'abp' && (
+              <View style={styles.detailCard}>
+                <View style={styles.detailCardHeader}>
+                  <Ionicons name="football-outline" size={18} color={theme.colors.primary} />
+                  <Text style={styles.detailCardTitle}>{t('setPieces.matchTab')} ({matchSheet.setPieces?.length || 0})</Text>
+                  {!!matchSheet.setPieces?.length && (
+                    <View style={styles.setPieceActions}>
+                      <TouchableOpacity style={[styles.setPieceActionBtn, { borderColor: theme.colors.error, backgroundColor: theme.colors.errorSoft }]} onPress={downloadSetPiecesPdf}>
+                        <MaterialIcons name="picture-as-pdf" size={16} color={theme.colors.error} />
+                        <Text style={[styles.setPieceActionText, { color: theme.colors.error }]}>PDF</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.setPieceActionBtn, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primarySoft }]} onPress={shareMatchSetPieces}>
+                        <Ionicons name="share-social-outline" size={16} color={theme.colors.primary} />
+                        <Text style={styles.setPieceActionText}>{t('setPieces.share')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+                {matchSheet.setPieces?.length ? (
+                  <View style={styles.setPiecesList}>
+                    {matchSheet.setPieces.map((setPiece, index) => (
+                      <View key={`${setPiece.strategyId || index}`} style={styles.setPieceDetailCard}>
+                        <View style={styles.setPieceDetailHeader}>
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={styles.setPieceDetailTitle} numberOfLines={1}>{setPiece.nombre}</Text>
+                            {!!setPiece.descripcion && <Text style={styles.setPieceDetailDesc} numberOfLines={2}>{setPiece.descripcion}</Text>}
+                          </View>
+                          {!!getVideoId(setPiece) && (
+                            <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece)}>
+                              <Ionicons name="play" size={16} color="#fff" />
+                              <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <SetPiecePreview setPiece={setPiece} players={players} height={IS_MOBILE ? 180 : 260} />
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.detailCardContent}>{t('setPieces.noResults')}</Text>
+                )}
+              </View>
+            )}
+
+            {activeDetailTab === 'data' && (
+              <>
             {/* Stats */}
             <View style={styles.detailSection}>
               <View style={styles.statsRow}>
@@ -590,46 +655,6 @@ export default function MatchSheetDetailModal({
                       jugadoresPorEquipo={team?.jugadoresPorEquipo || 11}
                       containerWidth={lineupContainerWidth}
                     />
-                  </View>
-                )}
-
-                {matchSheet.setPieces && matchSheet.setPieces.length > 0 && (
-                  <View style={styles.detailCard}>
-                    <View style={styles.detailCardHeader}>
-                      <Ionicons name="football-outline" size={18} color={theme.colors.primary} />
-                      <Text style={styles.detailCardTitle}>{t('setPieces.matchTab')} ({matchSheet.setPieces.length})</Text>
-                    </View>
-                    <View style={styles.setPiecesList}>
-                      {matchSheet.setPieces.map((setPiece, index) => (
-                        <View key={`${setPiece.strategyId || index}`} style={styles.setPieceDetailCard}>
-                          <View style={styles.setPieceDetailHeader}>
-                            <View style={{ flex: 1, minWidth: 0 }}>
-                              <Text style={styles.setPieceDetailTitle} numberOfLines={1}>{setPiece.nombre}</Text>
-                              {!!setPiece.descripcion && (
-                                <Text style={styles.setPieceDetailDesc} numberOfLines={2}>{setPiece.descripcion}</Text>
-                              )}
-                            </View>
-                            <View style={styles.setPieceActions}>
-                            {!!getVideoId(setPiece) && (
-                              <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece)}>
-                                <Ionicons name="play" size={16} color="#fff" />
-                                <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
-                              </TouchableOpacity>
-                            )}
-                              <TouchableOpacity style={styles.setPieceActionBtn} onPress={() => downloadSetPiecePdf(setPiece)}>
-                                <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
-                                <Text style={styles.setPieceActionText}>{t('setPieces.downloadPdf')}</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.setPieceActionBtn} onPress={() => shareSetPieceFromMatch(setPiece)}>
-                                <Ionicons name="share-social-outline" size={16} color={theme.colors.primary} />
-                                <Text style={styles.setPieceActionText}>{t('setPieces.share')}</Text>
-                              </TouchableOpacity>
-                            </View>
-                          </View>
-                          <SetPiecePreview setPiece={setPiece} players={players} height={IS_MOBILE ? 180 : 260} />
-                        </View>
-                      ))}
-                    </View>
                   </View>
                 )}
 
@@ -826,6 +851,8 @@ export default function MatchSheetDetailModal({
                 <Ionicons name="trash" size={20} color={theme.colors.error} />
                 <Text style={styles.deleteButtonText}>{t('matchSheet.deleteMatch')}</Text>
               </TouchableOpacity>
+            )}
+              </>
             )}
           </ScrollView>
         </View>
@@ -1046,6 +1073,34 @@ const makeStyles = (theme) => StyleSheet.create({
   statValueMobile: {
     textAlign: 'center',
   },
+  detailTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  detailTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  detailTabActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  detailTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  detailTabTextActive: {
+    color: '#fff',
+  },
 
   // Detail Cards
   detailsSection: {
@@ -1103,6 +1158,7 @@ const makeStyles = (theme) => StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     maxWidth: 260,
+    marginLeft: 'auto',
   },
   setPieceDetailTitle: {
     fontSize: 14,

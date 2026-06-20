@@ -163,6 +163,28 @@ const StrategyDocument = ({ strategy, folderName, imageBase64, t }) => {
   );
 };
 
+const SetPiecesDocument = ({ setPieces, t }) => (
+  <Document>
+    {setPieces.map((setPiece, index) => (
+      <Page key={`${setPiece.nombre || 'abp'}-${index}`} size="A4" orientation="landscape" style={baseStyles.pageLandscape}>
+        <View style={{ flex: 1, display: 'flex', flexDirection: 'column' }} wrap={false}>
+          <View style={s.setPieceTitleBar}>
+            <Text style={s.setPieceTitle}>{setPiece.nombre || t('setPieces.title') || 'ABP'}</Text>
+            {setPiece.descripcion ? <Text style={s.setPieceDescription}>{setPiece.descripcion}</Text> : null}
+          </View>
+          <View style={s.fullPageDiagramWrap}>
+            {setPiece.imagen ? (
+              <Image src={setPiece.imagen} style={s.fullPageDiagram} />
+            ) : (
+              <Text style={s.noImageText}>{t('strategy.noImage') || 'Sin Diagrama'}</Text>
+            )}
+          </View>
+        </View>
+      </Page>
+    ))}
+  </Document>
+);
+
 export async function generateStrategyPdf(strategy, folderName, imageBase64, t) {
   const fileName = `${(strategy.nombre || 'Estrategia').replace(/[/\?%*:|"<>]/g, '-')}`;
   await renderPdf(
@@ -174,4 +196,8 @@ export async function generateStrategyPdf(strategy, folderName, imageBase64, t) 
     />,
     fileName
   );
+}
+
+export async function generateSetPiecesPdf(setPieces, t, fileName = 'ABP') {
+  await renderPdf(<SetPiecesDocument setPieces={setPieces} t={t} />, fileName.replace(/[/\?%*:|"<>]/g, '-'));
 }
