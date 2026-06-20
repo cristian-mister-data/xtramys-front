@@ -78,6 +78,7 @@ import {
   renderFrameToCanvas,
   getVideoDimensions,
 } from '@/utils/videoCanvasRenderer';
+import { getVideoForEdit, getVideosByExercise, getVideosByStrategy } from '@/utils/api';
 
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
@@ -13302,6 +13303,70 @@ export default function Field(props = {}) {
   }, [initialElements]);
 
   // Efecto para cargar datos del video cuando estamos en modo edici�n
+  const loadEditVideoDataIntoBoard = useCallback((currentEditVideoData, deferOpen = false) => {
+    if (!currentEditVideoData?.videoId) return false;
+    if (lastLoadedVideoIdRef.current === currentEditVideoData.videoId) return true;
+
+    lastLoadedVideoIdRef.current = currentEditVideoData.videoId;
+    setIsEditingVideo(true);
+    setEditingVideoId(currentEditVideoData.videoId);
+    setEditingVideoName(currentEditVideoData.nombre || '');
+    setEditingVideoDescription(currentEditVideoData.descripcion || '');
+    setEditingVideoFolderId(currentEditVideoData.folderId || null);
+
+    const originalDimensions = currentEditVideoData.config || {
+      fieldWidth: 1280,
+      fieldHeight: 720,
+    };
+    editingVideoConfigRef.current = originalDimensions;
+
+    if (originalDimensions.playersWithNumber !== undefined) {
+      setPlayersWithNumber(originalDimensions.playersWithNumber);
+    }
+
+    if (currentEditVideoData.fieldType && !deferOpen) {
+      const decomposed = decomposeFieldId(currentEditVideoData.fieldType);
+      setFieldLineType(decomposed.lineType);
+      setViewMode(decomposed.viewMode);
+    }
+
+    if (currentEditVideoData.keyframes && currentEditVideoData.keyframes.length > 0) {
+      const loadedKeyframes = currentEditVideoData.keyframes.map((kf) => ({
+        timestamp: kf.timestamp,
+        elements: applyAssignedPlayersToKeyframeElements(kf.elements || []),
+        connectors: kf.connectors || [],
+        ballTrajectoryType: kf.ballTrajectoryType || 'ground',
+        ballTrajectoryById: kf.ballTrajectoryById || {},
+      }));
+
+      setVideoKeyframes(loadedKeyframes);
+      setLoadedEditVideoKeyframeCount(loadedKeyframes.length);
+
+      const lastLoadedKeyframe = loadedKeyframes[loadedKeyframes.length - 1];
+      if (!deferOpen && lastLoadedKeyframe && lastLoadedKeyframe.elements) {
+        const lastKeyframeElements = lastLoadedKeyframe.elements.map((elem) =>
+          snapshotToClone(elem, originalDimensions),
+        );
+        setClones(lastKeyframeElements);
+        setConnectors(lastLoadedKeyframe.connectors || []);
+        try {
+          savedClonesOriginalRef.current = JSON.parse(JSON.stringify(lastKeyframeElements));
+        } catch (e) {
+          savedClonesOriginalRef.current = lastKeyframeElements;
+        }
+      }
+    } else {
+      setLoadedEditVideoKeyframeCount(0);
+    }
+
+    if (!deferOpen) {
+      setTimeout(() => {
+        setVideoRecorderVisible(true);
+      }, 300);
+    }
+    return true;
+  }, [applyAssignedPlayersToKeyframeElements, snapshotToClone]);
+
   // Usamos useFocusEffect para que se ejecute cada vez que la pantalla gana el foco
   useFocusEffect(
     useCallback(() => {
@@ -13313,105 +13378,12 @@ export default function Field(props = {}) {
         return;
       }
 
-      lastLoadedVideoIdRef.current = currentEditVideoData.videoId;
-
-      // Limpiar global.editVideoData despus de usarlo
+      loadEditVideoDataIntoBoard(currentEditVideoData, deferEditVideoOpen);
       if (!editVideoData) global.editVideoData = null;
-
-      // Establecer modo edicin
-      setIsEditingVideo(true);
-      setEditingVideoId(currentEditVideoData.videoId);
-      setEditingVideoName(currentEditVideoData.nombre || '');
-      setEditingVideoDescription(currentEditVideoData.descripcion || '');
-      setEditingVideoFolderId(currentEditVideoData.folderId || null);
-
-      // Obtener dimensiones originales del video para conversin correcta de coordenadas
-      const originalDimensions = currentEditVideoData.config || {
-        fieldWidth: 1280,
-        fieldHeight: 720,
-      };
-      // Guardar en ref para uso posterior (goToKeyframe, goToLastKeyframe)
-      editingVideoConfigRef.current = originalDimensions;
-
-      // Cargar playersWithNumber si viene en config
-      if (originalDimensions.playersWithNumber !== undefined) {
-        setPlayersWithNumber(originalDimensions.playersWithNumber);
-      }
-
-      // Cambiar el tipo de campo si es diferente
-      if (currentEditVideoData.fieldType) {
-        const decomposed = decomposeFieldId(currentEditVideoData.fieldType);
-        setFieldLineType(decomposed.lineType);
-        setViewMode(decomposed.viewMode);
-      }
-
-      // Cargar keyframes
-      if (currentEditVideoData.keyframes && currentEditVideoData.keyframes.length > 0) {
-        // Obtener dimensiones originales del video para conversi�n correcta de coordenadas
-        const originalDimensions = currentEditVideoData.config || {
-          fieldWidth: 1280,
-          fieldHeight: 720,
-        };
-        // Guardar en ref para uso posterior (goToKeyframe, goToLastKeyframe)
-        editingVideoConfigRef.current = originalDimensions;
-
-        // Convertir keyframes del formato de BD al formato de videoKeyframes
-        const loadedKeyframes = currentEditVideoData.keyframes.map((kf) => ({
-          timestamp: kf.timestamp,
-          elements: applyAssignedPlayersToKeyframeElements(kf.elements || []),
-          connectors: kf.connectors || [],
-          // Preservar el tipo de trayectoria del balón para el segmento que
-          // sale de este keyframe (suelo por defecto, aire si así se guardó).
-          ballTrajectoryType: kf.ballTrajectoryType || 'ground',
-          ballTrajectoryById: kf.ballTrajectoryById || {},
-          // No incluimos fieldImageData porque se generar� al capturar
-        }));
-
-        setVideoKeyframes(loadedKeyframes);
-        setLoadedEditVideoKeyframeCount(loadedKeyframes.length);
-
-        // Cargar la última captura en el campo para que las nuevas capturas
-        // comparen contra la posición real más reciente del video editado.
-        const lastLoadedKeyframe = loadedKeyframes[loadedKeyframes.length - 1];
-        if (!deferEditVideoOpen && lastLoadedKeyframe && lastLoadedKeyframe.elements) {
-          // Pasar dimensiones originales para convertir correctamente las coordenadas absolutas a ratios
-          const lastKeyframeElements = lastLoadedKeyframe.elements.map((elem) =>
-            snapshotToClone(elem, originalDimensions),
-          );
-          setClones(lastKeyframeElements);
-
-          // Cargar conectores de la última captura si existen
-          setConnectors(lastLoadedKeyframe.connectors || []);
-
-          // Guardar como estado original
-          try {
-            savedClonesOriginalRef.current = JSON.parse(JSON.stringify(lastKeyframeElements));
-          } catch (e) {
-            savedClonesOriginalRef.current = lastKeyframeElements;
-          }
-        }
-
-        // Abrir autom�ticamente el grabador de video
-        if (!deferEditVideoOpen) {
-          setTimeout(() => {
-            setVideoRecorderVisible(true);
-          }, 300);
-        }
-      } else {
-        setLoadedEditVideoKeyframeCount(0);
-        // Si no hay keyframes, abrir VideoRecorder para empezar de cero
-        if (!deferEditVideoOpen) {
-          setTimeout(() => {
-            setVideoRecorderVisible(true);
-          }, 300);
-        }
-      }
-
-      // Cleanup cuando se sale de la pantalla - resetear el ID del �ltimo video cargado
       return () => {
         lastLoadedVideoIdRef.current = null;
       };
-    }, [fieldLineType, viewMode, snapshotToClone, applyAssignedPlayersToKeyframeElements, deferEditVideoOpen, editVideoData]),
+    }, [loadEditVideoDataIntoBoard, deferEditVideoOpen, editVideoData]),
   );
   // =====================================================
   // FIN CARGA DE VIDEO PARA EDICIÓN
@@ -15390,19 +15362,55 @@ export default function Field(props = {}) {
     return () => clearTimeout(timer);
   }, [selectedField]);
 
+  const loadAssociatedVideoForEditing = useCallback(async () => {
+    if (isEditingVideo || videoKeyframes.length > 0 || (!ejercicioId && !estrategiaId)) return false;
+    try {
+      const videosResult = ejercicioId
+        ? await getVideosByExercise(ejercicioId)
+        : await getVideosByStrategy(estrategiaId);
+      const videos = Array.isArray(videosResult) ? videosResult : (videosResult?.videos || []);
+      const video = videos[0];
+      const videoId = video?._id || video?.id || video?.videoId;
+      if (!videoId) return false;
+      const result = await getVideoForEdit(videoId);
+      if (!result?.success || !result.video) return false;
+      const videoData = result.video;
+      return loadEditVideoDataIntoBoard({
+        videoId: videoData.id || videoData._id || videoId,
+        nombre: videoData.nombre || presetVideoName || '',
+        descripcion: videoData.descripcion || '',
+        fieldType: videoData.fieldType,
+        keyframes: videoData.keyframes,
+        config: videoData.config,
+        folderId: videoData.folder?._id || videoData.folder || null,
+      }, true);
+    } catch (error) {
+      console.warn('Error cargando video asociado:', error);
+      return false;
+    }
+  }, [
+    ejercicioId,
+    estrategiaId,
+    isEditingVideo,
+    loadEditVideoDataIntoBoard,
+    presetVideoName,
+    videoKeyframes.length,
+  ]);
+
   // Funcin para abrir el grabador de video (desde otras rutas)
-  const handleOpenVideoRecorder = useCallback(() => {
+  const handleOpenVideoRecorder = useCallback(async () => {
+    const loadedAssociatedVideo = await loadAssociatedVideoForEditing();
     try {
       savedClonesOriginalRef.current = JSON.parse(JSON.stringify(actualClonesRef.current || []));
     } catch (e) {
       savedClonesOriginalRef.current = actualClonesRef.current ? [...actualClonesRef.current] : [];
     }
     keepVideoChangesRef.current = false;
-    if (!isEditingVideo) {
+    if (!isEditingVideo && !loadedAssociatedVideo) {
       setLoadedEditVideoKeyframeCount(0);
     }
     setVideoRecorderVisible(true);
-  }, [isEditingVideo]); // Sin [clones] " usa actualClonesRef
+  }, [isEditingVideo, loadAssociatedVideoForEditing]); // Sin [clones] " usa actualClonesRef
 
   const handleEditVideoSaved = useCallback(async () => {
     setIsSavingVideoEdit(true);
