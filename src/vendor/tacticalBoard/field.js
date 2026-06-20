@@ -11996,6 +11996,7 @@ export default function Field(props = {}) {
     ejercicioId = null, // ID del ejercicio para asociar videos
     estrategiaId = null, // ID de la estrategia para asociar videos
     editVideoData: editVideoDataParam = null, // Datos del video a editar (desde params)
+    deferEditVideoOpen = false,
     autoOpenVideoRecorder = false, // Abrir grabador de video automticamente
     hideFolderPicker = false, // Ocultar selector de carpeta en el grabador de video
     presetFolderId = null, // Carpeta preseleccionada para guardar videos
@@ -13273,12 +13274,39 @@ export default function Field(props = {}) {
   // Ref para almacenar el ID del �ltimo video cargado (para detectar cambios)
   const lastLoadedVideoIdRef = useRef(null);
 
+  const applyAssignedPlayersToKeyframeElements = useCallback((elements = []) => {
+    const assignedById = new Map(
+      (initialElements || [])
+        .filter((element) => element?.type === 'player' && element.playerData)
+        .map((element) => [String(element.id || element._id || ''), element]),
+    );
+    if (!assignedById.size) return elements;
+
+    return elements.map((element) => {
+      if (element?.type !== 'player') return element;
+      const assigned = assignedById.get(String(element.id || element._id || ''));
+      if (!assigned?.playerData) return element;
+      return {
+        ...element,
+        number: assigned.number ?? element.number,
+        playerData: assigned.playerData,
+        photoUrl:
+          assigned.photoUrl ||
+          (assigned.playerData?.foto ? cdnUrl(assigned.playerData.foto) : element.photoUrl),
+        preserveVisualStyle: true,
+        displayLabel: assigned.displayLabel ?? element.displayLabel,
+        textColor: assigned.textColor ?? element.textColor,
+        textBackgroundColor: assigned.textBackgroundColor ?? element.textBackgroundColor,
+      };
+    });
+  }, [initialElements]);
+
   // Efecto para cargar datos del video cuando estamos en modo edici�n
   // Usamos useFocusEffect para que se ejecute cada vez que la pantalla gana el foco
   useFocusEffect(
     useCallback(() => {
       // Obtener editVideoData fresco desde global cada vez que ganamos el foco
-      const currentEditVideoData = global.editVideoData;
+      const currentEditVideoData = editVideoData || global.editVideoData;
 
       // Si no hay datos de video para editar, no hacer nada
       if (!currentEditVideoData) {
@@ -13288,7 +13316,7 @@ export default function Field(props = {}) {
       lastLoadedVideoIdRef.current = currentEditVideoData.videoId;
 
       // Limpiar global.editVideoData despus de usarlo
-      global.editVideoData = null;
+      if (!editVideoData) global.editVideoData = null;
 
       // Establecer modo edicin
       setIsEditingVideo(true);
@@ -13330,7 +13358,7 @@ export default function Field(props = {}) {
         // Convertir keyframes del formato de BD al formato de videoKeyframes
         const loadedKeyframes = currentEditVideoData.keyframes.map((kf) => ({
           timestamp: kf.timestamp,
-          elements: kf.elements || [],
+          elements: applyAssignedPlayersToKeyframeElements(kf.elements || []),
           connectors: kf.connectors || [],
           // Preservar el tipo de trayectoria del balón para el segmento que
           // sale de este keyframe (suelo por defecto, aire si así se guardó).
@@ -13345,7 +13373,7 @@ export default function Field(props = {}) {
         // Cargar la última captura en el campo para que las nuevas capturas
         // comparen contra la posición real más reciente del video editado.
         const lastLoadedKeyframe = loadedKeyframes[loadedKeyframes.length - 1];
-        if (lastLoadedKeyframe && lastLoadedKeyframe.elements) {
+        if (!deferEditVideoOpen && lastLoadedKeyframe && lastLoadedKeyframe.elements) {
           // Pasar dimensiones originales para convertir correctamente las coordenadas absolutas a ratios
           const lastKeyframeElements = lastLoadedKeyframe.elements.map((elem) =>
             snapshotToClone(elem, originalDimensions),
@@ -13364,22 +13392,26 @@ export default function Field(props = {}) {
         }
 
         // Abrir autom�ticamente el grabador de video
-        setTimeout(() => {
-          setVideoRecorderVisible(true);
-        }, 300);
+        if (!deferEditVideoOpen) {
+          setTimeout(() => {
+            setVideoRecorderVisible(true);
+          }, 300);
+        }
       } else {
         setLoadedEditVideoKeyframeCount(0);
         // Si no hay keyframes, abrir VideoRecorder para empezar de cero
-        setTimeout(() => {
-          setVideoRecorderVisible(true);
-        }, 300);
+        if (!deferEditVideoOpen) {
+          setTimeout(() => {
+            setVideoRecorderVisible(true);
+          }, 300);
+        }
       }
 
       // Cleanup cuando se sale de la pantalla - resetear el ID del �ltimo video cargado
       return () => {
         lastLoadedVideoIdRef.current = null;
       };
-    }, [fieldLineType, viewMode, snapshotToClone]),
+    }, [fieldLineType, viewMode, snapshotToClone, applyAssignedPlayersToKeyframeElements, deferEditVideoOpen, editVideoData]),
   );
   // =====================================================
   // FIN CARGA DE VIDEO PARA EDICIÓN

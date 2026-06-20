@@ -49,6 +49,7 @@ import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { cdnUrl } from '@/config';
+import { duplicateVideoForEdit, getVideoForEdit } from '@/utils/api';
 
 const MATCH_SET_PIECE_FIELD_RESULT = 'matchSetPieceFieldResult';
 
@@ -1885,7 +1886,7 @@ export default function EditMatchSheetModal({
         customElements: sp.customElements || [],
         customFieldType: sp.customFieldType || '',
         pizarraConfig: sp.pizarraConfig || null,
-        videoId: typeof sp.videoId === 'object' ? sp.videoId?._id : (sp.videoId || (Array.isArray(sp.videos) ? sp.videos[0] : undefined)),
+        videoId: getSetPieceVideoId(sp),
         assignments: (sp.assignments || []).map((assignment) => {
           const playerId = typeof assignment.player === 'object' ? assignment.player?._id : assignment.player;
           const player = players.find((p) => p._id === playerId) || assignment.player;
@@ -2034,9 +2035,56 @@ export default function EditMatchSheetModal({
     });
   };
 
-  const openSetPieceBoard = (setPieceIndex) => {
+  const getSetPieceVideoId = (setPiece) => {
+    const video = setPiece?.videoId || (Array.isArray(setPiece?.videos) ? setPiece.videos[0] : null);
+    return typeof video === 'object' ? (video?._id || video?.id) : video;
+  };
+
+  const openSetPieceBoard = async (setPieceIndex) => {
     const setPiece = selectedSetPieces[setPieceIndex];
     if (!setPiece) return;
+    let boardSetPiece = setPiece;
+    let editVideoData = null;
+    let editableVideoId = getSetPieceVideoId(setPiece);
+
+    if (editableVideoId) {
+      try {
+        if (!setPiece.pizarraConfig?.matchVideoCopy) {
+          const duplicated = await duplicateVideoForEdit(editableVideoId, {
+            nombre: `${setPiece.nombre || t('setPieces.title')}_ficha`,
+          });
+          editableVideoId = duplicated?.video?._id || duplicated?.video?.id || duplicated?.videoId;
+          if (editableVideoId) {
+            boardSetPiece = {
+              ...setPiece,
+              videoId: editableVideoId,
+              pizarraConfig: { ...(setPiece.pizarraConfig || {}), matchVideoCopy: true },
+            };
+            setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? boardSetPiece : sp));
+          }
+        }
+
+        if (editableVideoId) {
+          const result = await getVideoForEdit(editableVideoId);
+          if (result?.success && result.video) {
+            const video = result.video;
+            editVideoData = {
+              videoId: video.id || video._id || editableVideoId,
+              nombre: video.nombre || boardSetPiece.nombre || '',
+              descripcion: video.descripcion || '',
+              fieldType: video.fieldType,
+              keyframes: video.keyframes,
+              config: video.config,
+              estrategiaId: null,
+              folderId: video.folder?._id || video.folder || null,
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('Error preparando video de ABP de ficha:', error);
+      }
+    }
+
     global.fieldCallbacks = {
       onSave: (updatedElements, updatedFieldType, imageBase64, updatedConfig) => {
         const playerElements = (updatedElements || []).filter(el => el.type === 'player' && el.playerData);
@@ -2052,11 +2100,19 @@ export default function EditMatchSheetModal({
           customImage: imageBase64,
           customElements: updatedElements,
           customFieldType: updatedFieldType,
-          pizarraConfig: { ...(updatedConfig || sp.pizarraConfig || {}), setPieceMode: true },
+          pizarraConfig: { ...(updatedConfig || sp.pizarraConfig || {}), setPieceMode: true, matchVideoCopy: sp.pizarraConfig?.matchVideoCopy === true },
           assignments: newAssignments,
         } : sp));
         setBoardParams(null);
         global.fieldCallbacks = null;
+      },
+      onVideoSaved: (savedVideoId) => {
+        if (!savedVideoId) return;
+        setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? {
+          ...sp,
+          videoId: savedVideoId,
+          pizarraConfig: { ...(sp.pizarraConfig || {}), setPieceMode: true, matchVideoCopy: true },
+        } : sp));
       },
       onCancel: () => {
         setBoardParams(null);
@@ -2064,15 +2120,17 @@ export default function EditMatchSheetModal({
       },
     };
     setBoardParams({
-      initialElements: withAssignedPlayers(setPiece),
-      initialFieldType: setPiece.customFieldType || setPiece.tipoCampo || 'full',
-      initialConfig: { ...(setPiece.pizarraConfig || {}), playersWithNumber: setPiece.pizarraConfig?.playersWithNumber ?? true, setPieceMode: true },
+      initialElements: withAssignedPlayers(boardSetPiece),
+      initialFieldType: boardSetPiece.customFieldType || boardSetPiece.tipoCampo || 'full',
+      initialConfig: { ...(boardSetPiece.pizarraConfig || {}), playersWithNumber: boardSetPiece.pizarraConfig?.playersWithNumber ?? true, setPieceMode: true },
       isStrategyMode: true,
       setPieceMode: true,
       embeddedBoard: true,
-      estrategiaId: setPiece.strategyId || setPiece._id || setPiece.id,
-      presetVideoName: setPiece.nombre || t('setPieces.title'),
+      estrategiaId: null,
+      presetVideoName: boardSetPiece.nombre || t('setPieces.title'),
       matchSheetPlayers: convocadosPlayers,
+      editVideoData,
+      deferEditVideoOpen: true,
     });
   };
 
@@ -2081,12 +2139,15 @@ export default function EditMatchSheetModal({
   };
 
   const playSetPieceVideo = async (setPiece) => {
-    const videoId = setPiece.videoId || (Array.isArray(setPiece.videos) ? setPiece.videos[0] : null);
+    const videoId = getSetPieceVideoId(setPiece);
     if (!videoId) return;
     setLoadingSetPieceVideo(true);
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
     try {
-      const url = await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) });
+      const url = await resolvePlayableVideoUrl(
+        videoId,
+        setPiece.pizarraConfig?.matchVideoCopy ? undefined : { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
+      );
       setSetPieceVideoUrl(url);
     } catch (error) {
       console.error('Error loading set piece video:', error);

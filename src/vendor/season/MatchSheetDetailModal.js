@@ -399,7 +399,10 @@ export default function MatchSheetDetailModal({
     setLoadingSetPieceVideo(true);
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
     try {
-      setSetPieceVideoUrl(await resolvePlayableVideoUrl(videoId, { playerOverlays: buildSetPiecePlayerOverlays(setPiece) }));
+      setSetPieceVideoUrl(await resolvePlayableVideoUrl(
+        videoId,
+        setPiece.pizarraConfig?.matchVideoCopy ? undefined : { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
+      ));
     } catch (error) {
       console.error('Error loading set piece video:', error);
       Alert.alert(t('message.error'), t('strategy.videoPlayError'));
