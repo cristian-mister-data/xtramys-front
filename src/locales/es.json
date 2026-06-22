@@ -2872,7 +2872,8 @@
       "matchdayOnlyNumbers": "La jornada solo puede contener números",
       "matchdayRequired": "Debes seleccionar una jornada",
       "duplicateMatchday": "Jornada duplicada",
-      "duplicateMatchdayMessage": "Ya existe una ficha de partido para la jornada {{matchday}} en este torneo: {{rival}}. Por favor, selecciona un número de jornada diferente."
+      "duplicateMatchdayMessage": "Ya existe una ficha de partido para la jornada {{matchday}} en este torneo: {{rival}}. Por favor, selecciona un número de jornada diferente.",
+      "goalsMismatch": "El número de goles no coincide con los goles asignados a los jugadores"
     },
     "pdf": {
       "lineupTitle": "PDF Alineación",

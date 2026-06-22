@@ -91,6 +91,31 @@ const isToday = (year, month, day) => {
          today.getDate() === day;
 };
 
+const CALENDAR_STORAGE_PREFIX = 'xtramys:season-calendar';
+const toLocalDateKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const fromLocalDateKey = (value, fallback) => {
+  const [year, month, day] = String(value || '').split('-').map(Number);
+  if (!year || !month || !day) return fallback;
+  return new Date(year, month - 1, day);
+};
+const readStoredDate = (key, fallback) => {
+  try {
+    if (typeof window === 'undefined') return fallback;
+    return fromLocalDateKey(window.localStorage.getItem(key), fallback);
+  } catch {
+    return fallback;
+  }
+};
+const saveStoredDate = (key, date) => {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(key, toLocalDateKey(date));
+  } catch {
+    // ponytail: if storage is blocked, we keep the month only in memory.
+  }
+};
+
 export default function SeasonCalendar({
   matchSheets = [],
   trainingSessions = [],
@@ -125,12 +150,15 @@ export default function SeasonCalendar({
     inputBg: theme.colors.inputBg,
     gradient: BRAND_GRADIENT,
   }), [theme]);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const calendarKey = team?._id ? `${CALENDAR_STORAGE_PREFIX}:${team._id}` : CALENDAR_STORAGE_PREFIX;
+  const monthKey = `${calendarKey}:month`;
+  const weekKey = `${calendarKey}:week`;
+  const [currentDate, setCurrentDate] = useState(() => readStoredDate(monthKey, new Date()));
   const [selectedDate, setSelectedDate] = useState(null);
   const isMobile = isMobileDevice();
   
   // Estado para vista de semana en móvil
-  const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => readStoredDate(weekKey, getMonday(new Date())));
   const [selectedMobileDate, setSelectedMobileDate] = useState(new Date());
   const slideAnim = useRef(new Animated.Value(0)).current;
   
@@ -170,6 +198,24 @@ export default function SeasonCalendar({
     t('season.months.november'),
     t('season.months.december'),
   ], [t]);
+
+  useEffect(() => {
+    const now = new Date();
+    const fallbackMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fallbackWeek = getMonday(new Date());
+    setCurrentDate(readStoredDate(monthKey, fallbackMonth));
+    setCurrentWeekStart(readStoredDate(weekKey, fallbackWeek));
+    setSelectedDate(null);
+    setSelectedMobileDate(new Date());
+  }, [monthKey, weekKey]);
+
+  useEffect(() => {
+    saveStoredDate(monthKey, currentDate);
+  }, [monthKey, currentDate]);
+
+  useEffect(() => {
+    saveStoredDate(weekKey, currentWeekStart);
+  }, [weekKey, currentWeekStart]);
   
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();

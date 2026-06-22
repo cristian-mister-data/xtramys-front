@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   Document, Page, Text, View, Image,
-  baseStyles, COLORS as BASE_COLORS, SPACING, FONT_SIZE,
-  renderPdf
+  baseStyles, COLORS, SPACING, FONT_SIZE,
+  renderPdf, PdfHeader, PdfFooter, PdfSection
 } from '@/utils/pdfDesign';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getPlayerFullName } from '@/utils/playerHelpers';
@@ -10,95 +10,12 @@ import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
 import api from '@/api/client';
 
-const COLORS = {
-  ...BASE_COLORS,
-  primary: '#f8fafc',
-  secondary: '#67e8f9',
-  accent: '#38bdf8',
-  bgMain: '#020617',
-  bgCard: '#0f172a',
-  bgSoft: '#1e293b',
-  text: '#e2e8f0',
-  textSecondary: '#cbd5e1',
-  textMuted: '#94a3b8',
-  border: '#334155',
-  borderLight: '#1e293b',
-  borderDark: '#64748b',
-  warning: '#fbbf24',
-  success: '#86efac',
-  danger: '#fca5a5',
-  accentLight: '#082f49',
-  accentBorder: '#0ea5e9',
-};
 // ── Shared Styles ──────────────────────────────────────────────────
 const s = {
   page: {
     ...baseStyles.page,
     backgroundColor: COLORS.bgMain,
     color: COLORS.text,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#07111f',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginBottom: SPACING.lg,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZE.title,
-    color: COLORS.primary,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.secondary,
-    marginTop: 3,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  headerDate: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  headerRight: {
-    fontSize: FONT_SIZE.lg,
-    color: COLORS.warning,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  footer: {
-    ...baseStyles.footer,
-    borderTopColor: COLORS.border,
-  },
-  footerText: {
-    ...baseStyles.footerText,
-    color: COLORS.textMuted,
-  },
-  section: {
-    marginBottom: SPACING.md,
-  },
-  sectionHeader: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: COLORS.accent,
-    paddingBottom: 4,
-    marginBottom: SPACING.sm,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZE.xl,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
   },
   grid2: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.md },
   grid4: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.sm },
@@ -460,37 +377,6 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
 // ── Components ─────────────────────────────────────────────────────
 
-const DarkPdfHeader = ({ title, subtitle, date, right }) => (
-  <View style={s.header}>
-    <View style={{ flexDirection: 'column', flex: 1 }}>
-      <Text style={s.headerTitle}>{title || ''}</Text>
-      {subtitle ? <Text style={s.headerSubtitle}>{subtitle}</Text> : null}
-      {date ? <Text style={s.headerDate}>{date}</Text> : null}
-    </View>
-    {right ? <Text style={s.headerRight}>{right}</Text> : null}
-  </View>
-);
-
-const DarkPdfFooter = ({ text = 'Xtramys' }) => (
-  <View style={s.footer} fixed>
-    <Text style={s.footerText}>{text}</Text>
-    <Text
-      style={s.footerText}
-      render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-    />
-  </View>
-);
-
-const DarkPdfSection = ({ title, children }) => (
-  <View style={s.section}>
-    {title ? (
-      <View style={s.sectionHeader}>
-        <Text style={s.sectionTitle}>{title}</Text>
-      </View>
-    ) : null}
-    {children}
-  </View>
-);
 
 const SessionCoverPage = ({ data, title }) => {
   const { t, fechaFormateada, jugadoresNombres, jugadoresExtrasNombres, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, duracionLabel, teamName } = data;
@@ -500,10 +386,10 @@ const SessionCoverPage = ({ data, title }) => {
 
   return (
     <Page size="A4" style={s.page}>
-      <DarkPdfHeader title={title} subtitle={t('session.pdfTitle', 'Sesión de Entrenamiento')} date={fechaFormateada} right={teamName} />
-      <DarkPdfFooter />
+      <PdfHeader title={title} subtitle={t('session.pdfTitle', 'Sesión de Entrenamiento')} date={fechaFormateada} right={teamName} />
+      <PdfFooter />
 
-      <DarkPdfSection title={t('session.summaryTitle', 'Resumen de la Sesión')}>
+      <PdfSection title={t('session.summaryTitle', 'Resumen de la Sesión')}>
         <View style={[s.grid4, { marginBottom: SPACING.md }]}>
           <View style={s.metricBox}>
             <Text style={s.metricVal}>{horaInicio} - {horaFin}</Text>
@@ -556,7 +442,7 @@ const SessionCoverPage = ({ data, title }) => {
             )}
           </View>
         </View>
-      </DarkPdfSection>
+      </PdfSection>
     </Page>
   );
 };
@@ -663,13 +549,13 @@ const ExercisesPage = ({ data, players, imageDataUris, title }) => {
 
   return (
     <Page size="A4" style={s.page}>
-      <DarkPdfHeader title={title} subtitle={t('session.exercisesTitle', 'Ejercicios de la Sesión')} date={fechaFormateada} />
-      <DarkPdfFooter />
-      <DarkPdfSection title={t('session.tacticalTechnicalDev', 'Desarrollo Táctico / Técnico')}>
+      <PdfHeader title={title} subtitle={t('session.exercisesTitle', 'Ejercicios de la Sesión')} date={fechaFormateada} />
+      <PdfFooter />
+      <PdfSection title={t('session.tacticalTechnicalDev', 'Desarrollo Táctico / Técnico')}>
         {ejerciciosOrdenados.map((ej, idx) => (
           <ExerciseCard key={idx} ejercicio={ej} index={idx} data={data} players={players} imageDataUris={imageDataUris} />
         ))}
-      </DarkPdfSection>
+      </PdfSection>
     </Page>
   );
 };
@@ -682,9 +568,9 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
 
   return chunks.map((chunk, pageIdx) => (
     <Page size="A4" style={s.page} key={pageIdx}>
-      <DarkPdfHeader title={title} subtitle={`${t('session.strengthExercisesTitle', 'Ejercicios de Fuerza')} (${t('session.page', 'Pág')} ${pageIdx + 1}/${chunks.length})`} date={fechaFormateada} />
-      <DarkPdfFooter />
-      <DarkPdfSection title={t('session.gymRoutinePrevention', 'Rutina de Gimnasio / Prevención')}>
+      <PdfHeader title={title} subtitle={`${t('session.strengthExercisesTitle', 'Ejercicios de Fuerza')} (${t('session.page', 'Pág')} ${pageIdx + 1}/${chunks.length})`} date={fechaFormateada} />
+      <PdfFooter />
+      <PdfSection title={t('session.gymRoutinePrevention', 'Rutina de Gimnasio / Prevención')}>
         <View style={s.stGrid}>
           {chunk.map((exercise, idx) => {
             const globalIdx = pageIdx * 12 + idx;
@@ -718,7 +604,7 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
             );
           })}
         </View>
-      </DarkPdfSection>
+      </PdfSection>
     </Page>
   ));
 };

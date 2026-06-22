@@ -714,11 +714,13 @@ export default function TacticalBoard({
     if (el.type === 'text' && pt) {
       if (el.id === editingTextId) return null;
       const fs = (el.fontSize || 0.03) * refScale;
-      const textW = Math.max(80, (el.text || '').length * fs * 0.6 + 20);
+      const lines = String(el.text || '').split('\n');
+      const textW = Math.max(80, Math.max(...lines.map((line) => line.length), 0) * fs * 0.6 + 20);
+      const textH = Math.max(fs, lines.length * fs * 1.2) + 20;
       return (
         <Group key={el.id} x={pt.x} y={pt.y} draggable onDragStart={onElementDragStart} onDragEnd={onElementDragEnd(el.id)} onDragMove={onElementDragMove} onClick={onSelect(el.id)}>
-          <Rect name="delIndicator" x={-10} y={-10} width={textW} height={fs + 20} stroke="#ff0000" strokeWidth={3} dash={[6, 4]} fill="rgba(255,0,0,0.2)" cornerRadius={4} listening={false} visible={false} />
-          <Text x={0} y={0} text={el.text || ''} fill={el.color || '#000'} fontSize={fs} fontStyle="bold" onDblClick={() => setEditingTextId(el.id)} onDblTap={() => setEditingTextId(el.id)} stroke={selected ? '#fbbf24' : undefined} strokeWidth={selected ? 1 : 0} />
+          <Rect name="delIndicator" x={-10} y={-10} width={textW} height={textH} stroke="#ff0000" strokeWidth={3} dash={[6, 4]} fill="rgba(255,0,0,0.2)" cornerRadius={4} listening={false} visible={false} />
+          <Text x={0} y={0} text={el.text || ''} fill={el.color || '#000'} fontSize={fs} fontStyle="bold" lineHeight={1.2} onDblClick={() => setEditingTextId(el.id)} onDblTap={() => setEditingTextId(el.id)} stroke={selected ? '#fbbf24' : undefined} strokeWidth={selected ? 1 : 0} />
         </Group>
       );
     }
@@ -914,12 +916,12 @@ export default function TacticalBoard({
             const pt = r2p(el.x, el.y);
             const fs = (el.fontSize || 0.03) * refScale;
             return (
-              <input
+              <textarea
                 autoFocus
                 defaultValue={el.text || ''}
                 onBlur={(e) => {
-                  const v = e.target.value.trim();
-                  if (!v) {
+                  const v = e.target.value.replace(/\r\n/g, '\n');
+                  if (!v.trim()) {
                     applyChange((prev) => prev.filter((it) => it.id !== editingTextId));
                     setSelectedId(null);
                   } else {
@@ -928,7 +930,7 @@ export default function TacticalBoard({
                   setEditingTextId(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.target.blur();
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') e.target.blur();
                   if (e.key === 'Escape') {
                     applyChange((prev) => prev.filter((it) => !(it.id === editingTextId && !it.text)));
                     setEditingTextId(null);
@@ -948,6 +950,10 @@ export default function TacticalBoard({
                   outline: 'none',
                   zIndex: 10,
                   minWidth: 80,
+                  minHeight: fs * 1.4,
+                  lineHeight: 1.2,
+                  fontFamily: 'inherit',
+                  resize: 'both',
                 }}
               />
             );

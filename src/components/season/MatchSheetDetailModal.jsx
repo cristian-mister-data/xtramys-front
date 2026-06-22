@@ -359,6 +359,62 @@ export default function MatchSheetDetailModal({
       </StatsGrid>
 
       <Stack $gap={12}>
+        {Array.isArray(data.convocados) && data.convocados.length > 0 && (
+          <Section>
+            <SectionTitle>
+              <MdGroup /> {t('matchSheet.fields.called', 'Convocados')} ({data.convocados.length})
+            </SectionTitle>
+            <Card>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {data.convocados.map((id) => {
+                  const pId = typeof id === 'object' ? id._id : id;
+                  const player = players.find(p => p._id === pId);
+                  return (
+                    <div key={pId} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: theme.colors.backgroundAlt, padding: '4px 8px', borderRadius: '6px', fontSize: '13px' }}>
+                      <PlayerAvatar>
+                        {player?.foto ? (
+                          <img src={cdnUrl(player.foto)} alt="" />
+                        ) : (
+                          getPlayerInitials(player) || '?'
+                        )}
+                      </PlayerAvatar>
+                      <span>{getPlayerName(players, pId)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </Section>
+        )}
+
+        {Array.isArray(data.noConvocados) && data.noConvocados.length > 0 && (
+          <Section>
+            <SectionTitle>
+              <MdGroup style={{ opacity: 0.6 }} /> {t('matchSheet.fields.notCalled', 'No convocados')} ({data.noConvocados.length})
+            </SectionTitle>
+            <Card>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {data.noConvocados.map((id) => {
+                  const pId = typeof id === 'object' ? id._id : id;
+                  const player = players.find(p => p._id === pId);
+                  return (
+                    <div key={pId} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: theme.colors.backgroundAlt, padding: '4px 8px', borderRadius: '6px', fontSize: '13px', opacity: 0.85 }}>
+                      <PlayerAvatar>
+                        {player?.foto ? (
+                          <img src={cdnUrl(player.foto)} alt="" />
+                        ) : (
+                          getPlayerInitials(player) || '?'
+                        )}
+                      </PlayerAvatar>
+                      <span>{getPlayerName(players, pId)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </Section>
+        )}
+
         {Array.isArray(data.goles) && data.goles.length > 0 && (
           <Section>
             <SectionTitle>

@@ -1092,23 +1092,28 @@ function drawFreeText(ctx, cw, ch, elem, scale) {
   const fs = baseFontSize * scale;
   const color = elem.color || '#000';
   const bg = elem.backgroundColor || 'transparent';
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  const lineHeight = fs * 1.2;
+  const pad = 4 * scale;
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  ctx.font = `${fs}px ${FONT_STACK}`;
-  const tw = ctx.measureText(text).width;
-  const pad = fs * 0.2;
+  ctx.font = `bold ${fs}px ${FONT_STACK}`;
+  const tw = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
+  const th = lines.length * lineHeight;
 
   if (bg && bg !== 'transparent') {
     ctx.fillStyle = bg;
-    ctx.fillRect(p.x - tw / 2 - pad, p.y - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
+    ctx.fillRect(p.x, p.y, tw + pad * 2, th + pad * 2);
   }
 
   ctx.fillStyle = color;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, p.x, p.y);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  lines.forEach((line, index) => {
+    ctx.fillText(line, p.x + pad, p.y + pad + index * lineHeight);
+  });
 
   ctx.restore();
 }

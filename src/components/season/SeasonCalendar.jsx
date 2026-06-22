@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { MdChevronLeft, MdChevronRight, MdSportsSoccer, MdFitnessCenter } from 'react-icons/md';
+import { useSelector, useDispatch } from 'react-redux';
+import { setCalendarDate } from '@/store/slices/season/seasonSlice';
 
 const Wrap = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -229,7 +231,16 @@ export default function SeasonCalendar({
   onSessionPress,
 }) {
   const { t, i18n } = useTranslation();
-  const [refDate, setRefDate] = useState(() => startOfMonth(new Date()));
+  const dispatch = useDispatch();
+  const savedCalendarDate = useSelector((state) => state.season.calendarDate);
+  const [refDate, setRefDate] = useState(() => 
+    savedCalendarDate ? new Date(savedCalendarDate) : startOfMonth(new Date())
+  );
+  
+  useEffect(() => {
+    dispatch(setCalendarDate(refDate.toISOString()));
+  }, [refDate, dispatch]);
+
   const cells = useMemo(() => buildGrid(refDate), [refDate]);
   const events = useMemo(
     () => indexEvents(matchSheets, trainingSessions),

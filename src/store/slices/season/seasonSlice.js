@@ -18,8 +18,13 @@ const seasonSlice = createSlice({
     seasons: [],
     loading: false,
     error: null,
+    calendarDate: null,
   },
-  reducers: {},
+  reducers: {
+    setCalendarDate: (state, action) => {
+      state.calendarDate = action.payload;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchTemporada.pending, (state) => { state.loading = true; })
@@ -109,4 +114,5 @@ const seasonSlice = createSlice({
   },
 });
 
+export const { setCalendarDate } = seasonSlice.actions;
 export default seasonSlice.reducer;

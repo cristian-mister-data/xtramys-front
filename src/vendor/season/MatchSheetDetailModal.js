@@ -618,6 +618,21 @@ export default function MatchSheetDetailModal({
                   </View>
                 )}
 
+                {matchSheet.noConvocados && matchSheet.noConvocados.length > 0 && (
+                  <View style={styles.detailCard}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="people-outline" size={18} color={theme.colors.textSecondary} />
+                      <Text style={styles.detailCardTitle}>{t('matchSheet.fields.notCalled')} ({matchSheet.noConvocados.length})</Text>
+                    </View>
+                    <PlayerListWithFilters
+                      playerIds={matchSheet.noConvocados}
+                      allPlayers={players}
+                      t={t}
+                      isMobile={IS_MOBILE}
+                    />
+                  </View>
+                )}
+
                 {matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
                   <View style={styles.detailCard}>
                     <View style={styles.detailCardHeader}>

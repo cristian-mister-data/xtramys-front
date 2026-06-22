@@ -92,6 +92,18 @@ const NumberInput = styled.input`
   width: 100%;
 `;
 
+const TextAreaInput = styled.textarea`
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+`;
+
 const Slider = styled.input.attrs({ type: 'range' })`
   width: 100%;
 `;
@@ -358,7 +370,7 @@ export default function LeftEditPanel({ element, onChange, onDelete, onClose, is
         <>
           <Field>
             <Label>{t('tacticalBoard.editPanel.text', 'Texto')}</Label>
-            <NumberInput value={el.text || ''} onChange={(e) => update({ text: e.target.value })} />
+            <TextAreaInput value={el.text || ''} onChange={(e) => update({ text: e.target.value.replace(/\r\n/g, '\n') })} />
           </Field>
           <Field>
             <Label>{t('tacticalBoard.editPanel.size', 'Tamaño')}: {Math.round((el.fontSize || 0.03) * 1000) / 10}</Label>

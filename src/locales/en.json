@@ -2867,7 +2867,8 @@
       "matchdayOnlyNumbers": "Matchday can only contain numbers",
       "matchdayRequired": "You must select a matchday",
       "duplicateMatchday": "Duplicate matchday",
-      "duplicateMatchdayMessage": "A match sheet already exists for matchday {{matchday}} in this tournament: {{rival}}. Please select a different matchday."
+      "duplicateMatchdayMessage": "A match sheet already exists for matchday {{matchday}} in this tournament: {{rival}}. Please select a different matchday.",
+      "goalsMismatch": "The number of goals does not match the goals assigned to the players"
     },
     "pdf": {
       "lineupTitle": "Lineup PDF",

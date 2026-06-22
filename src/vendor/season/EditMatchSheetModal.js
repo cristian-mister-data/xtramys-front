@@ -1810,6 +1810,11 @@ export default function EditMatchSheetModal({
       return;
     }
 
+    if ((Number(golesFavor) || 0) !== (goles || []).length || (Number(golesContra) || 0) !== (golesRival || []).length) {
+      Alert.alert(t('common.error'), t('matchSheet.validation.goalsMismatch'));
+      return;
+    }
+
     // Validación de jornada + torneo duplicados
     if (matchSheets.length > 0 && jornada && torneoId) {
       const jornadaNum = Number(jornada);

@@ -362,6 +362,10 @@ export default function MatchSheetFormModal({
       showMissingFieldsToast(t, [t('matchSheet.fields.tournament', 'Torneo')]);
       return;
     }
+    if ((form.golesFavor || 0) !== (form.goles || []).length || (form.golesContra || 0) !== (form.golesRival || []).length) {
+      setError(t('matchSheet.validation.goalsMismatch'));
+      return;
+    }
     onSubmit?.(form);
   };
 

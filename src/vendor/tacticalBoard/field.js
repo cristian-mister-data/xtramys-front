@@ -15245,7 +15245,11 @@ export default function Field(props = {}) {
           clone?.type === 'player' ? { ...clone, playersWithNumber } : clone
         ));
         let imageBase64 = '';
-        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        if (Platform.OS === 'web') {
+          imageBase64 = await captureViewShotBase64(canvasRef);
+        }
+
+        if (!imageBase64 && Platform.OS === 'web' && typeof document !== 'undefined') {
           const aspectVal = getAspectForView(viewMode);
           const aspect = aspectVal ? 1 / aspectVal : referenceWidth / referenceHeight;
           const { width: exportWidth, height: exportHeight } = getVideoDimensions(aspect);
