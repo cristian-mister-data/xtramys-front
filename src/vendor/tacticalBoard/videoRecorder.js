@@ -940,9 +940,9 @@ export default function VideoRecorder({
                 };
                 snapshot.textColor = elem.textColor || '#000000';
                 snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
-                if (elem.playerData.foto) {
-                  snapshot.photoUrl = cdnUrl(elem.playerData.foto);
-                }
+              }
+              if (elem.photoUrl || elem.playerData?.foto) {
+                snapshot.photoUrl = elem.photoUrl || cdnUrl(elem.playerData.foto);
               }
               // Añadir configuración de mostrar fotos y números
               snapshot.showPhotos = showPhotos;
@@ -1315,8 +1315,9 @@ export default function VideoRecorder({
       const uniquePhotoUrls = new Set();
       allFrames.forEach((frame) => {
         (frame.elements || []).forEach((elem) => {
-          if (elem.type === 'player' && elem.playerData?.foto) {
-            uniquePhotoUrls.add(elem.playerData.foto);
+          const photoSource = elem.photoUrl || elem.playerData?.foto;
+          if (elem.type === 'player' && photoSource) {
+            uniquePhotoUrls.add(photoSource);
           }
         });
       });
@@ -1334,6 +1335,7 @@ export default function VideoRecorder({
                 image.src = fullUrl;
               });
               playerPhotos[fotoPath] = img;
+              playerPhotos[cdnUrl(fotoPath)] = img;
             } catch (err) {
               console.warn(
                 `[videoRecorder] No se pudo cargar la foto del jugador ${fotoPath}:`,

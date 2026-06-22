@@ -84,7 +84,9 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
   const showPhotos = elem.showPhotos || options.showPhotos;
-  const photoImg = elem.playerData?.foto && options.playerPhotos?.[elem.playerData.foto];
+  const photoKey = elem.photoUrl || elem.playerData?.foto;
+  const photoImg =
+    photoKey && (options.playerPhotos?.[photoKey] || options.playerPhotos?.[elem.playerData?.foto]);
 
   if (showPhotos && photoImg) {
     ctx.save();

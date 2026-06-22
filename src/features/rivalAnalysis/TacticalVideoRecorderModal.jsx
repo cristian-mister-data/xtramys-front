@@ -227,6 +227,7 @@ export default function TacticalVideoRecorderModal({
                 presetFolderId={folderId}
                 presetVideoName={presetVideoName}
                 initialFieldType={initialFieldType}
+                embeddedBoard
               />
             </GestureHandlerRootView>
           </SafeAreaProvider>
