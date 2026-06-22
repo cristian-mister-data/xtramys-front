@@ -12542,6 +12542,9 @@ export default function Field(props = {}) {
   const handleSaveBoardSettings = useCallback(
     async (settingsParam) => {
       const settingsToSave = settingsParam || boardSettings;
+      if (settingsToSave?.playerIcon1?.size) {
+        setStandardSize(settingsToSave.playerIcon1.size);
+      }
       try {
         const str = await AsyncStorage.getItem('usuario');
         if (!str) return;
@@ -12668,6 +12671,9 @@ export default function Field(props = {}) {
 
           // Cargar boardSettings del usuario
           if (usuario && usuario.boardSettings) {
+            if (usuario.boardSettings.playerIcon1?.size) {
+              setStandardSize(usuario.boardSettings.playerIcon1.size);
+            }
             setBoardSettings((prev) => ({
               ...prev,
               playerIcon1: { ...prev.playerIcon1, ...usuario.boardSettings.playerIcon1 },
@@ -13993,14 +13999,6 @@ export default function Field(props = {}) {
       dispatch(fetchJugadoresEquipo({ team: teamId }));
     }
   }, [equipos, players.length, dispatch]);
-
-  // Mantener el tama�o de teamPlayerStyle sincronizado con standardSize
-  useEffect(() => {
-    setTeamPlayerStyle((prev) => ({
-      ...prev,
-      size: standardSize,
-    }));
-  }, [standardSize]);
 
   // Callback para cuando se pulsa un clon en modo set-piece
   const handleTapPlayerClone = useCallback((cloneId) => {
