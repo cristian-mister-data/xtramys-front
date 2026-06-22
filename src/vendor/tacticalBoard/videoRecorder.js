@@ -567,9 +567,8 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidt
           const p2 = { x: norm.pointsRatio[1].x * refWidth, y: norm.pointsRatio[1].y * refHeight };
           norm.x = (p1.x + p2.x) / 2;
           norm.y = (p1.y + p2.y) / 2;
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          norm.radius = Math.sqrt(dx * dx + dy * dy) / 2;
+          norm.width = Math.abs(p2.x - p1.x);
+          norm.height = Math.abs(p2.y - p1.y);
         } else if (norm.type === 'rectangle') {
           const p1 = { x: norm.pointsRatio[0].x * refWidth, y: norm.pointsRatio[0].y * refHeight };
           const p2 = { x: norm.pointsRatio[1].x * refWidth, y: norm.pointsRatio[1].y * refHeight };
@@ -1041,9 +1040,8 @@ export default function VideoRecorder({
               snapshot.y = (p1.y + p2.y) / 2;
 
               // Radio del círculo
-              const dx = p2.x - p1.x;
-              const dy = p2.y - p1.y;
-              snapshot.radius = Math.sqrt(dx * dx + dy * dy) / 2;
+              snapshot.width = Math.abs(p2.x - p1.x);
+              snapshot.height = Math.abs(p2.y - p1.y);
 
               // Capturar thickness
               const baseThickness = elem.thickness || 1;
@@ -1181,7 +1179,10 @@ export default function VideoRecorder({
             }
           }
           if (snapshot.type === 'circle') {
-            if (!snapshot.radius || snapshot.radius <= 0) {
+            if (
+              (!snapshot.width || snapshot.width <= 0 || !snapshot.height || snapshot.height <= 0) &&
+              (!snapshot.radius || snapshot.radius <= 0)
+            ) {
               return false;
             }
           }

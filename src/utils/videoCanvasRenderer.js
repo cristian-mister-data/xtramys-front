@@ -925,7 +925,7 @@ function drawCurveLine(ctx, cw, ch, elem, scale) {
 }
 
 function drawCircleShape(ctx, cw, ch, elem, scale) {
-  let cx, cy, r;
+  let cx, cy, rx, ry;
 
   if (elem.pointsRatio && elem.pointsRatio.length >= 2) {
     const p1 = ratioToDisplay(
@@ -944,14 +944,20 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
     );
     cx = (p1.x + p2.x) / 2;
     cy = (p1.y + p2.y) / 2;
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    r = Math.sqrt(dx * dx + dy * dy) / 2;
+    rx = Math.abs(p2.x - p1.x) / 2;
+    ry = Math.abs(p2.y - p1.y) / 2;
+  } else if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.width && elem.height) {
+    const coords = ratioToDisplay(elem.xRatio, elem.yRatio, currentViewMode, cw, ch);
+    cx = coords.x;
+    cy = coords.y;
+    rx = (elem.width / 2) * scale;
+    ry = (elem.height / 2) * scale;
   } else if (elem.xRatio !== undefined && elem.yRatio !== undefined && elem.radius) {
     const coords = ratioToDisplay(elem.xRatio, elem.yRatio, currentViewMode, cw, ch);
     cx = coords.x;
     cy = coords.y;
-    r = elem.radius * scale;
+    rx = elem.radius * scale;
+    ry = elem.radius * scale;
   } else if (elem.x !== undefined && elem.y !== undefined && elem.radius) {
     const coords = ratioToDisplay(
       elem.x / (elem.sourceWidth || 1280),
@@ -962,16 +968,17 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
     );
     cx = coords.x;
     cy = coords.y;
-    r = elem.radius * scale;
+    rx = elem.radius * scale;
+    ry = elem.radius * scale;
   } else {
     return;
   }
 
-  if (!r || r <= 0) return;
+  if (!rx || rx <= 0 || !ry || ry <= 0) return;
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
   if (elem.fillColor && elem.fillColor !== 'transparent') {
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
