@@ -46,7 +46,7 @@ import {
   createStreamingVideoEncoder,
 } from '@/utils/videoUtils';
 import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
-import { getAspectForView } from './fields';
+import { getAspectForView, ratioToDisplay } from './fields';
 import { SPEED_TO_FPS } from '@/constants/video';
 import {
   saveVideo as apiSaveVideo,
@@ -201,6 +201,9 @@ function interpolateElement(from, to, t) {
     'baseSize',
     'fontSize',
     'baseFontSize',
+    'textX',
+    'textY',
+    'textMaxWidth',
     'thickness',
     'baseThickness',
     'rotation',
@@ -513,7 +516,7 @@ function buildInterpolatedFrames(
 // los keyframes (viejos de BD + nuevos capturados) usen el mismo sistema
 // de coordenadas, independientemente del dispositivo donde se capturaron.
 // ============================================================
-function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
+function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidth = refWidth, textRefHeight = refHeight) {
   if (!keyframes || !Array.isArray(keyframes)) return [];
 
   const scaleFactor = Math.min(refWidth, refHeight) / 500;
@@ -586,14 +589,37 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight) {
 
       // === Texto libre: recalcular fontSize y posición ===
       if (norm.type === 'free-text' || norm.type === 'text') {
+        const previousTextWidth = norm.imageWidth;
+        const previousTextHeight = norm.imageHeight;
         if (norm.xRatio !== undefined && norm.yRatio !== undefined) {
           norm.x = norm.xRatio * refWidth;
           norm.y = norm.yRatio * refHeight;
         }
         if (norm.baseFontSize !== undefined) {
-          norm.fontSize = norm.baseFontSize * scaleFactor;
+          norm.fontSize = norm.baseFontSize;
         } else if (norm.baseSize !== undefined) {
-          norm.fontSize = norm.baseSize * scaleFactor;
+          norm.fontSize = norm.baseSize;
+        }
+        norm.imageWidth = textRefWidth;
+        norm.imageHeight = textRefHeight;
+        if (norm.textX !== undefined && previousTextWidth) {
+          norm.textX = norm.textX * (textRefWidth / previousTextWidth);
+        } else {
+          norm.textX =
+            norm.xRatio !== undefined ? norm.xRatio * textRefWidth : norm.x !== undefined ? norm.x : 0;
+        }
+        if (norm.textY !== undefined && previousTextHeight) {
+          norm.textY = norm.textY * (textRefHeight / previousTextHeight);
+        } else {
+          norm.textY =
+            norm.yRatio !== undefined ? norm.yRatio * textRefHeight : norm.y !== undefined ? norm.y : 0;
+        }
+        if (norm.textMaxWidth !== undefined && previousTextWidth) {
+          norm.textMaxWidth = norm.textMaxWidth * (textRefWidth / previousTextWidth);
+        } else {
+          const textX =
+            norm.xRatio !== undefined ? norm.xRatio * textRefWidth : norm.x !== undefined ? norm.x : 0;
+          norm.textMaxWidth = Math.max(40, textRefWidth - textX - 8);
         }
       }
 
@@ -609,6 +635,8 @@ export default function VideoRecorder({
   onClose,
   fieldWidth,
   fieldHeight,
+  fieldDisplayWidth,
+  fieldDisplayHeight,
   fieldRef, // Ref al ViewShot del campo (para captureRef)
   videoFrameControl, // Ref con { setFrame, deselectAll }
   fieldBaseRef, // Nueva prop: referencia solo al campo base sin elementos
@@ -1098,10 +1126,27 @@ export default function VideoRecorder({
           if (elem.type === 'free-text' || elem.type === 'text') {
             snapshot.x = elem.xRatio * fieldWidth;
             snapshot.y = elem.yRatio * fieldHeight;
-            snapshot.text = elem.value || elem.text || ''; // El texto está en 'value'
+            snapshot.text = String(elem.value ?? elem.text ?? ''); // El texto está en 'value'
             const baseFontSize = elem.size || elem.fontSize || 16;
+            const textSourceWidth = fieldDisplayWidth || fieldWidth;
+            const textSourceHeight = fieldDisplayHeight || fieldHeight;
+            const textPos =
+              elem.xRatio !== undefined && elem.yRatio !== undefined
+                ? ratioToDisplay(
+                    elem.xRatio,
+                    elem.yRatio,
+                    viewMode,
+                    textSourceWidth,
+                    textSourceHeight,
+                  )
+                : { x: elem.x || 0, y: elem.y || 0 };
             snapshot.baseFontSize = baseFontSize; // Guardar tamaño base para normalización
-            snapshot.fontSize = baseFontSize * scaleFactor; // El tamaño está en 'size'
+            snapshot.fontSize = baseFontSize; // El render del canvas aplica la escala final
+            snapshot.imageWidth = textSourceWidth;
+            snapshot.imageHeight = textSourceHeight;
+            snapshot.textX = textPos.x;
+            snapshot.textY = textPos.y;
+            snapshot.textMaxWidth = Math.max(40, textSourceWidth - textPos.x - 8);
             // Siempre capturar color (usar default si no hay)
             snapshot.color = elem.color || '#000000';
             snapshot.backgroundColor = elem.backgroundColor || 'transparent';
@@ -1520,7 +1565,13 @@ export default function VideoRecorder({
       // Normalizar coordenadas al guardar para consistencia con config
       const refW = fieldWidth || 1280;
       const refH = fieldHeight || 720;
-      const normalizedKeyframes = normalizeKeyframesForServer(keyframes, refW, refH);
+      const normalizedKeyframes = normalizeKeyframesForServer(
+        keyframes,
+        refW,
+        refH,
+        fieldDisplayWidth || refW,
+        fieldDisplayHeight || refH,
+      );
 
       // Preparar datos del video
       const videoData = {

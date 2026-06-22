@@ -1631,6 +1631,16 @@ function OptionsMenu({
     adjustedY = height - estimatedMenuHeight - 10;
   }
 
+  const smartMargin = 10;
+  const smartOffsetX = 8;
+  const anchorX = Number.isFinite(position.x) ? position.x : 0;
+  const anchorY = Number.isFinite(position.y) ? position.y : 0;
+  const openRight = anchorX + smartOffsetX + menuWidth <= width - smartMargin;
+  adjustedX = openRight ? anchorX + smartOffsetX : anchorX - menuWidth - smartOffsetX;
+  adjustedY = anchorY - Math.min(24, estimatedMenuHeight / 2);
+  adjustedX = Math.max(smartMargin, Math.min(adjustedX, width - menuWidth - smartMargin));
+  adjustedY = Math.max(smartMargin, Math.min(adjustedY, height - estimatedMenuHeight - smartMargin));
+
   // Estilos multiplataforma optimizados
   const menuStyle = {
     position: 'absolute',
@@ -1991,9 +2001,15 @@ const FreeTextTool = React.memo(
     );
 
     // En multi-drag, derivar indicador de eliminaci�n de la posici�n actual del elemento
-    const textDisplayX = textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth;
-    const textDisplayY =
-      textObj.y !== undefined ? textObj.y : (textObj.yRatio || 0.5) * imageHeight;
+    const textDisplay = ratioToDisplay(
+      textObj.xRatio ?? 0.5,
+      textObj.yRatio ?? 0.5,
+      viewMode,
+      imageWidth,
+      imageHeight,
+    );
+    const textDisplayX = textObj.xRatio !== undefined ? textDisplay.x : textObj.x || 0;
+    const textDisplayY = textObj.yRatio !== undefined ? textDisplay.y : textObj.y || 0;
     const isOutsideInMultiDrag =
       ALLOW_MULTI_ELEMENT_DRAG &&
       multiSelectMode &&
@@ -2233,8 +2249,8 @@ const FreeTextTool = React.memo(
           }}
           style={{
             position: 'absolute',
-            left: textObj.x !== undefined ? textObj.x : (textObj.xRatio || 0.5) * imageWidth,
-            top: textObj.y !== undefined ? textObj.y : (textObj.yRatio || 0.5) * imageHeight,
+            left: textDisplayX,
+            top: textDisplayY,
             zIndex:
               textObj.calculatedZIndex ||
               (textObj.locked === true ? 1 : textObj.zIndex || ZINDEX_BASE_ICONS),
@@ -2288,6 +2304,7 @@ const FreeTextTool = React.memo(
             style={{
               minWidth: 40,
               minHeight: 30,
+              maxWidth: Math.max(40, imageWidth - textDisplayX),
               padding: 4,
               userSelect: 'none',
               backgroundColor:
@@ -2303,9 +2320,13 @@ const FreeTextTool = React.memo(
             <Text
               style={{
                 fontSize: textObj.size || 18,
+                lineHeight: (textObj.size || 18) * 1.2,
+                fontFamily: 'Arial, Helvetica, sans-serif',
                 color: textObj.color || '#000',
                 fontWeight: 'bold',
                 userSelect: 'none',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
               }}
             >
               {textObj.value}
@@ -9529,12 +9550,14 @@ const MemoizedStraightLineDetector = React.memo(
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              setOptionsMenu({
-                visible: true,
-                position: { x: centerX + 20, y: centerY },
-                iconId: icon.id,
-                canRotate: true,
-                hideEdit: false,
+              e.target.measure((x, y, width, height, pageX, pageY) => {
+                setOptionsMenu({
+                  visible: true,
+                  position: { x: pageX + width, y: pageY + 40 + height / 2 },
+                  iconId: icon.id,
+                  canRotate: true,
+                  hideEdit: false,
+                });
               });
             }}
             style={{
@@ -9966,12 +9989,14 @@ const MemoizedCurveLineDetector = React.memo(
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              setOptionsMenu({
-                visible: true,
-                position: { x: centerX + 20, y: centerY },
-                iconId: icon.id,
-                canRotate: true,
-                hideEdit: false,
+              e.target.measure((x, y, width, height, pageX, pageY) => {
+                setOptionsMenu({
+                  visible: true,
+                  position: { x: pageX + width, y: pageY + 40 + height / 2 },
+                  iconId: icon.id,
+                  canRotate: true,
+                  hideEdit: false,
+                });
               });
             }}
             style={{
@@ -10970,12 +10995,14 @@ const MemoizedCircleDetector = React.memo(
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              setOptionsMenu({
-                visible: true,
-                position: { x: centerX + rx + 20, y: centerY },
-                iconId: icon.id,
-                canRotate: false,
-                hideEdit: false,
+              e.target.measure((x, y, width, height, pageX, pageY) => {
+                setOptionsMenu({
+                  visible: true,
+                  position: { x: pageX + width, y: pageY + 40 + height / 2 },
+                  iconId: icon.id,
+                  canRotate: false,
+                  hideEdit: false,
+                });
               });
             }}
             style={{
@@ -11468,12 +11495,14 @@ const MemoizedRectangleDetector = React.memo(
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              setOptionsMenu({
-                visible: true,
-                position: { x: minX + width + 20, y: centerY },
-                iconId: icon.id,
-                canRotate: false,
-                hideEdit: false,
+              e.target.measure((x, y, width, height, pageX, pageY) => {
+                setOptionsMenu({
+                  visible: true,
+                  position: { x: pageX + width, y: pageY + 40 + height / 2 },
+                  iconId: icon.id,
+                  canRotate: false,
+                  hideEdit: false,
+                });
               });
             }}
             style={{
@@ -11925,12 +11954,14 @@ const MemoizedCustomShapeDetector = React.memo(
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              setOptionsMenu({
-                visible: true,
-                position: { x: maxX + 20, y: centerY },
-                iconId: icon.id,
-                canRotate: false,
-                hideEdit: false,
+              e.target.measure((x, y, width, height, pageX, pageY) => {
+                setOptionsMenu({
+                  visible: true,
+                  position: { x: pageX + width, y: pageY + 40 + height / 2 },
+                  iconId: icon.id,
+                  canRotate: false,
+                  hideEdit: false,
+                });
               });
             }}
             style={{
@@ -17689,11 +17720,15 @@ export default function Field(props = {}) {
     const size = 100;
 
     return textClones.filter((clone) => {
-      const x = clone.x || 0;
-      const y = clone.y || 0;
+      const display =
+        clone.xRatio !== undefined && clone.yRatio !== undefined
+          ? ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight)
+          : { x: clone.x || 0, y: clone.y || 0 };
+      const x = display.x;
+      const y = display.y;
       return x + size >= minX && x - size <= maxX && y + size >= minY && y - size <= maxY;
     });
-  }, [positionedClones, imageWidth, imageHeight, isCloneVisible]);
+  }, [positionedClones, imageWidth, imageHeight, viewMode, isCloneVisible]);
 
   // Memoizar elementos de herramientas/materiales (se renderizan en capa inferior)
   const materialElements = useMemo(() => {
@@ -22847,6 +22882,8 @@ export default function Field(props = {}) {
             viewMode={viewMode}
             fieldWidth={referenceWidth}
             fieldHeight={referenceHeight}
+            fieldDisplayWidth={imageWidth}
+            fieldDisplayHeight={imageHeight}
             fieldRef={fieldRef}
             videoFrameControl={videoFrameControlRef}
             fieldBaseRef={fieldBaseRef}

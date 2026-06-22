@@ -1085,21 +1085,84 @@ function drawCustomShape(ctx, cw, ch, elem, scale) {
 }
 
 function drawFreeText(ctx, cw, ch, elem, scale) {
-  const p = pos(elem, cw, ch);
   const text = elem.text || elem.value || '';
   if (!text) return;
+  const sourceWidth = elem.imageWidth || cw;
+  const sourceHeight = elem.imageHeight || ch;
+  const scaleX = cw / sourceWidth;
+  const scaleY = ch / sourceHeight;
+  const textScale =
+    elem.imageWidth && elem.imageHeight
+      ? Math.min(scaleX, scaleY)
+      : scale;
+  const sourceX =
+    elem.textX !== undefined
+      ? elem.textX
+      : elem.imageWidth && elem.xRatio !== undefined
+      ? elem.xRatio * sourceWidth
+      : elem.x || 0;
+  const sourceY =
+    elem.textY !== undefined
+      ? elem.textY
+      : elem.imageHeight && elem.yRatio !== undefined
+      ? elem.yRatio * sourceHeight
+      : elem.y || 0;
+  const p =
+    elem.imageWidth && elem.imageHeight
+      ? { x: sourceX * scaleX, y: sourceY * scaleY }
+      : pos(elem, cw, ch);
   const baseFontSize = elem.baseFontSize || elem.baseSize || elem.fontSize || 16;
-  const fs = baseFontSize * scale;
+  const fs = baseFontSize * textScale;
   const color = elem.color || '#000';
   const bg = elem.backgroundColor || 'transparent';
-  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
   const lineHeight = fs * 1.2;
-  const pad = 4 * scale;
+  const pad = 4 * textScale;
+  const maxTextWidth =
+    elem.textMaxWidth !== undefined
+      ? Math.max(40 * textScale, elem.textMaxWidth * scaleX)
+      : elem.imageWidth
+        ? Math.max(40 * textScale, (elem.imageWidth - sourceX - 8) * scaleX)
+      : Math.max(40 * textScale, cw - p.x - pad * 2);
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
   ctx.font = `bold ${fs}px ${FONT_STACK}`;
+  const pushWrappedWord = (wrapped, word) => {
+    if (!word) return;
+    let current = wrapped[wrapped.length - 1];
+    let rest = word;
+    while (rest) {
+      const next = current ? `${current} ${rest}` : rest;
+      if (ctx.measureText(next).width <= maxTextWidth) {
+        wrapped[wrapped.length - 1] = next;
+        return;
+      }
+      if (current) {
+        wrapped.push('');
+        current = '';
+        continue;
+      }
+      let cut = 1;
+      while (cut < rest.length && ctx.measureText(rest.slice(0, cut + 1)).width <= maxTextWidth) {
+        cut += 1;
+      }
+      wrapped[wrapped.length - 1] = rest.slice(0, cut);
+      rest = rest.slice(cut);
+      if (rest) wrapped.push('');
+    }
+  };
+  const lines = String(text)
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .flatMap((line) => {
+      const words = line.split(' ');
+      const wrapped = [''];
+      for (const word of words) {
+        pushWrappedWord(wrapped, word);
+      }
+      return wrapped;
+    });
   const tw = Math.max(...lines.map((line) => ctx.measureText(line).width), 0);
   const th = lines.length * lineHeight;
 
