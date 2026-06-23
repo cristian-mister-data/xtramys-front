@@ -12,6 +12,7 @@ import {
 
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const getFolderId = (item) => item?.folder?._id || item?.folder || null;
 
 const applyFavorite = (state, strategyId, favorito) => {
   if (!strategyId || typeof favorito !== 'boolean') return;
@@ -21,6 +22,14 @@ const applyFavorite = (state, strategyId, favorito) => {
     if (idx !== -1) list[idx].favorito = favorito;
   });
   if (sameId(getItemId(state.strategy), strategyId)) state.strategy.favorito = favorito;
+};
+
+const upsertStrategy = (list, item) => {
+  if (!item) return list;
+  const idx = list.findIndex((strategy) => sameId(getItemId(strategy), getItemId(item)));
+  if (idx === -1) return [item, ...list];
+  list[idx] = item;
+  return list;
 };
 
 const strategySlice = createSlice({
@@ -70,7 +79,10 @@ const strategySlice = createSlice({
       .addCase(createEstrategia.pending, (s) => { s.loading = true; })
       .addCase(createEstrategia.fulfilled, (s, a) => {
         s.loading = false;
-        s.strategies = [...s.strategies, a.payload];
+        s.strategies = upsertStrategy(s.strategies, a.payload);
+        if (sameId(getFolderId(a.payload), s.currentFolder?._id)) {
+          s.currentFolderStrategies = upsertStrategy(s.currentFolderStrategies, a.payload);
+        }
       })
       .addCase(createEstrategia.rejected, (s, a) => { s.loading = false; s.error = a.error.message; })
 
@@ -79,6 +91,10 @@ const strategySlice = createSlice({
         s.loading = false;
         const idx = s.strategies.findIndex((e) => e._id === a.payload._id);
         if (idx !== -1) s.strategies[idx] = a.payload;
+        const folderIdx = s.currentFolderStrategies.findIndex((e) => e._id === a.payload._id);
+        if (folderIdx !== -1) s.currentFolderStrategies[folderIdx] = a.payload;
+        const globalIdx = s.globalStrategies.findIndex((e) => e._id === a.payload._id);
+        if (globalIdx !== -1) s.globalStrategies[globalIdx] = a.payload;
       })
       .addCase(updateEstrategia.rejected, (s, a) => { s.loading = false; s.error = a.error.message; })
 

@@ -1346,7 +1346,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       initialLoadDoneRef.current = true;
       dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
       dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
-      dispatch(fetchStrategyFoldersFlat({ lang }));
+      dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
       dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
       dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
     }
@@ -1357,7 +1357,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       if (idUsuario && initialLoadDoneRef.current) {
         dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
         dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
-        dispatch(fetchStrategyFoldersFlat({ lang }));
+        dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
         dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
         dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
       }
@@ -1423,7 +1423,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     // Recargar datos para reflejar cambios
     dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
     dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
-    dispatch(fetchStrategyFoldersFlat({ lang }));
+    dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
     if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
   };
 
@@ -1540,10 +1540,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       })).unwrap();
 
       // Refresh data
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-      dispatch(fetchStrategyFolders({ lang }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
       if (currentFolderId) {
-        dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+        dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
       }
 
       setShowMoveToFolder(false);
@@ -1573,10 +1573,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
             await dispatch(deleteEstrategia(strategy._id));
             showNotification(isSetPiece ? t('setPieces.deleteSuccess') : t('strategy.strategyDeleted', 'Estrategia eliminada'), 'success');
             // Recargar datos para reflejar cambios
-            dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-            dispatch(fetchStrategyFolders({ lang }));
-            dispatch(fetchStrategyFoldersFlat({ lang }));
-            if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+            dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+            dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+            dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
+            if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
           }
         }
       ]
@@ -1652,9 +1652,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
             try {
               await dispatch(batchDeleteStrategies([...selectedIds])).unwrap();
               showNotification(t('strategy.strategyDeleted') || 'Eliminadas', 'success');
-              dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-              dispatch(fetchStrategyFolders({ lang }));
-              if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+              dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+              dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+              if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
               handleCancelSelection();
             } catch (err) {
               showNotification(t('message.error'), 'error');
@@ -1672,9 +1672,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     try {
       await dispatch(batchMoveStrategies({ ids: [...selectedIds], folderId: folderId || null })).unwrap();
       showNotification(t('folders.moveToFolder') || 'Movidas', 'success');
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-      dispatch(fetchStrategyFolders({ lang }));
-      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
       setShowBatchMoveModal(false);
       handleCancelSelection();
     } catch (err) {
@@ -1828,10 +1828,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       setNewFolderNameEn('');
       setNewFolderColor('#3B82F6');
       setNewFolderIsGlobal(false);
-      dispatch(fetchStrategyFolders({ lang }));
-      dispatch(fetchStrategyFoldersFlat({ lang }));
-      if (folderData.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+      dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
+      if (folderData.isGlobal) dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
     } catch (error) {
       const errorMsg = error?.message || t('folders.createError');
       showNotification(errorMsg, 'error');
@@ -1879,11 +1879,11 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       await dispatch(deleteStrategyFolder({ id: folderToDelete._id, ...options })).unwrap();
       showNotification(t('folders.folderDeleted'), 'success');
 
-      dispatch(fetchStrategyFolders({ lang }));
-      dispatch(fetchStrategyFoldersFlat({ lang }));
-      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-      if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+      dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+      if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
 
       setShowDeleteFolderModal(false);
       setShowDeleteConfirmModal(false);
@@ -1924,10 +1924,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       await dispatch(updateStrategyFolder(updateData)).unwrap();
       showNotification(t('folders.folderUpdated'), 'success');
       setEditFolderModalVisible(false);
-      dispatch(fetchStrategyFolders({ lang }));
-      dispatch(fetchStrategyFoldersFlat({ lang }));
-      if (menuFolder.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+      dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
+      if (menuFolder.isGlobal) dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
     } catch (error) {
       showNotification(t('folders.updateError'), 'error');
     }
@@ -2473,9 +2473,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
                         lang: i18n.language,
                       })).unwrap();
                       showNotification(t('strategy.copiedToMyStrategies'), 'success');
-                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-                      dispatch(fetchGlobalStrategies({ lang }));
-                      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+                      dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
+                      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
                     } catch (err) {
                       Alert.alert(t('message.error'), err?.message || 'Error');
                     }
@@ -2549,9 +2549,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
                         })).unwrap();
                       }
                       showNotification(t('strategy.cloneCreated'), 'success');
-                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang }));
-                      dispatch(fetchGlobalStrategies({ lang }));
-                      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang }));
+                      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+                      dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
+                      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
                     } catch (err) {
                       Alert.alert(t('message.error'), err?.message || 'Error');
                     }
