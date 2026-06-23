@@ -2271,7 +2271,7 @@ export default function EditMatchSheetModal({
                   )}
                   <Text style={styles.setPiecePickerTitle} numberOfLines={2}>{sp.nombre}</Text>
                   <View style={styles.setPieceAddBadge}>
-                    <Ionicons name="add" size={14} color="#fff" />
+                    <Ionicons name="add" size={14} color={theme.colors.onPrimary} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -3437,7 +3437,7 @@ export default function EditMatchSheetModal({
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity style={styles.createRivalButton} onPress={openCreateRivalModal}>
-                    <MaterialIcons name="add" size={20} color="#fff" />
+                    <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                     <Text style={styles.createRivalButtonText}>{t('rivals.createNew')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -5178,3 +5178,4 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.primary,
   },
 });
+

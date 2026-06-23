@@ -407,7 +407,7 @@ export default function WellnessTemplates({ navigation }) {
                     onSubmitEditing={addQuestion}
                   />
                   <TouchableOpacity style={styles.addQuestionBtn} onPress={addQuestion}>
-                    <Ionicons name="add" size={24} color="#fff" />
+                    <Ionicons name="add" size={24} color={theme.colors.onPrimary} />
                   </TouchableOpacity>
                 </View>
               </KeyboardAwareScrollView>
@@ -771,3 +771,4 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
   },
 });
+

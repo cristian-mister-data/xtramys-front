@@ -969,7 +969,7 @@ export default function GestionEquipos() {
                         style={styles.createTeamButton}
                         onPress={() => handleOpenCreateTeamModal()}
                       >
-                        <Ionicons name="add-circle" size={20} color="#ffffff" />
+                        <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                         <Text style={styles.createTeamButtonText}>{t('team.createTeam')}</Text>
                       </TouchableOpacity>
                     )}
@@ -1246,7 +1246,7 @@ export default function GestionEquipos() {
                       setCreateSeasonModalVisible(true);
                     }}
                   >
-                    <Ionicons name="add-circle" size={20} color="#ffffff" />
+                    <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                     <Text style={styles.createSeasonInModalButtonText}>{t('season.createNewSeason')}</Text>
                   </TouchableOpacity>
                 )}
@@ -3922,3 +3922,5 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
   },
 });
+
+

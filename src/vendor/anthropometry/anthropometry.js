@@ -748,7 +748,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
                   style={[styles.headerPrimaryBtn, IS_MOBILE && styles.headerPrimaryBtnMobile]}
                   accessibilityLabel={t('anthropometry.newMeasurement')}
                 >
-                  <MaterialIcons name="add" size={20} color="#fff" />
+                  <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                   <Text
                     numberOfLines={1}
                     style={[
@@ -789,7 +789,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
                 style={styles.createButton}
                 onPress={openCreateModal}
               >
-                <MaterialIcons name="add" size={20} color="#fff" />
+                <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                 <Text style={styles.createButtonText}>{t('anthropometry.createFirst')}</Text>
               </TouchableOpacity>
             )}
@@ -1265,7 +1265,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
                       openCreateModal();
                     }}
                   >
-                    <MaterialIcons name="add-circle" size={24} color="#2474E5" />
+                    <MaterialIcons name="add" size={24} color="#2474E5" />
                     <Text style={styles.mobileMenuItemText}>{t('anthropometry.newMeasurement')}</Text>
                   </TouchableOpacity>
                 )}
@@ -2416,8 +2416,6 @@ const Anthropometry = ({ navigation, canMutate }) => {
 const makeStyles = (theme) =>
   StyleSheet.create({
     emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
@@ -4065,3 +4063,5 @@ const makeStyles = (theme) =>
   });
 
 export default Anthropometry;
+
+

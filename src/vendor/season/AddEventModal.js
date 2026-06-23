@@ -3242,7 +3242,7 @@ export default function AddEventModal({
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.createRivalButton} onPress={openCreateRivalModal}>
-                <MaterialIcons name="add" size={20} color="#fff" />
+                <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                 <Text style={styles.createRivalButtonText}>{t('rivals.createNew')}</Text>
               </TouchableOpacity>
             </View>
@@ -3893,7 +3893,7 @@ export default function AddEventModal({
           style={styles.addExerciseBtn}
           onPress={() => setShowExerciseSelectorModal(true)}
         >
-          <Ionicons name="add-circle" size={22} color={theme.colors.success} />
+          <Ionicons name="add" size={22} color={theme.colors.success} />
           <Text style={styles.addExerciseBtnText}>{t('schedule.addExerciseBtn')}</Text>
         </TouchableOpacity>
 
@@ -6552,3 +6552,5 @@ function VideoPlayerView({ url }) {
   });
   return <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls />;
 }
+
+

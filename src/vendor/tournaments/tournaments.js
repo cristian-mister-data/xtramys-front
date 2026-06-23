@@ -871,7 +871,7 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
       {/* Create match button */}
       {canMutate !== false && (
         <TouchableOpacity style={styles.createMatchBtn} onPress={() => onCreateMatch()}>
-          <MaterialIcons name="add-circle" size={20} color={theme.colors.primary} />
+          <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
           <Text style={styles.createMatchBtnText}>{t('tournaments.createMatch')}</Text>
         </TouchableOpacity>
       )}
@@ -1472,7 +1472,7 @@ export default function Tournaments({ canMutate }) {
       <Text style={styles.emptySubtitle}>{t('tournaments.emptySubtitle')}</Text>
       {canMutate !== false && (
         <TouchableOpacity style={styles.emptyButton} onPress={handleCreate}>
-          <MaterialIcons name="add" size={20} color="#fff" />
+          <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
           <Text style={styles.emptyButtonText}>{t('tournaments.createFirst')}</Text>
         </TouchableOpacity>
       )}
@@ -1501,7 +1501,7 @@ export default function Tournaments({ canMutate }) {
           </View>
           {canMutate !== false && (
             <TouchableOpacity style={styles.addButton} onPress={handleCreate}>
-              <MaterialIcons name="add" size={22} color="#fff" />
+              <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
               {!IS_MOBILE && <Text style={styles.addButtonText}>{t('tournaments.new')}</Text>}
             </TouchableOpacity>
           )}
@@ -1530,7 +1530,7 @@ export default function Tournaments({ canMutate }) {
         {IS_MOBILE && canMutate !== false && tournaments.length > 0 && (
           <TouchableOpacity style={[styles.fab, { bottom: Math.max(insets.bottom, 20) }]} onPress={handleCreate} activeOpacity={0.8}>
             <LinearGradient colors={[theme.colors.primary, theme.colors.primaryHover]} style={styles.fabGradient}>
-              <MaterialIcons name="add" size={28} color="#fff" />
+              <MaterialIcons name="add" size={28} color={theme.colors.onPrimary} />
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -2251,19 +2251,18 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 10,
     marginTop: 8,
     marginBottom: 20,
-    backgroundColor: theme.colors.primarySoft,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: theme.colors.primary,
-    borderStyle: 'dashed',
+    backgroundColor: theme.colors.primary,
+    borderRadius: 8,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   createMatchBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.primary,
+    color: theme.colors.onPrimary,
   },
   // Options modal
   modalOverlay: {
@@ -2718,3 +2717,5 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 6,
   },
 });
+
+

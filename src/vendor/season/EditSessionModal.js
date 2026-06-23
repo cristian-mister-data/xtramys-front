@@ -619,7 +619,7 @@ export default function EditSessionModal({
                 style={styles.addExerciseBtn}
                 onPress={() => setShowExerciseSelectorModal(true)}
               >
-                <Ionicons name="add-circle" size={22} color={theme.colors.success} />
+                <Ionicons name="add" size={22} color={theme.colors.success} />
                 <Text style={styles.addExerciseBtnText}>{t('session.addExercise')}</Text>
               </TouchableOpacity>
 
@@ -2605,3 +2605,4 @@ const makeStyles = (theme) => StyleSheet.create({
     marginLeft: 6,
   },
 });
+

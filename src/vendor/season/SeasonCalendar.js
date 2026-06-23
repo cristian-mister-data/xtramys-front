@@ -981,7 +981,7 @@ export default function SeasonCalendar({
                     onPress={() => onAddEvent(selectedMobileDate)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="add" size={20} color="#fff" />
+                    <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -998,7 +998,7 @@ export default function SeasonCalendar({
                       style={mobileStyles.emptyAddBtn}
                       onPress={() => onAddEvent(selectedMobileDate)}
                     >
-                      <Ionicons name="add-circle" size={18} color={THEME.primary} />
+                      <Ionicons name="add" size={18} color={THEME.primary} />
                       <Text style={mobileStyles.emptyAddText}>{t('season.add')}</Text>
                     </TouchableOpacity>
                   )}
@@ -1202,7 +1202,7 @@ export default function SeasonCalendar({
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="add-circle" size={20} color={THEME.primary} />
+            <Ionicons name="add" size={20} color={THEME.primary} />
             <Text style={styles.addEventText}>{t('season.add')}</Text>
           </TouchableOpacity>
         )}
@@ -2093,3 +2093,5 @@ const makeMobileStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
 });
+
+

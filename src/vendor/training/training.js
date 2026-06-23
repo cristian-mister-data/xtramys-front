@@ -1784,7 +1784,7 @@ export default function Training({ canMutate }) {
                 </Text>
                 {canMutate !== false && (
                 <TouchableOpacity style={styles.proEmptyButton} onPress={openCrearModal}>
-                  <MaterialIcons name="add" size={20} color="#fff" />
+                  <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                   <Text style={styles.proEmptyButtonText}>{t('session.createFirst')}</Text>
                 </TouchableOpacity>
               )}
@@ -5963,3 +5963,4 @@ function VideoPlayerView({ url }) {
   });
   return <VideoView player={player} style={{ flex: 1 }} contentFit="contain" nativeControls />;
 }
+

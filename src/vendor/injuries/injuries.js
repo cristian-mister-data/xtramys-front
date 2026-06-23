@@ -676,7 +676,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                 )}
                 {injuries?.length === 0 && canMutate !== false && (
                   <TouchableOpacity style={styles.emptyStateButton} onPress={openCreateModal}>
-                    <Ionicons name="add-circle" size={20} color="#ffffff" />
+                    <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                     <Text style={styles.emptyStateButtonText}>{t('injury.registerInjury')}</Text>
                   </TouchableOpacity>
                 )}
@@ -1340,13 +1340,13 @@ const makeStyles = (theme) => StyleSheet.create({
   }),
   emptyStateButtonText: Platform.select({
     web: {
-      color: '#ffffff',
+      color: theme.colors.onPrimary,
       fontWeight: '600',
       fontSize: 14,
       marginLeft: 0,
     },
     default: {
-      color: '#ffffff',
+      color: theme.colors.onPrimary,
       fontWeight: '600',
       fontSize: 14,
       marginLeft: 0,

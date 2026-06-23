@@ -717,7 +717,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
       {/* Botón crear plantilla */}
       {canMutate !== false && (
         <TouchableOpacity style={styles.createBtn} onPress={openCreateTemplateModal}>
-          <Ionicons name="add-circle" size={20} color="#fff" />
+          <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
           <Text style={styles.createBtnText}>
             {t('wellnessTemplates.createNew')}
           </Text>
@@ -876,7 +876,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
               />
               {canMutate !== false && (
               <TouchableOpacity style={styles.addQuestionBtn} onPress={addTemplateQuestion}>
-                <Ionicons name="add" size={24} color="#fff" />
+                <Ionicons name="add" size={24} color={theme.colors.onPrimary} />
               </TouchableOpacity>
             )}
             </View>
@@ -2491,3 +2491,5 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 2,
   },
 });
+
+

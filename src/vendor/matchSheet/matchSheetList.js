@@ -719,7 +719,7 @@ export default function MatchSheetList({ canMutate }) {
                   onPress={openCreateModal}
                   style={styles.headerCreateBtn}
                 >
-                  <Ionicons name="add" size={20} color="#fff" />
+                  <Ionicons name="add" size={20} color={theme.colors.onPrimary} />
                   {!IS_MOBILE && <Text style={styles.headerCreateBtnText}>{t('matchSheet.actions.createMatchSheet')}</Text>}
                 </TouchableOpacity>
               )}
@@ -1039,7 +1039,7 @@ export default function MatchSheetList({ canMutate }) {
                     style={styles.createButton}
                     onPress={openCreateModal}
                   >
-                    <MaterialIcons name="add" size={20} color="#fff" />
+                    <MaterialIcons name="add" size={20} color={theme.colors.onPrimary} />
                     <Text style={styles.createButtonText}>{t('matchSheet.createFirst')}</Text>
                   </TouchableOpacity>
                 )}
@@ -3897,3 +3897,4 @@ const makeStyles = (theme) => StyleSheet.create({
   }),
 
 });
+
