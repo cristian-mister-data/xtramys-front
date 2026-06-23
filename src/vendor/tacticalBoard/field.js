@@ -36,6 +36,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons, Entypo, Feather } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
@@ -1235,37 +1236,48 @@ const FORMATIONS_BY_PLAYER_COUNT = {
 // Legacy helper removed "� field selection now uses lineType + viewMode directly
 
 // Funci�n para obtener los iconos iniciales con etiquetas traducidas
+const DEFAULT_PLAYER_ICON_SIZE = 20;
+
 const getInitialIcons = () => [
   {
     id: 'icon1',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.bluePlayer'),
     color: '#2176ff',
-    size: 24,
+    size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
+    shape: 'circle',
+    hasStripes: false,
+    stripeColor: '#ffffff',
   },
   {
     id: 'icon2',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.redPlayer'),
     color: '#ff3838',
-    size: 24,
+    size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
+    shape: 'circle',
+    hasStripes: false,
+    stripeColor: '#ffffff',
   },
   {
     id: 'icon3',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.orangePlayer'),
     color: '#ffa600',
-    size: 24,
+    size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
+    shape: 'circle',
+    hasStripes: false,
+    stripeColor: '#ffffff',
   },
   {
     id: 'team-players',
     type: 'team-players',
     label: i18n.t('tacticalBoard.icons.teamPlayers'),
     color: '#000000ff',
-    size: 24,
+    size: DEFAULT_PLAYER_ICON_SIZE,
   },
   {
     id: 'coaching-staff',
@@ -3250,6 +3262,7 @@ function SettingsPanel({
   setPlayersWithNumber,
   boardSettings,
   setBoardSettings,
+  onApplyBoardSettings,
   onSaveBoardSettings,
   onOpenConnectors,
 }) {
@@ -3262,18 +3275,21 @@ function SettingsPanel({
   const [size, setSize] = useState(standardSize.toString());
   const MIN_SIZE = 16; // Tama�o m�nimo para que quepa el n�mero
   const [savingSettings, setSavingSettings] = useState(false);
+  const [draftSettings, setDraftSettings] = useState(boardSettings);
+  const [draftPlayersWithNumber, setDraftPlayersWithNumber] = useState(playersWithNumber);
 
   // Estados locales para los tama�os de cada jugador (para permitir edici�n libre)
-  const [size1, setSize1] = useState((boardSettings?.playerIcon1?.size || 24).toString());
-  const [size2, setSize2] = useState((boardSettings?.playerIcon2?.size || 24).toString());
-  const [size3, setSize3] = useState((boardSettings?.playerIcon3?.size || 24).toString());
-  const [sizeTeam, setSizeTeam] = useState((boardSettings?.teamPlayers?.size || 24).toString());
+  const [size1, setSize1] = useState((boardSettings?.playerIcon1?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
+  const [size2, setSize2] = useState((boardSettings?.playerIcon2?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
+  const [size3, setSize3] = useState((boardSettings?.playerIcon3?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
+  const [sizeTeam, setSizeTeam] = useState((boardSettings?.teamPlayers?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
 
   // Estados para color pickers
   const [colorPicker1Visible, setColorPicker1Visible] = useState(false);
   const [colorPicker2Visible, setColorPicker2Visible] = useState(false);
   const [colorPicker3Visible, setColorPicker3Visible] = useState(false);
   const [colorPickerTeamVisible, setColorPickerTeamVisible] = useState(false);
+  const [stripePickerTarget, setStripePickerTarget] = useState(null);
 
   useEffect(() => {
     setSize(standardSize.toString());
@@ -3282,7 +3298,9 @@ function SettingsPanel({
   // Sincronizar estados locales solo al abrir el panel (no cuando boardSettings cambia por cambio de color)
   useEffect(() => {
     if (visible && boardSettings) {
-      const defaultVal = isMobile ? 24 : 18;
+      const defaultVal = DEFAULT_PLAYER_ICON_SIZE;
+      setDraftSettings(boardSettings);
+      setDraftPlayersWithNumber(playersWithNumber);
       setSize1((boardSettings.playerIcon1?.size || defaultVal).toString());
       setSize2((boardSettings.playerIcon2?.size || defaultVal).toString());
       setSize3((boardSettings.playerIcon3?.size || defaultVal).toString());
@@ -3292,57 +3310,121 @@ function SettingsPanel({
 
   if (!visible) return null;
 
-  const handleApply = () => {
-    const parsedSize = parseInt(size);
-    if (!isNaN(parsedSize)) {
-      // Validar solo el m�nimo
-      const validSize = Math.max(MIN_SIZE, parsedSize);
-      setStandardSize(validSize);
-      setSize(validSize.toString()); // Actualizar el input con el valor validado
-    }
-    onClose();
-  };
-
-  const handleSave = async () => {
+  const buildSettingsFromInputs = () => {
     const parsedSize = parseInt(size);
     if (!isNaN(parsedSize)) {
       const validSize = Math.max(MIN_SIZE, parsedSize);
       setStandardSize(validSize);
+      setSize(validSize.toString());
     }
 
-    // Validar y actualizar tama�os de jugadores antes de guardar
-    const validSize1 = size1.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size1) || 24);
-    const validSize2 = size2.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size2) || 24);
-    const validSize3 = size3.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(size3) || 24);
+    const validSize1 = size1.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size1) || DEFAULT_PLAYER_ICON_SIZE);
+    const validSize2 = size2.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size2) || DEFAULT_PLAYER_ICON_SIZE);
+    const validSize3 = size3.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size3) || DEFAULT_PLAYER_ICON_SIZE);
     const validSizeTeam =
-      sizeTeam.trim() === '' ? 24 : Math.max(MIN_SIZE, parseInt(sizeTeam) || 24);
+      sizeTeam.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(sizeTeam) || DEFAULT_PLAYER_ICON_SIZE);
 
-    // Construir objeto con los nuevos settings y aplicarlo directamente
     const newSettings = {
-      ...boardSettings,
-      playerIcon1: { ...boardSettings.playerIcon1, size: validSize1 },
-      playerIcon2: { ...boardSettings.playerIcon2, size: validSize2 },
-      playerIcon3: { ...boardSettings.playerIcon3, size: validSize3 },
-      teamPlayers: { ...boardSettings.teamPlayers, size: validSizeTeam },
+      ...draftSettings,
+      playerIcon1: { ...draftSettings.playerIcon1, size: validSize1 },
+      playerIcon2: { ...draftSettings.playerIcon2, size: validSize2 },
+      playerIcon3: { ...draftSettings.playerIcon3, size: validSize3 },
+      teamPlayers: { ...draftSettings.teamPlayers, size: validSizeTeam },
     };
 
-    setBoardSettings(newSettings);
-
-    // Actualizar estados locales con valores validados
     setSize1(validSize1.toString());
     setSize2(validSize2.toString());
     setSize3(validSize3.toString());
     setSizeTeam(validSizeTeam.toString());
+    setDraftSettings(newSettings);
+    return newSettings;
+  };
+
+  const handleApply = () => {
+    const newSettings = buildSettingsFromInputs();
+    setBoardSettings(newSettings);
+    setPlayersWithNumber(draftPlayersWithNumber);
+    if (onApplyBoardSettings) onApplyBoardSettings(newSettings);
+    onClose();
+  };
+
+  const handleSave = async () => {
+    const newSettings = buildSettingsFromInputs();
+    setBoardSettings(newSettings);
+    setPlayersWithNumber(draftPlayersWithNumber);
+    if (onApplyBoardSettings) onApplyBoardSettings(newSettings);
 
     if (onSaveBoardSettings) {
       setSavingSettings(true);
       try {
-        // Pasar los nuevos settings al callback para evitar usar un estado stale
         await onSaveBoardSettings(newSettings);
       } finally {
         setSavingSettings(false);
       }
     }
+  };
+  const updateBoardIcon = (key, patch) => {
+    setDraftSettings((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], ...patch },
+    }));
+  };
+
+  const renderIconShapeControls = (key) => {
+    const settings = draftSettings?.[key] || {};
+    return (
+      <>
+        <View style={[styles.proModalGrid, { marginTop: 8 }]}>
+          {[
+            { value: 'circle', label: 'Circulo' },
+            { value: 'jersey', label: 'Camiseta' },
+          ].map((shapeOption) => (
+            <TouchableOpacity
+              key={shapeOption.value}
+              style={[
+                styles.proModalGridItem,
+                (settings.shape || 'circle') === shapeOption.value && styles.proModalGridItemSelected,
+              ]}
+              onPress={() => updateBoardIcon(key, { shape: shapeOption.value })}
+            >
+              <Text
+                style={[
+                  styles.proModalChipText,
+                  (settings.shape || 'circle') === shapeOption.value &&
+                    styles.proModalChipTextSelected,
+                ]}
+              >
+                {shapeOption.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
+          <Text style={styles.proModalSwitchLabel}>Rayas</Text>
+          <Switch
+            value={settings.hasStripes === true}
+            onValueChange={(value) => updateBoardIcon(key, { hasStripes: value })}
+            trackColor={{ false: '#ddd', true: '#81b0ff' }}
+            thumbColor={settings.hasStripes ? '#2176ff' : '#f4f3f4'}
+          />
+        </View>
+        {settings.hasStripes === true && (
+          <View style={styles.proModalRow}>
+            <TouchableOpacity
+              style={[
+                styles.proModalColorBtn,
+                {
+                  backgroundColor: settings.stripeColor || '#ffffff',
+                  borderColor: settings.stripeColor === '#ffffff' ? '#ccc' : '#e0e0e0',
+                },
+              ]}
+              onPress={() => setStripePickerTarget(key)}
+            />
+            <Text style={styles.proModalHint}>Color de rayas</Text>
+          </View>
+        )}
+      </>
+    );
   };
 
   return (
@@ -3413,10 +3495,10 @@ function SettingsPanel({
                   {t('tacticalBoard.settings.showPlayerNumbers')}
                 </Text>
                 <Switch
-                  value={playersWithNumber}
-                  onValueChange={setPlayersWithNumber}
+                  value={draftPlayersWithNumber}
+                  onValueChange={setDraftPlayersWithNumber}
                   trackColor={{ false: '#ddd', true: '#81b0ff' }}
-                  thumbColor={playersWithNumber ? '#2176ff' : '#f4f3f4'}
+                  thumbColor={draftPlayersWithNumber ? '#2176ff' : '#f4f3f4'}
                 />
               </View>
 
@@ -3457,7 +3539,7 @@ function SettingsPanel({
                       style={[
                         styles.proModalColorBtn,
                         {
-                          backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff',
+                          backgroundColor: draftSettings?.playerIcon1?.color || '#2176ff',
                           width: 32,
                           height: 32,
                           borderRadius: 16,
@@ -3472,7 +3554,7 @@ function SettingsPanel({
                     <TouchableOpacity
                       style={[
                         styles.proModalColorBtn,
-                        { backgroundColor: boardSettings?.playerIcon1?.color || '#2176ff' },
+                        { backgroundColor: draftSettings?.playerIcon1?.color || '#2176ff' },
                       ]}
                       onPress={() => setColorPicker1Visible(true)}
                     />
@@ -3486,6 +3568,7 @@ function SettingsPanel({
                       placeholderTextColor="#999"
                     />
                   </View>
+                  {renderIconShapeControls('playerIcon1')}
                 </View>
 
                 {/* Jugador 2 */}
@@ -3495,7 +3578,7 @@ function SettingsPanel({
                       style={[
                         styles.proModalColorBtn,
                         {
-                          backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838',
+                          backgroundColor: draftSettings?.playerIcon2?.color || '#ff3838',
                           width: 32,
                           height: 32,
                           borderRadius: 16,
@@ -3510,7 +3593,7 @@ function SettingsPanel({
                     <TouchableOpacity
                       style={[
                         styles.proModalColorBtn,
-                        { backgroundColor: boardSettings?.playerIcon2?.color || '#ff3838' },
+                        { backgroundColor: draftSettings?.playerIcon2?.color || '#ff3838' },
                       ]}
                       onPress={() => setColorPicker2Visible(true)}
                     />
@@ -3524,6 +3607,7 @@ function SettingsPanel({
                       placeholderTextColor="#999"
                     />
                   </View>
+                  {renderIconShapeControls('playerIcon2')}
                 </View>
 
                 {/* Jugador 3 */}
@@ -3533,7 +3617,7 @@ function SettingsPanel({
                       style={[
                         styles.proModalColorBtn,
                         {
-                          backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600',
+                          backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600',
                           width: 32,
                           height: 32,
                           borderRadius: 16,
@@ -3548,7 +3632,7 @@ function SettingsPanel({
                     <TouchableOpacity
                       style={[
                         styles.proModalColorBtn,
-                        { backgroundColor: boardSettings?.playerIcon3?.color || '#ffa600' },
+                        { backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600' },
                       ]}
                       onPress={() => setColorPicker3Visible(true)}
                     />
@@ -3562,6 +3646,7 @@ function SettingsPanel({
                       placeholderTextColor="#999"
                     />
                   </View>
+                  {renderIconShapeControls('playerIcon3')}
                 </View>
 
                 {/* Jugadores del equipo */}
@@ -3571,7 +3656,7 @@ function SettingsPanel({
                       style={[
                         styles.proModalColorBtn,
                         {
-                          backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff',
+                          backgroundColor: draftSettings?.teamPlayers?.color || '#2176ff',
                           width: 32,
                           height: 32,
                           borderRadius: 16,
@@ -3586,7 +3671,7 @@ function SettingsPanel({
                     <TouchableOpacity
                       style={[
                         styles.proModalColorBtn,
-                        { backgroundColor: boardSettings?.teamPlayers?.color || '#2176ff' },
+                        { backgroundColor: draftSettings?.teamPlayers?.color || '#2176ff' },
                       ]}
                       onPress={() => setColorPickerTeamVisible(true)}
                     />
@@ -3600,6 +3685,7 @@ function SettingsPanel({
                       placeholderTextColor="#999"
                     />
                   </View>
+                  {renderIconShapeControls('teamPlayers')}
                 </View>
               </View>
             </KeyboardAwareScrollView>
@@ -3642,10 +3728,10 @@ function SettingsPanel({
             {/* Color Pickers */}
             <MiniColorPickerModal
               visible={colorPicker1Visible}
-              initialColor={boardSettings?.playerIcon1?.color || '#2176ff'}
+              initialColor={draftSettings?.playerIcon1?.color || '#2176ff'}
               onClose={() => setColorPicker1Visible(false)}
               onSelect={(c) =>
-                setBoardSettings((prev) => ({
+                setDraftSettings((prev) => ({
                   ...prev,
                   playerIcon1: { ...prev.playerIcon1, color: c },
                 }))
@@ -3653,10 +3739,10 @@ function SettingsPanel({
             />
             <MiniColorPickerModal
               visible={colorPicker2Visible}
-              initialColor={boardSettings?.playerIcon2?.color || '#ff3838'}
+              initialColor={draftSettings?.playerIcon2?.color || '#ff3838'}
               onClose={() => setColorPicker2Visible(false)}
               onSelect={(c) =>
-                setBoardSettings((prev) => ({
+                setDraftSettings((prev) => ({
                   ...prev,
                   playerIcon2: { ...prev.playerIcon2, color: c },
                 }))
@@ -3664,10 +3750,10 @@ function SettingsPanel({
             />
             <MiniColorPickerModal
               visible={colorPicker3Visible}
-              initialColor={boardSettings?.playerIcon3?.color || '#ffa600'}
+              initialColor={draftSettings?.playerIcon3?.color || '#ffa600'}
               onClose={() => setColorPicker3Visible(false)}
               onSelect={(c) =>
-                setBoardSettings((prev) => ({
+                setDraftSettings((prev) => ({
                   ...prev,
                   playerIcon3: { ...prev.playerIcon3, color: c },
                 }))
@@ -3675,14 +3761,20 @@ function SettingsPanel({
             />
             <MiniColorPickerModal
               visible={colorPickerTeamVisible}
-              initialColor={boardSettings?.teamPlayers?.color || '#2176ff'}
+              initialColor={draftSettings?.teamPlayers?.color || '#2176ff'}
               onClose={() => setColorPickerTeamVisible(false)}
               onSelect={(c) =>
-                setBoardSettings((prev) => ({
+                setDraftSettings((prev) => ({
                   ...prev,
                   teamPlayers: { ...prev.teamPlayers, color: c },
                 }))
               }
+            />
+            <MiniColorPickerModal
+              visible={!!stripePickerTarget}
+              initialColor={draftSettings?.[stripePickerTarget]?.stripeColor || '#ffffff'}
+              onClose={() => setStripePickerTarget(null)}
+              onSelect={(c) => stripePickerTarget && updateBoardIcon(stripePickerTarget, { stripeColor: c })}
             />
           </View>
         </View>
@@ -12318,12 +12410,12 @@ export default function Field(props = {}) {
   const [showingMaterialsPalette, setShowingMaterialsPalette] = useState(false);
   const [showingStaffPalette, setShowingStaffPalette] = useState(false);
   const [teamPlayerSettingsVisible, setTeamPlayerSettingsVisible] = useState(false);
-  const [standardSize, setStandardSize] = useState(isMobile ? 24 : 18);
+  const [standardSize, setStandardSize] = useState(DEFAULT_PLAYER_ICON_SIZE);
   // Estado para el estilo por defecto de jugadores del equipo
   const [teamPlayerStyle, setTeamPlayerStyle] = useState({
     color: '#2176ff',
     goalkeeperColor: '#ff4a4a',
-    size: isMobile ? 24 : 18,
+    size: DEFAULT_PLAYER_ICON_SIZE,
     numberColor: '#ffffff',
     textColor: '#000000',
     textBackgroundColor: '#ffffff',
@@ -12348,6 +12440,7 @@ export default function Field(props = {}) {
   const [videoKeyframes, setVideoKeyframes] = useState([]);
   const [dismissedBallTrajectoryPrompts, setDismissedBallTrajectoryPrompts] = useState({});
   const [loadedEditVideoKeyframeCount, setLoadedEditVideoKeyframeCount] = useState(0);
+  const boardPreviewPlaybackIdRef = useRef(0);
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -12361,13 +12454,13 @@ export default function Field(props = {}) {
 
   // Estado para Configuraci�n de la pizarra (colores y tama�os de iconos de jugadores)
   const [boardSettings, setBoardSettings] = useState({
-    playerIcon1: { color: '#2176ff', size: 24 },
-    playerIcon2: { color: '#ff3838', size: 24 },
-    playerIcon3: { color: '#ffa600', size: 24 },
+    playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+    playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+    playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
     teamPlayers: {
       color: '#2176ff',
       goalkeeperColor: '#ff4a4a',
-      size: 24,
+      size: DEFAULT_PLAYER_ICON_SIZE,
       numberColor: '#ffffff',
       textColor: '#000000',
       textBackgroundColor: '#ffffff',
@@ -12539,6 +12632,57 @@ export default function Field(props = {}) {
 
   // Guardado inmediato de boardSettings (bot�n Guardar en panel de ajustes)
   // Ahora acepta un par�metro opcional settingsParam para evitar efectos de estado stale
+  const handleApplyBoardSettings = useCallback((settingsToApply) => {
+    if (!settingsToApply) return;
+    if (settingsToApply?.playerIcon1?.size) {
+      setStandardSize(settingsToApply.playerIcon1.size);
+    }
+    setPaletteIcons((prev) =>
+      prev.map((icon) => {
+        const setting =
+          icon.id === 'icon1'
+            ? settingsToApply.playerIcon1
+            : icon.id === 'icon2'
+              ? settingsToApply.playerIcon2
+              : icon.id === 'icon3'
+                ? settingsToApply.playerIcon3
+                : null;
+        if (!setting) return icon;
+        return {
+          ...icon,
+          color: setting.color,
+          size: setting.size,
+          shape: setting.shape || icon.shape || 'circle',
+          hasStripes: setting.hasStripes !== undefined ? setting.hasStripes : icon.hasStripes,
+          stripeColor: setting.stripeColor || icon.stripeColor || '#ffffff',
+        };
+      }),
+    );
+    setTeamPlayerStyle((prev) => ({
+      ...prev,
+      color: settingsToApply.teamPlayers.color,
+      goalkeeperColor: settingsToApply.teamPlayers.goalkeeperColor || prev.goalkeeperColor || '#ff4a4a',
+      size: settingsToApply.teamPlayers.size,
+      numberColor: settingsToApply.teamPlayers.numberColor || prev.numberColor,
+      textColor: settingsToApply.teamPlayers.textColor || prev.textColor,
+      textBackgroundColor: settingsToApply.teamPlayers.textBackgroundColor || prev.textBackgroundColor,
+      differentiateGoalkeeper:
+        settingsToApply.teamPlayers.differentiateGoalkeeper !== undefined
+          ? settingsToApply.teamPlayers.differentiateGoalkeeper
+          : prev.differentiateGoalkeeper,
+      goalkeeperStripeColor: settingsToApply.teamPlayers.goalkeeperStripeColor || prev.goalkeeperStripeColor,
+      showPhotos:
+        settingsToApply.teamPlayers.showPhotos !== undefined
+          ? settingsToApply.teamPlayers.showPhotos
+          : prev.showPhotos,
+      shape: settingsToApply.teamPlayers.shape || prev.shape || 'circle',
+      hasStripes:
+        settingsToApply.teamPlayers.hasStripes !== undefined
+          ? settingsToApply.teamPlayers.hasStripes
+          : prev.hasStripes,
+      stripeColor: settingsToApply.teamPlayers.stripeColor || prev.stripeColor || '#ffffff',
+    }));
+  }, []);
   const handleSaveBoardSettings = useCallback(
     async (settingsParam) => {
       const settingsToSave = settingsParam || boardSettings;
@@ -12566,6 +12710,12 @@ export default function Field(props = {}) {
                   ...icon,
                   color: settingsToSave.playerIcon1.color,
                   size: settingsToSave.playerIcon1.size,
+                  shape: settingsToSave.playerIcon1.shape || icon.shape || 'circle',
+                  hasStripes:
+                    settingsToSave.playerIcon1.hasStripes !== undefined
+                      ? settingsToSave.playerIcon1.hasStripes
+                      : icon.hasStripes,
+                  stripeColor: settingsToSave.playerIcon1.stripeColor || icon.stripeColor || '#ffffff',
                 };
               }
               if (icon.id === 'icon2') {
@@ -12573,6 +12723,12 @@ export default function Field(props = {}) {
                   ...icon,
                   color: settingsToSave.playerIcon2.color,
                   size: settingsToSave.playerIcon2.size,
+                  shape: settingsToSave.playerIcon2.shape || icon.shape || 'circle',
+                  hasStripes:
+                    settingsToSave.playerIcon2.hasStripes !== undefined
+                      ? settingsToSave.playerIcon2.hasStripes
+                      : icon.hasStripes,
+                  stripeColor: settingsToSave.playerIcon2.stripeColor || icon.stripeColor || '#ffffff',
                 };
               }
               if (icon.id === 'icon3') {
@@ -12580,6 +12736,12 @@ export default function Field(props = {}) {
                   ...icon,
                   color: settingsToSave.playerIcon3.color,
                   size: settingsToSave.playerIcon3.size,
+                  shape: settingsToSave.playerIcon3.shape || icon.shape || 'circle',
+                  hasStripes:
+                    settingsToSave.playerIcon3.hasStripes !== undefined
+                      ? settingsToSave.playerIcon3.hasStripes
+                      : icon.hasStripes,
+                  stripeColor: settingsToSave.playerIcon3.stripeColor || icon.stripeColor || '#ffffff',
                 };
               }
               return icon;
@@ -12637,8 +12799,6 @@ export default function Field(props = {}) {
     useCallback(() => {
       const loadUserSettings = async () => {
         // Si ya se cargaron los datos en esta sesi�n, no volver a cargar
-        if (userSettingsLoadedRef.current) return;
-
         try {
           const str = await AsyncStorage.getItem('usuario');
           if (!str) {
@@ -12646,7 +12806,19 @@ export default function Field(props = {}) {
             return;
           }
 
-          const usuario = JSON.parse(str);
+          const storedUsuario = JSON.parse(str);
+          let usuario = storedUsuario;
+          if (storedUsuario?._id) {
+            try {
+              const response = await api.get(`/user/${storedUsuario._id}`, { skipCache: true });
+              if (response?.data) {
+                usuario = response.data;
+                await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
+              }
+            } catch (err) {
+              console.warn('Error refreshing user settings, using local copy', err);
+            }
+          }
 
           if (usuario && usuario.formationSettings) {
             // Normalizar customLabels que puedan venir como Map u objeto desde el servidor
@@ -12690,6 +12862,13 @@ export default function Field(props = {}) {
                     ...icon,
                     color: usuario.boardSettings.playerIcon1.color || icon.color,
                     size: usuario.boardSettings.playerIcon1.size || icon.size,
+                    shape: usuario.boardSettings.playerIcon1.shape || icon.shape || 'circle',
+                    hasStripes:
+                      usuario.boardSettings.playerIcon1.hasStripes !== undefined
+                        ? usuario.boardSettings.playerIcon1.hasStripes
+                        : icon.hasStripes,
+                    stripeColor:
+                      usuario.boardSettings.playerIcon1.stripeColor || icon.stripeColor || '#ffffff',
                   };
                 }
                 if (icon.id === 'icon2' && usuario.boardSettings.playerIcon2) {
@@ -12697,6 +12876,13 @@ export default function Field(props = {}) {
                     ...icon,
                     color: usuario.boardSettings.playerIcon2.color || icon.color,
                     size: usuario.boardSettings.playerIcon2.size || icon.size,
+                    shape: usuario.boardSettings.playerIcon2.shape || icon.shape || 'circle',
+                    hasStripes:
+                      usuario.boardSettings.playerIcon2.hasStripes !== undefined
+                        ? usuario.boardSettings.playerIcon2.hasStripes
+                        : icon.hasStripes,
+                    stripeColor:
+                      usuario.boardSettings.playerIcon2.stripeColor || icon.stripeColor || '#ffffff',
                   };
                 }
                 if (icon.id === 'icon3' && usuario.boardSettings.playerIcon3) {
@@ -12704,6 +12890,13 @@ export default function Field(props = {}) {
                     ...icon,
                     color: usuario.boardSettings.playerIcon3.color || icon.color,
                     size: usuario.boardSettings.playerIcon3.size || icon.size,
+                    shape: usuario.boardSettings.playerIcon3.shape || icon.shape || 'circle',
+                    hasStripes:
+                      usuario.boardSettings.playerIcon3.hasStripes !== undefined
+                        ? usuario.boardSettings.playerIcon3.hasStripes
+                        : icon.hasStripes,
+                    stripeColor:
+                      usuario.boardSettings.playerIcon3.stripeColor || icon.stripeColor || '#ffffff',
                   };
                 }
                 return icon;
@@ -12847,7 +13040,7 @@ export default function Field(props = {}) {
     setTeamPlayerStyle({
       color: '#2176ff',
       goalkeeperColor: '#ff4a4a',
-      size: 24,
+      size: DEFAULT_PLAYER_ICON_SIZE,
       numberColor: '#ffffff',
       textColor: '#000000',
       textBackgroundColor: '#ffffff',
@@ -12860,13 +13053,13 @@ export default function Field(props = {}) {
       stripeColor: '#ffffff',
     });
     setBoardSettings({
-      playerIcon1: { color: '#2176ff', size: 24 },
-      playerIcon2: { color: '#ff3838', size: 24 },
-      playerIcon3: { color: '#ffa600', size: 24 },
+      playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+      playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+      playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
       teamPlayers: {
         color: '#2176ff',
         goalkeeperColor: '#ff4a4a',
-        size: 24,
+        size: DEFAULT_PLAYER_ICON_SIZE,
         numberColor: '#ffffff',
         textColor: '#000000',
         textBackgroundColor: '#ffffff',
@@ -13252,6 +13445,33 @@ export default function Field(props = {}) {
       }
     },
   };
+
+  const previewVideoOnBoard = useCallback(async (frames, fps = 30) => {
+    if (!Array.isArray(frames) || frames.length === 0) return;
+    const playbackId = ++boardPreviewPlaybackIdRef.current;
+    const frameMs = 1000 / Math.max(1, fps);
+    const now = () =>
+      typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+    const startedAt = now();
+    let index = 0;
+
+    while (index < frames.length && boardPreviewPlaybackIdRef.current === playbackId) {
+      const frame = frames[index];
+      await videoFrameControlRef.current?.setFrame?.(frame.elements || [], frame.connectors || []);
+
+      const elapsed = now() - startedAt;
+      const nextIndex = Math.min(frames.length - 1, Math.max(index + 1, Math.floor(elapsed / frameMs) + 1));
+      if (nextIndex === index) break;
+      await sleep(startedAt + nextIndex * frameMs - now());
+      index = nextIndex;
+    }
+
+    if (boardPreviewPlaybackIdRef.current === playbackId) {
+      const lastFrame = frames[frames.length - 1];
+      await videoFrameControlRef.current?.setFrame?.(lastFrame.elements || [], lastFrame.connectors || []);
+    }
+  }, []);
 
   // Restaurar al estado original (antes de abrir el video recorder)
   // Usado cuando se eliminan keyframes o se guarda el video
@@ -15493,6 +15713,7 @@ export default function Field(props = {}) {
   }, [clearBoardState, unlockOrientationAndGoBack]);
 
   const handleCloseVideoRecorder = useCallback(() => {
+    boardPreviewPlaybackIdRef.current += 1;
     // Mantener los elementos dibujados en el campo al cerrar
     keepVideoChangesRef.current = true;
     setVideoRecorderVisible(false);
@@ -18795,7 +19016,7 @@ export default function Field(props = {}) {
     const handleApply = () => {
       setTeamPlayerStyle({
         color,
-        size: parseInt(size) || 24,
+        size: parseInt(size) || DEFAULT_PLAYER_ICON_SIZE,
         numberColor,
         textColor,
         textBackgroundColor,
@@ -19117,7 +19338,7 @@ export default function Field(props = {}) {
                     <TouchableOpacity
                       style={styles.proModalStepperBtn}
                       onPress={() => {
-                        const current = parseInt(size) || 24;
+                        const current = parseInt(size) || DEFAULT_PLAYER_ICON_SIZE;
                         if (current > 12) setSize(String(current - 2));
                       }}
                     >
@@ -19129,7 +19350,7 @@ export default function Field(props = {}) {
                     <TouchableOpacity
                       style={styles.proModalStepperBtn}
                       onPress={() => {
-                        const current = parseInt(size) || 24;
+                        const current = parseInt(size) || DEFAULT_PLAYER_ICON_SIZE;
                         if (current < 80) setSize(String(current + 2));
                       }}
                     >
@@ -22055,7 +22276,7 @@ export default function Field(props = {}) {
                                   const arrowData = getArrowHeadForStraightLine(
                                     displayCurvePoints[secondLastIdx],
                                     displayCurvePoints[lastIdx],
-                                    standardSize || 24,
+                                    standardSize || DEFAULT_PLAYER_ICON_SIZE,
                                     0.5,
                                     previewThickness,
                                   );
@@ -22707,6 +22928,7 @@ export default function Field(props = {}) {
           setPlayersWithNumber={setPlayersWithNumber}
           boardSettings={boardSettings}
           setBoardSettings={setBoardSettings}
+          onApplyBoardSettings={handleApplyBoardSettings}
           onSaveBoardSettings={handleSaveBoardSettings}
           onOpenConnectors={() => setConnectorsModalVisible(true)}
         />
@@ -22894,6 +23116,7 @@ export default function Field(props = {}) {
             onApplyKeyframe={applyKeyframe}
             onGoToLastKeyframe={goToLastKeyframe}
             onRestoreOriginal={restoreToOriginalState}
+            onPreviewPlayback={previewVideoOnBoard}
             ejercicioId={ejercicioId}
             estrategiaId={estrategiaId}
             showPhotos={teamPlayerStyle.showPhotos}

@@ -649,6 +649,7 @@ export default function VideoRecorder({
   onApplyKeyframe, // Callback para aplicar un keyframe permanentemente
   onGoToLastKeyframe, // Callback para volver al último keyframe después de generar video
   onRestoreOriginal, // Callback para restaurar al estado original (antes de abrir video recorder)
+  onPreviewPlayback,
   ejercicioId = null, // ID del ejercicio (opcional)
   estrategiaId = null, // ID de la estrategia (opcional)
   showPhotos = false, // Mostrar fotos de jugadores en lugar de números
@@ -670,6 +671,7 @@ export default function VideoRecorder({
 }) {
   const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPreviewingBoard, setIsPreviewingBoard] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [showPreviewScreen, setShowPreviewScreen] = useState(false);
 
@@ -810,6 +812,14 @@ export default function VideoRecorder({
     const baseDuration = (lastTimestamp - firstTimestamp) / 1000; // en segundos
     return baseDuration + 1; // +1 segundo extra al final
   };
+
+  const getPlaybackFrames = useCallback(() => {
+    const fps = SPEED_TO_FPS[videoSpeed] || 30;
+    return {
+      fps,
+      frames: buildInterpolatedFrames(keyframes, fps, 0.9, 0.1, videoSpeed, 0.5),
+    };
+  }, [keyframes, videoSpeed]);
 
   // Función para mostrar notificación
   const showNotification = (message, type = 'success') => {
@@ -1254,20 +1264,7 @@ export default function VideoRecorder({
       videoThumbnailRef.current = null;
       setVideoThumbnail(null);
 
-      const fps = SPEED_TO_FPS[videoSpeed] || 30;
-      const moveDuration = 0.9;
-      const holdDuration = 0.1;
-      const extraDurationEnd = 0.5;
-
-      // 1. Interpolar todos los frames
-      const allFrames = buildInterpolatedFrames(
-        keyframes,
-        fps,
-        moveDuration,
-        holdDuration,
-        videoSpeed,
-        extraDurationEnd,
-      );
+      const { fps, frames: allFrames } = getPlaybackFrames();
 
       if (allFrames.length === 0) {
         throw new Error('No se pudieron generar frames');
@@ -1530,7 +1527,21 @@ export default function VideoRecorder({
       setLocalVideoPath(outputPath);
       setVideoUrl(fileUri);
       setCurrentVideoId(null);
-      setShowPreviewScreen(true);
+      setShowPreviewScreen(false);
+      setShowSaveModal(true);
+      if (!videoNombre.trim() && editingVideoName) {
+        setVideoNombre(editingVideoName);
+      }
+      setSelectedFolderId(presetFolderId || editingVideoFolderId || null);
+      try {
+        const lang = i18n.language;
+        const foldersResult = await getAllVideoFoldersFlat(lang);
+        if (foldersResult.success) {
+          setAllFolders((foldersResult.folders || []).filter((f) => !f.isGlobal));
+        }
+      } catch (folderError) {
+        console.error('Error cargando carpetas:', folderError);
+      }
       // NO llamar showNotification aquí — el modal abierto ya indica que el video se generó.
       // La notificación causa re-renders (setNotification + Animated.sequence)
       // que provocan parpadeo del SurfaceView dentro del Modal transparente en Android.
@@ -2051,6 +2062,25 @@ export default function VideoRecorder({
     downloadVideo();
   }, [localVideoPath]);
 
+  const previewOnBoard = useCallback(async () => {
+    if (keyframes.length < 2) {
+      showNotification(t('videoRecorder.needAtLeast2Positions'), 'error');
+      return;
+    }
+    if (!onPreviewPlayback) return;
+    const { fps, frames } = getPlaybackFrames();
+    if (!frames.length) {
+      showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
+      return;
+    }
+    try {
+      setIsPreviewingBoard(true);
+      await onPreviewPlayback(frames, fps);
+    } finally {
+      setIsPreviewingBoard(false);
+    }
+  }, [keyframes.length, onPreviewPlayback, getPlaybackFrames, t]);
+
   const progressPhaseLabel = generationPhase ? t(`videoRecorder.${generationPhase}`) : '';
 
   return (
@@ -2143,17 +2173,28 @@ export default function VideoRecorder({
             </View>
           )}
 
-          {/* Generate button */}
+          {/* Preview / save buttons */}
           {keyframes.length >= 2 && (
-            <TouchableOpacity
-              style={[styles.btnGenerate, isGenerating && styles.btnGenerateDisabled]}
-              onPress={generateVideo}
-              disabled={isGenerating}
-            >
-              <Text style={styles.btnGenerateText}>
-                {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.generate')}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.videoActionRow}>
+              <TouchableOpacity
+                style={[styles.btnPreviewBoard, (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled]}
+                onPress={previewOnBoard}
+                disabled={isGenerating || isPreviewingBoard}
+              >
+                <Text style={styles.btnPreviewBoardText}>
+                  {isPreviewingBoard ? t('videoRecorder.previewing', 'Viendo...') : t('videoRecorder.view', 'Ver')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnGenerate, (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled]}
+                onPress={generateVideo}
+                disabled={isGenerating || isPreviewingBoard}
+              >
+                <Text style={styles.btnGenerateText}>
+                  {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.save', 'Guardar')}
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Keyframe list */}
@@ -2879,7 +2920,26 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   // ── Generate ──
+  videoActionRow: {
+    flexDirection: 'row',
+    gap: IS_MOBILE ? 4 : 8,
+    marginBottom: IS_MOBILE ? 3 : 6,
+  },
+  btnPreviewBoard: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    borderRadius: IS_MOBILE ? 5 : 8,
+    paddingVertical: IS_MOBILE ? 3 : 9,
+    alignItems: 'center',
+  },
+  btnPreviewBoardText: {
+    color: '#fff',
+    fontSize: IS_MOBILE ? 7 : 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
   btnGenerate: {
+    flex: 1,
     backgroundColor: '#2563EB',
     borderRadius: IS_MOBILE ? 5 : 8,
     paddingVertical: IS_MOBILE ? 3 : 9,
@@ -2889,7 +2949,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
-    marginBottom: IS_MOBILE ? 3 : 6,
   },
   btnGenerateDisabled: {
     opacity: 0.5,
