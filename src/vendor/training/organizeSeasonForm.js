@@ -8,6 +8,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { toast } from '@/ui/toast';
 
 const daysList = [
   { label: 'weekdays.monday', value: 1 },
@@ -48,7 +49,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
   const styles = useMemo(() => makeStyles(theme), [theme]);
   // Detectar si es móvil para estilos responsivos
   const [fechaInicio, setFechaInicio] = useState(new Date());
-  const [fechaFin, setFechaFin] = useState(new Date());
+  const [fechaFin, setFechaFin] = useState(null);
   const [diasSemana, setDiasSemana] = useState([]);
   // INICIALIZACIÓN CORRECTA DE HORAS
   const [horaInicio, setHoraInicio] = useState(getTodayWithTime(18, 0));
@@ -68,9 +69,12 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
   }
 
   function handleSubmit() {
+    if (!fechaFin) {
+      toast.error(t('session.fillEndDate', 'Rellena la fecha fin'));
+      return;
+    }
     const missing = [];
     if (!fechaInicio) missing.push(t('session.startDate'));
-    if (!fechaFin) missing.push(t('session.endDate'));
     if (diasSemana.length === 0) missing.push(t('session.trainingDays'));
     if (missing.length > 0) {
       showMissingFieldsToast(t, missing);
@@ -196,7 +200,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
               >
                 <MaterialIcons name="calendar-today" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.dateText}>
-                  {fechaFin.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US')}
+                  {fechaFin ? fechaFin.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US') : t('session.selectEndDate', 'Seleccionar fecha')}
                 </Text>
               </TouchableOpacity>
             </View>

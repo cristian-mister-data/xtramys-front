@@ -1391,6 +1391,7 @@
     "analysisNoName": "Analysis"
   },
   "session": {
+    "fillEndDate": "Fill in the end date",
     "detailsTitle": "Session Details",
     "generalInformation": "General Information",
     "generalInfo": "General Information",

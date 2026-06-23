@@ -1394,6 +1394,8 @@
     "analysisNoName": "Análisis"
   },
   "session": {
+    "fillEndDate": "Rellena la fecha fin",
+    "selectEndDate": "Seleccionar fecha",
     "detailsTitle": "Detalles de la Sesión",
     "generalInformation": "Información General",
     "generalInfo": "Información General",
