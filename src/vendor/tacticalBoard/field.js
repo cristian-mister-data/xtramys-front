@@ -8133,8 +8133,8 @@ const DraggableIcon = React.memo(
                       }
                       differentiateGoalkeeper={differentiateGoalkeeper}
                       goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
-                      showPhotos={showPhotos && icon.playerData}
-                      photoUrl={cdnUrl(icon.playerData?.foto || '')}
+                      showPhotos={(showPhotos || icon.showPhotos) && icon.playerData}
+                      photoUrl={icon.photoUrl || cdnUrl(icon.playerData?.foto || '')}
                     />
 
                     {icon.playerData && (
@@ -14178,6 +14178,13 @@ export default function Field(props = {}) {
     }
   }, [initialConfig?.playersWithNumber]);
 
+  useEffect(() => {
+    const showPhotos = initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos;
+    if (showPhotos === true || showPhotos === false) {
+      setTeamPlayerStyle((prev) => ({ ...prev, showPhotos, showPosition: showPhotos ? false : prev.showPosition }));
+    }
+  }, [initialConfig?.teamPlayers?.showPhotos, initialConfig?.showPhotos]);
+
   // Inicializar availablePlayers con todos los jugadores no seleccionados
   useEffect(() => {
     const listToMap = matchSheetPlayers && matchSheetPlayers.length > 0 ? matchSheetPlayers : players;
@@ -14875,6 +14882,7 @@ export default function Field(props = {}) {
             number,
             playerData: { ...player, uniqueId: player.uniqueId },
             photoUrl: player.foto ? cdnUrl(player.foto) : c.photoUrl,
+            showPhotos: teamPlayerStyle.showPhotos || Boolean(player.foto),
             preserveVisualStyle: true,
             isGoalkeeper: keepsGoalkeeperStyle === true,
             displayLabel: c.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : c.displayLabel,
@@ -14912,6 +14920,7 @@ export default function Field(props = {}) {
                     uniqueId: player.uniqueId,
                   },
                   photoUrl: player.foto ? cdnUrl(player.foto) : elem.photoUrl,
+                  showPhotos: teamPlayerStyle.showPhotos || Boolean(player.foto),
                   preserveVisualStyle: true,
                   isGoalkeeper: keepsGoalkeeperStyle === true,
                   displayLabel: elem.displayLabel !== undefined && player.posicion ? getPositionAbbreviation(player.posicion) : elem.displayLabel,
@@ -15530,7 +15539,7 @@ export default function Field(props = {}) {
         }
 
         if (saveCallback) {
-          saveCallback(savedClones, selectedField, imageBase64, { playersWithNumber, connectors });
+          saveCallback(savedClones, selectedField, imageBase64, { playersWithNumber, connectors, teamPlayers: { showPhotos: teamPlayerStyle.showPhotos }, showPhotos: teamPlayerStyle.showPhotos });
         }
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);
@@ -15605,10 +15614,10 @@ export default function Field(props = {}) {
       try {
         if (fieldBaseRef.current) {
           const imageBase64 = await captureViewShotBase64(fieldBaseRef);
-          setFieldImageForVideo(`data:image/png;base64,${imageBase64}`);
+          setFieldImageForVideo(imageBase64 ? `data:image/png;base64,${imageBase64}` : null);
         }
       } catch (error) {
-        console.error('Error capturing field image for video:', error);
+        setFieldImageForVideo(null);
       }
     }, 300);
 
@@ -19559,6 +19568,7 @@ export default function Field(props = {}) {
     onSelectPlayer,
     isMobile,
     showPhotos = false,
+    setTeamPlayerStyle,
     teamPlayerStyle = {},
   }) {
     const iconSize = isMobile ? 28 : 32;
@@ -19600,6 +19610,24 @@ export default function Field(props = {}) {
                 <TouchableOpacity style={styles.proModalCloseBtn} onPress={onClose}>
                   <Text style={{ fontSize: 14, color: '#666' }}>✕</Text>
                 </TouchableOpacity>
+              </View>
+
+              <View style={styles.teamPlayersPhotoToggle}>
+                <Text style={styles.teamPlayersPhotoToggleText}>
+                  {t('tacticalBoard.teamSettings.showPhotos') || 'Mostrar fotos'}
+                </Text>
+                <Switch
+                  value={showPhotos}
+                  onValueChange={(value) =>
+                    setTeamPlayerStyle?.((prev) => ({
+                      ...prev,
+                      showPhotos: value,
+                      showPosition: value ? false : prev.showPosition,
+                    }))
+                  }
+                  trackColor={{ false: '#ddd', true: '#81b0ff' }}
+                  thumbColor={showPhotos ? '#2176ff' : '#f4f3f4'}
+                />
               </View>
 
               <ScrollView
@@ -22984,6 +23012,7 @@ export default function Field(props = {}) {
           onSelectPlayer={handleSelectPlayer}
           isMobile={isMobile}
           showPhotos={teamPlayerStyle.showPhotos}
+          setTeamPlayerStyle={setTeamPlayerStyle}
           teamPlayerStyle={teamPlayerStyle}
         />
 
@@ -24166,6 +24195,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
     paddingHorizontal: 4,
+  },
+  teamPlayersPhotoToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+    backgroundColor: '#f8f9fa',
+  },
+  teamPlayersPhotoToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333333',
   },
   playerGridItem: {
     width: '31%',

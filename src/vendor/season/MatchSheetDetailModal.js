@@ -313,15 +313,23 @@ export default function MatchSheetDetailModal({
   };
 
   const buildSetPiecePlayerOverlays = (setPiece) => {
+    const bySlot = new Map((setPiece?.assignments || []).map((assignment) => [String(assignment.slotId || ''), assignment]));
     const boardPlayers = (setPiece?.customElements || [])
       .filter((element) => element?.type === 'player' && element.playerData)
       .map((element, index) => {
-        const player = element.playerData;
+        const slotId = String(element.id || element._id || `slot-${index}`);
+        const assignment = bySlot.get(slotId);
+        const player = getAssignedPlayer(assignment) || element.playerData;
         const name = getPlayerFullName(player);
+        const photoUrl = assignment?.photoUrl || element.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
         return {
-          slotId: String(element.id || element._id || `slot-${index}`),
-          number: String(element.number || element.playerNumber || element.numero || element.text || element.label || ''),
-          exactSlot: true,
+          slotId,
+          number: String(assignment?.number || element.number || element.playerNumber || element.numero || element.text || element.label || ''),
+          exactSlot: false,
+          xRatio: element.xRatio,
+          yRatio: element.yRatio,
+          x: element.x,
+          y: element.y,
           playerData: {
             _id: player._id || player.id || '',
             nombre: name,
@@ -330,7 +338,8 @@ export default function MatchSheetDetailModal({
             posicion: player.posicion || player.position || '',
             foto: player.foto || '',
           },
-          photoUrl: player.foto ? cdnUrl(player.foto) : '',
+          photoUrl,
+          showPhotos: Boolean(photoUrl),
         };
       });
     if (boardPlayers.length) return boardPlayers;
@@ -339,9 +348,14 @@ export default function MatchSheetDetailModal({
       const player = getAssignedPlayer(assignment);
       if (!player) return null;
       const name = getPlayerFullName(player);
+      const photoUrl = assignment.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
       return {
         slotId: assignment.slotId,
         number: assignment.number,
+        xRatio: assignment.xRatio,
+        yRatio: assignment.yRatio,
+        x: assignment.x,
+        y: assignment.y,
         playerData: {
           _id: player._id,
           nombre: name,
@@ -350,7 +364,8 @@ export default function MatchSheetDetailModal({
           posicion: player.posicion || player.position || '',
           foto: player.foto || '',
         },
-        photoUrl: player.foto ? cdnUrl(player.foto) : '',
+        photoUrl,
+        showPhotos: Boolean(photoUrl),
       };
     })
     .filter(Boolean);

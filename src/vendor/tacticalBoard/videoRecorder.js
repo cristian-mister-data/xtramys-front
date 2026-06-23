@@ -884,12 +884,8 @@ export default function VideoRecorder({
 
           fieldImageData = `data:image/png;base64,${base64Image}`;
         } catch (captureError) {
-          console.error('Error capturando imagen del campo:', captureError);
-          showNotification(t('videoRecorder.errorCapturingField'), 'error');
-          if (videoFrameControl?.current?.setSelected) {
-            videoFrameControl.current.setSelected(savedSelection);
-          }
-          return;
+          console.warn('No se pudo capturar el campo base; se usará el renderer del video.', captureError);
+          fieldImageData = '';
         }
       }
 

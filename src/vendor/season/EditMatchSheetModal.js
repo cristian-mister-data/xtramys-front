@@ -49,7 +49,7 @@ import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { cdnUrl } from '@/config';
-import { duplicateVideoForEdit, getVideoForEdit } from '@/utils/api';
+import { duplicateVideoForEdit, getTacticalVideo, getVideoById, getVideoForEdit } from '@/utils/api';
 
 const MATCH_SET_PIECE_FIELD_RESULT = 'matchSetPieceFieldResult';
 
@@ -1505,15 +1505,23 @@ export default function EditMatchSheetModal({
   };
 
   const buildSetPiecePlayerOverlays = (setPiece) => {
+    const bySlot = new Map((setPiece?.assignments || []).map((assignment) => [String(assignment.slotId), assignment]));
     const boardPlayers = (setPiece?.customElements || [])
       .filter((element) => element?.type === 'player' && element.playerData)
       .map((element, index) => {
-        const player = element.playerData;
+        const assignment = bySlot.get(String(element.id || element._id || ''));
+        const assignedPlayer = getAssignedPlayer(assignment);
+        const player = assignedPlayer || element.playerData;
         const name = getPlayerFullName(player);
+        const photoUrl = assignment?.photoUrl || element.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
         return {
           slotId: String(element.id || element._id || `slot-${index}`),
-          number: String(element.number || element.playerNumber || element.numero || element.text || element.label || ''),
-          exactSlot: true,
+          number: String(assignment?.number || element.number || element.playerNumber || element.numero || element.text || element.label || ''),
+          exactSlot: false,
+          xRatio: element.xRatio,
+          yRatio: element.yRatio,
+          x: element.x,
+          y: element.y,
           playerData: {
             _id: player._id || player.id || '',
             nombre: name,
@@ -1522,7 +1530,8 @@ export default function EditMatchSheetModal({
             posicion: player.posicion || player.position || '',
             foto: player.foto || '',
           },
-          photoUrl: player.foto ? cdnUrl(player.foto) : '',
+          photoUrl,
+          showPhotos: Boolean(photoUrl) || assignment?.showPhotos || element.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || false,
         };
       });
     if (boardPlayers.length) return boardPlayers;
@@ -1531,9 +1540,14 @@ export default function EditMatchSheetModal({
       const player = getAssignedPlayer(assignment);
       if (!player) return null;
       const name = getPlayerFullName(player);
+      const photoUrl = assignment.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
       return {
         slotId: assignment.slotId,
         number: assignment.number,
+        xRatio: assignment.xRatio,
+        yRatio: assignment.yRatio,
+        x: assignment.x,
+        y: assignment.y,
         playerData: {
           _id: player._id,
           nombre: name,
@@ -1542,7 +1556,8 @@ export default function EditMatchSheetModal({
           posicion: player.posicion || player.position || '',
           foto: player.foto || '',
         },
-        photoUrl: player.foto ? cdnUrl(player.foto) : '',
+        photoUrl,
+        showPhotos: Boolean(photoUrl) || assignment.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || false,
       };
     })
     .filter(Boolean);
@@ -1898,8 +1913,15 @@ export default function EditMatchSheetModal({
           return {
             slotId: assignment.slotId,
             number: String(assignment.number || ''),
+            xRatio: assignment.xRatio,
+            yRatio: assignment.yRatio,
+            x: assignment.x,
+            y: assignment.y,
             player: playerId || undefined,
             playerName: player ? getPlayerFullName(player) : (assignment.playerName || ''),
+            foto: player?.foto || assignment.foto || '',
+            photoUrl: assignment.photoUrl || (player?.foto ? cdnUrl(player.foto) : ''),
+            showPhotos: assignment.showPhotos === true || Boolean(assignment.photoUrl || player?.foto),
           };
         }),
       }));
@@ -2031,10 +2053,13 @@ export default function EditMatchSheetModal({
       return {
         ...element,
         number: element.number || assignment?.number || player.dorsal || '',
+        photoUrl: assignment?.photoUrl || (player.foto ? cdnUrl(player.foto) : element.photoUrl),
+        showPhotos: Boolean(assignment?.photoUrl || player.foto || element.photoUrl) || assignment?.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || element.showPhotos,
         playerData: {
           ...player,
           nombre: getPlayerFullName(player),
           fullName: getPlayerFullName(player),
+          foto: player.foto || assignment?.foto || '',
         },
       };
     });
@@ -2051,15 +2076,25 @@ export default function EditMatchSheetModal({
     let boardSetPiece = setPiece;
     let editVideoData = null;
     let editableVideoId = getSetPieceVideoId(setPiece);
+    let didDuplicateVideo = false;
+    let videoMetadata = null;
 
     if (editableVideoId) {
       try {
         if (!setPiece.pizarraConfig?.matchVideoCopy) {
-          const duplicated = await duplicateVideoForEdit(editableVideoId, {
-            nombre: `${setPiece.nombre || t('setPieces.title')}_ficha`,
-          });
-          editableVideoId = duplicated?.video?._id || duplicated?.video?.id || duplicated?.videoId;
-          if (editableVideoId) {
+          videoMetadata = await getVideoById(editableVideoId).catch(() => null);
+          if (videoMetadata?.video?.type !== 'tactical') {
+            try {
+              const duplicated = await duplicateVideoForEdit(editableVideoId, {
+                nombre: `${setPiece.nombre || t('setPieces.title')}_ficha`,
+              });
+              editableVideoId = duplicated?.video?._id || duplicated?.video?.id || duplicated?.videoId || editableVideoId;
+              didDuplicateVideo = true;
+            } catch (duplicateError) {
+              console.warn('No se pudo duplicar el video de ABP; se abrirá el original:', duplicateError);
+            }
+          }
+          if (editableVideoId && didDuplicateVideo) {
             boardSetPiece = {
               ...setPiece,
               videoId: editableVideoId,
@@ -2070,16 +2105,27 @@ export default function EditMatchSheetModal({
         }
 
         if (editableVideoId) {
-          const result = await getVideoForEdit(editableVideoId);
-          if (result?.success && result.video) {
-            const video = result.video;
+          const isTacticalVideo = videoMetadata?.video?.type === 'tactical';
+          const result = isTacticalVideo
+            ? await getTacticalVideo(editableVideoId).catch(() => null)
+            : await getVideoForEdit(editableVideoId);
+          const video = isTacticalVideo
+            ? (result?.data?.video || result?.video)
+            : result?.video;
+          if ((isTacticalVideo ? video : result?.success && video)) {
             editVideoData = {
               videoId: video.id || video._id || editableVideoId,
-              nombre: video.nombre || boardSetPiece.nombre || '',
+              nombre: video.nombre || video.title || boardSetPiece.nombre || '',
               descripcion: video.descripcion || '',
-              fieldType: video.fieldType,
-              keyframes: video.keyframes,
-              config: video.config,
+              fieldType: video.fieldType || 'full',
+              keyframes: video.keyframes || (video.frames || []).map((frame) => ({
+                timestamp: frame.timestamp,
+                elements: frame.elements || [],
+                connectors: frame.connectors || [],
+                ballTrajectoryType: frame.ballTrajectoryType || 'ground',
+                ballTrajectoryById: frame.ballTrajectoryById || {},
+              })),
+              config: video.config || { speedMultiplier: video.speed || 1 },
               estrategiaId: null,
               folderId: video.folder?._id || video.folder || null,
             };
@@ -2096,16 +2142,33 @@ export default function EditMatchSheetModal({
         const newAssignments = playerElements.map((el, idx) => ({
           slotId: String(el.id || el._id || `slot-${idx}`),
           number: String(el.number || el.playerNumber || el.numero || el.text || el.label || ''),
+          xRatio: el.xRatio,
+          yRatio: el.yRatio,
+          x: el.x,
+          y: el.y,
           player: el.playerData?._id || el.playerData?.id || null,
           playerName: getPlayerFullName(el.playerData),
+          foto: el.playerData?.foto || '',
+          photoUrl: el.photoUrl || (el.playerData?.foto ? cdnUrl(el.playerData.foto) : ''),
+          showPhotos: Boolean(el.photoUrl || el.playerData?.foto) || el.showPhotos === true || updatedConfig?.teamPlayers?.showPhotos === true || updatedConfig?.showPhotos === true,
         }));
+        const showPhotos = newAssignments.some((assignment) => assignment.showPhotos && assignment.photoUrl);
 
         setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? {
           ...sp,
           customImage: imageBase64,
           customElements: updatedElements,
           customFieldType: updatedFieldType,
-          pizarraConfig: { ...(updatedConfig || sp.pizarraConfig || {}), setPieceMode: true, matchVideoCopy: sp.pizarraConfig?.matchVideoCopy === true },
+          pizarraConfig: {
+            ...(updatedConfig || sp.pizarraConfig || {}),
+            teamPlayers: {
+              ...((updatedConfig || sp.pizarraConfig || {})?.teamPlayers || {}),
+              showPhotos,
+            },
+            showPhotos,
+            setPieceMode: true,
+            matchVideoCopy: sp.pizarraConfig?.matchVideoCopy === true,
+          },
           assignments: newAssignments,
         } : sp));
         setBoardParams(null);
@@ -2127,7 +2190,19 @@ export default function EditMatchSheetModal({
     setBoardParams({
       initialElements: withAssignedPlayers(boardSetPiece),
       initialFieldType: boardSetPiece.customFieldType || boardSetPiece.tipoCampo || 'full',
-      initialConfig: { ...(boardSetPiece.pizarraConfig || {}), playersWithNumber: boardSetPiece.pizarraConfig?.playersWithNumber ?? true, setPieceMode: true },
+      initialConfig: {
+        ...(boardSetPiece.pizarraConfig || {}),
+        teamPlayers: {
+          ...(boardSetPiece.pizarraConfig?.teamPlayers || {}),
+          showPhotos: Boolean(
+            boardSetPiece.pizarraConfig?.teamPlayers?.showPhotos ||
+            boardSetPiece.pizarraConfig?.showPhotos ||
+            boardSetPiece.assignments?.some((assignment) => assignment.photoUrl || assignment.foto || (assignment.showPhotos && assignment.photoUrl))
+          ),
+        },
+        playersWithNumber: boardSetPiece.pizarraConfig?.playersWithNumber ?? true,
+        setPieceMode: true,
+      },
       isStrategyMode: true,
       setPieceMode: true,
       embeddedBoard: true,
@@ -2151,7 +2226,7 @@ export default function EditMatchSheetModal({
     try {
       const url = await resolvePlayableVideoUrl(
         videoId,
-        setPiece.pizarraConfig?.matchVideoCopy ? undefined : { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
+        { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
       );
       setSetPieceVideoUrl(url);
     } catch (error) {

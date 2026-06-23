@@ -88,19 +88,27 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   if (knownUrl && !playerOverlays) return maybeObjectUrl(knownUrl, urlOptions);
   if (!videoId) return '';
 
-  if (playerOverlays?.length) {
-    const result = await regenerateVideoWithField(videoId, null, playerOverlays);
-    if (result?.success && result?.videoId) {
-      return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
-    }
-  }
-
   const metadata = await getVideoById(videoId).catch(() => null);
   let directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
   if (!directUrl && !metadata) {
     const tacMetadata = await getTacticalVideo(videoId).catch(() => null);
     directUrl = tacMetadata?.video?.videoUrl || tacMetadata?.data?.video?.videoUrl;
   }
+  if (metadata?.video?.type === 'tactical' && directUrl && !playerOverlays?.length) {
+    return maybeObjectUrl(directUrl, urlOptions);
+  }
+
+  if (playerOverlays?.length) {
+    try {
+      const result = await regenerateVideoWithField(videoId, null, playerOverlays);
+      if (result?.success && result?.videoId) {
+        return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
+      }
+    } catch (_) {
+      if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
+    }
+  }
+
   if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
   if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), urlOptions);
 
