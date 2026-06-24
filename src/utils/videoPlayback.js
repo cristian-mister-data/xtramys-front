@@ -1,5 +1,6 @@
-import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, regenerateVideoWithField, getTacticalVideo } from '@/utils/api';
+import { getVideoById, getVideoDownloadUrl, getVideoStreamUrl, getTacticalVideo } from '@/utils/api';
 import { ensureMp4Blob } from '@/utils/videoUtils';
+import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
 
@@ -98,26 +99,18 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
     return maybeObjectUrl(directUrl, urlOptions);
   }
 
-  if (playerOverlays?.length) {
-    try {
-      const result = await regenerateVideoWithField(videoId, null, playerOverlays);
-      if (result?.success && result?.videoId) {
-        return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
-      }
-    } catch (_) {
-      if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
-    }
-  }
+  if (playerOverlays?.length && directUrl) return maybeObjectUrl(directUrl, urlOptions);
 
   if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
   if (metadata?.video?.hasStoredVideo) return resolveWithRetry(getVideoStreamUrl(videoId), urlOptions);
 
-  const result = await regenerateVideoWithField(videoId, null);
-  if (result?.success && result?.videoId) {
-    return resolveWithRetry(getVideoStreamUrl(result.videoId), urlOptions);
+  try {
+    const localUrl = await regenerateVideoInBrowser(videoId);
+    return urlOptions.objectUrl === false ? localUrl : localUrl;
+  } catch (error) {
+    console.warn('[videoPlayback] No se pudo regenerar el video en navegador:', error);
+    return maybeObjectUrl(getVideoStreamUrl(videoId), urlOptions);
   }
-
-  return maybeObjectUrl(getVideoStreamUrl(videoId), urlOptions);
 }
 
 async function resolveWithRetry(url, options, attempts = 3, delayMs = 1000) {
