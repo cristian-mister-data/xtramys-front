@@ -6,6 +6,11 @@ let currentViewMode = 'entire';
 
 const VIDEO_WIDTH = 1920;
 const FIELD_BG = '#4a8c3f';
+const NEUTRAL_PLAYER_COLORS = {
+  background: '#0F766E',
+  bib: '#FBBF24',
+  letter: '#111827',
+};
 
 let ballImage = null;
 if (typeof Image !== 'undefined') {
@@ -46,18 +51,32 @@ function applyRotation(ctx, x, y, rotation) {
 function drawJerseyPath(ctx, cx, cy, size) {
   const s = size / 100;
   ctx.beginPath();
-  ctx.moveTo(cx - 15 * s, cy - 45 * s);
-  ctx.quadraticCurveTo(cx, cy - 35 * s, cx + 15 * s, cy - 45 * s);
-  ctx.lineTo(cx + 35 * s, cy - 35 * s);
-  ctx.lineTo(cx + 50 * s, cy - 10 * s);
-  ctx.lineTo(cx + 35 * s, cy + 10 * s);
-  ctx.lineTo(cx + 25 * s, cy);
-  ctx.lineTo(cx + 25 * s, cy + 45 * s);
-  ctx.lineTo(cx - 25 * s, cy + 45 * s);
-  ctx.lineTo(cx - 25 * s, cy);
-  ctx.lineTo(cx - 35 * s, cy + 10 * s);
-  ctx.lineTo(cx - 50 * s, cy - 10 * s);
-  ctx.lineTo(cx - 35 * s, cy - 35 * s);
+  ctx.moveTo(cx - 15 * s, cy - 40 * s);
+  ctx.quadraticCurveTo(cx, cy - 30 * s, cx + 15 * s, cy - 40 * s);
+  ctx.lineTo(cx + 32 * s, cy - 30 * s);
+  ctx.lineTo(cx + 45 * s, cy - 8 * s);
+  ctx.lineTo(cx + 28 * s, cy + 4 * s);
+  ctx.lineTo(cx + 20 * s, cy - 5 * s);
+  ctx.lineTo(cx + 20 * s, cy + 40 * s);
+  ctx.lineTo(cx - 20 * s, cy + 40 * s);
+  ctx.lineTo(cx - 20 * s, cy - 5 * s);
+  ctx.lineTo(cx - 28 * s, cy + 4 * s);
+  ctx.lineTo(cx - 45 * s, cy - 8 * s);
+  ctx.lineTo(cx - 32 * s, cy - 30 * s);
+  ctx.closePath();
+}
+
+function drawJerseyBibPath(ctx, cx, cy, size) {
+  const s = size / 100;
+  ctx.beginPath();
+  ctx.moveTo(cx - 12 * s, cy - 38 * s);
+  ctx.quadraticCurveTo(cx, cy - 26 * s, cx + 12 * s, cy - 38 * s);
+  ctx.lineTo(cx + 20 * s, cy - 34 * s);
+  ctx.quadraticCurveTo(cx + 16 * s, cy - 18 * s, cx + 16 * s, cy - 2 * s);
+  ctx.lineTo(cx + 16 * s, cy + 32 * s);
+  ctx.lineTo(cx - 16 * s, cy + 32 * s);
+  ctx.lineTo(cx - 16 * s, cy - 2 * s);
+  ctx.quadraticCurveTo(cx - 16 * s, cy - 18 * s, cx - 20 * s, cy - 34 * s);
   ctx.closePath();
 }
 
@@ -79,6 +98,15 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   const r = size / 2;
   const color = elem.color || '#2176ff';
   const numberColor = elem.numberColor || '#ffffff';
+  const isNeutral =
+    elem.isNeutral === true ||
+    elem.id === 'neutral-player' ||
+    elem.idBase === 'neutral-player' ||
+    elem.number === 'N';
+  const hasBib = elem.hasBib !== undefined ? elem.hasBib : isNeutral;
+  const neutralBackgroundColor = elem.backgroundColor || NEUTRAL_PLAYER_COLORS.background;
+  const shirtColor = isNeutral ? neutralBackgroundColor : color;
+  const bibColor = elem.bibColor || (isNeutral ? color : (NEUTRAL_PLAYER_COLORS.bib || '#FBBF24'));
 
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
@@ -106,15 +134,20 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
 
     if (isJersey) {
       drawJerseyPath(ctx, p.x, p.y, size);
+      ctx.fillStyle = shirtColor;
+      ctx.fill();
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     } else {
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = shirtColor;
+      ctx.fill();
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
-    ctx.stroke();
 
     const sColor = elem.isGoalkeeper
       ? (elem.goalkeeperStripeColor || '#ffffff')
@@ -160,14 +193,59 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
       ctx.restore();
     }
 
-    const displayText = elem.displayLabel !== undefined ? elem.displayLabel : elem.number;
+    if (hasBib) {
+      ctx.save();
+      if (isJersey) {
+        ctx.globalAlpha = 0.8;
+        drawJerseyBibPath(ctx, p.x, p.y, size);
+        ctx.fillStyle = bibColor;
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r - 0.5, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r - 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = bibColor;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = shirtColor;
+        const cutouts = [
+          [p.x, p.y - size * 0.56, size * 0.18],
+          [p.x - size * 0.56, p.y, size * 0.2],
+          [p.x + size * 0.56, p.y, size * 0.2],
+        ];
+        for (const cutout of cutouts) {
+          ctx.beginPath();
+          ctx.arc(cutout[0], cutout[1], cutout[2], 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 1;
+        for (const cutout of cutouts) {
+          ctx.beginPath();
+          ctx.arc(cutout[0], cutout[1], cutout[2], 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r - 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const displayText = elem.displayLabel !== undefined ? elem.displayLabel : isNeutral ? 'N' : elem.number;
     const showNumbers =
       elem.playersWithNumber !== undefined
         ? elem.playersWithNumber
         : options.playersWithNumber !== undefined
           ? options.playersWithNumber
           : true;
-    if (displayText !== undefined && showNumbers !== false) {
+    if (displayText !== undefined && (showNumbers !== false || isNeutral)) {
       const isLabel = elem.displayLabel !== undefined;
       const baseFs = isLabel
         ? Math.max(10, size * 0.45)
@@ -176,10 +254,10 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
           : size * 0.6;
       const fs = isJersey ? Math.max(8, baseFs * 0.72) : baseFs;
       ctx.font = `${isLabel ? 600 : 'bold'} ${fs}px ${FONT_STACK}`;
-      ctx.fillStyle = numberColor;
+      ctx.fillStyle = elem.numberColor || (isNeutral ? NEUTRAL_PLAYER_COLORS.letter : numberColor);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(displayText), p.x, isJersey ? p.y + size * 0.08 : p.y);
+      ctx.fillText(String(displayText), p.x, isJersey || isNeutral ? p.y + size * 0.08 : p.y);
     }
   }
 

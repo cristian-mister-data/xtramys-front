@@ -79,6 +79,45 @@ const VIDEO_CAPTURE_QUALITY = 0.97;
 const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
 const STREAMING_ENCODE_BACKLOG = 6;
 
+const PLAYER_VISUAL_FIELDS = [
+  'color',
+  'numberColor',
+  'backgroundColor',
+  'isNeutral',
+  'shape',
+  'hasStripes',
+  'stripeColor',
+  'hasBib',
+  'bibColor',
+  'goalkeeperStripeColor',
+];
+
+function hydrateKeyframePlayerStyles(keyframes, currentElements = []) {
+  const stylesById = new Map(
+    currentElements
+      .filter((el) => el?.type === 'player' && el.id)
+      .map((el) => [el.id, el]),
+  );
+
+  return (keyframes || []).map((kf) => ({
+    ...kf,
+    elements: (kf.elements || []).map((el) => {
+      if (el?.type !== 'player') return el;
+      const current = stylesById.get(el.id);
+      const next = { ...el };
+      if (current) {
+        PLAYER_VISUAL_FIELDS.forEach((key) => {
+          if (next[key] === undefined && current[key] !== undefined) next[key] = current[key];
+        });
+      }
+      if (next.number === 'N' || next.id === 'neutral-player' || next.idBase === 'neutral-player') {
+        next.isNeutral = true;
+      }
+      return next;
+    }),
+  }));
+}
+
 // ============================================================
 // COMPONENTE AISLADO DE PREVIEW — React.memo + su propio player
 // Previene parpadeos: el VideoView NUNCA se desmonta/remonta
@@ -815,11 +854,12 @@ export default function VideoRecorder({
 
   const getPlaybackFrames = useCallback(() => {
     const fps = SPEED_TO_FPS[videoSpeed] || 30;
+    const styledKeyframes = hydrateKeyframePlayerStyles(keyframes, elements);
     return {
       fps,
-      frames: buildInterpolatedFrames(keyframes, fps, 0.9, 0.1, videoSpeed, 0.5),
+      frames: buildInterpolatedFrames(styledKeyframes, fps, 0.9, 0.1, videoSpeed, 0.5),
     };
-  }, [keyframes, videoSpeed]);
+  }, [elements, keyframes, videoSpeed]);
 
   // Función para mostrar notificación
   const showNotification = (message, type = 'success') => {
@@ -930,9 +970,13 @@ export default function VideoRecorder({
               snapshot.color = elem.color;
               snapshot.number = elem.playerNumber || elem.number;
               if (elem.numberColor) snapshot.numberColor = elem.numberColor;
+              if (elem.backgroundColor) snapshot.backgroundColor = elem.backgroundColor;
+              if (elem.isNeutral !== undefined) snapshot.isNeutral = elem.isNeutral;
               if (elem.shape) snapshot.shape = elem.shape;
               if (elem.hasStripes !== undefined) snapshot.hasStripes = elem.hasStripes;
               if (elem.stripeColor) snapshot.stripeColor = elem.stripeColor;
+              if (elem.hasBib !== undefined) snapshot.hasBib = elem.hasBib;
+              if (elem.bibColor) snapshot.bibColor = elem.bibColor;
               if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
               if (elem.ownerType) snapshot.ownerType = elem.ownerType;
               if (elem.preserveVisualStyle !== undefined) snapshot.preserveVisualStyle = elem.preserveVisualStyle;
@@ -1576,7 +1620,7 @@ export default function VideoRecorder({
       const refW = fieldWidth || 1280;
       const refH = fieldHeight || 720;
       const normalizedKeyframes = normalizeKeyframesForServer(
-        keyframes,
+        hydrateKeyframePlayerStyles(keyframes, elements),
         refW,
         refH,
         fieldDisplayWidth || refW,
@@ -1610,6 +1654,9 @@ export default function VideoRecorder({
       };
       const thumbnailToSave = videoThumbnailRef.current || videoThumbnail;
       if (thumbnailToSave) videoData.thumbnail = thumbnailToSave;
+      if (isEditingVideo && !localVideoPath) {
+        videoData.r2Key = '';
+      }
 
       // Guardar en BD primero (rápido, solo JSON)
       let result;
