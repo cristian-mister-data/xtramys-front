@@ -359,6 +359,34 @@ export default function EditSessionModal({
     return player ? getPlayerFullName(player) : '';
   };
 
+  const getExerciseComodines = (exerciseId) => {
+    const specialAssignment = (exerciseTeamAssignments[exerciseId] || []).find(ta => ta.teamNumber === 0);
+    return Math.max(0, specialAssignment?.comodines || 0);
+  };
+
+  const getComodinesAssignment = (exerciseId) => (
+    (exerciseTeamAssignments[exerciseId] || []).find(ta => ta.teamNumber === 0) || { teamNumber: 0, players: [], extraPlayers: [], comodines: 0 }
+  );
+
+  const updateExerciseComodines = (exerciseId, nextValue) => {
+    const teamAssignments = exerciseTeamAssignments[exerciseId] || [];
+    const newAssignments = teamAssignments.map(ta => ({
+      ...ta,
+      players: [...(ta.players || [])],
+      extraPlayers: [...(ta.extraPlayers || [])]
+    }));
+    let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
+    if (assignmentIndex === -1) {
+      newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
+      assignmentIndex = newAssignments.length - 1;
+    }
+    newAssignments[assignmentIndex].comodines = Math.max(0, nextValue);
+    setExerciseTeamAssignments(prev => ({
+      ...prev,
+      [exerciseId]: newAssignments
+    }));
+  };
+
   const normalizeTextValue = (value) => {
     if (typeof value === 'string') return value;
     if (Array.isArray(value)) {
@@ -791,7 +819,7 @@ export default function EditSessionModal({
                             <Text style={styles.teamAssignmentButtonText}>
                               {t('session.assignTeams')} ({exercise.equipos} {t('session.teams')})
                             </Text>
-                            {exerciseTeamAssignments[exId] && exerciseTeamAssignments[exId].some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0)) && (
+                            {exerciseTeamAssignments[exId] && exerciseTeamAssignments[exId].some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0 || (ta.comodines || 0) > 0)) && (
                               <View style={styles.teamAssignmentBadge}>
                                 <MaterialIcons name="check" size={14} color="#fff" />
                               </View>
@@ -1317,6 +1345,144 @@ export default function EditSessionModal({
                   </View>
 
                   <ScrollView style={styles.teamAssignmentModalBody}>
+                    <View style={styles.teamAssignmentTeamSection}>
+                      {(() => {
+                        const exId = currentExerciseForTeams._id;
+                        const currentAssignment = getComodinesAssignment(exId);
+                        const rosterForTeams = selectedPlayers.length > 0
+                          ? players.filter(p => !p.extra && selectedPlayers.includes(p._id))
+                          : players.filter(p => !p.extra);
+                        const allAvailable = [
+                          ...rosterForTeams.map(p => ({
+                            id: p._id,
+                            name: getPlayerFullName(p) || p.dorsal?.toString() || 'Sin nombre',
+                            dorsal: p.dorsal,
+                            isExtra: false
+                          })),
+                          ...extraPlayers.map(extraId => {
+                            const extraPlayer = extraPlayersAvailable.find(p => p._id === extraId);
+                            return {
+                              id: `extra_${extraId}`,
+                              name: extraPlayer ? getPlayerFullName(extraPlayer) : extraId,
+                              extraPlayerId: extraId,
+                              dorsal: extraPlayer?.dorsal || null,
+                              isExtra: true
+                            };
+                          })
+                        ];
+                        const assignedElsewhere = [];
+                        (exerciseTeamAssignments[exId] || []).forEach(ta => {
+                          if (ta.teamNumber !== 0) {
+                            ta.players?.forEach(pid => assignedElsewhere.push(pid));
+                            ta.extraPlayers?.forEach(epId => assignedElsewhere.push(`extra_${epId}`));
+                          }
+                        });
+                        return (
+                          <>
+                      <View style={styles.teamAssignmentTeamHeader}>
+                        <View style={[styles.teamAssignmentTeamBadge, { backgroundColor: '#0f766e' }]}>
+                          <Ionicons name="swap-horizontal" size={14} color="#fff" />
+                        </View>
+                        <Text style={styles.teamAssignmentTeamTitle}>{t('session.comodines', 'Comodines')}</Text>
+                        <Text style={styles.teamAssignmentTeamCount}>
+                          ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0) + getExerciseComodines(exId)})
+                        </Text>
+                      </View>
+
+                      <View style={styles.teamAssignmentComodinesRow}>
+                        <View style={styles.teamAssignmentComodinesLabel}>
+                          <Ionicons name="swap-horizontal" size={16} color="#0f766e" />
+                          <Text style={styles.teamAssignmentComodinesText}>{t('session.comodines', 'Comodines')}</Text>
+                        </View>
+                        <View style={styles.teamAssignmentComodinesStepper}>
+                          <TouchableOpacity
+                            style={[styles.teamAssignmentComodinesBtn, getExerciseComodines(currentExerciseForTeams._id) === 0 && styles.teamAssignmentComodinesBtnDisabled]}
+                            disabled={getExerciseComodines(currentExerciseForTeams._id) === 0}
+                            onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) - 1)}
+                          >
+                            <Feather name="minus" size={16} color={getExerciseComodines(currentExerciseForTeams._id) === 0 ? theme.colors.textMuted : '#0f766e'} />
+                          </TouchableOpacity>
+                          <Text style={styles.teamAssignmentComodinesValue}>{getExerciseComodines(currentExerciseForTeams._id)}</Text>
+                          <TouchableOpacity
+                            style={styles.teamAssignmentComodinesBtn}
+                            onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) + 1)}
+                          >
+                            <Feather name="plus" size={16} color="#0f766e" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.teamAssignmentPlayersList}>
+                        {allAvailable.map(player => {
+                          const isSelected = player.isExtra
+                            ? currentAssignment.extraPlayers?.includes(player.extraPlayerId)
+                            : currentAssignment.players?.includes(player.id);
+                          const isDisabled = assignedElsewhere.includes(player.id);
+                          return (
+                            <TouchableOpacity
+                              key={player.id}
+                              style={[
+                                styles.teamAssignmentPlayerChip,
+                                isSelected && styles.teamAssignmentPlayerChipSelected,
+                                isDisabled && styles.teamAssignmentPlayerChipDisabled,
+                                player.isExtra && styles.teamAssignmentPlayerChipExtra,
+                                isSelected && player.isExtra && styles.teamAssignmentPlayerChipExtraSelected
+                              ]}
+                              disabled={isDisabled}
+                              onPress={() => {
+                                const newAssignments = (exerciseTeamAssignments[exId] || []).map(ta => ({
+                                  ...ta,
+                                  players: [...(ta.players || [])],
+                                  extraPlayers: [...(ta.extraPlayers || [])]
+                                }));
+                                let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
+                                if (assignmentIndex === -1) {
+                                  newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
+                                  assignmentIndex = newAssignments.length - 1;
+                                }
+                                if (player.isExtra) {
+                                  const currentExtras = newAssignments[assignmentIndex].extraPlayers || [];
+                                  newAssignments[assignmentIndex].extraPlayers = currentExtras.includes(player.extraPlayerId)
+                                    ? currentExtras.filter(n => n !== player.extraPlayerId)
+                                    : [...currentExtras, player.extraPlayerId];
+                                } else {
+                                  const currentPlayers = newAssignments[assignmentIndex].players || [];
+                                  newAssignments[assignmentIndex].players = currentPlayers.includes(player.id)
+                                    ? currentPlayers.filter(id => id !== player.id)
+                                    : [...currentPlayers, player.id];
+                                }
+                                setExerciseTeamAssignments(prev => ({ ...prev, [exId]: newAssignments }));
+                              }}
+                            >
+                              {player.dorsal && (
+                                <Text style={[
+                                  styles.teamAssignmentPlayerDorsal,
+                                  isSelected && styles.teamAssignmentPlayerDorsalSelected
+                                ]}>
+                                  {player.dorsal}
+                                </Text>
+                              )}
+                              {player.isExtra && (
+                                <Ionicons name="person-add-outline" size={14} color={isSelected ? "#fff" : theme.colors.warning} style={{ marginRight: 4 }} />
+                              )}
+                              <Text style={[
+                                styles.teamAssignmentPlayerName,
+                                isSelected && styles.teamAssignmentPlayerNameSelected,
+                                isDisabled && styles.teamAssignmentPlayerNameDisabled
+                              ]} numberOfLines={1}>
+                                {player.name}
+                              </Text>
+                              {isSelected && (
+                                <MaterialIcons name="check" size={16} color="#fff" style={{ marginLeft: 4 }} />
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                          </>
+                        );
+                      })()}
+                    </View>
+
                     {Array.from({ length: currentExerciseForTeams.equipos || 0 }, (_, teamIndex) => {
                       const teamNumber = teamIndex + 1;
                       const exId = currentExerciseForTeams._id;
@@ -1369,7 +1535,7 @@ export default function EditSessionModal({
                               <Text style={styles.teamAssignmentTeamBadgeText}>{teamNumber}</Text>
                             </View>
                             <Text style={styles.teamAssignmentTeamTitle}>{t('session.team')} {teamNumber}</Text>
-                            <Text style={styles.teamAssignmentTeamCount}>
+                          <Text style={styles.teamAssignmentTeamCount}>
                               ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0)} jugadores)
                             </Text>
                           </View>
@@ -2505,6 +2671,51 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+  },
+  teamAssignmentComodinesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.successSoft || '#f0fdfa',
+  },
+  teamAssignmentComodinesLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  teamAssignmentComodinesText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f766e',
+  },
+  teamAssignmentComodinesStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: '#99f6e4',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  teamAssignmentComodinesBtn: {
+    width: 34,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teamAssignmentComodinesBtnDisabled: {
+    backgroundColor: theme.colors.inputBg,
+  },
+  teamAssignmentComodinesValue: {
+    minWidth: 30,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#134e4a',
   },
   teamAssignmentPlayersList: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import CreateExerciseForm from './createExerciseForm';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, copyClubExerciseToMine, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, updateExerciseFolder, deleteExerciseFolder, moveExerciseToFolder, duplicateExerciseToFolder, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEntrenamientosPorEquipo, updateEntrenamiento } from '@/store/slices/session/sessionThunks';
 import { clearCurrentFolder, setExerciseFavorite } from '@/store/slices/exercise/exerciseSlice';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,37 @@ const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const getSessionExerciseId = (item) => {
+  if (!item) return '';
+  if (typeof item === 'string' || typeof item === 'number') return String(item);
+  return String(item.ejercicio?._id || item.ejercicio || item.ejercicioId?._id || item.ejercicioId || item._id || item.id || '');
+};
+const replaceExerciseInSession = (session, oldExerciseId, newExerciseId) => {
+  const replaceId = (value) => (sameId(getSessionExerciseId(value), oldExerciseId) ? newExerciseId : getSessionExerciseId(value));
+  const directExercises = session.ejercicios || [];
+  const exerciseDetails = session.ejerciciosDetalle || [];
+  return {
+    fecha: session.fecha,
+    horaInicio: session.horaInicio,
+    horaFin: session.horaFin,
+    horaReunion: session.horaReunion,
+    equipo: session.equipo?._id || session.equipo,
+    ejercicios: (directExercises.length ? directExercises : exerciseDetails).map(replaceId).filter(Boolean),
+    ejerciciosDetalle: exerciseDetails.map((detail, index) => ({
+      ...detail,
+      ejercicio: replaceId(detail.ejercicio || detail.ejercicioId || detail),
+      orden: detail.orden || index + 1,
+    })),
+    observaciones: (session.observaciones || []).map((obs) => ({
+      ...obs,
+      ejercicioId: obs.tipo === 'general' ? obs.ejercicioId : replaceId(obs.ejercicioId || obs.ejercicio),
+    })),
+    ejerciciosFuerza: session.ejerciciosFuerza || [],
+    jugadores: session.jugadores || [],
+    jugadoresExtras: session.jugadoresExtras || [],
+    expectedWellness: session.expectedWellness,
+  };
+};
 const mergeById = (...groups) => {
   const map = new Map();
   groups.flat().filter(Boolean).forEach((item) => {
@@ -1427,7 +1459,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   // restaure el formulario incluso si solo `editingExercise` quedó set.
   useEffect(() => {
     if (creating || editingExercise) {
-      saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise });
+      const current = loadFormDraft(STORAGE_KEYS.EXERCISE_LIST, { remove: false });
+      saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { ...current, creating: true, editingExercise });
     } else {
       clearFormDraft(STORAGE_KEYS.EXERCISE_LIST);
     }
@@ -1435,19 +1468,34 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const handleSave = async (exercise) => {
     if (canMutate === false) return;
+    const listDraft = loadFormDraft(STORAGE_KEYS.EXERCISE_LIST, { remove: false });
+    const replaceInSession = listDraft?.replaceInSession;
+    let savedExercise = exercise;
+    let updatedSession = null;
+
     if (exercise.imagen) {
       bumpUrlVersion(exercise.imagen);
     }
     if (!exercise._id) {
       // Es un nuevo ejercicio
       const { _id, ...exerciseSinId } = exercise;
-      await dispatch(createEjercicio(exerciseSinId));
+      savedExercise = await dispatch(createEjercicio(exerciseSinId)).unwrap();
       if (exerciseSinId.isGlobal) dispatch(fetchGlobalExercises({ lang }));
     } else {
       // Es una actualización
-      await dispatch(updateEjercicio(exercise));
+      savedExercise = await dispatch(updateEjercicio(exercise)).unwrap();
       if (exercise.isGlobal) dispatch(fetchGlobalExercises({ lang }));
     }
+
+    if (replaceInSession?.session?._id && replaceInSession.oldExerciseId && savedExercise?._id) {
+      updatedSession = await dispatch(updateEntrenamiento({
+        id: replaceInSession.session._id,
+        data: replaceExerciseInSession(replaceInSession.session, replaceInSession.oldExerciseId, savedExercise._id),
+      })).unwrap();
+      const teamId = replaceInSession.session.equipo?._id || replaceInSession.session.equipo;
+      if (teamId) await dispatch(fetchEntrenamientosPorEquipo({ team: teamId })).unwrap();
+    }
+
     setCreating(false);
     setEditingExercise(null);
     clearFormDraft(STORAGE_KEYS.EXERCISE_LIST);
@@ -1458,6 +1506,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
     dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
     if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+    if (replaceInSession?.session?._id) {
+      navigation.navigate('Training', {
+        openSessionId: replaceInSession.session._id,
+        updatedSession,
+      });
+    }
   };
 
   const handleCancel = () => {

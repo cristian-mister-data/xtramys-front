@@ -4440,12 +4440,13 @@ function LeftEditPanel({
                       ]}
                       onPress={() => setLocalLineType('solid')}
                     >
-                      <View style={{ width: 36, height: 2, backgroundColor: color }} />
+                      <View style={{ width: 36, height: 2, backgroundColor: '#000000' }} />
                       <Text
                         style={[
                           styles.proModalChipText,
-                          { marginTop: 4 },
+                          { marginTop: 4, color: '#000000' },
                           localLineType === 'solid' && styles.proModalChipTextSelected,
+                          { color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.solid')}
@@ -4467,14 +4468,15 @@ function LeftEditPanel({
                         }}
                       >
                         {[...Array(5)].map((_, i) => (
-                          <View key={i} style={{ width: 4, height: 2, backgroundColor: color }} />
+                          <View key={i} style={{ width: 4, height: 2, backgroundColor: '#000000' }} />
                         ))}
                       </View>
                       <Text
                         style={[
                           styles.proModalChipText,
-                          { marginTop: 4 },
+                          { marginTop: 4, color: '#000000' },
                           localLineType === 'dotted' && styles.proModalChipTextSelected,
+                          { color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.dashed')}
@@ -4488,7 +4490,7 @@ function LeftEditPanel({
                       <Text
                         style={[
                           isMobile ? styles.proModalLabelMobile : styles.proModalLabel,
-                          { marginTop: 12 },
+                          { marginTop: 12, color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.dotSize')}:
@@ -4507,7 +4509,7 @@ function LeftEditPanel({
                             <Svg width="30" height="8">
                               <Path
                                 d="M2,4 L28,4"
-                                stroke={color}
+                                stroke="#000000"
                                 strokeWidth="2"
                                 strokeDasharray={`${size},${localDotSpacing}`}
                                 fill="none"
@@ -4521,7 +4523,7 @@ function LeftEditPanel({
                       <Text
                         style={[
                           isMobile ? styles.proModalLabelMobile : styles.proModalLabel,
-                          { marginTop: 10 },
+                          { marginTop: 10, color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.dotSpacing')}:
@@ -4540,7 +4542,7 @@ function LeftEditPanel({
                             <Svg width="30" height="8">
                               <Path
                                 d="M2,4 L28,4"
-                                stroke={color}
+                                stroke="#000000"
                                 strokeWidth="2"
                                 strokeDasharray={`${localDotSize},${spacing}`}
                                 fill="none"
@@ -18556,7 +18558,7 @@ export default function Field(props = {}) {
                           style={{
                             width: 28,
                             height: thickness * 2,
-                            backgroundColor: selectedColor,
+                            backgroundColor: '#000000',
                             borderRadius: thickness,
                           }}
                         />
@@ -18583,15 +18585,16 @@ export default function Field(props = {}) {
                         style={{
                           width: 40,
                           height: 3,
-                          backgroundColor: selectedColor,
+                          backgroundColor: '#000000',
                           borderRadius: 2,
                         }}
                       />
                       <Text
                         style={[
                           styles.proModalChipText,
-                          { marginTop: 4 },
+                          { marginTop: 4, color: '#000000' },
                           selectedType === 'solid' && styles.proModalChipTextSelected,
+                          { color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.solid')}
@@ -18609,7 +18612,7 @@ export default function Field(props = {}) {
                       <Svg width="40" height="10">
                         <Path
                           d="M5,5 L35,5"
-                          stroke={selectedColor}
+                          stroke="#000000"
                           strokeWidth="2"
                           strokeDasharray="2,4"
                         />
@@ -18617,8 +18620,9 @@ export default function Field(props = {}) {
                       <Text
                         style={[
                           styles.proModalChipText,
-                          { marginTop: 4 },
+                          { marginTop: 4, color: '#000000' },
                           selectedType === 'dotted' && styles.proModalChipTextSelected,
+                          { color: '#000000' },
                         ]}
                       >
                         {t('tacticalBoard.editPanel.dashed')}
@@ -18630,7 +18634,7 @@ export default function Field(props = {}) {
                 {selectedType === 'dotted' && (
                   <>
                     <View style={styles.proModalSection}>
-                      <Text style={styles.proModalLabel}>
+                      <Text style={[styles.proModalLabel, { color: '#000000' }]}>
                         {t('tacticalBoard.editPanel.dotSize')}
                       </Text>
                       <View style={styles.proModalGrid}>
@@ -18646,7 +18650,7 @@ export default function Field(props = {}) {
                             <Svg width="36" height="10">
                               <Path
                                 d="M5,5 L31,5"
-                                stroke={selectedColor}
+                                stroke="#000000"
                                 strokeWidth="2"
                                 strokeDasharray={`${size},${selectedDotSpacing}`}
                                 fill="none"
@@ -18659,7 +18663,7 @@ export default function Field(props = {}) {
                     </View>
 
                     <View style={styles.proModalSection}>
-                      <Text style={styles.proModalLabel}>
+                      <Text style={[styles.proModalLabel, { color: '#000000' }]}>
                         {t('tacticalBoard.editPanel.dotSpacing')}
                       </Text>
                       <View style={styles.proModalGrid}>
@@ -18675,7 +18679,7 @@ export default function Field(props = {}) {
                             <Svg width="36" height="10">
                               <Path
                                 d="M5,5 L31,5"
-                                stroke={selectedColor}
+                                stroke="#000000"
                                 strokeWidth="2"
                                 strokeDasharray={`${selectedDotSize},${spacing}`}
                                 fill="none"
@@ -23112,12 +23116,12 @@ export default function Field(props = {}) {
         {eraserMode && (
           <TouchableOpacity
             onPress={() => setEraserMode(false)}
-            style={styles.eraserModeIndicator}
+            style={[styles.eraserModeIndicator, { top: isMobile ? 6 : 30, left: isMobile ? 112 : 230 }]}
             activeOpacity={0.7}
           >
             <MaterialIcons name="cleaning-services" size={16} color="#fff" />
             <Text style={styles.eraserModeText}>{t('field.eraserMode')}</Text>
-            <Feather name="x" size={14} color="rgba(255,255,255,0.8)" />
+            <Feather name="x" size={14} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
         )}
 
@@ -23955,10 +23959,8 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
-  eraserModeIndicator: {
+            eraserModeIndicator: {
     position: 'absolute',
-    top: 14,
-    right: 14,
     flexDirection: 'row',
     backgroundColor: 'rgba(127, 29, 29, 0.94)',
     borderRadius: 999,
@@ -24475,12 +24477,12 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   proModalPreview: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#94a3b8',
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e8e8e8',
+    borderColor: '#cbd5e1',
     marginTop: 6,
   },
   proModalChip: {

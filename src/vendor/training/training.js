@@ -21,6 +21,7 @@ import {
   Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchEntrenamientosTemporada,
@@ -145,6 +146,30 @@ function DraggableExerciseItem({
   const [showTeamAssignmentModal, setShowTeamAssignmentModal] = useState(false);
   const numEquipos = ejercicio.equipos || 0;
 
+  const getExerciseComodines = () => {
+    const specialAssignment = (teamAssignments || []).find(ta => ta.teamNumber === 0);
+    return Math.max(0, specialAssignment?.comodines || 0);
+  };
+
+  const getComodinesAssignment = () => (
+    (teamAssignments || []).find(ta => ta.teamNumber === 0) || { teamNumber: 0, players: [], extraPlayers: [], comodines: 0 }
+  );
+
+  const updateExerciseComodines = (nextValue) => {
+    const newAssignments = (teamAssignments || []).map(ta => ({
+      ...ta,
+      players: [...(ta.players || [])],
+      extraPlayers: [...(ta.extraPlayers || [])]
+    }));
+    let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
+    if (assignmentIndex === -1) {
+      newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
+      assignmentIndex = newAssignments.length - 1;
+    }
+    newAssignments[assignmentIndex].comodines = Math.max(0, nextValue);
+    onUpdateTeamAssignments(newAssignments);
+  };
+
   return (
     <View style={styles.draggableExerciseItem}>
       {/* Header con nombre y controles de orden */}
@@ -227,7 +252,7 @@ function DraggableExerciseItem({
           <Text style={styles.teamAssignmentButtonText}>
             {t('session.assignTeams')} ({numEquipos} {t('session.teams')})
           </Text>
-          {teamAssignments && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0)) && (
+          {teamAssignments && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0 || (ta.comodines || 0) > 0)) && (
             <View style={styles.teamAssignmentBadge}>
               <MaterialIcons name="check" size={14} color="#fff" />
             </View>
@@ -262,6 +287,137 @@ function DraggableExerciseItem({
               </View>
 
               <ScrollView style={styles.teamAssignmentModalBody}>
+                <View style={styles.teamAssignmentTeamSection}>
+                  {(() => {
+                    const currentAssignment = getComodinesAssignment();
+                    const allAvailable = [
+                      ...(availablePlayers || []).map(p => ({
+                        id: p._id,
+                        name: getPlayerFullName(p) || p.dorsal?.toString() || 'Sin nombre',
+                        dorsal: p.dorsal,
+                        isExtra: false
+                      })),
+                      ...(extraPlayers || []).map(ep => ({
+                        id: `extra_${typeof ep === 'object' ? ep._id : ep}`,
+                        name: typeof ep === 'object' ? (getPlayerFullName(ep) || ep._id) : ep,
+                        extraPlayerId: typeof ep === 'object' ? ep._id : ep,
+                        dorsal: typeof ep === 'object' ? ep.dorsal : null,
+                        isExtra: true
+                      }))
+                    ];
+                    const assignedElsewhere = [];
+                    (teamAssignments || []).forEach(ta => {
+                      if (ta.teamNumber !== 0) {
+                        ta.players?.forEach(pid => assignedElsewhere.push(pid));
+                        ta.extraPlayers?.forEach(epId => assignedElsewhere.push(`extra_${epId}`));
+                      }
+                    });
+                    return (
+                      <>
+                  <View style={styles.teamAssignmentTeamHeader}>
+                    <View style={[styles.teamAssignmentTeamBadge, { backgroundColor: '#0f766e' }]}>
+                      <Ionicons name="swap-horizontal" size={14} color="#fff" />
+                    </View>
+                    <Text style={styles.teamAssignmentTeamTitle}>{t('session.comodines', 'Comodines')}</Text>
+                    <Text style={styles.teamAssignmentTeamCount}>
+                      ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0) + getExerciseComodines()})
+                    </Text>
+                  </View>
+
+                  <View style={styles.teamAssignmentComodinesRow}>
+                    <View style={styles.teamAssignmentComodinesLabel}>
+                      <Ionicons name="swap-horizontal" size={16} color="#0f766e" />
+                      <Text style={styles.teamAssignmentComodinesText}>{t('session.comodines', 'Comodines')}</Text>
+                    </View>
+                    <View style={styles.teamAssignmentComodinesStepper}>
+                      <TouchableOpacity
+                        style={[styles.teamAssignmentComodinesBtn, getExerciseComodines() === 0 && styles.teamAssignmentComodinesBtnDisabled]}
+                        disabled={getExerciseComodines() === 0}
+                        onPress={() => updateExerciseComodines(getExerciseComodines() - 1)}
+                      >
+                        <Feather name="minus" size={16} color={getExerciseComodines() === 0 ? '#94a3b8' : '#0f766e'} />
+                      </TouchableOpacity>
+                      <Text style={styles.teamAssignmentComodinesValue}>{getExerciseComodines()}</Text>
+                      <TouchableOpacity
+                        style={styles.teamAssignmentComodinesBtn}
+                        onPress={() => updateExerciseComodines(getExerciseComodines() + 1)}
+                      >
+                        <Feather name="plus" size={16} color="#0f766e" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View style={styles.teamAssignmentPlayersList}>
+                    {allAvailable.map(player => {
+                      const isSelected = player.isExtra
+                        ? currentAssignment.extraPlayers?.includes(player.extraPlayerId)
+                        : currentAssignment.players?.includes(player.id);
+                      const isDisabled = assignedElsewhere.includes(player.id);
+                      return (
+                        <TouchableOpacity
+                          key={player.id}
+                          style={[
+                            styles.teamAssignmentPlayerChip,
+                            isSelected && styles.teamAssignmentPlayerChipSelected,
+                            isDisabled && styles.teamAssignmentPlayerChipDisabled,
+                            player.isExtra && styles.teamAssignmentPlayerChipExtra,
+                            isSelected && player.isExtra && styles.teamAssignmentPlayerChipExtraSelected
+                          ]}
+                          disabled={isDisabled}
+                          onPress={() => {
+                            const newAssignments = (teamAssignments || []).map(ta => ({
+                              ...ta,
+                              players: [...(ta.players || [])],
+                              extraPlayers: [...(ta.extraPlayers || [])]
+                            }));
+                            let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
+                            if (assignmentIndex === -1) {
+                              newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
+                              assignmentIndex = newAssignments.length - 1;
+                            }
+                            if (player.isExtra) {
+                              const currentExtras = newAssignments[assignmentIndex].extraPlayers || [];
+                              newAssignments[assignmentIndex].extraPlayers = currentExtras.includes(player.extraPlayerId)
+                                ? currentExtras.filter(n => n !== player.extraPlayerId)
+                                : [...currentExtras, player.extraPlayerId];
+                            } else {
+                              const currentPlayers = newAssignments[assignmentIndex].players || [];
+                              newAssignments[assignmentIndex].players = currentPlayers.includes(player.id)
+                                ? currentPlayers.filter(id => id !== player.id)
+                                : [...currentPlayers, player.id];
+                            }
+                            onUpdateTeamAssignments(newAssignments);
+                          }}
+                        >
+                          {player.dorsal && (
+                            <Text style={[
+                              styles.teamAssignmentPlayerDorsal,
+                              isSelected && styles.teamAssignmentPlayerDorsalSelected
+                            ]}>
+                              {player.dorsal}
+                            </Text>
+                          )}
+                          {player.isExtra && (
+                            <Ionicons name="person-add-outline" size={14} color={isSelected ? "#fff" : "#f59e0b"} style={{ marginRight: 4 }} />
+                          )}
+                          <Text style={[
+                            styles.teamAssignmentPlayerName,
+                            isSelected && styles.teamAssignmentPlayerNameSelected,
+                            isDisabled && styles.teamAssignmentPlayerNameDisabled
+                          ]} numberOfLines={1}>
+                            {player.name}
+                          </Text>
+                          {isSelected && (
+                            <MaterialIcons name="check" size={16} color="#fff" style={{ marginLeft: 4 }} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                      </>
+                    );
+                  })()}
+                </View>
+
                 {Array.from({ length: numEquipos }, (_, teamIndex) => {
                   const teamNumber = teamIndex + 1;
                   const currentAssignment = teamAssignments?.find(ta => ta.teamNumber === teamNumber) || { teamNumber, players: [], extraPlayers: [] };
@@ -807,6 +963,7 @@ function CategoryPage({ catPageItems, onOpenCategory }) {
 /* ---------------- Componente principal Training ---------------- */
 export default function Training({ canMutate }) {
   const { t, i18n } = useTranslation();
+  const route = useRoute();
   const theme = useTheme();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
@@ -862,10 +1019,24 @@ export default function Training({ canMutate }) {
   const [mainExerciseVideoAvailability, setMainExerciseVideoAvailability] = useState({});
   const videoOpenedFromModalRef = useRef(null); // 'editar' | 'crear' | null
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
+  const openedSessionFromRouteRef = useRef(null);
   
   // NOTE: Wellness states and functions moved to TrainingSessionDetailModal
   
   // Función para reproducir video de ejercicio en el main component
+  useEffect(() => {
+    const openSessionId = route?.params?.openSessionId;
+    if (!openSessionId || openedSessionFromRouteRef.current === openSessionId) return;
+    const routedSession = route?.params?.updatedSession;
+    const session = String(routedSession?._id || '') === String(openSessionId)
+      ? routedSession
+      : (sesiones || []).find(s => String(s?._id) === String(openSessionId));
+    if (!session) return;
+    openedSessionFromRouteRef.current = openSessionId;
+    setSelectedSession(session);
+    setDetailModalVisible(true);
+  }, [route?.params?.openSessionId, route?.params?.updatedSession, sesiones]);
+
   const handlePlayExerciseVideoMain = async (exercise) => {
     videoOpenedFromModalRef.current = null;
     
@@ -5783,6 +5954,51 @@ function getStyles(theme) {
     fontSize: 13,
     color: '#64748b',
     fontWeight: '500',
+  },
+  teamAssignmentComodinesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    backgroundColor: '#f0fdfa',
+  },
+  teamAssignmentComodinesLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  teamAssignmentComodinesText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f766e',
+  },
+  teamAssignmentComodinesStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#99f6e4',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  teamAssignmentComodinesBtn: {
+    width: 34,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teamAssignmentComodinesBtnDisabled: {
+    backgroundColor: '#f8fafc',
+  },
+  teamAssignmentComodinesValue: {
+    minWidth: 30,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#134e4a',
   },
   teamAssignmentPlayersList: {
     flexDirection: 'row',

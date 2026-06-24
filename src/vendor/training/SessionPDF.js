@@ -88,30 +88,29 @@ const s = {
 
   // Exercises
   exCard: {
-    flexDirection: 'row',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
-    overflow: 'hidden',
     marginBottom: SPACING.md,
     backgroundColor: COLORS.bgCard,
   },
   exImgCol: {
-    width: '40%',
+    width: '100%',
     backgroundColor: COLORS.bgSoft,
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.sm,
+    minHeight: 90,
   },
   exImg: {
     width: '100%',
-    height: 120,
+    height: 86,
     objectFit: 'contain',
   },
   exInfoCol: {
-    width: '60%',
+    width: '100%',
     padding: SPACING.base,
   },
   exHeader: {
@@ -470,11 +469,11 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   if (!isLastExercise && detalle.tiempoDescanso > 0) pills.push(`${t('session.rest', 'Descanso')}: ${detalle.tiempoDescanso} min`);
 
   const teamAssignmentsData = (detalle.teamAssignments || [])
-    .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0))
+    .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0) || (ta.comodines || 0) > 0)
     .sort((a, b) => (a.teamNumber || 0) - (b.teamNumber || 0));
 
   return (
-    <View style={s.exCard} wrap={false}>
+    <View style={s.exCard}>
       <View style={s.exImgCol}>
         {imagenSrc ? <Image src={imagenSrc} style={s.exImg} /> : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>{t('session.noImage', 'Sin Imagen')}</Text>}
       </View>
@@ -514,7 +513,6 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
           <View style={{ marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.borderLight }}>
             <Text style={[s.exSectionLabel, { marginBottom: 4 }]}>{t('session.teamAssignments', 'Asignación de equipos')}</Text>
             {teamAssignmentsData.map((ta, i) => {
-              const color = getTeamColor(ta.teamNumber);
               const names = [];
               (ta.players || []).forEach((pid) => {
                 const id = getEntityId(pid);
@@ -528,7 +526,20 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
                 const nombre = p ? getPlayerFullName(p) : typeof epId === 'object' ? getPlayerFullName(epId) : id;
                 if (nombre) names.push(`* ${nombre}`);
               });
-
+              if ((ta.teamNumber || 0) === 0) {
+                if (names.length === 0 && !(ta.comodines > 0)) return null;
+                return (
+                  <View key={i} style={s.teamRow}>
+                    <Text style={[s.teamTag, { backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: '#0f766e', color: '#0f766e' }]}>
+                      {t('session.comodines', 'Comodines')}
+                    </Text>
+                    <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3 }}>
+                      {[...names, ta.comodines > 0 ? `${t('session.comodines', 'Comodines')}: ${ta.comodines}` : null].filter(Boolean).join(', ')}
+                    </Text>
+                  </View>
+                );
+              }
+              const color = getTeamColor(ta.teamNumber);
               return (
                 <View key={i} style={s.teamRow}>
                   <Text style={[s.teamTag, { backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: color, color }]}>{t('session.teamAbbr', 'Eq.')} {ta.teamNumber}</Text>

@@ -60,7 +60,7 @@ export const updateEntrenamiento = createAsyncThunk(
   async ({ id, data }) => {
     const res = await api.post(`/session/${id}`, data);
     clearSessionCache();
-    return res.data;
+    return Array.isArray(res.data) ? res.data[0] : res.data;
   }
 );
 

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { generateSessionPDF } from '@/vendor/training/SessionPDF';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
@@ -37,6 +38,10 @@ import {
   getSessionExerciseIds,
   getSessionExercises,
 } from '@/utils/sessionExercises';
+import {
+  saveFormDraft,
+  STORAGE_KEYS,
+} from '@/utils/formPersistence';
 
 // Tema consistente con el resto de la aplicación
 // NOTE: Colores ahora vienen del ThemeProvider de styled-components.
@@ -56,8 +61,10 @@ export default function TrainingSessionDetailModal({
   onEdit,
   onDelete,
   onWellnessUpdate, // Callback para cuando se actualice el wellness
+  canMutate = true,
 }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -68,6 +75,7 @@ export default function TrainingSessionDetailModal({
   const [sharingSession, setSharingSession] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageExercise, setSelectedImageExercise] = useState(null);
   
   // Estados para video
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -307,9 +315,34 @@ export default function TrainingSessionDetailModal({
     }
   };
 
-  const handleImagePress = (imagen) => {
+  const handleImagePress = (imagen, exercise = null) => {
     setSelectedImage(imagen);
+    setSelectedImageExercise(exercise);
     setImageModalVisible(true);
+  };
+
+  const handleEditExerciseAsNew = () => {
+    if (!selectedImageExercise) return;
+    const { _id, id, createdAt, updatedAt, __v, ...exerciseDraft } = selectedImageExercise;
+    const duplicateSuffix = i18n.language === 'en' ? 'duplicate' : 'duplicado';
+    saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, {
+      creating: true,
+      replaceInSession: {
+        session,
+        oldExerciseId: selectedImageExercise._id || selectedImageExercise.id,
+      },
+      editingExercise: {
+        ...exerciseDraft,
+        nombre: `${selectedImageExercise.nombre || t('exercise.exerciseName', 'Ejercicio')}_${duplicateSuffix}`,
+        isGlobal: false,
+        visibility: 'PRIVATE',
+      },
+    });
+    saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
+    setImageModalVisible(false);
+    setSelectedImage(null);
+    setSelectedImageExercise(null);
+    navigate('/exercises');
   };
   
   // Función para ver videos del ejercicio
@@ -642,7 +675,7 @@ export default function TrainingSessionDetailModal({
                         {ejercicio.imagen && (
                           <TouchableOpacity
                             style={styles.exerciseImageContainer}
-                            onPress={() => handleImagePress(ejercicio.imagen)}
+                            onPress={() => handleImagePress(ejercicio.imagen, ejercicio)}
                           >
                             <Image
                               source={{
@@ -742,7 +775,7 @@ export default function TrainingSessionDetailModal({
                           )}
                           
                           {/* Equipos asignados al ejercicio */}
-                          {teamAssignments && teamAssignments.length > 0 && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0)) && (
+                          {teamAssignments && teamAssignments.length > 0 && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0 || (ta.comodines || 0) > 0)) && (
                             <View style={styles.teamAssignmentsContainer}>
                               <View style={styles.teamAssignmentsHeader}>
                                 <Ionicons name="people" size={16} color={theme.colors.primary} />
@@ -751,7 +784,24 @@ export default function TrainingSessionDetailModal({
                                 </Text>
                               </View>
                               <View style={styles.teamsGrid}>
-                                {teamAssignments.map((team, teamIdx) => {
+                                {teamAssignments.filter(team => team.teamNumber === 0 && (team.comodines || 0) > 0).map((team, teamIdx) => (
+                                  <View key={`comodines-${teamIdx}`} style={styles.teamBox}>
+                                    <View style={[styles.teamBoxHeader, { backgroundColor: '#0f766e' }]}>
+                                      <Text style={styles.teamBoxTitle}>
+                                        {t('session.comodines', 'Comodines')}
+                                      </Text>
+                                      <Text style={styles.teamBoxCount}>
+                                        {team.comodines || 0}
+                                      </Text>
+                                    </View>
+                                    <View style={styles.teamBoxPlayers}>
+                                      <Text style={styles.teamPlayerName}>
+                                        • {t('session.comodines', 'Comodines')}: {team.comodines || 0}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                ))}
+                                {teamAssignments.filter(team => team.teamNumber > 0).map((team, teamIdx) => {
                                   const teamPlayers = (team.players || []).map(id => getPlayerName(id)).filter(n => n);
                                   // extraPlayers almacena IDs de jugadores extras (ObjectId ref a Player)
                                   const teamExtras = (team.extraPlayers || []).map(id => getPlayerName(id)).filter(n => n);
@@ -899,12 +949,18 @@ export default function TrainingSessionDetailModal({
         transparent
         animationType="fade"
        
-        onRequestClose={() => setImageModalVisible(false)}
+        onRequestClose={() => {
+          setImageModalVisible(false);
+          setSelectedImageExercise(null);
+        }}
       >
         <View style={styles.imageModalBg}>
           <TouchableOpacity
             style={styles.closeImageBtn}
-            onPress={() => setImageModalVisible(false)}
+            onPress={() => {
+              setImageModalVisible(false);
+              setSelectedImageExercise(null);
+            }}
           >
             <Text style={styles.closeImageText}>×</Text>
           </TouchableOpacity>
@@ -932,6 +988,15 @@ export default function TrainingSessionDetailModal({
                 resizeMode="contain"
               />
             </ImageZoom>
+          )}
+          {canMutate && selectedImageExercise && (
+            <TouchableOpacity
+              style={styles.editExerciseImageBtn}
+              onPress={handleEditExerciseAsNew}
+            >
+              <Feather name="edit-3" size={18} color="#fff" />
+              <Text style={styles.editExerciseImageBtnText}>{t('session.editExerciseAsNew', 'Editar como nuevo')}</Text>
+            </TouchableOpacity>
           )}
         </View>
       </Modal>
@@ -1516,6 +1581,28 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.92)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  editExerciseImageBtn: {
+    position: 'absolute',
+    bottom: 28,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  editExerciseImageBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   
   // Estilos para botón de video en ejercicio (brand pink kept literal)
