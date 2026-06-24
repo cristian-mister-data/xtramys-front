@@ -12722,7 +12722,7 @@ export default function Field(props = {}) {
   useEffect(() => {
     setIsLoadingField(false);
     setFieldImageReady(true);
-  }, [fieldLineType, viewMode, initialElements, sandbox, editVideoData]);
+  }, [fieldLineType, viewMode]);
 
   // Obtener iconos traducidos
   const INITIAL_ICONS = useMemo(() => getInitialIcons(), []);
@@ -14136,23 +14136,33 @@ export default function Field(props = {}) {
     return true;
   }, [applyAssignedPlayersToKeyframeElements, snapshotToClone]);
 
+  const loadEditVideoDataRef = useRef(loadEditVideoDataIntoBoard);
+  const deferEditVideoOpenRef = useRef(deferEditVideoOpen);
+  const editVideoDataRef = useRef(editVideoData);
+
+  useEffect(() => {
+    loadEditVideoDataRef.current = loadEditVideoDataIntoBoard;
+    deferEditVideoOpenRef.current = deferEditVideoOpen;
+    editVideoDataRef.current = editVideoData;
+  });
+
   // Usamos useFocusEffect para que se ejecute cada vez que la pantalla gana el foco
   useFocusEffect(
     useCallback(() => {
       // Obtener editVideoData fresco desde global cada vez que ganamos el foco
-      const currentEditVideoData = editVideoData || global.editVideoData;
+      const currentEditVideoData = editVideoDataRef.current || global.editVideoData;
 
       // Si no hay datos de video para editar, no hacer nada
       if (!currentEditVideoData) {
         return;
       }
 
-      loadEditVideoDataIntoBoard(currentEditVideoData, deferEditVideoOpen);
-      if (!editVideoData) global.editVideoData = null;
+      loadEditVideoDataRef.current(currentEditVideoData, deferEditVideoOpenRef.current);
+      if (!editVideoDataRef.current) global.editVideoData = null;
       return () => {
         lastLoadedVideoIdRef.current = null;
       };
-    }, [loadEditVideoDataIntoBoard, deferEditVideoOpen, editVideoData]),
+    }, []),
   );
   // =====================================================
   // FIN CARGA DE VIDEO PARA EDICIÓN
