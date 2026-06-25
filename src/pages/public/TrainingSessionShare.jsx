@@ -798,26 +798,115 @@ const css = `
   }
   @media (prefers-color-scheme: dark) {
     .sharePage {
-      color: #e5e7eb;
+      color: #f1f5f9;
       background:
-        radial-gradient(circle at top left, rgba(32, 116, 229, .28), transparent 28rem),
-        radial-gradient(circle at 90% 8%, rgba(20, 184, 166, .18), transparent 24rem),
-        #020617;
+        radial-gradient(ellipse at top left, rgba(20, 88, 200, .18), transparent 38rem),
+        radial-gradient(ellipse at 90% 10%, rgba(20, 184, 166, .12), transparent 30rem),
+        #080f1e;
     }
-    .panel, .exerciseCard, .strengthCard, .emptyBlock, .stateCard { background: rgba(15, 23, 42, .82); border-color: rgba(148,163,184,.22); box-shadow: none; }
-    .panel h2, .sectionTitle h2, .exerciseHead h3, .strengthBody h3, .stateCard h1 { color: #f8fafc; }
-    .sectionTitle span, .muted { color: #94a3b8; }
+
+    /* ── Panels & cards ───────────────────────────────────────── */
+    .panel, .exerciseCard, .strengthCard, .emptyBlock, .stateCard {
+      background: #111827;
+      border-color: rgba(255, 255, 255, .08);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
+    }
+
+    /* ── Typography ───────────────────────────────────────────── */
+    .panel h2, .sectionTitle h2 { color: #f8fafc; }
+    .exerciseHead h3, .strengthBody h3 { color: #f0f4ff; }
+    .stateCard h1 { color: #f8fafc; }
+    .groupTitle { color: #94a3b8; }
+    .sectionTitle p { color: #34d8c9; }
+    .sectionTitle span { color: #94a3b8; }
+    .muted { color: #64748b; }
     .pre, .infoGrid p, .teamCard p, .strengthNote { color: #cbd5e1; }
-    .exerciseMedia, .strengthMedia { background: linear-gradient(135deg, #0f172a, #111827); }
-    .pills span, .teamCard { background: rgba(30, 41, 59, .78); border-color: rgba(148,163,184,.2); }
-    .playerCard { background: rgba(15, 23, 42, .4); border-color: rgba(148, 163, 184, .1); }
-    .playerCard:hover { background: rgba(15, 23, 42, .7); border-color: rgba(148, 163, 184, .2); }
-    .playerCard.default .playerBadge { background: rgba(30, 41, 59, .6); color: #38bdf8; }
-    .playerCard.default.has-dorsal .playerBadge { background: #0284c7; color: #ffffff; box-shadow: 0 2px 4px rgba(2, 132, 199, .3); }
-    .playerCard.warm { background: rgba(120, 53, 4, .05); border-color: rgba(217, 119, 6, .15); }
-    .playerCard.warm .playerBadge { background: rgba(120, 53, 4, .15); color: #fb923c; }
-    .playerCard.warm.has-dorsal .playerBadge { background: #ea580c; color: #ffffff; box-shadow: 0 2px 4px rgba(234, 88, 12, .3); }
-    .playerCard.no-dorsal .playerBadge { background: rgba(51, 65, 85, .5); color: #94a3b8; }
+    .eyebrow { color: #34d8c9; }
+
+    /* ── Labels (Objetivo / Descripcion) ──────────────────────── */
+    .infoGrid b, .teamsBox h4 {
+      color: #34d8c9;
+    }
+
+    /* ── Exercise media backgrounds ───────────────────────────── */
+    .exerciseMedia, .strengthMedia {
+      background: linear-gradient(135deg, #0c1528 0%, #0f1f36 100%);
+      border-color: rgba(255, 255, 255, .07);
+    }
+    .emptyMedia { color: #475569; }
+
+    /* ── Pills ────────────────────────────────────────────────── */
+    .pills span {
+      background: rgba(59, 130, 246, .15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, .25);
+    }
+
+    /* ── Player cards ─────────────────────────────────────────── */
+    .playerCard {
+      background: #1a2236;
+      border-color: rgba(255, 255, 255, .08);
+      box-shadow: none;
+    }
+    .playerCard:hover {
+      background: #1e2a42;
+      border-color: rgba(99, 179, 237, .3);
+    }
+
+    /* default (plantilla) */
+    .playerCard.default .playerBadge {
+      background: rgba(59, 130, 246, .2);
+      color: #93c5fd;
+    }
+    .playerCard.default.has-dorsal .playerBadge {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, .4);
+    }
+
+    /* warm (extras) */
+    .playerCard.warm {
+      background: #1e1810;
+      border-color: rgba(251, 146, 60, .18);
+    }
+    .playerCard.warm .playerBadge {
+      background: rgba(251, 146, 60, .18);
+      color: #fb923c;
+    }
+    .playerCard.warm.has-dorsal .playerBadge {
+      background: #c2410c;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(194, 65, 12, .4);
+    }
+
+    /* no-dorsal badge */
+    .playerCard.no-dorsal .playerBadge {
+      background: rgba(71, 85, 105, .5);
+      color: #94a3b8;
+    }
+
     .playerName { color: #e2e8f0; }
+
+    /* ── Teams box ────────────────────────────────────────────── */
+    .teamCard {
+      background: #162032;
+      border-color: rgba(255, 255, 255, .08);
+    }
+    .teamCard strong { color: #60a5fa; }
+    .teamsBox { border-top-color: rgba(255, 255, 255, .08); }
+
+    /* ── Number badge on exercises ────────────────────────────── */
+    .number { background: #1d4ed8; }
+
+    /* ── Watch button ─────────────────────────────────────────── */
+    .watchBtn {
+      background: #0d9488;
+      color: #fff;
+    }
+    .watchBtn:hover { background: #0f766e; }
+
+    /* ── Media badge ──────────────────────────────────────────── */
+    .mediaBadge { background: #1e3a5f; color: #bfdbfe; }
+    .mediaBadge.video { background: #134e4a; color: #99f6e4; }
   }
 `;
