@@ -1132,7 +1132,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                           styles.lateralityButtonText,
                           (!formData.lado || formData.lado === '') && styles.lateralityButtonTextActive
                         ]}>
-                          {t('injury.sideNA', 'No aplica')}
+                          {t('injury.sideNA', 'Ambos')}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity

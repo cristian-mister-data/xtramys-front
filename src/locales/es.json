@@ -1055,7 +1055,7 @@
     "laterality": "Lateralidad",
     "sideRight": "Derecha",
     "sideLeft": "Izquierda",
-    "sideNA": "No aplica",
+    "sideNA": "Ambos",
     "selectEndDateOptional": "Seleccionar fecha de fin (opcional)",
     "selectEstimatedEndDateHeader": "Selecciona fecha fin prevista",
     "isRelapse": "Es una recaída",

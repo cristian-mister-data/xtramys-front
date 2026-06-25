@@ -1010,7 +1010,7 @@
     "laterality": "Laterality",
     "sideRight": "Right",
     "sideLeft": "Left",
-    "sideNA": "N/A",
+    "sideNA": "Both",
     "selectEstimatedEndDateOptional": "Select estimated end date",
     "management": "Injury Management",
     "injury_one": "injury",
