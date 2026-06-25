@@ -365,7 +365,7 @@ const ProfileGeneralPage = ({
 
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={t('player.profile.title')} subtitle={name} transparent={true} />
+      <PdfHeader title={t('player.profile.title')} transparent={true} />
       <View style={baseStyles.content}>
         <View style={s.profileHero} wrap={false}>
           <View style={s.playerHeroInfo}>
