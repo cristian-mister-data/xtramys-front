@@ -11,7 +11,7 @@ import {
   Button, Field, Label, Input, Row, Stack, ErrorText, TextArea, Muted,
 } from '@/ui/primitives';
 import { showMissingFieldsToast } from '@/utils/validationToast';
-import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
+import { fetchEjerciciosUsuario, fetchGlobalExercises, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import ExerciseSelectorModal from '@/features/session/ExerciseSelectorModal';
 import TeamAssignmentModal from '@/features/session/TeamAssignmentModal';
@@ -209,6 +209,19 @@ const normalizeTextValue = (value) => {
   return '';
 };
 
+const folderIdOf = (folder) => (typeof folder === 'object' ? folder?._id || folder?.id : folder);
+const cleanFolderName = (folder) => (folder?.displayName || folder?.nombre || '').replace(/^\s*└─\s*/, '').trim();
+const buildFolderPath = (folder, folderById) => {
+  const names = [];
+  let current = folder;
+  while (current) {
+    const name = cleanFolderName(current);
+    if (name) names.unshift(name);
+    current = folderById.get(String(folderIdOf(current.parentFolder)));
+  }
+  return names.join(' / ');
+};
+
 // Hydrates exercises from session payload (supports both ejerciciosDetalle and legacy ejercicios + observaciones array)
 function hydrateExercises(session) {
   const ids = [];
@@ -269,23 +282,29 @@ export default function SessionFormModal({
   const playersRaw = useSelector((s) => s.player.players);
   const exercisesRaw = useSelector((s) => s.exercise.exercises);
   const globalExercisesRaw = useSelector((s) => s.exercise.globalExercises);
+  const foldersFlat = useSelector((s) => s.exercise.foldersFlat) || [];
   const players = useMemo(() => playersRaw || [], [playersRaw]);
   const exercises = useMemo(() => exercisesRaw || [], [exercisesRaw]);
   const globalExercises = useMemo(() => globalExercisesRaw || [], [globalExercisesRaw]);
   const selectableExercises = useMemo(() => {
     const map = new Map();
+    const folderById = new Map(foldersFlat.map((folder) => [String(folder._id), folder]));
     [...exercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
       const id = exercise._id || exercise.id;
       if (!id) return;
       const prev = map.get(String(id));
+      const folderId = folderIdOf(exercise.folder);
+      const folder = folderId ? (typeof exercise.folder === 'object' ? exercise.folder : folderById.get(String(folderId))) : null;
       map.set(String(id), {
         ...prev,
         ...exercise,
+        folder: folder || exercise.folder,
+        folderPathLabel: folder ? buildFolderPath(folder, folderById) : undefined,
         favorito: Boolean(prev?.favorito || exercise.favorito),
       });
     });
     return Array.from(map.values());
-  }, [exercises, globalExercises]);
+  }, [exercises, globalExercises, foldersFlat]);
 
   // Form state
   const [fecha, setFecha] = useState('');
@@ -317,7 +336,10 @@ export default function SessionFormModal({
     if (open && globalExercises.length === 0) {
       dispatch(fetchGlobalExercises({}));
     }
-  }, [open, userId, exercises.length, globalExercises.length, dispatch]);
+    if (open && userId && foldersFlat.length === 0) {
+      dispatch(fetchExerciseFoldersFlat({ user: userId }));
+    }
+  }, [open, userId, exercises.length, globalExercises.length, foldersFlat.length, dispatch]);
 
   // Hydrate form when opening
   useEffect(() => {
@@ -563,7 +585,7 @@ export default function SessionFormModal({
                         </Thumb>
                         <ExBody>
                           <ExName>{ex?.nombre || t('session.unknownExercise', 'Ejercicio')}</ExName>
-                          {ex?.folder?.nombre && <ExMeta>{ex.folder.nombre}</ExMeta>}
+                          {(ex?.folderPathLabel || ex?.folder?.nombre) && <ExMeta>{ex.folderPathLabel || ex.folder.nombre}</ExMeta>}
                         </ExBody>
                         <Row $gap={4}>
                           <IconBtn type="button" disabled={idx === 0} onClick={() => moveExercise(idx, -1)} title={t('common.moveUp', 'Subir')}>

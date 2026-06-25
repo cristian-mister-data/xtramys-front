@@ -1579,10 +1579,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const displayedExercises = useMemo(() => {
     const hasFolder = (ex) => ex.folder !== null && ex.folder !== undefined && ex.folder !== '';
+    const isTitleSearch = !!filters.titulo?.trim();
     if (listFilter === 'global') {
-      if (currentFolderId) return currentFolderExercises;
-      const rootGlobal = globalExercises.filter(e => !hasFolder(e));
-      return filters.titulo ? rootGlobal.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase())) : rootGlobal;
+      if (currentFolderId && !isTitleSearch) return currentFolderExercises;
+      return isTitleSearch 
+        ? globalExercises.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
+        : globalExercises.filter(e => !hasFolder(e));
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
@@ -1607,9 +1609,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       }
       return mergeById(ejercicios, globalExercises);
     })();
-    if (currentFolderId) return currentFolderExercises;
+    if (currentFolderId && !isTitleSearch) return currentFolderExercises;
     if (listFilter === 'club') return base;
-    return base.filter(ex => !hasFolder(ex));
+    return isTitleSearch ? base : base.filter(ex => !hasFolder(ex));
   }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo]);
 
   const filteredEjercicios = useMemo(() => {
@@ -1629,13 +1631,14 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   }, [displayedExercises, listFilter, filters.titulo, filters.numeroJugadores, filters.equipos]);
 
   const displayedSubfolders = useMemo(() => {
+    if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return currentFolderSubfolders;
     if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
     if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
     if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB');
     return mergeById(exerciseFolders, globalFolders).filter(f => !f.parentFolder);
-  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario]);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo]);
 
   const handleDelete = (exercise) => {
     if (canMutate === false) return;

@@ -201,7 +201,7 @@ export default function ExerciseSelectorModal({
         <List>
           {filtered.map((ex) => {
             const sel = picked.includes(ex._id);
-            const folderName = ex.folder?.nombre;
+            const folderName = ex.folderPathLabel || ex.folder?.nombre;
             return (
               <ItemRow key={ex._id} type="button" $sel={sel} onClick={() => toggle(ex._id)}>
                 <Thumb>

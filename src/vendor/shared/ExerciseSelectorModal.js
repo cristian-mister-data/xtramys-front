@@ -64,6 +64,7 @@ const THEME_DEFAULT = {
   surfaceAlt: '#f1f5f9',
   primarySoft: '#eff6ff',
   primarySoftBorder: '#bfdbfe',
+  primarySoftText: '#1e40af',
   onPrimary: '#ffffff',
 };
 
@@ -85,6 +86,7 @@ const buildTheme = (sc) => {
     border: c.border || THEME_DEFAULT.border,
     primarySoft: c.primarySoft || THEME_DEFAULT.primarySoft,
     primarySoftBorder: c.primarySoft || THEME_DEFAULT.primarySoftBorder,
+    primarySoftText: c.primarySoftText || THEME_DEFAULT.primarySoftText,
     onPrimary: c.onPrimary || THEME_DEFAULT.onPrimary,
   };
 };
@@ -1597,7 +1599,7 @@ const makeS = (THEME) =>
       justifyContent: 'center',
     },
     exName: { fontSize: 14, fontWeight: '700', color: THEME.text },
-    exNameSel: { color: THEME.primary },
+    exNameSel: { color: THEME.primarySoftText || THEME.primary },
     exFolderTag: { fontSize: 10, color: THEME.textSec },
 
     // ── Exercise grid cards (desktop) ──
@@ -1637,7 +1639,7 @@ const makeS = (THEME) =>
       marginTop: 4,
       minHeight: 32,
     },
-    exCardNameSel: { color: '#1e40af', fontWeight: '700' },
+    exCardNameSel: { color: THEME.primarySoftText || THEME.primary || '#1e40af', fontWeight: '700' },
     exCardActions: {
       flexDirection: 'row',
       width: '100%',

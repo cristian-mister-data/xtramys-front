@@ -88,29 +88,32 @@ const s = {
 
   // Exercises
   exCard: {
+    flexDirection: 'row',
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
     marginBottom: SPACING.md,
     backgroundColor: COLORS.bgCard,
+    minHeight: 128,
+    overflow: 'hidden',
   },
   exImgCol: {
-    width: '100%',
+    width: '40%',
     backgroundColor: COLORS.bgSoft,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.sm,
-    minHeight: 90,
+    padding: 8,
+    minHeight: 128,
   },
   exImg: {
     width: '100%',
-    height: 86,
+    height: 112,
     objectFit: 'contain',
   },
   exInfoCol: {
-    width: '100%',
+    width: '60%',
     padding: SPACING.base,
   },
   exHeader: {
@@ -167,14 +170,14 @@ const s = {
   },
   teamRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 3,
+    alignItems: 'flex-start',
+    marginBottom: 4,
   },
   teamTag: {
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    paddingVertical: 1.5,
+    paddingHorizontal: 5,
     borderRadius: 4,
     marginRight: 6,
     textTransform: 'uppercase',
@@ -247,9 +250,25 @@ const truncateText = (text, maxLength = 300) => {
   return text.substring(0, maxLength) + '...';
 };
 
-const getTeamColor = (teamNumber) => {
-  const colors = [ '#67e8f9', '#a7f3d0', '#fde68a', '#bfdbfe', '#fbcfe8', '#c4b5fd', '#fdba74', '#fca5a5' ];
-  return colors[(teamNumber - 1) % colors.length];
+const getTeamTheme = (teamNumber) => {
+  if ((teamNumber || 0) === 0) {
+    return {
+      bg: '#f0fdfa', // Teal 50
+      border: '#99f6e4', // Teal 200
+      text: '#0f766e', // Teal 700
+    };
+  }
+  const themes = [
+    { bg: '#fee2e2', border: '#fca5a5', text: '#b91c1c' }, // Eq. 1: Red/Crimson
+    { bg: '#dbeafe', border: '#bfdbfe', text: '#1d4ed8' }, // Eq. 2: Blue/Navy
+    { bg: '#d1fae5', border: '#a7f3d0', text: '#065f46' }, // Eq. 3: Green/Emerald
+    { bg: '#fef3c7', border: '#fde68a', text: '#92400e' }, // Eq. 4: Amber/Orange
+    { bg: '#ede9fe', border: '#ddd6fe', text: '#5b21b6' }, // Eq. 5: Violet/Purple
+    { bg: '#fce7f3', border: '#fbcfe8', text: '#9d174d' }, // Eq. 6: Pink/Rose
+    { bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1' }, // Eq. 7: Cyan/Sky
+    { bg: '#f5f5f4', border: '#e7e5e4', text: '#374151' }  // Eq. 8: Stone/Gray
+  ];
+  return themes[(teamNumber - 1) % themes.length];
 };
 
 const formatTimeStr = (t) => {
@@ -473,7 +492,7 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
     .sort((a, b) => (a.teamNumber || 0) - (b.teamNumber || 0));
 
   return (
-    <View style={s.exCard}>
+    <View style={s.exCard} wrap={false}>
       <View style={s.exImgCol}>
         {imagenSrc ? <Image src={imagenSrc} style={s.exImg} /> : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>{t('session.noImage', 'Sin Imagen')}</Text>}
       </View>
@@ -528,22 +547,23 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
               });
               if ((ta.teamNumber || 0) === 0) {
                 if (names.length === 0 && !(ta.comodines > 0)) return null;
+                const theme = getTeamTheme(0);
                 return (
                   <View key={i} style={s.teamRow}>
-                    <Text style={[s.teamTag, { backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: '#0f766e', color: '#0f766e' }]}>
+                    <Text style={[s.teamTag, { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, color: theme.text }]}>
                       {t('session.comodines', 'Comodines')}
                     </Text>
-                    <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3 }}>
+                    <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3, marginTop: 1 }}>
                       {[...names, ta.comodines > 0 ? `${t('session.comodines', 'Comodines')}: ${ta.comodines}` : null].filter(Boolean).join(', ')}
                     </Text>
                   </View>
                 );
               }
-              const color = getTeamColor(ta.teamNumber);
+              const theme = getTeamTheme(ta.teamNumber);
               return (
                 <View key={i} style={s.teamRow}>
-                  <Text style={[s.teamTag, { backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: color, color }]}>{t('session.teamAbbr', 'Eq.')} {ta.teamNumber}</Text>
-                  <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3 }}>{names.join(', ')}</Text>
+                  <Text style={[s.teamTag, { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, color: theme.text }]}>{t('session.teamAbbr', 'Eq.')} {ta.teamNumber}</Text>
+                  <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3, marginTop: 1 }}>{names.join(', ')}</Text>
                 </View>
               );
             })}
