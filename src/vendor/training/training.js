@@ -1838,7 +1838,7 @@ export default function Training({ canMutate }) {
         
         {/* Tabs mejorados */}
         <View style={styles.proTabsContainer}>
-          <View style={[styles.proTabs, { backgroundColor: theme.colors.surfaceAlt }]}>
+          <View style={[styles.proTabs, { backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : theme.colors.border }]}>
             <TouchableOpacity
               style={[styles.proTab, tab === 'futuros' && [styles.proTabActive, { backgroundColor: theme.colors.surface }]]}
               onPress={() => setTab('futuros')}
@@ -1853,7 +1853,7 @@ export default function Training({ canMutate }) {
                 {t('session.upcoming')}
               </Text>
               {eventosFuturosFiltrados.length > 0 && (
-                <View style={[styles.proTabBadge, { backgroundColor: theme.colors.border }, tab === 'futuros' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
+                <View style={[styles.proTabBadge, { backgroundColor: theme.mode === 'dark' ? theme.colors.border : theme.colors.surface }, tab === 'futuros' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
                   <Text style={[styles.proTabBadgeText, { color: theme.colors.textSecondary }, tab === 'futuros' && [styles.proTabBadgeTextActive, { color: theme.colors.primary }]]}>
                     {eventosFuturosFiltrados.length}
                   </Text>
@@ -1874,7 +1874,7 @@ export default function Training({ canMutate }) {
                 {t('session.completed')}
               </Text>
               {eventosPasadosFiltrados.length > 0 && (
-                <View style={[styles.proTabBadge, { backgroundColor: theme.colors.border }, tab === 'pasados' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
+                <View style={[styles.proTabBadge, { backgroundColor: theme.mode === 'dark' ? theme.colors.border : theme.colors.surface }, tab === 'pasados' && [styles.proTabBadgeActive, { backgroundColor: theme.colors.primarySoft }]]}>
                   <Text style={[styles.proTabBadgeText, { color: theme.colors.textSecondary }, tab === 'pasados' && [styles.proTabBadgeTextActive, { color: theme.colors.primary }]]}>
                     {eventosPasadosFiltrados.length}
                   </Text>
@@ -2787,12 +2787,15 @@ function getStyles(theme) {
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   proTabActive: {
     backgroundColor: theme.colors.surface,
+    borderColor: theme.mode === 'dark' ? 'transparent' : theme.colors.borderStrong,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.08,
     shadowRadius: 8,
     elevation: 3,
   },

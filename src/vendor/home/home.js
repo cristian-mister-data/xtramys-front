@@ -1242,11 +1242,11 @@ export default function Home({ navigation: navigationProp }) {
 const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.background : theme.colors.backgroundAlt,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.background : theme.colors.backgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1432,7 +1432,7 @@ const makeStyles = (theme) => StyleSheet.create({
   // ========== STATS TABS ==========
   statsTabs: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.backgroundAlt,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.backgroundAlt : theme.colors.border,
     borderRadius: 10,
     padding: 3,
     marginBottom: 12,
@@ -1443,9 +1443,12 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   statsTabActive: {
     backgroundColor: theme.colors.surface,
+    borderColor: theme.mode === 'dark' ? 'transparent' : theme.colors.borderStrong,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
