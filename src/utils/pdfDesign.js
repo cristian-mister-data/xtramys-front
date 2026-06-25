@@ -17,14 +17,14 @@ import {
 
 // ── Design Tokens ──────────────────────────────────────────────────
 export const COLORS = {
-  primary: '#0f172a',
-  secondary: '#1e293b',
+  primary: '#111827',
+  secondary: '#374151',
   accent: '#2563eb',
-  bgMain: '#f8fafc',
+  bgMain: '#eef2f7',
   bgCard: '#ffffff',
-  bgSoft: '#f1f5f9',
-  text: '#334155',
-  textSecondary: '#64748b',
+  bgSoft: '#f8fafc',
+  text: '#1f2937',
+  textSecondary: '#4b5563',
   textMuted: '#94a3b8',
   border: '#e2e8f0',
   borderLight: '#f1f5f9',
@@ -64,7 +64,7 @@ export const baseStyles = StyleSheet.create({
   page: {
     paddingTop: SPACING.xxl,
     paddingBottom: 50,
-    paddingHorizontal: 36,
+    paddingHorizontal: 34,
     backgroundColor: COLORS.bgMain,
     fontFamily: 'Helvetica',
     fontSize: FONT_SIZE.base,
@@ -86,10 +86,12 @@ export const baseStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginBottom: SPACING.lg,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: SPACING.xl,
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.accent,
   },
   headerLeft: {
     flexDirection: 'column',
@@ -144,15 +146,18 @@ export const baseStyles = StyleSheet.create({
 
   // Section
   section: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1.5,
-    borderBottomColor: COLORS.primary,
-    paddingBottom: 4,
+    borderBottomWidth: 0,
+    paddingBottom: 0,
     marginBottom: SPACING.sm,
+    backgroundColor: '#e8eef7',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
   sectionTitle: {
     fontSize: FONT_SIZE.xl,
@@ -174,9 +179,9 @@ export const baseStyles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bgCard,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    padding: SPACING.base,
+    borderColor: '#d8e0eb',
+    borderRadius: 9,
+    padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
   cardAccent: {
@@ -194,9 +199,9 @@ export const baseStyles = StyleSheet.create({
   statCard: {
     backgroundColor: COLORS.bgCard,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 6,
-    padding: SPACING.base,
+    borderColor: '#d8e0eb',
+    borderRadius: 9,
+    padding: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
@@ -411,16 +416,59 @@ export const baseStyles = StyleSheet.create({
  * Standard PDF Header (fixed on each page).
  * @param {{ title: string, subtitle?: string, date?: string, right?: string }} props
  */
-export const PdfHeader = ({ title, subtitle, date, right }) => (
-  <View style={baseStyles.header}>
-    <View style={baseStyles.headerLeft}>
-      <Text style={baseStyles.headerTitle}>{title || ''}</Text>
-      {subtitle ? <Text style={baseStyles.headerSubtitle}>{subtitle}</Text> : null}
-      {date ? <Text style={baseStyles.headerDate}>{date}</Text> : null}
+export const PdfHeader = ({ title, subtitle, date, right, transparent = false }) => {
+  const headerStyle = [
+    baseStyles.header,
+    transparent && {
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: 0,
+      borderRadius: 0,
+      borderBottomWidth: 1.5,
+      borderBottomColor: '#cbd5e1',
+      marginBottom: 16,
+    },
+  ];
+  
+  const titleStyle = [
+    baseStyles.headerTitle,
+    transparent && {
+      color: '#0f172a',
+    },
+  ];
+
+  const subtitleStyle = [
+    baseStyles.headerSubtitle,
+    transparent && {
+      color: '#4b5563',
+    },
+  ];
+
+  const dateStyle = [
+    baseStyles.headerDate,
+    transparent && {
+      color: '#6b7280',
+    },
+  ];
+
+  const rightStyle = [
+    baseStyles.headerRight,
+    transparent && {
+      color: '#2563eb',
+    },
+  ];
+
+  return (
+    <View style={headerStyle}>
+      <View style={baseStyles.headerLeft}>
+        <Text style={titleStyle}>{title || ''}</Text>
+        {subtitle ? <Text style={subtitleStyle}>{subtitle}</Text> : null}
+        {date ? <Text style={dateStyle}>{date}</Text> : null}
+      </View>
+      {right ? <Text style={rightStyle}>{right}</Text> : null}
     </View>
-    {right ? <Text style={baseStyles.headerRight}>{right}</Text> : null}
-  </View>
-);
+  );
+};
 
 /**
  * Standard PDF Footer with page numbering (fixed at bottom).

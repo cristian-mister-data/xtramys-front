@@ -11,6 +11,7 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,28 @@ import AppLayout from '@/vendor/shared/appLayout';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import BodyInjuryMap from './BodyInjuryMap';
+import zoneTobillo from '@/assets/injuries/zone-tobillo.png';
+import zoneAductor from '@/assets/injuries/zone-aductor.png';
+import zoneCuadriceps from '@/assets/injuries/zone-cuadriceps.png';
+import zoneGemelo from '@/assets/injuries/zone-gemelo.png';
+import zoneIsquio from '@/assets/injuries/zone-isquio.png';
+import zonePubis from '@/assets/injuries/zone-pubis.png';
+import zoneRodilla from '@/assets/injuries/zone-rodilla.png';
+import zoneAbdomen from '@/assets/injuries/zone-abdomen.png';
+import zoneBrazo from '@/assets/injuries/zone-brazo.png';
+import zoneCabeza from '@/assets/injuries/zone-cabeza.png';
+import zoneCadera from '@/assets/injuries/zone-cadera.png';
+import zoneColumna from '@/assets/injuries/zone-columna.png';
+import zoneCuello from '@/assets/injuries/zone-cuello.png';
+import zoneEspalda from '@/assets/injuries/zone-espalda.png';
+import zoneGluteo from '@/assets/injuries/zone-gluteo.png';
+import zoneHombro from '@/assets/injuries/zone-hombro.png';
+import zoneMano from '@/assets/injuries/zone-mano.png';
+import zoneAntebrazo from '@/assets/injuries/zone-antebrazo.png';
+import zoneMuneca from '@/assets/injuries/zone-muneca.png';
+import zoneAquiles from '@/assets/injuries/zone-aquiles.png';
+import zoneEspinilla from '@/assets/injuries/zone-espinilla.png';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -50,6 +73,60 @@ const getPositionColor = (position) => {
   }
 };
 
+const zoneImages = {
+  tobillo: zoneTobillo,
+  aductor: zoneAductor,
+  cuadriceps: zoneCuadriceps,
+  gemelo: zoneGemelo,
+  isquio: zoneIsquio,
+  pubis: zonePubis,
+  rodilla: zoneRodilla,
+  abdomen: zoneAbdomen,
+  brazo: zoneBrazo,
+  cabeza: zoneCabeza,
+  cadera: zoneCadera,
+  columna: zoneColumna,
+  cuello: zoneCuello,
+  espalda: zoneEspalda,
+  gluteo: zoneGluteo,
+  hombro: zoneHombro,
+  mano: zoneMano,
+  antebrazo: zoneAntebrazo,
+  muneca: zoneMuneca,
+  aquiles: zoneAquiles,
+  espinilla: zoneEspinilla,
+  psoas: zoneCadera,
+};
+
+function ZoneThumb({ value, active }) {
+  return (
+    <View style={[thumbStyles.wrap, active && thumbStyles.activeWrap]}>
+      <Image source={zoneImages[value] || zoneAbdomen} style={thumbStyles.image} resizeMode="contain" />
+    </View>
+  );
+}
+
+const thumbStyles = StyleSheet.create({
+  wrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    padding: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'visible',
+  },
+  activeWrap: {
+    borderWidth: 2,
+    borderColor: '#6366f1',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+});
+
 export default function InjuriesManagement({ navigation, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -63,9 +140,9 @@ export default function InjuriesManagement({ navigation, canMutate }) {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [selectedInjury, setSelectedInjury] = useState(null);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
-  const [showZoneSelector, setShowZoneSelector] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [datePickerVisibleStart, setDatePickerVisibleStart] = useState(false);
   const [datePickerVisibleEnd, setDatePickerVisibleEnd] = useState(false);
@@ -96,21 +173,32 @@ export default function InjuriesManagement({ navigation, canMutate }) {
     fechaFinPrevistaDate: null,
     recaida: false,
     lesionEspecifica: '',
+    lado: '',
   });
 
   const zoneOptions = useMemo(() => [
-    { label: t('injury.zones.cadera'), value: 'cadera' },
-    { label: t('injury.zones.rodilla'), value: 'rodilla' },
-    { label: t('injury.zones.tobillo'), value: 'tobillo' },
-    { label: t('injury.zones.hombro'), value: 'hombro' },
-    { label: t('injury.zones.muneca'), value: 'muneca' },
-    { label: t('injury.zones.espalda'), value: 'espalda' },
-    { label: t('injury.zones.cuadriceps'), value: 'cuadriceps' },
-    { label: t('injury.zones.aductor'), value: 'aductor' },
-    { label: t('injury.zones.isquio'), value: 'isquio' },
-    { label: t('injury.zones.gemelo'), value: 'gemelo' },
-    { label: t('injury.zones.gluteo'), value: 'gluteo' },
-    { label: t('injury.zones.psoas'), value: 'psoas' }
+    { label: t('injury.zones.tobillo', 'Tobillo'), value: 'tobillo' },
+    { label: t('injury.zones.aductor', 'Aductores'), value: 'aductor' },
+    { label: t('injury.zones.cuadriceps', 'Cuadriceps'), value: 'cuadriceps' },
+    { label: t('injury.zones.gemelo', 'Gemelos'), value: 'gemelo' },
+    { label: t('injury.zones.isquio', 'Isquio'), value: 'isquio' },
+    { label: t('injury.zones.pubis', 'Pubis'), value: 'pubis' },
+    { label: t('injury.zones.rodilla', 'Rodilla'), value: 'rodilla' },
+    { label: t('injury.zones.abdomen', 'Abdomen'), value: 'abdomen' },
+    { label: t('injury.zones.brazo', 'Brazo'), value: 'brazo' },
+    { label: t('injury.zones.cabeza', 'Cabeza'), value: 'cabeza' },
+    { label: t('injury.zones.cadera', 'Cadera'), value: 'cadera' },
+    { label: t('injury.zones.columna', 'Columna'), value: 'columna' },
+    { label: t('injury.zones.cuello', 'Cuello'), value: 'cuello' },
+    { label: t('injury.zones.espalda', 'Espalda'), value: 'espalda' },
+    { label: t('injury.zones.gluteo', 'Gluteo'), value: 'gluteo' },
+    { label: t('injury.zones.hombro', 'Hombro'), value: 'hombro' },
+    { label: t('injury.zones.mano', 'Mano'), value: 'mano' },
+    { label: t('injury.zones.antebrazo', 'Antebrazo'), value: 'antebrazo' },
+    { label: t('injury.zones.muneca', 'Muneca'), value: 'muneca' },
+    { label: t('injury.zones.aquiles', 'Aquiles'), value: 'aquiles' },
+    { label: t('injury.zones.espinilla', 'Espinilla'), value: 'espinilla' },
+    { label: t('injury.zones.psoas', 'Psoas'), value: 'psoas' }
   ], [t]);
 
   const typeOptions = useMemo(() => [
@@ -176,6 +264,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
       return;
     }
     setEditMode(false);
+    setIsViewMode(false);
     setSelectedInjury(null);
     setFormData({
       jugador: '',
@@ -189,12 +278,14 @@ export default function InjuriesManagement({ navigation, canMutate }) {
       fechaFinPrevistaDate: null,
       recaida: false,
       lesionEspecifica: '',
+      lado: '',
     });
     setModalVisible(true);
   };
 
   const openEditModal = (injury) => {
     setEditMode(true);
+    setIsViewMode(true);
     setSelectedInjury(injury);
     const fechaInicioDate = injury.fechaInicio ? new Date(injury.fechaInicio) : null;
     const fechaFinDate = injury.fechaFin ? new Date(injury.fechaFin) : null;
@@ -211,14 +302,17 @@ export default function InjuriesManagement({ navigation, canMutate }) {
       fechaFinPrevistaDate: fechaFinPrevistaDate,
       recaida: injury.recaida || false,
       lesionEspecifica: injury.lesionEspecifica || '',
+      lado: injury.lado || '',
     });
     setModalVisible(true);
   };
 
   const closeModal = () => {
     setModalVisible(false);
+    setEditMode(false);
+    setIsViewMode(false);
+    setSelectedInjury(null);
     setShowPlayerSelector(false);
-    setShowZoneSelector(false);
     setShowTypeSelector(false);
     setDatePickerVisibleStart(false);
     setDatePickerVisibleEnd(false);
@@ -270,6 +364,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
         fechaFinPrevista: formData.fechaFinPrevista ? new Date(formData.fechaFinPrevista).toISOString() : null,
         recaida: formData.recaida,
         lesionEspecifica: formData.lesionEspecifica,
+        lado: formData.lado || null,
       };
 
       if (editMode && selectedInjury) {
@@ -691,7 +786,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                   <TouchableOpacity
                     key={injury._id}
                     style={styles.injuryCard}
-                    onPress={canMutate !== false ? () => openEditModal(injury) : undefined}
+                    onPress={() => openEditModal(injury)}
                   >
                     <LinearGradient colors={posColor} style={styles.injuryCardColorBar} />
                     <View style={styles.injuryCardInner}>
@@ -737,7 +832,10 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                       <View style={styles.detailRow}>
                         <Ionicons name="body" size={16} color={theme.colors.textSecondary} />
                         <Text style={styles.detailLabel}>{t('injury.zone')}:</Text>
-                        <Text style={styles.detailValue}>{injury.zona?.value ? t('injury.zones.' + injury.zona.value, injury.zona.label) : '-'}</Text>
+                        <Text style={styles.detailValue}>
+                          {injury.zona?.value ? t('injury.zones.' + injury.zona.value, injury.zona.label) : '-'}
+                          {injury.lado ? ` (${injury.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})` : ''}
+                        </Text>
                       </View>
                       <View style={styles.detailRow}>
                         <MaterialIcons name="healing" size={16} color={theme.colors.textSecondary} />
@@ -818,7 +916,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  {editMode ? t('injury.editInjury') : t('injury.registerInjuryTitle')}
+                  {isViewMode ? t('injury.injuryDetails') : (editMode ? t('injury.editInjury') : t('injury.registerInjuryTitle'))}
                 </Text>
                 <TouchableOpacity onPress={closeModal} style={styles.modalCloseButton}>
                   <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
@@ -826,260 +924,420 @@ export default function InjuriesManagement({ navigation, canMutate }) {
               </View>
 
               <KeyboardAwareScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                {/* Player Selector */}
-                <Text style={styles.inputLabel}>{t('injury.playerRequired')}</Text>
-                <TouchableOpacity
-                  style={styles.selectInput}
-                  onPress={() => setShowPlayerSelector(!showPlayerSelector)}
-                >
-<Text style={formData.jugador ? styles.selectInputText : styles.selectInputPlaceholder}>
-                    {formData.jugador
-                      ? (() => {
-                        const player = jugadores?.find(p => p._id === formData.jugador);
-                        return player ? getPlayerFullName(player) : t('injury.selectPlayer');
-                      })()
-                      : t('injury.selectPlayer')}
-                  </Text>
-                  <Ionicons name={showPlayerSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
-                {showPlayerSelector && (
-                  <View style={styles.optionsContainer}>
-                    <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
-                      {jugadores?.map((player) => (
-                        <TouchableOpacity
-                          key={player._id}
-                          style={[
-                            styles.option,
-                            formData.jugador === player._id && styles.optionSelected
-                          ]}
-                          onPress={() => {
-                            setFormData({ ...formData, jugador: player._id });
-                            setShowPlayerSelector(false);
-                          }}
-                        >
-<Text style={[
-                            styles.optionText,
-                            formData.jugador === player._id && styles.optionTextSelected
-                          ]}>
-                            {getPlayerFullName(player)}
-                          </Text>
-                          {formData.jugador === player._id && (
-                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
-                {/* Zone Selector */}
-                <Text style={styles.inputLabel}>{t('injury.bodyZoneRequired')}</Text>
-                <TouchableOpacity
-                  style={styles.selectInput}
-                  onPress={() => setShowZoneSelector(!showZoneSelector)}
-                >
-                  <Text style={formData.zona.value ? styles.selectInputText : styles.selectInputPlaceholder}>
-                    {formData.zona.value ? t('injury.zones.' + formData.zona.value, formData.zona.label) : t('injury.selectZone')}
-                  </Text>
-                  <Ionicons name={showZoneSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
-                {showZoneSelector && (
-                  <View style={styles.optionsContainer}>
-                    <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
-                      {zoneOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[
-                            styles.option,
-                            formData.zona.value === option.value && styles.optionSelected
-                          ]}
-                          onPress={() => {
-                            setFormData({ ...formData, zona: option });
-                            setShowZoneSelector(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.optionText,
-                            formData.zona.value === option.value && styles.optionTextSelected
-                          ]}>
-                            {option.label}
-                          </Text>
-                          {formData.zona.value === option.value && (
-                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
-                {/* Type Selector */}
-                <Text style={styles.inputLabel}>{t('injury.injuryTypeRequired')}</Text>
-                <TouchableOpacity
-                  style={styles.selectInput}
-                  onPress={() => setShowTypeSelector(!showTypeSelector)}
-                >
-                  <Text style={formData.tipo.value ? styles.selectInputText : styles.selectInputPlaceholder}>
-                    {formData.tipo.value ? t('injury.types.' + formData.tipo.value, formData.tipo.label) : t('injury.selectType')}
-                  </Text>
-                  <Ionicons name={showTypeSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
-                {showTypeSelector && (
-                  <View style={styles.optionsContainer}>
-                    <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
-                      {typeOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[
-                            styles.option,
-                            formData.tipo.value === option.value && styles.optionSelected
-                          ]}
-                          onPress={() => {
-                            setFormData({ ...formData, tipo: option });
-                            setShowTypeSelector(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.optionText,
-                            formData.tipo.value === option.value && styles.optionTextSelected
-                          ]}>
-                            {option.label}
-                          </Text>
-                          {formData.tipo.value === option.value && (
-                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-
-                {/* Specific Injury Details */}
-                <Text style={styles.inputLabel}>{t('injury.specificDetails')}</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder={t('injury.example')}
-                  placeholderTextColor={theme.colors.inputPlaceholder}
-                  value={formData.lesionEspecifica}
-                  onChangeText={(text) => setFormData({ ...formData, lesionEspecifica: text })}
-                  multiline
-                  rows={3}
-                />
-
-                {/* Start Date */}
-                <Text style={styles.inputLabel}>{t('injury.startDateRequired')}</Text>
-                <View style={styles.datePickerContainer}>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 1 }]}
-                    onPress={() => setDatePickerVisibleStart(true)}
-                  >
-                    <View style={styles.datePickerContent}>
-                      <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
-                      <Text style={formData.fechaInicioDate ? styles.datePickerText : styles.datePickerPlaceholder}>
-                        {formData.fechaInicioDate
-                          ? formData.fechaInicioDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })
-                          : t('injury.selectStartDate')}
-                      </Text>
+                {isViewMode && selectedInjury ? (
+                  <View style={styles.viewModeContainer}>
+                    <View style={styles.viewModeHeader}>
+                      <View style={[styles.injuryPlayerAvatar, { backgroundColor: getPositionColor(getPlayerPosition(selectedInjury.jugador))[0] + '20' }]}>
+                        <Ionicons name="person" size={24} color={getPositionColor(getPlayerPosition(selectedInjury.jugador))[1]} />
+                      </View>
+                      <View>
+                        <Text style={styles.viewModePlayerName}>{getPlayerName(selectedInjury.jugador)}</Text>
+                        <Text style={styles.viewModePlayerPosition}>
+                          {getPlayerPosition(selectedInjury.jugador) ?
+                            positionOptions.find(p => p.value === getPlayerPosition(selectedInjury.jugador))?.label ||
+                            getPlayerPosition(selectedInjury.jugador) :
+                            t('injury.unspecifiedPosition')
+                          }
+                        </Text>
+                      </View>
                     </View>
-                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
-                  {formData.fechaInicioDate && (
-                    <TouchableOpacity
-                      style={styles.clearDateButton}
-                      onPress={clearStartDate}
-                    >
-                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
-                    </TouchableOpacity>
-                  )}
-                </View>
 
-                {/* End Date */}
-                <Text style={styles.inputLabel}>{t('injury.endDateOptional')}</Text>
-                <View style={styles.datePickerContainer}>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 1 }]}
-                    onPress={() => setDatePickerVisibleEnd(true)}
-                  >
-                    <View style={styles.datePickerContent}>
-                      <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
-                      <Text style={formData.fechaFinDate ? styles.datePickerText : styles.datePickerPlaceholder}>
-                        {formData.fechaFinDate
-                          ? formData.fechaFinDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })
-                          : t('injury.selectEndDateOptional')}
-                      </Text>
+                    <View style={styles.viewModeDivider} />
+
+                    <BodyInjuryMap injuries={[selectedInjury]} t={t} compact={true} />
+
+                    <View style={styles.viewModeDivider} />
+
+                    <View style={styles.viewModeDetailsList}>
+                      <View style={styles.viewModeDetailRow}>
+                        <Ionicons name="body" size={20} color={theme.colors.textSecondary} />
+                        <View style={styles.viewModeDetailContent}>
+                          <Text style={styles.viewModeDetailLabel}>{t('injury.zone')}</Text>
+                          <Text style={styles.viewModeDetailValue}>
+                            {selectedInjury.zona?.value ? t('injury.zones.' + selectedInjury.zona.value, selectedInjury.zona.label) : '-'}
+                            {selectedInjury.lado ? ` (${selectedInjury.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})` : ''}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.viewModeDetailRow}>
+                        <MaterialIcons name="healing" size={20} color={theme.colors.textSecondary} />
+                        <View style={styles.viewModeDetailContent}>
+                          <Text style={styles.viewModeDetailLabel}>{t('injury.type')}</Text>
+                          <Text style={styles.viewModeDetailValue}>
+                            {selectedInjury.tipo?.value ? t('injury.types.' + selectedInjury.tipo.value, selectedInjury.tipo.label) : '-'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.viewModeDetailRow}>
+                        <Ionicons name="time" size={20} color={theme.colors.textSecondary} />
+                        <View style={styles.viewModeDetailContent}>
+                          <Text style={styles.viewModeDetailLabel}>{t('injury.durationLabel')}</Text>
+                          <Text style={styles.viewModeDetailValue}>
+                            {getInjuryDuration(selectedInjury).label}
+                            {getInjuryDuration(selectedInjury).days ? ` (${getInjuryDuration(selectedInjury).days} ${t('injury.days')})` : ''}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.viewModeDetailRow}>
+                        <MaterialIcons name="calendar-today" size={20} color={theme.colors.textSecondary} />
+                        <View style={styles.viewModeDetailContent}>
+                          <Text style={styles.viewModeDetailLabel}>{t('injury.startDate')}</Text>
+                          <Text style={styles.viewModeDetailValue}>{formatDate(selectedInjury.fechaInicio)}</Text>
+                        </View>
+                      </View>
+
+                      {selectedInjury.fechaFinPrevista && (
+                        <View style={styles.viewModeDetailRow}>
+                          <MaterialIcons name="schedule" size={20} color={theme.colors.warning} />
+                          <View style={styles.viewModeDetailContent}>
+                            <Text style={[styles.viewModeDetailLabel, { color: theme.colors.warning }]}>{t('injury.estimatedEnd')}</Text>
+                            <Text style={styles.viewModeDetailValue}>{formatDate(selectedInjury.fechaFinPrevista)}</Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {selectedInjury.fechaFin && (
+                        <View style={styles.viewModeDetailRow}>
+                          <MaterialIcons name="event-available" size={20} color={theme.colors.success} />
+                          <View style={styles.viewModeDetailContent}>
+                            <Text style={[styles.viewModeDetailLabel, { color: theme.colors.success }]}>{t('injury.actualEnd')}</Text>
+                            <Text style={styles.viewModeDetailValue}>{formatDate(selectedInjury.fechaFin)}</Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {selectedInjury.lesionEspecifica ? (
+                        <View style={styles.viewModeDetailRow}>
+                          <Ionicons name="information-circle-outline" size={20} color={theme.colors.textSecondary} />
+                          <View style={styles.viewModeDetailContent}>
+                            <Text style={styles.viewModeDetailLabel}>{t('injury.specificDetails')}</Text>
+                            <Text style={styles.viewModeDetailValue}>{selectedInjury.lesionEspecifica}</Text>
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {selectedInjury.recaida && (
+                        <View style={styles.viewModeRelapseBadge}>
+                          <Ionicons name="warning" size={16} color={theme.colors.warning} />
+                          <Text style={styles.viewModeRelapseText}>{t('injury.isRelapse')}</Text>
+                        </View>
+                      )}
                     </View>
-                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
-                  {formData.fechaFinDate && (
-                    <TouchableOpacity
-                      style={styles.clearDateButton}
-                      onPress={clearEndDate}
-                    >
-                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* Estimated End Date */}
-                <Text style={styles.inputLabel}>{t('injury.estimatedEndDateOptional')}</Text>
-                <View style={styles.datePickerContainer}>
-                  <TouchableOpacity
-                    style={[styles.datePickerButton, { flex: 1 }]}
-                    onPress={() => setDatePickerVisibleEndPrevista(true)}
-                  >
-                    <View style={styles.datePickerContent}>
-                      <MaterialIcons name="schedule" size={20} color={theme.colors.warning} />
-                      <Text style={formData.fechaFinPrevistaDate ? styles.datePickerText : styles.datePickerPlaceholder}>
-                        {formData.fechaFinPrevistaDate
-                          ? formData.fechaFinPrevistaDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })
-                          : t('injury.selectEstimatedEndDateOptional')}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
-                  </TouchableOpacity>
-                  {formData.fechaFinPrevistaDate && (
-                    <TouchableOpacity
-                      style={styles.clearDateButton}
-                      onPress={clearEstimatedEndDate}
-                    >
-                      <Ionicons name="close-circle" size={20} color={theme.colors.error} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* Relapse Checkbox */}
-                <TouchableOpacity
-                  style={styles.checkboxContainer}
-                  onPress={() => setFormData({ ...formData, recaida: !formData.recaida })}
-                >
-                  <View style={[styles.checkbox, formData.recaida && styles.checkboxChecked]}>
-                    {formData.recaida && <Ionicons name="checkmark" size={16} color="#ffffff" />}
                   </View>
-                  <Text style={styles.checkboxLabel}> {t('injury.isRelapse')}</Text>
-                </TouchableOpacity>
+                ) : (
+                  <>
+                    {/* Player Selector */}
+                    <Text style={styles.inputLabel}>{t('injury.playerRequired')}</Text>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setShowPlayerSelector(!showPlayerSelector)}
+                    >
+                      <Text style={formData.jugador ? styles.selectInputText : styles.selectInputPlaceholder}>
+                        {formData.jugador
+                          ? (() => {
+                            const player = jugadores?.find(p => p._id === formData.jugador);
+                            return player ? getPlayerFullName(player) : t('injury.selectPlayer');
+                          })()
+                          : t('injury.selectPlayer')}
+                      </Text>
+                      <Ionicons name={showPlayerSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                    {showPlayerSelector && (
+                      <View style={styles.optionsContainer}>
+                        <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
+                          {jugadores?.map((player) => (
+                            <TouchableOpacity
+                              key={player._id}
+                              style={[
+                                styles.option,
+                                formData.jugador === player._id && styles.optionSelected
+                              ]}
+                              onPress={() => {
+                                setFormData({ ...formData, jugador: player._id });
+                                setShowPlayerSelector(false);
+                              }}
+                            >
+                              <Text style={[
+                                styles.optionText,
+                                formData.jugador === player._id && styles.optionTextSelected
+                              ]}>
+                                {getPlayerFullName(player)}
+                              </Text>
+                              {formData.jugador === player._id && (
+                                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+
+                    {/* Zone Selector */}
+                    <Text style={styles.inputLabel}>{t('injury.bodyZoneRequired')}</Text>
+                    <View style={styles.zonePickerPanel}>
+                        <View style={styles.zoneGroup}>
+                          <Text style={styles.zoneGroupTitle}>Lesiones</Text>
+                          <View style={styles.zoneGrid}>
+                            {zoneOptions.map((option) => {
+                              const active = formData.zona.value === option.value;
+                              return (
+                                <TouchableOpacity
+                                  key={option.value}
+                                  style={[styles.zoneCard, active && styles.zoneCardActive]}
+                                  onPress={() => setFormData({ ...formData, zona: option })}
+                                  activeOpacity={0.8}
+                                >
+                                  <ZoneThumb value={option.value} active={active} />
+                                  <Text style={[styles.zoneCardText, active && styles.zoneCardTextActive]} numberOfLines={1}>
+                                    {option.label}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      {!formData.zona.value && (
+                        <Text style={styles.zonePickerHint}>{t('injury.selectZone')}</Text>
+                      )}
+                      </View>
+
+                    {/* Laterality Selector */}
+                    <Text style={styles.inputLabel}>{t('injury.laterality')}</Text>
+                    <View style={styles.lateralityContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.lateralityButton,
+                          formData.lado === 'izquierda' && styles.lateralityButtonActive
+                        ]}
+                        onPress={() => setFormData({ ...formData, lado: 'izquierda' })}
+                      >
+                        <Text style={[
+                          styles.lateralityButtonText,
+                          formData.lado === 'izquierda' && styles.lateralityButtonTextActive
+                        ]}>
+                          {t('injury.sideLeft', 'Izquierda')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.lateralityButton,
+                          (!formData.lado || formData.lado === '') && styles.lateralityButtonActive
+                        ]}
+                        onPress={() => setFormData({ ...formData, lado: '' })}
+                      >
+                        <Text style={[
+                          styles.lateralityButtonText,
+                          (!formData.lado || formData.lado === '') && styles.lateralityButtonTextActive
+                        ]}>
+                          {t('injury.sideNA', 'No aplica')}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.lateralityButton,
+                          formData.lado === 'derecha' && styles.lateralityButtonActive
+                        ]}
+                        onPress={() => setFormData({ ...formData, lado: 'derecha' })}
+                      >
+                        <Text style={[
+                          styles.lateralityButtonText,
+                          formData.lado === 'derecha' && styles.lateralityButtonTextActive
+                        ]}>
+                          {t('injury.sideRight', 'Derecha')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Type Selector */}
+                    <Text style={styles.inputLabel}>{t('injury.injuryTypeRequired')}</Text>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setShowTypeSelector(!showTypeSelector)}
+                    >
+                      <Text style={formData.tipo.value ? styles.selectInputText : styles.selectInputPlaceholder}>
+                        {formData.tipo.value ? t('injury.types.' + formData.tipo.value, formData.tipo.label) : t('injury.selectType')}
+                      </Text>
+                      <Ionicons name={showTypeSelector ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                    {showTypeSelector && (
+                      <View style={styles.optionsContainer}>
+                        <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
+                          {typeOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option.value}
+                              style={[
+                                styles.option,
+                                formData.tipo.value === option.value && styles.optionSelected
+                              ]}
+                              onPress={() => {
+                                setFormData({ ...formData, tipo: option });
+                                setShowTypeSelector(false);
+                              }}
+                            >
+                              <Text style={[
+                                styles.optionText,
+                                formData.tipo.value === option.value && styles.optionTextSelected
+                              ]}>
+                                {option.label}
+                              </Text>
+                              {formData.tipo.value === option.value && (
+                                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+
+                    {/* Specific Injury Details */}
+                    <Text style={styles.inputLabel}>{t('injury.specificDetails')}</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      placeholder={t('injury.example')}
+                      placeholderTextColor={theme.colors.inputPlaceholder}
+                      value={formData.lesionEspecifica}
+                      onChangeText={(text) => setFormData({ ...formData, lesionEspecifica: text })}
+                      multiline
+                      rows={3}
+                    />
+
+                    {/* Start Date */}
+                    <Text style={styles.inputLabel}>{t('injury.startDateRequired')}</Text>
+                    <View style={styles.datePickerContainer}>
+                      <TouchableOpacity
+                        style={[styles.datePickerButton, { flex: 1 }]}
+                        onPress={() => setDatePickerVisibleStart(true)}
+                      >
+                        <View style={styles.datePickerContent}>
+                          <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
+                          <Text style={formData.fechaInicioDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                            {formData.fechaInicioDate
+                              ? formData.fechaInicioDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })
+                              : t('injury.selectStartDate')}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
+                      {formData.fechaInicioDate && (
+                        <TouchableOpacity
+                          style={styles.clearDateButton}
+                          onPress={clearStartDate}
+                        >
+                          <Ionicons name="close-circle" size={20} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* End Date */}
+                    <Text style={styles.inputLabel}>{t('injury.endDateOptional')}</Text>
+                    <View style={styles.datePickerContainer}>
+                      <TouchableOpacity
+                        style={[styles.datePickerButton, { flex: 1 }]}
+                        onPress={() => setDatePickerVisibleEnd(true)}
+                      >
+                        <View style={styles.datePickerContent}>
+                          <MaterialIcons name="calendar-today" size={20} color={theme.colors.primary} />
+                          <Text style={formData.fechaFinDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                            {formData.fechaFinDate
+                              ? formData.fechaFinDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })
+                              : t('injury.selectEndDateOptional')}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
+                      {formData.fechaFinDate && (
+                        <TouchableOpacity
+                          style={styles.clearDateButton}
+                          onPress={clearEndDate}
+                        >
+                          <Ionicons name="close-circle" size={20} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Estimated End Date */}
+                    <Text style={styles.inputLabel}>{t('injury.estimatedEndDateOptional')}</Text>
+                    <View style={styles.datePickerContainer}>
+                      <TouchableOpacity
+                        style={[styles.datePickerButton, { flex: 1 }]}
+                        onPress={() => setDatePickerVisibleEndPrevista(true)}
+                      >
+                        <View style={styles.datePickerContent}>
+                          <MaterialIcons name="schedule" size={20} color={theme.colors.warning} />
+                          <Text style={formData.fechaFinPrevistaDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                            {formData.fechaFinPrevistaDate
+                              ? formData.fechaFinPrevistaDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })
+                              : t('injury.selectEstimatedEndDateOptional')}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
+                      {formData.fechaFinPrevistaDate && (
+                        <TouchableOpacity
+                          style={styles.clearDateButton}
+                          onPress={clearEstimatedEndDate}
+                        >
+                          <Ionicons name="close-circle" size={20} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Relapse Checkbox */}
+                    <TouchableOpacity
+                      style={styles.checkboxContainer}
+                      onPress={() => setFormData({ ...formData, recaida: !formData.recaida })}
+                    >
+                      <View style={[styles.checkbox, formData.recaida && styles.checkboxChecked]}>
+                        {formData.recaida && <Ionicons name="checkmark" size={16} color="#ffffff" />}
+                      </View>
+                      <Text style={styles.checkboxLabel}> {t('injury.isRelapse')}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </KeyboardAwareScrollView>
 
               <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={closeModal}>
-                  <Text style={styles.modalCancelText}>{t('injury.cancel')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalConfirmButton} onPress={handleSubmit}>
-                  <Text style={styles.modalConfirmText}>
-                    {editMode ? t('injury.update') : t('injury.save')}
-                  </Text>
-                </TouchableOpacity>
+                {isViewMode ? (
+                  <>
+                    <TouchableOpacity style={styles.modalCancelButton} onPress={closeModal}>
+                      <Text style={styles.modalCancelText}>{t('common.close', 'Cerrar')}</Text>
+                    </TouchableOpacity>
+                    {canMutate !== false && (
+                      <TouchableOpacity
+                        style={styles.modalConfirmButton}
+                        onPress={() => setIsViewMode(false)}
+                      >
+                        <Text style={styles.modalConfirmText}>{t('common.edit', 'Editar')}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.modalCancelButton} onPress={closeModal}>
+                      <Text style={styles.modalCancelText}>{t('injury.cancel')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.modalConfirmButton} onPress={handleSubmit}>
+                      <Text style={styles.modalConfirmText}>
+                        {editMode ? t('injury.update') : t('injury.save')}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
 
@@ -1476,7 +1734,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: isMobileDevice() ? 16 : 20,
     width: isMobileDevice() ? '100%' : '94%',
-    maxWidth: isMobileDevice() ? 400 : 1120,
+    maxWidth: isMobileDevice() ? 430 : 1120,
     maxHeight: isMobileDevice() ? '95%' : '92%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
@@ -1503,7 +1761,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBody: {
     padding: isMobileDevice() ? 16 : 20,
-    maxHeight: isMobileDevice() ? 400 : 620,
+    maxHeight: isMobileDevice() ? 560 : 680,
   },
   inputLabel: {
     fontSize: 14,
@@ -1584,6 +1842,163 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   optionTextSelected: {
     color: theme.colors.primarySoftText,
+    fontWeight: '600',
+  },
+  zonePickerPanel: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 18,
+    padding: isMobileDevice() ? 12 : 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  zoneGroup: {
+    gap: 8,
+  },
+  zoneGroupTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.text,
+  },
+  zoneGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: isMobileDevice() ? 10 : 12,
+  },
+  zoneCard: {
+    width: isMobileDevice() ? '30.8%' : 96,
+    minHeight: isMobileDevice() ? 98 : 108,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  zoneCardActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  zoneCardText: {
+    marginTop: 7,
+    fontSize: 12,
+    lineHeight: 15,
+    color: theme.colors.textSecondary,
+    fontWeight: '800',
+    textAlign: 'center',
+    width: '100%',
+  },
+  zoneCardTextActive: {
+    color: theme.colors.primary,
+  },
+  zonePickerHint: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontWeight: '600',
+  },
+  lateralityContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  lateralityButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceAlt,
+    justifyContent: 'center',
+    height: 44,
+  },
+  lateralityButtonActive: {
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primary,
+  },
+  lateralityButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  lateralityButtonTextActive: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  viewModeContainer: {
+    paddingVertical: 10,
+    gap: 16,
+  },
+  viewModeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  viewModePlayerName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  viewModePlayerPosition: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  viewModeDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: 4,
+  },
+  viewModeDetailsList: {
+    gap: 14,
+  },
+  viewModeDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  viewModeDetailContent: {
+    flex: 1,
+    gap: 2,
+  },
+  viewModeDetailLabel: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  viewModeDetailValue: {
+    fontSize: 15,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  viewModeRelapseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.warningSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  viewModeRelapseText: {
+    fontSize: 13,
+    color: theme.colors.warningSoftText,
     fontWeight: '600',
   },
   checkboxContainer: {

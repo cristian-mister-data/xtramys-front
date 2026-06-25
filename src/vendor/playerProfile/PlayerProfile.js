@@ -682,6 +682,31 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                 <Text style={styles.infoLabel}>{t('player.profile.team')}</Text>
                 <Text style={styles.infoValue}>{team?.nombre || '-'}</Text>
               </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>{t('player.birthDate')}</Text>
+                <Text style={styles.infoValue}>
+                  {player.fechaNacimiento
+                    ? new Date(player.fechaNacimiento).toLocaleDateString(getLocale(), {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        timeZone: 'UTC',
+                      })
+                    : '-'}
+                </Text>
+              </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>{t('player.preferredFoot')}</Text>
+                <Text style={styles.infoValue}>
+                  {player.pierna === 'right'
+                    ? t('player.footRight')
+                    : player.pierna === 'left'
+                      ? t('player.footLeft')
+                      : player.pierna === 'both'
+                        ? t('player.footBoth')
+                        : '-'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -953,6 +978,9 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                                 injury.zona?.es ||
                                 injury.zona ||
                                 t('player.profile.unknownLocation')}
+                            {injury.lado
+                              ? ` (${injury.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})`
+                              : ''}
                           </Text>
                         </View>
                       )}

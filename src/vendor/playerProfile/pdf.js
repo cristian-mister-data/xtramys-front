@@ -19,6 +19,15 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 import { format } from 'date-fns';
 
 const s = StyleSheet.create({
+  page: {
+    paddingTop: 30,
+    paddingBottom: 50,
+    paddingHorizontal: 34,
+    backgroundColor: '#ffffff',
+    fontFamily: 'Helvetica',
+    fontSize: FONT_SIZE.base,
+    color: '#1f2937',
+  },
   grid2: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -37,104 +46,248 @@ const s = StyleSheet.create({
     gap: SPACING.sm,
     marginBottom: SPACING.md,
   },
-  statCard: {
-    flex: 1,
-    padding: SPACING.sm,
-    backgroundColor: COLORS.bgCard,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+  profileHero: {
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.lg,
+    borderBottomWidth: 4,
+    borderBottomColor: '#2563eb',
   },
-  statValue: {
+  playerHeroInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  profilePhoto: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  profilePhotoEmpty: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#334155',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  heroTextContainer: {
+    flexDirection: 'column',
+  },
+  profileName: {
     fontSize: 20,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.primary,
-    marginBottom: 4,
+    color: '#ffffff',
+    marginBottom: 6,
   },
-  statLabel: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.textMuted,
+  profileMetaRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  numberBadge: {
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    fontSize: FONT_SIZE.sm,
+    fontFamily: 'Helvetica-Bold',
+  },
+  positionBadge: {
+    backgroundColor: '#10b981',
+    color: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    fontSize: FONT_SIZE.sm,
+    fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
   },
-  avatarContainer: {
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: SPACING.sm,
-  },
-  playerName: {
-    fontSize: FONT_SIZE.xl,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.text,
-  },
-  teamName: {
+  footBadge: {
+    backgroundColor: '#6366f1',
+    color: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textMuted,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+  },
+  teamBadge: {
+    backgroundColor: '#475569',
+    color: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    fontSize: FONT_SIZE.sm,
+    fontFamily: 'Helvetica-Bold',
+  },
+  heroDetails: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  heroDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroDetailLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: '#94a3b8',
+    fontFamily: 'Helvetica',
+  },
+  heroDetailValue: {
+    fontSize: FONT_SIZE.sm,
+    color: '#ffffff',
+    fontFamily: 'Helvetica-Bold',
+  },
+  infoStatCard: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoStatLabel: {
+    fontSize: 8,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+  },
+  infoStatValue: {
+    fontSize: 12,
+    color: '#0f172a',
+    fontFamily: 'Helvetica-Bold',
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  statValue: {
+    fontSize: 14,
+    fontFamily: 'Helvetica-Bold',
+    color: '#1f2937',
+  },
+  statLabel: {
+    fontSize: 7.5,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    marginTop: 3,
+    letterSpacing: 0.5,
   },
   table: {
     width: '100%',
     marginTop: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
-    borderRadius: 4,
+    borderColor: '#e2e8f0',
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: COLORS.bgHeader,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: '#e2e8f0',
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: '#e2e8f0',
   },
   th: {
     flex: 1,
-    fontSize: FONT_SIZE.xs,
+    fontSize: FONT_SIZE.sm,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.primary,
+    color: '#0f172a',
   },
   td: {
     flex: 1,
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text,
+    fontSize: FONT_SIZE.sm,
+    color: '#374151',
   },
   card: {
-    padding: SPACING.md,
-    backgroundColor: COLORS.bgCard,
+    padding: 10,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#e2e8f0',
     borderRadius: 8,
-    marginBottom: SPACING.sm,
+    marginBottom: 6,
   },
   cardTitle: {
     fontSize: FONT_SIZE.sm,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.text,
-    marginBottom: 4,
+    color: '#0f172a',
+    marginBottom: 3,
   },
   cardSubtitle: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textMuted,
-    marginBottom: 6,
+    color: '#64748b',
+    marginBottom: 4,
   },
   badge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 10,
-    fontSize: 9,
+    borderRadius: 8,
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
-    color: '#fff',
+    color: '#ffffff',
+  },
+  injuryPdfCard: {
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  injuryPdfHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
+  injuryPdfTitle: {
+    fontSize: FONT_SIZE.sm,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0f172a',
+    flex: 1,
+  },
+  injuryPdfMeta: {
+    fontSize: FONT_SIZE.xs,
+    color: '#64748b',
+    marginBottom: 3,
+  },
+  injuryPdfDetail: {
+    fontSize: FONT_SIZE.xs,
+    color: '#374151',
+    lineHeight: 1.35,
   },
 });
 
@@ -145,6 +298,53 @@ const formatDate = (dateStr) => {
   } catch (e) {
     return dateStr;
   }
+};
+
+const optionLabel = (option, prefix, t, fallback = '-') => {
+  if (!option) return fallback;
+  if (typeof option === 'string') return option;
+  return option.value
+    ? t(`${prefix}.${option.value}`, option.label || option.value)
+    : option.label || option.name || option.es || fallback;
+};
+
+const injuryStatus = (injury) => {
+  if (!injury?.fechaFin) return { label: 'ACTIVA', color: COLORS.danger };
+  return new Date(injury.fechaFin) > new Date()
+    ? { label: 'RECUPERACION', color: '#f59e0b' }
+    : { label: 'RECUPERADA', color: COLORS.success };
+};
+
+const playerInjuryList = (injuries, player) => (
+  (injuries || [])
+    .filter((i) => (typeof i.jugador === 'object' ? i.jugador._id : i.jugador) === player?._id)
+    .sort((a, b) => new Date(b.fechaInicio || 0) - new Date(a.fechaInicio || 0))
+);
+
+// --- Perfil General ---
+const playerBirthDate = (player) => (
+  player?.fechaNacimiento || player?.fecha_nacimiento || player?.birthDate || player?.birthday
+);
+
+const translateFoot = (pierna, t) => {
+  if (pierna === 'right') return t('player.footRight', 'Derecha');
+  if (pierna === 'left') return t('player.footLeft', 'Izquierda');
+  if (pierna === 'both') return t('player.footBoth', 'Ambidiestro');
+  return pierna || '-';
+};
+
+const playerAgeText = (player, t) => {
+  const yearsStr = t ? t('player.yearsOld', 'años') : 'años';
+  if (player?.edad) return `${player.edad} ${yearsStr}`;
+  const birth = playerBirthDate(player);
+  if (!birth) return '-';
+  const date = new Date(birth);
+  if (Number.isNaN(date.getTime())) return '-';
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const monthDelta = today.getMonth() - date.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < date.getDate())) age -= 1;
+  return `${age} ${yearsStr}`;
 };
 
 // --- Perfil General ---
@@ -161,52 +361,65 @@ const ProfileGeneralPage = ({
   const teamName = team?.nombre || '';
   const latestAntro =
     anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
+  const profileInjuries = playerInjuryList(injuries, player);
 
   return (
-    <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title={t('player.profile.title')} subtitle={name} />
+    <Page size="A4" style={s.page}>
+      <PdfHeader title={t('player.profile.title')} subtitle={name} transparent={true} />
       <View style={baseStyles.content}>
-        <View style={s.avatarContainer}>
-          {fotoBase64 ? (
-            <Image src={fotoBase64} style={s.avatar} />
-          ) : (
-            <View
-              style={[
-                s.avatar,
-                { backgroundColor: COLORS.bgSoft, justifyContent: 'center', alignItems: 'center' },
-              ]}
-            >
-              <Text style={{ color: COLORS.textMuted, fontSize: FONT_SIZE.sm }}>Sin Foto</Text>
+        <View style={s.profileHero} wrap={false}>
+          <View style={s.playerHeroInfo}>
+            {fotoBase64 ? (
+              <Image src={fotoBase64} style={s.profilePhoto} />
+            ) : (
+              <View style={s.profilePhotoEmpty}>
+                <Text style={{ color: '#94a3b8', fontSize: 10 }}>Sin foto</Text>
+              </View>
+            )}
+            <View style={s.heroTextContainer}>
+              <Text style={s.profileName}>{name}</Text>
+              <View style={s.profileMetaRow}>
+                {player.dorsal ? <Text style={s.numberBadge}>#{player.dorsal}</Text> : null}
+                {player.posicion ? <Text style={s.positionBadge}>{player.posicion}</Text> : null}
+                {player.pierna ? (
+                  <Text style={s.footBadge}>{translateFoot(player.pierna, t)}</Text>
+                ) : null}
+                {teamName ? <Text style={s.teamBadge}>{teamName}</Text> : null}
+              </View>
             </View>
-          )}
-          <Text style={s.playerName}>{name}</Text>
-          <Text style={s.teamName}>{teamName}</Text>
+          </View>
+          <View style={s.heroDetails}>
+            <View style={s.heroDetailRow}>
+              <Text style={s.heroDetailLabel}>{t('player.birthDate')}:</Text>
+              <Text style={s.heroDetailValue}>{formatDate(playerBirthDate(player))}</Text>
+            </View>
+            <View style={s.heroDetailRow}>
+              <Text style={s.heroDetailLabel}>{t('player.age')}:</Text>
+              <Text style={s.heroDetailValue}>{playerAgeText(player, t)}</Text>
+            </View>
+          </View>
         </View>
 
-        <PdfSection title="Información Personal">
+        <PdfSection title={t('player.profile.personalInfo', 'Información personal')}>
           <View style={s.grid4}>
-            <View style={s.statCard}>
-              <Text style={s.statLabel}>Posición</Text>
-              <Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>
-                {player.posicion || '-'}
-              </Text>
+            <View style={s.infoStatCard}>
+              <Text style={s.infoStatLabel}>{t('player.height', 'Altura')}</Text>
+              <Text style={s.infoStatValue}>{player.altura ? `${player.altura} cm` : '-'}</Text>
             </View>
-            <View style={s.statCard}>
-              <Text style={s.statLabel}>Dorsal</Text>
-              <Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>
-                {player.dorsal || '-'}
-              </Text>
+            <View style={s.infoStatCard}>
+              <Text style={s.infoStatLabel}>{t('player.profile.weight', 'Peso') || 'Peso'}</Text>
+              <Text style={s.infoStatValue}>{player.peso ? `${player.peso} kg` : '-'}</Text>
             </View>
-            <View style={s.statCard}>
-              <Text style={s.statLabel}>Altura</Text>
-              <Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>
-                {player.altura ? `${player.altura} cm` : '-'}
-              </Text>
+            <View style={s.infoStatCard}>
+              <Text style={s.infoStatLabel}>{t('player.sex', 'Sexo')}</Text>
+              <Text style={s.infoStatValue}>{player.sexo || '-'}</Text>
             </View>
-            <View style={s.statCard}>
-              <Text style={s.statLabel}>Peso</Text>
-              <Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>
-                {player.peso ? `${player.peso} kg` : '-'}
+            <View style={s.infoStatCard}>
+              <Text style={s.infoStatLabel}>{t('player.profile.type', 'Tipo')}</Text>
+              <Text style={s.infoStatValue}>
+                {player.esExtra || player.extra
+                  ? t('player.profile.extraPlayer', 'Extra')
+                  : t('player.profile.rosterPlayer', 'Plantilla')}
               </Text>
             </View>
           </View>
@@ -217,7 +430,7 @@ const ProfileGeneralPage = ({
             <PdfSection title="Estadísticas de Partidos">
               <View style={s.grid4}>
                 <View style={s.statCard}>
-                  <Text style={s.statValue}>{stats.matches?.total || 0}</Text>
+                  <Text style={[s.statValue, { color: '#2563eb' }]}>{stats.matches?.total || 0}</Text>
                   <Text style={s.statLabel}>Jugados</Text>
                 </View>
                 <View style={s.statCard}>
@@ -229,31 +442,31 @@ const ProfileGeneralPage = ({
                   <Text style={s.statLabel}>Suplente</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={s.statValue}>{stats.matches?.minutesPlayed || 0}</Text>
+                  <Text style={s.statValue}>{stats.matches?.minutesPlayed || 0}'</Text>
                   <Text style={s.statLabel}>Minutos</Text>
                 </View>
               </View>
               <View style={s.grid4}>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.success }]}>
+                  <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.goals?.total || 0}
                   </Text>
                   <Text style={s.statLabel}>Goles</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.success }]}>
+                  <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.goals?.assists || 0}
                   </Text>
                   <Text style={s.statLabel}>Asistencias</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: '#eab308' }]}>
+                  <Text style={[s.statValue, { color: '#f59e0b' }]}>
                     {stats.cards?.yellow || 0}
                   </Text>
                   <Text style={s.statLabel}>T. Amarillas</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.danger }]}>
+                  <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.cards?.red || 0}
                   </Text>
                   <Text style={s.statLabel}>T. Rojas</Text>
@@ -272,19 +485,19 @@ const ProfileGeneralPage = ({
                   <Text style={s.statLabel}>Total</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.success }]}>
+                  <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.trainings.attended || 0}
                   </Text>
                   <Text style={s.statLabel}>Asistió</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.danger }]}>
+                  <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.trainings.missed || 0}
                   </Text>
                   <Text style={s.statLabel}>Faltó</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.accent }]}>
+                  <Text style={[s.statValue, { color: '#2563eb' }]}>
                     {stats.trainings.percentage || 0}%
                   </Text>
                   <Text style={s.statLabel}>Asistencia</Text>
@@ -301,17 +514,17 @@ const ProfileGeneralPage = ({
             >
               <View style={s.grid3}>
                 <View style={s.statCard}>
-                  <Text style={s.statValue}>{latestAntro.peso || '-'} kg</Text>
+                  <Text style={[s.statValue, { color: '#2563eb' }]}>{latestAntro.peso || '-'} kg</Text>
                   <Text style={s.statLabel}>{t('anthropometry.weight')}</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={s.statValue}>
+                  <Text style={[s.statValue, { color: '#2563eb' }]}>
                     {latestAntro.porcentajeGrasa ? latestAntro.porcentajeGrasa.toFixed(1) : '-'}%
                   </Text>
                   <Text style={s.statLabel}>{t('anthropometry.fatPercentage')}</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={s.statValue}>
+                  <Text style={[s.statValue, { color: '#2563eb' }]}>
                     {latestAntro.sumaPliegues ? latestAntro.sumaPliegues.toFixed(1) : '-'} mm
                   </Text>
                   <Text style={s.statLabel}>{t('anthropometry.sumOfFolds')}</Text>
@@ -330,13 +543,13 @@ const ProfileGeneralPage = ({
                   <Text style={s.statLabel}>Total</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.danger }]}>
+                  <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.injuries.active || 0}
                   </Text>
                   <Text style={s.statLabel}>Activas</Text>
                 </View>
                 <View style={s.statCard}>
-                  <Text style={[s.statValue, { color: COLORS.success }]}>
+                  <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.injuries.recovered || 0}
                   </Text>
                   <Text style={s.statLabel}>Recuperadas</Text>
@@ -345,6 +558,35 @@ const ProfileGeneralPage = ({
                   <Text style={s.statValue}>{stats.injuries.daysMissed || 0}</Text>
                   <Text style={s.statLabel}>Días Baja</Text>
                 </View>
+              </View>
+              <View style={{ marginTop: 6 }}>
+                {profileInjuries.map((inj, index) => {
+                  const status = injuryStatus(inj);
+                  const zone = optionLabel(inj.zona, 'injury.zones', t);
+                  const type = optionLabel(inj.tipo, 'injury.types', t, 'Lesion');
+                  return (
+                    <View key={index} style={[s.injuryPdfCard, { borderLeftWidth: 4, borderLeftColor: status.color }]} wrap={false}>
+                      <View style={s.injuryPdfHeader}>
+                        <Text style={s.injuryPdfTitle}>
+                          {type} - {zone}
+                          {inj.lado
+                            ? ` (${inj.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})`
+                            : ''}
+                        </Text>
+                        <Text style={[s.badge, { backgroundColor: status.color }]}>{status.label}</Text>
+                      </View>
+                      <Text style={s.injuryPdfMeta}>
+                        Inicio: {formatDate(inj.fechaInicio)}
+                        {inj.fechaFinPrevista ? ` - Prevista: ${formatDate(inj.fechaFinPrevista)}` : ''}
+                        {inj.fechaFin ? ` - Fin: ${formatDate(inj.fechaFin)}` : ''}
+                      </Text>
+                      {Boolean(inj.lesionEspecifica) && (
+                        <Text style={s.injuryPdfDetail}>Detalle: {inj.lesionEspecifica}</Text>
+                      )}
+                      {inj.recaida && <Text style={s.injuryPdfMeta}>Recaida registrada</Text>}
+                    </View>
+                  );
+                })}
               </View>
             </PdfSection>
           </View>
@@ -359,8 +601,8 @@ const ProfileGeneralPage = ({
 const AnthropometryPage = ({ player, team, data, t }) => {
   const latest = data && data.length > 0 ? data[0] : null;
   return (
-    <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title={t('anthropometry.title')} subtitle={getPlayerFullName(player)} />
+    <Page size="A4" style={s.page}>
+      <PdfHeader title={t('anthropometry.title')} subtitle={getPlayerFullName(player)} transparent={true} />
       <View style={baseStyles.content}>
         {latest ? (
           <PdfSection
@@ -514,10 +756,11 @@ const AnthropometryPage = ({ player, team, data, t }) => {
 const AttendancePage = ({ player, stats, t }) => {
   const missed = stats?.trainings?.missedSessions || [];
   return (
-    <Page size="A4" style={baseStyles.page}>
+    <Page size="A4" style={s.page}>
       <PdfHeader
         title={t('player.profile.attendanceReport')}
         subtitle={getPlayerFullName(player)}
+        transparent={true}
       />
       <View style={baseStyles.content}>
         <View style={s.grid4}>
@@ -585,13 +828,11 @@ const AttendancePage = ({ player, stats, t }) => {
 
 // --- Lesiones ---
 const InjuryPage = ({ player, stats, injuries, t }) => {
-  const playerInjuries = injuries
-    .filter((i) => (typeof i.jugador === 'object' ? i.jugador._id : i.jugador) === player._id)
-    .sort((a, b) => new Date(b.fechaInicio) - new Date(a.fechaInicio));
+  const playerInjuries = playerInjuryList(injuries, player);
 
   return (
-    <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title={t('player.profile.injuryHistory')} subtitle={getPlayerFullName(player)} />
+    <Page size="A4" style={s.page}>
+      <PdfHeader title={t('player.profile.injuryHistory')} subtitle={getPlayerFullName(player)} transparent={true} />
       <View style={baseStyles.content}>
         <View style={s.grid4}>
           <View style={s.statCard}>
@@ -619,7 +860,7 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
         <PdfSection title={t('player.profile.injuryDetails')}>
           {playerInjuries.length > 0 ? (
             playerInjuries.map((inj, i) => {
-              const isActive = inj.estado === 'activa' || !inj.fechaFin;
+              const status = injuryStatus(inj);
               return (
                 <View key={i} style={s.card} wrap={false}>
                   <View
@@ -629,23 +870,27 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
                       marginBottom: 4,
                     }}
                   >
-                    <Text style={s.cardTitle}>{inj.tipo || 'Desconocido'}</Text>
+                    <Text style={s.cardTitle}>{optionLabel(inj.tipo, 'injury.types', t, 'Desconocido')}</Text>
                     <Text
                       style={[
                         s.badge,
-                        { backgroundColor: isActive ? COLORS.danger : COLORS.success },
+                        { backgroundColor: status.color },
                       ]}
                     >
-                      {isActive ? 'ACTIVA' : 'RECUPERADO'}
+                      {status.label}
                     </Text>
                   </View>
                   <Text style={s.cardSubtitle}>
                     Inicio: {formatDate(inj.fechaInicio)}{' '}
+                    {inj.fechaFinPrevista ? `| Prevista: ${formatDate(inj.fechaFinPrevista)} ` : ''}
                     {inj.fechaFin ? `| Fin: ${formatDate(inj.fechaFin)}` : ''}
                   </Text>
                   {Boolean(inj.zona) && (
                     <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.text }}>
-                      Zona: {inj.zona} {inj.lado ? `(${inj.lado})` : ''}
+                      Zona: {optionLabel(inj.zona, 'injury.zones', t, t('player.profile.unknownLocation'))}
+                      {inj.lado
+                        ? ` (${inj.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})`
+                        : ''}
                     </Text>
                   )}
                   {Boolean(inj.lesionEspecifica) && (
@@ -681,8 +926,8 @@ const WellnessPage = ({ player, wellnessData, isPreWellness, t }) => {
     : t('player.profile.wellnessHistory');
 
   return (
-    <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title={title} subtitle={getPlayerFullName(player)} />
+    <Page size="A4" style={s.page}>
+      <PdfHeader title={title} subtitle={getPlayerFullName(player)} transparent={true} />
       <View style={baseStyles.content}>
         <View style={s.grid2}>
           <View style={s.statCard}>

@@ -100,6 +100,7 @@ const SexBtn = styled.button`
 const emptyForm = {
   nombre: '', apellido: '', edad: '', posicion: '',
   dorsal: '', altura: '', sexo: 'M', foto: null, extra: false,
+  fechaNacimiento: '', pierna: '',
 };
 
 export default function PlayerFormModal({
@@ -130,6 +131,8 @@ export default function PlayerFormModal({
         sexo: player.sexo || 'M',
         foto: player.foto || null,
         extra: !!player.extra,
+        fechaNacimiento: player.fechaNacimiento ? player.fechaNacimiento.split('T')[0] : '',
+        pierna: player.pierna || '',
       });
     } else {
       setData(emptyForm);
@@ -139,6 +142,30 @@ export default function PlayerFormModal({
   }, [open, mode, player]);
 
   const set = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
+
+  const handleBirthDateChange = (e) => {
+    const bdate = e.target.value;
+    setData((d) => {
+      const updated = { ...d, fechaNacimiento: bdate };
+      if (bdate) {
+        const dateParts = bdate.split('-');
+        if (dateParts.length === 3) {
+          const year = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          const day = parseInt(dateParts[2], 10);
+          const birth = new Date(year, month, day);
+          const today = new Date();
+          let age = today.getFullYear() - birth.getFullYear();
+          const monthDelta = today.getMonth() - birth.getMonth();
+          if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) age -= 1;
+          if (age >= 0) {
+            updated.edad = age.toString();
+          }
+        }
+      }
+      return updated;
+    });
+  };
 
   const handleFilePick = (e) => {
     const file = e.target.files?.[0];
@@ -198,6 +225,8 @@ export default function PlayerFormModal({
       dorsal: dorsalNum,
       sexo: data.sexo || 'M',
       extra: !!data.extra,
+      fechaNacimiento: data.fechaNacimiento || null,
+      pierna: data.pierna || '',
     };
     if (data.altura) payload.altura = parseInt(data.altura, 10);
     else if (mode === 'edit') payload.altura = null;
@@ -284,6 +313,24 @@ export default function PlayerFormModal({
                 </SexBtn>
                 <SexBtn type="button" $active={data.sexo === 'F'} onClick={() => setData((d) => ({ ...d, sexo: 'F' }))}>
                   {t('player.female', 'F')}
+                </SexBtn>
+              </SexRow>
+            </Field>
+            <Field>
+              <Label>{t('player.birthDate', 'Fecha de nacimiento')}</Label>
+              <Input type="date" value={data.fechaNacimiento} onChange={handleBirthDateChange} />
+            </Field>
+            <Field>
+              <Label>{t('player.preferredFoot', 'Pierna')}</Label>
+              <SexRow>
+                <SexBtn type="button" $active={data.pierna === 'right'} onClick={() => setData((d) => ({ ...d, pierna: 'right' }))}>
+                  {t('player.footRight', 'Derecha')}
+                </SexBtn>
+                <SexBtn type="button" $active={data.pierna === 'left'} onClick={() => setData((d) => ({ ...d, pierna: 'left' }))}>
+                  {t('player.footLeft', 'Izquierda')}
+                </SexBtn>
+                <SexBtn type="button" $active={data.pierna === 'both'} onClick={() => setData((d) => ({ ...d, pierna: 'both' }))}>
+                  {t('player.footBoth', 'Ambidiestro')}
                 </SexBtn>
               </SexRow>
             </Field>

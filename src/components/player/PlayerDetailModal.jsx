@@ -185,6 +185,31 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
           <StatValue>{player.sexo || '-'}</StatValue>
           <StatLabel>{t('player.sex', 'Sexo')}</StatLabel>
         </Stat>
+        <Stat style={{ gridColumn: 'span 2' }}>
+          <StatValue>
+            {player.fechaNacimiento
+              ? new Date(player.fechaNacimiento).toLocaleDateString(undefined, {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  timeZone: 'UTC',
+                })
+              : '-'}
+          </StatValue>
+          <StatLabel>{t('player.birthDate', 'Fecha de nacimiento')}</StatLabel>
+        </Stat>
+        <Stat style={{ gridColumn: 'span 2' }}>
+          <StatValue>
+            {player.pierna === 'right'
+              ? t('player.footRight', 'Derecha')
+              : player.pierna === 'left'
+                ? t('player.footLeft', 'Izquierda')
+                : player.pierna === 'both'
+                  ? t('player.footBoth', 'Ambidiestro')
+                  : '-'}
+          </StatValue>
+          <StatLabel>{t('player.preferredFoot', 'Pierna')}</StatLabel>
+        </Stat>
       </Stats>
 
       <Muted style={{ display: 'block', marginTop: 16, fontSize: 12 }}>
