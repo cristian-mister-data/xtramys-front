@@ -851,6 +851,12 @@
     "noCategories": "No categories"
   },
   "setPieces": {
+    "visibility": "Set piece visibility",
+    "descriptionPlaceholder": "Describe the set piece here...",
+    "objectivePlaceholder": "What is the objective of the set piece?",
+    "examplePlaceholder": "E.g. Attacking corner kick",
+    "saving": "Saving set piece...",
+    "saveSetPiece": "Save set piece",
     "title": "Set Pieces",
     "subtitle": "Set-piece actions with diagrams and linked videos.",
     "create": "Create set piece",
@@ -5166,6 +5172,7 @@
     "sharedLibrary": "Shared by my club",
     "exerciseVisibility": "Exercise visibility",
     "strategyVisibility": "Strategy visibility",
+    "setPieceVisibility": "Set piece visibility",
     "videoVisibility": "Video visibility",
     "private": "Private",
     "shareWithClub": "Share with my club"

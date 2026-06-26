@@ -854,6 +854,12 @@
     "noCategories": "Sin categorías"
   },
   "setPieces": {
+    "visibility": "Visibilidad de la ABP",
+    "descriptionPlaceholder": "Describe aquí la ABP...",
+    "objectivePlaceholder": "¿Cuál es el objetivo de la ABP?",
+    "examplePlaceholder": "Ej. Córner ofensivo izquierda",
+    "saving": "Guardando ABP...",
+    "saveSetPiece": "Guardar ABP",
     "title": "ABP",
     "subtitle": "Acciones a balón parado, gráficos y vídeos asociados.",
     "create": "Crear ABP",
@@ -5172,6 +5178,7 @@
     "sharedLibrary": "Compartido por mi club",
     "exerciseVisibility": "Visibilidad del ejercicio",
     "strategyVisibility": "Visibilidad de la estrategia",
+    "setPieceVisibility": "Visibilidad de la ABP",
     "videoVisibility": "Visibilidad del video",
     "private": "Privado",
     "shareWithClub": "Compartir con mi club"

@@ -346,7 +346,7 @@ export default function CreateStrategyForm({
     const trimmedName = String(name || '').trim();
     if (!trimmedName) {
       errors.name = true;
-      missingFields.push(t('strategy.name'));
+      missingFields.push(isSetPiece ? t('setPieces.name', 'Nombre de la ABP') : t('strategy.name'));
     }
     
     if (Object.keys(errors).length > 0) {
@@ -426,7 +426,7 @@ export default function CreateStrategyForm({
         {/* Selector de visibilidad y global (Arriba del todo) */}
         {((!isAdmin && userClubId) || isAdmin) && (
           <View style={styles.formCard}>
-            <Text style={styles.subTitle}>{isAdmin ? t('visibility', 'Visibilidad') : t('club.strategyVisibility', 'Visibilidad de la estrategia')}</Text>
+            <Text style={styles.subTitle}>{isAdmin ? t('visibility', 'Visibilidad') : (isSetPiece ? t('club.setPieceVisibility', 'Visibilidad de la ABP') : t('club.strategyVisibility', 'Visibilidad de la estrategia'))}</Text>
             
             {!isAdmin && userClubId && (
               <View style={styles.visibilityContainer}>
@@ -471,7 +471,7 @@ export default function CreateStrategyForm({
                     <Ionicons name="person" size={20} color={!isGlobal ? (theme?.colors?.primary || '#3b82f6') : (theme?.colors?.textMuted || '#94a3b8')} />
                   </View>
                   <View style={styles.visibilityTextContainer}>
-                    <Text style={[styles.visibilityTitle, !isGlobal && styles.visibilityTitleSelected]}>{t('strategy.myStrategies')}</Text>
+                    <Text style={[styles.visibilityTitle, !isGlobal && styles.visibilityTitleSelected]}>{isSetPiece ? t('setPieces.mine', 'Mis ABP') : t('strategy.myStrategies')}</Text>
                     <Text style={styles.visibilityDesc}>Privado</Text>
                   </View>
                 </TouchableOpacity>
@@ -484,7 +484,7 @@ export default function CreateStrategyForm({
                     <Ionicons name="globe" size={20} color={isGlobal ? (theme?.colors?.success || '#10b981') : (theme?.colors?.textMuted || '#94a3b8')} />
                   </View>
                   <View style={styles.visibilityTextContainer}>
-                    <Text style={[styles.visibilityTitle, isGlobal && styles.visibilityTitleSelected]}>{t('strategy.appStrategies')}</Text>
+                    <Text style={[styles.visibilityTitle, isGlobal && styles.visibilityTitleSelected]}>{isSetPiece ? t('setPieces.app', 'ABP de la app') : t('strategy.appStrategies')}</Text>
                     <Text style={styles.visibilityDesc}>Público</Text>
                   </View>
                 </TouchableOpacity>
@@ -497,7 +497,7 @@ export default function CreateStrategyForm({
           <Text style={styles.subTitle}>{t('strategy.generalData')}</Text>
           <TextInput
             style={styles.input}
-            placeholder={t('strategy.examplePlaceholder')}
+            placeholder={isSetPiece ? t('setPieces.examplePlaceholder', 'Ej. Córner ofensivo izquierda') : t('strategy.examplePlaceholder')}
             placeholderTextColor={placeholderColor}
             value={name}
             onChangeText={(text) => {
@@ -527,7 +527,7 @@ export default function CreateStrategyForm({
           <Text style={styles.inputLabel}>{t('strategy.description')}</Text>
           <TextInput
             style={[styles.input, styles.textarea]}
-            placeholder={t('strategy.descriptionPlaceholder')}
+            placeholder={isSetPiece ? t('setPieces.descriptionPlaceholder', 'Describe aquí la ABP...') : t('strategy.descriptionPlaceholder')}
             placeholderTextColor={placeholderColor}
             value={description}
             onChangeText={setDescription}
@@ -536,7 +536,7 @@ export default function CreateStrategyForm({
           <Text style={styles.inputLabel}>{t('strategy.objective')}</Text>
           <TextInput
             style={[styles.input, styles.textarea]}
-            placeholder={t('strategy.objectivePlaceholder')}
+            placeholder={isSetPiece ? t('setPieces.objectivePlaceholder', '¿Cuál es el objetivo de la ABP?') : t('strategy.objectivePlaceholder')}
             placeholderTextColor={placeholderColor}
             value={objective}
             onChangeText={setObjective}
@@ -617,7 +617,7 @@ export default function CreateStrategyForm({
         >
           <Ionicons name="save-outline" size={18} color={onPrimaryColor} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
-            {saving ? t('strategy.saving') : (editingStrategy ? t('edition.saveChanges') : t('strategy.saveStrategy'))}
+            {saving ? (isSetPiece ? t('setPieces.saving', 'Guardando ABP...') : t('strategy.saving')) : (editingStrategy ? t('edition.saveChanges') : (isSetPiece ? t('setPieces.saveSetPiece', 'Guardar ABP') : t('strategy.saveStrategy')))}
           </Text>
         </TouchableOpacity>
       </View>
