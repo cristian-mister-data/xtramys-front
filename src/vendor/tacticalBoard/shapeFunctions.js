@@ -139,7 +139,15 @@ function renderCircle({
   };
 
   // Configuración para el estilo de la línea
-  const dashArray = icon.lineType === 'dotted' ? `${icon.dotSize || 2},${icon.dotSpacing || 4}` : null;
+  const drawProgress =
+    typeof icon._drawProgress === 'number' ? Math.max(0, Math.min(1, icon._drawProgress)) : 1;
+  const circumference = Math.PI * 2 * radius;
+  const dashArray =
+    drawProgress < 1
+      ? `${circumference * drawProgress},${circumference}`
+      : icon.lineType === 'dotted'
+        ? `${icon.dotSize || 2},${icon.dotSpacing || 4}`
+        : null;
 
   // Función para el manejo de toques en el círculo
   const handlePress = (e) => {
@@ -174,16 +182,18 @@ function renderCircle({
     <>
       {/* Circunferencia visible */}
       <Circle
-        key={`circle-visual-${icon.id}-${color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}-${icon.fillColor || 'transparent'}`}
+        key={`circle-visual-${icon.id}-${color}-${thickness}-${icon.lineType || 'solid'}-${icon.dotSize || 2}-${icon.dotSpacing || 4}-${icon.fillColor || 'transparent'}-${drawProgress}`}
         cx={centerX}
         cy={centerY}
         r={radius}
         stroke={isMultiSelected ? '#3498db' : color}
         strokeWidth={thickness}
-        fill={icon.fillColor && icon.fillColor !== 'transparent' ? `${icon.fillColor}99` : "transparent"}
+        fill={drawProgress >= 1 && icon.fillColor && icon.fillColor !== 'transparent' ? `${icon.fillColor}99` : "transparent"}
         strokeDasharray={dashArray}
+        rotation="-90"
+        origin={`${centerX}, ${centerY}`}
       />
-      {diameter_m !== undefined && diameter_m > 0 && (
+      {drawProgress >= 1 && diameter_m !== undefined && diameter_m > 0 && (
         <SvgText
           x={centerX}
           y={centerY + 4}

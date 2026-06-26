@@ -91,6 +91,102 @@ function setLineDash(ctx, elem, scale) {
   }
 }
 
+function clamp01(value) {
+  if (typeof value !== 'number') return 1;
+  return Math.max(0, Math.min(1, value));
+}
+
+function pointAtProgress(from, to, progress) {
+  return {
+    x: from.x + (to.x - from.x) * progress,
+    y: from.y + (to.y - from.y) * progress,
+  };
+}
+
+function quadraticPoint(from, control, to, t) {
+  const mt = 1 - t;
+  return {
+    x: mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x,
+    y: mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y,
+  };
+}
+
+function sampleQuadratic(from, control, to, steps = 16) {
+  const samples = [];
+  for (let i = 1; i <= steps; i += 1) {
+    samples.push(quadraticPoint(from, control, to, i / steps));
+  }
+  return samples;
+}
+
+function sampleCurve(points) {
+  if (points.length <= 2) return points;
+  const samples = [points[0]];
+  if (points.length === 3) {
+    samples.push(...sampleQuadratic(points[0], points[1], points[2], 32));
+    return samples;
+  }
+  let current = points[0];
+  for (let i = 1; i < points.length - 2; i += 1) {
+    const end = {
+      x: (points[i].x + points[i + 1].x) / 2,
+      y: (points[i].y + points[i + 1].y) / 2,
+    };
+    samples.push(...sampleQuadratic(current, points[i], end));
+    current = end;
+  }
+  samples.push(...sampleQuadratic(current, points[points.length - 2], points[points.length - 1]));
+  return samples;
+}
+
+function partialPolyline(points, progress) {
+  const p = clamp01(progress);
+  if (p >= 1 || points.length < 2) return points;
+  if (p <= 0) return [points[0], points[0]];
+
+  let total = 0;
+  const lengths = [];
+  for (let i = 1; i < points.length; i += 1) {
+    const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    lengths.push(length);
+    total += length;
+  }
+  if (!total) return [points[0], points[0]];
+
+  const target = total * p;
+  let covered = 0;
+  const out = [points[0]];
+  for (let i = 1; i < points.length; i += 1) {
+    const length = lengths[i - 1];
+    if (covered + length >= target) {
+      out.push(pointAtProgress(points[i - 1], points[i], (target - covered) / length));
+      return out;
+    }
+    out.push(points[i]);
+    covered += length;
+  }
+  return out;
+}
+
+function strokePolyline(ctx, points, elem, scale) {
+  if (!points.length) return;
+  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.strokeStyle = elem.color || '#000';
+  ctx.lineWidth = Math.max(1, thickness);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  setLineDash(ctx, elem, scale);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   const p = pos(elem, cw, ch);
   const baseSize = elem.baseSize || 24;
@@ -907,16 +1003,23 @@ function drawStraightLine(ctx, cw, ch, elem, scale) {
       const refH = elem.sourceHeight || 720;
       const p1 = ratioToDisplay(elem.x1 / refW, elem.y1 / refH, currentViewMode, cw, ch);
       const p2 = ratioToDisplay(elem.x2 / refW, elem.y2 / refH, currentViewMode, cw, ch);
-      drawLineSegment(ctx, p1, p2, elem, scale);
+      const progress = clamp01(elem._drawProgress);
+      const currentEnd = progress < 1 ? pointAtProgress(p1, p2, progress) : p2;
+      drawLineSegment(ctx, p1, currentEnd, elem, scale);
+      if (elem.type === 'straight-arrow' && progress > 0.08) {
+        drawArrowhead(ctx, p1, currentEnd, elem, scale);
+      }
     }
     return;
   }
   const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
   const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
-  drawLineSegment(ctx, p1, p2, elem, scale);
+  const progress = clamp01(elem._drawProgress);
+  const currentEnd = progress < 1 ? pointAtProgress(p1, p2, progress) : p2;
+  drawLineSegment(ctx, p1, currentEnd, elem, scale);
 
-  if (elem.type === 'straight-arrow') {
-    drawArrowhead(ctx, p1, p2, elem, scale);
+  if (elem.type === 'straight-arrow' && progress > 0.08) {
+    drawArrowhead(ctx, p1, currentEnd, elem, scale);
   }
 }
 
@@ -970,6 +1073,22 @@ function drawCurveLine(ctx, cw, ch, elem, scale) {
           ch,
         ),
       );
+
+  const progress = clamp01(elem._drawProgress);
+  if (progress < 1) {
+    const visiblePoints = partialPolyline(sampleCurve(points), progress);
+    strokePolyline(ctx, visiblePoints, elem, scale);
+    if (elem.type === 'curve-arrow' && visiblePoints.length >= 2 && progress > 0.08) {
+      drawArrowhead(
+        ctx,
+        visiblePoints[visiblePoints.length - 2],
+        visiblePoints[visiblePoints.length - 1],
+        elem,
+        scale,
+      );
+    }
+    return;
+  }
 
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
   ctx.save();
@@ -1056,10 +1175,12 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
 
   if (!rx || rx <= 0 || !ry || ry <= 0) return;
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  const progress = clamp01(elem._drawProgress);
+  const startAngle = -Math.PI / 2;
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-  if (elem.fillColor && elem.fillColor !== 'transparent') {
+  ctx.ellipse(cx, cy, rx, ry, 0, startAngle, startAngle + Math.PI * 2 * progress);
+  if (progress >= 1 && elem.fillColor && elem.fillColor !== 'transparent') {
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
     ctx.fill();

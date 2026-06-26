@@ -9284,6 +9284,7 @@ const MemoizedStraightLine = React.memo(
     lineEndX,
     lineEndY,
     isMultiSelected,
+    drawProgress,
   }) => {
     const actualEndX = isArrow ? lineEndX : x2;
     const actualEndY = isArrow ? lineEndY : y2;
@@ -9340,7 +9341,8 @@ const MemoizedStraightLine = React.memo(
       prevProps.isMultiSelected === nextProps.isMultiSelected &&
       prevProps.arrowPoints === nextProps.arrowPoints &&
       prevProps.lineEndX === nextProps.lineEndX &&
-      prevProps.lineEndY === nextProps.lineEndY
+      prevProps.lineEndY === nextProps.lineEndY &&
+      prevProps.drawProgress === nextProps.drawProgress
     );
   },
 );
@@ -9358,6 +9360,7 @@ const MemoizedCurveLine = React.memo(
     isArrow,
     arrowPoints,
     isMultiSelected,
+    drawProgress,
   }) => {
     const strokeColor = isMultiSelected ? '#3498db' : color;
     const strokeDasharray = lineType === 'dotted' ? `${dotSize || 2}, ${dotSpacing || 4}` : null;
@@ -9407,10 +9410,82 @@ const MemoizedCurveLine = React.memo(
       prevProps.dotSpacing === nextProps.dotSpacing &&
       prevProps.isArrow === nextProps.isArrow &&
       prevProps.isMultiSelected === nextProps.isMultiSelected &&
-      prevProps.arrowPoints === nextProps.arrowPoints
+      prevProps.arrowPoints === nextProps.arrowPoints &&
+      prevProps.drawProgress === nextProps.drawProgress
     );
   },
 );
+
+function clampDrawProgress(value) {
+  return typeof value === 'number' ? Math.max(0, Math.min(1, value)) : 1;
+}
+
+function pointAtDrawProgress(from, to, progress) {
+  return {
+    x: from.x + (to.x - from.x) * progress,
+    y: from.y + (to.y - from.y) * progress,
+  };
+}
+
+function quadraticPointAt(from, control, to, t) {
+  const mt = 1 - t;
+  return {
+    x: mt * mt * from.x + 2 * mt * t * control.x + t * t * to.x,
+    y: mt * mt * from.y + 2 * mt * t * control.y + t * t * to.y,
+  };
+}
+
+function sampleQuadraticPoints(from, control, to, steps = 16) {
+  const out = [];
+  for (let i = 1; i <= steps; i++) out.push(quadraticPointAt(from, control, to, i / steps));
+  return out;
+}
+
+function sampleCurvePoints(points) {
+  if (points.length <= 2) return points;
+  const out = [points[0]];
+  if (points.length === 3) {
+    out.push(...sampleQuadraticPoints(points[0], points[1], points[2], 32));
+    return out;
+  }
+  let current = points[0];
+  for (let i = 1; i < points.length - 2; i++) {
+    const end = {
+      x: (points[i].x + points[i + 1].x) / 2,
+      y: (points[i].y + points[i + 1].y) / 2,
+    };
+    out.push(...sampleQuadraticPoints(current, points[i], end));
+    current = end;
+  }
+  out.push(...sampleQuadraticPoints(current, points[points.length - 2], points[points.length - 1]));
+  return out;
+}
+
+function partialPointsByProgress(points, progress) {
+  const p = clampDrawProgress(progress);
+  if (p >= 1 || points.length < 2) return points;
+  if (p <= 0) return [points[0], points[0]];
+  const lengths = [];
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    lengths.push(length);
+    total += length;
+  }
+  const target = total * p;
+  let covered = 0;
+  const out = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const length = lengths[i - 1];
+    if (covered + length >= target) {
+      out.push(pointAtDrawProgress(points[i - 1], points[i], (target - covered) / length));
+      return out;
+    }
+    out.push(points[i]);
+    covered += length;
+  }
+  return out;
+}
 
 // Componente batch para renderizar muchas l�neas en un solo SVG Group
 const BatchLinesRenderer = React.memo(
@@ -9446,14 +9521,16 @@ const BatchLinesRenderer = React.memo(
 
           const p1 = tp(icon.points[0].x, icon.points[0].y);
           const p2 = tp(icon.points[1].x, icon.points[1].y);
+          const drawProgress = clampDrawProgress(icon._drawProgress);
           const x1 = p1.x;
           const y1 = p1.y;
-          const x2 = p2.x;
-          const y2 = p2.y;
+          const currentEnd = drawProgress < 1 ? pointAtDrawProgress(p1, p2, drawProgress) : p2;
+          const x2 = currentEnd.x;
+          const y2 = currentEnd.y;
 
           const thickness = (icon.thickness || 1) * scale * 0.7;
           const isMultiSelected = multiSelectMode && selectedCloneIdsSet?.has(icon.id);
-          const isArrow = icon.type === 'straight-arrow';
+          const isArrow = icon.type === 'straight-arrow' && drawProgress > 0.08;
 
           let arrowPoints = '';
           let lineEndX = x2;
@@ -9488,6 +9565,7 @@ const BatchLinesRenderer = React.memo(
             lineEndX,
             lineEndY,
             isMultiSelected,
+            drawProgress,
           };
         })
         .filter(Boolean);
@@ -9506,29 +9584,33 @@ const BatchLinesRenderer = React.memo(
           const scale = (widthRatio + heightRatio) / 2;
 
           const pts = icon.points.map((p) => tp(p.x, p.y));
+          const drawProgress = clampDrawProgress(icon._drawProgress);
+          const renderPts = drawProgress < 1
+            ? partialPointsByProgress(sampleCurvePoints(pts), drawProgress)
+            : pts;
 
-          const pathData = generateCurvePath(pts);
+          const pathData = generateCurvePath(renderPts);
           const thickness = (icon.thickness || 1) * scale * 0.7;
           const isMultiSelected = multiSelectMode && selectedCloneIdsSet?.has(icon.id);
-          const isArrow = icon.type === 'curve-arrow';
+          const isArrow = icon.type === 'curve-arrow' && drawProgress > 0.08;
 
           let arrowPoints = '';
-          if (isArrow && pts.length >= 2) {
-            const lastIdx = pts.length - 1;
+          if (isArrow && renderPts.length >= 2) {
+            const lastIdx = renderPts.length - 1;
             let secondLastIdx = lastIdx - 1;
 
             while (secondLastIdx >= 0 && lastIdx > 0) {
               const dist = Math.sqrt(
-                Math.pow(pts[lastIdx].x - pts[secondLastIdx].x, 2) +
-                  Math.pow(pts[lastIdx].y - pts[secondLastIdx].y, 2),
+                Math.pow(renderPts[lastIdx].x - renderPts[secondLastIdx].x, 2) +
+                  Math.pow(renderPts[lastIdx].y - renderPts[secondLastIdx].y, 2),
               );
               if (dist > 5) break;
               secondLastIdx--;
             }
             if (secondLastIdx < 0) secondLastIdx = 0;
 
-            const lastPoint = pts[lastIdx];
-            const secondLastPoint = pts[secondLastIdx];
+            const lastPoint = renderPts[lastIdx];
+            const secondLastPoint = renderPts[secondLastIdx];
 
             const dx = lastPoint.x - secondLastPoint.x;
             const dy = lastPoint.y - secondLastPoint.y;
@@ -9556,6 +9638,7 @@ const BatchLinesRenderer = React.memo(
             isArrow,
             arrowPoints,
             isMultiSelected,
+            drawProgress,
           };
         })
         .filter(Boolean);
@@ -9594,6 +9677,7 @@ const BatchLinesRenderer = React.memo(
         prev.lineType !== next.lineType ||
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
+        prev._drawProgress !== next._drawProgress ||
         !arraysEqual(prev.points, next.points)
       ) {
         return false;
@@ -9610,6 +9694,7 @@ const BatchLinesRenderer = React.memo(
         prev.lineType !== next.lineType ||
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
+        prev._drawProgress !== next._drawProgress ||
         !arraysEqual(prev.points, next.points)
       ) {
         return false;
@@ -10550,10 +10635,19 @@ const MemoizedCircleSvg = React.memo(
     isSelected,
     imageWidth,
     imageHeight,
+    drawProgress,
   }) => {
-    const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
+    const progress = clampDrawProgress(drawProgress);
+    const approxCircumference = Math.PI * 2 * Math.max(rx, ry);
+    const dashArray =
+      progress < 1
+        ? `${approxCircumference * progress},${approxCircumference}`
+        : lineType === 'dotted'
+          ? `${dotSize || 2},${dotSpacing || 4}`
+          : null;
 
     const showDimensions =
+      progress >= 1 &&
       isSelected &&
       diameter_w_m !== undefined &&
       diameter_h_m !== undefined &&
@@ -10588,8 +10682,10 @@ const MemoizedCircleSvg = React.memo(
           ry={ry}
           stroke={isMultiSelected ? '#3498db' : color}
           strokeWidth={thickness}
-          fill={fillColor && fillColor !== 'transparent' ? `${fillColor}99` : 'transparent'}
+          fill={progress >= 1 && fillColor && fillColor !== 'transparent' ? `${fillColor}99` : 'transparent'}
           strokeDasharray={dashArray}
+          rotation="-90"
+          origin={`${centerX}, ${centerY}`}
         />
         {showDimensions && (
           <G>
@@ -10636,7 +10732,8 @@ const MemoizedCircleSvg = React.memo(
     prev.diameter_h_m === next.diameter_h_m &&
     prev.isSelected === next.isSelected &&
     prev.imageWidth === next.imageWidth &&
-    prev.imageHeight === next.imageHeight,
+    prev.imageHeight === next.imageHeight &&
+    prev.drawProgress === next.drawProgress,
 );
 
 // Rectángulo SVG memoizado - solo renderiza el SVG
@@ -10851,6 +10948,7 @@ const BatchShapesRenderer = React.memo(
             imageHeight,
             diameter_w_m,
             diameter_h_m,
+            drawProgress: icon._drawProgress,
           };
         })
         .filter(Boolean);
@@ -11000,6 +11098,7 @@ const BatchShapesRenderer = React.memo(
         prev.lineType !== next.lineType ||
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
+        prev._drawProgress !== next._drawProgress ||
         prev.zIndex !== next.zIndex ||
         !arraysEqual(prev.points, next.points)
       )
@@ -13636,6 +13735,7 @@ export default function Field(props = {}) {
       const id =
         snap.id || `${snap.type || 'elem'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const clone = { id, type: snap.type || 'unknown' };
+      if (snap._drawProgress !== undefined) clone._drawProgress = snap._drawProgress;
 
       // Posici�n puntual - PRIORIZAR ratios originales si est�n disponibles
       if (typeof snap.xRatio === 'number' && typeof snap.yRatio === 'number') {

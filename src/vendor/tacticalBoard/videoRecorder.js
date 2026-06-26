@@ -305,6 +305,7 @@ function getBallTrajectoryForSegment(keyframe, ballId) {
 }
 
 const BALL_TRAJECTORY_MIN_MOVE = 0.006;
+const DRAW_REVEAL_TYPES = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle']);
 
 function getBallSnapshotRatio(ball) {
   if (!ball) return null;
@@ -385,10 +386,15 @@ function buildInterpolatedFrames(
   });
 
   // Hold inicial en la primera posición (misma duración que holdDuration)
-  for (let h = 0; h < holdFrames; h++) {
+  const initialFrames = framesPerTransition;
+  for (let h = 0; h < initialFrames; h++) {
+    const initialProgress = initialFrames > 1 ? easeInOutCubic(h / (initialFrames - 1)) : 1;
     const elementsWithUpdatedRotations = (firstKf.elements || []).map((el) => {
       if (el.type === 'ball') {
         return { ...el, rotation: ballRotations.get(el.id) || 0 };
+      }
+      if (DRAW_REVEAL_TYPES.has(el.type)) {
+        return { ...el, _drawProgress: initialProgress };
       }
       return el;
     });
@@ -452,8 +458,13 @@ function buildInterpolatedFrames(
           let interpEl;
           if (fe && te) {
             interpEl = interpolateElement(fe, te, isAirBall ? linearProgress : t);
+          } else if (!fe && te) {
+            interpEl = { ...te };
+            if (DRAW_REVEAL_TYPES.has(te.type)) {
+              interpEl._drawProgress = t;
+            }
           } else {
-            interpEl = { ...(te || fe) };
+            continue;
           }
 
           // Inyectar rotación acumulada en el balón
