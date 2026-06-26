@@ -4,44 +4,38 @@ import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import './shims/rn-runtime-patch.js';
 
-// Intercept global script/chunk loading failures to recover on redeployments
-(function() {
-  const handleChunkError = (errorMsg) => {
-    const isChunkError = 
-      /failed to fetch dynamically imported module/i.test(errorMsg) ||
-      /failed to load module script/i.test(errorMsg) ||
-      /loading chunk/i.test(errorMsg);
-      
-    if (isChunkError) {
-      const now = Date.now();
-      const lastReload = parseInt(localStorage.getItem('last_chunk_error_reload') || '0', 10);
-      // Wait at least 10 seconds between reload attempts to avoid infinite loops
-      if (now - lastReload > 10000) {
-        localStorage.setItem('last_chunk_error_reload', String(now));
-        console.warn('Chunk loading error detected. Reloading page to fetch latest version...', errorMsg);
-        window.location.reload();
-      } else {
-        console.error('Chunk loading error detected, but reload cooldown active. Prevents infinite refresh loop.');
-      }
-    }
+// Recover automatically when a deploy removes old Vite chunks still referenced by this tab.
+(function () {
+  const isChunkError = (value) => (
+    /failed to fetch dynamically imported module/i.test(value) ||
+    /failed to load module script/i.test(value) ||
+    /loading chunk/i.test(value) ||
+    /importing a module script failed/i.test(value) ||
+    /\/assets\/.*\.js/i.test(value)
+  );
+
+  const reloadForFreshBuild = (value) => {
+    if (!isChunkError(String(value || ''))) return false;
+    const lastReload = Number(sessionStorage.getItem('xtramys_chunk_reload_at') || 0);
+    if (Date.now() - lastReload < 10000) return true;
+    sessionStorage.setItem('xtramys_chunk_reload_at', String(Date.now()));
+    window.location.reload();
+    return true;
   };
 
-  // Capture script loading failures (MIME type or 404 errors)
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    reloadForFreshBuild(event.payload?.message || event.payload);
+  });
+
   window.addEventListener('error', (event) => {
     const target = event.target || event.srcElement;
-    const isScript = target && (target.tagName === 'SCRIPT' || target.nodeName === 'SCRIPT');
-    
-    if (isScript || (event.message && /failed to load/i.test(event.message))) {
-      handleChunkError(event.message || 'Script resource load failed');
-    }
-  }, true); // Capture phase is required for resource loading errors
+    const src = target?.src || target?.href || '';
+    if (reloadForFreshBuild(`${event.message || ''} ${src}`)) event.preventDefault?.();
+  }, true);
 
-  // Capture promise rejections from dynamic imports
   window.addEventListener('unhandledrejection', (event) => {
-    if (event.reason) {
-      const reasonStr = String(event.reason.message || event.reason);
-      handleChunkError(reasonStr);
-    }
+    if (reloadForFreshBuild(event.reason?.message || event.reason)) event.preventDefault();
   });
 })();
 
