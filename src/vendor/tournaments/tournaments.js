@@ -1288,12 +1288,12 @@ function OptionsModal({ visible, tournament, onClose, onEdit, onDelete, onToggle
 /* ================== Main Tournaments Component ================== */
 export default function Tournaments({ canMutate }) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { width: screenWidth } = useWindowDimensions();
+  const IS_MOBILE = screenWidth < 430;
+  const styles = useMemo(() => makeStyles(theme, IS_MOBILE), [theme, IS_MOBILE]);
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
-  const IS_MOBILE = screenWidth < 430;
 
   const teams = useSelector(selectTeams);
   const tournaments = useSelector(selectTournaments);
@@ -1517,10 +1517,7 @@ export default function Tournaments({ canMutate }) {
             data={filteredTournaments}
             renderItem={renderTournament}
             keyExtractor={item => item._id}
-            contentContainerStyle={[
-              styles.listContent,
-              filteredTournaments.length === 0 && { flex: 1 },
-            ]}
+            contentContainerStyle={styles.listContent}
             ListEmptyComponent={renderEmpty}
             showsVerticalScrollIndicator={false}
           />
@@ -1600,7 +1597,7 @@ export default function Tournaments({ canMutate }) {
 }
 
 /* ================== Styles ================== */
-const makeStyles = (theme) => StyleSheet.create({
+const makeStyles = (theme, IS_MOBILE = false) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -1638,7 +1635,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
   },
   filterChipTextActive: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
   },
   addButton: {
     flexDirection: 'row',
@@ -1650,7 +1647,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
   },
   addButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1752,10 +1749,10 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   // Empty state
   emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 60,
+    paddingVertical: IS_MOBILE ? 36 : 60,
+    paddingHorizontal: IS_MOBILE ? 18 : 24,
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -1781,10 +1778,10 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   emptyButtonText: {
-    color: '#fff',
+    color: theme.colors.onPrimary,
     fontWeight: '600',
     fontSize: 14,
   },
