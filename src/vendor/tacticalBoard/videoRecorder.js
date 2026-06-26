@@ -1763,6 +1763,7 @@ export default function VideoRecorder({
         if (global.fieldCallbacks?.onVideoSaved && savedVideoId) {
           global.fieldCallbacks.onVideoSaved(savedVideoId);
         }
+        window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
 
         // Restaurar al estado original (antes de abrir video recorder)
         if (onRestoreOriginal) {

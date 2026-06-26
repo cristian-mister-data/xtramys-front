@@ -1365,6 +1365,20 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
   );
 
   useEffect(() => {
+    if (!idUsuario) return undefined;
+    const refresh = () => {
+      dispatch(fetchEstrategiasUsuario({ user: idUsuario, lang, kind: strategyKind }));
+      dispatch(fetchStrategyFolders({ lang, kind: strategyKind }));
+      dispatch(fetchStrategyFoldersFlat({ lang, kind: strategyKind }));
+      dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
+      dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
+      if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
+    };
+    window.addEventListener('xtramys:video-library-changed', refresh);
+    return () => window.removeEventListener('xtramys:video-library-changed', refresh);
+  }, [currentFolderId, dispatch, idUsuario, lang, strategyKind]);
+
+  useEffect(() => {
     if (!loading && strategies.length > 0) {
       setLoadingData(false);
     } else if (!loading && !foldersLoading) {

@@ -391,6 +391,11 @@ export default function MyVideos({ canMutate = true } = {}) {
     }
   };
 
+  useEffect(() => {
+    window.addEventListener('xtramys:video-library-changed', loadContent);
+    return () => window.removeEventListener('xtramys:video-library-changed', loadContent);
+  });
+
   const showNotification = (message, type = 'success') => {
     setNotification({ visible: true, message, type });
     setTimeout(() => {
@@ -623,6 +628,7 @@ export default function MyVideos({ canMutate = true } = {}) {
         showNotification(t('myVideos.videoDuplicated'), 'success');
       }
       
+      window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
       setShowMoveModal(false);
       setMenuVideo(null);
       loadContent();
@@ -820,6 +826,7 @@ export default function MyVideos({ canMutate = true } = {}) {
             try {
               await apiDeleteVideo(videoId);
               showNotification(t('myVideos.videoDeleted'), 'success');
+              window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
               await loadContent();
             } catch (error) {
               console.error('Error eliminando video:', error);
@@ -919,6 +926,7 @@ export default function MyVideos({ canMutate = true } = {}) {
             try {
               await batchDeleteVideos([...selectedIds]);
               showNotification(t('strategy.strategyDeleted') || 'Eliminados', 'success');
+              window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
               loadContent();
               handleCancelSelection();
             } catch (err) {
@@ -937,6 +945,7 @@ export default function MyVideos({ canMutate = true } = {}) {
     try {
       await batchMoveVideos([...selectedIds], folderId || null);
       showNotification(t('folders.moveToFolder') || 'Movidos', 'success');
+      window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
       loadContent();
       setShowBatchMoveModal(false);
       handleCancelSelection();

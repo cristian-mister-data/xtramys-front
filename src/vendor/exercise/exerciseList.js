@@ -1435,6 +1435,20 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   );
 
   useEffect(() => {
+    if (!idUsuario) return undefined;
+    const refresh = () => {
+      dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
+      dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
+      dispatch(fetchGlobalExercises({ lang }));
+      dispatch(fetchGlobalFolders({ lang }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+    };
+    window.addEventListener('xtramys:video-library-changed', refresh);
+    return () => window.removeEventListener('xtramys:video-library-changed', refresh);
+  }, [currentFolderId, dispatch, idUsuario, lang]);
+
+  useEffect(() => {
     if (!loading && ejercicios.length > 0) {
       setLoadingData(false);
     } else if (!loading && !foldersLoading) {

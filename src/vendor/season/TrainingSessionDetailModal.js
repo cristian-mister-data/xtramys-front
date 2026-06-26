@@ -334,6 +334,7 @@ export default function TrainingSessionDetailModal({
       editingExercise: {
         ...exerciseDraft,
         nombre: `${selectedImageExercise.nombre || t('exercise.exerciseName', 'Ejercicio')}_${duplicateSuffix}`,
+        folder: null,
         isGlobal: false,
         visibility: 'PRIVATE',
       },

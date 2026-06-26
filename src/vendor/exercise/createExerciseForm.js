@@ -138,11 +138,16 @@ export default function CreateExerciseForm({
   useEffect(() => {
     if (folderId && exerciseFoldersFlat.length > 0) {
       const foundFolder = exerciseFoldersFlat.find(f => f._id === folderId);
+      if (foundFolder?.isGlobal && !isGlobal) {
+        setFolderId('');
+        setFolderName('');
+        return;
+      }
       if (foundFolder) {
         setFolderName(foundFolder.nombre);
       }
     }
-  }, [folderId, exerciseFoldersFlat]);
+  }, [folderId, exerciseFoldersFlat, isGlobal]);
 
   // Cargar carpetas de ejercicio
   useEffect(() => {
@@ -331,13 +336,16 @@ export default function CreateExerciseForm({
 
       setSaving(true);
 
+      const selectedFolder = exerciseFoldersFlat.find(f => f._id === folderId);
+      const safeFolderId = selectedFolder?.isGlobal && !isGlobal ? '' : folderId;
+
       const newExercise = {
         nombre: trimmedName,
         tiempo: trimmedDuration,
         descripcion: String(description || ''),
         objetivo: String(objective || ''),
         dimensiones: dimensions ? String(dimensions) : undefined,
-        folder: folderId || undefined,
+        folder: safeFolderId || undefined,
         numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
         equipos: teams ? Number(teams) : undefined,
         usuario: idUsuario,
