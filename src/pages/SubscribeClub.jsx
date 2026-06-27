@@ -136,6 +136,14 @@ const PriceValue = styled.span`
   color: #fff;
 `;
 
+const OldPriceValue = styled.span`
+  margin-right: 8px;
+  color: rgba(255,255,255,0.38);
+  font-weight: 700;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+`;
+
 const TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -379,7 +387,8 @@ const CheckIcon = () => (
 
 const MIN_QUANTITY = 5;
 const MAX_QUANTITY = 500;
-const PRICE_PER_USER = 49;
+const OLD_PRICE_PER_USER = 49;
+const PRICE_PER_USER = 35;
 
 export default function SubscribeClub() {
   const { t, i18n } = useTranslation();
@@ -531,7 +540,7 @@ export default function SubscribeClub() {
         <PriceBlock>
           <PriceRow>
             <span>{isEs ? 'Precio unitario' : 'Unit price'}</span>
-            <PriceValue>{PRICE_PER_USER}€/{isEs ? 'usuario/año' : 'user/year'}</PriceValue>
+            <PriceValue><OldPriceValue>{OLD_PRICE_PER_USER}€</OldPriceValue>{PRICE_PER_USER}€/{isEs ? 'usuario/año' : 'user/year'}</PriceValue>
           </PriceRow>
           <PriceRow>
             <span>{isEs ? 'Licencias' : 'Licenses'}</span>

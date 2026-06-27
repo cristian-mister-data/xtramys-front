@@ -1139,7 +1139,7 @@ export default function Profile() {
                       <SubIcon $plan="pro">👑</SubIcon>
                     </SubHeader>
 
-                    <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Profesional')}</SubPlanName>
+                    <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Individual')}</SubPlanName>
 
                     {user.subscriptionCurrentPeriodEnd && (
                       <SubInfoRow $type={isCancelledActive ? 'cancelled' : 'renew'}>

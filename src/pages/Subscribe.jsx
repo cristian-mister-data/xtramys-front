@@ -117,6 +117,14 @@ const Amount = styled.span`
   line-height: 1;
 `;
 
+const OldAmount = styled.span`
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 800;
+  color: rgba(255,255,255,0.38);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+`;
+
 const Period = styled.span`
   font-size: clamp(15px, 4.5vw, 18px);
   color: rgba(255,255,255,0.4);
@@ -560,6 +568,9 @@ const CheckIcon = () => (
 );
 
 const CLUB_MIN_QUANTITY = 5;
+const INDIVIDUAL_PRICE = 45;
+const INDIVIDUAL_OLD_PRICE = 59;
+const CLUB_PRICE_PER_USER = 35;
 
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
@@ -679,7 +690,7 @@ export default function Subscribe() {
         ) : (
           <>
             <Badge>
-              {isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Pro')}
+              {isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Individual')}
             </Badge>
             <Title>
               {isClubPlan ? t('subscription.clubTitle', 'Plan Club') : t('subscription.title', 'Suscripción requerida')}
@@ -693,10 +704,11 @@ export default function Subscribe() {
             {isClubPlan ? (
               <>
                 <PriceRow>
-                  <Amount>49€</Amount>
+                  <OldAmount>49€</OldAmount>
+                  <Amount>{CLUB_PRICE_PER_USER}€</Amount>
                   <Period>/{t('subscription.userYear', 'usuario/año')}</Period>
                 </PriceRow>
-                <PriceSub>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
+                <PriceSub>{t('subscription.weekOffer', 'Oferta esta semana')} · {t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
 
                 <QtyContainer>
                   <QtyLabel>{t('subscription.qtyLabel', 'Número de Licencias (Entrenadores)')}</QtyLabel>
@@ -725,17 +737,18 @@ export default function Subscribe() {
                     </QtyButton>
                   </QtySelectorRow>
                   <QtyNotice style={{ marginTop: 6, fontSize: '13px', color: '#ff6b00', fontWeight: 'bold' }}>
-                    {t('subscription.totalAnnual', 'Total anual:')} {quantity * 49}€
+                    {t('subscription.totalAnnual', 'Total anual:')} {quantity * CLUB_PRICE_PER_USER}€
                   </QtyNotice>
                 </QtyContainer>
               </>
             ) : (
               <>
                 <PriceRow>
-                  <Amount>{isEs ? '59€' : '€59'}</Amount>
+                  <OldAmount>{isEs ? `${INDIVIDUAL_OLD_PRICE}€` : `€${INDIVIDUAL_OLD_PRICE}`}</OldAmount>
+                  <Amount>{isEs ? `${INDIVIDUAL_PRICE}€` : `€${INDIVIDUAL_PRICE}`}</Amount>
                   <Period>/{t('subscription.year', 'año')}</Period>
                 </PriceRow>
-                <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
+                <PriceSub>{t('subscription.weekOffer', 'Oferta esta semana')} · {t('subscription.annual', 'Facturación anual')}</PriceSub>
               </>
             )}
 
@@ -823,7 +836,7 @@ export default function Subscribe() {
             )}
             {isClubPlan && (
               <SwitchPlanLink onClick={() => navigate('/subscribe')}>
-                {t('subscription.switchToPro', '¿Entrenas solo? Conoce el Plan Pro →')}
+                {t('subscription.switchToPro', '¿Entrenas solo? Conoce el Plan Individual →')}
               </SwitchPlanLink>
             )}
           </>
