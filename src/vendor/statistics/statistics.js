@@ -303,7 +303,7 @@ export default function Statistics({ navigation: navigationProp }) {
       };
 
       // Obtener tiempo total del partido incluyendo tiempo de descuento
-      const tiempoPorParte = match.equipo?.tiempoPorParte || 45;
+      const tiempoPorParte = match.tiempoPorParte || match.equipo?.tiempoPorParte || 45;
       const descuentoPrimerTiempo = match.descuentoPrimerTiempo || 0;
       const descuentoSegundoTiempo = match.descuentoSegundoTiempo || 0;
       const tiempoPrimeraParte = tiempoPorParte + descuentoPrimerTiempo;
@@ -4298,3 +4298,4 @@ const makeStyles = (theme, isMobile) =>
       textAlign: 'center',
     },
   });
+

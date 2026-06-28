@@ -28,7 +28,7 @@ import { clearSanctions } from '@/store/slices/tournament/tournamentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
-import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
+import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES, getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { getVideosByExercise, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
 import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
@@ -1240,7 +1240,7 @@ export default function AddEventModal({
     ubicacion: 'local',
     golesFavor: '',
     golesContra: '',
-    alineacion: '1-4-4-2',
+    alineacion: getDefaultFormation(team?.jugadoresPorEquipo || 11),
     alineacionRival: '',
     notasEntrenador: '',
     descuentoPrimerTiempo: '0',
@@ -1574,7 +1574,7 @@ export default function AddEventModal({
         ubicacion: 'local',
         golesFavor: isPast ? '0' : '',
         golesContra: isPast ? '0' : '',
-        alineacion: '1-4-4-2',
+        alineacion: getDefaultFormation(team?.jugadoresPorEquipo || 11),
         alineacionRival: '',
         notasEntrenador: '',
         descuentoPrimerTiempo: '0',
@@ -1845,6 +1845,7 @@ export default function AddEventModal({
         pierna: matchData.fase === 'eliminatoria' || matchData.fase === 'grupos' ? matchData.pierna : null,
         golesFavor: isMatchPast ? Number(matchData.golesFavor || 0) : (matchData.golesFavor !== '' && matchData.golesFavor !== null && matchData.golesFavor !== undefined ? Number(matchData.golesFavor) : null),
         golesContra: isMatchPast ? Number(matchData.golesContra || 0) : (matchData.golesContra !== '' && matchData.golesContra !== null && matchData.golesContra !== undefined ? Number(matchData.golesContra) : null),
+        tiempoPorParte: team?.tiempoPorParte || 45,
         resultado: resultado || undefined,
         alineacion: matchData.alineacion || undefined,
         alineacionRival: matchData.alineacionRival || undefined,
@@ -2705,7 +2706,7 @@ export default function AddEventModal({
               convocados={convocados}
               titulares={alineacionTitulares}
               suplentes={alineacionSuplentes}
-              formation={matchData.alineacion || '1-4-4-2'}
+              formation={matchData.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11)}
               onTitularesChange={setAlineacionTitulares}
               onSuplentesChange={setAlineacionSuplentes}
               jugadoresPorEquipo={jugadoresPorEquipo}

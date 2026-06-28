@@ -42,7 +42,7 @@ import * as ImagePicker from 'expo-image-picker';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import Field from '@/vendor/tacticalBoard/field';
-import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES } from '@/vendor/matchSheet/useMatchSheetForm';
+import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES, getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { getPositionColor } from '@/components/player/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
@@ -1086,7 +1086,7 @@ export default function EditMatchSheetModal({
   const [golesFavor, setGolesFavor] = useState('');
   const [golesContra, setGolesContra] = useState('');
   const [notasEntrenador, setNotasEntrenador] = useState('');
-  const [alineacion, setAlineacion] = useState('1-4-4-2');
+  const [alineacion, setAlineacion] = useState(() => getDefaultFormation(team?.jugadoresPorEquipo || 11));
   const [alineacionRival, setAlineacionRival] = useState('');
   
   // Estados para jugadores
@@ -1361,7 +1361,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
       setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
       setNotasEntrenador(matchSheet.notasEntrenador || '');
-      setAlineacion(matchSheet.alineacion || '1-4-4-2');
+      setAlineacion(matchSheet.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival(matchSheet.alineacionRival || '');
       
       // Jugadores - extraer IDs
@@ -1410,7 +1410,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(isPast ? '0' : '');
       setGolesContra(isPast ? '0' : '');
       setNotasEntrenador('');
-      setAlineacion('1-4-4-2');
+      setAlineacion(getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival('');
       setConvocados([]);
       setNoConvocados([]);
@@ -1627,7 +1627,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
       setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
       setNotasEntrenador(matchSheet.notasEntrenador || '');
-      setAlineacion(matchSheet.alineacion || '1-4-4-2');
+      setAlineacion(matchSheet.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival(matchSheet.alineacionRival || '');
       setConvocados(getIds(matchSheet.convocados));
       setNoConvocados(getIds(matchSheet.noConvocados));
@@ -1665,7 +1665,7 @@ export default function EditMatchSheetModal({
       setGolesFavor('');
       setGolesContra('');
       setNotasEntrenador('');
-      setAlineacion('1-4-4-2');
+      setAlineacion(getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival('');
       setConvocados([]);
       setNoConvocados([]);

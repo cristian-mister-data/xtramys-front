@@ -251,6 +251,7 @@ export default function MatchSheetDetailModal({
   } = useMatchSheetPDF({ team, players });
 
   if (!matchSheet) return null;
+  const jugadoresPorEquipo = matchSheet.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11;
 
   const formatDate = (date) => {
     if (!date) return t('matchSheet.fields.noDate');
@@ -685,7 +686,31 @@ export default function MatchSheetDetailModal({
                       readOnly={true}
                       showPhotos={true}
                       showNames={true}
-                      jugadoresPorEquipo={team?.jugadoresPorEquipo || 11}
+                      jugadoresPorEquipo={jugadoresPorEquipo}
+                      containerWidth={lineupContainerWidth}
+                    />
+                  </View>
+                )}
+
+                {matchSheet.alineacionRival && (
+                  <View style={[styles.detailCard, IS_MOBILE && styles.detailCardLineupMobile]}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="shield-outline" size={18} color={theme.colors.error} />
+                      <Text style={styles.detailCardTitle}>
+                        {matchSheet.rival || t('matchSheet.fields.rival')} ({matchSheet.alineacionRival})
+                      </Text>
+                    </View>
+                    <LineupEditor
+                      players={[]}
+                      convocados={[]}
+                      titulares={[]}
+                      suplentes={[]}
+                      formation={matchSheet.alineacionRival}
+                      readOnly={true}
+                      showPhotos={false}
+                      showNames={true}
+                      onLineupChange={() => {}}
+                      jugadoresPorEquipo={jugadoresPorEquipo}
                       containerWidth={lineupContainerWidth}
                     />
                   </View>

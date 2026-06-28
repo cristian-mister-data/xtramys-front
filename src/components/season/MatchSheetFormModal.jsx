@@ -18,31 +18,8 @@ import RivalSelector from '@/features/matchSheet/RivalSelector';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import JornadaModal from '@/features/matchSheet/modals/JornadaModal';
 import { generateMatchSheetPDF, generateLineupPDF, generateCallUpPDF } from '@/features/matchSheet/pdf';
-import { cdnUrl } from '@/config';
-import { getPlayerInitials } from '@/utils/playerHelpers';
-import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const EMPTY = [];
-
-const PlayerAvatar = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  overflow: hidden;
-  flex-shrink: 0;
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
 
 const Section = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -58,11 +35,11 @@ const SectionHead = styled.div`
   gap: 8px;
   font-size: 14px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.primary};
+  color: #1a237e;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
-  border-bottom: 2px solid ${({ theme }) => theme.colors.primary};
+  border-bottom: 2px solid #1a237e;
   padding-bottom: 6px;
 `;
 
@@ -70,7 +47,7 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  @media (max-width: 600px) { grid-template-columns: 1fr; }
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
 `;
 
 const ChipRow = styled.div`
@@ -82,43 +59,24 @@ const ChipRow = styled.div`
 const Chip = styled.button`
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
-  background: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.surface)};
-  color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.text)};
+  border: 1px solid ${({ $active }) => ($active ? '#1a237e' : '#ddd')};
+  background: ${({ $active }) => ($active ? '#1a237e' : '#fff')};
+  color: ${({ $active }) => ($active ? '#fff' : '#333')};
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.primary};
-  }
-  &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Select = styled.select`
   width: 100%;
-  max-width: 140px;
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: 14px;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
-  background: ${({ theme }) => theme.colors.inputBg};
-  color: ${({ theme }) => theme.colors.text};
-  flex-shrink: 0;
-  &:focus-visible {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.borderFocus};
-    box-shadow: ${({ theme }) => theme.shadows.focus};
-  }
-
-  @media (max-width: 560px) {
-    max-width: 90px;
-    font-size: 12px;
-    padding: 6px 6px;
-  }
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
 `;
 
 const Counter = styled.div`
@@ -127,57 +85,26 @@ const Counter = styled.div`
   gap: 6px;
   button {
     width: 30px; height: 30px; border-radius: 8px;
-    background: ${({ theme }) => theme.colors.backgroundAlt};
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    color: ${({ theme }) => theme.colors.text};
+    background: #f1f5f9; border: 1px solid #e2e8f0;
     cursor: pointer; font-size: 16px; font-weight: 800;
-    transition: background 0.15s ease;
-    &:hover { background: ${({ theme }) => theme.colors.surfaceAlt}; }
-    &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
   }
-  .value {
-    min-width: 36px; text-align: center; font-size: 18px; font-weight: 800;
-    color: ${({ theme }) => theme.colors.primary};
-  }
+  .value { min-width: 36px; text-align: center; font-size: 18px; font-weight: 800; color: #1a237e; }
 `;
 
 const ScoreRow = styled.div`
   display: flex; align-items: center; justify-content: center; gap: 14px;
-  padding: 10px; border-radius: 12px;
-  background: ${({ theme }) => theme.colors.backgroundAlt};
-  .crest {
-    width: 48px; height: 48px; border-radius: 8px;
-    background: ${({ theme }) => theme.colors.surfaceAlt};
-    object-fit: cover;
-  }
-  .vs {
-    font-size: 18px; font-weight: 800;
-    color: ${({ theme }) => theme.colors.textMuted};
-  }
+  padding: 10px; border-radius: 12px; background: #fafafa;
+  .crest { width: 48px; height: 48px; border-radius: 8px; background: #eee; object-fit: cover; }
+  .vs { font-size: 18px; font-weight: 800; color: #888; }
 `;
 
 const EventRow = styled.div`
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px;
-  background: ${({ theme }) => theme.colors.backgroundAlt};
-  border-radius: 8px;
-  flex-wrap: wrap;
-  min-width: 0;
-  overflow: hidden;
-
-  @media (max-width: 560px) {
-    gap: 4px;
-  }
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px; background: #fafafa; border-radius: 8px;
 `;
 
 const SmallInput = styled(Input)`
-  max-width: 60px;
-  min-width: 48px;
-  flex-shrink: 0;
-
-  @media (max-width: 560px) {
-    max-width: 50px;
-  }
+  max-width: 70px;
 `;
 
 const ListEmpty = styled(Muted)`
@@ -198,14 +125,16 @@ function computeResultado(gf, gc) {
   return 'Empate';
 }
 
-function buildEmpty() {
+function buildEmpty(playerCount = 11, timePerHalf = 45) {
   return {
     rival: '', rivalId: null, rivalEscudo: null,
     ubicacion: 'local', jornada: null,
     fechaHora: new Date().toISOString(),
     resultado: 'Empate',
     golesFavor: 0, golesContra: 0,
-    alineacion: '1-4-4-2', alineacionRival: '',
+    tiempoPorParte: timePerHalf,
+    jugadoresPorEquipo: playerCount,
+    alineacion: getDefaultFormation(playerCount), alineacionRival: '',
     notasEntrenador: '',
     competicion: 'liga', torneoId: null,
     descuentoPrimerTiempo: 0, descuentoSegundoTiempo: 0,
@@ -234,28 +163,9 @@ export default function MatchSheetFormModal({
   const team = useSelector((s) => s.team?.teams?.find((e) => e.seleccionado) || null);
   const teamId = team?._id;
 
-  // Fetch tournament sanctions
-  useEffect(() => {
-    if (form.torneoId && form.competicion === 'torneo') {
-      dispatch(fetchTournamentSanctions(form.torneoId));
-    }
-  }, [form.torneoId, form.competicion, dispatch]);
-
-  // Fetch tournaments when modal opens
-  useEffect(() => {
-    if (open && teamId) {
-      dispatch(fetchTournamentsByTeam(teamId));
-    }
-  }, [open, teamId, dispatch]);
-
-  const sanctionedPlayerIds = useMemo(() => 
-    sanctions.filter(s => s.sancionado).map(s => s.playerId),
-    [sanctions]
-  );
-
-  const [form, setForm] = useState(buildEmpty());
+  const [form, setForm] = useState(() => buildEmpty(match?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11, match?.tiempoPorParte || team?.tiempoPorParte || 45));
   const [error, setError] = useState('');
-  const [playerCount, setPlayerCount] = useState(11);
+  const [playerCount, setPlayerCount] = useState(() => match?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11);
 
   // Modals
   const [callupModal, setCallupModal] = useState(false);
@@ -270,23 +180,44 @@ export default function MatchSheetFormModal({
   }, [open, teamId, dispatch]);
 
   useEffect(() => {
+    if (open && teamId) dispatch(fetchTournamentsByTeam(teamId));
+  }, [open, teamId, dispatch]);
+
+  useEffect(() => {
+    if (form.torneoId && form.competicion === 'torneo') {
+      dispatch(fetchTournamentSanctions(form.torneoId));
+    }
+  }, [form.torneoId, form.competicion, dispatch]);
+
+  const sanctionedPlayerIds = useMemo(
+    () => sanctions.filter((s) => s.sancionado).map((s) => s.playerId),
+    [sanctions]
+  );
+
+  useEffect(() => {
     if (!open) return;
+    const initialPlayerCount = match?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11;
+    const initialTimePerHalf = match?.tiempoPorParte || team?.tiempoPorParte || 45;
+    setPlayerCount(initialPlayerCount);
     if (mode === 'edit' && match) {
       setForm({
-        ...buildEmpty(),
+        ...buildEmpty(initialPlayerCount, initialTimePerHalf),
         ...match,
+        tiempoPorParte: initialTimePerHalf,
+        jugadoresPorEquipo: initialPlayerCount,
+        alineacion: match.alineacion || getDefaultFormation(initialPlayerCount),
         torneoId: match.torneoId?._id || match.torneoId || null,
         rivalId: match.rivalId?._id || match.rivalId || null,
         fechaHora: match.fechaHora || new Date().toISOString(),
       });
     } else {
       setForm({
-        ...buildEmpty(),
+        ...buildEmpty(initialPlayerCount, initialTimePerHalf),
         fechaHora: defaultDate || new Date().toISOString(),
       });
     }
     setError('');
-  }, [open, mode, match, defaultDate]);
+  }, [open, mode, match, defaultDate, team?.jugadoresPorEquipo, team?.tiempoPorParte]);
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -302,19 +233,15 @@ export default function MatchSheetFormModal({
 
   // Auto-update suplentes when convocados changes
   const handleConvocadosChange = (ids) => {
-    const allPlayerIds = players.map(p => p._id);
-    const noCallups = allPlayerIds.filter((id) => !ids.includes(id));
+    const noCallups = form.noConvocados.filter((id) => !ids.includes(id));
     const titulares = form.alineacionTitulares.filter((id) => ids.includes(id));
     const suplentes = ids.filter((id) => !titulares.includes(id));
     update({ convocados: ids, noConvocados: noCallups, alineacionTitulares: titulares, alineacionSuplentes: suplentes });
   };
 
   const handleNoCallupsChange = (ids) => {
-    const allPlayerIds = players.map(p => p._id);
-    const callups = allPlayerIds.filter((id) => !ids.includes(id));
-    const titulares = form.alineacionTitulares.filter((id) => callups.includes(id));
-    const suplentes = form.alineacionSuplentes.filter((id) => callups.includes(id));
-    update({ noConvocados: ids, convocados: callups, alineacionTitulares: titulares, alineacionSuplentes: suplentes });
+    const callups = form.convocados.filter((id) => !ids.includes(id));
+    update({ noConvocados: ids, convocados: callups });
   };
 
   const handleLineupChange = ({ titulares, suplentes }) => {
@@ -350,23 +277,10 @@ export default function MatchSheetFormModal({
   const handleSubmit = (e) => {
     e?.preventDefault?.();
     setError('');
-    if (!form.rival?.trim()) {
-      showMissingFieldsToast(t, [t('matchSheet.fields.rival', 'Rival')]);
-      return;
-    }
-    if (!form.fechaHora) {
-      showMissingFieldsToast(t, [t('matchSheet.fields.dateTime', 'Fecha y hora')]);
-      return;
-    }
-    if (form.competicion === 'torneo' && !form.torneoId) {
-      showMissingFieldsToast(t, [t('matchSheet.fields.tournament', 'Torneo')]);
-      return;
-    }
-    if ((form.golesFavor || 0) !== (form.goles || []).length || (form.golesContra || 0) !== (form.golesRival || []).length) {
-      setError(t('matchSheet.validation.goalsMismatch'));
-      return;
-    }
-    onSubmit?.(form);
+    if (!form.rival?.trim()) return setError(t('matchSheet.rivalRequired', 'El rival es obligatorio'));
+    if (!form.fechaHora) return setError(t('matchSheet.dateRequired', 'La fecha es obligatoria'));
+    if (form.competicion === 'torneo' && !form.torneoId) return setError(t('matchSheet.tournamentRequired', 'Selecciona un torneo'));
+    onSubmit?.({ ...form, tiempoPorParte: team?.tiempoPorParte || form.tiempoPorParte || 45, jugadoresPorEquipo: playerCount });
   };
 
   const handlePDF = (kind) => {
@@ -401,11 +315,15 @@ export default function MatchSheetFormModal({
                   <MdPictureAsPdf /> PDF
                 </Button>
                 {pdfMenu ? (
-                  <PdfMenu>
-                    <PdfItem type="button" onClick={() => handlePDF('full')}>{t('matchSheet.pdf.fullSheet', 'Ficha completa')}</PdfItem>
-                    <PdfItem type="button" onClick={() => handlePDF('lineup')}>{t('matchSheet.pdf.lineup', 'Alineación')}</PdfItem>
-                    <PdfItem type="button" onClick={() => handlePDF('callup')}>{t('matchSheet.pdf.callup', 'Convocatoria')}</PdfItem>
-                  </PdfMenu>
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
+                    background: '#fff', border: '1px solid #ddd', borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 10, minWidth: 180,
+                  }}>
+                    <button type="button" onClick={() => handlePDF('full')} style={pdfBtnStyle}>{t('matchSheet.pdf.fullSheet', 'Ficha completa')}</button>
+                    <button type="button" onClick={() => handlePDF('lineup')} style={pdfBtnStyle}>{t('matchSheet.pdf.lineup', 'Alineación')}</button>
+                    <button type="button" onClick={() => handlePDF('callup')} style={pdfBtnStyle}>{t('matchSheet.pdf.callup', 'Convocatoria')}</button>
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -506,7 +424,7 @@ export default function MatchSheetFormModal({
                 {[7, 8, 11].map((n) => (
                   <Chip key={n} type="button" $active={playerCount === n} onClick={() => {
                     setPlayerCount(n);
-                    update({ alineacion: getDefaultFormation(n) });
+                    update({ jugadoresPorEquipo: n, alineacion: getDefaultFormation(n) });
                   }}>F{n}</Chip>
                 ))}
               </ChipRow>
@@ -584,7 +502,7 @@ export default function MatchSheetFormModal({
                   <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'goal', index: i })}>
                     {playerLabel(g.jugador)}
                   </Button>
-                  <Select value={g.tipo || 'normal'} onChange={(e) => updateGoal(i, { tipo: e.target.value })}>
+                  <Select style={{ maxWidth: 110 }} value={g.tipo || 'normal'} onChange={(e) => updateGoal(i, { tipo: e.target.value })}>
                     <option value="normal">{t('matchSheet.goalNormal', 'Normal')}</option>
                     <option value="penalti">{t('matchSheet.goalPenalty', 'Penalti')}</option>
                     <option value="falta">{t('matchSheet.goalFK', 'Falta')}</option>
@@ -607,7 +525,7 @@ export default function MatchSheetFormModal({
               {(form.golesRival || []).map((g, i) => (
                 <EventRow key={i}>
                   <SmallInput type="number" min="0" max="120" value={g.minuto} onChange={(e) => updateRivalGoal(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
-                  <Muted style={{ flex: 1, fontSize: 12 }}>{t('matchSheet.fields.goalsAgainst', 'Gol rival')}</Muted>
+                  <span style={{ flex: 1, fontSize: 12, color: '#888' }}>{t('matchSheet.fields.goalsAgainst', 'Gol rival')}</span>
                   <Button type="button" $variant="danger" onClick={() => removeRivalGoal(i)}><MdDelete /></Button>
                 </EventRow>
               ))}
@@ -628,7 +546,7 @@ export default function MatchSheetFormModal({
                   <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'yellow', index: i })}>
                     {playerLabel(c.jugador)}
                   </Button>
-                  <Input style={{ maxWidth: 120, minWidth: 60, flexShrink: 1 }} placeholder={t('matchSheet.fields.reason', 'Motivo')} value={c.motivo || ''} onChange={(e) => updateYellow(i, { motivo: e.target.value })} />
+                  <Input style={{ maxWidth: 140 }} placeholder={t('matchSheet.fields.reason', 'Motivo')} value={c.motivo || ''} onChange={(e) => updateYellow(i, { motivo: e.target.value })} />
                   <Button type="button" $variant="danger" onClick={() => removeYellow(i)}><MdDelete /></Button>
                 </EventRow>
               ))}
@@ -664,42 +582,18 @@ export default function MatchSheetFormModal({
             </Row>
             <Stack $gap={6}>
               {form.cambios.length === 0 ? <ListEmpty>{t('common.empty', 'Sin datos')}</ListEmpty> : null}
-              {form.cambios.map((c, i) => {
-                const salePlayer = players.find((x) => x._id === c.sale);
-                const entraPlayer = players.find((x) => x._id === c.entra);
-                return (
-                  <EventRow key={i}>
-                    <SmallInput type="number" min="0" max="120" value={c.minuto} onChange={(e) => updateChange(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
-                    <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setScorerModal({ type: 'changeOut', index: i })}>
-                      <span style={{ color: 'red', fontWeight: 'bold' }}>↓</span>
-                      {salePlayer ? (
-                        <PlayerAvatar>
-                          {salePlayer.foto ? (
-                            <img src={cdnUrl(salePlayer.foto)} alt="" />
-                          ) : (
-                            getPlayerInitials(salePlayer) || '?'
-                          )}
-                        </PlayerAvatar>
-                      ) : null}
-                      <span>{playerLabel(c.sale)}</span>
-                    </Button>
-                    <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setScorerModal({ type: 'changeIn', index: i })}>
-                      <span style={{ color: 'green', fontWeight: 'bold' }}>↑</span>
-                      {entraPlayer ? (
-                        <PlayerAvatar>
-                          {entraPlayer.foto ? (
-                            <img src={cdnUrl(entraPlayer.foto)} alt="" />
-                          ) : (
-                            getPlayerInitials(entraPlayer) || '?'
-                          )}
-                        </PlayerAvatar>
-                      ) : null}
-                      <span>{playerLabel(c.entra)}</span>
-                    </Button>
-                    <Button type="button" $variant="danger" onClick={() => removeChange(i)}><MdDelete /></Button>
-                  </EventRow>
-                );
-              })}
+              {form.cambios.map((c, i) => (
+                <EventRow key={i}>
+                  <SmallInput type="number" min="0" max="120" value={c.minuto} onChange={(e) => updateChange(i, { minuto: parseInt(e.target.value, 10) || 0 })} />
+                  <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'changeOut', index: i })}>
+                    ↓ {playerLabel(c.sale)}
+                  </Button>
+                  <Button type="button" $variant="ghost" style={{ flex: 1, justifyContent: 'flex-start' }} onClick={() => setScorerModal({ type: 'changeIn', index: i })}>
+                    ↑ {playerLabel(c.entra)}
+                  </Button>
+                  <Button type="button" $variant="danger" onClick={() => removeChange(i)}><MdDelete /></Button>
+                </EventRow>
+              ))}
             </Stack>
           </div>
         </Section>
@@ -724,7 +618,7 @@ export default function MatchSheetFormModal({
         onClose={() => setCallupModal(false)}
         players={players}
         selectedIds={form.convocados}
-        excludeIds={EMPTY}
+        excludeIds={form.noConvocados}
         onConfirm={handleConvocadosChange}
         title={t('matchSheet.callups', 'Convocados')}
         sanctionedPlayerIds={sanctionedPlayerIds}
@@ -734,7 +628,7 @@ export default function MatchSheetFormModal({
         onClose={() => setNoCallupModal(false)}
         players={players}
         selectedIds={form.noConvocados}
-        excludeIds={EMPTY}
+        excludeIds={form.convocados}
         onConfirm={handleNoCallupsChange}
         title={t('matchSheet.notCalledUp', 'No convocados')}
         sanctionedPlayerIds={sanctionedPlayerIds}
@@ -766,39 +660,8 @@ export default function MatchSheetFormModal({
   );
 }
 
-const PdfMenu = styled.div`
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 6px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 10px;
-  box-shadow: ${({ theme }) => theme.shadows.lg};
-  z-index: 10;
-  min-width: 200px;
-  overflow: hidden;
-  padding: 4px;
-`;
-
-const PdfItem = styled.button`
-  display: block;
-  width: 100%;
-  padding: 9px 12px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.text};
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  &:hover {
-    background: ${({ theme }) => theme.colors.primarySoft};
-    color: ${({ theme }) => theme.colors.primarySoftText};
-  }
-  &:focus-visible {
-    outline: none;
-    box-shadow: ${({ theme }) => theme.shadows.focus};
-  }
-`;
+const pdfBtnStyle = {
+  display: 'block', width: '100%', padding: '8px 12px',
+  background: 'transparent', border: 'none', textAlign: 'left',
+  fontSize: 13, cursor: 'pointer',
+};

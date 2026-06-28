@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import Svg, { Rect, Line, Circle, Path, G, Defs, ClipPath, Ellipse } from 'react-native-svg';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
+import { getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 
 // Posiciones tácticas predefinidas para diferentes formaciones
 const FORMATION_POSITIONS = {
@@ -676,7 +677,7 @@ export default function LineupEditor({
   players = [],
   convocados = [],
   titulares = [],
-  formation = '1-4-4-2',
+  formation = null,
   onTitularesChange,
   onSuplentesChange,
   suplentes = [],
@@ -724,9 +725,7 @@ export default function LineupEditor({
 
   // Formación por defecto según número de jugadores
   const defaultFormation = useMemo(() => {
-    if (jugadoresPorEquipo === 7) return '1-3-2-1';
-    if (jugadoresPorEquipo === 8) return '1-3-3-1';
-    return '1-4-4-2';
+    return getDefaultFormation(jugadoresPorEquipo);
   }, [jugadoresPorEquipo]);
 
   // Obtener posiciones de la formación

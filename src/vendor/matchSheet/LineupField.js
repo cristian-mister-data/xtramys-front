@@ -18,6 +18,7 @@ import Svg, { Rect, Line, Circle, Ellipse } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName, getPlayerInitials, getPlayerFirstName } from '@/utils/playerHelpers';
+import { getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 
 // Imagen del campo de fútbol (usamos SVG para dibujarlo)
 const FIELD_ASPECT_RATIO = 1.5; // Ancho/Alto típico de un campo
@@ -273,7 +274,8 @@ function PlayerMarker({
 export default function LineupField({
   players = [], // Lista de jugadores disponibles
   lineup = [], // Array de { player, x, y, posicionTactica }
-  formation = '1-4-4-2',
+  jugadoresPorEquipo = 11,
+  formation = getDefaultFormation(jugadoresPorEquipo),
   showPhotos = true,
   showNames = true,
   onLineupChange, // Callback cuando cambia la alineación
@@ -295,8 +297,9 @@ export default function LineupField({
 
   // Obtener posiciones de la formación
   const formationPositions = useMemo(() => {
-    return FORMATION_POSITIONS[formation] || FORMATION_POSITIONS['1-4-4-2'];
-  }, [formation]);
+    const defForm = getDefaultFormation(jugadoresPorEquipo);
+    return FORMATION_POSITIONS[formation] || FORMATION_POSITIONS[defForm] || FORMATION_POSITIONS['1-4-4-2'];
+  }, [formation, jugadoresPorEquipo]);
 
   // Combinar posiciones de formación con jugadores asignados
   const displayPositions = useMemo(() => {

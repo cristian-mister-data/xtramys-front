@@ -32,6 +32,12 @@ export default function useMatchSheetPDF({ team, players }) {
     showPhotos: true,
   });
 
+  const getDefaultFormation = useCallback((jugadoresPorEquipo) => {
+    if (jugadoresPorEquipo === 7) return '1-3-2-1';
+    if (jugadoresPorEquipo === 8) return '1-3-3-1';
+    return '1-4-4-2';
+  }, []);
+
   // Traducciones de posiciones
   const getPositionTranslations = useCallback(() => ({
     POR: t('matchSheet.positions.POR'),
@@ -64,12 +70,13 @@ export default function useMatchSheetPDF({ team, players }) {
     
     setGeneratingPDFType('lineup');
     try {
+      const jugadoresPorEquipo = matchSheet.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11;
       await generateLineupPDF({
         matchSheet,
         team,
         players,
         lineup,
-        formation: matchSheet.alineacion || '1-4-4-2',
+        formation: matchSheet.alineacion || getDefaultFormation(jugadoresPorEquipo),
         showPhotos: pdfOptions.showPhotos,
         showNames: pdfOptions.showNames,
         translations: {
@@ -104,7 +111,7 @@ export default function useMatchSheetPDF({ team, players }) {
     } finally {
       setGeneratingPDFType(null);
     }
-  }, [team, players, pdfOptions, currentLang, t, getPositionTranslations]);
+  }, [team, players, pdfOptions, currentLang, t, getPositionTranslations, getDefaultFormation]);
 
   // Generar PDF de Convocatoria
   const handleGenerateCallUpPDF = useCallback(async (matchSheet) => {

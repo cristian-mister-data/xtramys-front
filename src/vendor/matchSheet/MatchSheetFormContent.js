@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import RivalSelector from '@/vendor/shared/RivalSelector';
 import LineupEditor from './LineupEditor';
+import { getDefaultFormation } from './useMatchSheetForm';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { cdnUrl } from '@/config';
@@ -554,7 +555,7 @@ const MatchSheetFormContent = ({
               convocados={convocados}
               titulares={alineacionTitulares}
               suplentes={alineacionSuplentes}
-              formation={alineacion || '1-4-4-2'}
+              formation={alineacion || getDefaultFormation(selectedTeam?.jugadoresPorEquipo || 11)}
               onTitularesChange={setAlineacionTitulares}
               onSuplentesChange={setAlineacionSuplentes}
               jugadoresPorEquipo={selectedTeam?.jugadoresPorEquipo || 11}

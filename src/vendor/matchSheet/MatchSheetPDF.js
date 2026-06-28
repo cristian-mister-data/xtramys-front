@@ -67,7 +67,17 @@ const sortByMinute = (items = []) => [...items].sort((a, b) => {
 export const generateLineupPDF = async ({ matchSheet, team, players, lineup, formation, showPhotos = true, showNames = true, translations = {} }) => {
   try {
     const { resolvedPlayers, resolvedTeam } = await resolvePhotos(players, team);
-    await generateLineupPdf({ matchSheet, team: resolvedTeam, players: resolvedPlayers, lineup, formation, showPhotos, showNames, translations });
+    await generateLineupPdf({
+      matchSheet,
+      team: resolvedTeam,
+      players: resolvedPlayers,
+      lineup,
+      formation,
+      jugadoresPorEquipo: matchSheet?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11,
+      showPhotos,
+      showNames,
+      translations,
+    });
   } catch (error) {
     console.error('Error generating lineup PDF:', error);
     throw error;
@@ -96,7 +106,21 @@ export const generateMatchSheetPDF = async ({ matchSheet, team, players, showPho
     const tarjetasRojas = sortByMinute(matchSheet.tarjetasRojas || []);
     const cambios = sortByMinute(matchSheet.cambios || []);
     const { resolvedPlayers, resolvedTeam } = await resolvePhotos(players, team);
-    await generateMatchSheetPdf({ matchSheet, team: resolvedTeam, players: resolvedPlayers, titulares, suplentes, goles, golesRival, tarjetasAmarillas, tarjetasRojas, cambios, showPhotos, translations });
+    await generateMatchSheetPdf({
+      matchSheet,
+      team: resolvedTeam,
+      players: resolvedPlayers,
+      titulares,
+      suplentes,
+      goles,
+      golesRival,
+      tarjetasAmarillas,
+      tarjetasRojas,
+      cambios,
+      jugadoresPorEquipo: matchSheet?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11,
+      showPhotos,
+      translations,
+    });
   } catch (error) {
     console.error('Error generating match sheet PDF:', error);
     throw error;

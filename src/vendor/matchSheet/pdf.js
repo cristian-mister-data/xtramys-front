@@ -50,7 +50,44 @@ const FORMATION_POSITIONS = {
   '1-3-4-1-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'MI', x: 12, y: 54 }, { pos: 'MC', x: 38, y: 52 }, { pos: 'MC', x: 62, y: 52 }, { pos: 'MD', x: 88, y: 54 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
   '1-4-3-2-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MC', x: 25, y: 54 }, { pos: 'MC', x: 50, y: 50 }, { pos: 'MC', x: 75, y: 54 }, { pos: 'MI', x: 25, y: 34 }, { pos: 'MD', x: 75, y: 34 }, { pos: 'DC', x: 50, y: 16 }],
   '1-4-1-2-1-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 50, y: 58 }, { pos: 'MC', x: 30, y: 46 }, { pos: 'MC', x: 70, y: 46 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
+  '1-3-3-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MI', x: 15, y: 46 }, { pos: 'MC', x: 50, y: 42 }, { pos: 'MD', x: 85, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-3-2-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MC', x: 32, y: 46 }, { pos: 'MC', x: 68, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
 };
+
+const getPlayersPerTeam = (matchSheet, team, explicitValue) => {
+  const count = Number(explicitValue || matchSheet?.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11);
+  return [7, 8, 11].includes(count) ? count : 11;
+};
+
+const getDefaultFormation = (jugadoresPorEquipo) => {
+  if (jugadoresPorEquipo === 7) return '1-3-2-1';
+  if (jugadoresPorEquipo === 8) return '1-3-3-1';
+  return '1-4-4-2';
+};
+
+const buildFormationPositions = (formation) => {
+  const rows = String(formation || '').split('-').map(Number).filter(Number.isFinite);
+  if (rows.length < 2 || rows[0] !== 1) return null;
+
+  const yByRows = rows.length === 4 ? [90, 72, 45, 18] : rows.length === 5 ? [90, 74, 56, 36, 16] : null;
+  if (!yByRows) return null;
+
+  return rows.flatMap((amount, rowIndex) => {
+    const y = yByRows[rowIndex];
+    return Array.from({ length: amount }, (_, index) => {
+      const x = amount === 1 ? 50 : 12 + (index * 76) / (amount - 1);
+      const pos = rowIndex === 0 ? 'POR' : rowIndex === rows.length - 1 ? 'DC' : rowIndex === 1 ? 'DFC' : 'MC';
+      return { pos, x, y };
+    });
+  });
+};
+
+const getFormationPositions = (formation, jugadoresPorEquipo) => (
+  FORMATION_POSITIONS[formation]
+  || buildFormationPositions(formation)
+  || FORMATION_POSITIONS[getDefaultFormation(jugadoresPorEquipo)]
+  || FORMATION_POSITIONS['1-4-4-2']
+);
 
 const formatDateSafe = (dateStr) => {
   if (!dateStr) return '-';
@@ -63,7 +100,7 @@ const formatTimeSafe = (dateStr) => {
 };
 
 // 2D SVG Field Component
-const SoccerField = ({ lineup, players, formation, showPhotos, showNames, width = 340, titulares = [] }) => {
+const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, showPhotos, showNames, width = 340, titulares = [] }) => {
   const height = width * 1.35;
   const W = width;
   const H = height;
@@ -117,7 +154,7 @@ const SoccerField = ({ lineup, players, formation, showPhotos, showNames, width 
     };
   };
 
-  const positions = FORMATION_POSITIONS[formation] || FORMATION_POSITIONS['1-4-4-2'];
+  const positions = getFormationPositions(formation, jugadoresPorEquipo);
 
   return (
     <View style={{ width, height, position: 'relative', borderRadius: 12, overflow: 'hidden', marginHorizontal: 'auto' }}>
@@ -178,8 +215,10 @@ const SoccerField = ({ lineup, players, formation, showPhotos, showNames, width 
 };
 
 // --- ALINEACIÓN PDF ---
-const LineupPage = ({ matchSheet, team, players, lineup, formation, showPhotos, showNames, translations }) => {
+const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPorEquipo, showPhotos, showNames, translations }) => {
   const suplentesIds = matchSheet.alineacionSuplentes || [];
+  const playersPerTeam = getPlayersPerTeam(matchSheet, team, jugadoresPorEquipo);
+  const resolvedFormation = formation || getDefaultFormation(playersPerTeam);
   
   return (
     <Page size="A4" style={[baseStyles.page, { flexDirection: 'row', padding: 0 }]}>
@@ -195,10 +234,10 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, showPhotos, 
           </View>
         </View>
 
-        <SoccerField lineup={lineup} players={players} formation={formation} showPhotos={showPhotos} showNames={showNames} width={360} titulares={matchSheet.alineacionTitulares} />
+        <SoccerField lineup={lineup} players={players} formation={resolvedFormation} jugadoresPorEquipo={playersPerTeam} showPhotos={showPhotos} showNames={showNames} width={360} titulares={matchSheet.alineacionTitulares} />
 
         <View style={{ alignItems: 'center', marginTop: 16 }}>
-          <Text style={s.chip}>{formation}</Text>
+          <Text style={s.chip}>{resolvedFormation}</Text>
         </View>
       </View>
 
@@ -378,7 +417,7 @@ const renderEventIcon = (tipo) => {
   return null;
 };
 
-const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes = [], noConvocados = [], goles = [], golesRival = [], tarjetasAmarillas = [], tarjetasRojas = [], cambios = [], showPhotos }) => {
+const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes = [], noConvocados = [], goles = [], golesRival = [], tarjetasAmarillas = [], tarjetasRojas = [], cambios = [], jugadoresPorEquipo, showPhotos }) => {
   const eventos = [
     ...sortByMinute(goles).map(g => ({ ...g, tipo: 'gol' })),
     ...sortByMinute(golesRival).map(g => ({ ...g, tipo: 'golRival', isRival: true })),
@@ -386,6 +425,10 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
     ...sortByMinute(tarjetasRojas).map(t => ({ ...t, tipo: 'roja' })),
     ...sortByMinute(cambios).map(c => ({ ...c, tipo: 'cambio' }))
   ].sort((a, b) => parseMinute(a.minuto) - parseMinute(b.minuto));
+  const playersPerTeam = getPlayersPerTeam(matchSheet, team, jugadoresPorEquipo);
+  const ownFormation = matchSheet.alineacion || getDefaultFormation(playersPerTeam);
+  const rivalFormation = matchSheet.alineacionRival || getDefaultFormation(playersPerTeam);
+
   return (
     <Page size="A4" style={baseStyles.page}>
       <PdfHeader title="FICHA DE PARTIDO" subtitle={`${team?.nombre || 'Local'} vs ${matchSheet.rival}`} />
@@ -408,6 +451,39 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
                 <Text style={{ fontSize: 28, fontFamily: 'Helvetica-Bold', color: '#fff' }}>{matchSheet.golesLocal} - {matchSheet.golesVisitante}</Text>
               </View>
               <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: COLORS.primary }}>{matchSheet.ubicacion === 'local' || matchSheet.ubicacion === 'Casa' ? matchSheet.rival : team?.nombre}</Text>
+            </View>
+          </View>
+        )}
+
+        {(titulares.length > 0 || matchSheet.alineacionRival) && (
+          <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.md }}>
+            <View style={{ flex: 1 }}>
+              <PdfSection title={`${team?.nombre || 'Mi equipo'} (${ownFormation})`}>
+                <SoccerField
+                  lineup={[]}
+                  players={players}
+                  formation={ownFormation}
+                  jugadoresPorEquipo={playersPerTeam}
+                  showPhotos={showPhotos}
+                  showNames={true}
+                  width={230}
+                  titulares={titulares}
+                />
+              </PdfSection>
+            </View>
+            <View style={{ flex: 1 }}>
+              <PdfSection title={`${matchSheet.rival || 'Rival'} (${rivalFormation})`}>
+                <SoccerField
+                  lineup={[]}
+                  players={[]}
+                  formation={rivalFormation}
+                  jugadoresPorEquipo={playersPerTeam}
+                  showPhotos={false}
+                  showNames={true}
+                  width={230}
+                  titulares={[]}
+                />
+              </PdfSection>
             </View>
           </View>
         )}
@@ -538,9 +614,9 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
 
 // ── EXPORTACIÓN ASÍNCRONA ──────────────────────────────────────────
 
-export const generateLineupPdf = async ({ matchSheet, team, players, lineup, formation, showPhotos, showNames, translations }) => {
+export const generateLineupPdf = async ({ matchSheet, team, players, lineup, formation, jugadoresPorEquipo, showPhotos, showNames, translations }) => {
   const fileName = `alineacion_${matchSheet.rival.replace(/\s+/g, '_')}`;
-  await renderPdf(<Document><LineupPage matchSheet={matchSheet} team={team} players={players} lineup={lineup} formation={formation} showPhotos={showPhotos} showNames={showNames} translations={translations} /></Document>, fileName);
+  await renderPdf(<Document><LineupPage matchSheet={matchSheet} team={team} players={players} lineup={lineup} formation={formation} jugadoresPorEquipo={jugadoresPorEquipo} showPhotos={showPhotos} showNames={showNames} translations={translations} /></Document>, fileName);
 };
 
 export const generateCallUpPdf = async ({ matchSheet, team, players, convocados, noConvocados, horaQuedada, lugarQuedada, observaciones, fechaQuedada, showPhotos, translations }) => {
@@ -548,7 +624,7 @@ export const generateCallUpPdf = async ({ matchSheet, team, players, convocados,
   await renderPdf(<Document><CallUpPage matchSheet={matchSheet} team={team} players={players} convocados={convocados} noConvocados={noConvocados} horaQuedada={horaQuedada} lugarQuedada={lugarQuedada} observaciones={observaciones} fechaQuedada={fechaQuedada} showPhotos={showPhotos} translations={translations} /></Document>, fileName);
 };
 
-export const generateMatchSheetPdf = async ({ matchSheet, team, players, titulares, suplentes, noConvocados, goles, golesRival, tarjetasAmarillas, tarjetasRojas, cambios, showPhotos, translations }) => {
+export const generateMatchSheetPdf = async ({ matchSheet, team, players, titulares, suplentes, noConvocados, goles, golesRival, tarjetasAmarillas, tarjetasRojas, cambios, jugadoresPorEquipo, showPhotos, translations }) => {
   const fileName = `ficha_partido_${matchSheet.rival.replace(/\s+/g, '_')}`;
-  await renderPdf(<Document><MatchSheetPage matchSheet={matchSheet} team={team} players={players} titulares={titulares} suplentes={suplentes} noConvocados={noConvocados} goles={goles} golesRival={golesRival} tarjetasAmarillas={tarjetasAmarillas} tarjetasRojas={tarjetasRojas} cambios={cambios} showPhotos={showPhotos} translations={translations} /></Document>, fileName);
+  await renderPdf(<Document><MatchSheetPage matchSheet={matchSheet} team={team} players={players} titulares={titulares} suplentes={suplentes} noConvocados={noConvocados} goles={goles} golesRival={golesRival} tarjetasAmarillas={tarjetasAmarillas} tarjetasRojas={tarjetasRojas} cambios={cambios} jugadoresPorEquipo={jugadoresPorEquipo} showPhotos={showPhotos} translations={translations} /></Document>, fileName);
 };

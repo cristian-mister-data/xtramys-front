@@ -1,12 +1,12 @@
-// components/pages/matchSheet/useMatchSheetForm.js
-// Hook reutilizable para el formulario de creación/edición de fichas de partido
+﻿// components/pages/matchSheet/useMatchSheetForm.js
+// Hook reutilizable para el formulario de creaciÃ³n/ediciÃ³n de fichas de partido
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 
-// Alineaciones de fútbol 11 (incluyen portero con prefijo 1-)
+// Alineaciones de fÃºtbol 11 (incluyen portero con prefijo 1-)
 export const ALINEACIONES = [
   '1-4-4-2',
   '1-4-3-3',
@@ -22,7 +22,7 @@ export const ALINEACIONES = [
   '1-4-1-2-1-2',
 ];
 
-// Alineaciones de fútbol 8 (incluyen portero con prefijo 1-)
+// Alineaciones de fÃºtbol 8 (incluyen portero con prefijo 1-)
 export const ALINEACIONES_8 = [
   '1-3-3-1',
   '1-2-3-2',
@@ -32,7 +32,7 @@ export const ALINEACIONES_8 = [
   '1-4-2-1',
 ];
 
-// Alineaciones de fútbol 7 (incluyen portero con prefijo 1-)
+// Alineaciones de fÃºtbol 7 (incluyen portero con prefijo 1-)
 export const ALINEACIONES_7 = [
   '1-3-2-1',
   '1-2-3-1',
@@ -49,10 +49,15 @@ export const ALINEACIONES_BY_PLAYER_COUNT = {
   11: ALINEACIONES,
 };
 
-// Claves de ubicación
+export function getDefaultFormation(jugadoresPorEquipo) {
+  const list = ALINEACIONES_BY_PLAYER_COUNT[jugadoresPorEquipo] || ALINEACIONES;
+  return list[0] || '1-4-4-2';
+}
+
+// Claves de ubicaciÃ³n
 export const UBICACIONES_KEYS = ['home', 'away', 'neutral'];
 
-// Normalizar formación
+// Normalizar formaciÃ³n
 export function normalizeFormation(value) {
   if (!value) return '';
   const v = String(value).trim();
@@ -62,7 +67,7 @@ export function normalizeFormation(value) {
 }
 
 /**
- * Hook para manejar el estado y la lógica del formulario de fichas de partido
+ * Hook para manejar el estado y la lÃ³gica del formulario de fichas de partido
  * Reutilizable en matchSheetList, AddEventModal y EditMatchSheetModal
  */
 export default function useMatchSheetForm({ 
@@ -75,7 +80,7 @@ export default function useMatchSheetForm({
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language?.split('-')[0] || 'es';
   
-  // Ubicaciones traducidas dinámicamente
+  // Ubicaciones traducidas dinÃ¡micamente
   const ubicaciones = useMemo(() => 
     UBICACIONES_KEYS.map(key => t(`matchSheet.fields.${key}`))
   , [t]);
@@ -85,13 +90,13 @@ export default function useMatchSheetForm({
     Array.from({ length: 100 }, (_, i) => String(i + 1))
   , []);
 
-  // Estado para competición/torneo
+  // Estado para competiciÃ³n/torneo
   const [competicion, setCompeticion] = useState('liga');
   const [torneoId, setTorneoId] = useState(null);
   const [showCompeticionModal, setShowCompeticionModal] = useState(false);
   const [showTorneoModal, setShowTorneoModal] = useState(false);
 
-  // Estados para datos básicos del partido
+  // Estados para datos bÃ¡sicos del partido
   const [rival, setRival] = useState('');
   const [rivalId, setRivalId] = useState(null);
   const [rivalEscudo, setRivalEscudo] = useState(null);
@@ -99,7 +104,7 @@ export default function useMatchSheetForm({
   const [jornada, setJornada] = useState('');
   const [golesFavor, setGolesFavor] = useState('0');
   const [golesContra, setGolesContra] = useState('0');
-  const [alineacion, setAlineacion] = useState('');
+  const [alineacion, setAlineacion] = useState(() => getDefaultFormation(selectedTeam?.jugadoresPorEquipo || 11));
   const [alineacionRival, setAlineacionRival] = useState('');
   const [notasEntrenador, setNotasEntrenador] = useState('');
   const [fechaHora, setFechaHora] = useState(new Date());
@@ -121,7 +126,7 @@ export default function useMatchSheetForm({
   const [jugadoresEnCampo, setJugadoresEnCampo] = useState([]);
   const [jugadoresExpulsados, setJugadoresExpulsados] = useState([]);
   
-  // Estados para estadísticas
+  // Estados para estadÃ­sticas
   const [posesion, setPosesion] = useState('');
   const [tiros, setTiros] = useState('');
   const [tirosAPuerta, setTirosAPuerta] = useState('');
@@ -133,12 +138,12 @@ export default function useMatchSheetForm({
   const [descuentoPrimerTiempo, setDescuentoPrimerTiempo] = useState('0');
   const [descuentoSegundoTiempo, setDescuentoSegundoTiempo] = useState('0');
   
-  // Estado para mostrar alineación visual en el formulario
+  // Estado para mostrar alineaciÃ³n visual en el formulario
   const [showVisualLineup, setShowVisualLineup] = useState(false);
   const [lineupPositions, setLineupPositions] = useState([]);
   const [setPieces, setSetPieces] = useState([]);
 
-  // Estados para modales de selección
+  // Estados para modales de selecciÃ³n
   const [showUbicacionModal, setShowUbicacionModal] = useState(false);
   const [showJornadaModal, setShowJornadaModal] = useState(false);
   const [showAlineacionModal, setShowAlineacionModal] = useState(false);
@@ -162,12 +167,12 @@ export default function useMatchSheetForm({
     return matchDate < now;
   }, [fechaHora]);
 
-  // Calcular resultado automáticamente (valores internos en español para BD)
+  // Calcular resultado automÃ¡ticamente (valores internos en espaÃ±ol para BD)
   const resultado = useMemo(() => {
     const gf = parseInt(golesFavor) || 0;
     const gc = parseInt(golesContra) || 0;
     
-    // Solo calcular si el partido ya pasó
+    // Solo calcular si el partido ya pasÃ³
     if (!isMatchPast) return '';
     
     // Si no hay goles definidos, no mostrar resultado
@@ -191,7 +196,8 @@ export default function useMatchSheetForm({
     setJornada(matchSheet.jornada ? String(matchSheet.jornada) : '');
     setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
     setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
-    setAlineacion(normalizeFormation(matchSheet.alineacion));
+    const numJugadores = matchSheet.jugadoresPorEquipo || selectedTeam?.jugadoresPorEquipo || 11;
+    setAlineacion(normalizeFormation(matchSheet.alineacion || getDefaultFormation(numJugadores)));
     setAlineacionRival(normalizeFormation(matchSheet.alineacionRival));
     setNotasEntrenador(matchSheet.notasEntrenador || '');
     setFechaHora(matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date());
@@ -211,9 +217,9 @@ export default function useMatchSheetForm({
     setGolesRival(matchSheet.golesRival || []);
     
     // Reconstruir jugadores en campo desde titulares y cambios
-    // (el useEffect abajo se encargará de esto automáticamente)
+    // (el useEffect abajo se encargarÃ¡ de esto automÃ¡ticamente)
     
-    // Cargar estadísticas
+    // Cargar estadÃ­sticas
     setPosesion(matchSheet.posesion ? String(matchSheet.posesion) : '');
     setTiros(matchSheet.tiros ? String(matchSheet.tiros) : '');
     setTirosAPuerta(matchSheet.tirosAPuerta ? String(matchSheet.tirosAPuerta) : '');
@@ -225,11 +231,11 @@ export default function useMatchSheetForm({
     setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo ? String(matchSheet.descuentoPrimerTiempo) : '0');
     setDescuentoSegundoTiempo(matchSheet.descuentoSegundoTiempo ? String(matchSheet.descuentoSegundoTiempo) : '0');
     
-    // Competición/torneo
+    // CompeticiÃ³n/torneo
     setCompeticion(matchSheet.competicion || 'liga');
     setTorneoId(matchSheet.torneoId?._id || matchSheet.torneoId || null);
     setSetPieces(matchSheet.setPieces || []);
-  }, []);
+  }, [selectedTeam]);
 
   // Resetear el formulario
   const resetForm = useCallback(() => {
@@ -240,7 +246,8 @@ export default function useMatchSheetForm({
     setJornada('');
     setGolesFavor('0');
     setGolesContra('0');
-    setAlineacion('');
+    const numJugadores = selectedTeam?.jugadoresPorEquipo || 11;
+    setAlineacion(getDefaultFormation(numJugadores));
     setAlineacionRival('');
     setNotasEntrenador('');
     setFechaHora(new Date());
@@ -268,7 +275,7 @@ export default function useMatchSheetForm({
     setSetPieces([]);
     setCompeticion('liga');
     setTorneoId(null);
-  }, []);
+  }, [selectedTeam]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -278,6 +285,13 @@ export default function useMatchSheetForm({
       resetForm();
     }
   }, [initialMatchSheet, loadMatchSheet, resetForm]);
+
+  // Actualizar alineaciÃ³n por defecto si cambia el equipo al crear ficha nueva
+  useEffect(() => {
+    if (!initialMatchSheet && selectedTeam?.jugadoresPorEquipo) {
+      setAlineacion(prev => (!prev || prev === '1-4-4-2' || prev === '1-3-3-1' || prev === '1-3-2-1') ? getDefaultFormation(selectedTeam.jugadoresPorEquipo) : prev);
+    }
+  }, [initialMatchSheet, selectedTeam?.jugadoresPorEquipo]);
 
   // Recalcular jugadores en campo siempre que cambien titulares, cambios o tarjetas rojas
   useEffect(() => {
@@ -294,7 +308,7 @@ export default function useMatchSheetForm({
     setJugadoresExpulsados(rojasIds);
   }, [alineacionTitulares, cambios, tarjetasRojas]);
 
-  // Obtener jugadores disponibles para selección
+  // Obtener jugadores disponibles para selecciÃ³n
   const getAvailablePlayers = useCallback((excludeLists = [], onlyInclude = null) => {
     const excludeIds = excludeLists.flat();
     let available = players;
@@ -316,6 +330,8 @@ export default function useMatchSheetForm({
       jornada: jornada ? Number(jornada) : null,
       golesFavor: isMatchPast ? Number(golesFavor || 0) : (golesFavor !== '' ? Number(golesFavor) : null),
       golesContra: isMatchPast ? Number(golesContra || 0) : (golesContra !== '' ? Number(golesContra) : null),
+      tiempoPorParte: selectedTeam?.tiempoPorParte || 45,
+      jugadoresPorEquipo: selectedTeam?.jugadoresPorEquipo || 11,
       alineacion: normalizeFormation(alineacion),
       alineacionRival: normalizeFormation(alineacionRival),
       notasEntrenador,
@@ -361,7 +377,7 @@ export default function useMatchSheetForm({
       ...(competicion === 'torneo' && torneoId ? { torneoId } : {}),
     };
   }, [
-    rival, rivalId, rivalEscudo, ubicacion, jornada, competicion, torneoId,
+    rival, rivalId, rivalEscudo, ubicacion, jornada, competicion, torneoId, selectedTeam,
     golesFavor, golesContra, alineacion, alineacionRival,
     notasEntrenador, fechaHora, resultado, isMatchPast,
     convocados, noConvocados, alineacionTitulares, alineacionSuplentes,
@@ -425,11 +441,12 @@ export default function useMatchSheetForm({
     // Constantes
     alineaciones: ALINEACIONES_BY_PLAYER_COUNT[selectedTeam?.jugadoresPorEquipo] || ALINEACIONES,
     jugadoresPorEquipo: selectedTeam?.jugadoresPorEquipo || 11,
+    getDefaultFormation,
     ubicaciones,
     jornadaOptions,
     currentLang,
     
-    // Competición/torneo
+    // CompeticiÃ³n/torneo
     competicion,
     setCompeticion,
     torneoId,
@@ -439,7 +456,7 @@ export default function useMatchSheetForm({
     showTorneoModal,
     setShowTorneoModal,
     
-    // Datos básicos
+    // Datos bÃ¡sicos
     rival,
     setRival,
     rivalId,
@@ -493,7 +510,7 @@ export default function useMatchSheetForm({
     golesRival,
     setGolesRival,
     
-    // Estadísticas
+    // EstadÃ­sticas
     posesion,
     setPosesion,
     tiros,
@@ -511,7 +528,7 @@ export default function useMatchSheetForm({
     descuentoSegundoTiempo,
     setDescuentoSegundoTiempo,
     
-    // Alineación visual
+    // AlineaciÃ³n visual
     showVisualLineup,
     setShowVisualLineup,
     lineupPositions,
@@ -551,7 +568,7 @@ export default function useMatchSheetForm({
     incrementGolesContra,
     decrementGolesContra,
     
-    // Métodos
+    // MÃ©todos
     loadMatchSheet,
     resetForm,
     buildMatchSheetData,
