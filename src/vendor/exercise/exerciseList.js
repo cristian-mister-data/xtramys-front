@@ -1607,7 +1607,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     const isTitleSearch = !!filters.titulo?.trim();
     const titleFilter = filters.titulo.trim().toLowerCase();
     const sort = (items) => sortByLocalizedName(items, lang);
+    const demoOnly = (items) => items.filter(ex => !ex.isGlobal);
     if (listFilter === 'global') {
+      if (isDemo) return [];
       if (currentFolderId && !isTitleSearch) return sort(currentFolderExercises);
       return sort(isTitleSearch
         ? globalExercises.filter(e => getLocalizedSortName(e, lang).toLowerCase().includes(titleFilter))
@@ -1615,7 +1617,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
-      [...ejercicios, ...globalExercises].filter(Boolean).forEach((exercise) => {
+      [...ejercicios, ...(isDemo ? [] : globalExercises)].filter(Boolean).forEach((exercise) => {
         const id = getItemId(exercise);
         if (!id) return;
         const prev = favsById.get(String(id));
@@ -1629,17 +1631,17 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return ejercicios.filter(ex => sameId(ex.usuario, idUsuario));
+        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => sameId(ex.usuario, idUsuario));
       }
       if (listFilter === 'club') {
         return ejercicios.filter(ex => ex.visibility === 'CLUB');
       }
-      return mergeById(ejercicios, globalExercises);
+      return isDemo ? demoOnly(ejercicios) : mergeById(ejercicios, globalExercises);
     })();
-    if (currentFolderId && !isTitleSearch) return sort(currentFolderExercises);
+    if (currentFolderId && !isTitleSearch) return sort(isDemo ? demoOnly(currentFolderExercises) : currentFolderExercises);
     if (listFilter === 'club') return sort(base);
     return sort(isTitleSearch ? base : base.filter(ex => !hasFolder(ex)));
-  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang]);
+  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang, isDemo]);
 
   const filteredEjercicios = useMemo(() => {
     if (listFilter === 'global') return displayedExercises;
@@ -1661,11 +1663,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
-    if (listFilter === 'global') return sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario)), lang);
+    if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
     if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
-    return sortByLocalizedName(mergeById(exerciseFolders, globalFolders).filter(f => !f.parentFolder), lang);
-  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang]);
+    return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder && !f.isGlobal), lang);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);
 
   const handleDelete = (exercise) => {
     if (canMutate === false) return;

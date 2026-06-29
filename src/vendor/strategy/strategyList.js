@@ -1505,14 +1505,16 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     const matchesKind = (st) => (st?.kind || 'strategy') === strategyKind;
     const isTitleSearch = Boolean(filters.titulo?.trim());
     const applyPath = (items) => sortByLocalizedName(items.map(withFolderPath), lang);
+    const demoOnly = (items) => items.filter(st => !st.isGlobal);
     if (listFilter === 'global') {
+      if (isDemo) return [];
       if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(matchesKind));
       const rootGlobal = globalStrategies.filter((s) => matchesKind(s) && !hasFolder(s));
       return applyPath(isTitleSearch ? globalStrategies.filter(matchesKind) : rootGlobal);
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
-      [...strategies, ...globalStrategies].filter(matchesKind).forEach((strategy) => {
+      [...strategies, ...(isDemo ? [] : globalStrategies)].filter(matchesKind).forEach((strategy) => {
         const id = strategy._id || strategy.id;
         if (!id) return;
         const prev = favsById.get(String(id));
@@ -1523,21 +1525,21 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
         });
       });
       const favs = Array.from(favsById.values()).filter((st) => st.favorito);
-      if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(e => matchesKind(e) && e.favorito));
+      if (currentFolderId && !isTitleSearch) return applyPath(demoOnly(currentFolderStrategies).filter(e => matchesKind(e) && e.favorito));
       return applyPath(isTitleSearch ? favs : favs.filter(ex => !hasFolder(ex)));
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return strategies.filter(st => matchesKind(st) && sameId(st.usuario, idUsuario));
+        return strategies.filter(st => matchesKind(st) && !st.isGlobal && (isDemo || sameId(st.usuario, idUsuario)));
       }
       if (listFilter === 'club') {
         return strategies.filter(st => matchesKind(st) && st.visibility === 'CLUB');
       }
-      return mergeById(strategies, globalStrategies).filter(matchesKind);
+      return (isDemo ? demoOnly(strategies) : mergeById(strategies, globalStrategies)).filter(matchesKind);
     })();
-    if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(matchesKind));
+    if (currentFolderId && !isTitleSearch) return applyPath((isDemo ? demoOnly(currentFolderStrategies) : currentFolderStrategies).filter(matchesKind));
     return applyPath(isTitleSearch ? base : base.filter((st) => !hasFolder(st)));
-  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind, withFolderPath, lang]);
+  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind, withFolderPath, lang, isDemo]);
 
   const filteredStrategies = useMemo(() => {
     return displayedStrategies.filter((strategy) => {
@@ -1551,11 +1553,11 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
-    if (listFilter === 'global') return sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario)), lang);
+    if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
     if (listFilter === 'club') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB'), lang);
-    return sortByLocalizedName(mergeById(strategyFolders, globalFolders).filter((f) => !f.parentFolder), lang);
-  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario, filters.titulo, lang]);
+    return sortByLocalizedName((isDemo ? strategyFolders : mergeById(strategyFolders, globalFolders)).filter((f) => !f.parentFolder && !f.isGlobal), lang);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario, filters.titulo, lang, isDemo]);
 
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {

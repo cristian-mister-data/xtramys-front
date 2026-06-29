@@ -403,15 +403,21 @@ export default function MyVideos({ canMutate = true } = {}) {
       if (sourceFilter === 'global') {
         loadedFolders = loadedFolders.filter(f => f.isGlobal);
       } else if (sourceFilter === 'mine') {
-        loadedFolders = loadedFolders.filter(f => !f.isGlobal && sameId(f.usuario, user?._id));
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal && (isDemo || sameId(f.usuario, user?._id)));
       } else if (sourceFilter === 'club') {
         loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB');
+      } else if (isDemo) {
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal);
       }
       setFolders(sortByLocalizedName(loadedFolders, lang));
       
       // Cargar videos del nivel actual. Para "all" y "favorites" pedimos los dos
       // orígenes de forma explícita para no depender de cómo mezcle el backend.
       if (sourceFilter === 'global') {
+        if (isDemo) {
+          setVideos([]);
+          return;
+        }
         const videosResult = await listGlobalVideos(folderParam);
         setVideos(videosResult.success ? decorateVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'mine') {
@@ -423,11 +429,13 @@ export default function MyVideos({ canMutate = true } = {}) {
         const videosResult = await apiListVideos(params);
         setVideos(videosResult.success ? decorateVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'favorites') {
-        const [mineResult, clubResult, globalResult] = await Promise.all([
-          apiListVideos(),
-          apiListVideos({ filterType: 'club' }),
-          listGlobalVideos(),
-        ]);
+        const [mineResult, clubResult, globalResult] = isDemo
+          ? [await apiListVideos(), { success: true, videos: [] }, { success: true, videos: [] }]
+          : await Promise.all([
+            apiListVideos(),
+            apiListVideos({ filterType: 'club' }),
+            listGlobalVideos(),
+          ]);
         const mergedVideos = decorateVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
           clubResult.success ? clubResult.videos || [] : [],
@@ -435,11 +443,13 @@ export default function MyVideos({ canMutate = true } = {}) {
         ));
         setVideos(mergedVideos.filter((video) => video.favorito));
       } else {
-        const [mineResult, clubResult, globalResult] = await Promise.all([
-          isSearch ? apiListVideos() : apiListVideos({ folderId: currentFolder || 'root' }),
-          isSearch ? apiListVideos({ filterType: 'club' }) : apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' }),
-          listGlobalVideos(folderParam),
-        ]);
+        const [mineResult, clubResult, globalResult] = isDemo
+          ? [await (isSearch ? apiListVideos() : apiListVideos({ folderId: currentFolder || 'root' })), { success: true, videos: [] }, { success: true, videos: [] }]
+          : await Promise.all([
+            isSearch ? apiListVideos() : apiListVideos({ folderId: currentFolder || 'root' }),
+            isSearch ? apiListVideos({ filterType: 'club' }) : apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' }),
+            listGlobalVideos(folderParam),
+          ]);
         setVideos(decorateVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
           clubResult.success ? clubResult.videos || [] : [],
