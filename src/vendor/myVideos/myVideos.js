@@ -142,6 +142,7 @@ export default function MyVideos({ canMutate = true } = {}) {
   // Source filter: 'all' | 'mine' | 'global' | 'favorites'
   const [sourceFilter, setSourceFilter] = useState('all');
   const [user, setUser] = useState(null);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
 
   // Estado de selección múltiple
   const [selectionMode, setSelectionMode] = useState(false);
@@ -1353,8 +1354,8 @@ export default function MyVideos({ canMutate = true } = {}) {
           { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
           { key: 'all', label: t('myVideos.allVideos') || 'Todos' },
           { key: 'mine', label: t('myVideos.myVideosOnly') || 'Míos' },
-          ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
-          { key: 'global', label: t('myVideos.appVideos') || 'App' },
+          ...(user?.clubId && !isDemo ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
+          ...(!isDemo ? [{ key: 'global', label: t('myVideos.appVideos') || 'App' }] : []),
         ].map(tab => (
           <TouchableOpacity
             key={tab.key}

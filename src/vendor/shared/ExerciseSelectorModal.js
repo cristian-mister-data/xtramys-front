@@ -116,6 +116,8 @@ export default function ExerciseSelectorModal({
   const reduxFolders = useSelector((s) => s.exercise.folders) || [];
   const reduxFoldersFlat = useSelector((s) => s.exercise.foldersFlat) || [];
   const globalExercises = useSelector((s) => s.exercise.globalExercises) || [];
+  const user = useSelector((s) => s.usuario.user);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
 
   // ── States ──
   const [search, setSearch] = useState('');
@@ -738,7 +740,7 @@ export default function ExerciseSelectorModal({
               { key: 'favorites', label: t('common.favorites', 'Favoritos'), icon: 'star' },
               { key: 'all', label: t('exercise.allExercises') },
               { key: 'mine', label: t('exercise.myExercises') },
-              { key: 'global', label: t('exercise.appExercises') },
+              ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises') }] : []),
             ].map((tab) => (
               <TouchableOpacity
                 key={tab.key}

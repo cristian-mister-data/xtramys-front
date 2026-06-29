@@ -1305,6 +1305,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const [viewingExercise, setViewingExercise] = useState(null);
   const idUsuario = user?._id || "";
   const userRole = user?.role || "user";
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const canEditExerciseItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' (admin only) | 'favorites'
   const [viewMode, setViewMode] = useState("list");
@@ -2317,8 +2318,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
             { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('exercise.allExercises') },
             { key: 'mine', label: t('exercise.myExercises') },
-            ...(user?.clubId ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
-            { key: 'global', label: t('exercise.appExercises') },
+            ...(user?.clubId && !isDemo ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
+            ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises') }] : []),
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (

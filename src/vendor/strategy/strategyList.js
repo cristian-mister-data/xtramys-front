@@ -1258,6 +1258,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const canEditStrategyItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
   const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -2254,8 +2255,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
             { key: 'favorites', label: isSetPiece ? t('setPieces.favorites') : (t('common.favorites') || 'Favoritos'), icon: 'star' },
             { key: 'all', label: isSetPiece ? t('setPieces.all') : (t('strategy.allStrategies') || 'Todas') },
             { key: 'mine', label: isSetPiece ? t('setPieces.mine') : (t('strategy.myStrategies') || 'Mías') },
-            ...(user?.clubId ? [{ key: 'club', label: isSetPiece ? t('setPieces.club') : t('club.sharedLibrary', 'Compartido por mi club') }] : []),
-            { key: 'global', label: isSetPiece ? t('setPieces.app') : (t('strategy.appStrategies') || 'App') },
+            ...(user?.clubId && !isDemo ? [{ key: 'club', label: isSetPiece ? t('setPieces.club') : t('club.sharedLibrary', 'Compartido por mi club') }] : []),
+            ...(!isDemo ? [{ key: 'global', label: isSetPiece ? t('setPieces.app') : (t('strategy.appStrategies') || 'App') }] : []),
           ].map(tab => {
             const isActive = listFilter === tab.key;
             return (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import { MdSearch, MdCheck, MdImage, MdStar, MdFolderShared, MdPerson } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
@@ -109,6 +110,8 @@ export default function ExerciseSelectorModal({
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(selectedIds);
   const [sourceFilter, setSourceFilter] = useState('all');
+  const user = useSelector((s) => s.usuario.user);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
 
   useEffect(() => {
     if (open) {
@@ -179,7 +182,7 @@ export default function ExerciseSelectorModal({
           { key: 'all', label: t('common.all', 'Todos'), icon: null },
           { key: 'favorites', label: t('common.favorites', 'Favoritos'), icon: MdStar },
           { key: 'mine', label: t('exercise.mine', 'Mis ejercicios'), icon: MdPerson },
-          { key: 'global', label: t('exercise.appExercises', 'App'), icon: MdFolderShared },
+          ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises', 'App'), icon: MdFolderShared }] : []),
         ].map(({ key, label, icon: Icon }) => (
           <FilterButton
             key={key}
