@@ -65,13 +65,16 @@ const menuItems = [
   },
 ];
 
-const sectionLabels = {
-  4: 'menu.tools',
-  8: 'menu.management',
-  14: 'menu.analysis',
+const getTutorialMenuItems = () => menuItems;
+
+const getSectionLabel = (item) => {
+  if (item.id === 'tacticalBoard') return 'menu.tools';
+  if (item.id === 'methodology') return 'menu.management';
+  if (item.id === 'injuries') return 'menu.analysis';
+  return '';
 };
 
-const tutorialSteps = [
+const buildTutorialSteps = (items) => [
   {
     id: 'welcome',
     type: 'fullscreen',
@@ -88,7 +91,7 @@ const tutorialSteps = [
     titleKey: 'tutorial.drawer.title',
     descriptionKey: 'tutorial.drawer.description',
   },
-  ...menuItems.map((item, menuIndex) => ({
+  ...items.map((item, menuIndex) => ({
     ...item,
     type: 'menu',
     menuIndex,
@@ -104,10 +107,11 @@ const tutorialSteps = [
 
 function useHydratedSteps() {
   const { t } = useTranslation();
+  const items = useMemo(() => getTutorialMenuItems(), []);
 
   return useMemo(
     () =>
-      tutorialSteps.map((step) => {
+      buildTutorialSteps(items).map((step) => {
         const baseKey = `tutorial.steps.${step.id}`;
         return {
           ...step,
@@ -117,13 +121,14 @@ function useHydratedSteps() {
           bullets: step.bullets?.map((key) => t(`${baseKey}.${key}`)) || [],
         };
       }),
-    [t],
+    [t, items],
   );
 }
 
 export default function OnboardingTutorial({ visible, onComplete }) {
   const { t } = useTranslation();
   const steps = useHydratedSteps();
+  const drawerItems = useMemo(() => getTutorialMenuItems(), []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const drawerScrollRef = useRef(null);
   const itemRefs = useRef({});
@@ -190,6 +195,7 @@ export default function OnboardingTutorial({ visible, onComplete }) {
         onSkip={finish}
         drawerScrollRef={drawerScrollRef}
         itemRefs={itemRefs}
+        drawerItems={drawerItems}
       />
     );
 
@@ -284,11 +290,12 @@ function SpotlightStep({
   onSkip,
   drawerScrollRef,
   itemRefs,
+  drawerItems,
 }) {
   return (
     <SpotlightOverlay role="dialog" aria-modal="true" aria-labelledby="tutorial-title" data-theme-aware="true">
       <TutorialScene>
-        <DrawerPreview t={t} step={step} drawerScrollRef={drawerScrollRef} itemRefs={itemRefs} />
+        <DrawerPreview t={t} step={step} drawerScrollRef={drawerScrollRef} itemRefs={itemRefs} items={drawerItems} />
         <PagePreview aria-hidden="true">
           <PageHeader>
             <MdMenu size={24} />
@@ -346,7 +353,7 @@ function SpotlightStep({
   );
 }
 
-function DrawerPreview({ t, step, drawerScrollRef, itemRefs }) {
+function DrawerPreview({ t, step, drawerScrollRef, itemRefs, items }) {
   const highlightIndex = step.type === 'menu' ? step.menuIndex : -1;
   return (
     <DrawerShell $highlightDrawer={step.type === 'drawer'}>
@@ -355,13 +362,14 @@ function DrawerPreview({ t, step, drawerScrollRef, itemRefs }) {
         <span>{t('tutorial.drawer.yourAccount')}</span>
       </DrawerHeader>
       <DrawerScroll ref={drawerScrollRef}>
-        {menuItems.map((item, index) => {
+        {items.map((item, index) => {
           const Icon = item.Icon;
           const active = index === highlightIndex;
+          const sectionLabel = getSectionLabel(item);
           return (
             <MenuFragment key={item.id}>
-              {sectionLabels[index] ? (
-                <SectionDivider>{t(sectionLabels[index])}</SectionDivider>
+              {sectionLabel ? (
+                <SectionDivider>{t(sectionLabel)}</SectionDivider>
               ) : null}
               <DrawerItem
                 ref={(node) => {

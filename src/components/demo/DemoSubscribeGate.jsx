@@ -67,7 +67,7 @@ export default function DemoSubscribeGate({ children }) {
           {t('subscription.requiredToView', 'Tienes que estar suscrito para verlo')}
         </GateTitle>
         <GateDescription>
-          {t('subscription.demoNotice', 'Esta seccion no esta incluida en la demo. Suscribete para desbloquear todo el contenido.')}
+          {t('subscription.demoNotice', 'Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.')}
         </GateDescription>
         <SubscribeButton to="/subscribe">
           {t('subscription.viewSubscription', 'Ver suscripción')}

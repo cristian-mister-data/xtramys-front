@@ -275,10 +275,10 @@ export default function Sidebar({ open, onClose }) {
         }
       ];
     }
-    return getNavSections(t)
+    return getNavSections(t, { isDemo })
       .filter((s) => !s.hiddenInSidebar)
       .filter((section) => section.items.length > 0);
-  }, [t, user?.role]);
+  }, [t, user?.role, isDemo]);
 
   const handleLogout = async () => {
     onClose && onClose();

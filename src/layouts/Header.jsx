@@ -362,7 +362,8 @@ export default function Header({ onMenu, hideSearch = false }) {
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
 
-  const allItems = useMemo(() => getFlatNavItems(t), [t]);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
+  const allItems = useMemo(() => getFlatNavItems(t, { isDemo }), [t, isDemo]);
   const results = useMemo(() => searchNav(allItems, query, 8), [allItems, query]);
 
   // Reset índice activo al cambiar resultados

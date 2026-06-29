@@ -181,25 +181,25 @@ export default function AppRouter() {
         <Route path="/players" element={lazy_(<Players />)} />
         <Route path="/players/:id" element={lazy_(<PlayerProfile />)} />
         <Route path="/exercises/*" element={lazy_(<Exercises />)} />
-        <Route path="/strength-exercises" element={lazy_(<StrengthExercises />)} />
+        <Route path="/strength-exercises" element={lazy_(<DemoSubscribeGate><StrengthExercises /></DemoSubscribeGate>)} />
         <Route path="/strategies/*" element={lazy_(<Strategies />)} />
         <Route path="/set-pieces/*" element={lazy_(<SetPieces />)} />
         <Route path="/training" element={lazy_(<Training />)} />
         <Route path="/my-videos" element={lazy_(<MyVideos />)} />
         <Route path="/video-editor" element={lazy_(<VideoEditor />)} />
-        <Route path="/methodology" element={lazy_(<Methodology />)} />
-        <Route path="/goalkeeper-methodology" element={lazy_(<GoalkeeperMethodology />)} />
+        <Route path="/methodology" element={lazy_(<DemoSubscribeGate><Methodology /></DemoSubscribeGate>)} />
+        <Route path="/goalkeeper-methodology" element={lazy_(<DemoSubscribeGate><GoalkeeperMethodology /></DemoSubscribeGate>)} />
         <Route path="/wellness" element={lazy_(<DemoSubscribeGate><WellnessManagement /></DemoSubscribeGate>)} />
         <Route path="/wellness/templates" element={lazy_(<DemoSubscribeGate><WellnessTemplates /></DemoSubscribeGate>)} />
         <Route path="/rivals" element={lazy_(<Rivals />)} />
         <Route path="/match-sheets" element={lazy_(<MatchSheets />)} />
         <Route path="/injuries" element={lazy_(<Injuries />)} />
         <Route path="/injuries/statistics" element={lazy_(<InjuryStatistics />)} />
-        <Route path="/injury-prevention" element={lazy_(<InjuryPrevention />)} />
+        <Route path="/injury-prevention" element={lazy_(<DemoSubscribeGate><InjuryPrevention /></DemoSubscribeGate>)} />
         <Route path="/rival-analysis/*" element={lazy_(<RivalAnalysis />)} />
         <Route path="/anthropometry" element={lazy_(<Anthropometry />)} />
         <Route path="/statistics" element={lazy_(<Statistics />)} />
-        <Route path="/nutrition" element={lazy_(<Nutrition />)} />
+        <Route path="/nutrition" element={lazy_(<DemoSubscribeGate><Nutrition /></DemoSubscribeGate>)} />
         <Route path="/profile" element={lazy_(<Profile />)} />
         <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
         

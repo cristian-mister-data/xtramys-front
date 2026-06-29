@@ -28,8 +28,8 @@ import {
  * `keywords` se usan SOLO para el buscador (no se muestran).
  * Función para que las traducciones se evalúen en cada render.
  */
-export function getNavSections(t) {
-  return [
+export function getNavSections(t, options = {}) {
+  const sections = [
     {
       items: [
         {
@@ -150,13 +150,15 @@ export function getNavSections(t) {
       hiddenInSidebar: true,
     },
   ];
+
+  return sections;
 }
 
 /**
  * Aplana las secciones a una lista de items para el buscador.
  */
-export function getFlatNavItems(t) {
-  return getNavSections(t).flatMap((s) =>
+export function getFlatNavItems(t, options = {}) {
+  return getNavSections(t, options).flatMap((s) =>
     s.items.map((it) => ({
       ...it,
       section: s.title || '',
