@@ -4,7 +4,7 @@
 import axios from 'axios';
 import i18n from '../i18n';
 import { API_URL, BACKEND_URL, USE_COOKIE_AUTH } from '../config';
-import { loadToken } from '../auth/storage';
+import { loadToken, loadUser } from '../auth/storage';
 
 let _networkErrorHandler = null;
 export const setNetworkErrorHandler = (h) => {
@@ -53,6 +53,7 @@ const GET_CACHE_TTL_MS = Number.POSITIVE_INFINITY;
 const getResponseCache = new Map();
 const getInflight = new Map();
 let getCacheVersion = 0;
+let lastCacheUserKey = '';
 
 const CACHE_BYPASS_ROUTES = [
   '/auth/',
@@ -111,6 +112,48 @@ function clearGetCache() {
   getCacheVersion += 1;
   getResponseCache.clear();
   getInflight.clear();
+}
+
+const DEMO_FORBIDDEN_GET_PREFIXES = [
+  '/tactical-videos',
+  '/media',
+  '/methodology',
+  '/goalkeeper-methodology',
+  '/nutrition',
+  '/wellness-template',
+];
+
+const DEMO_ALLOWED_WRITE_PREFIXES = ['/auth/logout', '/stripe', '/paypal'];
+
+function requestPath(config) {
+  const raw = String(config.url || '');
+  try {
+    return new URL(raw, config.baseURL || API_URL).pathname.replace(/^\/api/, '');
+  } catch {
+    return raw.replace(/^\/api/, '');
+  }
+}
+
+function assertDemoRequestAllowed(config) {
+  const user = loadUser?.();
+  if (user?.plan !== 'demo' && user?.accessMode !== 'demo') return;
+
+  const method = String(config.method || 'get').toLowerCase();
+  const path = requestPath(config);
+  if (method !== 'get') {
+    if (DEMO_ALLOWED_WRITE_PREFIXES.some((prefix) => path.startsWith(prefix))) return;
+    const error = new Error(i18n.t('errors.DEMO_READ_ONLY', 'La demo es de solo lectura.'));
+    error.code = 'DEMO_READ_ONLY';
+    error.status = 403;
+    throw error;
+  }
+
+  if (DEMO_FORBIDDEN_GET_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    const error = new Error(i18n.t('errors.DEMO_FORBIDDEN', 'Esta funcion no esta incluida en la demo.'));
+    error.code = 'DEMO_FORBIDDEN';
+    error.status = 403;
+    throw error;
+  }
 }
 
 function attachGetCache(config) {
@@ -173,6 +216,13 @@ function attachInterceptors(instance) {
   instance.interceptors.request.use(
     (config) => {
       const method = String(config.method || 'get').toLowerCase();
+      const user = loadUser?.();
+      const cacheUserKey = `${user?._id || ''}:${user?.accessMode || user?.plan || ''}`;
+      if (cacheUserKey !== lastCacheUserKey) {
+        lastCacheUserKey = cacheUserKey;
+        clearGetCache();
+      }
+      assertDemoRequestAllowed(config);
       if (!RETRYABLE_METHODS.has(method)) clearGetCache();
 
       // Send token in Authorization header as a fallback/additional option,

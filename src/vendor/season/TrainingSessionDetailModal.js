@@ -762,6 +762,12 @@ export default function TrainingSessionDetailModal({
                                 <Text>{ejercicio.tiempo} min</Text>
                               </Text>
                             )}
+                            {ejercicio.materialNecesario && (
+                              <Text style={styles.exerciseDetailText}>
+                                <Text style={styles.exerciseDetailLabel}>{t('exercise.materialNeeded')}: </Text>
+                                <Text>{i18n.language === 'en' && ejercicio.translations?.en?.materialNecesario ? ejercicio.translations.en.materialNecesario : ejercicio.materialNecesario}</Text>
+                              </Text>
+                            )}
                           </View>
                           
                           {/* Observación específica de la sesión */}
@@ -785,23 +791,37 @@ export default function TrainingSessionDetailModal({
                                 </Text>
                               </View>
                               <View style={styles.teamsGrid}>
-                                {teamAssignments.filter(team => team.teamNumber === 0 && (team.comodines || 0) > 0).map((team, teamIdx) => (
-                                  <View key={`comodines-${teamIdx}`} style={styles.teamBox}>
-                                    <View style={[styles.teamBoxHeader, { backgroundColor: '#0f766e' }]}>
-                                      <Text style={styles.teamBoxTitle}>
-                                        {t('session.comodines', 'Comodines')}
-                                      </Text>
-                                      <Text style={styles.teamBoxCount}>
-                                        {team.comodines || 0}
-                                      </Text>
+                                {teamAssignments.filter(team => team.teamNumber === 0 && ((team.comodines || 0) > 0 || team.players?.length > 0 || team.extraPlayers?.length > 0)).map((team, teamIdx) => {
+                                  const teamPlayers = (team.players || []).map(id => getPlayerName(id)).filter(n => n);
+                                  const teamExtras = (team.extraPlayers || []).map(id => getPlayerName(id)).filter(n => n);
+                                  const allNames = [...teamPlayers, ...teamExtras];
+                                  const totalCount = allNames.length + (team.comodines || 0);
+                                  
+                                  return (
+                                    <View key={`comodines-${teamIdx}`} style={styles.teamBox}>
+                                      <View style={[styles.teamBoxHeader, { backgroundColor: '#0f766e' }]}>
+                                        <Text style={styles.teamBoxTitle}>
+                                          {t('session.comodines', 'Comodines')}
+                                        </Text>
+                                        <Text style={styles.teamBoxCount}>
+                                          {totalCount}
+                                        </Text>
+                                      </View>
+                                      <View style={styles.teamBoxPlayers}>
+                                        {allNames.map((name, nameIdx) => (
+                                          <Text key={nameIdx} style={styles.teamPlayerName}>
+                                            • {name}
+                                          </Text>
+                                        ))}
+                                        {(team.comodines || 0) > 0 && (
+                                          <Text style={styles.teamPlayerName}>
+                                            • {t('session.comodines', 'Comodines')}: {team.comodines}
+                                          </Text>
+                                        )}
+                                      </View>
                                     </View>
-                                    <View style={styles.teamBoxPlayers}>
-                                      <Text style={styles.teamPlayerName}>
-                                        • {t('session.comodines', 'Comodines')}: {team.comodines || 0}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                ))}
+                                  );
+                                })}
                                 {teamAssignments.filter(team => team.teamNumber > 0).map((team, teamIdx) => {
                                   const teamPlayers = (team.players || []).map(id => getPlayerName(id)).filter(n => n);
                                   // extraPlayers almacena IDs de jugadores extras (ObjectId ref a Player)

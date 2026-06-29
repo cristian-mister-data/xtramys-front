@@ -86,6 +86,16 @@ const mergeById = (...groups) => {
   });
   return Array.from(map.values());
 };
+const getLocalizedSortName = (item, lang) => (
+  (String(lang).startsWith('en') && item?.translations?.en?.nombre) || item?.nombre || ''
+).trim();
+const sortByLocalizedName = (items, lang) => [...items].sort((a, b) =>
+  getLocalizedSortName(a, lang).localeCompare(
+    getLocalizedSortName(b, lang),
+    String(lang).startsWith('en') ? 'en' : 'es',
+    { sensitivity: 'base', numeric: true },
+  )
+);
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
@@ -1594,11 +1604,13 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const displayedExercises = useMemo(() => {
     const hasFolder = (ex) => ex.folder !== null && ex.folder !== undefined && ex.folder !== '';
     const isTitleSearch = !!filters.titulo?.trim();
+    const titleFilter = filters.titulo.trim().toLowerCase();
+    const sort = (items) => sortByLocalizedName(items, lang);
     if (listFilter === 'global') {
-      if (currentFolderId && !isTitleSearch) return currentFolderExercises;
-      return isTitleSearch 
-        ? globalExercises.filter(e => e.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
-        : globalExercises.filter(e => !hasFolder(e));
+      if (currentFolderId && !isTitleSearch) return sort(currentFolderExercises);
+      return sort(isTitleSearch
+        ? globalExercises.filter(e => getLocalizedSortName(e, lang).toLowerCase().includes(titleFilter))
+        : globalExercises.filter(e => !hasFolder(e)));
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
@@ -1612,7 +1624,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
           favorito: Boolean(prev?.favorito || exercise.favorito),
         });
       });
-      return Array.from(favsById.values()).filter((exercise) => exercise.favorito);
+      return sort(Array.from(favsById.values()).filter((exercise) => exercise.favorito));
     }
     const base = (() => {
       if (listFilter === 'mine') {
@@ -1623,16 +1635,16 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       }
       return mergeById(ejercicios, globalExercises);
     })();
-    if (currentFolderId && !isTitleSearch) return currentFolderExercises;
-    if (listFilter === 'club') return base;
-    return isTitleSearch ? base : base.filter(ex => !hasFolder(ex));
-  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo]);
+    if (currentFolderId && !isTitleSearch) return sort(currentFolderExercises);
+    if (listFilter === 'club') return sort(base);
+    return sort(isTitleSearch ? base : base.filter(ex => !hasFolder(ex)));
+  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang]);
 
   const filteredEjercicios = useMemo(() => {
     if (listFilter === 'global') return displayedExercises;
     return displayedExercises.filter(exercise => {
       const tituloMatch = !filters.titulo ||
-        exercise.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
+        getLocalizedSortName(exercise, lang).toLowerCase().includes(filters.titulo.toLowerCase());
 
       const jugadoresMatch = !filters.numeroJugadores ||
         (exercise.numeroJugadores && exercise.numeroJugadores.toString().includes(filters.numeroJugadores));
@@ -1642,17 +1654,17 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
       return tituloMatch && jugadoresMatch && equiposMatch;
     });
-  }, [displayedExercises, listFilter, filters.titulo, filters.numeroJugadores, filters.equipos]);
+  }, [displayedExercises, listFilter, filters.titulo, filters.numeroJugadores, filters.equipos, lang]);
 
   const displayedSubfolders = useMemo(() => {
     if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
-    if (currentFolderId) return currentFolderSubfolders;
-    if (listFilter === 'global') return globalFolders.filter(f => !f.parentFolder);
-    if (listFilter === 'mine') return exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario));
-    if (listFilter === 'club') return exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB');
-    return mergeById(exerciseFolders, globalFolders).filter(f => !f.parentFolder);
-  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo]);
+    if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
+    if (listFilter === 'global') return sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && sameId(f.usuario, idUsuario)), lang);
+    if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
+    return sortByLocalizedName(mergeById(exerciseFolders, globalFolders).filter(f => !f.parentFolder), lang);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang]);
 
   const handleDelete = (exercise) => {
     if (canMutate === false) return;
@@ -1700,6 +1712,33 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     ).unwrap();
     return duplicated;
   }, [dispatch, buildDuplicateName, i18n.language, t, idUsuario]);
+
+  const handleEditAsNewExercise = useCallback(async (exercise) => {
+    setLoadingData(true);
+    let originalVideos = [];
+    try {
+      if (exercise._id || exercise.id) {
+        originalVideos = await getVideosByExercise(exercise._id || exercise.id);
+      }
+    } catch (err) {
+      console.warn('Error fetching original exercise videos:', err);
+    } finally {
+      setLoadingData(false);
+    }
+
+    const duplicateName = buildDuplicateName(exercise?.nombre || t('exercise.exerciseName'));
+    const cloned = {
+      ...exercise,
+      _id: undefined,
+      id: undefined,
+      nombre: duplicateName,
+      isGlobal: false,
+      usuario: idUsuario,
+      pendingVideoIds: (originalVideos || []).map(v => v._id || v.id).filter(Boolean),
+    };
+    setEditingExercise(cloned);
+    setCreating(true);
+  }, [idUsuario, buildDuplicateName, t]);
 
   const handleEditAssociatedVideo = useCallback(async (video, parentExercise) => {
     try {
@@ -2630,6 +2669,24 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                   </View>
                   <View style={styles.mvActionTextContainer}>
                     <Text style={styles.mvActionTitle}>{t('edition.edit')}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.mvActionOption}
+                  onPress={() => {
+                    const ex = selectedExerciseForOptions;
+                    setOptionsModalVisible(false);
+                    if (ex) handleEditAsNewExercise(ex);
+                  }}
+                >
+                  <View style={[styles.mvActionIcon, { backgroundColor: '#F0FDF4' }]}>
+                    <Feather name="plus-square" size={20} color="#15803D" />
+                  </View>
+                  <View style={styles.mvActionTextContainer}>
+                    <Text style={styles.mvActionTitle}>{t('edition.editAsNew', 'Editar como nuevo')}</Text>
                   </View>
                 </TouchableOpacity>
               )}

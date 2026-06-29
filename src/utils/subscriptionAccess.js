@@ -1,8 +1,13 @@
-export function hasPaidSubscriptionAccess(user, subscriptionStatus) {
+export function hasDemoAccess(user) {
+  return user?.plan === 'demo' || user?.accessMode === 'demo';
+}
+
+export function hasFullAccess(user, subscriptionStatus) {
   if (!user) return false;
   if (user.role === 'admin') return true;
   if (user.role === 'club_admin') return true;
   if (user.clubId && user.clubMemberStatus === 'active') return true;
+  if (user.plan === 'pro' || user.plan === 'club') return true;
 
   const status = subscriptionStatus || user.subscriptionStatus;
   const activeStatuses = new Set(['active', 'trialing']);
@@ -22,6 +27,18 @@ export function hasPaidSubscriptionAccess(user, subscriptionStatus) {
 
   return hasFuturePeriod && cancelledButStillPaid;
 }
+
+export function hasAppAccess(user, subscriptionStatus) {
+  return hasFullAccess(user, subscriptionStatus) || hasDemoAccess(user);
+}
+
+export function getAccessMode(user, subscriptionStatus) {
+  if (hasFullAccess(user, subscriptionStatus)) return 'full';
+  if (hasDemoAccess(user)) return 'demo';
+  return 'none';
+}
+
+export const hasPaidSubscriptionAccess = hasFullAccess;
 
 export function isSubscriptionScheduledToCancel(user, subscriptionStatus) {
   if (!user) return false;

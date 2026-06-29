@@ -255,6 +255,7 @@ export default function TrainingSessionShare() {
 }
 
 function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBase, onMedia }) {
+  const { t, i18n } = useTranslation();
   const id = getId(exercise);
   const detail = exercise.detail || {};
   const videos = exercise.publicVideos || [];
@@ -274,6 +275,10 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
     exercise.tiempo && `${exercise.tiempo} min`,
     !isLast && detail.tiempoDescanso > 0 && `Descanso ${detail.tiempoDescanso} min`,
   ].filter(Boolean);
+
+  const localizedMaterial = i18n.language === 'en' && exercise.translations?.en?.materialNecesario
+    ? exercise.translations.en.materialNecesario
+    : exercise.materialNecesario;
 
   return (
     <article className="exerciseCard">
@@ -298,9 +303,10 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
         </div>
 
         <InfoGrid items={[
-          ['Objetivo', exercise.objetivo],
-          ['Descripcion', exercise.descripcion],
-          ['Observacion', note],
+          [t('exercise.objective', 'Objetivo'), exercise.objetivo],
+          [t('exercise.description', 'Descripcion'), exercise.descripcion],
+          [t('exercise.materialNeeded', 'Material necesario'), localizedMaterial],
+          [t('exercise.observation', 'Observacion'), note],
         ]} />
 
         <TeamAssignments teams={detail.teamAssignments || []} playerById={playerById} />
@@ -366,7 +372,9 @@ function InfoGrid({ items }) {
 }
 
 function TeamAssignments({ teams, playerById }) {
-  const rows = (teams || []).filter((team) => (team.players?.length || team.extraPlayers?.length));
+  const rows = (teams || []).filter((team) => 
+    (team.players?.length || team.extraPlayers?.length || (team.teamNumber === 0 && (team.comodines || 0) > 0))
+  );
   if (!rows.length) return null;
   return (
     <div className="teamsBox">
@@ -376,9 +384,13 @@ function TeamAssignments({ teams, playerById }) {
           const names = [...(team.players || []), ...(team.extraPlayers || [])]
             .map((id) => playerById.get(getId(id)) || `Jugador ${String(getId(id)).slice(-4)}`)
             .filter(Boolean);
+          if (team.teamNumber === 0 && (team.comodines || 0) > 0) {
+            names.push(`Comodines: ${team.comodines}`);
+          }
+          const title = team.teamNumber === 0 ? 'Comodines' : `Equipo ${team.teamNumber}`;
           return (
             <div className="teamCard" key={`${team.teamNumber || i}-${names.join('-')}`}>
-              <strong>Equipo {team.teamNumber || i + 1}</strong>
+              <strong>{title}</strong>
               <p>{names.join(', ')}</p>
             </div>
           );

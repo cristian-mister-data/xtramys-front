@@ -5024,6 +5024,9 @@
     "SUBSCRIPTION_CHECK_ERROR": "Error verifying subscription"
   },
   "subscription": {
+    "requiredToView": "You must be subscribed to view this",
+    "demoNotice": "This section is not included in the demo. Subscribe to unlock all content.",
+    "viewSubscription": "View subscription",
     "title": "Subscription required",
     "plan": "Individual Plan",
     "cancelledBadge": "Cancelled",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,6 +47,7 @@ import AddEventModal from './AddEventModal';
 import EditMatchSheetModal from './EditMatchSheetModal';
 import EditSessionModal from './EditSessionModal';
 import { mergeExercises } from '@/utils/sessionExercises';
+import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -72,6 +73,8 @@ export default function GestionEquipos() {
   const equipos = useSelector(state => state.team.teams);
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const route = useRoute();
+  const addedExerciseFromRouteRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -142,6 +145,27 @@ export default function GestionEquipos() {
   // Estados para modales de edición
   const [editMatchModalVisible, setEditMatchModalVisible] = useState(false);
   const [editSessionModalVisible, setEditSessionModalVisible] = useState(false);
+
+  const handleCreateExerciseFromSession = useCallback(() => {
+    saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise: null, addToTrainingDraft: true });
+    saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
+    navigation.navigate('/exercises');
+  }, [navigation]);
+
+  useEffect(() => {
+    const addExerciseId = route?.params?.addExerciseId;
+    if (!addExerciseId || addedExerciseFromRouteRef.current === addExerciseId) return;
+    const draft = loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { remove: false });
+    if (!draft) return;
+    saveFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { ...draft, addExerciseId });
+    addedExerciseFromRouteRef.current = addExerciseId;
+    if (draft.mode === 'edit') {
+      setSelectedSession(draft.session || null);
+      setEditSessionModalVisible(true);
+    } else {
+      setAddEventModalVisible(true);
+    }
+  }, [route?.params?.addExerciseId]);
 
   // Fetch sanctions when editing a tournament match
   useEffect(() => {
@@ -1971,6 +1995,7 @@ export default function GestionEquipos() {
           team={equipoSeleccionado}
           matchSheets={matchSheets}
           injuries={injuries}
+          onCreateExerciseFromSession={handleCreateExerciseFromSession}
         />
 
         {/* Edit Match Sheet Modal */}
@@ -2011,6 +2036,7 @@ export default function GestionEquipos() {
             setEditSessionModalVisible(false);
             setSelectedSession(null);
           }}
+          onCreateExerciseFromSession={handleCreateExerciseFromSession}
         />
 
         {/* Team Detail Modal */}

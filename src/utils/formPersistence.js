@@ -41,6 +41,7 @@ export function clearFormDraft(key) {
 export const STORAGE_KEYS = {
   STRATEGY_LIST: 'xtramys.strategyList.state',
   EXERCISE_LIST: 'xtramys.exerciseList.state',
+  TRAINING_SESSION_DRAFT: 'xtramys.trainingSession.draft',
   STRATEGY_FORM_DRAFT: 'xtramys.strategyForm.draft',
   EXERCISE_FORM_DRAFT: 'xtramys.exerciseForm.draft',
   FIELD_RESULT: 'xtramys.field.result',

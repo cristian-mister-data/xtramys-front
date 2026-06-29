@@ -169,7 +169,18 @@ async function loadFrameImage(source) {
   };
 }
 
-const yieldToBrowser = () => new Promise((resolve) => setTimeout(resolve, 0));
+const yieldToBrowser = () => new Promise((resolve) => {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    resolve();
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => setTimeout(finish, 0));
+  }
+  setTimeout(finish, 32);
+});
 
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 

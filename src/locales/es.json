@@ -5030,6 +5030,9 @@
     "SUBSCRIPTION_CHECK_ERROR": "Error al verificar la suscripción"
   },
   "subscription": {
+    "requiredToView": "Tienes que estar suscrito para verlo",
+    "demoNotice": "Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.",
+    "viewSubscription": "Ver suscripción",
     "title": "Suscripción requerida",
     "plan": "Plan Individual",
     "cancelledBadge": "Cancelada",

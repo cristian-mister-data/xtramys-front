@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
+import { getAccessMode, hasAppAccess } from '@/utils/subscriptionAccess';
 
 const SUBSCRIBE_PATHS = [
   '/subscribe',
@@ -22,6 +22,41 @@ const GuardFallback = () => (
   <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
 );
 
+const DEMO_ALLOWED_PREFIXES = [
+  '/app',
+  '/season',
+  '/tournaments',
+  '/players',
+  '/training',
+  '/wellness',
+  '/rivals',
+  '/match-sheets',
+  '/injuries',
+  '/rival-analysis',
+  '/anthropometry',
+  '/statistics',
+  '/profile',
+  '/tactical-board',
+  '/exercises',
+  '/strategies',
+  '/set-pieces',
+  '/my-videos',
+  '/strength-exercises',
+  '/methodology',
+  '/goalkeeper-methodology',
+  '/nutrition',
+  '/injury-prevention',
+  '/video-editor',
+  '/subscribe',
+  '/suscripcion',
+  '/payment',
+];
+
+const DEMO_REDIRECT_PREFIXES = [
+  '/season/create',
+  '/wellness/templates',
+];
+
 export default function ProtectedRoute({ children }) {
   const isAuthenticated = useSelector((s) => s.usuario.isAuthenticated);
   const authChecked = useSelector((s) => s.usuario.authChecked);
@@ -41,7 +76,8 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;
   }
 
-  const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
+  const accessMode = getAccessMode(user, subscriptionStatus);
+  const hasAccess = hasAppAccess(user, subscriptionStatus);
 
   if (user?.role === 'club_admin') {
     const allowedPrefixes = [
@@ -59,6 +95,15 @@ export default function ProtectedRoute({ children }) {
     const isAllowed = allowedPrefixes.some((p) => currentPath.startsWith(p)) || currentPath === '/';
     if (!isAllowed) {
       return <Navigate to="/club/dashboard" replace />;
+    }
+  }
+
+  if (accessMode === 'demo') {
+    const currentPath = location.pathname;
+    const isBlocked = DEMO_REDIRECT_PREFIXES.some((p) => currentPath.startsWith(p));
+    const isAllowed = !isBlocked && (DEMO_ALLOWED_PREFIXES.some((p) => currentPath.startsWith(p)) || currentPath === '/');
+    if (!isAllowed) {
+      return <Navigate to="/app" replace />;
     }
   }
 

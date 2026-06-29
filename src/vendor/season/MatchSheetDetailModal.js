@@ -692,29 +692,6 @@ export default function MatchSheetDetailModal({
                   </View>
                 )}
 
-                {matchSheet.alineacionRival && (
-                  <View style={[styles.detailCard, IS_MOBILE && styles.detailCardLineupMobile]}>
-                    <View style={styles.detailCardHeader}>
-                      <Ionicons name="shield-outline" size={18} color={theme.colors.error} />
-                      <Text style={styles.detailCardTitle}>
-                        {matchSheet.rival || t('matchSheet.fields.rival')} ({matchSheet.alineacionRival})
-                      </Text>
-                    </View>
-                    <LineupEditor
-                      players={[]}
-                      convocados={[]}
-                      titulares={[]}
-                      suplentes={[]}
-                      formation={matchSheet.alineacionRival}
-                      readOnly={true}
-                      showPhotos={false}
-                      showNames={true}
-                      onLineupChange={() => {}}
-                      jugadoresPorEquipo={jugadoresPorEquipo}
-                      containerWidth={lineupContainerWidth}
-                    />
-                  </View>
-                )}
 
                 {matchSheet.notasEntrenador && (
                   <View style={styles.detailCard}>

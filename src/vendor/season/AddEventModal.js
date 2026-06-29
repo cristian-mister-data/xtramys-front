@@ -42,6 +42,7 @@ import RivalSelector from '@/vendor/shared/RivalSelector';
 import { PlayerSelectionModal, getPlayerInjuryStatus } from '@/vendor/shared/training';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
+import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -1213,6 +1214,7 @@ export default function AddEventModal({
   injuries = [],
   defaultEventType = null, // 'match', 'session' o null para mostrar selector
   canMutate = true,
+  onCreateExerciseFromSession,
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -1449,6 +1451,43 @@ export default function AddEventModal({
   const [exerciseForVideo, setExerciseForVideo] = useState(null);
   const [exerciseVideoAvailability, setExerciseVideoAvailability] = useState({});
 
+  useEffect(() => {
+    if (!visible) return;
+    const draft = loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { remove: false });
+    const addExerciseId = draft?.addExerciseId;
+    if (!draft || draft.mode !== 'create') return;
+    setEventType('session');
+    if (draft.sessionData) setSessionData(draft.sessionData);
+    setSelectedPlayers(draft.selectedPlayers || []);
+    setExtraPlayers(draft.extraPlayers || []);
+    setExerciseObservations(draft.exerciseObservations || {});
+    setExerciseRestTimes(draft.exerciseRestTimes || {});
+    setExerciseTeamAssignments(draft.exerciseTeamAssignments || {});
+    setSelectedStrengthExercises(draft.selectedStrengthExercises || []);
+    setStrengthExerciseObservations(draft.strengthExerciseObservations || {});
+    setStrengthExerciseRestTimes(draft.strengthExerciseRestTimes || {});
+    setSelectedExercises([...new Set([...(draft.selectedExercises || []), ...(addExerciseId ? [addExerciseId] : [])])]);
+  }, [visible]);
+
+  const createExerciseFromSession = () => {
+    saveFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, {
+      mode: 'create',
+      sessionData,
+      selectedExercises,
+      exerciseObservations,
+      exerciseRestTimes,
+      exerciseTeamAssignments,
+      selectedStrengthExercises,
+      strengthExerciseObservations,
+      strengthExerciseRestTimes,
+      selectedPlayers,
+      extraPlayers,
+      originPath: window.location.pathname,
+    });
+    setShowExerciseSelectorModal(false);
+    onCreateExerciseFromSession?.();
+  };
+
   // Alineaciones disponibles según cantidad de jugadores del equipo
   const jugadoresPorEquipo = team?.jugadoresPorEquipo || 11;
   const alineacionesDisponibles = ALINEACIONES_BY_PLAYER_COUNT[jugadoresPorEquipo] || ALINEACIONES;
@@ -1550,6 +1589,7 @@ export default function AddEventModal({
   // Resetear al abrir
   useEffect(() => {
     if (visible) {
+      if (loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { remove: false })?.mode === 'create') return;
       setEventType(defaultEventType); // Usar defaultEventType si se proporciona
       const date = selectedDate || new Date();
       const hasExplicitTime = selectedDate && (date.getHours() !== 0 || date.getMinutes() !== 0);
@@ -1939,6 +1979,7 @@ export default function AddEventModal({
         jugadoresExtras: extraPlayers.length > 0 ? extraPlayers : [],
         expectedWellness: sessionData.expectedWellness,
       });
+      clearFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT);
       onClose();
     } catch (error) {
       Alert.alert(t('message.error'), t('session.createError'));
@@ -4560,6 +4601,7 @@ export default function AddEventModal({
         }}
         exerciseTypes={exerciseTypes}
         multiSelect={true}
+        onCreateExercise={createExerciseFromSession}
       />
 
       {/* Modal selector de ejercicios de fuerza */}

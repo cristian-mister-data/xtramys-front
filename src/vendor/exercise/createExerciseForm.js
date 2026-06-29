@@ -53,6 +53,7 @@ export default function CreateExerciseForm({
   const [duration, setDuration] = useState(editingExercise ? String(editingExercise.tiempo ?? '') : '');
   const [description, setDescription] = useState(editingExercise ? editingExercise.descripcion || '' : '');
   const [objective, setObjective] = useState(editingExercise ? editingExercise.objetivo || '' : '');
+  const [materialNecesario, setMaterialNecesario] = useState(editingExercise ? editingExercise.materialNecesario || '' : '');
   const [dimensions, setDimensions] = useState(editingExercise ? editingExercise.dimensiones || '' : '');
   const [folderId, setFolderId] = useState(editingExercise?.folder?._id || editingExercise?.folder || '');
   const [folderName, setFolderName] = useState('');
@@ -110,7 +111,7 @@ export default function CreateExerciseForm({
   );
 
   // Estados para videos pendientes de asociar (para nuevos ejercicios)
-  const pendingVideoIds = useRef([]);
+  const pendingVideoIds = useRef(editingExercise?.pendingVideoIds || []);
 
   // Estado para admin: ejercicio global
   const user = useSelector(state => state.usuario.user);
@@ -127,6 +128,7 @@ export default function CreateExerciseForm({
   const [nameEn, setNameEn] = useState(editingExercise?.translations?.en?.nombre || '');
   const [descriptionEn, setDescriptionEn] = useState(editingExercise?.translations?.en?.descripcion || '');
   const [objectiveEn, setObjectiveEn] = useState(editingExercise?.translations?.en?.objetivo || '');
+  const [materialNecesarioEn, setMaterialNecesarioEn] = useState(editingExercise?.translations?.en?.materialNecesario || '');
 
   // Estados para carpeta de ejercicio
   const [showFolderModal, setShowFolderModal] = useState(false);
@@ -192,6 +194,7 @@ export default function CreateExerciseForm({
       if (typeof draft.duration === 'string') setDuration(draft.duration);
       if (typeof draft.description === 'string') setDescription(draft.description);
       if (typeof draft.objective === 'string') setObjective(draft.objective);
+      if (typeof draft.materialNecesario === 'string') setMaterialNecesario(draft.materialNecesario);
       if (typeof draft.dimensions === 'string') setDimensions(draft.dimensions);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
       if (typeof draft.playerNumbers === 'string') setPlayerNumbers(draft.playerNumbers);
@@ -199,6 +202,7 @@ export default function CreateExerciseForm({
       if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
+      if (typeof draft.materialNecesarioEn === 'string') setMaterialNecesarioEn(draft.materialNecesarioEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (typeof draft.visibility === 'string') setVisibility(draft.visibility);
       if (Array.isArray(draft.fieldElements)) setFieldElements(draft.fieldElements);
@@ -233,8 +237,8 @@ export default function CreateExerciseForm({
     saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
       kind: 'exercise',
       editingId,
-      name, duration, description, objective, dimensions, folderId,
-      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
+      name, duration, description, objective, materialNecesario, dimensions, folderId,
+      playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
     });
@@ -278,8 +282,8 @@ export default function CreateExerciseForm({
           saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
             kind: 'exercise',
             editingId,
-            name, duration, description, objective, dimensions, folderId,
-            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, isGlobal,
+            name, duration, description, objective, materialNecesario, dimensions, folderId,
+            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal,
             fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
           });
@@ -344,6 +348,7 @@ export default function CreateExerciseForm({
         tiempo: trimmedDuration,
         descripcion: String(description || ''),
         objetivo: String(objective || ''),
+        materialNecesario: String(materialNecesario || ''),
         dimensiones: dimensions ? String(dimensions) : undefined,
         folder: safeFolderId || undefined,
         numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
@@ -358,7 +363,7 @@ export default function CreateExerciseForm({
         visibility: !isAdmin && userClubId ? visibility : (editingExercise?.visibility || 'PRIVATE'),
         // Traducciones para ejercicios globales
         translations: (isAdmin && isGlobal)
-          ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
+          ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '', materialNecesario: materialNecesarioEn || '' } }
           : undefined,
         // Incluir IDs de videos pendientes para asociar después de crear el ejercicio
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
@@ -590,6 +595,15 @@ export default function CreateExerciseForm({
             onChangeText={setObjective}
             multiline
           />
+          <Text style={styles.inputLabel}>{t('exercise.materialNeeded')}</Text>
+          <TextInput
+            style={[styles.input, styles.textarea]}
+            placeholder={t('exercise.materialNeededPlaceholder')}
+            placeholderTextColor={placeholderColor}
+            value={materialNecesario}
+            onChangeText={setMaterialNecesario}
+            multiline
+          />
         </View>
 
         <View style={styles.formCard}>
@@ -650,6 +664,13 @@ export default function CreateExerciseForm({
               value={descriptionEn}
               onChangeText={setDescriptionEn}
               multiline
+            />
+            <TextInput
+              style={{ backgroundColor: theme?.colors?.inputBg || '#1f2937', borderWidth: 1, borderColor: theme?.colors?.inputBorder || '#334155', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginTop: 8, fontSize: 14, color: theme?.colors?.text || '#e2e8f0' }}
+              placeholder={t('exercise.materialNeededEnglish', 'Required equipment (English)')}
+              placeholderTextColor={placeholderColor}
+              value={materialNecesarioEn}
+              onChangeText={setMaterialNecesarioEn}
             />
           </View>
         )}

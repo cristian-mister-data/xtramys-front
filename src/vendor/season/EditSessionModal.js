@@ -40,6 +40,7 @@ import {
   getSessionExerciseId,
   mergeExercises,
 } from '@/utils/sessionExercises';
+import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -56,6 +57,7 @@ export default function EditSessionModal({
   onClose,
   onSave,
   canMutate = true,
+  onCreateExerciseFromSession,
 }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'es';
@@ -287,6 +289,51 @@ export default function EditSessionModal({
     }
   }, [visible, session]);
 
+  useEffect(() => {
+    if (!visible) return;
+    const draft = loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT);
+    if (!draft || draft.mode !== 'edit') return;
+    const addExerciseId = draft.addExerciseId;
+    if (draft.fecha) setFecha(new Date(draft.fecha));
+    if (draft.horaInicio) setHoraInicio(draft.horaInicio);
+    if (draft.horaFin) setHoraFin(draft.horaFin);
+    setObservaciones(draft.observaciones || '');
+    setSelectedPlayers(draft.selectedPlayers || []);
+    setExtraPlayers(draft.extraPlayers || []);
+    setExerciseObservations(draft.exerciseObservations || {});
+    setExerciseRestTimes(draft.exerciseRestTimes || {});
+    setExerciseTeamAssignments(draft.exerciseTeamAssignments || {});
+    setSelectedStrengthExercises(draft.selectedStrengthExercises || []);
+    setStrengthExerciseObservations(draft.strengthExerciseObservations || {});
+    setStrengthExerciseRestTimes(draft.strengthExerciseRestTimes || {});
+    setExpectedWellness(draft.expectedWellness ?? null);
+    setSelectedExercises([...new Set([...(draft.selectedExercises || []), ...(addExerciseId ? [addExerciseId] : [])])]);
+  }, [visible]);
+
+  const createExerciseFromSession = () => {
+    saveFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, {
+      mode: 'edit',
+      session,
+      fecha,
+      horaInicio,
+      horaFin,
+      observaciones,
+      selectedPlayers,
+      extraPlayers,
+      selectedExercises,
+      exerciseObservations,
+      exerciseRestTimes,
+      exerciseTeamAssignments,
+      selectedStrengthExercises,
+      strengthExerciseObservations,
+      strengthExerciseRestTimes,
+      expectedWellness,
+      originPath: window.location.pathname,
+    });
+    setShowExerciseSelectorModal(false);
+    onCreateExerciseFromSession?.();
+  };
+
   // Formatear fecha
   const formatDate = (date) => {
     if (!date) return '';
@@ -459,6 +506,7 @@ export default function EditSessionModal({
         jugadoresExtras: extraPlayers,
         expectedWellness,
       });
+      clearFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT);
       onClose();
     } catch (error) {
       Alert.alert(t('message.error'), t('session.saveChangesError'));
@@ -1268,6 +1316,7 @@ export default function EditSessionModal({
                 });
               }
             }}
+            onCreateExercise={createExerciseFromSession}
           />
 
           {/* Modal selector de ejercicios de fuerza */}

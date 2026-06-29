@@ -6,6 +6,7 @@ import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
 import LangSubscribe from '@/pages/LangSubscribe';
+import DemoSubscribeGate from '@/components/demo/DemoSubscribeGate';
 
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
@@ -188,8 +189,8 @@ export default function AppRouter() {
         <Route path="/video-editor" element={lazy_(<VideoEditor />)} />
         <Route path="/methodology" element={lazy_(<Methodology />)} />
         <Route path="/goalkeeper-methodology" element={lazy_(<GoalkeeperMethodology />)} />
-        <Route path="/wellness" element={lazy_(<WellnessManagement />)} />
-        <Route path="/wellness/templates" element={lazy_(<WellnessTemplates />)} />
+        <Route path="/wellness" element={lazy_(<DemoSubscribeGate><WellnessManagement /></DemoSubscribeGate>)} />
+        <Route path="/wellness/templates" element={lazy_(<DemoSubscribeGate><WellnessTemplates /></DemoSubscribeGate>)} />
         <Route path="/rivals" element={lazy_(<Rivals />)} />
         <Route path="/match-sheets" element={lazy_(<MatchSheets />)} />
         <Route path="/injuries" element={lazy_(<Injuries />)} />

@@ -21,7 +21,7 @@ import {
   Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchEntrenamientosTemporada,
@@ -57,6 +57,7 @@ import ExerciseSelectorModal from '@/vendor/shared/ExerciseSelectorModal';
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } from '@/data/strengthExercises';
 // NOTE: WellnessDetailModal and PreWellnessDetailModal now used only in TrainingSessionDetailModal
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 
 // Componentes compartidos
 import { PlayerSelectionModal, THEME, getPlayerInjuryStatus } from '@/vendor/shared/training';
@@ -963,6 +964,7 @@ function CategoryPage({ catPageItems, onOpenCategory }) {
 /* ---------------- Componente principal Training ---------------- */
 export default function Training({ canMutate }) {
   const { t, i18n } = useTranslation();
+  const navigation = useNavigation();
   const route = useRoute();
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -1020,6 +1022,7 @@ export default function Training({ canMutate }) {
   const videoOpenedFromModalRef = useRef(null); // 'editar' | 'crear' | null
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const openedSessionFromRouteRef = useRef(null);
+  const addedExerciseFromRouteRef = useRef(null);
   
   // NOTE: Wellness states and functions moved to TrainingSessionDetailModal
   
@@ -1036,6 +1039,21 @@ export default function Training({ canMutate }) {
     setSelectedSession(session);
     setDetailModalVisible(true);
   }, [route?.params?.openSessionId, route?.params?.updatedSession, sesiones]);
+
+  useEffect(() => {
+    const addExerciseId = route?.params?.addExerciseId;
+    if (!addExerciseId || addedExerciseFromRouteRef.current === addExerciseId) return;
+    const draft = loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { remove: false });
+    if (!draft) return;
+    saveFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { ...draft, addExerciseId });
+    addedExerciseFromRouteRef.current = addExerciseId;
+    if (draft.mode === 'edit') {
+      setSelectedSession(draft.session || null);
+      setEditModalVisible(true);
+    } else {
+      setAddEventModalVisible(true);
+    }
+  }, [route?.params?.addExerciseId]);
 
   const handlePlayExerciseVideoMain = async (exercise) => {
     videoOpenedFromModalRef.current = null;
@@ -1428,6 +1446,12 @@ export default function Training({ canMutate }) {
     setDetailModalVisible(false);
     setEditModalVisible(true);
   }
+
+  const handleCreateExerciseFromSession = useCallback(() => {
+    saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise: null, addToTrainingDraft: true });
+    saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
+    navigation.navigate('/exercises');
+  }, [navigation]);
 
   async function handleSaveSession(updatedData) {
     const selectedTeam = equipos.find(e => e.seleccionado === true);
@@ -2400,6 +2424,7 @@ export default function Training({ canMutate }) {
         injuries={injuries}
         defaultEventType="session"
         canMutate={canMutate}
+        onCreateExerciseFromSession={handleCreateExerciseFromSession}
       />
 
       {/* Modal para ver detalles de sesión (igual que en calendario) */}
@@ -2432,6 +2457,7 @@ export default function Training({ canMutate }) {
         }}
         onSave={handleSaveSession}
         canMutate={canMutate}
+        onCreateExerciseFromSession={handleCreateExerciseFromSession}
       />
 
     </View>

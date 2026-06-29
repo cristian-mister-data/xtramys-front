@@ -99,7 +99,7 @@ export default function CreateStrategyForm({
   );
 
   // Estados para videos pendientes de asociar (para nuevas estrategias)
-  const pendingVideoIds = useRef([]);
+  const pendingVideoIds = useRef(editingStrategy?.pendingVideoIds || []);
 
   // Estado para admin: estrategia global
   const [isAdmin, setIsAdmin] = useState(false);

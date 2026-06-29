@@ -5,6 +5,10 @@ import { updateUsuario } from '@/store/slices/user/userThunks';
 
 const TutorialContext = createContext({ openTutorial: () => {} });
 
+function demoTutorialKey(userId) {
+  return `xtramys.demoTutorialCompleto.${userId}`;
+}
+
 export function TutorialProvider({ children }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.usuario?.user);
@@ -19,7 +23,9 @@ export function TutorialProvider({ children }) {
     }
 
     if (autoShownForUserRef.current === user._id) return;
-    if (user.tutorialCompleto) {
+    const isDemo = user.plan === 'demo' || user.accessMode === 'demo';
+    const demoCompleted = isDemo && localStorage.getItem(demoTutorialKey(user._id)) === 'true';
+    if (user.tutorialCompleto || demoCompleted) {
       autoShownForUserRef.current = user._id;
       return;
     }
@@ -39,6 +45,11 @@ export function TutorialProvider({ children }) {
   const completeTutorial = useCallback(async () => {
     setVisible(false);
     if (!user?._id || user.tutorialCompleto) return;
+
+    if (user.plan === 'demo' || user.accessMode === 'demo') {
+      localStorage.setItem(demoTutorialKey(user._id), 'true');
+      return;
+    }
 
     try {
       await dispatch(

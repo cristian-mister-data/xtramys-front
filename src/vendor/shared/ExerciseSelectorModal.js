@@ -100,6 +100,7 @@ export default function ExerciseSelectorModal({
   setSelectedIds,
   multiSelect = true,
   onSelectSingle = null,
+  onCreateExercise = null,
 }) {
   const { t, i18n } = useTranslation();
   const themeSC = useTheme();
@@ -670,6 +671,12 @@ export default function ExerciseSelectorModal({
               />
               {hasActiveFilters > 0 && <Text style={s.filterBtnBadge}>{hasActiveFilters}</Text>}
             </TouchableOpacity>
+            {onCreateExercise && (
+              <TouchableOpacity style={s.createExerciseBtn} onPress={onCreateExercise}>
+                <Ionicons name="add" size={18} color={THEME.onPrimary} />
+                <Text style={s.createExerciseBtnText}>{t('exercise.createExercise')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* ─── FILTROS EXPANDIBLES ─── */}
@@ -1371,6 +1378,17 @@ const makeS = (THEME) =>
     },
     filterBtnActive: { backgroundColor: THEME.primary, borderColor: THEME.primary },
     filterBtnBadge: { fontSize: 10, color: THEME.surface, fontWeight: '700', marginTop: -2 },
+    createExerciseBtn: {
+      height: 42,
+      borderRadius: 12,
+      backgroundColor: THEME.primary,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    createExerciseBtnText: { color: THEME.onPrimary, fontSize: 13, fontWeight: '700' },
 
     // Filters panel
     filtersPanel: {

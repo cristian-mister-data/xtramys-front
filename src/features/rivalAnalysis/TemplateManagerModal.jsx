@@ -21,6 +21,7 @@ import {
   createTemplate,
   createTemplateFromRecommended,
   setTemplateAsDefault,
+  updateTemplate,
   deleteTemplate,
   addQuestionToTemplate,
   updateQuestionInTemplate,
@@ -278,6 +279,11 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
   const [createFromRecommended, setCreateFromRecommended] = useState(true);
   const [creating, setCreating] = useState(false);
 
+  // edit-template-name form
+  const [showEditNameModal, setShowEditNameModal] = useState(false);
+  const [editTemplateNameVal, setEditTemplateNameVal] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
   // question form
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [qText, setQText] = useState('');
@@ -345,6 +351,34 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
       toast.error(err?.message || t('common.error', 'Error'));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleOpenEditName = (template) => {
+    setEditTemplateNameVal(template.name);
+    setShowEditNameModal(true);
+  };
+
+  const handleSaveTemplateName = async () => {
+    if (!editTemplateNameVal.trim()) {
+      toast.error(t('rivalAnalysis.template.nameRequired', 'Introduce un nombre'));
+      return;
+    }
+    setSavingName(true);
+    try {
+      const updated = await dispatch(
+        updateTemplate({
+          id: selectedTemplate._id,
+          data: { name: editTemplateNameVal.trim() },
+        })
+      ).unwrap();
+      setSelectedTemplate(updated);
+      toast.success(t('rivalAnalysis.template.updateSuccess', 'Plantilla actualizada'));
+      setShowEditNameModal(false);
+    } catch (err) {
+      toast.error(err?.message || t('common.error', 'Error'));
+    } finally {
+      setSavingName(false);
     }
   };
 
@@ -535,6 +569,11 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
           </Button>
           <TemplateName>
             {tpl.name}
+            {!tpl.isRecommended && (
+              <Button $variant="ghost" onClick={() => handleOpenEditName(tpl)} style={{ padding: 4 }}>
+                <MdEdit size={16} />
+              </Button>
+            )}
             {tpl.isRecommended && (
               <Badge $tone="rec">
                 <MdStar size={12} />
@@ -670,6 +709,36 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
                 {t('rivalAnalysis.template.fromScratch', 'Empezar desde cero')}
               </label>
             </Stack>
+          </Field>
+        </Stack>
+      </Modal>
+
+      {/* Edit template name */}
+      <Modal
+        open={showEditNameModal}
+        onClose={() => setShowEditNameModal(false)}
+        title={t('rivalAnalysis.template.editNameTitle', 'Editar nombre de la plantilla')}
+        width={FORM_MODAL_WIDTH}
+        footer={
+          <Row $gap={8}>
+            <Button $variant="secondary" onClick={() => setShowEditNameModal(false)} disabled={savingName}>
+              {t('common.cancel', 'Cancelar')}
+            </Button>
+            <Button $variant="primary" onClick={handleSaveTemplateName} disabled={savingName}>
+              {savingName ? t('common.saving', 'Guardando…') : t('common.save', 'Guardar')}
+            </Button>
+          </Row>
+        }
+      >
+        <Stack $gap={12}>
+          <Field>
+            <Label>{t('rivalAnalysis.template.name', 'Nombre')}</Label>
+            <Input
+              value={editTemplateNameVal}
+              onChange={(e) => setEditTemplateNameVal(e.target.value)}
+              placeholder={t('rivalAnalysis.template.namePlaceholder', 'Mi plantilla')}
+              autoFocus
+            />
           </Field>
         </Stack>
       </Modal>

@@ -390,6 +390,7 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     horaInicio, horaFin, duracionLabel,
     teamName: team?.nombre || 'Equipo',
     teamLogo: team?.escudo || null,
+    lang: i18n?.language,
   };
 };
 
@@ -525,6 +526,16 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
           <View style={s.exSection}>
             <Text style={s.exSectionLabel}>{t('session.observation', 'Observación')}</Text>
             <Text style={s.exSectionText}>{detalle.observacion}</Text>
+          </View>
+        )}
+        {Boolean(ejercicio.materialNecesario) && (
+          <View style={s.exSection}>
+            <Text style={s.exSectionLabel}>{t('exercise.materialNeeded', 'Material necesario')}</Text>
+            <Text style={s.exSectionText}>
+              {data.lang?.startsWith('en') && ejercicio.translations?.en?.materialNecesario
+                ? ejercicio.translations.en.materialNecesario
+                : ejercicio.materialNecesario}
+            </Text>
           </View>
         )}
 

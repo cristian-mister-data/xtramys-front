@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
@@ -31,6 +31,7 @@ import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import { fetchEntrenamientosPorEquipo, updateEntrenamiento, deleteEntrenamiento } from '@/store/slices/session/sessionThunks';
 import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import { mergeExercises, getSessionExerciseIds, getEntityId } from '@/utils/sessionExercises';
+import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { fetchTemporadaUsuarioSeleccionada } from '@/store/slices/season/seasonThunks';
 import { fetchMatchSheetsByTeam, updateMatchSheet, deleteMatchSheet } from '@/store/slices/matchSheet/matchSheetThunks';
 import { fetchTournamentsByTeam } from '@/store/slices/tournament/tournamentThunks';
@@ -82,6 +83,8 @@ export default function Home({ navigation: navigationProp }) {
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
   const navigation = navigationProp || navigationFromHook;
+  const route = useRoute();
+  const addedExerciseFromRouteRef = useRef(null);
   const routerNavigate = useNavigate();
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -164,6 +167,25 @@ export default function Home({ navigation: navigationProp }) {
       routerNavigate('/season/create', { replace: true });
     }
   }, [idUsuario, initialSeasonLoaded, seasonLoading, temporada, routerNavigate]);
+
+  const handleCreateExerciseFromSession = useCallback(() => {
+    saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise: null, addToTrainingDraft: true });
+    saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
+    navigation.navigate('/exercises');
+  }, [navigation]);
+
+  useEffect(() => {
+    const addExerciseId = route?.params?.addExerciseId;
+    if (!addExerciseId || addedExerciseFromRouteRef.current === addExerciseId) return;
+    const draft = loadFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { remove: false });
+    if (!draft) return;
+    saveFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT, { ...draft, addExerciseId });
+    addedExerciseFromRouteRef.current = addExerciseId;
+    if (draft.mode === 'edit') {
+      setSelectedSessionForDetail(draft.session || null);
+      setEditSessionModalVisible(true);
+    }
+  }, [route?.params?.addExerciseId]);
 
   // Cargar equipos cuando hay temporada
   useEffect(() => {
@@ -1215,6 +1237,7 @@ export default function Home({ navigation: navigationProp }) {
         setEditSessionModalVisible(false);
         setSelectedSessionForDetail(null);
       }}
+      onCreateExerciseFromSession={handleCreateExerciseFromSession}
     />
 
     <EditMatchSheetModal

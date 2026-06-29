@@ -251,6 +251,7 @@ export default function Sidebar({ open, onClose }) {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.usuario.user);
   const supervising = useSelector((s) => s.usuario.supervising);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const { mode } = useThemeMode();
 
   const sections = useMemo(() => {
@@ -274,7 +275,9 @@ export default function Sidebar({ open, onClose }) {
         }
       ];
     }
-    return getNavSections(t).filter((s) => !s.hiddenInSidebar);
+    return getNavSections(t)
+      .filter((s) => !s.hiddenInSidebar)
+      .filter((section) => section.items.length > 0);
   }, [t, user?.role]);
 
   const handleLogout = async () => {
@@ -330,7 +333,7 @@ export default function Sidebar({ open, onClose }) {
             </Avatar>
             <UserMeta>
               <UserName>{user?.nombre || 'Usuario'}</UserName>
-              <UserHint>{user?.email || ''}</UserHint>
+              <UserHint>{isDemo ? 'Demo' : (user?.correo || user?.email || '')}</UserHint>
             </UserMeta>
           </UserCard>
           {supervising ? (

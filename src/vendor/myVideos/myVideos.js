@@ -73,6 +73,32 @@ const getFavoriteValue = (item) => {
   return false;
 };
 const normalizeVideo = (video) => video ? { ...video, favorito: getFavoriteValue(video) } : video;
+const getLocalizedSortName = (item, lang) => (
+  (String(lang).startsWith('en') && item?.translations?.en?.nombre) || item?.nombre || ''
+).trim();
+const sortByLocalizedName = (items, lang) => [...items].sort((a, b) =>
+  getLocalizedSortName(a, lang).localeCompare(
+    getLocalizedSortName(b, lang),
+    String(lang).startsWith('en') ? 'en' : 'es',
+    { sensitivity: 'base', numeric: true },
+  )
+);
+const getFolderId = (folder) => (typeof folder === 'object' ? (folder?._id || folder?.id) : folder);
+const buildFolderPath = (folder, folderById, lang) => {
+  const names = [];
+  let current = folder;
+  const seen = new Set();
+  while (current) {
+    const id = getItemId(current);
+    if (id && seen.has(String(id))) break;
+    if (id) seen.add(String(id));
+    const name = getLocalizedSortName(current, lang);
+    if (name) names.unshift(name);
+    const parentId = getFolderId(current.parentFolder);
+    current = parentId ? folderById.get(String(parentId)) : null;
+  }
+  return names.join(' / ');
+};
 const canEditClubOwnedItem = (item, user, isAdmin) => {
   if (!item) return false;
   if (isAdmin) return true;
@@ -126,6 +152,7 @@ export default function MyVideos({ canMutate = true } = {}) {
   // Estado para navegación de carpetas
   const [currentFolder, setCurrentFolder] = useState(null);
   const [folderPath, setFolderPath] = useState([]);
+  const [allFoldersFlat, setAllFoldersFlat] = useState([]);
 
   // User role (detectar desde AsyncStorage como en createExerciseForm)
   const [isAdmin, setIsAdmin] = useState(false);
@@ -327,15 +354,48 @@ export default function MyVideos({ canMutate = true } = {}) {
   useFocusEffect(
     useCallback(() => {
       loadContent();
-    }, [currentFolder, sourceFilter])
+    }, [currentFolder, sourceFilter, filter, lang])
   );
 
   const loadContent = async () => {
     try {
       setLoading(true);
+      const isSearch = Boolean(filter.trim());
+      const folderParam = isSearch ? undefined : (currentFolder || 'root');
+      const folderById = new Map();
+      const decorateVideos = (items = []) => normalizeLoadedVideos(items).map((video) => {
+        const folderId = getFolderId(video.folder || video.folderId);
+        if (!folderId) return video;
+        const folder = typeof video.folder === 'object'
+          ? { ...folderById.get(String(folderId)), ...video.folder }
+          : folderById.get(String(folderId));
+        if (!folder) return video;
+        return {
+          ...video,
+          folder,
+          folderPathLabel: buildFolderPath(folder, folderById, lang) || getLocalizedSortName(folder, lang),
+        };
+      });
+
+      try {
+        const flatResult = await getAllVideoFoldersFlat(lang);
+        const flatFolders = flatResult.success ? (flatResult.folders || []) : [];
+        setAllFoldersFlat(flatFolders);
+        flatFolders.forEach((folder) => {
+          const id = getItemId(folder);
+          if (id) folderById.set(String(id), folder);
+        });
+      } catch (error) {
+        allFoldersFlat.forEach((folder) => {
+          const id = getItemId(folder);
+          if (id) folderById.set(String(id), folder);
+        });
+      }
       
       // Cargar carpetas del nivel actual (ya incluye globales desde el backend)
-      const foldersResult = await listVideoFolders(currentFolder || 'null', lang);
+      const foldersResult = isSearch
+        ? { success: true, folders: [] }
+        : await listVideoFolders(currentFolder || 'null', lang);
       let loadedFolders = foldersResult.success ? (foldersResult.folders || []) : [];
       
       // Filtrar por sourceFilter
@@ -346,26 +406,28 @@ export default function MyVideos({ canMutate = true } = {}) {
       } else if (sourceFilter === 'club') {
         loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB');
       }
-      setFolders(loadedFolders);
+      setFolders(sortByLocalizedName(loadedFolders, lang));
       
       // Cargar videos del nivel actual. Para "all" y "favorites" pedimos los dos
       // orígenes de forma explícita para no depender de cómo mezcle el backend.
       if (sourceFilter === 'global') {
-        const videosResult = await listGlobalVideos(currentFolder || 'root');
-        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
+        const videosResult = await listGlobalVideos(folderParam);
+        setVideos(videosResult.success ? decorateVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'mine') {
-        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', filterType: 'mine' });
-        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
+        const params = isSearch ? { filterType: 'mine' } : { folderId: currentFolder || 'root', filterType: 'mine' };
+        const videosResult = await apiListVideos(params);
+        setVideos(videosResult.success ? decorateVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'club') {
-        const videosResult = await apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' });
-        setVideos(videosResult.success ? normalizeLoadedVideos(videosResult.videos || []) : []);
+        const params = isSearch ? { filterType: 'club' } : { folderId: currentFolder || 'root', filterType: 'club' };
+        const videosResult = await apiListVideos(params);
+        setVideos(videosResult.success ? decorateVideos(videosResult.videos || []) : []);
       } else if (sourceFilter === 'favorites') {
         const [mineResult, clubResult, globalResult] = await Promise.all([
           apiListVideos(),
           apiListVideos({ filterType: 'club' }),
           listGlobalVideos(),
         ]);
-        const mergedVideos = normalizeLoadedVideos(mergeVideosById(
+        const mergedVideos = decorateVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
           clubResult.success ? clubResult.videos || [] : [],
           globalResult.success ? globalResult.videos || [] : []
@@ -373,11 +435,11 @@ export default function MyVideos({ canMutate = true } = {}) {
         setVideos(mergedVideos.filter((video) => video.favorito));
       } else {
         const [mineResult, clubResult, globalResult] = await Promise.all([
-          apiListVideos({ folderId: currentFolder || 'root' }),
-          apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' }),
-          listGlobalVideos(currentFolder || 'root'),
+          isSearch ? apiListVideos() : apiListVideos({ folderId: currentFolder || 'root' }),
+          isSearch ? apiListVideos({ filterType: 'club' }) : apiListVideos({ folderId: currentFolder || 'root', filterType: 'club' }),
+          listGlobalVideos(folderParam),
         ]);
-        setVideos(normalizeLoadedVideos(mergeVideosById(
+        setVideos(decorateVideos(mergeVideosById(
           mineResult.success ? mineResult.videos || [] : [],
           clubResult.success ? clubResult.videos || [] : [],
           globalResult.success ? globalResult.videos || [] : []
@@ -712,6 +774,60 @@ export default function MyVideos({ canMutate = true } = {}) {
     }
   };
 
+  const editVideoAsNew = async (video) => {
+    if (canMutate === false) return;
+    try {
+      setIsGenerating(true);
+      setMenuVisible(false);
+      
+      const videoId = video._id || video.id;
+      const lang = i18n.language;
+      const baseName = getLocalizedVideoName(video);
+      const duplicateName = `${baseName.trim()} - ${lang === 'en' ? 'Copy' : 'Copia'}`;
+      
+      const duplicated = await duplicateVideoForEdit(videoId, {
+        lang,
+        nombre: duplicateName,
+      });
+      const editableVideoId = duplicated?.video?.id || duplicated?.video?._id;
+
+      if (!editableVideoId) {
+        throw new Error('No se pudo crear el duplicado para edición');
+      }
+      
+      const result = await getVideoForEdit(editableVideoId);
+      
+      if (result.success && result.video) {
+        const videoData = result.video;
+        
+        // Guardar datos en global para que Field los pueda leer
+        global.editVideoData = {
+          videoId: videoData.id || videoData._id,
+          nombre: videoData.nombre,
+          descripcion: videoData.descripcion,
+          fieldType: videoData.fieldType,
+          keyframes: videoData.keyframes,
+          config: videoData.config,
+          ejercicioId: videoData.ejercicio?._id || videoData.ejercicio || null,
+          estrategiaId: videoData.estrategia?._id || videoData.estrategia || null,
+          folderId: videoData.folder?._id || videoData.folder || null,
+        };
+        
+        showNotification(t('myVideos.cloneToEdit') || 'Duplicado para edición', 'success');
+        
+        // Navegar a la pizarra táctica para editar
+        navigation.navigate('TacticalBoard');
+      } else {
+        showNotification(t('myVideos.couldNotLoadVideo'), 'error');
+      }
+    } catch (error) {
+      console.error('Error cargando video para edición como nuevo:', error);
+      showNotification(t('myVideos.couldNotLoadVideo'), 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Función para editar video - navega a Field con los datos del video
   // Para videos globales y usuario no-admin: duplica primero (consistente con ejercicios)
   const editVideo = async (video) => {
@@ -958,11 +1074,13 @@ export default function MyVideos({ canMutate = true } = {}) {
   // ---- Fin selecci\u00f3n m\u00faltiple ----
 
   const filteredContent = useCallback(() => {
-    const filterLower = filter.toLowerCase();
-    const filteredFolders = sourceFilter === 'favorites' ? [] : folders.filter(f => f.nombre.toLowerCase().includes(filterLower));
-    const filteredVideos = videos.filter(v => v.nombre.toLowerCase().includes(filterLower));
+    const filterLower = filter.trim().toLowerCase();
+    const filteredFolders = (sourceFilter === 'favorites' || filterLower)
+      ? []
+      : sortByLocalizedName(folders.filter(f => getLocalizedSortName(f, lang).toLowerCase().includes(filterLower)), lang);
+    const filteredVideos = sortByLocalizedName(videos.filter(v => getLocalizedSortName(v, lang).toLowerCase().includes(filterLower)), lang);
     return { filteredFolders, filteredVideos };
-  }, [folders, videos, filter, sourceFilter]);
+  }, [folders, videos, filter, sourceFilter, lang]);
 
   const { filteredFolders, filteredVideos } = filteredContent();
 
@@ -1102,6 +1220,12 @@ export default function MyVideos({ canMutate = true } = {}) {
           <Text style={styles.videoDescription} numberOfLines={2}>
             {video.descripcion}
           </Text>
+        )}
+        {video.folderPathLabel && (
+          <View style={styles.videoMeta}>
+            <Feather name="folder" size={12} color={theme.colors.textMuted} />
+            <Text style={styles.videoDate} numberOfLines={1}>{video.folderPathLabel}</Text>
+          </View>
         )}
         <View style={styles.videoMeta}>
           <Feather name="calendar" size={12} color={theme.colors.textMuted} />
@@ -1521,6 +1645,25 @@ export default function MyVideos({ canMutate = true } = {}) {
                     {menuVideo?.isGlobal && !isAdmin
                       ? t('myVideos.editCopySubtitle')
                       : t('myVideos.editSubtitle')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              )}
+
+              {canMutate !== false && (
+              <TouchableOpacity
+                style={styles.actionOption}
+                onPress={() => {
+                  if (menuVideo) editVideoAsNew(menuVideo);
+                }}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#F0FDF4' }]}>
+                  <Feather name="plus-square" size={20} color="#15803D" />
+                </View>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>{t('edition.editAsNew', 'Editar como nuevo')}</Text>
+                  <Text style={styles.actionSubtitle}>
+                    {t('myVideos.editAsNewSubtitle', 'Crea una copia de este video para hacerla tuya y editarla')}
                   </Text>
                 </View>
               </TouchableOpacity>

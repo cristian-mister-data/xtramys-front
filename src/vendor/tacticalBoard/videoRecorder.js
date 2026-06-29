@@ -1425,6 +1425,11 @@ export default function VideoRecorder({
         streamingError = null;
       };
 
+      const waitStreamingChain = (message) => Promise.race([
+        streamingChain,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(message)), 4000)),
+      ]);
+
       const enqueueStreamingFrame = async (frameCapture, frameIndex) => {
         if (!streamingEncoder || streamingError) return;
         streamingBacklog += 1;
@@ -1435,7 +1440,11 @@ export default function VideoRecorder({
           });
 
         if (streamingBacklog >= STREAMING_ENCODE_BACKLOG) {
-          await streamingChain;
+          try {
+            await waitStreamingChain('Streaming WebCodecs bloqueado');
+          } catch (error) {
+            streamingError = error;
+          }
           streamingBacklog = 0;
           if (streamingError) disableStreamingEncoder(streamingError);
         }
@@ -1520,11 +1529,16 @@ export default function VideoRecorder({
       // 5. Finalizar/codificar el vídeo
       await new Promise((resolve) => setTimeout(resolve, 0));
       setGenerationPhase('generationEncoding');
+      await new Promise((resolve) => setTimeout(resolve, 50));
       let outputPath;
       let encodedMime;
 
       if (streamingEncoder) {
-        await streamingChain;
+        try {
+          await waitStreamingChain('Streaming WebCodecs bloqueado al finalizar');
+        } catch (error) {
+          streamingError = error;
+        }
         streamingBacklog = 0;
         if (streamingError) disableStreamingEncoder(streamingError);
       }

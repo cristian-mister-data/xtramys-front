@@ -76,6 +76,32 @@ const mergeById = (...groups) => {
   });
   return Array.from(map.values());
 };
+const getLocalizedSortName = (item, lang) => (
+  (String(lang).startsWith('en') && item?.translations?.en?.nombre) || item?.nombre || ''
+).trim();
+const sortByLocalizedName = (items, lang) => [...items].sort((a, b) =>
+  getLocalizedSortName(a, lang).localeCompare(
+    getLocalizedSortName(b, lang),
+    String(lang).startsWith('en') ? 'en' : 'es',
+    { sensitivity: 'base', numeric: true },
+  )
+);
+const getFolderId = (folder) => (typeof folder === 'object' ? (folder?._id || folder?.id) : folder);
+const buildFolderPath = (folder, folderById, lang) => {
+  const names = [];
+  let current = folder;
+  const seen = new Set();
+  while (current) {
+    const id = getItemId(current);
+    if (id && seen.has(String(id))) break;
+    if (id) seen.add(String(id));
+    const name = getLocalizedSortName(current, lang);
+    if (name) names.unshift(name);
+    const parentId = getFolderId(current.parentFolder);
+    current = parentId ? folderById.get(String(parentId)) : null;
+  }
+  return names.join(' / ');
+};
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
@@ -154,6 +180,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
 
   // Función para obtener el nombre de la carpeta
   const getFolderName = () => {
+    if (strategy.folderPathLabel) return strategy.folderPathLabel;
     if (!strategy.folder) return null;
     if (typeof strategy.folder === 'object') return strategy.folder.nombre;
     return null;
@@ -1449,15 +1476,38 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
   };
 
+  const folderById = useMemo(() => {
+    const map = new Map();
+    mergeById(strategyFoldersFlat, strategyFolders, globalFolders, currentFolderSubfolders).forEach((folder) => {
+      const id = getItemId(folder);
+      if (id) map.set(String(id), folder);
+    });
+    return map;
+  }, [strategyFoldersFlat, strategyFolders, globalFolders, currentFolderSubfolders]);
+
+  const withFolderPath = useCallback((strategy) => {
+    const folderId = getFolderId(strategy?.folder);
+    if (!folderId) return strategy;
+    const folder = typeof strategy.folder === 'object'
+      ? { ...folderById.get(String(folderId)), ...strategy.folder }
+      : folderById.get(String(folderId));
+    if (!folder) return strategy;
+    return {
+      ...strategy,
+      folder,
+      folderPathLabel: buildFolderPath(folder, folderById, lang) || getLocalizedSortName(folder, lang),
+    };
+  }, [folderById, lang]);
+
   const displayedStrategies = useMemo(() => {
     const hasFolder = (st) => st.folder !== null && st.folder !== undefined && st.folder !== '';
     const matchesKind = (st) => (st?.kind || 'strategy') === strategyKind;
+    const isTitleSearch = Boolean(filters.titulo?.trim());
+    const applyPath = (items) => sortByLocalizedName(items.map(withFolderPath), lang);
     if (listFilter === 'global') {
-      if (currentFolderId) return currentFolderStrategies.filter(matchesKind);
+      if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(matchesKind));
       const rootGlobal = globalStrategies.filter((s) => matchesKind(s) && !hasFolder(s));
-      return filters.titulo
-        ? rootGlobal.filter((s) => s.nombre.toLowerCase().includes(filters.titulo.toLowerCase()))
-        : rootGlobal;
+      return applyPath(isTitleSearch ? globalStrategies.filter(matchesKind) : rootGlobal);
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
@@ -1472,7 +1522,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
         });
       });
       const favs = Array.from(favsById.values()).filter((st) => st.favorito);
-      return currentFolderId ? currentFolderStrategies.filter(e => matchesKind(e) && e.favorito) : favs.filter(ex => !hasFolder(ex));
+      if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(e => matchesKind(e) && e.favorito));
+      return applyPath(isTitleSearch ? favs : favs.filter(ex => !hasFolder(ex)));
     }
     const base = (() => {
       if (listFilter === 'mine') {
@@ -1483,26 +1534,27 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       }
       return mergeById(strategies, globalStrategies).filter(matchesKind);
     })();
-    return currentFolderId ? currentFolderStrategies.filter(matchesKind) : base.filter((st) => !hasFolder(st));
-  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind]);
+    if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(matchesKind));
+    return applyPath(isTitleSearch ? base : base.filter((st) => !hasFolder(st)));
+  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind, withFolderPath, lang]);
 
   const filteredStrategies = useMemo(() => {
-    if (listFilter === 'global') return displayedStrategies;
     return displayedStrategies.filter((strategy) => {
       const tituloMatch = !filters.titulo
-        || strategy.nombre.toLowerCase().includes(filters.titulo.toLowerCase());
+        || getLocalizedSortName(strategy, lang).toLowerCase().includes(filters.titulo.toLowerCase());
       return tituloMatch;
     });
-  }, [displayedStrategies, listFilter, filters.titulo]);
+  }, [displayedStrategies, filters.titulo, lang]);
 
   const displayedSubfolders = useMemo(() => {
+    if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
-    if (currentFolderId) return currentFolderSubfolders;
-    if (listFilter === 'global') return globalFolders.filter((f) => !f.parentFolder);
-    if (listFilter === 'mine') return strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario));
-    if (listFilter === 'club') return strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB');
-    return mergeById(strategyFolders, globalFolders).filter((f) => !f.parentFolder);
-  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario]);
+    if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
+    if (listFilter === 'global') return sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && sameId(f.usuario, idUsuario)), lang);
+    if (listFilter === 'club') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB'), lang);
+    return sortByLocalizedName(mergeById(strategyFolders, globalFolders).filter((f) => !f.parentFolder), lang);
+  }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario, filters.titulo, lang]);
 
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {
@@ -1736,6 +1788,33 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     ).unwrap();
     return duplicated;
   }, [dispatch, buildDuplicateName, i18n.language, t]);
+
+  const handleEditAsNewStrategy = useCallback(async (strategy) => {
+    setLoadingData(true);
+    let originalVideos = [];
+    try {
+      if (strategy._id || strategy.id) {
+        originalVideos = await getVideosByStrategy(strategy._id || strategy.id);
+      }
+    } catch (err) {
+      console.warn('Error fetching original strategy videos:', err);
+    } finally {
+      setLoadingData(false);
+    }
+
+    const duplicateName = buildDuplicateName(strategy?.nombre || t('strategy.strategyName'));
+    const cloned = {
+      ...strategy,
+      _id: undefined,
+      id: undefined,
+      nombre: duplicateName,
+      isGlobal: false,
+      usuario: idUsuario,
+      pendingVideoIds: (originalVideos || []).map(v => v._id || v.id).filter(Boolean),
+    };
+    setEditingStrategy(cloned);
+    setCreating(true);
+  }, [idUsuario, buildDuplicateName, t]);
 
   const handleEditAssociatedVideo = useCallback(async (video, parentStrategy) => {
     try {
@@ -2502,6 +2581,24 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
                     <Text style={styles.mvActionTitle}>{t('strategy.copyToMyStrategies')}</Text>
                   </View>
                 </TouchableOpacity>
+                )}
+
+                {canMutate !== false && (
+                  <TouchableOpacity
+                    style={styles.mvActionOption}
+                    onPress={() => {
+                      const st = selectedStrategyForOptions;
+                      setOptionsModalVisible(false);
+                      if (st) handleEditAsNewStrategy(st);
+                    }}
+                  >
+                    <View style={[styles.mvActionIcon, { backgroundColor: '#F0FDF4' }]}>
+                      <Feather name="plus-square" size={20} color="#15803D" />
+                    </View>
+                    <View style={styles.mvActionTextContainer}>
+                      <Text style={styles.mvActionTitle}>{t('edition.editAsNew', 'Editar como nuevo')}</Text>
+                    </View>
+                  </TouchableOpacity>
                 )}
 
                 {canMutate !== false && canEditStrategyItem(selectedStrategyForOptions) && (
