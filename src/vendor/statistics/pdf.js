@@ -223,6 +223,7 @@ const translatePosition = (position, t) => {
     'RW': 'RW', 'RIGHT WINGER': 'RW',
     'ST': 'ST', 'STRIKER': 'ST', 'FORWARD': 'ST',
     'PORTERO': 'GK', 'ARQUERO': 'GK',
+    'LATERAL': 'LB',
     'LATERAL IZQUIERDO': 'LB', 'LATERAL IZQ.': 'LB', 'LATERAL IZQ': 'LB',
     'DEFENSA CENTRAL': 'CB', 'CENTRAL CENTRAL': 'CB',
     'LATERAL DERECHO': 'RB', 'LATERAL DER.': 'RB', 'LATERAL DER': 'RB',
@@ -231,15 +232,42 @@ const translatePosition = (position, t) => {
     'MEDIAPUNTA': 'CAM',
     'MEDIO IZQUIERDO': 'LM', 'MEDIOCAMPO IZQ.': 'LM', 'MEDIOCAMPO IZQ': 'LM',
     'MEDIO DERECHO': 'RM', 'MEDIOCAMPO DER.': 'RM', 'MEDIOCAMPO DER': 'RM',
+    'EXTREMO': 'winger',
+    'WINGER': 'winger',
     'EXTREMO IZQUIERDO': 'LW', 'EXTREMO IZQ.': 'LW', 'EXTREMO IZQ': 'LW',
     'EXTREMO DERECHO': 'RW', 'EXTREMO DER.': 'RW', 'EXTREMO DER': 'RW',
     'DELANTERO CENTRO': 'ST', 'DELANTERO': 'ST', 'PUNTA': 'ST'
   };
   const key = mapping[posUpper] || posUpper;
-  const trans = t ? t(`formations.positions.${key}`) : null;
+  
+  // First try formations.positions.<key>
+  let trans = t ? t(`formations.positions.${key}`) : null;
   if (trans && !trans.startsWith('formations.positions.')) {
     return trans;
   }
+
+  // Fallback to player.positions.<key>
+  const playerPosKeyMap = {
+    'winger': 'winger',
+    'extremo': 'winger',
+    'portero': 'goalkeeper',
+    'gk': 'goalkeeper',
+    'lateral': 'lateral',
+    'central': 'central',
+    'cb': 'central',
+    'centrocampista': 'midfielder',
+    'cm': 'midfielder',
+    'delantero': 'forward',
+    'st': 'forward'
+  };
+  const pk = playerPosKeyMap[key.toLowerCase()];
+  if (pk) {
+    trans = t ? t(`player.positions.${pk}`) : null;
+    if (trans && !trans.startsWith('player.positions.')) {
+      return trans;
+    }
+  }
+
   return position;
 };
 

@@ -1666,7 +1666,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
     if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
     if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
-    return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder && !f.isGlobal), lang);
+    return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);
 
   const handleDelete = (exercise) => {

@@ -36,6 +36,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { translatePosition } from '@/components/player/playerHelpers';
 import { toast } from '@/ui/toast';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 
@@ -1951,7 +1952,7 @@ const Anthropometry = ({ navigation, canMutate }) => {
                               {getPlayerFullName(player)}
                             </Text>
                             {!!player.posicion && (
-                              <Text style={styles.pickerModalItemMeta}>{player.posicion}</Text>
+                              <Text style={styles.pickerModalItemMeta}>{translatePosition(player.posicion, t)}</Text>
                             )}
                           </View>
                           {selectedPlayer === player._id && (

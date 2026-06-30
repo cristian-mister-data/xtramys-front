@@ -1259,6 +1259,28 @@ const getDefaultNeutralPlayerSettings = () => ({
   isNeutral: true,
 });
 
+const DEFAULT_GOALKEEPER_ICON_1_SETTINGS = {
+  color: '#ffffff',
+  size: DEFAULT_PLAYER_ICON_SIZE,
+  shape: 'circle',
+  hasStripes: true,
+  stripeColor: '#dc2626',
+  numberColor: '#111827',
+  isGoalkeeper: true,
+  goalkeeperStripeColor: '#dc2626',
+};
+
+const DEFAULT_GOALKEEPER_ICON_2_SETTINGS = {
+  color: '#2176ff',
+  size: DEFAULT_PLAYER_ICON_SIZE,
+  shape: 'circle',
+  hasStripes: true,
+  stripeColor: '#111827',
+  numberColor: '#ffffff',
+  isGoalkeeper: true,
+  goalkeeperStripeColor: '#111827',
+};
+
 const isNeutralPlayerIcon = (icon) =>
   icon?.type === 'player' && (icon?.isNeutral === true || icon?.id === 'neutral-player');
 
@@ -1289,34 +1311,20 @@ const getInitialIcons = () => [
     id: 'goalkeeper-1',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.goalkeeper', { defaultValue: 'Portero' }),
-    color: '#ffffff',
-    size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
-    shape: 'circle',
-    hasStripes: true,
-    stripeColor: '#dc2626',
-    numberColor: '#111827',
-    isGoalkeeper: true,
-    goalkeeperStripeColor: '#dc2626',
+    ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS,
   },
   {
     id: 'goalkeeper-2',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.goalkeeper', { defaultValue: 'Portero' }),
-    color: '#2176ff',
-    size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
-    shape: 'circle',
-    hasStripes: true,
-    stripeColor: '#111827',
-    numberColor: '#ffffff',
-    isGoalkeeper: true,
-    goalkeeperStripeColor: '#111827',
+    ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS,
   },
   {
     id: 'neutral-player',
     type: 'player',
-    label: i18n.t('tacticalBoard.icons.neutralPlayer', { defaultValue: 'Comodin' }),
+    label: i18n.t('tacticalBoard.icons.neutralPlayer', { defaultValue: 'Comodín' }),
     number: 'N',
     ...getDefaultNeutralPlayerSettings(),
   },
@@ -3329,20 +3337,22 @@ function SettingsPanel({
   // Estados locales para los tama�os de cada jugador (para permitir edici�n libre)
   const [size1, setSize1] = useState((boardSettings?.playerIcon1?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
   const [size2, setSize2] = useState((boardSettings?.playerIcon2?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
-  const [size3, setSize3] = useState((boardSettings?.playerIcon3?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
   const [sizeNeutral, setSizeNeutral] = useState((boardSettings?.playerIcon4?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
   const [sizeTeam, setSizeTeam] = useState((boardSettings?.teamPlayers?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
 
   // Estados para color pickers
   const [colorPicker1Visible, setColorPicker1Visible] = useState(false);
   const [colorPicker2Visible, setColorPicker2Visible] = useState(false);
-  const [colorPicker3Visible, setColorPicker3Visible] = useState(false);
   const [colorPickerNeutralVisible, setColorPickerNeutralVisible] = useState(false);
   const [neutralBgPickerVisible, setNeutralBgPickerVisible] = useState(false);
   const [neutralLetterPickerVisible, setNeutralLetterPickerVisible] = useState(false);
   const [colorPickerTeamVisible, setColorPickerTeamVisible] = useState(false);
+  const [colorPickerGoalkeeperVisible, setColorPickerGoalkeeperVisible] = useState(false);
   const [stripePickerTarget, setStripePickerTarget] = useState(null);
   const [bibPickerTarget, setBibPickerTarget] = useState(null);
+  const isGoalkeeperStripeTarget = stripePickerTarget === 'teamPlayersGoalkeeperStripe';
+  const isPaletteGoalkeeperStripeTarget =
+    stripePickerTarget === 'goalkeeperIcon1' || stripePickerTarget === 'goalkeeperIcon2';
 
   useEffect(() => {
     setSize(standardSize.toString());
@@ -3356,7 +3366,6 @@ function SettingsPanel({
       setDraftPlayersWithNumber(playersWithNumber);
       setSize1((boardSettings.playerIcon1?.size || defaultVal).toString());
       setSize2((boardSettings.playerIcon2?.size || defaultVal).toString());
-      setSize3((boardSettings.playerIcon3?.size || defaultVal).toString());
       setSizeNeutral((boardSettings.playerIcon4?.size || defaultVal).toString());
       setSizeTeam((boardSettings.teamPlayers?.size || defaultVal).toString());
     }
@@ -3374,7 +3383,6 @@ function SettingsPanel({
 
     const validSize1 = size1.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size1) || DEFAULT_PLAYER_ICON_SIZE);
     const validSize2 = size2.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size2) || DEFAULT_PLAYER_ICON_SIZE);
-    const validSize3 = size3.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size3) || DEFAULT_PLAYER_ICON_SIZE);
     const validSizeNeutral =
       sizeNeutral.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(sizeNeutral) || DEFAULT_PLAYER_ICON_SIZE);
     const validSizeTeam =
@@ -3384,14 +3392,14 @@ function SettingsPanel({
       ...draftSettings,
       playerIcon1: { ...draftSettings.playerIcon1, size: validSize1 },
       playerIcon2: { ...draftSettings.playerIcon2, size: validSize2 },
-      playerIcon3: { ...draftSettings.playerIcon3, size: validSize3 },
+      goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS, ...draftSettings.goalkeeperIcon1 },
+      goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS, ...draftSettings.goalkeeperIcon2 },
       playerIcon4: { ...getDefaultNeutralPlayerSettings(), ...draftSettings.playerIcon4, size: validSizeNeutral },
       teamPlayers: { ...draftSettings.teamPlayers, size: validSizeTeam },
     };
 
     setSize1(validSize1.toString());
     setSize2(validSize2.toString());
-    setSize3(validSize3.toString());
     setSizeNeutral(validSizeNeutral.toString());
     setSizeTeam(validSizeTeam.toString());
     setDraftSettings(newSettings);
@@ -3435,8 +3443,8 @@ function SettingsPanel({
       <>
         <View style={[styles.proModalGrid, { marginTop: 8 }]}>
           {[
-            { value: 'circle', label: 'Circulo' },
-            { value: 'jersey', label: 'Camiseta' },
+            { value: 'circle', label: t('tacticalBoard.editPanel.circle') },
+            { value: 'jersey', label: t('tacticalBoard.editPanel.jersey') },
           ].map((shapeOption) => (
             <TouchableOpacity
               key={shapeOption.value}
@@ -3459,7 +3467,7 @@ function SettingsPanel({
           ))}
         </View>
         <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
-          <Text style={styles.proModalSwitchLabel}>Peto</Text>
+          <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
           <Switch
             value={resolvedHasBib}
             onValueChange={(value) => updateBoardIcon(key, { hasBib: value })}
@@ -3479,11 +3487,11 @@ function SettingsPanel({
               ]}
               onPress={() => setBibPickerTarget(key)}
             />
-            <Text style={styles.proModalHint}>Color del peto</Text>
+            <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.bibColor')}</Text>
           </View>
         )}
         <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
-          <Text style={styles.proModalSwitchLabel}>Rayas</Text>
+          <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.stripes')}</Text>
           <Switch
             value={settings.hasStripes === true}
             onValueChange={(value) => updateBoardIcon(key, { hasStripes: value })}
@@ -3503,7 +3511,7 @@ function SettingsPanel({
               ]}
               onPress={() => setStripePickerTarget(key)}
             />
-            <Text style={styles.proModalHint}>Color de rayas</Text>
+            <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.stripeColor')}</Text>
           </View>
         )}
       </>
@@ -3693,7 +3701,84 @@ function SettingsPanel({
                   {renderIconShapeControls('playerIcon2')}
                 </View>
 
-                {/* Jugador 3 */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor:
+                            draftSettings?.goalkeeperIcon1?.color ||
+                            DEFAULT_GOALKEEPER_ICON_1_SETTINGS.color,
+                          borderColor: '#d1d5db',
+                          width: 32,
+                          height: 32,
+                          borderRadius: 16,
+                        },
+                      ]}
+                    />
+                    <Text style={styles.proModalCardTitle}>
+                      {t('tacticalBoard.settings.goalkeeper1')}
+                    </Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <Text style={styles.proModalHint}>
+                      {t('tacticalBoard.settings.goalkeeperStripeColor')}
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor:
+                            draftSettings?.goalkeeperIcon1?.goalkeeperStripeColor ||
+                            draftSettings?.goalkeeperIcon1?.stripeColor ||
+                            DEFAULT_GOALKEEPER_ICON_1_SETTINGS.goalkeeperStripeColor,
+                        },
+                      ]}
+                      onPress={() => setStripePickerTarget('goalkeeperIcon1')}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor:
+                            draftSettings?.goalkeeperIcon2?.color ||
+                            DEFAULT_GOALKEEPER_ICON_2_SETTINGS.color,
+                          width: 32,
+                          height: 32,
+                          borderRadius: 16,
+                        },
+                      ]}
+                    />
+                    <Text style={styles.proModalCardTitle}>
+                      {t('tacticalBoard.settings.goalkeeper2')}
+                    </Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <Text style={styles.proModalHint}>
+                      {t('tacticalBoard.settings.goalkeeperStripeColor')}
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor:
+                            draftSettings?.goalkeeperIcon2?.goalkeeperStripeColor ||
+                            draftSettings?.goalkeeperIcon2?.stripeColor ||
+                            DEFAULT_GOALKEEPER_ICON_2_SETTINGS.goalkeeperStripeColor,
+                        },
+                      ]}
+                      onPress={() => setStripePickerTarget('goalkeeperIcon2')}
+                    />
+                  </View>
+                </View>
+
+                {/* Jugador 3 eliminado de la configuración
                 <View style={styles.proModalCard}>
                   <View style={styles.proModalCardHeader}>
                     <View
@@ -3731,6 +3816,7 @@ function SettingsPanel({
                   </View>
                   {renderIconShapeControls('playerIcon3')}
                 </View>
+                */}
 
                 {/* Comodin */}
                 <View style={styles.proModalCard}>
@@ -3769,7 +3855,9 @@ function SettingsPanel({
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.proModalCardTitle}>Comodin</Text>
+                    <Text style={styles.proModalCardTitle}>
+                      {t('tacticalBoard.settings.neutralPlayer')}
+                    </Text>
                   </View>
                   <View style={styles.proModalRow}>
                     <TouchableOpacity
@@ -3779,7 +3867,7 @@ function SettingsPanel({
                       ]}
                       onPress={() => setColorPickerNeutralVisible(true)}
                     />
-                    <Text style={styles.proModalHint}>Peto</Text>
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.bib')}</Text>
                     <TouchableOpacity
                       style={[
                         styles.proModalColorBtn,
@@ -3787,7 +3875,7 @@ function SettingsPanel({
                       ]}
                       onPress={() => setNeutralBgPickerVisible(true)}
                     />
-                    <Text style={styles.proModalHint}>Fondo</Text>
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.settings.background')}</Text>
                   </View>
                   <View style={styles.proModalRow}>
                     <TouchableOpacity
@@ -3797,14 +3885,14 @@ function SettingsPanel({
                       ]}
                       onPress={() => setNeutralLetterPickerVisible(true)}
                     />
-                    <Text style={styles.proModalHint}>Letra</Text>
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.settings.letter')}</Text>
                     <TextInput
                       style={[styles.proModalInputMobile, { flex: 1 }]}
                       keyboardType="number-pad"
                       autoComplete="off"
                       value={sizeNeutral}
                       onChangeText={setSizeNeutral}
-                      placeholder="Tamano"
+                      placeholder={t('tacticalBoard.settings.size')}
                       placeholderTextColor="#999"
                     />
                   </View>
@@ -3845,6 +3933,58 @@ function SettingsPanel({
                       onChangeText={setSizeTeam}
                       placeholder="Tama�o"
                       placeholderTextColor="#999"
+                    />
+                  </View>
+                  <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
+                    <Text style={styles.proModalSwitchLabel}>
+                      {t('tacticalBoard.teamSettings.differentiateGoalkeeper')}
+                    </Text>
+                    <Switch
+                      value={draftSettings?.teamPlayers?.differentiateGoalkeeper !== false}
+                      onValueChange={(value) =>
+                        setDraftSettings((prev) => ({
+                          ...prev,
+                          teamPlayers: { ...prev.teamPlayers, differentiateGoalkeeper: value },
+                        }))
+                      }
+                      trackColor={{ false: '#ddd', true: '#81b0ff' }}
+                      thumbColor={
+                        draftSettings?.teamPlayers?.differentiateGoalkeeper !== false
+                          ? '#2176ff'
+                          : '#f4f3f4'
+                      }
+                    />
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.settings.goalkeepers')}</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor: draftSettings?.teamPlayers?.goalkeeperColor || '#ff4a4a',
+                          borderColor:
+                            (draftSettings?.teamPlayers?.goalkeeperColor || '#ff4a4a') === '#ffffff'
+                              ? '#ccc'
+                              : '#e0e0e0',
+                        },
+                      ]}
+                      onPress={() => setColorPickerGoalkeeperVisible(true)}
+                    />
+                    <Text style={styles.proModalHint}>
+                      {t('tacticalBoard.settings.goalkeeperStripeColor')}
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor: draftSettings?.teamPlayers?.goalkeeperStripeColor || '#ffffff',
+                          borderColor:
+                            (draftSettings?.teamPlayers?.goalkeeperStripeColor || '#ffffff') === '#ffffff'
+                              ? '#ccc'
+                              : '#e0e0e0',
+                        },
+                      ]}
+                      onPress={() => setStripePickerTarget('teamPlayersGoalkeeperStripe')}
                     />
                   </View>
                   {renderIconShapeControls('teamPlayers')}
@@ -3911,17 +4051,6 @@ function SettingsPanel({
               }
             />
             <MiniColorPickerModal
-              visible={colorPicker3Visible}
-              initialColor={draftSettings?.playerIcon3?.color || '#ffa600'}
-              onClose={() => setColorPicker3Visible(false)}
-              onSelect={(c) =>
-                setDraftSettings((prev) => ({
-                  ...prev,
-                  playerIcon3: { ...prev.playerIcon3, color: c },
-                }))
-              }
-            />
-            <MiniColorPickerModal
               visible={colorPickerNeutralVisible}
               initialColor={draftSettings?.playerIcon4?.color || NEUTRAL_PLAYER_COLORS.bib}
               onClose={() => setColorPickerNeutralVisible(false)}
@@ -3966,10 +4095,47 @@ function SettingsPanel({
               }
             />
             <MiniColorPickerModal
+              visible={colorPickerGoalkeeperVisible}
+              initialColor={draftSettings?.teamPlayers?.goalkeeperColor || '#ff4a4a'}
+              onClose={() => setColorPickerGoalkeeperVisible(false)}
+              onSelect={(c) =>
+                setDraftSettings((prev) => ({
+                  ...prev,
+                  teamPlayers: { ...prev.teamPlayers, goalkeeperColor: c },
+                }))
+              }
+            />
+            <MiniColorPickerModal
               visible={!!stripePickerTarget}
-              initialColor={draftSettings?.[stripePickerTarget]?.stripeColor || '#ffffff'}
+              initialColor={
+                isGoalkeeperStripeTarget
+                  ? draftSettings?.teamPlayers?.goalkeeperStripeColor || '#ffffff'
+                  : isPaletteGoalkeeperStripeTarget
+                    ? draftSettings?.[stripePickerTarget]?.goalkeeperStripeColor ||
+                      draftSettings?.[stripePickerTarget]?.stripeColor ||
+                      '#ffffff'
+                    : draftSettings?.[stripePickerTarget]?.stripeColor || '#ffffff'
+              }
               onClose={() => setStripePickerTarget(null)}
-              onSelect={(c) => stripePickerTarget && updateBoardIcon(stripePickerTarget, { stripeColor: c })}
+              onSelect={(c) => {
+                if (isGoalkeeperStripeTarget) {
+                  setDraftSettings((prev) => ({
+                    ...prev,
+                    teamPlayers: { ...prev.teamPlayers, goalkeeperStripeColor: c },
+                  }));
+                  return;
+                }
+                if (isPaletteGoalkeeperStripeTarget) {
+                  updateBoardIcon(stripePickerTarget, {
+                    stripeColor: c,
+                    goalkeeperStripeColor: c,
+                    hasStripes: true,
+                    isGoalkeeper: true,
+                  });
+                  return;
+                }
+                if (stripePickerTarget) updateBoardIcon(stripePickerTarget, { stripeColor: c });
+              }}
             />
             <MiniColorPickerModal
               visible={!!bibPickerTarget}
@@ -4308,7 +4474,7 @@ function LeftEditPanel({
                 <>
                   <View style={styles.proModalRow}>
                     <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                      Fondo
+                      {t('tacticalBoard.settings.background')}
                     </Text>
                     <TouchableOpacity
                       style={[
@@ -4480,7 +4646,7 @@ function LeftEditPanel({
                   </View>
 
                   <View style={[styles.proModalSwitch, { marginTop: 10 }]}>
-                    <Text style={styles.proModalSwitchLabel}>Peto</Text>
+                    <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
                     <Switch
                       value={hasBib}
                       onValueChange={setHasBib}
@@ -4493,7 +4659,7 @@ function LeftEditPanel({
                     <>
                       <View style={[styles.proModalRow, { marginTop: 8 }]}>
                         <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                          Color del peto
+                          {t('tacticalBoard.editPanel.bibColor')}
                         </Text>
                         <TouchableOpacity
                           style={[
@@ -5231,7 +5397,12 @@ function LeftEditPanel({
                     hasStripes: icon.type === 'player' ? hasStripes : icon.hasStripes,
                     hasBib: icon.type === 'player' ? hasBib : icon.hasBib,
                     bibColor: icon.type === 'player' ? bibColor : icon.bibColor,
-                    stripeColor: icon.type === 'player' ? stripeColor : icon.stripeColor,
+                    stripeColor:
+                      icon.type === 'player'
+                        ? isGoalkeeper
+                          ? goalkeeperStripeColor
+                          : stripeColor
+                        : icon.stripeColor,
                     // Nuevas propiedades para tipo de lnea y relleno
                     lineType: canHaveLineType ? localLineType : icon.lineType,
                     fillColor: canHaveFill ? fillColor : icon.fillColor,
@@ -7057,12 +7228,10 @@ function renderIconCanvas(
 
   // Determinar qu mostrar: displayLabel (posicin) o number
   const displayText = displayLabel !== undefined ? displayLabel : isNeutral ? 'N' : number;
-  const drawPlayerVerticalStripes = hasPlayerStripes;
   const drawGoalkeeperVerticalStripes =
-    isGoalkeeper && differentiateGoalkeeper && isJersey && !hasPlayerStripes;
-  const drawGoalkeeperHorizontalStripes = isGoalkeeper && differentiateGoalkeeper && !isJersey;
+    isGoalkeeper && differentiateGoalkeeper;
+  const drawPlayerVerticalStripes = hasPlayerStripes && !drawGoalkeeperVerticalStripes;
   const drawVerticalStripes = drawPlayerVerticalStripes || drawGoalkeeperVerticalStripes;
-  const drawGoalkeeperHorizontal = drawGoalkeeperHorizontalStripes;
   const verticalStripeColor = drawPlayerVerticalStripes
     ? playerStripeColor
     : goalkeeperStripeColor || '#ffffff';
@@ -7208,23 +7377,6 @@ function renderIconCanvas(
                   ))}
                 </>
               )}
-              {drawGoalkeeperHorizontal && (
-                <>
-                  {[0.1, 0.35, 0.6, 0.85].map((factor) => (
-                    <Rect
-                      key={factor}
-                      x={0}
-                      y={size * factor}
-                      width={size}
-                      height={2}
-                      fill={goalkeeperStripeColorValue}
-                      opacity={0.85}
-                      clipPath={`url(#${clipId})`}
-                    />
-                  ))}
-                </>
-              )}
-
               {/* 3. Bib (Peto) on top of the base body and stripes */}
               {hasBib && (
                 isJersey ? (
@@ -7334,53 +7486,23 @@ function renderIconCanvas(
               resizeMode="cover"
             />
           )}
-          {/* Rayas horizontales para portero (solo si no hay foto) */}
+          {/* Rayas verticales para portero (solo si no hay foto) */}
           {showGoalkeeperStripes && !shouldShowPhoto && (
             <>
-              <View
-                style={{
-                  position: 'absolute',
-                  top: size * 0.1,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  backgroundColor: goalkeeperStripeColorValue,
-                  opacity: 0.85,
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  top: size * 0.35,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  backgroundColor: goalkeeperStripeColorValue,
-                  opacity: 0.85,
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  top: size * 0.6,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  backgroundColor: goalkeeperStripeColorValue,
-                  opacity: 0.85,
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  top: size * 0.85,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  backgroundColor: goalkeeperStripeColorValue,
-                  opacity: 0.85,
-                }}
-              />
+              {[-0.22, 0, 0.22].map((offset) => (
+                <View
+                  key={`goalkeeper-stripe-${offset}`}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: halfSize + size * offset - Math.max(2, size * 0.06) / 2,
+                    width: Math.max(2, size * 0.12),
+                    backgroundColor: goalkeeperStripeColorValue,
+                    opacity: 0.9,
+                  }}
+                />
+              ))}
             </>
           )}
           {/* N�mero/posici�n solo si no hay foto */}
@@ -8539,7 +8661,11 @@ const DraggableIcon = React.memo(
                             icon.playerData?.demarcacion === 'POR'
                       }
                       differentiateGoalkeeper={differentiateGoalkeeper}
-                      goalkeeperStripeColor={icon.goalkeeperStripeColor || goalkeeperStripeColor}
+                      goalkeeperStripeColor={
+                        icon.playerData
+                          ? goalkeeperStripeColor
+                          : icon.goalkeeperStripeColor || goalkeeperStripeColor
+                      }
                       showPhotos={(showPhotos || icon.showPhotos) && icon.playerData}
                       photoUrl={icon.photoUrl || cdnUrl(icon.playerData?.foto || '')}
                     />
@@ -8702,6 +8828,17 @@ function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
 const BOARD_OBJECT_HIT_TOLERANCE = 8;
 const SHAPE_BORDER_HIT_TOLERANCE = 6;
 const ALLOW_MULTI_ELEMENT_DRAG = true;
+
+function hasVisibleFill(fillColor) {
+  return Boolean(fillColor && fillColor !== 'transparent');
+}
+
+function isPointInsideEllipse(pointX, pointY, centerX, centerY, rx, ry) {
+  if (!Number.isFinite(rx) || rx <= 0 || !Number.isFinite(ry) || ry <= 0) return false;
+  const nx = (pointX - centerX) / rx;
+  const ny = (pointY - centerY) / ry;
+  return nx * nx + ny * ny <= 1;
+}
 
 function distanceToBoardSegment(pointX, pointY, startX, startY, endX, endY) {
   const segmentX = endX - startX;
@@ -8994,7 +9131,10 @@ function isPointOnBoardClone(
     const centerY = (firstPoint.y + secondPoint.y) / 2;
     const rx = Math.abs(secondPoint.x - firstPoint.x) / 2;
     const ry = Math.abs(secondPoint.y - firstPoint.y) / 2;
-    return isEllipseBorderTouch(pointX, pointY, centerX, centerY, rx, ry, tolerance);
+    return (
+      isPointInsideEllipse(pointX, pointY, centerX, centerY, rx, ry) ||
+      isEllipseBorderTouch(pointX, pointY, centerX, centerY, rx, ry, tolerance)
+    );
   }
 
   if (clone.type === 'rectangle' && clone.points?.length === 2) {
@@ -10701,8 +10841,6 @@ const MemoizedCircleSvg = React.memo(
           strokeWidth={thickness}
           fill={progress >= 1 && fillColor && fillColor !== 'transparent' ? `${fillColor}99` : 'transparent'}
           strokeDasharray={dashArray}
-          rotation="-90"
-          origin={`${centerX}, ${centerY}`}
         />
         {showDimensions && (
           <G>
@@ -11436,13 +11574,16 @@ const MemoizedCircleDetector = React.memo(
       if (saveClonesHistory) saveClonesHistory();
     };
 
-    const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
+    const isCircleResponderHit = (e, offsetX = 0, offsetY = 0) => {
       const point = getResponderLocalPoint(e, offsetX, offsetY);
+      const centerLocalX = touchMargin + rx;
+      const centerLocalY = touchMargin + ry;
+      if (isPointInsideEllipse(point.x, point.y, centerLocalX, centerLocalY, rx, ry)) return true;
       return isEllipseBorderTouch(
         point.x,
         point.y,
-        touchMargin + rx,
-        touchMargin + ry,
+        centerLocalX,
+        centerLocalY,
         rx,
         ry,
         touchTolerance,
@@ -11451,8 +11592,8 @@ const MemoizedCircleDetector = React.memo(
 
     // Props comunes de responder
     const responderProps = {
-      onStartShouldSetResponder: (e) => isBorderResponderHit(e),
-      onMoveShouldSetResponder: (e) => canDrag && isBorderResponderHit(e),
+      onStartShouldSetResponder: (e) => isCircleResponderHit(e),
+      onMoveShouldSetResponder: (e) => canDrag && isCircleResponderHit(e),
       onResponderGrant: handleResponderGrant,
       onResponderMove: handleResponderMove,
       onResponderRelease: handleResponderRelease,
@@ -11491,9 +11632,9 @@ const MemoizedCircleDetector = React.memo(
             }}
             {...{
               ...responderProps,
-              onStartShouldSetResponder: (e) => isBorderResponderHit(e, segmentLeft, segmentTop),
+              onStartShouldSetResponder: (e) => isCircleResponderHit(e, segmentLeft, segmentTop),
               onMoveShouldSetResponder: (e) =>
-                canDrag && isBorderResponderHit(e, segmentLeft, segmentTop),
+                canDrag && isCircleResponderHit(e, segmentLeft, segmentTop),
             }}
           />,
         );
@@ -11519,6 +11660,19 @@ const MemoizedCircleDetector = React.memo(
         {generateTouchSegments()}
 
         {/* Resize handles en los puntos cardinales del c�rculo */}
+        <View
+          pointerEvents="auto"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: touchWidth,
+            height: touchHeight,
+            backgroundColor: 'transparent',
+          }}
+          {...responderProps}
+        />
+
         {selectedCloneId === icon.id && !multiSelectMode && (
           <>
             {[
@@ -11697,6 +11851,7 @@ const MemoizedRectangleDetector = React.memo(
     const centerY = minY + height / 2;
 
     const isSelected = selectedCloneIdsSet?.has(icon.id);
+    const hasFill = hasVisibleFill(icon.fillColor);
     const canDrag =
       !icon.locked &&
       !isAnyDrawingMode &&
@@ -11908,6 +12063,31 @@ const MemoizedRectangleDetector = React.memo(
       backgroundColor: 'transparent',
     };
 
+    const isRectangleResponderHit = (e, offsetX = 0, offsetY = 0) => {
+      const point = getResponderLocalPoint(e, offsetX, offsetY);
+      const rectX = touchTolerance;
+      const rectY = touchTolerance;
+      if (
+        hasFill &&
+        point.x >= rectX &&
+        point.x <= rectX + width &&
+        point.y >= rectY &&
+        point.y <= rectY + height
+      ) {
+        return true;
+      }
+      return isRectangleBorderTouch(point.x, point.y, rectX, rectY, width, height, touchTolerance);
+    };
+
+    const rectangleResponderProps = {
+      onStartShouldSetResponder: (e) => isRectangleResponderHit(e),
+      onMoveShouldSetResponder: (e) => canDrag && isRectangleResponderHit(e),
+      onResponderGrant: handleResponderGrant,
+      onResponderMove: handleResponderMove,
+      onResponderRelease: handleResponderRelease,
+      onResponderTerminate: handleResponderRelease,
+    };
+
     const makeEdgeResponderProps = (offsetX = 0, offsetY = 0) => ({
       onStartShouldSetResponder: (e) => {
         const point = getResponderLocalPoint(e, offsetX, offsetY);
@@ -11961,6 +12141,20 @@ const MemoizedRectangleDetector = React.memo(
           zIndex: detectorZIndex,
         }}
       >
+        <View
+          pointerEvents="auto"
+          style={[
+            edgeBandStyle,
+            {
+              left: 0,
+              top: 0,
+              width: width + touchTolerance * 2,
+              height: height + touchTolerance * 2,
+            },
+          ]}
+          {...rectangleResponderProps}
+        />
+
         {/* Banda superior */}
         <View
           pointerEvents="auto"
@@ -12189,6 +12383,7 @@ const MemoizedCustomShapeDetector = React.memo(
     const touchMargin = 22;
 
     const isSelected = selectedCloneIdsSet?.has(icon.id);
+    const hasFill = hasVisibleFill(icon.fillColor);
     const canDrag =
       !icon.locked &&
       !isAnyDrawingMode &&
@@ -12396,6 +12591,12 @@ const MemoizedCustomShapeDetector = React.memo(
 
     const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
       const point = getResponderLocalPoint(e, offsetX, offsetY);
+      if (
+        hasFill &&
+        isPointInsidePolygon(point.x + minX - touchMargin, point.y + minY - touchMargin, pts)
+      ) {
+        return true;
+      }
       return isPolygonBorderTouch(
         point.x,
         point.y,
@@ -12486,6 +12687,19 @@ const MemoizedCustomShapeDetector = React.memo(
         {generateTouchSegments()}
 
         {/* Vertex resize handles en cada v�rtice del custom-shape */}
+        <View
+          pointerEvents="auto"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: width + touchMargin * 2,
+            height: height + touchMargin * 2,
+            backgroundColor: 'transparent',
+          }}
+          {...responderProps}
+        />
+
         {selectedCloneId === icon.id && !multiSelectMode && (
           <>
             {pts.map((pt, i) => (
@@ -12965,6 +13179,8 @@ export default function Field(props = {}) {
     playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
     playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
     playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+    goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS },
+    goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS },
     playerIcon4: getDefaultNeutralPlayerSettings(),
     teamPlayers: {
       color: '#2176ff',
@@ -13165,23 +13381,30 @@ export default function Field(props = {}) {
               ? settingsToApply.playerIcon2
               : icon.id === 'icon3'
                 ? settingsToApply.playerIcon3
-                : icon.id === 'neutral-player'
-                  ? { ...getDefaultNeutralPlayerSettings(), ...settingsToApply.playerIcon4 }
-                  : null;
+                : icon.id === 'goalkeeper-1'
+                  ? { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS, ...settingsToApply.goalkeeperIcon1 }
+                  : icon.id === 'goalkeeper-2'
+                    ? { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS, ...settingsToApply.goalkeeperIcon2 }
+                    : icon.id === 'neutral-player'
+                      ? { ...getDefaultNeutralPlayerSettings(), ...settingsToApply.playerIcon4 }
+                      : null;
         if (!setting) return icon;
         return {
           ...icon,
           color: setting.color,
           backgroundColor: setting.backgroundColor || icon.backgroundColor,
           numberColor: setting.numberColor || icon.numberColor,
-          number: setting.isNeutral ? 'N' : icon.number,
+          number: setting.isNeutral ? 'N' : setting.isGoalkeeper ? 1 : icon.number,
           isNeutral: setting.isNeutral !== undefined ? setting.isNeutral : icon.isNeutral,
+          isGoalkeeper: setting.isGoalkeeper !== undefined ? setting.isGoalkeeper : icon.isGoalkeeper,
           size: setting.size,
           shape: setting.shape || icon.shape || 'circle',
           hasStripes: setting.hasStripes !== undefined ? setting.hasStripes : icon.hasStripes,
           hasBib: setting.hasBib !== undefined ? setting.hasBib : icon.hasBib,
           bibColor: setting.bibColor !== undefined ? setting.bibColor : icon.bibColor,
           stripeColor: setting.stripeColor || icon.stripeColor || '#ffffff',
+          goalkeeperStripeColor:
+            setting.goalkeeperStripeColor || setting.stripeColor || icon.goalkeeperStripeColor,
         };
       }),
     );
@@ -13301,6 +13524,46 @@ export default function Field(props = {}) {
                       ? settingsToSave.playerIcon3.bibColor
                       : icon.bibColor,
                   stripeColor: settingsToSave.playerIcon3.stripeColor || icon.stripeColor || '#ffffff',
+                };
+              }
+              if (icon.id === 'goalkeeper-1' && settingsToSave.goalkeeperIcon1) {
+                const goalkeeperSettings = {
+                  ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS,
+                  ...settingsToSave.goalkeeperIcon1,
+                };
+                return {
+                  ...icon,
+                  ...goalkeeperSettings,
+                  number: 1,
+                  isGoalkeeper: true,
+                  stripeColor:
+                    goalkeeperSettings.goalkeeperStripeColor ||
+                    goalkeeperSettings.stripeColor ||
+                    icon.stripeColor,
+                  goalkeeperStripeColor:
+                    goalkeeperSettings.goalkeeperStripeColor ||
+                    goalkeeperSettings.stripeColor ||
+                    icon.goalkeeperStripeColor,
+                };
+              }
+              if (icon.id === 'goalkeeper-2' && settingsToSave.goalkeeperIcon2) {
+                const goalkeeperSettings = {
+                  ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS,
+                  ...settingsToSave.goalkeeperIcon2,
+                };
+                return {
+                  ...icon,
+                  ...goalkeeperSettings,
+                  number: 1,
+                  isGoalkeeper: true,
+                  stripeColor:
+                    goalkeeperSettings.goalkeeperStripeColor ||
+                    goalkeeperSettings.stripeColor ||
+                    icon.stripeColor,
+                  goalkeeperStripeColor:
+                    goalkeeperSettings.goalkeeperStripeColor ||
+                    goalkeeperSettings.stripeColor ||
+                    icon.goalkeeperStripeColor,
                 };
               }
               if (icon.id === 'neutral-player') {
@@ -13427,6 +13690,16 @@ export default function Field(props = {}) {
               playerIcon1: { ...prev.playerIcon1, ...usuario.boardSettings.playerIcon1 },
               playerIcon2: { ...prev.playerIcon2, ...usuario.boardSettings.playerIcon2 },
               playerIcon3: { ...prev.playerIcon3, ...usuario.boardSettings.playerIcon3 },
+              goalkeeperIcon1: {
+                ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS,
+                ...prev.goalkeeperIcon1,
+                ...usuario.boardSettings.goalkeeperIcon1,
+              },
+              goalkeeperIcon2: {
+                ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS,
+                ...prev.goalkeeperIcon2,
+                ...usuario.boardSettings.goalkeeperIcon2,
+              },
               playerIcon4: {
                 ...getDefaultNeutralPlayerSettings(),
                 ...prev.playerIcon4,
@@ -13502,6 +13775,46 @@ export default function Field(props = {}) {
                         : icon.bibColor,
                     stripeColor:
                       usuario.boardSettings.playerIcon3.stripeColor || icon.stripeColor || '#ffffff',
+                  };
+                }
+                if (icon.id === 'goalkeeper-1' && usuario.boardSettings.goalkeeperIcon1) {
+                  const goalkeeperSettings = {
+                    ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS,
+                    ...usuario.boardSettings.goalkeeperIcon1,
+                  };
+                  return {
+                    ...icon,
+                    ...goalkeeperSettings,
+                    number: 1,
+                    isGoalkeeper: true,
+                    stripeColor:
+                      goalkeeperSettings.goalkeeperStripeColor ||
+                      goalkeeperSettings.stripeColor ||
+                      icon.stripeColor,
+                    goalkeeperStripeColor:
+                      goalkeeperSettings.goalkeeperStripeColor ||
+                      goalkeeperSettings.stripeColor ||
+                      icon.goalkeeperStripeColor,
+                  };
+                }
+                if (icon.id === 'goalkeeper-2' && usuario.boardSettings.goalkeeperIcon2) {
+                  const goalkeeperSettings = {
+                    ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS,
+                    ...usuario.boardSettings.goalkeeperIcon2,
+                  };
+                  return {
+                    ...icon,
+                    ...goalkeeperSettings,
+                    number: 1,
+                    isGoalkeeper: true,
+                    stripeColor:
+                      goalkeeperSettings.goalkeeperStripeColor ||
+                      goalkeeperSettings.stripeColor ||
+                      icon.stripeColor,
+                    goalkeeperStripeColor:
+                      goalkeeperSettings.goalkeeperStripeColor ||
+                      goalkeeperSettings.stripeColor ||
+                      icon.goalkeeperStripeColor,
                   };
                 }
                 if (icon.id === 'neutral-player') {
@@ -13677,6 +13990,8 @@ export default function Field(props = {}) {
       playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
       playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
       playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
+      goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS },
+      goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS },
       playerIcon4: getDefaultNeutralPlayerSettings(),
       teamPlayers: {
         color: '#2176ff',
@@ -19834,50 +20149,20 @@ export default function Field(props = {}) {
                         )}
                         {differentiateGoalkeeper && (
                           <>
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconPreviewSize * 0.1,
-                                left: 0,
-                                right: 0,
-                                height: 2,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconPreviewSize * 0.35,
-                                left: 0,
-                                right: 0,
-                                height: 2,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconPreviewSize * 0.6,
-                                left: 0,
-                                right: 0,
-                                height: 2,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconPreviewSize * 0.85,
-                                left: 0,
-                                right: 0,
-                                height: 2,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
+                            {[-0.22, 0, 0.22].map((offset) => (
+                              <View
+                                key={`team-player-preview-gk-stripe-${offset}`}
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  bottom: 0,
+                                  left: iconPreviewSize / 2 + iconPreviewSize * offset - 3,
+                                  width: 6,
+                                  backgroundColor: goalkeeperStripeColor,
+                                  opacity: 0.9,
+                                }}
+                              />
+                            ))}
                           </>
                         )}
                         {hasBib && (
@@ -20094,8 +20379,8 @@ export default function Field(props = {}) {
                   </Text>
                   <View style={[styles.proModalGrid, { marginTop: 0 }]}>
                     {[
-                      { value: 'circle', label: 'Circulo' },
-                      { value: 'jersey', label: 'Camiseta' },
+                      { value: 'circle', label: t('tacticalBoard.editPanel.circle') },
+                      { value: 'jersey', label: t('tacticalBoard.editPanel.jersey') },
                     ].map((shapeOption) => (
                       <TouchableOpacity
                         key={shapeOption.value}
@@ -20120,7 +20405,9 @@ export default function Field(props = {}) {
                 </View>
 
                 <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
-                  <Text style={styles.proModalSwitchLabel}>Rayas de camiseta</Text>
+                  <Text style={styles.proModalSwitchLabel}>
+                    {t('tacticalBoard.editPanel.jerseyStripes')}
+                  </Text>
                   <Switch
                     value={hasStripes}
                     onValueChange={setHasStripes}
@@ -20134,7 +20421,7 @@ export default function Field(props = {}) {
                   <View style={[styles.proModalSection, { marginTop: 8 }]}>
                     <View style={styles.proModalRow}>
                       <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                        Color de rayas de camiseta:
+                        {t('tacticalBoard.teamSettings.playerStripeColor')}
                       </Text>
                       <TouchableOpacity
                         style={[
@@ -20159,7 +20446,7 @@ export default function Field(props = {}) {
                 />
 
                 <View style={[styles.proModalSwitch, { marginTop: 4 }]}>
-                  <Text style={styles.proModalSwitchLabel}>Peto</Text>
+                  <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
                   <Switch
                     value={hasBib}
                     onValueChange={setHasBib}
@@ -20173,7 +20460,7 @@ export default function Field(props = {}) {
                   <View style={[styles.proModalSection, { marginTop: 8 }]}>
                     <View style={styles.proModalRow}>
                       <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                        Color del peto:
+                        {t('tacticalBoard.editPanel.bibColor')}
                       </Text>
                       <TouchableOpacity
                         style={[
@@ -20263,7 +20550,7 @@ export default function Field(props = {}) {
                   <View style={[styles.proModalSection, { marginTop: 8 }]}>
                     <View style={styles.proModalRow}>
                       <Text style={isMobile ? styles.proModalLabelMobile : styles.proModalLabel}>
-                        {t('tacticalBoard.teamSettings.stripeColor') || 'Color de las rayas:'}
+                        {t('tacticalBoard.teamSettings.goalkeeperStripeColor')}
                       </Text>
                       <TouchableOpacity
                         style={[
@@ -21199,53 +21486,23 @@ export default function Field(props = {}) {
                               ))}
                             </>
                           )}
-                        {/* Rayas horizontales para portero (circulo) */}
+                        {/* Rayas verticales para portero (circulo) */}
                         {showStripes && playerShape !== 'jersey' && (
                           <>
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconSize * 0.1,
-                                left: 0,
-                                right: 0,
-                                height: 3,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconSize * 0.35,
-                                left: 0,
-                                right: 0,
-                                height: 3,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconSize * 0.6,
-                                left: 0,
-                                right: 0,
-                                height: 3,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
-                            <View
-                              style={{
-                                position: 'absolute',
-                                top: iconSize * 0.85,
-                                left: 0,
-                                right: 0,
-                                height: 3,
-                                backgroundColor: goalkeeperStripeColor,
-                                opacity: 0.85,
-                              }}
-                            />
+                            {[-0.22, 0, 0.22].map((offset) => (
+                              <View
+                                key={`sliding-team-player-gk-circle-stripe-${player.uniqueId}-${offset}`}
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  bottom: 0,
+                                  left: iconSize / 2 + iconSize * offset - 3,
+                                  width: 6,
+                                  backgroundColor: goalkeeperStripeColor,
+                                  opacity: 0.9,
+                                }}
+                              />
+                            ))}
                           </>
                         )}
                         {showPhotos && player.foto ? (
@@ -22896,6 +23153,11 @@ export default function Field(props = {}) {
                           const baseThickness = currentPaletteIcon?.thickness || 1;
                           const previewThickness = baseThickness * scale * 0.7;
                           const previewColor = currentPaletteIcon?.color || '#000000';
+                          const previewFillColor = currentPaletteIcon?.fillColor || 'transparent';
+                          const previewFill =
+                            previewFillColor && previewFillColor !== 'transparent'
+                              ? `${previewFillColor}99`
+                              : 'transparent';
 
                           // Convert ratio coords to display coords
                           const dp0 = ratioToDisplay(
@@ -22984,7 +23246,7 @@ export default function Field(props = {}) {
                                   ry={Math.abs(dp1.y - dp0.y) / 2}
                                   stroke={previewColor}
                                   strokeWidth={previewThickness}
-                                  fill="none"
+                                  fill={previewFill}
                                   strokeDasharray={
                                     lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined
                                   }
@@ -23002,7 +23264,7 @@ export default function Field(props = {}) {
                                   height={Math.abs(dp1.y - dp0.y)}
                                   stroke={previewColor}
                                   strokeWidth={previewThickness}
-                                  fill="none"
+                                  fill={previewFill}
                                   strokeDasharray={
                                     lineType === 'dotted' ? `${dotSize},${dotSpacing}` : undefined
                                   }

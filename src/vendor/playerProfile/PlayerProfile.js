@@ -37,6 +37,7 @@ import {
   getPlayerPreWellnessHistory,
 } from '../../utils/api';
 import { getPlayerFullName } from '../../utils/playerHelpers';
+import { translatePosition } from '@/components/player/playerHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import { useTheme } from 'styled-components';
@@ -529,6 +530,9 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
     return playerStats;
   }, [player, visible, matchSheets, injuries, trainingSessions]);
 
+  const latestAntro = anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
+  const displayWeight = latestAntro?.peso || player.peso;
+
   const exportToPDF = async () => {
     if (!stats) {
       Alert.alert(t('message.error'), t('player.profile.statsNotReady'));
@@ -664,7 +668,9 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
               </View>
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>{t('player.profile.position')}</Text>
-                <Text style={styles.infoValue}>{player.posicion || '-'}</Text>
+                <Text style={styles.infoValue}>
+                  {player.posicion ? translatePosition(player.posicion, t) : '-'}
+                </Text>
               </View>
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>{t('player.profile.dorsal')}</Text>
@@ -706,6 +712,18 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                         ? t('player.footBoth')
                         : '-'}
                 </Text>
+              </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>{t('player.height', 'Altura')}</Text>
+                <Text style={styles.infoValue}>{player.altura ? `${player.altura} cm` : '-'}</Text>
+              </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>{t('player.profile.weight', 'Peso') || 'Peso'}</Text>
+                <Text style={styles.infoValue}>{displayWeight ? `${displayWeight} kg` : '-'}</Text>
+              </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>{t('player.sex', 'Sexo')}</Text>
+                <Text style={styles.infoValue}>{player.sexo || '-'}</Text>
               </View>
             </View>
           </View>

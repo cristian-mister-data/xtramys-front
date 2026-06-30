@@ -6,6 +6,9 @@ import {
 } from '@/utils/pdfDesign';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 import { format } from 'date-fns';
+import i18n from '@/i18n';
+import { translatePosition } from '@/components/player/playerHelpers';
+
 
 const s = StyleSheet.create({
   grid2: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.md, marginBottom: SPACING.md },
@@ -417,7 +420,7 @@ const renderEventIcon = (tipo) => {
   return null;
 };
 
-const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes = [], noConvocados = [], goles = [], golesRival = [], tarjetasAmarillas = [], tarjetasRojas = [], cambios = [], jugadoresPorEquipo, showPhotos }) => {
+const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes = [], noConvocados = [], goles = [], golesRival = [], tarjetasAmarillas = [], tarjetasRojas = [], cambios = [], jugadoresPorEquipo, showPhotos, translations = {} }) => {
   const eventos = [
     ...sortByMinute(goles).map(g => ({ ...g, tipo: 'gol' })),
     ...sortByMinute(golesRival).map(g => ({ ...g, tipo: 'golRival', isRival: true })),
@@ -431,20 +434,20 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
 
   return (
     <Page size="A4" style={baseStyles.page}>
-      <PdfHeader title="FICHA DE PARTIDO" subtitle={`${team?.nombre || 'Local'} vs ${matchSheet.rival}`} />
+      <PdfHeader title={translations.matchSheetTitle || "FICHA DE PARTIDO"} subtitle={`${team?.nombre || translations.team || 'Local'} vs ${matchSheet.rival}`} />
       <View style={baseStyles.content}>
         <View style={s.grid4}>
-          <View style={s.statCard}><Text style={s.statLabel}>Fecha</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatDateSafe(matchSheet.fechaHora)}</Text></View>
-          <View style={s.statCard}><Text style={s.statLabel}>Hora</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatTimeSafe(matchSheet.fechaHora) || '-'}</Text></View>
+          <View style={s.statCard}><Text style={s.statLabel}>{translations.date || 'Fecha'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatDateSafe(matchSheet.fechaHora)}</Text></View>
+          <View style={s.statCard}><Text style={s.statLabel}>{translations.time || 'Hora'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatTimeSafe(matchSheet.fechaHora) || '-'}</Text></View>
           {matchSheet.jornada ? (
-            <View style={s.statCard}><Text style={s.statLabel}>Jornada</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{matchSheet.jornada}</Text></View>
+            <View style={s.statCard}><Text style={s.statLabel}>{translations.matchDay || 'Jornada'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{matchSheet.jornada}</Text></View>
           ) : null}
-          <View style={s.statCard}><Text style={s.statLabel}>Ubicación</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{matchSheet.ubicacion || '-'}</Text></View>
+          <View style={s.statCard}><Text style={s.statLabel}>{translations.location || 'Ubicación'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{matchSheet.ubicacion || '-'}</Text></View>
         </View>
 
         {(matchSheet.golesLocal || matchSheet.golesVisitante) && (
           <View style={[s.card, { alignItems: 'center', backgroundColor: COLORS.bgHeader, paddingVertical: 20 }]}>
-            <Text style={{ fontSize: 10, color: COLORS.textMuted, marginBottom: 8 }}>RESULTADO FINAL</Text>
+            <Text style={{ fontSize: 10, color: COLORS.textMuted, marginBottom: 8 }}>{translations.result || 'RESULTADO FINAL'}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
                <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: COLORS.primary }}>{matchSheet.ubicacion === 'local' || matchSheet.ubicacion === 'Casa' ? team?.nombre : matchSheet.rival}</Text>
               <View style={{ backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}>

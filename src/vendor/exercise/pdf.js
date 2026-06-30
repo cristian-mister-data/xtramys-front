@@ -128,21 +128,21 @@ const ExerciseDocument = ({ exercise, imageBase64, t }) => {
 
             {exercise.dimensiones ? (
               <View style={s.infoCard}>
-                <Text style={s.infoCardTitle}>📐 {t('exercise.fieldDimensions') || 'Dimensiones'}</Text>
+                <Text style={s.infoCardTitle}>{t('exercise.fieldDimensions') || 'Dimensiones'}</Text>
                 <Text style={s.infoCardContent}>{exercise.dimensiones}</Text>
               </View>
             ) : null}
 
             {exercise.objetivo ? (
               <View style={s.infoCard}>
-                <Text style={s.infoCardTitle}>🎯 {t('exercise.objective') || 'Objetivo'}</Text>
+                <Text style={s.infoCardTitle}>{t('exercise.objective') || 'Objetivo'}</Text>
                 <Text style={s.infoCardContent}>{exercise.objetivo}</Text>
               </View>
             ) : null}
 
             {exercise.descripcion ? (
               <View style={s.infoCard}>
-                <Text style={s.infoCardTitle}>📝 {t('exercise.description') || 'Descripción'}</Text>
+                <Text style={s.infoCardTitle}>{t('exercise.description') || 'Descripción'}</Text>
                 <Text style={s.infoCardContent}>{exercise.descripcion}</Text>
               </View>
             ) : null}

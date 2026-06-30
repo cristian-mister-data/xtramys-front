@@ -25,6 +25,7 @@ import {
 } from '@/store/slices/anthropometry/anthropometryThunks';
 import { clearCurrentAnthropometry } from '@/store/slices/anthropometry/anthropometrySlice';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { translatePosition } from '@/components/player/playerHelpers';
 import { toast } from '@/ui/toast';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 
@@ -419,7 +420,12 @@ const AnthropometryForm = ({ navigation, route }) => {
         >
           <View style={styles.pickerModal}>
             <View style={styles.pickerModalHeader}>
-              <Text style={styles.pickerModalTitle}>{t('anthropometry.modal.selectPlayerTitle') || t('anthropometry.selectPlayer')}</Text>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={styles.pickerModalTitle}>{t('anthropometry.modal.selectPlayerTitle') || t('anthropometry.selectPlayer')}</Text>
+                <Text style={{ fontSize: 12, color: c.textMuted, marginTop: 2 }}>
+                  {t('anthropometry.modal.selectPlayerSubtitle', 'Elige el jugador para registrar sus mediciones')}
+                </Text>
+              </View>
               <TouchableOpacity onPress={() => setShowPlayerModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={22} color={c.textMuted} />
               </TouchableOpacity>
@@ -434,7 +440,14 @@ const AnthropometryForm = ({ navigation, route }) => {
                     setShowPlayerModal(false);
                   }}
                 >
-                  <Text style={styles.pickerModalItemText}>{getPlayerFullName(player)}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.pickerModalItemText}>{getPlayerFullName(player)}</Text>
+                    {!!player.posicion && (
+                      <Text style={{ fontSize: 12, color: c.textMuted, marginTop: 2 }}>
+                        {translatePosition(player.posicion, t)}
+                      </Text>
+                    )}
+                  </View>
                   {formData.jugador === player._id && (
                     <Ionicons name="checkmark" size={20} color={c.primary} />
                   )}

@@ -248,8 +248,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     const sColor = elem.isGoalkeeper
       ? (elem.goalkeeperStripeColor || '#ffffff')
       : (elem.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff'));
-    const drawVerticalStripes = elem.hasStripes || (elem.isGoalkeeper && isJersey);
-    const drawGoalkeeperHorizontal = elem.isGoalkeeper && !isJersey && !elem.hasStripes;
+    const drawVerticalStripes = elem.hasStripes || elem.isGoalkeeper;
 
     if (drawVerticalStripes) {
       ctx.save();
@@ -270,21 +269,6 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
         for (const f of [-0.5, -0.1, 0.3]) {
           ctx.fillRect(p.x + size * f, p.y - r, size * 0.15, size);
         }
-      }
-      ctx.restore();
-    }
-
-    if (drawGoalkeeperHorizontal) {
-      ctx.save();
-      ctx.globalAlpha = 0.85;
-      ctx.strokeStyle = sColor;
-      ctx.lineWidth = 2;
-      for (const off of [0.1, 0.35, 0.6, 0.85]) {
-        const y = p.y - r + size * off;
-        ctx.beginPath();
-        ctx.moveTo(p.x - r, y);
-        ctx.lineTo(p.x + r, y);
-        ctx.stroke();
       }
       ctx.restore();
     }

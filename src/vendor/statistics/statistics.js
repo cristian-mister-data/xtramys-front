@@ -744,7 +744,7 @@ export default function Statistics({ navigation: navigationProp }) {
       .slice(0, weeklyDateRange.start || weeklyDateRange.end ? 100 : 8); // Show more weeks when filtered
   }, [trainingSessions, players, weeklyDateRange, selectedPlayerIds]);
 
-  // Función para generar PDF de asistencia semanal
+  // Funciï¿½n para generar PDF de asistencia semanal
   const generateWeeklyAttendancePDF = async (week) => {
     const weekDate = new Date(week.weekStart);
     const weekEnd = new Date(weekDate);
@@ -2025,7 +2025,7 @@ export default function Statistics({ navigation: navigationProp }) {
                       <View style={styles.compactPlayerStats}>
                         <View style={styles.compactStatBox}>
                           <Text style={styles.compactStatValue}>{player.matches}</Text>
-                          <Text style={styles.compactStatLabel}>PJ</Text>
+                          <Text style={styles.compactStatLabel}>{t('statistics.matchesPlayedAbbr', 'PJ')}</Text>
                         </View>
                         <View style={styles.compactStatBox}>
                           <Text style={[styles.compactStatValue, { color: theme.colors.primary }]}>

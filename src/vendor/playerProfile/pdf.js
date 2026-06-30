@@ -16,6 +16,7 @@ import {
   renderPdf,
 } from '@/utils/pdfDesign';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { translatePosition } from '@/components/player/playerHelpers';
 import { format } from 'date-fns';
 
 const s = StyleSheet.create({
@@ -361,6 +362,7 @@ const ProfileGeneralPage = ({
   const teamName = team?.nombre || '';
   const latestAntro =
     anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
+  const displayWeight = latestAntro?.peso || player.peso;
   const profileInjuries = playerInjuryList(injuries, player);
 
   return (
@@ -371,18 +373,17 @@ const ProfileGeneralPage = ({
           <View style={s.playerHeroInfo}>
             {fotoBase64 ? (
               <Image src={fotoBase64} style={s.profilePhoto} />
-            ) : (
-              <View style={s.profilePhotoEmpty}>
-                <Text style={{ color: '#94a3b8', fontSize: 10 }}>Sin foto</Text>
+            ) : (              <View style={s.profilePhotoEmpty}>
+                <Text style={{ color: '#94a3b8', fontSize: 10 }}>{t('player.profile.noPhoto', 'Sin foto')}</Text>
               </View>
             )}
             <View style={s.heroTextContainer}>
               <Text style={s.profileName}>{name}</Text>
               <View style={s.profileMetaRow}>
                 {player.dorsal ? <Text style={s.numberBadge}>#{player.dorsal}</Text> : null}
-                {player.posicion ? <Text style={s.positionBadge}>{player.posicion}</Text> : null}
+                {player.posicion ? <Text style={s.positionBadge}>{translatePosition(player.posicion, t)}</Text> : null}
                 {player.pierna ? (
-                  <Text style={s.footBadge}>{translateFoot(player.pierna, t)}</Text>
+                   <Text style={s.footBadge}>{translateFoot(player.pierna, t)}</Text>
                 ) : null}
                 {teamName ? <Text style={s.teamBadge}>{teamName}</Text> : null}
               </View>
@@ -407,8 +408,8 @@ const ProfileGeneralPage = ({
               <Text style={s.infoStatValue}>{player.altura ? `${player.altura} cm` : '-'}</Text>
             </View>
             <View style={s.infoStatCard}>
-              <Text style={s.infoStatLabel}>{t('player.profile.weight', 'Peso') || 'Peso'}</Text>
-              <Text style={s.infoStatValue}>{player.peso ? `${player.peso} kg` : '-'}</Text>
+              <Text style={s.infoStatLabel}>{t('player.profile.weight', 'Peso')}</Text>
+              <Text style={s.infoStatValue}>{displayWeight ? `${displayWeight} kg` : '-'}</Text>
             </View>
             <View style={s.infoStatCard}>
               <Text style={s.infoStatLabel}>{t('player.sex', 'Sexo')}</Text>
@@ -427,23 +428,23 @@ const ProfileGeneralPage = ({
 
         {stats && (
           <View wrap={false}>
-            <PdfSection title="Estadísticas de Partidos">
+            <PdfSection title={t('player.profile.matchStats', 'Estadísticas de Partidos')}>
               <View style={s.grid4}>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#2563eb' }]}>{stats.matches?.total || 0}</Text>
-                  <Text style={s.statLabel}>Jugados</Text>
+                  <Text style={s.statLabel}>{t('player.profile.played', 'Jugados')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.matches?.starter || 0}</Text>
-                  <Text style={s.statLabel}>Titular</Text>
+                  <Text style={s.statLabel}>{t('player.profile.starter', 'Titular')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.matches?.substitute || 0}</Text>
-                  <Text style={s.statLabel}>Suplente</Text>
+                  <Text style={s.statLabel}>{t('player.profile.substitute', 'Suplente')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.matches?.minutesPlayed || 0}'</Text>
-                  <Text style={s.statLabel}>Minutos</Text>
+                  <Text style={s.statLabel}>{t('player.profile.minutes', 'Minutos')}</Text>
                 </View>
               </View>
               <View style={s.grid4}>
@@ -451,25 +452,25 @@ const ProfileGeneralPage = ({
                   <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.goals?.total || 0}
                   </Text>
-                  <Text style={s.statLabel}>Goles</Text>
+                  <Text style={s.statLabel}>{t('player.profile.goalsShort', 'Goles')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.goals?.assists || 0}
                   </Text>
-                  <Text style={s.statLabel}>Asistencias</Text>
+                  <Text style={s.statLabel}>{t('player.profile.assistsShort', 'Asistencias')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#f59e0b' }]}>
                     {stats.cards?.yellow || 0}
                   </Text>
-                  <Text style={s.statLabel}>T. Amarillas</Text>
+                  <Text style={s.statLabel}>{t('player.profile.yellowCardsAbbr', 'T. Amarillas')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.cards?.red || 0}
                   </Text>
-                  <Text style={s.statLabel}>T. Rojas</Text>
+                  <Text style={s.statLabel}>{t('player.profile.redCardsAbbr', 'T. Rojas')}</Text>
                 </View>
               </View>
             </PdfSection>
@@ -482,25 +483,25 @@ const ProfileGeneralPage = ({
               <View style={s.grid4}>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.trainings.total || 0}</Text>
-                  <Text style={s.statLabel}>Total</Text>
+                  <Text style={s.statLabel}>{t('player.profile.total', 'Total')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.trainings.attended || 0}
                   </Text>
-                  <Text style={s.statLabel}>Asistió</Text>
+                  <Text style={s.statLabel}>{t('player.profile.attended', 'Asistió')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.trainings.missed || 0}
                   </Text>
-                  <Text style={s.statLabel}>Faltó</Text>
+                  <Text style={s.statLabel}>{t('player.profile.missed', 'Faltó')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#2563eb' }]}>
                     {stats.trainings.percentage || 0}%
                   </Text>
-                  <Text style={s.statLabel}>Asistencia</Text>
+                  <Text style={s.statLabel}>{t('player.profile.attendance', 'Asistencia')}</Text>
                 </View>
               </View>
             </PdfSection>
@@ -540,23 +541,23 @@ const ProfileGeneralPage = ({
               <View style={s.grid4}>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.injuries.total || 0}</Text>
-                  <Text style={s.statLabel}>Total</Text>
+                  <Text style={s.statLabel}>{t('player.profile.total', 'Total')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#ef4444' }]}>
                     {stats.injuries.active || 0}
                   </Text>
-                  <Text style={s.statLabel}>Activas</Text>
+                  <Text style={s.statLabel}>{t('player.profile.active', 'Activas')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={[s.statValue, { color: '#10b981' }]}>
                     {stats.injuries.recovered || 0}
                   </Text>
-                  <Text style={s.statLabel}>Recuperadas</Text>
+                  <Text style={s.statLabel}>{t('player.profile.recovered', 'Recuperadas')}</Text>
                 </View>
                 <View style={s.statCard}>
                   <Text style={s.statValue}>{stats.injuries.daysMissed || 0}</Text>
-                  <Text style={s.statLabel}>Días Baja</Text>
+                  <Text style={s.statLabel}>{t('player.profile.daysOff', 'Días Baja')}</Text>
                 </View>
               </View>
               <View style={{ marginTop: 6 }}>
@@ -576,14 +577,14 @@ const ProfileGeneralPage = ({
                         <Text style={[s.badge, { backgroundColor: status.color }]}>{status.label}</Text>
                       </View>
                       <Text style={s.injuryPdfMeta}>
-                        Inicio: {formatDate(inj.fechaInicio)}
-                        {inj.fechaFinPrevista ? ` - Prevista: ${formatDate(inj.fechaFinPrevista)}` : ''}
-                        {inj.fechaFin ? ` - Fin: ${formatDate(inj.fechaFin)}` : ''}
+                        {t('player.profile.injuryDetailStart', 'Inicio')}: {formatDate(inj.fechaInicio)}
+                        {inj.fechaFinPrevista ? ` - ${t('player.profile.injuryDetailEstimated', 'Prevista')}: ${formatDate(inj.fechaFinPrevista)}` : ''}
+                        {inj.fechaFin ? ` - ${t('player.profile.injuryDetailEnd', 'Fin')}: ${formatDate(inj.fechaFin)}` : ''}
                       </Text>
                       {Boolean(inj.lesionEspecifica) && (
-                        <Text style={s.injuryPdfDetail}>Detalle: {inj.lesionEspecifica}</Text>
+                        <Text style={s.injuryPdfDetail}>{t('player.profile.injuryDetailDesc', 'Detalle')}: {inj.lesionEspecifica}</Text>
                       )}
-                      {inj.recaida && <Text style={s.injuryPdfMeta}>Recaida registrada</Text>}
+                      {inj.recaida && <Text style={s.injuryPdfMeta}>{t('player.profile.relapseRegistered', 'Recaída registrada')}</Text>}
                     </View>
                   );
                 })}
@@ -638,7 +639,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
             </Text>
             <View style={s.grid3}>
               <View style={s.card}>
-                <Text style={s.statLabel}>Tricipital</Text>
+                <Text style={s.statLabel}>{t('anthropometry.tricipital', 'Tricipital')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.tricipital != null
                     ? `${Number(latest.pliegues.tricipital).toFixed(1)} mm`
@@ -646,7 +647,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
                 </Text>
               </View>
               <View style={s.card}>
-                <Text style={s.statLabel}>Bicipital</Text>
+                <Text style={s.statLabel}>{t('anthropometry.bicipital', 'Bicipital')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.bicipital != null
                     ? `${Number(latest.pliegues.bicipital).toFixed(1)} mm`
@@ -654,7 +655,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
                 </Text>
               </View>
               <View style={s.card}>
-                <Text style={s.statLabel}>Subescapular</Text>
+                <Text style={s.statLabel}>{t('anthropometry.subescapular', 'Subescapular')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.subescapular != null
                     ? `${Number(latest.pliegues.subescapular).toFixed(1)} mm`
@@ -664,7 +665,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
             </View>
             <View style={s.grid3}>
               <View style={s.card}>
-                <Text style={s.statLabel}>Suprailíaco</Text>
+                <Text style={s.statLabel}>{t('anthropometry.suprailiaco', 'Suprailíaco')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.suprailiaco != null
                     ? `${Number(latest.pliegues.suprailiaco).toFixed(1)} mm`
@@ -672,7 +673,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
                 </Text>
               </View>
               <View style={s.card}>
-                <Text style={s.statLabel}>Muslo Frontal</Text>
+                <Text style={s.statLabel}>{t('anthropometry.musloFrontal', 'Muslo Frontal')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.muslo_frontal != null
                     ? `${Number(latest.pliegues.muslo_frontal).toFixed(1)} mm`
@@ -680,7 +681,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
                 </Text>
               </View>
               <View style={s.card}>
-                <Text style={s.statLabel}>Pierna Medial</Text>
+                <Text style={s.statLabel}>{t('anthropometry.piernaMedial', 'Pierna Medial')}</Text>
                 <Text style={s.statValue}>
                   {latest.pliegues?.pierna_medial != null
                     ? `${Number(latest.pliegues.pierna_medial).toFixed(1)} mm`
@@ -694,7 +695,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
               latest.pliegues?.cresta_iliaca != null) && (
               <View style={s.grid3}>
                 <View style={s.card}>
-                  <Text style={s.statLabel}>Abdominal</Text>
+                  <Text style={s.statLabel}>{t('anthropometry.abdominal', 'Abdominal')}</Text>
                   <Text style={s.statValue}>
                     {latest.pliegues?.abdominal != null
                       ? `${Number(latest.pliegues.abdominal).toFixed(1)} mm`
@@ -702,7 +703,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
                   </Text>
                 </View>
                 <View style={s.card}>
-                  <Text style={s.statLabel}>Cresta Ilíaca</Text>
+                  <Text style={s.statLabel}>{t('anthropometry.crestaIliaca', 'Cresta Ilíaca')}</Text>
                   <Text style={s.statValue}>
                     {latest.pliegues?.cresta_iliaca != null
                       ? `${Number(latest.pliegues.cresta_iliaca).toFixed(1)} mm`
@@ -720,7 +721,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
           </PdfSection>
         ) : (
           <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>
-            No hay mediciones registradas.
+            {t('player.profile.noMeasurements', 'No hay mediciones registradas.')}
           </Text>
         )}
 
@@ -730,8 +731,8 @@ const AnthropometryPage = ({ player, team, data, t }) => {
               <View style={s.tableHeader}>
                 <Text style={s.th}>{t('anthropometry.date')}</Text>
                 <Text style={s.th}>{t('anthropometry.weight')}</Text>
-                <Text style={s.th}>Pliegues</Text>
-                <Text style={s.th}>% Grasa</Text>
+                <Text style={s.th}>{t('anthropometry.skinfolds', 'Pliegues')}</Text>
+                <Text style={s.th}>% {t('player.profile.goalsShort', 'Grasa') || 'Grasa'}</Text>
               </View>
               {data.map((m, i) => (
                 <View key={i} style={s.tableRow}>
@@ -766,25 +767,25 @@ const AttendancePage = ({ player, stats, t }) => {
         <View style={s.grid4}>
           <View style={s.statCard}>
             <Text style={s.statValue}>{stats?.trainings?.total || 0}</Text>
-            <Text style={s.statLabel}>Total</Text>
+            <Text style={s.statLabel}>{t('player.profile.total', 'Total')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={[s.statValue, { color: COLORS.success }]}>
               {stats?.trainings?.attended || 0}
             </Text>
-            <Text style={s.statLabel}>Asistió</Text>
+            <Text style={s.statLabel}>{t('player.profile.attended', 'Asistió')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={[s.statValue, { color: COLORS.danger }]}>
               {stats?.trainings?.missed || 0}
             </Text>
-            <Text style={s.statLabel}>Faltó</Text>
+            <Text style={s.statLabel}>{t('player.profile.missed', 'Faltó')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={[s.statValue, { color: COLORS.accent }]}>
               {stats?.trainings?.percentage || 0}%
             </Text>
-            <Text style={s.statLabel}>Asistencia</Text>
+            <Text style={s.statLabel}>{t('player.profile.attendance', 'Asistencia')}</Text>
           </View>
         </View>
 
@@ -810,13 +811,13 @@ const AttendancePage = ({ player, stats, t }) => {
                     {formatDate(session.fecha)}{' '}
                     {session.horaInicio ? `- ${session.horaInicio}` : ''}
                   </Text>
-                  <Text style={s.cardSubtitle}>{session.nombre || 'Sesión de Entrenamiento'}</Text>
+                  <Text style={s.cardSubtitle}>{session.nombre || t('player.profile.trainingSession', 'Sesión de Entrenamiento')}</Text>
                 </View>
               </View>
             ))
           ) : (
             <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>
-              No hay faltas registradas.
+              {t('player.profile.noMissedTrainings', 'No hay faltas registradas.')}
             </Text>
           )}
         </PdfSection>
@@ -837,23 +838,23 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
         <View style={s.grid4}>
           <View style={s.statCard}>
             <Text style={s.statValue}>{stats?.injuries?.total || 0}</Text>
-            <Text style={s.statLabel}>Total</Text>
+            <Text style={s.statLabel}>{t('player.profile.total', 'Total')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={[s.statValue, { color: COLORS.danger }]}>
               {stats?.injuries?.active || 0}
             </Text>
-            <Text style={s.statLabel}>Activas</Text>
+            <Text style={s.statLabel}>{t('player.profile.active', 'Activas')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={[s.statValue, { color: COLORS.success }]}>
               {stats?.injuries?.recovered || 0}
             </Text>
-            <Text style={s.statLabel}>Recuperadas</Text>
+            <Text style={s.statLabel}>{t('player.profile.recovered', 'Recuperadas')}</Text>
           </View>
           <View style={s.statCard}>
             <Text style={s.statValue}>{stats?.injuries?.daysMissed || 0}</Text>
-            <Text style={s.statLabel}>Días Baja</Text>
+            <Text style={s.statLabel}>{t('player.profile.daysOff', 'Días Baja')}</Text>
           </View>
         </View>
 
@@ -870,7 +871,7 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
                       marginBottom: 4,
                     }}
                   >
-                    <Text style={s.cardTitle}>{optionLabel(inj.tipo, 'injury.types', t, 'Desconocido')}</Text>
+                    <Text style={s.cardTitle}>{optionLabel(inj.tipo, 'injury.types', t, t('player.profile.unknown'))}</Text>
                     <Text
                       style={[
                         s.badge,
@@ -881,13 +882,13 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
                     </Text>
                   </View>
                   <Text style={s.cardSubtitle}>
-                    Inicio: {formatDate(inj.fechaInicio)}{' '}
-                    {inj.fechaFinPrevista ? `| Prevista: ${formatDate(inj.fechaFinPrevista)} ` : ''}
-                    {inj.fechaFin ? `| Fin: ${formatDate(inj.fechaFin)}` : ''}
+                    {t('player.profile.injuryDetailStart', 'Inicio')}: {formatDate(inj.fechaInicio)}{' '}
+                    {inj.fechaFinPrevista ? `| ${t('player.profile.injuryDetailEstimated', 'Prevista')}: ${formatDate(inj.fechaFinPrevista)} ` : ''}
+                    {inj.fechaFin ? `| ${t('player.profile.injuryDetailEnd', 'Fin')}: ${formatDate(inj.fechaFin)}` : ''}
                   </Text>
                   {Boolean(inj.zona) && (
                     <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.text }}>
-                      Zona: {optionLabel(inj.zona, 'injury.zones', t, t('player.profile.unknownLocation'))}
+                      {t('player.profile.injuryLocation', 'Ubicación')}: {optionLabel(inj.zona, 'injury.zones', t, t('player.profile.unknownLocation'))}
                       {inj.lado
                         ? ` (${inj.lado === 'derecha' ? t('injury.sideRight', 'Derecha') : t('injury.sideLeft', 'Izquierda')})`
                         : ''}
@@ -895,7 +896,7 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
                   )}
                   {Boolean(inj.lesionEspecifica) && (
                     <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.text }}>
-                      Lesión: {inj.lesionEspecifica}
+                      {t('player.profile.specificInjury', 'Lesión')}: {inj.lesionEspecifica}
                     </Text>
                   )}
                   {Boolean(inj.descripcion) && (
@@ -908,7 +909,7 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
             })
           ) : (
             <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>
-              No hay lesiones registradas.
+              {t('player.profile.noInjuries', 'No hay lesiones registradas.')}
             </Text>
           )}
         </PdfSection>
@@ -932,14 +933,14 @@ const WellnessPage = ({ player, wellnessData, isPreWellness, t }) => {
         <View style={s.grid2}>
           <View style={s.statCard}>
             <Text style={s.statValue}>{wellnessData?.totalResponses || 0}</Text>
-            <Text style={s.statLabel}>Total Reportes</Text>
+            <Text style={s.statLabel}>{t('player.profile.totalReports', 'Total Reportes')}</Text>
           </View>
           {!isPreWellness && (
             <View style={s.statCard}>
               <Text style={[s.statValue, { color: COLORS.primary }]}>
                 {wellnessData?.averageWellness ? wellnessData.averageWellness.toFixed(1) : '-'}
               </Text>
-              <Text style={s.statLabel}>Puntuación Media</Text>
+              <Text style={s.statLabel}>{t('player.profile.averageScore', 'Puntuación Media')}</Text>
             </View>
           )}
         </View>
@@ -1006,7 +1007,7 @@ const WellnessPage = ({ player, wellnessData, isPreWellness, t }) => {
             })
           ) : (
             <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>
-              No hay registros.
+              {t('player.profile.noRecords', 'No hay registros.')}
             </Text>
           )}
         </PdfSection>
