@@ -568,9 +568,9 @@ const CheckIcon = () => (
 );
 
 const CLUB_MIN_QUANTITY = 5;
-const INDIVIDUAL_PRICE = 45;
+const INDIVIDUAL_PRICE = 59;
 const INDIVIDUAL_OLD_PRICE = 59;
-const CLUB_PRICE_PER_USER = 35;
+const CLUB_PRICE_PER_USER = 49;
 
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
@@ -704,11 +704,10 @@ export default function Subscribe() {
             {isClubPlan ? (
               <>
                 <PriceRow>
-                  <OldAmount>49€</OldAmount>
                   <Amount>{CLUB_PRICE_PER_USER}€</Amount>
                   <Period>/{t('subscription.userYear', 'usuario/año')}</Period>
                 </PriceRow>
-                <PriceSub>{t('subscription.weekOffer', 'Oferta esta semana')} · {t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
+                <PriceSub>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
 
                 <QtyContainer>
                   <QtyLabel>{t('subscription.qtyLabel', 'Número de Licencias (Entrenadores)')}</QtyLabel>
@@ -744,11 +743,10 @@ export default function Subscribe() {
             ) : (
               <>
                 <PriceRow>
-                  <OldAmount>{isEs ? `${INDIVIDUAL_OLD_PRICE}€` : `€${INDIVIDUAL_OLD_PRICE}`}</OldAmount>
                   <Amount>{isEs ? `${INDIVIDUAL_PRICE}€` : `€${INDIVIDUAL_PRICE}`}</Amount>
                   <Period>/{t('subscription.year', 'año')}</Period>
                 </PriceRow>
-                <PriceSub>{t('subscription.weekOffer', 'Oferta esta semana')} · {t('subscription.annual', 'Facturación anual')}</PriceSub>
+                <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
               </>
             )}
 

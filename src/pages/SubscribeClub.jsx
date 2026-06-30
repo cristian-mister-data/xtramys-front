@@ -388,7 +388,7 @@ const CheckIcon = () => (
 const MIN_QUANTITY = 5;
 const MAX_QUANTITY = 500;
 const OLD_PRICE_PER_USER = 49;
-const PRICE_PER_USER = 35;
+const PRICE_PER_USER = 49;
 
 export default function SubscribeClub() {
   const { t, i18n } = useTranslation();
@@ -540,7 +540,7 @@ export default function SubscribeClub() {
         <PriceBlock>
           <PriceRow>
             <span>{isEs ? 'Precio unitario' : 'Unit price'}</span>
-            <PriceValue><OldPriceValue>{OLD_PRICE_PER_USER}€</OldPriceValue>{PRICE_PER_USER}€/{isEs ? 'usuario/año' : 'user/year'}</PriceValue>
+            <PriceValue>{PRICE_PER_USER}€/{isEs ? 'usuario/año' : 'user/year'}</PriceValue>
           </PriceRow>
           <PriceRow>
             <span>{isEs ? 'Licencias' : 'Licenses'}</span>
