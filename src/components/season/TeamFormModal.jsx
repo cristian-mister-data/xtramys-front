@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { MdLock } from 'react-icons/md';
 import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import Select from '@/ui/Select';
 import { Button, Field, Input, Label, Row, Stack, ErrorText, Muted } from '@/ui/primitives';
@@ -275,7 +276,12 @@ export default function TeamFormModal({
             {t('common.cancel', 'Cancelar')}
           </Button>
           <Button onClick={handleSubmit} disabled={loading || canMutate === false}>
-            {loading ? '...' : (mode === 'edit'
+            {loading ? '...' : canMutate === false ? (
+              <Row $gap={6}>
+                <MdLock size={18} />
+                {t('subscription.availableWithSubscription', 'Disponible con suscripción')}
+              </Row>
+            ) : (mode === 'edit'
               ? t('common.save', 'Guardar')
               : t('common.create', 'Crear'))}
           </Button>

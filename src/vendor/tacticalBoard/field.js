@@ -1239,7 +1239,7 @@ const FORMATIONS_BY_PLAYER_COUNT = {
 // Legacy helper removed "� field selection now uses lineType + viewMode directly
 
 // Funci�n para obtener los iconos iniciales con etiquetas traducidas
-const DEFAULT_PLAYER_ICON_SIZE = 20;
+const DEFAULT_PLAYER_ICON_SIZE = 24;
 const NEUTRAL_PLAYER_COLORS = {
   background: '#0F766E',
   bib: '#FBBF24',
@@ -1269,7 +1269,7 @@ const getInitialIcons = () => [
     label: i18n.t('tacticalBoard.icons.bluePlayer'),
     color: '#2176ff',
     size: DEFAULT_PLAYER_ICON_SIZE,
-    number: 1,
+    number: 2,
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
@@ -1280,21 +1280,38 @@ const getInitialIcons = () => [
     label: i18n.t('tacticalBoard.icons.redPlayer'),
     color: '#ff3838',
     size: DEFAULT_PLAYER_ICON_SIZE,
-    number: 1,
+    number: 2,
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
   },
   {
-    id: 'icon3',
+    id: 'goalkeeper-1',
     type: 'player',
-    label: i18n.t('tacticalBoard.icons.orangePlayer'),
-    color: '#ffa600',
+    label: i18n.t('tacticalBoard.icons.goalkeeper', { defaultValue: 'Portero' }),
+    color: '#ffffff',
     size: DEFAULT_PLAYER_ICON_SIZE,
     number: 1,
     shape: 'circle',
-    hasStripes: false,
-    stripeColor: '#ffffff',
+    hasStripes: true,
+    stripeColor: '#dc2626',
+    numberColor: '#111827',
+    isGoalkeeper: true,
+    goalkeeperStripeColor: '#dc2626',
+  },
+  {
+    id: 'goalkeeper-2',
+    type: 'player',
+    label: i18n.t('tacticalBoard.icons.goalkeeper', { defaultValue: 'Portero' }),
+    color: '#2176ff',
+    size: DEFAULT_PLAYER_ICON_SIZE,
+    number: 1,
+    shape: 'circle',
+    hasStripes: true,
+    stripeColor: '#111827',
+    numberColor: '#ffffff',
+    isGoalkeeper: true,
+    goalkeeperStripeColor: '#111827',
   },
   {
     id: 'neutral-player',
@@ -12807,8 +12824,8 @@ export default function Field(props = {}) {
   const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
 
-  // Detectar si es m�vil (menor a 768px en el lado m�s corto)
-  const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
+  // Compacta la pizarra tambien en tablet.
+  const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 1024;
   // Decompose initialFieldType (may be legacy ID like 'full' or compound 'full:entire')
   const initialDecomposed = useMemo(() => decomposeFieldId(initialFieldType), [initialFieldType]);
   const [fieldLineType, setFieldLineType] = useState(initialDecomposed.lineType);
@@ -14976,7 +14993,7 @@ export default function Field(props = {}) {
 
   const iconCounters = useRef({});
   paletteIcons.forEach((icon) => {
-    if (!iconCounters.current[icon.id]) iconCounters.current[icon.id] = 1;
+    if (!iconCounters.current[icon.id]) iconCounters.current[icon.id] = icon.number || 1;
   });
 
   // Contador incremental de z-index para ordenar elementos por orden de creacin
@@ -15130,7 +15147,9 @@ export default function Field(props = {}) {
     (placementAction, ratioPoint) => {
       if (!placementAction) return;
       const shouldAutoNumber =
-        placementAction.kind === 'palette-player' && placementAction.paletteIconId;
+        placementAction.kind === 'palette-player' &&
+        placementAction.paletteIconId &&
+        !placementAction.clone?.isGoalkeeper;
       const currentNumber = shouldAutoNumber
         ? iconCounters.current[placementAction.paletteIconId] || placementAction.number || 1
         : placementAction.clone.number;
@@ -20740,8 +20759,8 @@ export default function Field(props = {}) {
               {
                 ...(isMobile
                   ? {
-                      bottom: 10,
-                      left: 136,
+                      top: 6,
+                      left: 112,
                     }
                   : {
                       top: 20,

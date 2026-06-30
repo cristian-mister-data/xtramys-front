@@ -17,7 +17,7 @@ import {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const IS_MOBILE = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 768;
+const IS_MOBILE = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 1024;
 
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
@@ -58,6 +58,7 @@ import {
   linkVideoToStrategy,
 } from '@/utils/api';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import i18n from '@/i18n';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -720,6 +721,8 @@ export default function VideoRecorder({
   onSavingChange = null,
 }) {
   const { t } = useTranslation();
+  const user = useSelector((state) => state.usuario.user);
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewingBoard, setIsPreviewingBoard] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
@@ -2157,18 +2160,22 @@ export default function VideoRecorder({
       {/* Video Recorder Panel */}
       <View style={IS_MOBILE ? styles.panelMobile : styles.panelDesktop}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {t('videoRecorder.title')}
-          </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Feather name="x" size={14} color="#94a3b8" />
-          </TouchableOpacity>
-        </View>
+        {!IS_MOBILE && (
+          <View style={styles.header}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {t('videoRecorder.title')}
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <Feather name="x" size={14} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView
           style={styles.scroll}
+          horizontal={IS_MOBILE}
           showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           nestedScrollEnabled={true}
         >
@@ -2178,6 +2185,7 @@ export default function VideoRecorder({
             onPress={captureKeyframe}
             disabled={isGenerating}
           >
+            {IS_MOBILE && <Feather name="camera" size={18} color="#fff" />}
             <Text style={styles.btnCaptureText}>{t('videoRecorder.capture')}</Text>
           </TouchableOpacity>
 
@@ -2206,6 +2214,7 @@ export default function VideoRecorder({
                 accessibilityRole="button"
                 accessibilityLabel={t('videoRecorder.deleteLast')}
               >
+                {IS_MOBILE && <Feather name="skip-back" size={17} color="#fff" />}
                 <Text style={styles.btnSecondaryText}>{t('videoRecorder.deleteLast')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2215,6 +2224,7 @@ export default function VideoRecorder({
                 accessibilityRole="button"
                 accessibilityLabel={t('videoRecorder.clearAll')}
               >
+                {IS_MOBILE && <Feather name="trash-2" size={17} color="#fff" />}
                 <Text style={styles.btnDangerText}>{t('videoRecorder.clearAll')}</Text>
               </TouchableOpacity>
             </View>
@@ -2250,16 +2260,18 @@ export default function VideoRecorder({
                 onPress={previewOnBoard}
                 disabled={isGenerating || isPreviewingBoard}
               >
-                <Text style={styles.btnPreviewBoardText}>
+                {IS_MOBILE && <Feather name="play" size={20} color="#fff" />}
+                <Text style={styles.btnPreviewBoardText} numberOfLines={1}>
                   {isPreviewingBoard ? t('videoRecorder.previewing', 'Viendo...') : t('videoRecorder.view', 'Ver')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btnGenerate, (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled]}
-                onPress={generateVideo}
+                onPress={isDemo ? () => showNotification(t('videoRecorder.demoSaveDisabled', 'Necesitas una suscripción para guardar vídeos'), 'error') : generateVideo}
                 disabled={isGenerating || isPreviewingBoard}
               >
-                <Text style={styles.btnGenerateText}>
+                {(isDemo || IS_MOBILE) && <Feather name={isDemo ? "lock" : "save"} size={20} color="#fff" />}
+                <Text style={styles.btnGenerateText} numberOfLines={1}>
                   {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.save', 'Guardar')}
                 </Text>
               </TouchableOpacity>
@@ -2398,6 +2410,11 @@ export default function VideoRecorder({
             </View>
           )}
         </ScrollView>
+        {IS_MOBILE && (
+          <TouchableOpacity onPress={onClose} style={styles.mobileCloseBtn} accessibilityRole="button" accessibilityLabel="Cerrar panel de video">
+            <Feather name="x" size={22} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Pantalla fullscreen de preview — componente aislado, sin parpadeos */}
@@ -2825,18 +2842,20 @@ const styles = StyleSheet.create({
   },
   panelMobile: {
     position: 'absolute',
-    right: 6,
-    top: 52,
-    width: SCREEN_WIDTH < 380 ? 108 : 120,
-    maxHeight: SCREEN_HEIGHT < 720 ? '70%' : '76%',
-    backgroundColor: '#ffffff',
-    borderRadius: 9,
-    padding: 5,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 78,
+    backgroundColor: 'rgba(18, 18, 18, 0.98)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 14,
     zIndex: 1000,
   },
   // ── Header ──
@@ -2844,45 +2863,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: IS_MOBILE ? 3 : 8,
-    marginBottom: IS_MOBILE ? 3 : 8,
+    paddingBottom: IS_MOBILE ? 0 : 8,
+    marginBottom: IS_MOBILE ? 0 : 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: IS_MOBILE ? 'transparent' : '#f1f5f9',
   },
   headerTitle: {
+    display: IS_MOBILE ? 'none' : 'flex',
     fontSize: IS_MOBILE ? (SCREEN_WIDTH < 400 ? 8 : 9) : 13,
     fontWeight: '700',
     color: '#0f172a',
     flex: 1,
   },
   closeBtn: {
-    width: IS_MOBILE ? 18 : 22,
-    height: IS_MOBILE ? 18 : 22,
-    borderRadius: IS_MOBILE ? 9 : 11,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: IS_MOBILE ? 3 : 6,
+    marginLeft: 6,
+  },
+  mobileCloseBtn: {
+    position: 'absolute',
+    right: 12,
+    top: 15,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.24,
+    shadowRadius: 7,
+    elevation: 30,
+    zIndex: 30,
   },
   // ── Scroll ──
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 4 },
+  scrollContent: {
+    paddingBottom: IS_MOBILE ? 0 : 4,
+    flexDirection: IS_MOBILE ? 'row' : 'column',
+    alignItems: IS_MOBILE ? 'center' : 'stretch',
+    gap: IS_MOBILE ? 10 : 0,
+    paddingRight: IS_MOBILE ? 54 : 0,
+  },
   // ── Capture button ──
   btnCapture: {
-    backgroundColor: '#16a34a',
-    borderRadius: IS_MOBILE ? 5 : 8,
-    paddingVertical: IS_MOBILE ? 3 : 9,
+    backgroundColor: IS_MOBILE ? '#2563EB' : '#16a34a',
+    borderRadius: IS_MOBILE ? 12 : 8,
+    paddingVertical: IS_MOBILE ? 0 : 9,
+    paddingHorizontal: IS_MOBILE ? 12 : 0,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: IS_MOBILE ? 'row' : 'column',
+    gap: IS_MOBILE ? 6 : 0,
     shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-    marginBottom: IS_MOBILE ? 3 : 6,
+    marginBottom: IS_MOBILE ? 0 : 6,
+    height: IS_MOBILE ? 48 : undefined,
+    minWidth: IS_MOBILE ? 112 : undefined,
   },
   btnCaptureText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 7 : 12,
+    fontSize: IS_MOBILE ? 12 : 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -2890,14 +2941,19 @@ const styles = StyleSheet.create({
   counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: IS_MOBILE ? 3 : 6,
-    marginBottom: IS_MOBILE ? 3 : 6,
+    gap: IS_MOBILE ? 6 : 6,
+    marginBottom: IS_MOBILE ? 0 : 6,
+    height: IS_MOBILE ? 48 : undefined,
+    paddingHorizontal: IS_MOBILE ? 12 : 0,
+    borderLeftWidth: IS_MOBILE ? 1 : 0,
+    borderRightWidth: IS_MOBILE ? 1 : 0,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   counterBadge: {
-    width: IS_MOBILE ? 15 : 20,
-    height: IS_MOBILE ? 15 : 20,
-    borderRadius: IS_MOBILE ? 7.5 : 10,
-    backgroundColor: '#f1f5f9',
+    width: IS_MOBILE ? 34 : 20,
+    height: IS_MOBILE ? 34 : 20,
+    borderRadius: IS_MOBILE ? 17 : 10,
+    backgroundColor: IS_MOBILE ? 'rgba(255,255,255,0.1)' : '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2905,7 +2961,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   counterBadgeText: {
-    fontSize: IS_MOBILE ? 7 : 10,
+    fontSize: IS_MOBILE ? 14 : 10,
     fontWeight: '700',
     color: '#94a3b8',
   },
@@ -2913,51 +2969,58 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   counterLabel: {
-    fontSize: IS_MOBILE ? 7 : 11,
-    color: '#64748b',
+    fontSize: IS_MOBILE ? 11 : 11,
+    color: IS_MOBILE ? 'rgba(255,255,255,0.72)' : '#64748b',
     fontWeight: '500',
   },
   // ── Secondary actions ──
   secondaryRow: {
-    flexDirection: IS_MOBILE ? 'column' : 'row',
-    gap: IS_MOBILE ? 2 : 4,
-    marginBottom: IS_MOBILE ? 3 : 6,
+    flexDirection: 'row',
+    gap: IS_MOBILE ? 8 : 4,
+    marginBottom: IS_MOBILE ? 0 : 6,
   },
   btnSecondary: {
-    backgroundColor: '#d97706',
-    borderRadius: IS_MOBILE ? 4 : 6,
-    paddingVertical: IS_MOBILE ? 3 : 7,
-    paddingHorizontal: 3,
+    backgroundColor: IS_MOBILE ? 'rgba(255,255,255,0.1)' : '#d97706',
+    borderRadius: IS_MOBILE ? 12 : 6,
+    paddingVertical: IS_MOBILE ? 0 : 7,
+    paddingHorizontal: IS_MOBILE ? 0 : 3,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: IS_MOBILE ? 20 : 30,
+    minHeight: IS_MOBILE ? 48 : 30,
+    width: IS_MOBILE ? 48 : undefined,
+    borderWidth: IS_MOBILE ? 1 : 0,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   btnSecondaryText: {
+    display: IS_MOBILE ? 'none' : 'flex',
     color: '#fff',
-    fontSize: IS_MOBILE ? 6 : 11,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   btnDanger: {
     backgroundColor: '#dc2626',
-    borderRadius: IS_MOBILE ? 4 : 6,
-    paddingVertical: IS_MOBILE ? 3 : 7,
-    paddingHorizontal: 3,
+    borderRadius: IS_MOBILE ? 12 : 6,
+    paddingVertical: IS_MOBILE ? 0 : 7,
+    paddingHorizontal: IS_MOBILE ? 0 : 3,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: IS_MOBILE ? 20 : 30,
+    minHeight: IS_MOBILE ? 48 : 30,
+    width: IS_MOBILE ? 48 : undefined,
   },
   btnDangerText: {
+    display: IS_MOBILE ? 'none' : 'flex',
     color: '#fff',
-    fontSize: IS_MOBILE ? 6 : 11,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   // ── Speed ──
   speedSection: {
-    marginBottom: IS_MOBILE ? 3 : 6,
+    marginBottom: IS_MOBILE ? 0 : 6,
   },
   speedLabel: {
+    display: IS_MOBILE ? 'none' : 'flex',
     fontSize: IS_MOBILE ? 6 : 10,
     color: '#64748b',
     fontWeight: '600',
@@ -2965,15 +3028,18 @@ const styles = StyleSheet.create({
   },
   speedGroup: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: IS_MOBILE ? 4 : 6,
-    padding: IS_MOBILE ? 1 : 2,
-    gap: IS_MOBILE ? 1 : 2,
+    backgroundColor: IS_MOBILE ? 'rgba(255,255,255,0.08)' : '#f1f5f9',
+    borderRadius: IS_MOBILE ? 12 : 6,
+    padding: IS_MOBILE ? 3 : 2,
+    gap: IS_MOBILE ? 3 : 2,
+    height: IS_MOBILE ? 48 : undefined,
+    alignItems: 'center',
   },
   speedBtn: {
-    flex: 1,
-    paddingVertical: IS_MOBILE ? 2 : 4,
-    borderRadius: 4,
+    flex: IS_MOBILE ? 0 : 1,
+    minWidth: IS_MOBILE ? 42 : undefined,
+    paddingVertical: IS_MOBILE ? 8 : 4,
+    borderRadius: IS_MOBILE ? 9 : 4,
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
@@ -2981,9 +3047,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   speedBtnText: {
-    fontSize: IS_MOBILE ? 6 : 10,
+    fontSize: IS_MOBILE ? 12 : 10,
     fontWeight: '600',
-    color: '#64748b',
+    color: IS_MOBILE ? 'rgba(255,255,255,0.75)' : '#64748b',
   },
   speedBtnTextActive: {
     color: '#fff',
@@ -2991,48 +3057,68 @@ const styles = StyleSheet.create({
   // ── Generate ──
   videoActionRow: {
     flexDirection: 'row',
-    gap: IS_MOBILE ? 4 : 8,
-    marginBottom: IS_MOBILE ? 3 : 6,
+    gap: IS_MOBILE ? 6 : 8,
+    marginBottom: IS_MOBILE ? 0 : 6,
+    paddingHorizontal: IS_MOBILE ? 6 : 0,
+    alignItems: 'center',
+    flexShrink: 0,
   },
   btnPreviewBoard: {
-    flex: 1,
-    backgroundColor: '#0f172a',
-    borderRadius: IS_MOBILE ? 5 : 8,
-    paddingVertical: IS_MOBILE ? 3 : 9,
+    flex: IS_MOBILE ? 1 : 1,
+    flexShrink: 0,
+    backgroundColor: '#1e293b',
+    borderRadius: IS_MOBILE ? 12 : 8,
+    paddingVertical: IS_MOBILE ? 10 : 9,
+    paddingHorizontal: IS_MOBILE ? 10 : undefined,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    minHeight: IS_MOBILE ? 48 : undefined,
+    borderWidth: IS_MOBILE ? 1 : 0,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   btnPreviewBoardText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 7 : 12,
+    fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   btnGenerate: {
-    flex: 1,
+    flex: IS_MOBILE ? 2 : 1,
+    flexShrink: 0,
     backgroundColor: '#2563EB',
-    borderRadius: IS_MOBILE ? 5 : 8,
-    paddingVertical: IS_MOBILE ? 3 : 9,
+    borderRadius: IS_MOBILE ? 12 : 8,
+    paddingVertical: IS_MOBILE ? 10 : 9,
+    paddingHorizontal: IS_MOBILE ? 10 : undefined,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    minHeight: IS_MOBILE ? 48 : undefined,
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 4,
   },
   btnGenerateDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   btnGenerateText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 7 : 12,
+    fontSize: IS_MOBILE ? 12 : 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
   // ── Keyframe section ──
   kfSection: {
-    marginTop: 1,
+    marginTop: IS_MOBILE ? 0 : 1,
+    flexDirection: IS_MOBILE ? 'row' : 'column',
+    alignItems: IS_MOBILE ? 'center' : 'stretch',
   },
   kfSectionTitle: {
+    display: IS_MOBILE ? 'none' : 'flex',
     fontSize: SCREEN_WIDTH < 400 ? 7 : 8,
     fontWeight: '700',
     color: '#94a3b8',
@@ -3042,14 +3128,20 @@ const styles = StyleSheet.create({
   },
   kfList: {
     maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : 320,
+    flexDirection: IS_MOBILE ? 'row' : 'column',
+    gap: IS_MOBILE ? 6 : 0,
   },
   kfItem: {
-    backgroundColor: '#f8fafc',
-    borderRadius: IS_MOBILE ? 6 : 10,
-    padding: IS_MOBILE ? 3 : 7,
-    marginBottom: IS_MOBILE ? 3 : 6,
-    borderLeftWidth: IS_MOBILE ? 2 : 3,
+    backgroundColor: IS_MOBILE ? 'rgba(255,255,255,0.08)' : '#f8fafc',
+    borderRadius: IS_MOBILE ? 12 : 10,
+    padding: IS_MOBILE ? 0 : 7,
+    marginBottom: IS_MOBILE ? 0 : 6,
+    borderLeftWidth: IS_MOBILE ? 0 : 3,
     borderLeftColor: '#2563EB',
+    borderWidth: IS_MOBILE ? 1 : 0,
+    borderColor: 'rgba(255,255,255,0.12)',
+    height: IS_MOBILE ? 48 : undefined,
+    overflow: IS_MOBILE ? 'hidden' : 'visible',
   },
   kfItemTop: {
     flexDirection: 'row',
@@ -3057,43 +3149,44 @@ const styles = StyleSheet.create({
     gap: IS_MOBILE ? 2 : 4,
   },
   kfNum: {
-    width: IS_MOBILE ? 14 : 18,
-    height: IS_MOBILE ? 14 : 18,
-    borderRadius: IS_MOBILE ? 7 : 9,
-    backgroundColor: '#eff6ff',
+    width: IS_MOBILE ? 34 : 18,
+    height: IS_MOBILE ? 48 : 18,
+    borderRadius: IS_MOBILE ? 0 : 9,
+    backgroundColor: IS_MOBILE ? '#2563EB' : '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   kfNumText: {
-    fontSize: IS_MOBILE ? 7 : 9,
+    fontSize: IS_MOBILE ? 13 : 9,
     fontWeight: '700',
-    color: '#2563EB',
+    color: IS_MOBILE ? '#fff' : '#2563EB',
   },
   kfViewBtn: {
     flex: 1,
-    backgroundColor: '#eff6ff',
+    backgroundColor: IS_MOBILE ? 'transparent' : '#eff6ff',
     borderRadius: 4,
-    paddingVertical: IS_MOBILE ? 1 : 2,
-    paddingHorizontal: IS_MOBILE ? 2 : 4,
+    paddingVertical: IS_MOBILE ? 0 : 2,
+    paddingHorizontal: IS_MOBILE ? 8 : 4,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   kfViewBtnText: {
-    fontSize: IS_MOBILE ? 6 : 9,
+    fontSize: IS_MOBILE ? 11 : 9,
     fontWeight: '600',
-    color: '#2563EB',
+    color: IS_MOBILE ? '#fff' : '#2563EB',
   },
   kfRemoveBtn: {
-    width: IS_MOBILE ? 14 : 18,
-    height: IS_MOBILE ? 14 : 18,
-    borderRadius: IS_MOBILE ? 7 : 9,
-    backgroundColor: '#fef2f2',
+    width: IS_MOBILE ? 28 : 18,
+    height: IS_MOBILE ? 48 : 18,
+    borderRadius: IS_MOBILE ? 0 : 9,
+    backgroundColor: IS_MOBILE ? '#ef4444' : '#fef2f2',
     alignItems: 'center',
     justifyContent: 'center',
   },
   kfRemoveBtnText: {
     fontSize: IS_MOBILE ? 10 : 14,
     fontWeight: '700',
-    color: '#ef4444',
+    color: IS_MOBILE ? '#fff' : '#ef4444',
     lineHeight: IS_MOBILE ? 10 : 14,
   },
   // ── Trajectory ──

@@ -2105,7 +2105,7 @@ export default function AddEventModal({
         <View style={[styles.matchWarning, { backgroundColor: theme.colors.error + '15', borderColor: theme.colors.error + '40' }]}>
           <Ionicons name="lock-closed" size={24} color={theme.colors.error} />
           <Text style={[styles.matchWarningText, { color: theme.colors.error }]}>
-            {t('schedule.readOnlyMode') || 'You do not have permission to create events in this season.'}
+            {t('subscription.availableWithSubscription', 'Disponible con suscripción')}
           </Text>
         </View>
       )}
@@ -2148,7 +2148,7 @@ export default function AddEventModal({
           </Text>
           <Text style={styles.typeOptionDescription}>
             {!canMutate
-              ? (t('schedule.readOnlyMode') || 'You do not have permission to create events.')
+              ? t('subscription.availableWithSubscription', 'Disponible con suscripción')
               : hasMatchOnSelectedDate 
               ? t('schedule.notAvailableMatchDay')
               : t('schedule.matchSheetDesc')}
@@ -2191,7 +2191,7 @@ export default function AddEventModal({
           </Text>
           <Text style={styles.typeOptionDescription}>
             {!canMutate
-              ? (t('schedule.readOnlyMode') || 'You do not have permission to create events.')
+              ? t('subscription.availableWithSubscription', 'Disponible con suscripción')
               : hasMatchOnSelectedDate 
               ? t('schedule.notAvailableMatchDay')
               : t('schedule.trainingSessionDesc')}
@@ -3070,7 +3070,7 @@ export default function AddEventModal({
           ) : (
             <>
               <Ionicons name={!canMutate ? "lock-closed" : "add-circle"} size={20} color="#ffffff" />
-              <Text style={styles.footerSaveBtnText}>{!canMutate ? (t('schedule.readOnlyMode') || 'Read-only') : t('schedule.createMatchSheet')}</Text>
+              <Text style={styles.footerSaveBtnText}>{!canMutate ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('schedule.createMatchSheet')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -3359,7 +3359,7 @@ export default function AddEventModal({
                 {savingRival ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.createRivalSaveText}>{t('common.create')}</Text>
+                  <Text style={styles.createRivalSaveText}>{!canMutate ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('common.create')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -4431,7 +4431,7 @@ export default function AddEventModal({
           ) : (
             <>
               <Ionicons name={!canMutate ? "lock-closed" : "add-circle"} size={20} color="#ffffff" />
-              <Text style={styles.footerSaveBtnText}>{!canMutate ? (t('schedule.readOnlyMode') || 'Read-only') : t('schedule.createSessionBtn')}</Text>
+              <Text style={styles.footerSaveBtnText}>{!canMutate ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('schedule.createSessionBtn')}</Text>
             </>
           )}
         </TouchableOpacity>

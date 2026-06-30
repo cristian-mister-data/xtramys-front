@@ -337,8 +337,9 @@ export default function RivalAnalysis() {
         title={t('rivalAnalysis.title', 'Análisis del Rival')}
         subtitle={selectedTeam?.nombre || t('rivalAnalysis.subtitle', 'Scouting y seguimiento del oponente')}
         icon={MdAnalytics}
-        actions={canMutate ? (
-          <Row $gap={8}>
+        actions={(
+          <CanMutate>
+            <Row $gap={8}>
             <Button $variant="secondary" onClick={() => setShowTemplates(true)}>
               <Row $gap={6}>
                 <MdLibraryBooks size={18} />
@@ -351,8 +352,9 @@ export default function RivalAnalysis() {
                 {t('rivalAnalysis.add', 'Nuevo análisis')}
               </Row>
             </Button>
-          </Row>
-        ) : null}
+            </Row>
+          </CanMutate>
+        )}
       />
 
       <Toolbar>
@@ -410,13 +412,15 @@ export default function RivalAnalysis() {
               ? t('rivalAnalysis.createFirstHint', 'Crea tu primer análisis para comenzar')
               : t('rivalAnalysis.tryDifferentFilters', 'Prueba con otros filtros.')}
           </Muted>
-          {analyses.length === 0 && canMutate && (
-            <Button $variant="primary" onClick={openCreate}>
+          {analyses.length === 0 && (
+            <CanMutate>
+              <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
                 {t('rivalAnalysis.addFirst', 'Crear análisis')}
               </Row>
-            </Button>
+              </Button>
+            </CanMutate>
           )}
         </EmptyState>
       ) : (

@@ -1788,6 +1788,7 @@
     "errorGeneratingVideo": "Error generating video",
     "nameRequired": "Name is required",
     "noKeyframesToSave": "No keyframes to save",
+    "demoSaveDisabled": "You need a subscription to save videos",
     "videoSavedSuccess": "Video saved successfully",
     "videoUpdatedSuccess": "Video updated successfully",
     "errorSavingVideo": "Error saving video",
@@ -5025,6 +5026,7 @@
   },
   "subscription": {
     "requiredToView": "You must be subscribed to view this",
+    "availableWithSubscription": "Available with subscription",
     "demoNotice": "This section is not included in the demo. Subscribe to unlock all content.",
     "viewSubscription": "View subscription",
     "title": "Subscription required",

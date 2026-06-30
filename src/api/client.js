@@ -148,6 +148,8 @@ function assertDemoRequestAllowed(config) {
     throw error;
   }
 
+  if (path === '/media/image-download') return;
+
   if (DEMO_FORBIDDEN_GET_PREFIXES.some((prefix) => path.startsWith(prefix))) {
     const error = new Error(i18n.t('errors.DEMO_FORBIDDEN', 'Esta funcion no esta incluida en la demo.'));
     error.code = 'DEMO_FORBIDDEN';

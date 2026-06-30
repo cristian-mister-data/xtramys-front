@@ -163,12 +163,12 @@ export default function TacticalBoard({
     // Update corresponding elements on the canvas (placed/selected)
     applyChange((prevElements) =>
       prevElements.map((el) => {
-        const isMatch = el.paletteIconId === iconId || 
+        const isMatch = el.paletteIconId === iconId ||
           (iconId === 'icon1' && el.type === 'player' && el.color === (paletteColor['icon1'] || PALETTE_PLAYERS[0].color)) ||
           (iconId === 'icon2' && el.type === 'player' && el.color === (paletteColor['icon2'] || PALETTE_PLAYERS[1].color)) ||
           (iconId === 'icon3' && el.type === 'player' && el.color === (paletteColor['icon3'] || PALETTE_PLAYERS[2].color)) ||
           (el.type === iconId);
-        
+
         if (isMatch) {
           return { ...el, color: newColor };
         }
@@ -184,7 +184,7 @@ export default function TacticalBoard({
   const handlePaletteItemChange = (patch) => {
     if (!editingPaletteItem) return;
     setEditingPaletteItem((prev) => ({ ...prev, ...patch }));
-    
+
     const iconId = editingPaletteItem.id;
     // Also apply the color change to the palette defaults
     if (patch.color !== undefined) {
@@ -194,12 +194,12 @@ export default function TacticalBoard({
     // Update corresponding elements on the canvas (placed/selected)
     applyChange((prevElements) =>
       prevElements.map((el) => {
-        const isMatch = el.paletteIconId === iconId || 
+        const isMatch = el.paletteIconId === iconId ||
           (iconId === 'icon1' && el.type === 'player' && el.color === (paletteColor['icon1'] || PALETTE_PLAYERS[0].color)) ||
           (iconId === 'icon2' && el.type === 'player' && el.color === (paletteColor['icon2'] || PALETTE_PLAYERS[1].color)) ||
           (iconId === 'icon3' && el.type === 'player' && el.color === (paletteColor['icon3'] || PALETTE_PLAYERS[2].color)) ||
           (el.type === iconId);
-        
+
         if (isMatch) {
           return { ...el, ...patch };
         }
@@ -401,7 +401,7 @@ export default function TacticalBoard({
 
     // drawing tools (líneas / formas)
     if (activeTool === 'straight-line' || activeTool === 'straight-arrow'
-        || activeTool === 'curve-line' || activeTool === 'curve-arrow') {
+      || activeTool === 'curve-line' || activeTool === 'curve-arrow') {
       setDrawing((d) => {
         const arrow = activeTool.endsWith('arrow');
         const type = activeTool.startsWith('curve') ? 'curve' : 'line';
@@ -473,7 +473,7 @@ export default function TacticalBoard({
   const onElementDragEnd = (id) => (e) => {
     const node = getDraggableGroup(e.target);
     if (!node) return;
-    
+
     const outside = isDraggedNodeOutside(node, size.w, size.h);
     const r = p2r(node.x(), node.y());
 
@@ -488,13 +488,13 @@ export default function TacticalBoard({
     node.getLayer()?.batchDraw();
     setDraggingOutside(false);
 
-    if (outside) { 
-      applyChange((prev) => prev.filter((it) => it.id !== id)); 
-      setSelectedId(null); 
-    } else { 
-      const x = Math.max(0, Math.min(1, r.x)); 
-      const y = Math.max(0, Math.min(1, r.y)); 
-      applyChange((prev) => prev.map((it) => (it.id === id ? { ...it, x, y } : it))); 
+    if (outside) {
+      applyChange((prev) => prev.filter((it) => it.id !== id));
+      setSelectedId(null);
+    } else {
+      const x = Math.max(0, Math.min(1, r.x));
+      const y = Math.max(0, Math.min(1, r.y));
+      applyChange((prev) => prev.map((it) => (it.id === id ? { ...it, x, y } : it)));
     }
   };
 

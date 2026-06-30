@@ -1147,8 +1147,10 @@ export default function EditSessionModal({
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                    <Text style={styles.saveBtnText}>{t('session.save')}</Text>
+                    <Ionicons name={canMutate === false ? 'lock-closed' : 'checkmark'} size={20} color="#fff" />
+                    <Text style={styles.saveBtnText}>
+                      {canMutate === false ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('session.save')}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>

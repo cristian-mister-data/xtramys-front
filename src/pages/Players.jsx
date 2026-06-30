@@ -413,11 +413,13 @@ export default function Players() {
         title={t('player.players', 'Jugadores')}
         subtitle={selectedTeam?.nombre || t('player.noTeamSelected', 'Selecciona un equipo')}
         icon={MdPeople}
-        actions={selectedTeam && canMutate ? (
-          <Button onClick={() => setCreateOpen(true)}>
-            <MdAdd size={18} />
-            {t('player.createPlayer', 'Nuevo jugador')}
-          </Button>
+        actions={selectedTeam ? (
+          <CanMutate>
+            <Button onClick={() => setCreateOpen(true)}>
+              <MdAdd size={18} />
+              {t('player.createPlayer', 'Nuevo jugador')}
+            </Button>
+          </CanMutate>
         ) : null}
       />
 
@@ -568,13 +570,15 @@ export default function Players() {
                   ? t('player.createFirstPlayer', 'Crea tu primer jugador para comenzar')
                   : t('player.tryDifferentFilters', 'Prueba con otros filtros.')}
               </Muted>
-              {players.length === 0 && canMutate ? (
-                <Button $variant="primary" onClick={() => setCreateOpen(true)}>
-                  <Row $gap={6}>
-                    <MdAdd size={18} />
-                    {t('player.createPlayer', 'Crear jugador')}
-                  </Row>
-                </Button>
+              {players.length === 0 ? (
+                <CanMutate>
+                  <Button $variant="primary" onClick={() => setCreateOpen(true)}>
+                    <Row $gap={6}>
+                      <MdAdd size={18} />
+                      {t('player.createPlayer', 'Crear jugador')}
+                    </Row>
+                  </Button>
+                </CanMutate>
               ) : null}
             </EmptyCard>
           ) : viewMode === 'list' ? (

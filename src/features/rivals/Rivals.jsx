@@ -49,6 +49,7 @@ import { toast } from '../../ui/toast';
 import { confirmAction } from '../../ui/confirm';
 import ImageCropper from '../../components/season/ImageCropper';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
+import CanMutate from '@/components/shared/CanMutate';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 
 // ---------- styles ----------
@@ -484,16 +485,18 @@ export default function Rivals() {
         title={t('rivals.title', 'Rivales')}
         subtitle={selectedTeam?.nombre || t('rivals.subtitle', 'Gestión de equipos rivales')}
         icon={MdShield}
-        actions={canMutate ? (
-          <Row $gap={8}>
+        actions={(
+          <CanMutate>
+            <Row $gap={8}>
             <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
                 {t('rivals.add', 'Añadir rival')}
               </Row>
             </Button>
-          </Row>
-        ) : null}
+            </Row>
+          </CanMutate>
+        )}
       />
 
       <Row $gap={8} $wrap>
@@ -526,13 +529,15 @@ export default function Rivals() {
               ? t('rivals.createFirstHint', 'Crea tu primer rival para comenzar')
               : t('rivals.tryDifferentFilters', 'Prueba con otros filtros.')}
           </Muted>
-          {rivals.length === 0 && canMutate && (
-            <Button $variant="primary" onClick={openCreate}>
+          {rivals.length === 0 && (
+            <CanMutate>
+              <Button $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
                 {t('rivals.createFirst', 'Crear rival')}
               </Row>
-            </Button>
+              </Button>
+            </CanMutate>
           )}
         </EmptyState>
       ) : (

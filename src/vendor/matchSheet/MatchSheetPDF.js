@@ -6,31 +6,48 @@ import api from '@/api/client';
 const toDataUrl = async (url) => {
   if (!url || typeof url !== 'string') return url;
   if (url.startsWith('data:')) return url;
+  const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  const webpToPngDataUrl = (blob) => new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(blob);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
+    img.src = objectUrl;
+  });
+  const normalizeBlob = (blob) => (
+    blob?.type === 'image/webp' || url.toLowerCase().split('?')[0].endsWith('.webp')
+      ? webpToPngDataUrl(blob)
+      : blobToDataUrl(blob)
+  );
   try {
     const res = await api.get('/media/image-download', {
-      params: { url },
+      params: { url, format: 'jpeg' },
       responseType: 'blob',
       timeout: 15000,
     });
-    const blob = res.data;
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
+    return await normalizeBlob(res.data);
   } catch (err) {
     console.warn('Proxy fetch failed for URL, trying direct fetch:', url, err.message);
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error('fetch failed: ' + res.status);
       const blob = await res.blob();
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
+      return await normalizeBlob(blob);
     } catch (e2) {
       console.warn('Direct fetch failed for URL, fallback to original:', url, e2.message);
       return url;
