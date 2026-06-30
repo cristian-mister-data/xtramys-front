@@ -18,6 +18,13 @@ import {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const IS_MOBILE = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 1024;
+const VIDEO_PANEL_SCALE = IS_MOBILE
+  ? Math.max(0.66, Math.min(0.9, SCREEN_WIDTH / 900, SCREEN_HEIGHT / 820))
+  : 1;
+const vp = (value) => Math.round(value * VIDEO_PANEL_SCALE);
+const VP_BTN = vp(40);
+const VP_TEXT = Math.max(8, vp(10));
+const VP_ICON = Math.max(14, vp(17));
 
 function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, children, ...props }) {
   return (
@@ -2185,7 +2192,7 @@ export default function VideoRecorder({
             onPress={captureKeyframe}
             disabled={isGenerating}
           >
-            {IS_MOBILE && <Feather name="camera" size={18} color="#fff" />}
+            {IS_MOBILE && <Feather name="camera" size={Math.max(15, vp(18))} color="#fff" />}
             <Text style={styles.btnCaptureText}>{t('videoRecorder.capture')}</Text>
           </TouchableOpacity>
 
@@ -2214,7 +2221,7 @@ export default function VideoRecorder({
                 accessibilityRole="button"
                 accessibilityLabel={t('videoRecorder.deleteLast')}
               >
-                {IS_MOBILE && <Feather name="skip-back" size={17} color="#fff" />}
+                {IS_MOBILE && <Feather name="skip-back" size={Math.max(15, vp(17))} color="#fff" />}
                 <Text style={styles.btnSecondaryText}>{t('videoRecorder.deleteLast')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -2224,7 +2231,7 @@ export default function VideoRecorder({
                 accessibilityRole="button"
                 accessibilityLabel={t('videoRecorder.clearAll')}
               >
-                {IS_MOBILE && <Feather name="trash-2" size={17} color="#fff" />}
+                {IS_MOBILE && <Feather name="trash-2" size={Math.max(15, vp(17))} color="#fff" />}
                 <Text style={styles.btnDangerText}>{t('videoRecorder.clearAll')}</Text>
               </TouchableOpacity>
             </View>
@@ -2260,7 +2267,7 @@ export default function VideoRecorder({
                 onPress={previewOnBoard}
                 disabled={isGenerating || isPreviewingBoard}
               >
-                {IS_MOBILE && <Feather name="play" size={20} color="#fff" />}
+                {IS_MOBILE && <Feather name="play" size={VP_ICON} color="#fff" />}
                 <Text style={styles.btnPreviewBoardText} numberOfLines={1}>
                   {isPreviewingBoard ? t('videoRecorder.previewing', 'Viendo...') : t('videoRecorder.view', 'Ver')}
                 </Text>
@@ -2270,7 +2277,7 @@ export default function VideoRecorder({
                 onPress={isDemo ? () => showNotification(t('videoRecorder.demoSaveDisabled', 'Necesitas una suscripción para guardar vídeos'), 'error') : generateVideo}
                 disabled={isGenerating || isPreviewingBoard}
               >
-                {(isDemo || IS_MOBILE) && <Feather name={isDemo ? "lock" : "save"} size={20} color="#fff" />}
+                {(isDemo || IS_MOBILE) && <Feather name={isDemo ? "lock" : "save"} size={VP_ICON} color="#fff" />}
                 <Text style={styles.btnGenerateText} numberOfLines={1}>
                   {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.save', 'Guardar')}
                 </Text>
@@ -2303,6 +2310,20 @@ export default function VideoRecorder({
                       }),
                     );
                   };
+                  if (IS_MOBILE) {
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => onSelectKeyframe && onSelectKeyframe(index)}
+                        style={styles.kfItem}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t('videoRecorder.view')} ${index + 1}`}
+                      >
+                        <Text style={styles.kfNumText}>{index + 1}</Text>
+                      </TouchableOpacity>
+                    );
+                  }
+
                   return (
                     <View key={index} style={styles.kfItem}>
                       <View style={styles.kfItemTop}>
@@ -3064,38 +3085,40 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   btnPreviewBoard: {
-    flex: IS_MOBILE ? 1 : 1,
+    flex: IS_MOBILE ? 0 : 1,
     flexShrink: 0,
     backgroundColor: '#1e293b',
-    borderRadius: IS_MOBILE ? 12 : 8,
-    paddingVertical: IS_MOBILE ? 10 : 9,
-    paddingHorizontal: IS_MOBILE ? 10 : undefined,
+    borderRadius: IS_MOBILE ? vp(12) : 8,
+    paddingVertical: IS_MOBILE ? 0 : 9,
+    paddingHorizontal: IS_MOBILE ? vp(12) : undefined,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 6,
-    minHeight: IS_MOBILE ? 48 : undefined,
+    gap: IS_MOBILE ? vp(5) : 6,
+    height: IS_MOBILE ? VP_BTN : undefined,
+    minWidth: IS_MOBILE ? vp(80) : undefined,
     borderWidth: IS_MOBILE ? 1 : 0,
     borderColor: 'rgba(255,255,255,0.18)',
   },
   btnPreviewBoardText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: IS_MOBILE ? VP_TEXT : 13,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   btnGenerate: {
-    flex: IS_MOBILE ? 2 : 1,
+    flex: IS_MOBILE ? 0 : 1,
     flexShrink: 0,
     backgroundColor: '#2563EB',
-    borderRadius: IS_MOBILE ? 12 : 8,
-    paddingVertical: IS_MOBILE ? 10 : 9,
-    paddingHorizontal: IS_MOBILE ? 10 : undefined,
+    borderRadius: IS_MOBILE ? vp(12) : 8,
+    paddingVertical: IS_MOBILE ? 0 : 9,
+    paddingHorizontal: IS_MOBILE ? vp(12) : undefined,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 6,
-    minHeight: IS_MOBILE ? 48 : undefined,
+    gap: IS_MOBILE ? vp(5) : 6,
+    height: IS_MOBILE ? VP_BTN : undefined,
+    minWidth: IS_MOBILE ? vp(110) : undefined,
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.28,
@@ -3107,7 +3130,7 @@ const styles = StyleSheet.create({
   },
   btnGenerateText: {
     color: '#fff',
-    fontSize: IS_MOBILE ? 12 : 12,
+    fontSize: IS_MOBILE ? VP_TEXT : 12,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -3129,18 +3152,20 @@ const styles = StyleSheet.create({
   kfList: {
     maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : 320,
     flexDirection: IS_MOBILE ? 'row' : 'column',
-    gap: IS_MOBILE ? 6 : 0,
+    gap: IS_MOBILE ? vp(5) : 0,
+    alignItems: 'center',
   },
   kfItem: {
-    backgroundColor: IS_MOBILE ? 'rgba(255,255,255,0.08)' : '#f8fafc',
-    borderRadius: IS_MOBILE ? 12 : 10,
+    backgroundColor: IS_MOBILE ? '#2563EB' : '#f8fafc',
+    borderRadius: IS_MOBILE ? VP_BTN / 2 : 10,
     padding: IS_MOBILE ? 0 : 7,
     marginBottom: IS_MOBILE ? 0 : 6,
     borderLeftWidth: IS_MOBILE ? 0 : 3,
     borderLeftColor: '#2563EB',
-    borderWidth: IS_MOBILE ? 1 : 0,
-    borderColor: 'rgba(255,255,255,0.12)',
-    height: IS_MOBILE ? 48 : undefined,
+    width: IS_MOBILE ? VP_BTN : undefined,
+    height: IS_MOBILE ? VP_BTN : undefined,
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: IS_MOBILE ? 'hidden' : 'visible',
   },
   kfItemTop: {
@@ -3157,8 +3182,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   kfNumText: {
-    fontSize: IS_MOBILE ? 13 : 9,
-    fontWeight: '700',
+    fontSize: IS_MOBILE ? 14 : 9,
+    fontWeight: '800',
     color: IS_MOBILE ? '#fff' : '#2563EB',
   },
   kfViewBtn: {
