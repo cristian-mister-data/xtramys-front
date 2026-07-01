@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { POSITION_COLORS } from './formations';
 import { cdnUrl } from '@/config';
+import { getPlayerFirstName } from '@/utils/playerHelpers';
 
 // Read-only field renderer + slot helpers
 // Used both inside LineupEditor (interactive) and in detail/PDF (static).
@@ -157,7 +158,7 @@ export function PlayerSlot({
 }) {
   const color = POSITION_COLORS[slot.pos] || '#3b82f6';
   const empty = !player;
-  const firstName = player ? (player.nombre || '').split(' ')[0] : '';
+  const firstName = player ? getPlayerFirstName(player) : '';
   return (
     <SlotBase
       style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: size }}

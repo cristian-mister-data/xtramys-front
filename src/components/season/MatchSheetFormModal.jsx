@@ -18,6 +18,7 @@ import RivalSelector from '@/features/matchSheet/RivalSelector';
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import JornadaModal from '@/features/matchSheet/modals/JornadaModal';
 import { generateMatchSheetPDF, generateLineupPDF, generateCallUpPDF } from '@/features/matchSheet/pdf';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const EMPTY = [];
 
@@ -271,7 +272,7 @@ export default function MatchSheetFormModal({
 
   const playerLabel = (id) => {
     const p = players.find((x) => x._id === id);
-    return p ? `${p.dorsal ?? '?'} · ${p.nombre}` : t('matchSheet.selectPlayer', 'Selecciona...');
+    return p ? `${p.dorsal ?? '?'} · ${getPlayerFullName(p)}` : t('matchSheet.selectPlayer', 'Selecciona...');
   };
 
   const handleSubmit = (e) => {

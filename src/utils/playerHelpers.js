@@ -3,7 +3,7 @@
  */
 
 /**
- * Returns the full name of a player (nombre + apellido)
+ * Returns the display name of a player (apodo or nombre + apellido)
  * @param {Object} player - The player object
  * @returns {string} - Full name or empty string
  */
@@ -11,7 +11,21 @@ export const getPlayerFullName = (player) => {
   if (!player) return '';
   const nombre = player.nombre || '';
   const apellido = player.apellidos || player.apellido || '';
+  return (player.apodo || '').trim() || `${nombre} ${apellido}`.trim();
+};
+
+export const getPlayerBaseName = (player) => {
+  if (!player) return '';
+  const nombre = player.nombre || '';
+  const apellido = player.apellidos || player.apellido || '';
   return `${nombre} ${apellido}`.trim();
+};
+
+export const getPlayerRosterName = (player) => {
+  if (!player) return '';
+  const fullName = getPlayerBaseName(player);
+  const apodo = (player.apodo || '').trim();
+  return apodo && fullName ? `${fullName} (${apodo})` : apodo || fullName;
 };
 
 /**
@@ -21,7 +35,7 @@ export const getPlayerFullName = (player) => {
  */
 export const getPlayerFirstName = (player) => {
   if (!player) return '';
-  return player.nombre || '';
+  return (player.apodo || '').trim() || player.nombre || '';
 };
 
 /**
@@ -31,7 +45,7 @@ export const getPlayerFirstName = (player) => {
  */
 export const getPlayerInitials = (player) => {
   if (!player) return '';
-  const firstName = player.nombre?.charAt(0) || '';
+  const firstName = ((player.apodo || player.nombre) || '').charAt(0);
   const lastName = (player.apellidos || player.apellido)?.charAt(0) || '';
   return `${firstName}${lastName}`.toUpperCase();
 };

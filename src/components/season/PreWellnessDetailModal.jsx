@@ -16,6 +16,7 @@ import {
   togglePreWellnessLink,
   deletePreWellnessResponse,
 } from '@/api/wellness';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const HeroCard = styled.div`
   background: linear-gradient(135deg, ${({ theme }) => theme.mode === 'dark' ? '#be185d' : '#ec4899'}, ${({ theme }) => theme.mode === 'dark' ? '#9d174d' : '#db2777'});
@@ -324,7 +325,7 @@ export default function PreWellnessDetailModal({
                   <ResponseRow key={r._id}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>
-                        {r?.player?.nombre || t('common.player', 'Jugador')} {r?.player?.apellidos || ''}
+                        {getPlayerFullName(r?.player) || t('common.player', 'Jugador')}
                       </div>
                       <ResponseMeta>
                         {r.createdAt

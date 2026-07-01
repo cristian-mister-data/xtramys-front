@@ -6,6 +6,7 @@ import LineupField from './LineupField';
 import { getFormationSlots, POSITION_COLORS } from './formations';
 import { Button, Row, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
+import { getPlayerFirstName, getPlayerFullName } from '@/utils/playerHelpers';
 
 // LineupEditor — visual tap-to-place lineup builder.
 // Props:
@@ -227,7 +228,7 @@ export default function LineupEditor({
                 <Avatar>
                   {p.foto ? <img src={cdnUrl(p.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (p.dorsal ?? '?')}
                 </Avatar>
-                <Name>{(p.nombre || '').split(' ')[0]}</Name>
+                <Name>{getPlayerFirstName(p)}</Name>
               </PlayerChip>
             ))
           )}
@@ -254,7 +255,7 @@ export default function LineupEditor({
               if (!p) return null;
               return (
                 <StarterPill key={id} $color={POSITION_COLORS.MC}>
-                  {p.dorsal ?? '?'} · {p.nombre}
+                  {p.dorsal ?? '?'} · {getPlayerFullName(p)}
                 </StarterPill>
               );
             })}

@@ -18,6 +18,7 @@ import {
   deleteWellnessResponse,
 } from '@/api/wellness';
 import { getWellnessFormUrl } from '@/utils/api';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const HeroCard = styled.div`
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary}, ${({ theme }) => theme.colors.primaryHover});
@@ -413,7 +414,7 @@ export default function WellnessDetailModal({
                   <ResponseRow key={r._id}>
                     <ResponseInfo>
                       <ResponseName>
-                        {r?.player?.nombre || t('common.player', 'Jugador')} {r?.player?.apellidos || ''}
+                        {getPlayerFullName(r?.player) || t('common.player', 'Jugador')}
                       </ResponseName>
                       <ResponseDate>
                         {r.createdAt

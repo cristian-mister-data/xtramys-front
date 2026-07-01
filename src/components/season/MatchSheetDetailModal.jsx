@@ -9,7 +9,7 @@ import {
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
-import { getPlayerInitials } from '@/utils/playerHelpers';
+import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const HeroCard = styled.div`
@@ -244,7 +244,7 @@ function getPlayerName(players, id) {
   if (!id) return '—';
   const p = players.find((x) => x._id === id || x._id === id?._id);
   if (!p) return id?.nombre || '—';
-  return [p.nombre, p.apellidos].filter(Boolean).join(' ') || '—';
+  return getPlayerFullName(p) || '—';
 }
 
 export default function MatchSheetDetailModal({

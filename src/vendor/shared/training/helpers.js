@@ -171,8 +171,8 @@ export function calcularDuracionTotal(ejercicios) {
 export function getPlayerFullName(player) {
   if (!player) return '';
   const nombre = player.nombre || '';
-  const apellidos = player.apellidos || '';
-  return `${nombre} ${apellidos}`.trim();
+  const apellidos = player.apellidos || player.apellido || '';
+  return (player.apodo || '').trim() || `${nombre} ${apellidos}`.trim();
 }
 
 /**
@@ -182,8 +182,8 @@ export function getPlayerFullName(player) {
  */
 export function getPlayerInitials(player) {
   if (!player) return '??';
-  const nombre = player.nombre || '';
-  const apellidos = player.apellidos || '';
+  const nombre = player.apodo || player.nombre || '';
+  const apellidos = player.apellidos || player.apellido || '';
   const inicial1 = nombre.charAt(0).toUpperCase();
   const inicial2 = apellidos.charAt(0).toUpperCase();
   return `${inicial1}${inicial2}` || '??';

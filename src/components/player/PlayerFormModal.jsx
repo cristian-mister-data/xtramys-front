@@ -98,7 +98,7 @@ const SexBtn = styled.button`
 `;
 
 const emptyForm = {
-  nombre: '', apellido: '', edad: '', posicion: '',
+  nombre: '', apellido: '', apodo: '', edad: '', posicion: '',
   dorsal: '', altura: '', sexo: 'M', foto: null, extra: false,
   fechaNacimiento: '', pierna: '',
 };
@@ -124,6 +124,7 @@ export default function PlayerFormModal({
       setData({
         nombre: player.nombre || '',
         apellido: player.apellido || '',
+        apodo: player.apodo || '',
         edad: player.edad?.toString() || '',
         posicion: player.posicion || '',
         dorsal: player.dorsal?.toString() || '',
@@ -220,6 +221,7 @@ export default function PlayerFormModal({
     const payload = {
       nombre: data.nombre.trim(),
       apellido: data.apellido.trim(),
+      apodo: data.apodo.trim(),
       edad: parseInt(data.edad, 10),
       posicion: data.posicion,
       dorsal: dorsalNum,
@@ -292,6 +294,10 @@ export default function PlayerFormModal({
             <Field>
               <Label>{t('player.lastName', 'Apellido')}</Label>
               <Input value={data.apellido} onChange={set('apellido')} />
+            </Field>
+            <Field>
+              <Label>{t('player.nickname', 'Apodo')}</Label>
+              <Input value={data.apodo} onChange={set('apodo')} />
             </Field>
             <Field>
               <Label>{t('player.dorsal', 'Dorsal')}</Label>

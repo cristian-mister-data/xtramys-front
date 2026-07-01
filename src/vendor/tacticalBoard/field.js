@@ -6087,7 +6087,7 @@ function FormationModal({
         if (player) {
           return {
             name:
-              player.nombre?.substring(0, 3).toUpperCase() ||
+              getPlayerFullName(player)?.substring(0, 3).toUpperCase() ||
               player.apellido?.substring(0, 3).toUpperCase() ||
               `J${idx + 1}`,
             fullName: getPlayerFullName(player),
@@ -8693,7 +8693,7 @@ const DraggableIcon = React.memo(
                           ...noTextSelectionStyle,
                         }}
                       >
-                        {icon.playerData.nombre || icon.playerData.name}
+                        {getPlayerFullName(icon.playerData) || icon.playerData.name}
                       </Text>
                     )}
                   </View>
@@ -8802,6 +8802,8 @@ const DraggableIcon = React.memo(
       icon.playerData?.id !== nextIcon.playerData?.id ||
       icon.playerData?.uniqueId !== nextIcon.playerData?.uniqueId ||
       icon.playerData?.nombre !== nextIcon.playerData?.nombre ||
+      icon.playerData?.apodo !== nextIcon.playerData?.apodo ||
+      icon.playerData?.fullName !== nextIcon.playerData?.fullName ||
       icon.playerData?.name !== nextIcon.playerData?.name ||
       icon.playerData?.foto !== nextIcon.playerData?.foto
     )
@@ -14726,7 +14728,7 @@ export default function Field(props = {}) {
           playerData:
             isRealPlayer && playerInfo?.fullName
               ? {
-                  nombre: playerInfo.fullName.split(' ')[0], // Solo el primer nombre
+                  nombre: playerInfo.fullName,
                   fullName: playerInfo.fullName,
                   foto: playerInfo.foto, // Incluir foto
                   posicion: playerInfo.posicion, // Incluir posici�n para detectar portero
@@ -15881,7 +15883,8 @@ export default function Field(props = {}) {
                   defaultDisplayLabel: elem.defaultDisplayLabel ?? elem.displayLabel,
                   number,
                   playerData: {
-                    nombre: player.nombre,
+                    nombre: getPlayerFullName(player),
+                    fullName: getPlayerFullName(player),
                     demarcacion: player.demarcacion,
                     posicion: player.posicion,
                     foto: player.foto,

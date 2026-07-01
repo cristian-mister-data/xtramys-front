@@ -19,7 +19,7 @@ import {
   getPositionOptions,
   getPositionColor,
   getPositionIcon,
-  getPlayerFullName,
+  getPlayerRosterName,
 } from '@/components/player/playerHelpers';
 import {
   fetchJugadoresEquipo,
@@ -337,7 +337,7 @@ export default function Players() {
     if (!players) return [];
     return [...players]
       .filter((p) => {
-        const fullName = getPlayerFullName(p).toLowerCase();
+        const fullName = getPlayerRosterName(p).toLowerCase();
         const matchesName = !search || fullName.includes(search.toLowerCase());
         const matchesPos = !positionFilter || p.posicion === positionFilter;
         const matchesType =
@@ -394,7 +394,7 @@ export default function Players() {
 
   const handleDelete = async (player) => {
     const ok = await confirmAction(
-      `${t('player.deleteConfirmation', '¿Eliminar al jugador')} ${getPlayerFullName(player)}?`,
+      `${t('player.deleteConfirmation', '¿Eliminar al jugador')} ${getPlayerRosterName(player)}?`,
     );
     if (!ok) return;
     try {

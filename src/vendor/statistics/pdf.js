@@ -144,9 +144,9 @@ const s = {
 const getPlayerFullName = (player, t) => {
   if (!player) return t ? t('common.unknown', 'Desconocido') : 'Desconocido';
   const name = player.nombre || '';
-  const surname = player.apellidos || '';
+  const surname = player.apellidos || player.apellido || '';
   const fullName = `${name} ${surname}`.trim();
-  return fullName || (t ? t('common.unknown', 'Desconocido') : 'Desconocido');
+  return (player.apodo || '').trim() || fullName || (t ? t('common.unknown', 'Desconocido') : 'Desconocido');
 };
 
 const mapZoneKey = (zoneValue) => {
@@ -654,7 +654,7 @@ const InjuriesStatsPage = ({ injuries = [], players = [], t, title, date, hideHe
             {injuryHistory.map((inj, idx) => {
               const playerId = inj.jugador?._id || inj.jugador;
               const player = players.find((p) => p._id === playerId);
-              const playerName = player ? getPlayerFullName(player, t) : (inj.jugador?.nombre || t('common.unknown', 'Desconocido'));
+              const playerName = getPlayerFullName(player || inj.jugador, t);
               const type = translateType(inj.tipo, t);
               const zone = translateZone(inj.zona, t);
               const startDateStr = inj.fechaInicio ? new Date(inj.fechaInicio).toLocaleDateString(getLocale()) : '-';

@@ -36,7 +36,7 @@ import {
   getPlayerAnthropometryPDF,
   getPlayerPreWellnessHistory,
 } from '../../utils/api';
-import { getPlayerFullName } from '../../utils/playerHelpers';
+import { getPlayerBaseName } from '../../utils/playerHelpers';
 import { translatePosition } from '@/components/player/playerHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/vendor/shared/ProfessionalHeader';
@@ -639,7 +639,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
             </TouchableOpacity>
             <View>
               <Text style={styles.headerTitle}>{t('player.profile.title')}</Text>
-              <Text style={styles.headerSubtitle}>{getPlayerFullName(player)}</Text>
+              <Text style={styles.headerSubtitle}>{getPlayerBaseName(player)}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.pdfButton} onPress={exportToPDF}>
@@ -658,8 +658,14 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
             <View style={styles.infoGrid}>
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>{t('player.profile.name')}</Text>
-                <Text style={styles.infoValue}>{getPlayerFullName(player)}</Text>
+                <Text style={styles.infoValue}>{getPlayerBaseName(player)}</Text>
               </View>
+              {player.apodo ? (
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>{t('player.nickname', 'Apodo')}</Text>
+                  <Text style={styles.infoValue}>{player.apodo}</Text>
+                </View>
+              ) : null}
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>{t('player.profile.age')}</Text>
                 <Text style={styles.infoValue}>
@@ -1311,7 +1317,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                 </TouchableOpacity>
                 <View>
                   <Text style={styles.headerTitle}>{t('player.profile.wellnessHistory')}</Text>
-                  <Text style={styles.headerSubtitle}>{getPlayerFullName(player)}</Text>
+                  <Text style={styles.headerSubtitle}>{getPlayerBaseName(player)}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.exportButton} onPress={exportWellnessPDF}>
@@ -1459,7 +1465,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                   <Text style={styles.headerTitle}>
                     {t('player.profile.preWellnessHistory') || 'Pre-Wellness History'}
                   </Text>
-                  <Text style={styles.headerSubtitle}>{getPlayerFullName(player)}</Text>
+                  <Text style={styles.headerSubtitle}>{getPlayerBaseName(player)}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.exportButton} onPress={exportPreWellnessPDF}>
@@ -1589,7 +1595,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                 </TouchableOpacity>
                 <View>
                   <Text style={styles.headerTitle}>{t('player.profile.attendanceHistory')}</Text>
-                  <Text style={styles.headerSubtitle}>{getPlayerFullName(player)}</Text>
+                  <Text style={styles.headerSubtitle}>{getPlayerBaseName(player)}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.exportButton} onPress={exportAttendancePDF}>
@@ -1747,7 +1753,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                 </TouchableOpacity>
                 <View>
                   <Text style={styles.headerTitle}>{t('anthropometry.title')}</Text>
-                  <Text style={styles.headerSubtitle}>{getPlayerFullName(player)}</Text>
+                  <Text style={styles.headerSubtitle}>{getPlayerBaseName(player)}</Text>
                 </View>
               </View>
               <TouchableOpacity

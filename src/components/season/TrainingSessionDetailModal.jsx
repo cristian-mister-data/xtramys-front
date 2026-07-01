@@ -9,6 +9,7 @@ import {
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const HeroCard = styled.div`
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.success}, ${({ theme }) => theme.mode === 'dark' ? theme.colors.successSoftText : '#059669'});
@@ -343,7 +344,7 @@ function getPlayerName(players, ref) {
   if (!ref) return '—';
   const id = typeof ref === 'string' ? ref : ref?._id;
   const p = players.find((x) => x._id === id);
-  if (p) return [p.nombre, p.apellidos].filter(Boolean).join(' ') || '—';
+  if (p) return getPlayerFullName(p) || '—';
   return ref?.nombre || '—';
 }
 

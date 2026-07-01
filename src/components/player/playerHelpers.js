@@ -58,13 +58,26 @@ export const translatePosition = (pos, t) => {
 
 export const getPlayerFullName = (p) => {
   if (!p) return '';
-  return `${p.nombre || ''} ${p.apellido || ''}`.trim();
+  const fullName = `${p.nombre || ''} ${p.apellido || p.apellidos || ''}`.trim();
+  return (p.apodo || '').trim() || fullName;
+};
+
+export const getPlayerBaseName = (p) => {
+  if (!p) return '';
+  return `${p.nombre || ''} ${p.apellido || p.apellidos || ''}`.trim();
+};
+
+export const getPlayerRosterName = (p) => {
+  if (!p) return '';
+  const fullName = getPlayerBaseName(p);
+  const apodo = (p.apodo || '').trim();
+  return apodo && fullName ? `${fullName} (${apodo})` : apodo || fullName;
 };
 
 export const getPlayerInitials = (p) => {
   if (!p) return '?';
-  const a = (p.nombre || '').trim().charAt(0).toUpperCase();
-  const b = (p.apellido || '').trim().charAt(0).toUpperCase();
+  const a = (p.apodo || p.nombre || '').trim().charAt(0).toUpperCase();
+  const b = (p.apellido || p.apellidos || '').trim().charAt(0).toUpperCase();
   return (a + b) || '?';
 };
 

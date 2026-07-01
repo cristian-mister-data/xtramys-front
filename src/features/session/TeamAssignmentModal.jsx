@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MdClose } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Row, Muted } from '@/ui/primitives';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 export const TEAM_COLORS = [
   '#ef4444', '#3b82f6', '#10b981', '#f59e0b',
@@ -133,7 +134,7 @@ export default function TeamAssignmentModal({
 
   const clearAll = () => setAssignments(buildEmpty(equipos));
 
-  const playerName = (p) => p.nombre || p.apellidos || '?';
+  const playerName = (p) => getPlayerFullName(p) || '?';
 
   if (!exercise) return null;
 

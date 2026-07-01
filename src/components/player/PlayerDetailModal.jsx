@@ -6,7 +6,7 @@ import { Button, Row, Muted } from '@/ui/primitives';
 import {
   getPositionColor,
   getPositionIcon,
-  getPlayerFullName,
+  getPlayerBaseName,
   getPlayerInitials,
   translatePosition,
 } from './playerHelpers';
@@ -124,7 +124,7 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
     <Modal
       open={open}
       onClose={onClose}
-      title={getPlayerFullName(player)}
+      title={getPlayerBaseName(player)}
       width={560}
       footer={
         <FooterContainer>
@@ -160,7 +160,7 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
           {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
         </Avatar>
         <div>
-          <HeaderName>{getPlayerFullName(player)}</HeaderName>
+          <HeaderName>{getPlayerBaseName(player)}</HeaderName>
           <HeaderSub>
             {getPositionIcon(player.posicion)} {translatePosition(player.posicion, t)}
             {player.extra ? ` · ⭐ ${t('player.extra', 'Extra')}` : ''}
@@ -177,6 +177,12 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
           <StatValue>{player.edad ?? '-'}</StatValue>
           <StatLabel>{t('player.age', 'Edad')}</StatLabel>
         </Stat>
+        {player.apodo ? (
+          <Stat>
+            <StatValue>{player.apodo}</StatValue>
+            <StatLabel>{t('player.nickname', 'Apodo')}</StatLabel>
+          </Stat>
+        ) : null}
         <Stat>
           <StatValue>{player.altura ? `${player.altura}` : '-'}</StatValue>
           <StatLabel>{t('player.height', 'Altura')} (cm)</StatLabel>

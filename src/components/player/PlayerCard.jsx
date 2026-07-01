@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   getPositionColor,
   getPositionIcon,
-  getPlayerFullName,
+  getPlayerRosterName,
   getPlayerInitials,
   translatePosition,
 } from './playerHelpers';
@@ -208,7 +208,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
           </GridAvatar>
         </GridHeader>
         <GridBody>
-          <GridName>{getPlayerFullName(player)}</GridName>
+          <GridName>{getPlayerRosterName(player)}</GridName>
           <GridStats>
             <Tag $bg={theme.colors.primarySoft} $color={theme.colors.primarySoftText}>#{player.dorsal ?? '-'}</Tag>
             {player.edad ? <Tag>{player.edad} {t('player.yearsOld', 'años')}</Tag> : null}
@@ -227,7 +227,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
         {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
       </Avatar>
       <Body>
-        <Name>{getPlayerFullName(player)}</Name>
+        <Name>{getPlayerRosterName(player)}</Name>
         <Tags>
           {player.extra ? <Tag $bg={theme.colors.warningSoft} $color={theme.colors.warningSoftText}>⭐ {t('player.extra', 'Extra')}</Tag> : null}
           <Tag $bg={posBg} $color={posText}>{icon} {positionLabel}</Tag>

@@ -15,7 +15,7 @@ import {
   PdfSection,
   renderPdf,
 } from '@/utils/pdfDesign';
-import { getPlayerFullName } from '@/utils/playerHelpers';
+import { getPlayerBaseName } from '@/utils/playerHelpers';
 import { translatePosition } from '@/components/player/playerHelpers';
 import { format } from 'date-fns';
 
@@ -358,7 +358,7 @@ const ProfileGeneralPage = ({
   injuries,
   t,
 }) => {
-  const name = getPlayerFullName(player);
+  const name = getPlayerBaseName(player);
   const teamName = team?.nombre || '';
   const latestAntro =
     anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
@@ -403,6 +403,12 @@ const ProfileGeneralPage = ({
 
         <PdfSection title={t('player.profile.personalInfo', 'Información personal')}>
           <View style={s.grid4}>
+            {player.apodo ? (
+              <View style={s.infoStatCard}>
+                <Text style={s.infoStatLabel}>{t('player.nickname', 'Apodo')}</Text>
+                <Text style={s.infoStatValue}>{player.apodo}</Text>
+              </View>
+            ) : null}
             <View style={s.infoStatCard}>
               <Text style={s.infoStatLabel}>{t('player.height', 'Altura')}</Text>
               <Text style={s.infoStatValue}>{player.altura ? `${player.altura} cm` : '-'}</Text>
@@ -603,7 +609,7 @@ const AnthropometryPage = ({ player, team, data, t }) => {
   const latest = data && data.length > 0 ? data[0] : null;
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={t('anthropometry.title')} subtitle={getPlayerFullName(player)} transparent={true} />
+      <PdfHeader title={t('anthropometry.title')} subtitle={getPlayerBaseName(player)} transparent={true} />
       <View style={baseStyles.content}>
         {latest ? (
           <PdfSection
@@ -760,7 +766,7 @@ const AttendancePage = ({ player, stats, t }) => {
     <Page size="A4" style={s.page}>
       <PdfHeader
         title={t('player.profile.attendanceReport')}
-        subtitle={getPlayerFullName(player)}
+        subtitle={getPlayerBaseName(player)}
         transparent={true}
       />
       <View style={baseStyles.content}>
@@ -833,7 +839,7 @@ const InjuryPage = ({ player, stats, injuries, t }) => {
 
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={t('player.profile.injuryHistory')} subtitle={getPlayerFullName(player)} transparent={true} />
+      <PdfHeader title={t('player.profile.injuryHistory')} subtitle={getPlayerBaseName(player)} transparent={true} />
       <View style={baseStyles.content}>
         <View style={s.grid4}>
           <View style={s.statCard}>
@@ -928,7 +934,7 @@ const WellnessPage = ({ player, wellnessData, isPreWellness, t }) => {
 
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={title} subtitle={getPlayerFullName(player)} transparent={true} />
+      <PdfHeader title={title} subtitle={getPlayerBaseName(player)} transparent={true} />
       <View style={baseStyles.content}>
         <View style={s.grid2}>
           <View style={s.statCard}>
@@ -1028,7 +1034,7 @@ export const generateProfilePdf = async ({
   injuries,
   t,
 }) => {
-  const fileName = `perfil_${getPlayerFullName(player).replace(/\s+/g, '_')}`;
+  const fileName = `perfil_${getPlayerBaseName(player).replace(/\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <ProfileGeneralPage
@@ -1046,7 +1052,7 @@ export const generateProfilePdf = async ({
 };
 
 export const generateAnthropometryPdf = async ({ player, team, data, t }) => {
-  const fileName = `antropometria_${getPlayerFullName(player).replace(/\\s+/g, '_')}`;
+  const fileName = `antropometria_${getPlayerBaseName(player).replace(/\\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <AnthropometryPage player={player} team={team} data={data} t={t} />
@@ -1056,7 +1062,7 @@ export const generateAnthropometryPdf = async ({ player, team, data, t }) => {
 };
 
 export const generateAttendancePdf = async ({ player, team, stats, t }) => {
-  const fileName = `asistencia_${getPlayerFullName(player).replace(/\\s+/g, '_')}`;
+  const fileName = `asistencia_${getPlayerBaseName(player).replace(/\\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <AttendancePage player={player} stats={stats} t={t} />
@@ -1066,7 +1072,7 @@ export const generateAttendancePdf = async ({ player, team, stats, t }) => {
 };
 
 export const generateInjuryPdf = async ({ player, team, stats, injuries, t }) => {
-  const fileName = `lesiones_${getPlayerFullName(player).replace(/\\s+/g, '_')}`;
+  const fileName = `lesiones_${getPlayerBaseName(player).replace(/\\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <InjuryPage player={player} stats={stats} injuries={injuries} t={t} />
@@ -1076,7 +1082,7 @@ export const generateInjuryPdf = async ({ player, team, stats, injuries, t }) =>
 };
 
 export const generateWellnessPdf = async ({ player, team, wellnessData, t }) => {
-  const fileName = `wellness_${getPlayerFullName(player).replace(/\\s+/g, '_')}`;
+  const fileName = `wellness_${getPlayerBaseName(player).replace(/\\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <WellnessPage player={player} wellnessData={wellnessData} isPreWellness={false} t={t} />
@@ -1086,7 +1092,7 @@ export const generateWellnessPdf = async ({ player, team, wellnessData, t }) => 
 };
 
 export const generatePreWellnessPdf = async ({ player, team, preWellnessData, t }) => {
-  const fileName = `prewellness_${getPlayerFullName(player).replace(/\\s+/g, '_')}`;
+  const fileName = `prewellness_${getPlayerBaseName(player).replace(/\\s+/g, '_')}`;
   await renderPdf(
     <Document>
       <WellnessPage player={player} wellnessData={preWellnessData} isPreWellness={true} t={t} />

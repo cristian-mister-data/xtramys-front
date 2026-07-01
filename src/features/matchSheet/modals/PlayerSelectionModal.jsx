@@ -6,6 +6,7 @@ import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
 import { getPositionColor, getPlayerInitials, translatePosition } from '@/components/player/playerHelpers';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const SearchWrap = styled.div`
   position: relative;
@@ -162,7 +163,7 @@ export default function PlayerSelectionModal({
     const q = search.trim().toLowerCase();
     return players
       .filter((p) => !excludeIds.includes(p._id))
-      .filter((p) => !q || (p.nombre || '').toLowerCase().includes(q) || String(p.dorsal || '').includes(q));
+      .filter((p) => !q || getPlayerFullName(p).toLowerCase().includes(q) || String(p.dorsal || '').includes(q));
   }, [players, search, excludeIds]);
 
   const toggle = (id) => {
@@ -256,7 +257,7 @@ export default function PlayerSelectionModal({
                   )}
                 </Avatar>
                 <Info>
-                  <PlayerName>{p.nombre || t('matchSheet.unknown', 'Sin nombre')}</PlayerName>
+                  <PlayerName>{getPlayerFullName(p) || t('matchSheet.unknown', 'Sin nombre')}</PlayerName>
                   <PlayerMeta>
                     {p.dorsal != null && <Dorsal>#{p.dorsal}</Dorsal>}
                     {pos && <Position $pos={pos}>{translatePosition(pos, t)}</Position>}

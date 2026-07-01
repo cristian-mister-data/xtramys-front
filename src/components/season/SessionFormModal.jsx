@@ -15,6 +15,7 @@ import { fetchEjerciciosUsuario, fetchGlobalExercises, fetchExerciseFoldersFlat 
 import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionModal';
 import ExerciseSelectorModal from '@/features/session/ExerciseSelectorModal';
 import TeamAssignmentModal from '@/features/session/TeamAssignmentModal';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const Grid3 = styled.div`
   display: grid;
@@ -524,7 +525,7 @@ export default function SessionFormModal({
                   {selectedPlayers.slice(0, 12).map((id) => {
                     const p = rosterPlayers.find((x) => x._id === id);
                     if (!p) return null;
-                    return <Chip key={id}>{p.dorsal ? `${p.dorsal} · ` : ''}{p.nombre}</Chip>;
+                    return <Chip key={id}>{p.dorsal ? `${p.dorsal} · ` : ''}{getPlayerFullName(p)}</Chip>;
                   })}
                   {selectedPlayers.length > 12 && <Chip>+{selectedPlayers.length - 12}</Chip>}
                 </PlayerChips>
@@ -544,7 +545,7 @@ export default function SessionFormModal({
                           onClick={() => toggleExtra(p._id)}
                         >
                           {sel ? <MdCheckCircle size={14} /> : null}
-                          {p.nombre}
+                          {getPlayerFullName(p)}
                         </ToggleChip>
                       );
                     })}

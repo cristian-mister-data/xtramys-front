@@ -51,6 +51,7 @@ import {
 import api from '@/api/client';
 import { BACKEND_URL } from '@/config';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -1382,7 +1383,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
                       {sessionWellnessData.pendingPlayers.map((player, index) => (
                         <View key={player._id || index} style={styles.pendingPlayer}>
                           <Ionicons name="person-outline" size={14} color={THEME.warning} />
-                          <Text style={styles.pendingPlayerName}>{player.fullName || player.nombre}</Text>
+                          <Text style={styles.pendingPlayerName}>{player.fullName || getPlayerFullName(player)}</Text>
                         </View>
                       ))}
                     </View>
