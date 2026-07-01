@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit, MdCalendarMonth } from 'react-icons/md';
+import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit, MdCalendarMonth, MdSportsSoccer, MdRestaurant, MdLibraryBooks, MdSportsHandball } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -36,6 +36,65 @@ const StatsGrid = styled.div`
     gap: 10px;
     margin-bottom: 16px;
   }
+`;
+
+const ResourcesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+`;
+
+const ResourceCard = styled(Card)`
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  transition: transform 0.2s, box-shadow 0.2s;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.shadows.md};
+  }
+`;
+
+const ResourceHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const ResourceIconBox = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ $bg }) => $bg || 'rgba(59, 130, 246, 0.1)'};
+  color: ${({ $color }) => $color || '#3b82f6'};
+`;
+
+const ResourceTitle = styled.h3`
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const ResourceDescription = styled.p`
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex: 1;
 `;
 
 const StatCard = styled(Card)`
@@ -1468,6 +1527,92 @@ export default function ClubDashboard() {
           <Muted style={{ fontSize: 12 }}>{t('clubDashboard.sharedTactics')}</Muted>
         </StatCard>
       </StatsGrid>
+
+      {/* Recursos Compartidos del Club */}
+      <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>
+        Recursos Compartidos del Club
+      </h2>
+      <ResourcesGrid>
+        <ResourceCard>
+          <ResourceHeader>
+            <ResourceIconBox $bg="rgba(16, 185, 129, 0.12)" $color="#10b981">
+              <MdSportsSoccer size={22} />
+            </ResourceIconBox>
+            <ResourceTitle>Biblioteca de Ejercicios</ResourceTitle>
+          </ResourceHeader>
+          <ResourceDescription>
+            Biblioteca de ejercicios oficiales del club compartida con todos los entrenadores.
+          </ResourceDescription>
+          <Button
+            type="button"
+            $variant="primary"
+            style={{ borderRadius: 10, fontWeight: 600, fontSize: 13, marginTop: 'auto' }}
+            onClick={() => navigate('/exercises')}
+          >
+            Gestionar Biblioteca
+          </Button>
+        </ResourceCard>
+
+        <ResourceCard>
+          <ResourceHeader>
+            <ResourceIconBox $bg="rgba(239, 68, 68, 0.12)" $color="#ef4444">
+              <MdRestaurant size={22} />
+            </ResourceIconBox>
+            <ResourceTitle>Plan de Nutrición</ResourceTitle>
+          </ResourceHeader>
+          <ResourceDescription>
+            Plan nutricional y pautas de alimentación de referencia para los jugadores del club.
+          </ResourceDescription>
+          <Button
+            type="button"
+            $variant="primary"
+            style={{ borderRadius: 10, fontWeight: 600, fontSize: 13, marginTop: 'auto' }}
+            onClick={() => navigate('/nutrition')}
+          >
+            Gestionar Nutrición
+          </Button>
+        </ResourceCard>
+
+        <ResourceCard>
+          <ResourceHeader>
+            <ResourceIconBox $bg="rgba(59, 130, 246, 0.12)" $color="#3b82f6">
+              <MdLibraryBooks size={22} />
+            </ResourceIconBox>
+            <ResourceTitle>Metodología del Club</ResourceTitle>
+          </ResourceHeader>
+          <ResourceDescription>
+            Definición oficial de la metodología de entrenamiento y modelo de juego del club.
+          </ResourceDescription>
+          <Button
+            type="button"
+            $variant="primary"
+            style={{ borderRadius: 10, fontWeight: 600, fontSize: 13, marginTop: 'auto' }}
+            onClick={() => navigate('/methodology')}
+          >
+            Gestionar Metodología
+          </Button>
+        </ResourceCard>
+
+        <ResourceCard>
+          <ResourceHeader>
+            <ResourceIconBox $bg="rgba(245, 158, 11, 0.12)" $color="#f59e0b">
+              <MdSportsHandball size={22} />
+            </ResourceIconBox>
+            <ResourceTitle>Metodología de Porteros</ResourceTitle>
+          </ResourceHeader>
+          <ResourceDescription>
+            Líneas metodológicas y modelo de entrenamiento específico para porteros.
+          </ResourceDescription>
+          <Button
+            type="button"
+            $variant="primary"
+            style={{ borderRadius: 10, fontWeight: 600, fontSize: 13, marginTop: 'auto' }}
+            onClick={() => navigate('/goalkeeper-methodology')}
+          >
+            Gestionar M. Porteros
+          </Button>
+        </ResourceCard>
+      </ResourcesGrid>
 
       {/* {t('clubDashboard.subscriptionAndLicenses')} Card */}
       {subStatus && subStatus.stripeSubscriptionId && (

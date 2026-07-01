@@ -11580,7 +11580,6 @@ const MemoizedCircleDetector = React.memo(
       const point = getResponderLocalPoint(e, offsetX, offsetY);
       const centerLocalX = touchMargin + rx;
       const centerLocalY = touchMargin + ry;
-      if (isPointInsideEllipse(point.x, point.y, centerLocalX, centerLocalY, rx, ry)) return true;
       return isEllipseBorderTouch(
         point.x,
         point.y,
@@ -11658,12 +11657,12 @@ const MemoizedCircleDetector = React.memo(
           zIndex: detectorZIndex,
         }}
       >
-        {/* Segmentos de toque a lo largo del per�metro del c�rculo */}
+        {/* Segmentos de toque a lo largo del permetro del crculo */}
         {generateTouchSegments()}
 
-        {/* Resize handles en los puntos cardinales del c�rculo */}
+        {/* Resize handles en los puntos cardinales del crculo */}
         <View
-          pointerEvents="auto"
+          pointerEvents="none"
           style={{
             position: 'absolute',
             left: 0,
@@ -11722,7 +11721,7 @@ const MemoizedCircleDetector = React.memo(
           </>
         )}
 
-        {/* Indicador visual para selecci�n m�ltiple en c�rculos */}
+        {/* Indicador visual para seleccin mltiple en crculos */}
         {multiSelectMode && isSelected && (
           <View
             pointerEvents="none"
@@ -11796,7 +11795,7 @@ const MemoizedCircleDetector = React.memo(
     prev.selectedCloneIdsSet?.has(prev.icon.id) === next.selectedCloneIdsSet?.has(next.icon.id),
 );
 
-// Detector memoizado para rect�ngulos - Solo detecta toques en los BORDES
+// Detector memoizado para rectngulos - Solo detecta toques en los BORDES
 const MemoizedRectangleDetector = React.memo(
   ({
     icon,
@@ -12069,15 +12068,6 @@ const MemoizedRectangleDetector = React.memo(
       const point = getResponderLocalPoint(e, offsetX, offsetY);
       const rectX = touchTolerance;
       const rectY = touchTolerance;
-      if (
-        hasFill &&
-        point.x >= rectX &&
-        point.x <= rectX + width &&
-        point.y >= rectY &&
-        point.y <= rectY + height
-      ) {
-        return true;
-      }
       return isRectangleBorderTouch(point.x, point.y, rectX, rectY, width, height, touchTolerance);
     };
 
@@ -12144,7 +12134,7 @@ const MemoizedRectangleDetector = React.memo(
         }}
       >
         <View
-          pointerEvents="auto"
+          pointerEvents="none"
           style={[
             edgeBandStyle,
             {
@@ -12217,7 +12207,7 @@ const MemoizedRectangleDetector = React.memo(
           {...rightEdgeResponderProps}
         />
 
-        {/* Resize handles en las esquinas del rect�ngulo */}
+        {/* Resize handles en las esquinas del rectngulo */}
         {selectedCloneId === icon.id && !multiSelectMode && (
           <>
             {[
@@ -12261,7 +12251,7 @@ const MemoizedRectangleDetector = React.memo(
           </>
         )}
 
-        {/* Indicador visual para selecci�n m�ltiple en rect�ngulos */}
+        {/* Indicador visual para seleccin mltiple en rectngulos */}
         {multiSelectMode && isSelected && (
           <View
             pointerEvents="none"
@@ -12284,7 +12274,7 @@ const MemoizedRectangleDetector = React.memo(
           </View>
         )}
 
-        {/* Bot�n de men� - solo visible cuando est� seleccionado */}
+        {/* Botn de men - solo visible cuando est seleccionado */}
         {selectedCloneId === icon.id && !multiSelectMode && (
           <TouchableOpacity
             onPress={(e) => {
@@ -12496,7 +12486,7 @@ const MemoizedCustomShapeDetector = React.memo(
       }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
-        // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
+        // Multi-drag: eliminar TODOS los seleccionados que estn fuera del campo
         setClones((prev) => {
           const remaining = prev.filter((c) => {
             if (!base.selectedIds.includes(c.id) || c.locked) return true;
@@ -12593,12 +12583,6 @@ const MemoizedCustomShapeDetector = React.memo(
 
     const isBorderResponderHit = (e, offsetX = 0, offsetY = 0) => {
       const point = getResponderLocalPoint(e, offsetX, offsetY);
-      if (
-        hasFill &&
-        isPointInsidePolygon(point.x + minX - touchMargin, point.y + minY - touchMargin, pts)
-      ) {
-        return true;
-      }
       return isPolygonBorderTouch(
         point.x,
         point.y,
@@ -12622,15 +12606,15 @@ const MemoizedCustomShapeDetector = React.memo(
       onResponderTerminate: handleResponderRelease,
     };
 
-    // Generar segmentos de toque a lo largo del per�metro del pol�gono
+    // Generar segmentos de toque a lo largo del permetro del polgono
     const generateTouchSegments = () => {
       const segments = [];
       const segmentSize = touchTolerance * 2;
 
-      // Recorrer cada lado del pol�gono (incluyendo el que cierra la forma)
+      // Recorrer cada lado del polgono (incluyendo el que cierra la forma)
       for (let i = 0; i < pts.length; i++) {
         const p1 = pts[i];
-        const p2 = pts[(i + 1) % pts.length]; // El �ltimo punto conecta con el primero
+        const p2 = pts[(i + 1) % pts.length]; // El ltimo punto conecta con el primero
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
         const length = Math.sqrt(dx * dx + dy * dy);
@@ -12685,12 +12669,12 @@ const MemoizedCustomShapeDetector = React.memo(
           zIndex: detectorZIndex,
         }}
       >
-        {/* Segmentos de toque a lo largo del per�metro */}
+        {/* Segmentos de toque a lo largo del permetro */}
         {generateTouchSegments()}
 
         {/* Vertex resize handles en cada v�rtice del custom-shape */}
         <View
-          pointerEvents="auto"
+          pointerEvents="none"
           style={{
             position: 'absolute',
             left: 0,

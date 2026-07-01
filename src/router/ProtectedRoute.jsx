@@ -91,6 +91,11 @@ export default function ProtectedRoute({ children }) {
       '/season/create',   // initial setup: create season, team and shield
       '/auth/verify-email',
       '/auth/reset-password',
+      '/exercises',
+      '/nutrition',
+      '/methodology',
+      '/goalkeeper-methodology',
+      '/tactical-board',
     ];
     const currentPath = location.pathname;
     const isAllowed = allowedPrefixes.some((p) => currentPath.startsWith(p)) || currentPath === '/';
