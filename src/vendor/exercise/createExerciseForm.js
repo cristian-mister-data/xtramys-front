@@ -54,6 +54,7 @@ export default function CreateExerciseForm({
   const [description, setDescription] = useState(editingExercise ? editingExercise.descripcion || '' : '');
   const [objective, setObjective] = useState(editingExercise ? editingExercise.objetivo || '' : '');
   const [materialNecesario, setMaterialNecesario] = useState(editingExercise ? editingExercise.materialNecesario || '' : '');
+  const [videoUrl, setVideoUrl] = useState(editingExercise ? editingExercise.videoUrl || '' : '');
   const [dimensions, setDimensions] = useState(editingExercise ? editingExercise.dimensiones || '' : '');
   const [folderId, setFolderId] = useState(editingExercise?.folder?._id || editingExercise?.folder || '');
   const [folderName, setFolderName] = useState('');
@@ -195,6 +196,7 @@ export default function CreateExerciseForm({
       if (typeof draft.description === 'string') setDescription(draft.description);
       if (typeof draft.objective === 'string') setObjective(draft.objective);
       if (typeof draft.materialNecesario === 'string') setMaterialNecesario(draft.materialNecesario);
+      if (typeof draft.videoUrl === 'string') setVideoUrl(draft.videoUrl);
       if (typeof draft.dimensions === 'string') setDimensions(draft.dimensions);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
       if (typeof draft.playerNumbers === 'string') setPlayerNumbers(draft.playerNumbers);
@@ -237,7 +239,7 @@ export default function CreateExerciseForm({
     saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
       kind: 'exercise',
       editingId,
-      name, duration, description, objective, materialNecesario, dimensions, folderId,
+      name, duration, description, objective, materialNecesario, videoUrl, dimensions, folderId,
       playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
@@ -282,7 +284,7 @@ export default function CreateExerciseForm({
           saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
             kind: 'exercise',
             editingId,
-            name, duration, description, objective, materialNecesario, dimensions, folderId,
+            name, duration, description, objective, materialNecesario, videoUrl, dimensions, folderId,
             playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal,
             fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
@@ -349,6 +351,7 @@ export default function CreateExerciseForm({
         descripcion: String(description || ''),
         objetivo: String(objective || ''),
         materialNecesario: String(materialNecesario || ''),
+        videoUrl: String(videoUrl || '').trim(),
         dimensiones: dimensions ? String(dimensions) : undefined,
         folder: safeFolderId || undefined,
         numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
@@ -604,6 +607,20 @@ export default function CreateExerciseForm({
             onChangeText={setMaterialNecesario}
             multiline
           />
+          <Text style={styles.inputLabel}>{t('exercise.videoLink', 'Enlace de video')}</Text>
+          <View style={styles.inputWithIcon}>
+            <Ionicons name="link-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.inputField}
+              value={videoUrl}
+              onChangeText={setVideoUrl}
+              placeholder={t('exercise.videoLinkPlaceholder', 'https://...')}
+              placeholderTextColor={placeholderColor}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </View>
         </View>
 
         <View style={styles.formCard}>

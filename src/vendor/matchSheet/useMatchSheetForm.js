@@ -107,6 +107,7 @@ export default function useMatchSheetForm({
   const [alineacion, setAlineacion] = useState(() => getDefaultFormation(selectedTeam?.jugadoresPorEquipo || 11));
   const [alineacionRival, setAlineacionRival] = useState('');
   const [notasEntrenador, setNotasEntrenador] = useState('');
+  const [partidoUrl, setPartidoUrl] = useState('');
   const [fechaHora, setFechaHora] = useState(new Date());
   
   // Estados para jugadores seleccionados
@@ -200,6 +201,7 @@ export default function useMatchSheetForm({
     setAlineacion(normalizeFormation(matchSheet.alineacion || getDefaultFormation(numJugadores)));
     setAlineacionRival(normalizeFormation(matchSheet.alineacionRival));
     setNotasEntrenador(matchSheet.notasEntrenador || '');
+    setPartidoUrl(matchSheet.partidoUrl || '');
     setFechaHora(matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date());
     
     // Cargar jugadores
@@ -250,6 +252,7 @@ export default function useMatchSheetForm({
     setAlineacion(getDefaultFormation(numJugadores));
     setAlineacionRival('');
     setNotasEntrenador('');
+    setPartidoUrl('');
     setFechaHora(new Date());
     setConvocados([]);
     setNoConvocados([]);
@@ -335,6 +338,7 @@ export default function useMatchSheetForm({
       alineacion: normalizeFormation(alineacion),
       alineacionRival: normalizeFormation(alineacionRival),
       notasEntrenador,
+      partidoUrl: String(partidoUrl || '').trim(),
       fechaHora: fechaHora.toISOString(),
       resultado: isMatchPast ? resultado : '',
       convocados,
@@ -379,7 +383,7 @@ export default function useMatchSheetForm({
   }, [
     rival, rivalId, rivalEscudo, ubicacion, jornada, competicion, torneoId, selectedTeam,
     golesFavor, golesContra, alineacion, alineacionRival,
-    notasEntrenador, fechaHora, resultado, isMatchPast,
+    notasEntrenador, partidoUrl, fechaHora, resultado, isMatchPast,
     convocados, noConvocados, alineacionTitulares, alineacionSuplentes,
     goles, tarjetasAmarillas, tarjetasRojas, cambios, golesRival,
     posesion, tiros, tirosAPuerta, corners, faltas, fueras,
@@ -478,6 +482,8 @@ export default function useMatchSheetForm({
     setAlineacionRival,
     notasEntrenador,
     setNotasEntrenador,
+    partidoUrl,
+    setPartidoUrl,
     fechaHora,
     setFechaHora,
     resultado,

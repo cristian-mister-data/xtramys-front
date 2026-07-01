@@ -143,6 +143,7 @@ function buildEmpty(playerCount = 11, timePerHalf = 45) {
     alineacionTitulares: [], alineacionSuplentes: [],
     goles: [], golesRival: [],
     tarjetasAmarillas: [], tarjetasRojas: [], cambios: [],
+    partidoUrl: '',
   };
 }
 
@@ -608,6 +609,15 @@ export default function MatchSheetFormModal({
             onChange={(e) => update({ notasEntrenador: e.target.value })}
             placeholder={t('matchSheet.notesPlaceholder', 'Observaciones, análisis...')}
           />
+          <Field>
+            <Label>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Label>
+            <Input
+              type="url"
+              value={form.partidoUrl || ''}
+              onChange={(e) => update({ partidoUrl: e.target.value })}
+              placeholder="https://..."
+            />
+          </Field>
         </Section>
 
         {error ? <ErrorText>{error}</ErrorText> : null}

@@ -1086,6 +1086,7 @@ export default function EditMatchSheetModal({
   const [golesFavor, setGolesFavor] = useState('');
   const [golesContra, setGolesContra] = useState('');
   const [notasEntrenador, setNotasEntrenador] = useState('');
+  const [partidoUrl, setPartidoUrl] = useState('');
   const [alineacion, setAlineacion] = useState(() => getDefaultFormation(team?.jugadoresPorEquipo || 11));
   const [alineacionRival, setAlineacionRival] = useState('');
   
@@ -1361,6 +1362,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
       setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
       setNotasEntrenador(matchSheet.notasEntrenador || '');
+      setPartidoUrl(matchSheet.partidoUrl || '');
       setAlineacion(matchSheet.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival(matchSheet.alineacionRival || '');
       
@@ -1410,6 +1412,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(isPast ? '0' : '');
       setGolesContra(isPast ? '0' : '');
       setNotasEntrenador('');
+      setPartidoUrl('');
       setAlineacion(getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival('');
       setConvocados([]);
@@ -1627,6 +1630,7 @@ export default function EditMatchSheetModal({
       setGolesFavor(matchSheet.golesFavor != null ? String(matchSheet.golesFavor) : (isPast ? '0' : ''));
       setGolesContra(matchSheet.golesContra != null ? String(matchSheet.golesContra) : (isPast ? '0' : ''));
       setNotasEntrenador(matchSheet.notasEntrenador || '');
+      setPartidoUrl(matchSheet.partidoUrl || '');
       setAlineacion(matchSheet.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival(matchSheet.alineacionRival || '');
       setConvocados(getIds(matchSheet.convocados));
@@ -1665,6 +1669,7 @@ export default function EditMatchSheetModal({
       setGolesFavor('');
       setGolesContra('');
       setNotasEntrenador('');
+      setPartidoUrl('');
       setAlineacion(getDefaultFormation(team?.jugadoresPorEquipo || 11));
       setAlineacionRival('');
       setConvocados([]);
@@ -1946,6 +1951,7 @@ export default function EditMatchSheetModal({
         alineacion,
         alineacionRival,
         notasEntrenador,
+        partidoUrl: String(partidoUrl || '').trim(),
         convocados,
         noConvocados,
         alineacionTitulares,
@@ -3155,6 +3161,17 @@ export default function EditMatchSheetModal({
                 placeholderTextColor={theme.colors.textMuted}
                 multiline
                 rows={4}
+              />
+              <Text style={styles.inputLabel}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
+              <TextInput
+                style={styles.textInput}
+                value={partidoUrl}
+                onChangeText={setPartidoUrl}
+                placeholder="https://..."
+                placeholderTextColor={theme.colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
               />
             </View>
 

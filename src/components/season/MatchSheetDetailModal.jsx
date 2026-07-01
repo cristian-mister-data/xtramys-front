@@ -1,16 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import {
   MdLocationOn, MdEmojiEvents, MdSchedule, MdEdit, MdDelete,
-  MdSportsSoccer, MdGroup, MdNote, MdCircle,
+  MdSportsSoccer, MdGroup, MdNote, MdCircle, MdLink, MdOpenInNew, MdPersonSearch, MdStar
 } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getScoutingReports } from '@/api/scouting';
 
 const HeroCard = styled.div`
   background: ${({ $color, theme }) =>
@@ -163,6 +165,19 @@ const Notes = styled.div`
   line-height: 1.5;
 `;
 
+const ExternalLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+`;
+
 const SetPieceGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -256,16 +271,49 @@ export default function MatchSheetDetailModal({
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
   const players = useSelector((s) => s.player?.players ?? []);
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
 
   const data = useMemo(() => match || null, [match]);
+
+  const [scoutingReports, setScoutingReports] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  useEffect(() => {
+    if (!open || !data?._id) {
+      setScoutingReports([]);
+      return;
+    }
+    const loadScouting = async () => {
+      try {
+        const { data: reports } = await getScoutingReports({ matchSheet: data._id });
+        setScoutingReports(reports || []);
+      } catch (err) {
+        console.error('Error loading scouting reports', err);
+      }
+    };
+    loadScouting();
+  }, [open, data?._id]);
+
   if (!data) return null;
 
   const tournamentColor = data?.torneoId?.color || theme.colors.primary;
   const result = getResultBadge(data?.resultado, t, theme);
+  const openScouting = () => {
+    const params = new URLSearchParams();
+    if (data._id) params.set('matchSheet', data._id);
+    if (data.rival) params.set('rival', data.rival);
+    const rivalId = data.rivalId?._id || data.rivalId;
+    if (rivalId) params.set('rivalId', rivalId);
+    if (data.competicion) params.set('competition', data.competicion);
+    if (data.fechaHora) params.set('date', new Date(data.fechaHora).toISOString().slice(0, 10));
+    navigate(`/scouting?${params.toString()}`);
+    onClose?.();
+  };
 
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
@@ -279,6 +327,9 @@ export default function MatchSheetDetailModal({
             </Button>
           )}
           <Row style={{ gap: 8 }}>
+            <Button type="button" $variant="secondary" onClick={openScouting}>
+              <MdPersonSearch /> Scouting
+            </Button>
             <Button type="button" $variant="ghost" onClick={onClose}>
               {t('common.close', 'Cerrar')}
             </Button>
@@ -557,13 +608,263 @@ export default function MatchSheetDetailModal({
           </Section>
         ) : null}
 
+        {data.partidoUrl ? (
+          <Section>
+            <SectionTitle>
+              <MdLink /> {t('matchSheet.fields.matchLink', 'Enlace del partido')}
+            </SectionTitle>
+            <Card>
+              <ExternalLink href={data.partidoUrl} target="_blank" rel="noreferrer">
+                <MdOpenInNew />
+                <span>{data.partidoUrl}</span>
+              </ExternalLink>
+            </Card>
+          </Section>
+        ) : null}
+
         {!data.goles?.length && !data.tarjetasAmarillas?.length &&
          !data.tarjetasRojas?.length && !data.cambios?.length &&
-         !data.notasEntrenador && !data.observaciones ? (
+         !data.notasEntrenador && !data.observaciones && !data.partidoUrl &&
+         !scoutingReports.length ? (
           <Muted style={{ textAlign: 'center', padding: 12 }}>
             {t('matchSheet.noEvents', 'Sin eventos registrados')}
           </Muted>
         ) : null}
+
+        {scoutingReports.length > 0 && (
+          <Section>
+            <SectionTitle>
+              <MdPersonSearch /> {t('matchSheet.featuredPlayers', 'Jugadores destacados')}
+            </SectionTitle>
+            <Card style={{ background: theme.colors.surface }}>
+              <Stack $gap={8}>
+                {scoutingReports.map((report) => (
+                  <div
+                    key={report._id}
+                    onClick={() => setSelectedReport(report)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: theme.colors.backgroundAlt,
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: `1px solid ${theme.colors.border}`,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = theme.colors.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = theme.colors.border;
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: theme.colors.text }}>
+                        {report.playerName}
+                      </div>
+                      <div style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
+                        {[report.position, report.playerTeam].filter(Boolean).join(' - ') || 'Sin posición/equipo'}
+                      </div>
+                    </div>
+                    {report.rating && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: theme.colors.warningSoft, color: theme.colors.warningSoftText, padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                        <MdStar /> {report.rating}/10
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </Stack>
+            </Card>
+          </Section>
+        )}
+      </Stack>
+    </Modal>
+    <ScoutingDetailModal
+      open={!!selectedReport}
+      onClose={() => setSelectedReport(null)}
+      report={selectedReport}
+    />
+  </>
+  );
+}
+
+const FIELD_LABELS = {
+  juegoAereo: 'Juego aéreo',
+  tomaDecisiones: 'Toma de decisiones',
+  visionJuego: 'Visión de juego',
+  trabajoDefensivo: 'Trabajo defensivo',
+};
+const scoreLabel = (field) => FIELD_LABELS[field] || field.charAt(0).toUpperCase() + field.slice(1);
+
+function getRecommendationLabel(val) {
+  switch (val) {
+    case 'muy_recomendable': return 'Muy recomendable';
+    case 'seguir_observando': return 'Seguir observando';
+    case 'no_recomendado': return 'No recomendado';
+    default: return val || '—';
+  }
+}
+
+function getPotentialLabel(val) {
+  switch (val) {
+    case 'bajo': return 'Bajo';
+    case 'medio': return 'Medio';
+    case 'alto': return 'Alto';
+    default: return val || '—';
+  }
+}
+
+function ScoutingDetailModal({ open, onClose, report }) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+
+  if (!open || !report) return null;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Scouting: ${report.playerName}`}
+      width={600}
+      footer={
+        <Button type="button" onClick={onClose}>
+          {t('common.close', 'Cerrar')}
+        </Button>
+      }
+    >
+      <Stack $gap={16}>
+        <div style={{
+          background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryHover})`,
+          color: theme.colors.onPrimary,
+          padding: '20px',
+          borderRadius: theme.radius.lg,
+          boxShadow: theme.shadows.md,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800' }}>{report.playerName}</h3>
+            <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
+              {[report.position, report.playerTeam].filter(Boolean).join(' - ') || 'Sin posición/equipo'}
+            </div>
+            {report.age && (
+              <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
+                {report.age} años | Pie: {report.dominantFoot || 'Sin definir'}
+              </div>
+            )}
+          </div>
+          {report.rating && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              backdropFilter: 'blur(4px)',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontWeight: '800',
+              fontSize: '18px'
+            }}>
+              ⭐ {report.rating}/10
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ background: theme.colors.backgroundAlt, border: `1px solid ${theme.colors.border}`, padding: '12px', borderRadius: theme.radius.md }}>
+            <div style={{ fontSize: '11px', color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: '700' }}>Recomendación</div>
+            <div style={{ fontSize: '14px', fontWeight: '700', marginTop: '4px', color: theme.colors.text }}>{getRecommendationLabel(report.recommendation)}</div>
+          </div>
+          <div style={{ background: theme.colors.backgroundAlt, border: `1px solid ${theme.colors.border}`, padding: '12px', borderRadius: theme.radius.md }}>
+            <div style={{ fontSize: '11px', color: theme.colors.textSecondary, textTransform: 'uppercase', fontWeight: '700' }}>Potencial</div>
+            <div style={{ fontSize: '14px', fontWeight: '700', marginTop: '4px', color: theme.colors.text }}>{getPotentialLabel(report.potential)}</div>
+          </div>
+        </div>
+
+        {report.tags && report.tags.length > 0 && (
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: theme.colors.textSecondary, marginBottom: '6px', textTransform: 'uppercase' }}>Tags</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {report.tags.map(tag => (
+                <span key={tag} style={{
+                  background: theme.colors.primarySoft,
+                  color: theme.colors.primarySoftText,
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(report.strengths || report.improvements) && (
+          <div style={{ display: 'grid', gridTemplateColumns: report.strengths && report.improvements ? '1fr 1fr' : '1fr', gap: '12px' }}>
+            {report.strengths && (
+              <div style={{ background: theme.colors.backgroundAlt, border: `1px solid ${theme.colors.border}`, padding: '12px', borderRadius: theme.radius.md }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: theme.colors.success, marginBottom: '6px', textTransform: 'uppercase' }}>💪 Fortalezas</div>
+                <div style={{ fontSize: '13px', color: theme.colors.text, whiteSpace: 'pre-wrap' }}>{report.strengths}</div>
+              </div>
+            )}
+            {report.improvements && (
+              <div style={{ background: theme.colors.backgroundAlt, border: `1px solid ${theme.colors.border}`, padding: '12px', borderRadius: theme.radius.md }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: theme.colors.error, marginBottom: '6px', textTransform: 'uppercase' }}>📈 Aspectos a mejorar</div>
+                <div style={{ fontSize: '13px', color: theme.colors.text, whiteSpace: 'pre-wrap' }}>{report.improvements}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          {Object.entries({
+            Técnica: report.technical,
+            Física: report.physical,
+            Táctica: report.tactical,
+            Mental: report.mental
+          }).map(([category, scores]) => {
+            if (!scores) return null;
+            const entries = Object.entries(scores).filter(([_, v]) => v !== null && v !== '');
+            if (entries.length === 0) return null;
+
+            return (
+              <div key={category} style={{ background: theme.colors.surface, border: `1px solid ${theme.colors.border}`, padding: '12px', borderRadius: theme.radius.md }}>
+                <div style={{ fontSize: '12px', fontWeight: '700', color: theme.colors.textSecondary, marginBottom: '8px', textTransform: 'uppercase', borderBottom: `1px solid ${theme.colors.border}`, paddingBottom: '4px' }}>
+                  {category}
+                </div>
+                <Stack $gap={6}>
+                  {entries.map(([field, score]) => (
+                    <div key={field} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                      <span style={{ color: theme.colors.text }}>{scoreLabel(field)}</span>
+                      <span style={{ fontWeight: 'bold', color: theme.colors.primary }}>{score}/10</span>
+                    </div>
+                  ))}
+                </Stack>
+              </div>
+            );
+          })}
+        </div>
+
+        {report.observations && (
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: theme.colors.textSecondary, marginBottom: '6px', textTransform: 'uppercase' }}>Observaciones</div>
+            <div style={{
+              background: theme.colors.backgroundAlt,
+              border: `1px solid ${theme.colors.border}`,
+              padding: '12px',
+              borderRadius: theme.radius.md,
+              fontSize: '13px',
+              color: theme.colors.text,
+              whiteSpace: 'pre-wrap',
+              lineHeight: '1.5'
+            }}>
+              {report.observations}
+            </div>
+          </div>
+        )}
       </Stack>
     </Modal>
   );

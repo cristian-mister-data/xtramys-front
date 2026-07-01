@@ -57,6 +57,7 @@ export default function CreateStrategyForm({
   const [folderName, setFolderName] = useState('');
   const [description, setDescription] = useState(editingStrategy ? editingStrategy.descripcion || '' : '');
   const [objective, setObjective] = useState(editingStrategy ? editingStrategy.objetivo || '' : '');
+  const [videoUrl, setVideoUrl] = useState(editingStrategy ? editingStrategy.videoUrl || '' : '');
   // En web el componente puede remontarse después de volver del editor de campo.
   // Inicializamos imagen/fieldElements/fieldType desde FIELD_RESULT si existe,
   // para sobrevivir a remounts (ver bug fix análogo en createExerciseForm.js).
@@ -221,6 +222,7 @@ export default function CreateStrategyForm({
       if (typeof draft.name === 'string') setName(draft.name);
       if (typeof draft.description === 'string') setDescription(draft.description);
       if (typeof draft.objective === 'string') setObjective(draft.objective);
+      if (typeof draft.videoUrl === 'string') setVideoUrl(draft.videoUrl);
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
       if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
@@ -262,7 +264,7 @@ export default function CreateStrategyForm({
     saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
       kind: draftKind,
       editingId,
-      name, description, objective, folderId,
+      name, description, objective, videoUrl, folderId,
       nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
@@ -309,7 +311,7 @@ export default function CreateStrategyForm({
           saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
             kind: draftKind,
             editingId,
-            name, description, objective, folderId,
+            name, description, objective, videoUrl, folderId,
             nameEn, descriptionEn, objectiveEn, isGlobal,
             fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
@@ -369,6 +371,7 @@ export default function CreateStrategyForm({
         nombre: trimmedName,
         descripcion: String(description || ''),
         objetivo: String(objective || ''),
+        videoUrl: String(videoUrl || '').trim(),
         folder: folderId || undefined,
         usuario: idUsuario,
         _id: editingStrategy ? editingStrategy._id : undefined,
@@ -542,6 +545,20 @@ export default function CreateStrategyForm({
             onChangeText={setObjective}
             multiline
           />
+          <Text style={styles.inputLabel}>{t('strategy.videoLink', 'Enlace de video')}</Text>
+          <View style={styles.inputWithIcon}>
+            <Ionicons name="link-outline" size={18} color={iconColor} style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.inputField}
+              value={videoUrl}
+              onChangeText={setVideoUrl}
+              placeholder={t('strategy.videoLinkPlaceholder', 'https://...')}
+              placeholderTextColor={placeholderColor}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </View>
         </View>
 
         <View style={styles.formCard}>
@@ -712,6 +729,23 @@ const makeStyles = (theme) => StyleSheet.create({
   textarea: {
     minHeight: 60,
     verticalAlign: "top",
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme?.colors?.inputBorder || '#334155',
+    marginBottom: 16,
+  },
+  inputField: {
+    flex: 1,
+    fontSize: 15,
+    color: theme?.colors?.text || '#e2e8f0',
+    padding: 0,
   },
   graphicSection: {
     alignItems: "center",

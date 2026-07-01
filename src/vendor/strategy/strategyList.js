@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Pressable, Alert, FlatList, TouchableOpacity, Image, ActivityIndicator, Modal, TextInput, ScrollView, BackHandler, Platform, Dimensions, Animated, Linking } from 'react-native';
 import { useTheme } from 'styled-components';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -66,6 +66,14 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+const openExternalUrl = (url) => {
+  if (!url) return;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  Linking.openURL(url);
+};
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
 const mergeById = (...groups) => {
@@ -522,6 +530,19 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
                       <Text style={styles.detailCardTitle}>{t('strategy.objective')}</Text>
                     </View>
                     <Text style={styles.detailCardContent}>{getLocalizedObjective()}</Text>
+                  </View>
+                )}
+
+                {strategy.videoUrl && (
+                  <View style={{ ...styles.detailCard, marginBottom: 16 }}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="link-outline" size={18} color={theme.colors.primary} />
+                      <Text style={styles.detailCardTitle}>{t('strategy.videoLink', 'Enlace de video')}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.externalLinkRow} onPress={() => openExternalUrl(strategy.videoUrl)}>
+                      <Feather name="external-link" size={16} color={theme.colors.primary} />
+                      <Text style={styles.externalLinkText} numberOfLines={1}>{strategy.videoUrl}</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
@@ -4068,6 +4089,17 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text,
     lineHeight: 22,
+  },
+  externalLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  externalLinkText: {
+    flex: 1,
+    color: theme.colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
   },
 
   // --- Estilos para Videos de la Estrategia ---

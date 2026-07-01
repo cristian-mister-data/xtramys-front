@@ -21,6 +21,7 @@ import {
   MdOutlineAssignment,
   MdMap,
   MdPerson,
+  MdPersonSearch,
 } from 'react-icons/md';
 
 /**
@@ -118,6 +119,10 @@ export function getNavSections(t, options = {}) {
         {
           to: '/rival-analysis', label: t('menu.rivalAnalysis', 'Análisis rival'), Icon: MdAnalytics,
           keywords: ['analisis rival', 'rival analysis', 'scouting', 'rivales']
+        },
+        {
+          to: '/scouting', label: t('menu.scouting', 'Scouting'), Icon: MdPersonSearch,
+          keywords: ['scouting', 'ojeador', 'jugadores rivales', 'seguimiento', 'informes']
         },
         {
           to: '/anthropometry', label: t('menu.anthropometry', 'Antropometría'), Icon: MdAccessibility,

@@ -65,6 +65,8 @@ const MatchSheetFormContent = ({
   setDescuentoSegundoTiempo,
   notasEntrenador,
   setNotasEntrenador,
+  partidoUrl,
+  setPartidoUrl,
   
   // Convocatoria y alineación
   convocados = [],
@@ -645,6 +647,17 @@ const MatchSheetFormContent = ({
             onChangeText={setNotasEntrenador}
             multiline
             rows={6}
+          />
+          <Text style={styles.inputLabel}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="https://..."
+            placeholderTextColor={theme.colors.textMuted}
+            value={partidoUrl}
+            onChangeText={setPartidoUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
           />
         </View>
       </View>

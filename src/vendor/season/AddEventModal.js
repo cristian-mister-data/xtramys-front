@@ -1245,6 +1245,7 @@ export default function AddEventModal({
     alineacion: getDefaultFormation(team?.jugadoresPorEquipo || 11),
     alineacionRival: '',
     notasEntrenador: '',
+    partidoUrl: '',
     descuentoPrimerTiempo: '0',
     descuentoSegundoTiempo: '0',
     competicion: 'amistoso',
@@ -1617,6 +1618,7 @@ export default function AddEventModal({
         alineacion: getDefaultFormation(team?.jugadoresPorEquipo || 11),
         alineacionRival: '',
         notasEntrenador: '',
+        partidoUrl: '',
         descuentoPrimerTiempo: '0',
         descuentoSegundoTiempo: '0',
         competicion: defaultTournament ? 'torneo' : 'amistoso',
@@ -1890,6 +1892,7 @@ export default function AddEventModal({
         alineacion: matchData.alineacion || undefined,
         alineacionRival: matchData.alineacionRival || undefined,
         notasEntrenador: matchData.notasEntrenador || undefined,
+        partidoUrl: matchData.partidoUrl?.trim() || undefined,
         descuentoPrimerTiempo: Number(matchData.descuentoPrimerTiempo) || 0,
         descuentoSegundoTiempo: Number(matchData.descuentoSegundoTiempo) || 0,
         convocados: convocados.length > 0 ? convocados : undefined,
@@ -2834,6 +2837,17 @@ export default function AddEventModal({
             placeholderTextColor={theme.colors.textMuted}
             multiline
             rows={6}
+          />
+          <Text style={styles.inputLabel}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
+          <TextInput
+            style={styles.textInput}
+            value={matchData.partidoUrl}
+            onChangeText={(text) => setMatchData(prev => ({ ...prev, partidoUrl: text }))}
+            placeholder="https://..."
+            placeholderTextColor={theme.colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
           />
         </View>
       </View>

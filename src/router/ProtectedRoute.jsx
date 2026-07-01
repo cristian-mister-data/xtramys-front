@@ -33,6 +33,7 @@ const DEMO_ALLOWED_PREFIXES = [
   '/match-sheets',
   '/injuries',
   '/rival-analysis',
+  '/scouting',
   '/anthropometry',
   '/statistics',
   '/profile',

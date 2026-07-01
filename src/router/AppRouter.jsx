@@ -34,6 +34,7 @@ const InjuryStatistics = lazy(() => import('@/pages/InjuryStatistics'));
 const InjuryPrevention = lazy(() => import('@/pages/InjuryPrevention'));
 const MatchSheets = lazy(() => import('@/pages/MatchSheets'));
 const RivalAnalysis = lazy(() => import('@/pages/RivalAnalysis'));
+const Scouting = lazy(() => import('@/pages/Scouting'));
 const Rivals = lazy(() => import('@/pages/Rivals'));
 const Anthropometry = lazy(() => import('@/pages/Anthropometry'));
 const Nutrition = lazy(() => import('@/pages/Nutrition'));
@@ -197,6 +198,7 @@ export default function AppRouter() {
         <Route path="/injuries/statistics" element={lazy_(<InjuryStatistics />)} />
         <Route path="/injury-prevention" element={lazy_(<DemoSubscribeGate><InjuryPrevention /></DemoSubscribeGate>)} />
         <Route path="/rival-analysis/*" element={lazy_(<RivalAnalysis />)} />
+        <Route path="/scouting" element={lazy_(<Scouting />)} />
         <Route path="/anthropometry" element={lazy_(<Anthropometry />)} />
         <Route path="/statistics" element={lazy_(<Statistics />)} />
         <Route path="/nutrition" element={lazy_(<DemoSubscribeGate><Nutrition /></DemoSubscribeGate>)} />

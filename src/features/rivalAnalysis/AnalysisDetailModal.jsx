@@ -22,6 +22,7 @@
 //   regenerado antes de reproducir/descargar.
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
@@ -51,6 +52,7 @@ import {
   MdShieldMoon,
   MdBackHand,
   MdSwapVert,
+  MdPersonSearch,
 } from 'react-icons/md';
 
 import { deleteRivalAnalysis } from '@/store/slices/rivalAnalysis/rivalAnalysisThunks';
@@ -504,6 +506,7 @@ export default function AnalysisDetailModal({
   const { t } = useTranslation();
   const theme = useTheme();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Estado para el modal de visualización de video (un solo player a la vez).
   const [videoModalUrl, setVideoModalUrl] = useState(null);
@@ -537,6 +540,16 @@ export default function AnalysisDetailModal({
 
   const handlePdf = () => {
     generateRivalAnalysisPdf(analysis, template, t, selectedTeam);
+  };
+
+  const openScouting = () => {
+    const params = new URLSearchParams();
+    if (analysis?._id) params.set('rivalAnalysis', analysis._id);
+    if (analysis?.rival) params.set('rival', analysis.rival);
+    const rivalId = analysis?.rivalId?._id || analysis?.rivalId;
+    if (rivalId) params.set('rivalId', rivalId);
+    navigate(`/scouting?${params.toString()}`);
+    onClose?.();
   };
 
   const handlePlayVideo = async (videoId) => {
@@ -795,6 +808,10 @@ export default function AnalysisDetailModal({
             <Button $variant="secondary" onClick={handlePdf}>
               <MdPictureAsPdf size={16} />
               {t('common.pdf', 'PDF')}
+            </Button>
+            <Button $variant="secondary" onClick={openScouting}>
+              <MdPersonSearch size={16} />
+              Scouting
             </Button>
             {canMutate !== false && (
               <Button $variant="primary" onClick={() => onEdit?.(analysis)}>

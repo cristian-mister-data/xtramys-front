@@ -1,6 +1,7 @@
 // components/pages/season/MatchSheetDetailModal.js
 // Modal de detalle de ficha de partido con PDFs de alineación y convocatoria
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   View,
   Text,
@@ -29,6 +30,8 @@ import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlay
 import { generateSetPiecesPdf } from '@/vendor/strategy/pdf';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
+import { getScoutingReports, deleteScoutingReport } from '@/api/scouting';
+import ScoutingDetailModal from '@/components/scouting/ScoutingDetailModal';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -208,9 +211,11 @@ export default function MatchSheetDetailModal({
   onClose,
   onEdit,
   onDelete,
+  canMutate,
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const currentLang = i18n.language || 'es';
   const { width: screenWidth } = useWindowDimensions();
@@ -249,6 +254,52 @@ export default function MatchSheetDetailModal({
     closeLineupModal,
     closeConvocatoriaModal,
   } = useMatchSheetPDF({ team, players });
+
+  const [scoutingReports, setScoutingReports] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  useEffect(() => {
+    if (!visible || !matchSheet?._id) {
+      setScoutingReports([]);
+      return;
+    }
+    const loadScouting = async () => {
+      try {
+        const { data: reports } = await getScoutingReports({ matchSheet: matchSheet._id });
+        setScoutingReports(reports || []);
+      } catch (err) {
+        console.error('Error loading scouting reports', err);
+      }
+    };
+    loadScouting();
+  }, [visible, matchSheet?._id]);
+
+  const handleDeleteScouting = async (scoutReport) => {
+    Alert.alert(
+      'Eliminar Scouting',
+      `¿Eliminar el informe de scouting de ${scoutReport.playerName}?`,
+      [
+        { text: t('schedule.cancel'), style: 'cancel' },
+        {
+          text: t('message.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteScoutingReport(scoutReport._id);
+              // Reload reports list
+              const { data: reports } = await getScoutingReports({ matchSheet: matchSheet._id });
+              setScoutingReports(reports || []);
+              setSelectedReport(null);
+              Alert.alert('Éxito', 'Informe de scouting eliminado');
+            } catch (error) {
+              console.error('Error deleting scouting report:', error);
+              Alert.alert('Error', 'No se pudo eliminar el informe');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!matchSheet) return null;
   const jugadoresPorEquipo = matchSheet.jugadoresPorEquipo || team?.jugadoresPorEquipo || 11;
@@ -433,6 +484,18 @@ export default function MatchSheetDetailModal({
     setSetPieceVideoTitle('');
   };
 
+  const openScouting = () => {
+    const params = new URLSearchParams();
+    if (matchSheet?._id) params.set('matchSheet', matchSheet._id);
+    if (matchSheet?.rival) params.set('rival', matchSheet.rival);
+    const rivalId = matchSheet?.rivalId?._id || matchSheet?.rivalId;
+    if (rivalId) params.set('rivalId', rivalId);
+    if (matchSheet?.competicion) params.set('competition', matchSheet.competicion);
+    if (matchSheet?.fechaHora) params.set('date', new Date(matchSheet.fechaHora).toISOString().slice(0, 10));
+    navigate(`/scouting?${params.toString()}`);
+    onClose?.();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -455,6 +518,12 @@ export default function MatchSheetDetailModal({
                 generatingPDFType={generatingPDFType}
                 compact={true}
               />
+              <TouchableOpacity
+                style={styles.modalEditButton}
+                onPress={openScouting}
+              >
+                <Ionicons name="person-add-outline" size={20} color={theme.colors.text} />
+              </TouchableOpacity>
               {onEdit && (
                 <TouchableOpacity
                   style={styles.modalEditButton}
@@ -853,6 +922,48 @@ export default function MatchSheetDetailModal({
               </View>
             </View>
 
+                {/* Scouting Players List */}
+                {scoutingReports.length > 0 && (
+                  <View style={styles.detailCard}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="person" size={18} color={theme.colors.primary} />
+                      <Text style={styles.detailCardTitle}>{t('matchSheet.featuredPlayers', 'Jugadores destacados')} ({scoutingReports.length})</Text>
+                    </View>
+                    {scoutingReports.map((report) => (
+                      <TouchableOpacity
+                        key={report._id}
+                        onPress={() => setSelectedReport(report)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          backgroundColor: theme.colors.backgroundAlt,
+                          padding: 12,
+                          borderRadius: 8,
+                          marginVertical: 4,
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: 'bold', fontSize: 14, color: theme.colors.text }}>
+                            {report.playerName}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
+                            {[report.position, report.playerTeam].filter(Boolean).join(' - ') || 'Sin posición/equipo'}
+                          </Text>
+                        </View>
+                        {report.rating && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.colors.warningSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                            <Ionicons name="star" size={12} color={theme.colors.warning} />
+                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: theme.colors.warningSoftText }}>{report.rating}/10</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
             {/* Botones de PDF - Componente reutilizable */}
             <MatchSheetPDFButtons
               matchSheet={matchSheet}
@@ -936,6 +1047,19 @@ export default function MatchSheetDetailModal({
         matchSheet={matchSheet}
         players={players}
         generatingPDF={generatingPDF}
+      />
+
+      {/* Scouting Detail Sub-Modal */}
+      <ScoutingDetailModal
+        visible={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        report={selectedReport}
+        onEdit={(rep) => {
+          setSelectedReport(null);
+          onClose?.();
+          navigate(`/scouting?edit=${rep._id}&matchSheet=${matchSheet._id}`);
+        }}
+        onDelete={canMutate !== false ? handleDeleteScouting : undefined}
       />
     </Modal>
   );
