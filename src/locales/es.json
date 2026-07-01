@@ -621,6 +621,8 @@
     "noTypes": "No hay tipos creados",
     "useCreateButton": "Usa el botón 'Crear' para agregar tipos",
     "manageTypes": "Gestionar Tipos",
+    "materialNeeded": "Material necesario",
+    "materialNeededPlaceholder": "Ej. Conos, petos, balones...",
     "selectTypes": "Seleccionar Tipos",
     "selectExercises": "Seleccionar ejercicios",
     "videos": "Videos del ejercicio",

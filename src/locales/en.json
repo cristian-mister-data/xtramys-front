@@ -618,6 +618,8 @@
     "noTypes": "No types created",
     "useCreateButton": "Use the 'Create' button to add types",
     "manageTypes": "Manage Types",
+    "materialNeeded": "Material needed",
+    "materialNeededPlaceholder": "Ex. Cones, vests, balls...",
     "selectTypes": "Select Types",
     "selectExercises": "Select exercises",
     "videos": "Exercise videos",
@@ -3772,7 +3774,7 @@
       "tip4": "After training: Replenish 150% of lost weight",
       "tip5": "Avoid sugary drinks outside of sports context"
     },
-      "newElements": {
+    "newElements": {
       "newMeal": "New meal...",
       "newTip": "New tip...",
       "newElement": "New element...",
