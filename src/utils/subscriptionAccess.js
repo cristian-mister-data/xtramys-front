@@ -4,6 +4,7 @@ export function hasDemoAccess(user) {
 
 export function hasFullAccess(user, subscriptionStatus) {
   if (!user) return false;
+  if (hasDemoAccess(user)) return false;
   if (user.role === 'admin') return true;
   if (user.role === 'club_admin') return true;
   if (user.clubId && user.clubMemberStatus === 'active') return true;
@@ -21,9 +22,7 @@ export function hasFullAccess(user, subscriptionStatus) {
 
   const hasFuturePeriod = Date.now() < periodEndTime;
   const cancelledButStillPaid =
-    user.subscriptionCancelAtPeriodEnd ||
-    status === 'canceled' ||
-    status === 'cancelled';
+    user.subscriptionCancelAtPeriodEnd || status === 'canceled' || status === 'cancelled';
 
   return hasFuturePeriod && cancelledButStillPaid;
 }
@@ -50,6 +49,6 @@ export function isSubscriptionScheduledToCancel(user, subscriptionStatus) {
 
   return Boolean(
     hasFuturePeriod &&
-    (user.subscriptionCancelAtPeriodEnd || status === 'canceled' || status === 'cancelled')
+    (user.subscriptionCancelAtPeriodEnd || status === 'canceled' || status === 'cancelled'),
   );
 }
