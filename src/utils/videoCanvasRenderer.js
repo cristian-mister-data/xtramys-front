@@ -189,7 +189,7 @@ function strokePolyline(ctx, points, elem, scale) {
 
 function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   const p = pos(elem, cw, ch);
-  const baseSize = elem.baseSize || 24;
+  const baseSize = (elem.baseSize || 24) + (elem.shape === 'jersey' ? 2 : 0);
   const size = baseSize * scale;
   const r = size / 2;
   const color = elem.color || '#2176ff';

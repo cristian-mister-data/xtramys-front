@@ -3436,7 +3436,7 @@ function SettingsPanel({
     }));
   };
 
-  const renderIconShapeControls = (key) => {
+  const renderIconShapeControls = (key, showExtras = true) => {
     const settings = draftSettings?.[key] || {};
     const resolvedHasBib = settings.hasBib !== undefined ? settings.hasBib : key === 'playerIcon4';
     return (
@@ -3466,6 +3466,8 @@ function SettingsPanel({
             </TouchableOpacity>
           ))}
         </View>
+        {showExtras && (
+          <>
         <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
           <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
           <Switch
@@ -3513,6 +3515,8 @@ function SettingsPanel({
             />
             <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.stripeColor')}</Text>
           </View>
+        )}
+          </>
         )}
       </>
     );
@@ -3738,6 +3742,7 @@ function SettingsPanel({
                       onPress={() => setStripePickerTarget('goalkeeperIcon1')}
                     />
                   </View>
+                  {renderIconShapeControls('goalkeeperIcon1', false)}
                 </View>
 
                 <View style={styles.proModalCard}>
@@ -3776,6 +3781,7 @@ function SettingsPanel({
                       onPress={() => setStripePickerTarget('goalkeeperIcon2')}
                     />
                   </View>
+                  {renderIconShapeControls('goalkeeperIcon2', false)}
                 </View>
 
                 {/* Jugador 3 eliminado de la configuración
@@ -8820,7 +8826,7 @@ const DraggableIcon = React.memo(
 );
 
 function getProportionalIconSize(icon, imageWidth, standardSize = 24) {
-  const baseSize = icon.size || standardSize;
+  const baseSize = (icon.size || standardSize) + (icon.type === 'player' && icon.shape === 'jersey' ? 2 : 0);
   const REFERENCE_SCALE = 1.5;
   const viewportRatio = imageWidth / REFERENCE_WIDTH;
   const scaleFactor = Math.max(0.5, REFERENCE_SCALE * viewportRatio);
@@ -13826,7 +13832,7 @@ export default function Field(props = {}) {
                   tp.goalkeeperColor !== undefined && tp.goalkeeperColor !== null
                     ? tp.goalkeeperColor
                     : '#ff4a4a',
-                size: tp.size !== undefined && tp.size !== null ? tp.size : standardSize,
+                size: tp.size !== undefined && tp.size !== null ? tp.size : DEFAULT_PLAYER_ICON_SIZE,
                 numberColor:
                   tp.numberColor !== undefined && tp.numberColor !== null
                     ? tp.numberColor
@@ -19974,7 +19980,9 @@ export default function Field(props = {}) {
     const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
     const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
     const [color, setColor] = useState(teamPlayerStyle?.color || '#2176ff');
-    const [size, setSize] = useState(teamPlayerStyle?.size?.toString() || '24');
+    const [size, setSize] = useState(
+      teamPlayerStyle?.size?.toString() || DEFAULT_PLAYER_ICON_SIZE.toString(),
+    );
     const [numberColor, setNumberColor] = useState(teamPlayerStyle?.numberColor || '#ffffff');
     const [textColor, setTextColor] = useState(teamPlayerStyle?.textColor || '#000000');
     const [textBackgroundColor, setTextBackgroundColor] = useState(
@@ -20005,7 +20013,7 @@ export default function Field(props = {}) {
     // Sincronizar con props cuando cambia teamPlayerStyle
     useEffect(() => {
       setColor(teamPlayerStyle?.color || '#2176ff');
-      setSize(teamPlayerStyle?.size?.toString() || '24');
+      setSize(teamPlayerStyle?.size?.toString() || DEFAULT_PLAYER_ICON_SIZE.toString());
       setNumberColor(teamPlayerStyle?.numberColor || '#ffffff');
       setTextColor(teamPlayerStyle?.textColor || '#000000');
       setTextBackgroundColor(teamPlayerStyle?.textBackgroundColor || '#ffffff');
@@ -20022,7 +20030,15 @@ export default function Field(props = {}) {
 
     if (!visible) return null;
 
+    const photosJerseyMessage =
+      'Las fotos no están disponibles en modo camiseta. Se usará el modo círculo.';
+
     const handleApply = () => {
+      const normalizedShape = showPhotos && playerShape === 'jersey' ? 'circle' : playerShape;
+      if (normalizedShape !== playerShape) {
+        Alert.alert('Fotos no disponibles', photosJerseyMessage);
+        setPlayerShape(normalizedShape);
+      }
       setTeamPlayerStyle({
         color,
         size: parseInt(size) || DEFAULT_PLAYER_ICON_SIZE,
@@ -20033,7 +20049,7 @@ export default function Field(props = {}) {
         differentiateGoalkeeper,
         goalkeeperStripeColor,
         showPhotos,
-        shape: playerShape,
+        shape: normalizedShape,
         hasStripes,
         hasBib,
         bibColor,
@@ -20042,7 +20058,8 @@ export default function Field(props = {}) {
       onClose();
     };
 
-    const iconPreviewSize = isMobile ? 40 : 50;
+    const iconPreviewSize = isMobile ? 44 : 50;
+    const iconPreviewShapeSize = playerShape === 'jersey' ? iconPreviewSize + 2 : iconPreviewSize;
 
     return (
       <Modal
@@ -20088,9 +20105,13 @@ export default function Field(props = {}) {
                 <View style={[styles.proModalPreview, { marginBottom: 12, alignItems: 'center' }]}>
                   <View
                     style={{
-                      width: iconPreviewSize,
-                      height: iconPreviewSize,
-                      borderRadius: playerShape === 'jersey' ? 6 : iconPreviewSize / 2,
+                      width: iconPreviewShapeSize,
+                      height: iconPreviewShapeSize,
+                      borderRadius: playerShape === 'jersey' ? 0 : iconPreviewShapeSize / 2,
+                      clipPath:
+                        playerShape === 'jersey'
+                          ? 'polygon(35% 10%, 50% 20%, 65% 10%, 82% 20%, 95% 42%, 78% 54%, 70% 45%, 70% 90%, 30% 90%, 30% 45%, 22% 54%, 5% 42%, 18% 20%)'
+                          : undefined,
                       backgroundColor: showPhotos ? 'transparent' : color,
                       justifyContent: 'center',
                       alignItems: 'center',
@@ -20103,15 +20124,15 @@ export default function Field(props = {}) {
                     {showPhotos ? (
                       <View
                         style={{
-                          width: iconPreviewSize,
-                          height: iconPreviewSize,
-                          borderRadius: iconPreviewSize / 2,
+                          width: iconPreviewShapeSize,
+                          height: iconPreviewShapeSize,
+                          borderRadius: iconPreviewShapeSize / 2,
                           backgroundColor: '#e0e0e0',
                           justifyContent: 'center',
                           alignItems: 'center',
                         }}
                       >
-                        <Ionicons name="person" size={iconPreviewSize * 0.6} color="#888" />
+                        <Ionicons name="person" size={iconPreviewShapeSize * 0.6} color="#888" />
                       </View>
                     ) : (
                       <>
@@ -20125,7 +20146,7 @@ export default function Field(props = {}) {
                                   position: 'absolute',
                                   top: 0,
                                   bottom: 0,
-                                  left: iconPreviewSize / 2 + iconPreviewSize * offset - 3,
+                                  left: iconPreviewShapeSize / 2 + iconPreviewShapeSize * offset - 3,
                                   width: 6,
                                   backgroundColor: stripeColor,
                                   opacity: 0.9,
@@ -20143,7 +20164,7 @@ export default function Field(props = {}) {
                                   position: 'absolute',
                                   top: 0,
                                   bottom: 0,
-                                  left: iconPreviewSize / 2 + iconPreviewSize * offset - 3,
+                                  left: iconPreviewShapeSize / 2 + iconPreviewShapeSize * offset - 3,
                                   width: 6,
                                   backgroundColor: goalkeeperStripeColor,
                                   opacity: 0.9,
@@ -20156,9 +20177,9 @@ export default function Field(props = {}) {
                           <View
                             style={{
                               position: 'absolute',
-                              top: iconPreviewSize * 0.18,
-                              width: iconPreviewSize * 0.58,
-                              height: iconPreviewSize * 0.64,
+                              top: iconPreviewShapeSize * 0.18,
+                              width: iconPreviewShapeSize * 0.58,
+                              height: iconPreviewShapeSize * 0.64,
                               borderRadius: playerShape === 'jersey' ? 5 : 7,
                               backgroundColor: bibColor,
                               borderWidth: 1,
@@ -20171,8 +20192,8 @@ export default function Field(props = {}) {
                             color: numberColor,
                             fontSize:
                               playerShape === 'jersey'
-                                ? iconPreviewSize * 0.36
-                                : iconPreviewSize * 0.5,
+                                ? iconPreviewShapeSize * 0.36
+                                : iconPreviewShapeSize * 0.5,
                             fontWeight: 'bold',
                           }}
                         >
@@ -20496,6 +20517,10 @@ export default function Field(props = {}) {
                       // Si se activan fotos, desactivar mostrar posici�n
                       if (val) {
                         setShowPosition(false);
+                        if (playerShape === 'jersey') {
+                          setPlayerShape('circle');
+                          Alert.alert('Fotos no disponibles', photosJerseyMessage);
+                        }
                       }
                     }}
                     trackColor={{ false: '#ddd', true: '#81b0ff' }}
@@ -21310,6 +21335,11 @@ export default function Field(props = {}) {
       const nameFontSize = isMobile ? 8 : 10; // M�s peque�o en m�vil
       const dorsalFontSize = isMobile ? 12 : 16; // M�s peque�o en m�vil
 
+      const panelIconSize = isMobile ? 36 : iconSize;
+      const panelShapeSize = playerShape === 'jersey' ? panelIconSize + 2 : panelIconSize;
+      const panelNameFontSize = isMobile ? 9 : nameFontSize;
+      const panelDorsalFontSize = isMobile ? 16 : dorsalFontSize;
+
       useEffect(() => {
         if (visible) {
           setIsVisible(true);
@@ -21411,14 +21441,22 @@ export default function Field(props = {}) {
                       onPress={() => onSelectPlayer(player)}
                       style={[
                         styles.paletteIconButton,
-                        { width: iconSize + 20, height: iconSize + 36, flexDirection: 'column' },
+                        {
+                          width: panelShapeSize + 20,
+                          height: panelShapeSize + 36,
+                          flexDirection: 'column',
+                        },
                       ]}
                     >
                       <View
                         style={{
-                          width: iconSize,
-                          height: iconSize,
-                          borderRadius: playerShape === 'jersey' ? 5 : iconSize / 2,
+                          width: panelShapeSize,
+                          height: panelShapeSize,
+                          borderRadius: playerShape === 'jersey' ? 0 : panelShapeSize / 2,
+                          clipPath:
+                            playerShape === 'jersey'
+                              ? 'polygon(35% 10%, 50% 20%, 65% 10%, 82% 20%, 95% 42%, 78% 54%, 70% 45%, 70% 90%, 30% 90%, 30% 45%, 22% 54%, 5% 42%, 18% 20%)'
+                              : undefined,
                           backgroundColor:
                             differentiateGoalkeeper && isGK ? goalkeeperColor : teamPlayerColor,
                           justifyContent: 'center',
@@ -21441,7 +21479,7 @@ export default function Field(props = {}) {
                                   position: 'absolute',
                                   top: 0,
                                   bottom: 0,
-                                  left: iconSize / 2 + iconSize * offset - 3,
+                                  left: panelShapeSize / 2 + panelShapeSize * offset - 3,
                                   width: 6,
                                   backgroundColor: playerStripeColor,
                                   opacity: 0.9,
@@ -21464,7 +21502,7 @@ export default function Field(props = {}) {
                                     position: 'absolute',
                                     top: 0,
                                     bottom: 0,
-                                    left: iconSize / 2 + iconSize * offset - 3,
+                                    left: panelShapeSize / 2 + panelShapeSize * offset - 3,
                                     width: 6,
                                     backgroundColor: goalkeeperStripeColor,
                                     opacity: 0.9,
@@ -21483,7 +21521,7 @@ export default function Field(props = {}) {
                                   position: 'absolute',
                                   top: 0,
                                   bottom: 0,
-                                  left: iconSize / 2 + iconSize * offset - 3,
+                                  left: panelShapeSize / 2 + panelShapeSize * offset - 3,
                                   width: 6,
                                   backgroundColor: goalkeeperStripeColor,
                                   opacity: 0.9,
@@ -21496,9 +21534,9 @@ export default function Field(props = {}) {
                           <Image
                             source={{ uri: cdnUrl(player.foto) }}
                             style={{
-                              width: iconSize - 4,
-                              height: iconSize - 4,
-                              borderRadius: (iconSize - 4) / 2,
+                              width: panelShapeSize - 4,
+                              height: panelShapeSize - 4,
+                              borderRadius: (panelShapeSize - 4) / 2,
                             }}
                             resizeMode="cover"
                           />
@@ -21508,9 +21546,9 @@ export default function Field(props = {}) {
                               <View
                                 style={{
                                   position: 'absolute',
-                                  top: iconSize * 0.18,
-                                  width: iconSize * 0.58,
-                                  height: iconSize * 0.64,
+                                  top: panelShapeSize * 0.18,
+                                  width: panelShapeSize * 0.58,
+                                  height: panelShapeSize * 0.64,
                                   borderRadius: playerShape === 'jersey' ? 5 : 7,
                                   backgroundColor: bibColor,
                                   borderWidth: 1,
@@ -21522,7 +21560,9 @@ export default function Field(props = {}) {
                               style={{
                                 color: numberColor,
                                 fontSize:
-                                  playerShape === 'jersey' ? dorsalFontSize * 0.72 : dorsalFontSize,
+                                  playerShape === 'jersey'
+                                    ? panelDorsalFontSize * 0.72
+                                    : panelDorsalFontSize,
                                 fontWeight: 'bold',
                               }}
                             >
@@ -21542,12 +21582,12 @@ export default function Field(props = {}) {
                           paddingHorizontal: 3,
                           paddingVertical: 1,
                           borderRadius: 3,
-                          minWidth: iconSize,
+                          minWidth: panelIconSize,
                         }}
                       >
                         <Text
                           style={{
-                            fontSize: nameFontSize,
+                            fontSize: panelNameFontSize,
                             color: textColor,
                             textAlign: 'center',
                             fontWeight: '500',
