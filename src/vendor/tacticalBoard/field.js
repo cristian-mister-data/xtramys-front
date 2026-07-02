@@ -1240,6 +1240,7 @@ const FORMATIONS_BY_PLAYER_COUNT = {
 
 // Funci�n para obtener los iconos iniciales con etiquetas traducidas
 const DEFAULT_PLAYER_ICON_SIZE = 24;
+const DEFAULT_PLAYER_NUMBER_COLOR = '#ffffff';
 const NEUTRAL_PLAYER_COLORS = {
   background: '#0F766E',
   bib: '#FBBF24',
@@ -1281,6 +1282,60 @@ const DEFAULT_GOALKEEPER_ICON_2_SETTINGS = {
   goalkeeperStripeColor: '#111827',
 };
 
+const getDefaultBoardSettings = () => ({
+  playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff', numberColor: DEFAULT_PLAYER_NUMBER_COLOR },
+  playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff', numberColor: DEFAULT_PLAYER_NUMBER_COLOR },
+  playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff', numberColor: DEFAULT_PLAYER_NUMBER_COLOR },
+  goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS },
+  goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS },
+  playerIcon4: getDefaultNeutralPlayerSettings(),
+  teamPlayers: {
+    color: '#2176ff',
+    goalkeeperColor: '#ff4a4a',
+    size: DEFAULT_PLAYER_ICON_SIZE,
+    numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
+    textColor: '#000000',
+    textBackgroundColor: '#ffffff',
+    differentiateGoalkeeper: true,
+    goalkeeperStripeColor: '#ffffff',
+    showPhotos: false,
+    shape: 'circle',
+    hasStripes: false,
+    hasBib: false,
+    bibColor: NEUTRAL_PLAYER_COLORS.bib,
+    stripeColor: '#ffffff',
+  },
+});
+
+const mergeIconSettings = (defaults, fallback, settings) => ({
+  ...defaults,
+  ...(fallback || {}),
+  ...(settings || {}),
+  numberColor: settings?.numberColor ?? fallback?.numberColor ?? defaults.numberColor,
+  size: settings?.size ?? fallback?.size ?? defaults.size,
+});
+
+const normalizeBoardSettings = (settings = {}, fallback = {}) => {
+  settings = settings || {};
+  fallback = fallback || {};
+  const defaults = getDefaultBoardSettings();
+  return {
+    ...defaults,
+    ...fallback,
+    ...settings,
+    playerIcon1: mergeIconSettings(defaults.playerIcon1, fallback.playerIcon1, settings.playerIcon1),
+    playerIcon2: mergeIconSettings(defaults.playerIcon2, fallback.playerIcon2, settings.playerIcon2),
+    playerIcon3: mergeIconSettings(defaults.playerIcon3, fallback.playerIcon3, settings.playerIcon3),
+    goalkeeperIcon1: mergeIconSettings(defaults.goalkeeperIcon1, fallback.goalkeeperIcon1, settings.goalkeeperIcon1),
+    goalkeeperIcon2: mergeIconSettings(defaults.goalkeeperIcon2, fallback.goalkeeperIcon2, settings.goalkeeperIcon2),
+    playerIcon4: {
+      ...mergeIconSettings(defaults.playerIcon4, fallback.playerIcon4, settings.playerIcon4),
+      hasBib: true,
+    },
+    teamPlayers: mergeIconSettings(defaults.teamPlayers, fallback.teamPlayers, settings.teamPlayers),
+  };
+};
+
 const isNeutralPlayerIcon = (icon) =>
   icon?.type === 'player' && (icon?.isNeutral === true || icon?.id === 'neutral-player');
 
@@ -1295,6 +1350,7 @@ const getInitialIcons = () => [
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   {
     id: 'icon2',
@@ -1306,6 +1362,7 @@ const getInitialIcons = () => [
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   {
     id: 'goalkeeper-1',
@@ -3334,12 +3391,6 @@ function SettingsPanel({
   const [draftSettings, setDraftSettings] = useState(boardSettings);
   const [draftPlayersWithNumber, setDraftPlayersWithNumber] = useState(playersWithNumber);
 
-  // Estados locales para los tama�os de cada jugador (para permitir edici�n libre)
-  const [size1, setSize1] = useState((boardSettings?.playerIcon1?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
-  const [size2, setSize2] = useState((boardSettings?.playerIcon2?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
-  const [sizeNeutral, setSizeNeutral] = useState((boardSettings?.playerIcon4?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
-  const [sizeTeam, setSizeTeam] = useState((boardSettings?.teamPlayers?.size || DEFAULT_PLAYER_ICON_SIZE).toString());
-
   // Estados para color pickers
   const [colorPicker1Visible, setColorPicker1Visible] = useState(false);
   const [colorPicker2Visible, setColorPicker2Visible] = useState(false);
@@ -3350,6 +3401,7 @@ function SettingsPanel({
   const [colorPickerGoalkeeperVisible, setColorPickerGoalkeeperVisible] = useState(false);
   const [stripePickerTarget, setStripePickerTarget] = useState(null);
   const [bibPickerTarget, setBibPickerTarget] = useState(null);
+  const [numberColorPickerTarget, setNumberColorPickerTarget] = useState(null);
   const isGoalkeeperStripeTarget = stripePickerTarget === 'teamPlayersGoalkeeperStripe';
   const isPaletteGoalkeeperStripeTarget =
     stripePickerTarget === 'goalkeeperIcon1' || stripePickerTarget === 'goalkeeperIcon2';
@@ -3364,10 +3416,13 @@ function SettingsPanel({
       const defaultVal = DEFAULT_PLAYER_ICON_SIZE;
       setDraftSettings(boardSettings);
       setDraftPlayersWithNumber(playersWithNumber);
-      setSize1((boardSettings.playerIcon1?.size || defaultVal).toString());
-      setSize2((boardSettings.playerIcon2?.size || defaultVal).toString());
-      setSizeNeutral((boardSettings.playerIcon4?.size || defaultVal).toString());
-      setSizeTeam((boardSettings.teamPlayers?.size || defaultVal).toString());
+      const syncedSize =
+        boardSettings.playerIcon1?.size ||
+        boardSettings.playerIcon2?.size ||
+        boardSettings.playerIcon4?.size ||
+        boardSettings.teamPlayers?.size ||
+        defaultVal;
+      setSize(syncedSize.toString());
     }
   }, [visible]);
 
@@ -3375,33 +3430,21 @@ function SettingsPanel({
 
   const buildSettingsFromInputs = () => {
     const parsedSize = parseInt(size);
-    if (!isNaN(parsedSize)) {
-      const validSize = Math.max(MIN_SIZE, parsedSize);
-      setStandardSize(validSize);
-      setSize(validSize.toString());
-    }
+    const validSize = Math.max(MIN_SIZE, isNaN(parsedSize) ? DEFAULT_PLAYER_ICON_SIZE : parsedSize);
+    setStandardSize(validSize);
+    setSize(validSize.toString());
 
-    const validSize1 = size1.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size1) || DEFAULT_PLAYER_ICON_SIZE);
-    const validSize2 = size2.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(size2) || DEFAULT_PLAYER_ICON_SIZE);
-    const validSizeNeutral =
-      sizeNeutral.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(sizeNeutral) || DEFAULT_PLAYER_ICON_SIZE);
-    const validSizeTeam =
-      sizeTeam.trim() === '' ? DEFAULT_PLAYER_ICON_SIZE : Math.max(MIN_SIZE, parseInt(sizeTeam) || DEFAULT_PLAYER_ICON_SIZE);
-
-    const newSettings = {
+    const newSettings = normalizeBoardSettings({
       ...draftSettings,
-      playerIcon1: { ...draftSettings.playerIcon1, size: validSize1 },
-      playerIcon2: { ...draftSettings.playerIcon2, size: validSize2 },
-      goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS, ...draftSettings.goalkeeperIcon1 },
-      goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS, ...draftSettings.goalkeeperIcon2 },
-      playerIcon4: { ...getDefaultNeutralPlayerSettings(), ...draftSettings.playerIcon4, size: validSizeNeutral },
-      teamPlayers: { ...draftSettings.teamPlayers, size: validSizeTeam },
-    };
+      playerIcon1: { ...draftSettings.playerIcon1, size: validSize },
+      playerIcon2: { ...draftSettings.playerIcon2, size: validSize },
+      playerIcon3: { ...draftSettings.playerIcon3, size: validSize },
+      goalkeeperIcon1: { ...draftSettings.goalkeeperIcon1, size: validSize },
+      goalkeeperIcon2: { ...draftSettings.goalkeeperIcon2, size: validSize },
+      playerIcon4: { ...draftSettings.playerIcon4, size: validSize, hasBib: true },
+      teamPlayers: { ...draftSettings.teamPlayers, size: validSize },
+    });
 
-    setSize1(validSize1.toString());
-    setSize2(validSize2.toString());
-    setSizeNeutral(validSizeNeutral.toString());
-    setSizeTeam(validSizeTeam.toString());
     setDraftSettings(newSettings);
     return newSettings;
   };
@@ -3435,10 +3478,34 @@ function SettingsPanel({
       [key]: { ...prev[key], ...patch },
     }));
   };
+  const getNumberColor = (key) => {
+    if (key === 'playerIcon4') return draftSettings?.playerIcon4?.numberColor || NEUTRAL_PLAYER_COLORS.letter;
+    return draftSettings?.[key]?.numberColor || '#ffffff';
+  };
+  const renderNumberColorControl = (key) => (
+    <>
+      <Text style={styles.proModalHint}>{t('tacticalBoard.teamSettings.numberColor')}</Text>
+      <TouchableOpacity
+        style={[
+          styles.proModalColorBtn,
+          {
+            backgroundColor: getNumberColor(key),
+            borderColor: getNumberColor(key) === '#ffffff' ? '#ccc' : '#e0e0e0',
+          },
+        ]}
+        onPress={() => setNumberColorPickerTarget(key)}
+      />
+    </>
+  );
 
   const renderIconShapeControls = (key, showExtras = true) => {
     const settings = draftSettings?.[key] || {};
-    const resolvedHasBib = settings.hasBib !== undefined ? settings.hasBib : key === 'playerIcon4';
+    const isNeutralKey = key === 'playerIcon4';
+    const resolvedHasBib = isNeutralKey
+      ? true
+      : settings.hasBib !== undefined
+        ? settings.hasBib
+        : false;
     return (
       <>
         <View style={[styles.proModalGrid, { marginTop: 8 }]}>
@@ -3468,16 +3535,18 @@ function SettingsPanel({
         </View>
         {showExtras && (
           <>
-        <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
-          <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
-          <Switch
-            value={resolvedHasBib}
-            onValueChange={(value) => updateBoardIcon(key, { hasBib: value })}
-            trackColor={{ false: '#ddd', true: '#81b0ff' }}
-            thumbColor={resolvedHasBib ? '#2176ff' : '#f4f3f4'}
-          />
-        </View>
-        {resolvedHasBib && (
+        {!isNeutralKey && (
+          <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
+            <Text style={styles.proModalSwitchLabel}>{t('tacticalBoard.editPanel.bib')}</Text>
+            <Switch
+              value={resolvedHasBib}
+              onValueChange={(value) => updateBoardIcon(key, { hasBib: value })}
+              trackColor={{ false: '#ddd', true: '#81b0ff' }}
+              thumbColor={resolvedHasBib ? '#2176ff' : '#f4f3f4'}
+            />
+          </View>
+        )}
+        {resolvedHasBib && !isNeutralKey && (
           <View style={styles.proModalRow}>
             <TouchableOpacity
               style={[
@@ -3550,9 +3619,6 @@ function SettingsPanel({
           >
             {/* Header */}
             <View style={styles.proModalHeader}>
-              <View style={styles.proModalHeaderIcon}>
-                <Ionicons name="settings-outline" size={16} color="#64748b" />
-              </View>
               <Text style={isMobile ? styles.proModalTitleMobile : styles.proModalTitle}>
                 {t('tacticalBoard.settings.title')}
               </Text>
@@ -3653,15 +3719,10 @@ function SettingsPanel({
                       ]}
                       onPress={() => setColorPicker1Visible(true)}
                     />
-                    <TextInput
-                      style={[styles.proModalInputMobile, { flex: 1 }]}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={size1}
-                      onChangeText={setSize1}
-                      placeholder="Tama�o"
-                      placeholderTextColor="#999"
-                    />
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.colorLabel')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    {renderNumberColorControl('playerIcon1')}
                   </View>
                   {renderIconShapeControls('playerIcon1')}
                 </View>
@@ -3692,15 +3753,10 @@ function SettingsPanel({
                       ]}
                       onPress={() => setColorPicker2Visible(true)}
                     />
-                    <TextInput
-                      style={[styles.proModalInputMobile, { flex: 1 }]}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={size2}
-                      onChangeText={setSize2}
-                      placeholder="Tama�o"
-                      placeholderTextColor="#999"
-                    />
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.colorLabel')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    {renderNumberColorControl('playerIcon2')}
                   </View>
                   {renderIconShapeControls('playerIcon2')}
                 </View>
@@ -3742,6 +3798,9 @@ function SettingsPanel({
                       onPress={() => setStripePickerTarget('goalkeeperIcon1')}
                     />
                   </View>
+                  <View style={styles.proModalRow}>
+                    {renderNumberColorControl('goalkeeperIcon1')}
+                  </View>
                   {renderIconShapeControls('goalkeeperIcon1', false)}
                 </View>
 
@@ -3780,6 +3839,9 @@ function SettingsPanel({
                       ]}
                       onPress={() => setStripePickerTarget('goalkeeperIcon2')}
                     />
+                  </View>
+                  <View style={styles.proModalRow}>
+                    {renderNumberColorControl('goalkeeperIcon2')}
                   </View>
                   {renderIconShapeControls('goalkeeperIcon2', false)}
                 </View>
@@ -3892,15 +3954,6 @@ function SettingsPanel({
                       onPress={() => setNeutralLetterPickerVisible(true)}
                     />
                     <Text style={styles.proModalHint}>{t('tacticalBoard.settings.letter')}</Text>
-                    <TextInput
-                      style={[styles.proModalInputMobile, { flex: 1 }]}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={sizeNeutral}
-                      onChangeText={setSizeNeutral}
-                      placeholder={t('tacticalBoard.settings.size')}
-                      placeholderTextColor="#999"
-                    />
                   </View>
                   {renderIconShapeControls('playerIcon4')}
                 </View>
@@ -3931,15 +3984,10 @@ function SettingsPanel({
                       ]}
                       onPress={() => setColorPickerTeamVisible(true)}
                     />
-                    <TextInput
-                      style={[styles.proModalInputMobile, { flex: 1 }]}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={sizeTeam}
-                      onChangeText={setSizeTeam}
-                      placeholder="Tama�o"
-                      placeholderTextColor="#999"
-                    />
+                    <Text style={styles.proModalHint}>{t('tacticalBoard.editPanel.colorLabel')}</Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    {renderNumberColorControl('teamPlayers')}
                   </View>
                   <View style={[styles.proModalSwitch, { marginTop: 8 }]}>
                     <Text style={styles.proModalSwitchLabel}>
@@ -4142,6 +4190,15 @@ function SettingsPanel({
                 }
                 if (stripePickerTarget) updateBoardIcon(stripePickerTarget, { stripeColor: c });
               }}
+            />
+            <MiniColorPickerModal
+              visible={!!numberColorPickerTarget}
+              initialColor={numberColorPickerTarget ? getNumberColor(numberColorPickerTarget) : '#ffffff'}
+              onClose={() => setNumberColorPickerTarget(null)}
+              onSelect={(c) =>
+                numberColorPickerTarget &&
+                updateBoardIcon(numberColorPickerTarget, { numberColor: c })
+              }
             />
             <MiniColorPickerModal
               visible={!!bibPickerTarget}
@@ -13167,30 +13224,8 @@ export default function Field(props = {}) {
   });
 
   // Estado para Configuraci�n de la pizarra (colores y tama�os de iconos de jugadores)
-  const [boardSettings, setBoardSettings] = useState({
-    playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-    playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-    playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-    goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS },
-    goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS },
-    playerIcon4: getDefaultNeutralPlayerSettings(),
-    teamPlayers: {
-      color: '#2176ff',
-      goalkeeperColor: '#ff4a4a',
-      size: DEFAULT_PLAYER_ICON_SIZE,
-      numberColor: '#ffffff',
-      textColor: '#000000',
-      textBackgroundColor: '#ffffff',
-      differentiateGoalkeeper: true,
-      goalkeeperStripeColor: '#ffffff',
-      showPhotos: false,
-      shape: 'circle',
-      hasStripes: false,
-      hasBib: false,
-      bibColor: NEUTRAL_PLAYER_COLORS.bib,
-      stripeColor: '#ffffff',
-    },
-  });
+  const [boardSettings, setBoardSettings] = useState(() => getDefaultBoardSettings());
+  const [pendingPalettePlayerSettings, setPendingPalettePlayerSettings] = useState(null);
 
   // Estado para conectores (l�neas que conectan elementos)
   useEffect(() => {
@@ -13359,11 +13394,34 @@ export default function Field(props = {}) {
 
   // Guardado inmediato de boardSettings (bot�n Guardar en panel de ajustes)
   // Ahora acepta un par�metro opcional settingsParam para evitar efectos de estado stale
+  const getBoardPaletteIconSettings = useCallback((paletteIcon, settings) => {
+    if (!paletteIcon || !settings) return null;
+    if (paletteIcon.id === 'icon1') return settings.playerIcon1;
+    if (paletteIcon.id === 'icon2') return settings.playerIcon2;
+    if (paletteIcon.id === 'icon3') return settings.playerIcon3;
+    if (paletteIcon.id === 'goalkeeper-1') {
+      return { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS, ...settings.goalkeeperIcon1 };
+    }
+    if (paletteIcon.id === 'goalkeeper-2') {
+      return { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS, ...settings.goalkeeperIcon2 };
+    }
+    if (paletteIcon.id === 'neutral-player') {
+      return { ...getDefaultNeutralPlayerSettings(), ...settings.playerIcon4 };
+    }
+    return null;
+  }, []);
+
+  const applyBoardSettingsToPlacedPalettePlayers = useCallback((settingsToApply) => {
+    setPendingPalettePlayerSettings(settingsToApply || null);
+  }, []);
+
   const handleApplyBoardSettings = useCallback((settingsToApply) => {
     if (!settingsToApply) return;
+    settingsToApply = normalizeBoardSettings(settingsToApply);
     if (settingsToApply?.playerIcon1?.size) {
       setStandardSize(settingsToApply.playerIcon1.size);
     }
+    applyBoardSettingsToPlacedPalettePlayers(settingsToApply);
     setPaletteIcons((prev) =>
       prev.map((icon) => {
         const setting =
@@ -13385,7 +13443,10 @@ export default function Field(props = {}) {
           ...icon,
           color: setting.color,
           backgroundColor: setting.backgroundColor || icon.backgroundColor,
-          numberColor: setting.numberColor || icon.numberColor,
+          numberColor:
+            setting.numberColor !== undefined
+              ? setting.numberColor
+              : icon.numberColor || DEFAULT_PLAYER_NUMBER_COLOR,
           number: setting.isNeutral ? 'N' : setting.isGoalkeeper ? 1 : icon.number,
           isNeutral: setting.isNeutral !== undefined ? setting.isNeutral : icon.isNeutral,
           isGoalkeeper: setting.isGoalkeeper !== undefined ? setting.isGoalkeeper : icon.isGoalkeeper,
@@ -13405,7 +13466,10 @@ export default function Field(props = {}) {
       color: settingsToApply.teamPlayers.color,
       goalkeeperColor: settingsToApply.teamPlayers.goalkeeperColor || prev.goalkeeperColor || '#ff4a4a',
       size: settingsToApply.teamPlayers.size,
-      numberColor: settingsToApply.teamPlayers.numberColor || prev.numberColor,
+      numberColor:
+        settingsToApply.teamPlayers.numberColor !== undefined
+          ? settingsToApply.teamPlayers.numberColor
+          : prev.numberColor,
       textColor: settingsToApply.teamPlayers.textColor || prev.textColor,
       textBackgroundColor: settingsToApply.teamPlayers.textBackgroundColor || prev.textBackgroundColor,
       differentiateGoalkeeper:
@@ -13432,13 +13496,14 @@ export default function Field(props = {}) {
           : prev.bibColor,
       stripeColor: settingsToApply.teamPlayers.stripeColor || prev.stripeColor || '#ffffff',
     }));
-  }, []);
+  }, [applyBoardSettingsToPlacedPalettePlayers]);
   const handleSaveBoardSettings = useCallback(
     async (settingsParam) => {
-      const settingsToSave = settingsParam || boardSettings;
+      const settingsToSave = normalizeBoardSettings(settingsParam || boardSettings);
       if (settingsToSave?.playerIcon1?.size) {
         setStandardSize(settingsToSave.playerIcon1.size);
       }
+      applyBoardSettingsToPlacedPalettePlayers(settingsToSave);
       try {
         const str = await AsyncStorage.getItem('usuario');
         if (!str) return;
@@ -13450,51 +13515,33 @@ export default function Field(props = {}) {
         );
         const updated = result?.payload;
         if (updated && typeof updated === 'object') {
-          await AsyncStorage.setItem('usuario', JSON.stringify(updated));
+          const updatedUser = {
+            ...updated,
+            boardSettings: normalizeBoardSettings(updated.boardSettings, settingsToSave),
+          };
+          await AsyncStorage.setItem('usuario', JSON.stringify(updatedUser));
 
           // Actualizar los iconos de la paleta con los nuevos valores (usar settingsToSave)
           setPaletteIcons((prev) =>
             prev.map((icon) => {
               if (icon.id === 'icon1') {
+                const playerSettings = settingsToSave.playerIcon1;
                 return {
                   ...icon,
-                  color: settingsToSave.playerIcon1.color,
-                  size: settingsToSave.playerIcon1.size,
-                  shape: settingsToSave.playerIcon1.shape || icon.shape || 'circle',
-                  hasStripes:
-                    settingsToSave.playerIcon1.hasStripes !== undefined
-                      ? settingsToSave.playerIcon1.hasStripes
-                      : icon.hasStripes,
-                  hasBib:
-                    settingsToSave.playerIcon1.hasBib !== undefined
-                      ? settingsToSave.playerIcon1.hasBib
-                      : icon.hasBib,
-                  bibColor:
-                    settingsToSave.playerIcon1.bibColor !== undefined
-                      ? settingsToSave.playerIcon1.bibColor
-                      : icon.bibColor,
-                  stripeColor: settingsToSave.playerIcon1.stripeColor || icon.stripeColor || '#ffffff',
+                  ...playerSettings,
+                  numberColor: playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
+                  shape: playerSettings.shape || icon.shape || 'circle',
+                  stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
                 };
               }
               if (icon.id === 'icon2') {
+                const playerSettings = settingsToSave.playerIcon2;
                 return {
                   ...icon,
-                  color: settingsToSave.playerIcon2.color,
-                  size: settingsToSave.playerIcon2.size,
-                  shape: settingsToSave.playerIcon2.shape || icon.shape || 'circle',
-                  hasStripes:
-                    settingsToSave.playerIcon2.hasStripes !== undefined
-                      ? settingsToSave.playerIcon2.hasStripes
-                      : icon.hasStripes,
-                  hasBib:
-                    settingsToSave.playerIcon2.hasBib !== undefined
-                      ? settingsToSave.playerIcon2.hasBib
-                      : icon.hasBib,
-                  bibColor:
-                    settingsToSave.playerIcon2.bibColor !== undefined
-                      ? settingsToSave.playerIcon2.bibColor
-                      : icon.bibColor,
-                  stripeColor: settingsToSave.playerIcon2.stripeColor || icon.stripeColor || '#ffffff',
+                  ...playerSettings,
+                  numberColor: playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
+                  shape: playerSettings.shape || icon.shape || 'circle',
+                  stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
                 };
               }
               if (icon.id === 'icon3') {
@@ -13502,6 +13549,10 @@ export default function Field(props = {}) {
                   ...icon,
                   color: settingsToSave.playerIcon3.color,
                   size: settingsToSave.playerIcon3.size,
+                  numberColor:
+                    settingsToSave.playerIcon3.numberColor !== undefined
+                      ? settingsToSave.playerIcon3.numberColor
+                      : icon.numberColor || DEFAULT_PLAYER_NUMBER_COLOR,
                   shape: settingsToSave.playerIcon3.shape || icon.shape || 'circle',
                   hasStripes:
                     settingsToSave.playerIcon3.hasStripes !== undefined
@@ -13578,7 +13629,10 @@ export default function Field(props = {}) {
             goalkeeperColor:
               settingsToSave.teamPlayers.goalkeeperColor || prev.goalkeeperColor || '#ff4a4a',
             size: settingsToSave.teamPlayers.size,
-            numberColor: settingsToSave.teamPlayers.numberColor || prev.numberColor,
+            numberColor:
+              settingsToSave.teamPlayers.numberColor !== undefined
+                ? settingsToSave.teamPlayers.numberColor
+                : prev.numberColor,
             textColor: settingsToSave.teamPlayers.textColor || prev.textColor,
             textBackgroundColor:
               settingsToSave.teamPlayers.textBackgroundColor || prev.textBackgroundColor,
@@ -13622,7 +13676,7 @@ export default function Field(props = {}) {
         );
       }
     },
-    [dispatch, boardSettings, t],
+    [applyBoardSettingsToPlacedPalettePlayers, dispatch, boardSettings, t],
   );
 
   // Cargar Configuraci�n guardada del usuario al entrar a la pantalla
@@ -13674,6 +13728,7 @@ export default function Field(props = {}) {
 
           // Cargar boardSettings del usuario
           if (usuario && usuario.boardSettings) {
+            usuario.boardSettings = normalizeBoardSettings(usuario.boardSettings);
             if (usuario.boardSettings.playerIcon1?.size) {
               setStandardSize(usuario.boardSettings.playerIcon1.size);
             }
@@ -13696,55 +13751,33 @@ export default function Field(props = {}) {
                 ...getDefaultNeutralPlayerSettings(),
                 ...prev.playerIcon4,
                 ...usuario.boardSettings.playerIcon4,
+                hasBib: true,
               },
               teamPlayers: { ...prev.teamPlayers, ...usuario.boardSettings.teamPlayers },
             }));
+            applyBoardSettingsToPlacedPalettePlayers(usuario.boardSettings);
 
             // Actualizar tambi�n los iconos de la paleta y teamPlayerStyle con los valores del usuario
             setPaletteIcons((prev) =>
               prev.map((icon) => {
                 if (icon.id === 'icon1' && usuario.boardSettings.playerIcon1) {
+                  const playerSettings = usuario.boardSettings.playerIcon1;
                   return {
                     ...icon,
-                    color: usuario.boardSettings.playerIcon1.color || icon.color,
-                    size: usuario.boardSettings.playerIcon1.size || icon.size,
-                    shape: usuario.boardSettings.playerIcon1.shape || icon.shape || 'circle',
-                    hasStripes:
-                      usuario.boardSettings.playerIcon1.hasStripes !== undefined
-                        ? usuario.boardSettings.playerIcon1.hasStripes
-                        : icon.hasStripes,
-                    hasBib:
-                      usuario.boardSettings.playerIcon1.hasBib !== undefined
-                        ? usuario.boardSettings.playerIcon1.hasBib
-                        : icon.hasBib,
-                    bibColor:
-                      usuario.boardSettings.playerIcon1.bibColor !== undefined
-                        ? usuario.boardSettings.playerIcon1.bibColor
-                        : icon.bibColor,
-                    stripeColor:
-                      usuario.boardSettings.playerIcon1.stripeColor || icon.stripeColor || '#ffffff',
+                    ...playerSettings,
+                    numberColor: playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
+                    shape: playerSettings.shape || icon.shape || 'circle',
+                    stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
                   };
                 }
                 if (icon.id === 'icon2' && usuario.boardSettings.playerIcon2) {
+                  const playerSettings = usuario.boardSettings.playerIcon2;
                   return {
                     ...icon,
-                    color: usuario.boardSettings.playerIcon2.color || icon.color,
-                    size: usuario.boardSettings.playerIcon2.size || icon.size,
-                    shape: usuario.boardSettings.playerIcon2.shape || icon.shape || 'circle',
-                    hasStripes:
-                      usuario.boardSettings.playerIcon2.hasStripes !== undefined
-                        ? usuario.boardSettings.playerIcon2.hasStripes
-                        : icon.hasStripes,
-                    hasBib:
-                      usuario.boardSettings.playerIcon2.hasBib !== undefined
-                        ? usuario.boardSettings.playerIcon2.hasBib
-                        : icon.hasBib,
-                    bibColor:
-                      usuario.boardSettings.playerIcon2.bibColor !== undefined
-                        ? usuario.boardSettings.playerIcon2.bibColor
-                        : icon.bibColor,
-                    stripeColor:
-                      usuario.boardSettings.playerIcon2.stripeColor || icon.stripeColor || '#ffffff',
+                    ...playerSettings,
+                    numberColor: playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
+                    shape: playerSettings.shape || icon.shape || 'circle',
+                    stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
                   };
                 }
                 if (icon.id === 'icon3' && usuario.boardSettings.playerIcon3) {
@@ -13752,6 +13785,10 @@ export default function Field(props = {}) {
                     ...icon,
                     color: usuario.boardSettings.playerIcon3.color || icon.color,
                     size: usuario.boardSettings.playerIcon3.size || icon.size,
+                    numberColor:
+                      usuario.boardSettings.playerIcon3.numberColor ||
+                      icon.numberColor ||
+                      DEFAULT_PLAYER_NUMBER_COLOR,
                     shape: usuario.boardSettings.playerIcon3.shape || icon.shape || 'circle',
                     hasStripes:
                       usuario.boardSettings.playerIcon3.hasStripes !== undefined
@@ -13814,6 +13851,7 @@ export default function Field(props = {}) {
                     ...icon,
                     ...getDefaultNeutralPlayerSettings(),
                     ...usuario.boardSettings.playerIcon4,
+                    hasBib: true,
                     number: 'N',
                     isNeutral: true,
                   };
@@ -13875,7 +13913,7 @@ export default function Field(props = {}) {
       };
 
       loadUserSettings();
-    }, []),
+    }, [applyBoardSettingsToPlacedPalettePlayers]),
   );
 
   // Helper: clear multi-select
@@ -13978,30 +14016,7 @@ export default function Field(props = {}) {
       bibColor: NEUTRAL_PLAYER_COLORS.bib,
       stripeColor: '#ffffff',
     });
-    setBoardSettings({
-      playerIcon1: { color: '#2176ff', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-      playerIcon2: { color: '#ff3838', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-      playerIcon3: { color: '#ffa600', size: DEFAULT_PLAYER_ICON_SIZE, shape: 'circle', hasStripes: false, stripeColor: '#ffffff' },
-      goalkeeperIcon1: { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS },
-      goalkeeperIcon2: { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS },
-      playerIcon4: getDefaultNeutralPlayerSettings(),
-      teamPlayers: {
-        color: '#2176ff',
-        goalkeeperColor: '#ff4a4a',
-        size: DEFAULT_PLAYER_ICON_SIZE,
-        numberColor: '#ffffff',
-        textColor: '#000000',
-        textBackgroundColor: '#ffffff',
-        differentiateGoalkeeper: true,
-        goalkeeperStripeColor: '#ffffff',
-        showPhotos: false,
-        shape: 'circle',
-        hasStripes: false,
-        hasBib: false,
-        bibColor: NEUTRAL_PLAYER_COLORS.bib,
-        stripeColor: '#ffffff',
-      },
-    });
+    setBoardSettings(getDefaultBoardSettings());
     setFormationSettings({
       displayMode: 'number',
       customLabels: { ...getDefaultPositionLabels() },
@@ -14979,6 +14994,39 @@ export default function Field(props = {}) {
   }, []); // SIN dependencias — identidad 100% estable
 
   // Función UNDO optimizada (restaura clones y conectores)
+  useEffect(() => {
+    if (!pendingPalettePlayerSettings) return;
+    const settingsToApply = pendingPalettePlayerSettings;
+    setPendingPalettePlayerSettings(null);
+    setClones((prev) =>
+      prev.map((clone) => {
+        if (clone.type !== 'player' || clone.playerData || typeof clone.paletteIndex !== 'number') {
+          return clone;
+        }
+        const setting = getBoardPaletteIconSettings(paletteIcons[clone.paletteIndex], settingsToApply);
+        if (!setting) return clone;
+        return {
+          ...clone,
+          color: setting.color !== undefined ? setting.color : clone.color,
+          backgroundColor:
+            setting.backgroundColor !== undefined ? setting.backgroundColor : clone.backgroundColor,
+          numberColor:
+            setting.numberColor !== undefined
+              ? setting.numberColor
+              : clone.numberColor || DEFAULT_PLAYER_NUMBER_COLOR,
+          size: setting.size !== undefined ? setting.size : clone.size,
+          shape: setting.shape || clone.shape || 'circle',
+          hasStripes: setting.hasStripes !== undefined ? setting.hasStripes : clone.hasStripes,
+          hasBib: setting.hasBib !== undefined ? setting.hasBib : clone.hasBib,
+          bibColor: setting.bibColor !== undefined ? setting.bibColor : clone.bibColor,
+          stripeColor: setting.stripeColor || clone.stripeColor || '#ffffff',
+          goalkeeperStripeColor:
+            setting.goalkeeperStripeColor || setting.stripeColor || clone.goalkeeperStripeColor,
+        };
+      }),
+    );
+  }, [getBoardPaletteIconSettings, paletteIcons, pendingPalettePlayerSettings, setClones]);
+
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
       historyIndexRef.current--;

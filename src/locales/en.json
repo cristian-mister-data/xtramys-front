@@ -911,7 +911,7 @@
     "selection": "Select",
     "cancel": "Cancel",
     "configuration": "Configuration",
-    "widthStandardIcon": "Standard icon size",
+    "widthStandardIcon": "Player size",
     "minimum": "Minimum",
     "widthMinimunIcon": "Minimum size: 16 pixels (no maximum)",
     "showNumberLabels": "Show player numbers",
@@ -2043,7 +2043,7 @@
     },
     "settings": {
       "title": "⚙️ Configuration",
-      "iconSizeLabel": "Standard icon size:",
+      "iconSizeLabel": "Player size:",
       "sizePlaceholder": "Size ({{size}})",
       "minSizeHint": "Minimum size: {{min}} pixels (no max)",
       "showPlayerNumbers": "Show numbers on players:",

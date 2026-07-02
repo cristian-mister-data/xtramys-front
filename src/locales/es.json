@@ -914,7 +914,7 @@
     "selection": "Seleccionar",
     "cancel": "Cancelar",
     "configuration": "Configuración",
-    "widthStandardIcon": "Tamaño estándar de iconos",
+    "widthStandardIcon": "Tamaño jugadores",
     "minimum": "Mínimo",
     "widthMinimunIcon": "Tamaño mínimo: 16 píxeles (sin máximo)",
     "showNumberLabels": "Mostrar número jugadores",
@@ -2048,7 +2048,7 @@
     },
     "settings": {
       "title": "⚙️ Configuración",
-      "iconSizeLabel": "Tamaño estándar de iconos:",
+      "iconSizeLabel": "Tamaño jugadores:",
       "sizePlaceholder": "Tamaño ({{size}})",
       "minSizeHint": "Tamaño mínimo: {{min}} píxeles (sin máximo)",
       "showPlayerNumbers": "Mostrar números en jugadores:",
