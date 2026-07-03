@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { MdPlayCircleOutline, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { MdPlayCircleOutline, MdLightMode, MdDarkMode, MdNotifications } from 'react-icons/md';
 import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -928,6 +928,16 @@ export default function Profile() {
             <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
           </CardHeader>
           <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+            <AccountBtn type="button" onClick={() => navigate('/notifications')}>
+              <MdNotifications size={20} />
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div>{t('notifications.title', 'Notificaciones')}</div>
+                <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
+                  {t('notifications.subtitle', 'Revisa solicitudes, actividad y contenido compartido.')}
+                </Muted>
+              </div>
+              <span style={{ color: '#cbd5e1' }}>{'>'}</span>
+            </AccountBtn>
             {user?.role !== 'club_admin' && (
             <AccountBtn type="button" onClick={openTutorial}>
               <MdPlayCircleOutline size={20} />

@@ -56,6 +56,7 @@ import {
 } from '@/utils/formPersistence';
 import { persistFavoriteState } from '@/utils/favoritePersistence';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { getSharedWithMe } from '@/api/sharedContent';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -1014,7 +1015,7 @@ function FolderManagement({ folders, foldersFlat, onBack, dispatch, createFolder
 }
 
 function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = false, forceWidth = null, forceHeight = null, onOpenOptions, styles, isSelected = false, selectionMode = false, onToggleSelect, onToggleFavorite }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const lang = i18n.language;
 
@@ -1133,6 +1134,12 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
               <Ionicons name="globe-outline" size={14} color="#16a34a" />
             )}
           </View>
+
+          {strategy.sharedByFriend && (
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              {t('friends.sharedBy', { name: strategy.sharedByFriend.nombre })}
+            </Text>
+          )}
 
           {getFolderName() && (
             <View style={[styles.infoTagsContainer, isGrid && styles.infoTagsContainerGrid]}>
@@ -1277,11 +1284,12 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
   });
 
   const [viewingStrategy, setViewingStrategy] = useState(null);
+  const [sharedStrategies, setSharedStrategies] = useState([]);
   const [idUsuario, setIdUsuario] = useState("");
   const [userRole, setUserRole] = useState('user');
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
-  const canEditStrategyItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
-  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
+  const canEditStrategyItem = useCallback((item) => !item?.sharedByFriend && canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
+  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites' | 'shared'
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [viewMode, setViewMode] = useState("list");
   // Estados para modal de opciones en cada tarjeta
@@ -1334,6 +1342,32 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
   const getDuplicateSuffix = useCallback(() => (i18n.language === 'en' ? 'duplicate' : 'duplicado'), [i18n.language]);
   const buildDuplicateName = useCallback((baseName) => `${(baseName || '').trim()}_${getDuplicateSuffix()}`, [getDuplicateSuffix]);
+
+  const loadSharedStrategies = useCallback(() => {
+    if (isDemo) return;
+    getSharedWithMe(isSetPiece ? 'setPiece' : 'strategy').then(({ data }) => setSharedStrategies(data || [])).catch(() => setSharedStrategies([]));
+  }, [isDemo, isSetPiece]);
+
+  useEffect(() => {
+    loadSharedStrategies();
+  }, [loadSharedStrategies]);
+
+  useEffect(() => {
+    if (listFilter === 'shared') loadSharedStrategies();
+  }, [listFilter, loadSharedStrategies]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || viewingStrategy) return;
+    const url = new URL(window.location.href);
+    const openId = url.searchParams.get('open');
+    if (!openId) return;
+    const item = [...sharedStrategies, ...strategies, ...globalStrategies].find((strategy) => sameId(getItemId(strategy), openId));
+    if (item) {
+      url.searchParams.delete('open');
+      window.history.replaceState({}, '', url.toString());
+      setViewingStrategy(item);
+    }
+  }, [sharedStrategies, strategies, globalStrategies, viewingStrategy]);
 
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -1527,6 +1561,9 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     const isTitleSearch = Boolean(filters.titulo?.trim());
     const applyPath = (items) => sortByLocalizedName(items.map(withFolderPath), lang);
     const demoOnly = (items) => items.filter(st => !st.isGlobal);
+    if (listFilter === 'shared') {
+      return applyPath(sharedStrategies.filter(matchesKind));
+    }
     if (listFilter === 'global') {
       if (isDemo) return [];
       if (currentFolderId && !isTitleSearch) return applyPath(currentFolderStrategies.filter(matchesKind));
@@ -1560,7 +1597,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     })();
     if (currentFolderId && !isTitleSearch) return applyPath((isDemo ? demoOnly(currentFolderStrategies) : currentFolderStrategies).filter(matchesKind));
     return applyPath(isTitleSearch ? base : base.filter((st) => !hasFolder(st)));
-  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind, withFolderPath, lang, isDemo]);
+  }, [listFilter, currentFolderId, currentFolderStrategies, globalStrategies, strategies, idUsuario, filters.titulo, strategyKind, withFolderPath, lang, isDemo, sharedStrategies]);
 
   const filteredStrategies = useMemo(() => {
     return displayedStrategies.filter((strategy) => {
@@ -1573,6 +1610,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
   const displayedSubfolders = useMemo(() => {
     if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
+    if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
     if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
@@ -2278,6 +2316,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
             { key: 'favorites', label: isSetPiece ? t('setPieces.favorites') : (t('common.favorites') || 'Favoritos'), icon: 'star' },
             { key: 'all', label: isSetPiece ? t('setPieces.all') : (t('strategy.allStrategies') || 'Todas') },
             { key: 'mine', label: isSetPiece ? t('setPieces.mine') : (t('strategy.myStrategies') || 'Mías') },
+            ...(!isDemo ? [{ key: 'shared', label: t('friends.sharedByFriends') }] : []),
             ...(user?.clubId && !isDemo ? [{ key: 'club', label: isSetPiece ? t('setPieces.club') : t('club.sharedLibrary', 'Compartido por mi club') }] : []),
             ...(!isDemo ? [{ key: 'global', label: isSetPiece ? t('setPieces.app') : (t('strategy.appStrategies') || 'App') }] : []),
           ].map(tab => {
@@ -3832,6 +3871,11 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     marginBottom: 2,
     letterSpacing: 0.25,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    marginBottom: 4,
   },
   cardTitleMobile: {
     fontSize: 13,

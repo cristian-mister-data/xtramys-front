@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { linkVideoToExercise } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import FriendShareSelector from '@/components/shared/FriendShareSelector';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import {
@@ -124,6 +125,17 @@ export default function CreateExerciseForm({
     return user?.role === 'admin';
   });
   const [visibility, setVisibility] = useState(editingExercise?.visibility || 'PRIVATE');
+  const isRestoringDraft = useMemo(() => {
+    const editingId = editingExercise?._id || editingExercise?.id || null;
+    const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
+    return !!(draft && (draft.editingId || null) === editingId && draft.kind === 'exercise');
+  }, [editingExercise]);
+
+  const [friendSharing, setFriendSharing] = useState({
+    sharedWithFriends: !!editingExercise?.sharedWithFriends,
+    shareWithAll: true,
+    sharingFriendIds: [],
+  });
 
   // Traducciones para ejercicios globales (admin)
   const [nameEn, setNameEn] = useState(editingExercise?.translations?.en?.nombre || '');
@@ -204,6 +216,12 @@ export default function CreateExerciseForm({
       if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
+      if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
+      if (typeof draft.playerNumbers === 'string') setPlayerNumbers(draft.playerNumbers);
+      if (typeof draft.teams === 'string') setTeams(draft.teams);
+      if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
+      if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
+      if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
       if (typeof draft.materialNecesarioEn === 'string') setMaterialNecesarioEn(draft.materialNecesarioEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (typeof draft.visibility === 'string') setVisibility(draft.visibility);
@@ -212,6 +230,7 @@ export default function CreateExerciseForm({
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
+      if (draft.friendSharing) setFriendSharing(draft.friendSharing);
     }
 
     if (resultMatches) {
@@ -243,6 +262,7 @@ export default function CreateExerciseForm({
       playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
+      friendSharing,
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
@@ -285,9 +305,10 @@ export default function CreateExerciseForm({
             kind: 'exercise',
             editingId,
             name, duration, description, objective, materialNecesario, videoUrl, dimensions, folderId,
-            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal,
+            playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
             fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
+            friendSharing,
           });
         }
         // Si estamos editando, el video ya se asocia directamente con ejercicioId
@@ -364,6 +385,9 @@ export default function CreateExerciseForm({
         pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
         visibility: !isAdmin && userClubId ? visibility : (editingExercise?.visibility || 'PRIVATE'),
+        sharedWithFriends: friendSharing.sharedWithFriends,
+        shareWithAll: friendSharing.shareWithAll,
+        sharingFriendIds: friendSharing.sharingFriendIds,
         // Traducciones para ejercicios globales
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '', materialNecesario: materialNecesarioEn || '' } }
@@ -478,6 +502,16 @@ export default function CreateExerciseForm({
               </View>
             )}
           </View>
+        )}
+
+        {!isGlobal && (
+          <FriendShareSelector
+            contentType="exercise"
+            contentId={editingExercise?._id}
+            value={friendSharing}
+            onChange={setFriendSharing}
+            skipLoadFromDb={isRestoringDraft}
+          />
         )}
 
         <View style={styles.formCard}>

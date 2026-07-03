@@ -35,6 +35,7 @@ import {
 } from '@/utils/formPersistence';
 import { persistFavoriteState } from '@/utils/favoritePersistence';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { getSharedWithMe } from '@/api/sharedContent';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -1031,7 +1032,7 @@ function FolderManagement({
 // Mejorada: solo muestra el campo si hay elementosCampo y tipoCampo
 function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions, styles, isSelected = false, selectionMode = false, onToggleSelect, onToggleFavorite }) {
   const { width: screenWidth } = useWindowDimensions();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const lang = i18n.language;
   const IS_MOBILE = screenWidth < 430;
@@ -1174,6 +1175,11 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             )}
           </View>
           {/* Duración SIEMPRE visible */}
+          {exercise.sharedByFriend && (
+            <Text style={styles.cardDuration} numberOfLines={1}>
+              {t('friends.sharedBy', { name: exercise.sharedByFriend.nombre })}
+            </Text>
+          )}
           <Text style={[styles.cardDuration, IS_MOBILE && { fontSize: 12 }, isGrid && styles.cardDurationGrid]}>{exercise.tiempo} min</Text>
 
           {/* Información adicional de jugadores y equipos SOLO EN VISTA LISTA */}
@@ -1324,11 +1330,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     return fieldResult?.kind === 'exercise' ? (s?.editingExercise || null) : null;
   });
   const [viewingExercise, setViewingExercise] = useState(null);
+  const [sharedExercises, setSharedExercises] = useState([]);
   const idUsuario = user?._id || "";
   const userRole = user?.role || "user";
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
-  const canEditExerciseItem = useCallback((item) => canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
-  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' (admin only) | 'favorites'
+  const canEditExerciseItem = useCallback((item) => !item?.sharedByFriend && canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
+  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites' | 'shared'
   const [viewMode, setViewMode] = useState("list");
   const [scrollEnabled, setScrollEnabled] = useState(true);
 
@@ -1372,6 +1379,32 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const getDuplicateSuffix = useCallback(() => (i18n.language === 'en' ? 'duplicate' : 'duplicado'), [i18n.language]);
   const buildDuplicateName = useCallback((baseName) => `${(baseName || '').trim()}_${getDuplicateSuffix()}`, [getDuplicateSuffix]);
+
+  const loadSharedExercises = useCallback(() => {
+    if (isDemo) return;
+    getSharedWithMe('exercise').then(({ data }) => setSharedExercises(data || [])).catch(() => setSharedExercises([]));
+  }, [isDemo]);
+
+  useEffect(() => {
+    loadSharedExercises();
+  }, [loadSharedExercises]);
+
+  useEffect(() => {
+    if (listFilter === 'shared') loadSharedExercises();
+  }, [listFilter, loadSharedExercises]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || viewingExercise) return;
+    const url = new URL(window.location.href);
+    const openId = url.searchParams.get('open');
+    if (!openId) return;
+    const item = [...sharedExercises, ...ejercicios, ...globalExercises].find((exercise) => sameId(getItemId(exercise), openId));
+    if (item) {
+      url.searchParams.delete('open');
+      window.history.replaceState({}, '', url.toString());
+      setViewingExercise(item);
+    }
+  }, [sharedExercises, ejercicios, globalExercises, viewingExercise]);
 
   // Editar carpeta
   const [editFolderModalVisible, setEditFolderModalVisible] = useState(false);
@@ -1629,6 +1662,9 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     const titleFilter = filters.titulo.trim().toLowerCase();
     const sort = (items) => sortByLocalizedName(items, lang);
     const demoOnly = (items) => items.filter(ex => !ex.isGlobal);
+    if (listFilter === 'shared') {
+      return sort(sharedExercises);
+    }
     if (listFilter === 'global') {
       if (isDemo) return [];
       if (currentFolderId && !isTitleSearch) return sort(currentFolderExercises);
@@ -1662,7 +1698,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (currentFolderId && !isTitleSearch) return sort(isDemo ? demoOnly(currentFolderExercises) : currentFolderExercises);
     if (listFilter === 'club') return sort(base);
     return sort(isTitleSearch ? base : base.filter(ex => !hasFolder(ex)));
-  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang, isDemo]);
+  }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang, isDemo, sharedExercises]);
 
   const filteredEjercicios = useMemo(() => {
     if (listFilter === 'global') return displayedExercises;
@@ -1683,6 +1719,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const displayedSubfolders = useMemo(() => {
     if (filters.titulo?.trim()) return [];
     if (listFilter === 'favorites') return [];
+    if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
     if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
@@ -2341,6 +2378,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
             { key: 'favorites', label: t('common.favorites') || 'Favoritos', icon: 'star' },
             { key: 'all', label: t('exercise.allExercises') },
             { key: 'mine', label: t('exercise.myExercises') },
+            ...(!isDemo ? [{ key: 'shared', label: t('friends.sharedByFriends') }] : []),
             ...(user?.clubId && !isDemo ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
             ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises') }] : []),
           ].map(tab => {

@@ -9,6 +9,7 @@ import { preloadRoute } from '@/router/preload';
 import { getFlatNavItems, searchNav, normalize } from './navItems';
 import xtramysLogo from '@/images/xtramys.webp';
 import xtramysWhiteLogo from '@/images/xtramys_white.webp';
+import NotificationBell from '@/components/shared/NotificationBell';
 
 const Bar = styled.header`
   grid-area: header;
@@ -502,6 +503,7 @@ export default function Header({ onMenu, hideSearch = false }) {
       )}
 
       <RightActions>
+        <NotificationBell />
         <Profile onClick={() => navigate('/profile')} aria-label={t('menu.profile', 'Perfil')}>
           <Avatar src={user?.imagen}>{!user?.imagen && initials(user?.nombre)}</Avatar>
           <span>{user?.nombre || ''}</span>

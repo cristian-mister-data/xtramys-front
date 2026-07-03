@@ -18,6 +18,7 @@ import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStrategyFoldersFlat, createStrategyFolder, fetchGlobalFolders } from '@/store/slices/strategy/strategyThunks';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import FriendShareSelector from '@/components/shared/FriendShareSelector';
 import { LinearGradient } from 'expo-linear-gradient';
 import { linkVideoToStrategy } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
@@ -106,6 +107,11 @@ export default function CreateStrategyForm({
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGlobal, setIsGlobal] = useState(editingStrategy?.isGlobal || false);
   const [visibility, setVisibility] = useState(editingStrategy?.visibility || 'PRIVATE');
+  const [friendSharing, setFriendSharing] = useState({
+    sharedWithFriends: !!editingStrategy?.sharedWithFriends,
+    shareWithAll: true,
+    sharingFriendIds: [],
+  });
   const [userClubId, setUserClubId] = useState(null);
 
   const [saving, setSaving] = useState(false);
@@ -226,6 +232,8 @@ export default function CreateStrategyForm({
       if (typeof draft.folderId === 'string') setFolderId(draft.folderId);
       if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
       if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
+      if (typeof draft.nameEn === 'string') setNameEn(draft.nameEn);
+      if (typeof draft.descriptionEn === 'string') setDescriptionEn(draft.descriptionEn);
       if (typeof draft.objectiveEn === 'string') setObjectiveEn(draft.objectiveEn);
       if (typeof draft.isGlobal === 'boolean') setIsGlobal(draft.isGlobal);
       if (typeof draft.visibility === 'string') setVisibility(draft.visibility);
@@ -234,6 +242,7 @@ export default function CreateStrategyForm({
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
+      if (draft.friendSharing) setFriendSharing(draft.friendSharing);
     }
 
     if (resultMatches) {
@@ -268,6 +277,7 @@ export default function CreateStrategyForm({
       nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
       fieldElements, fieldType, imagen, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
+      friendSharing,
     });
 
     // Crear callbacks globales que se pueden acceder desde cualquier lugar
@@ -312,9 +322,10 @@ export default function CreateStrategyForm({
             kind: draftKind,
             editingId,
             name, description, objective, videoUrl, folderId,
-            nameEn, descriptionEn, objectiveEn, isGlobal,
+            nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
             fieldElements, fieldType, imagen, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
+            friendSharing,
           });
         }
         // Si estamos editando, el video ya se asocia directamente con estrategiaId
@@ -382,6 +393,9 @@ export default function CreateStrategyForm({
         isGlobal: isAdmin ? isGlobal : false,
         kind: isSetPiece ? 'setPiece' : 'strategy',
         visibility: !isAdmin && userClubId ? visibility : (editingStrategy?.visibility || 'PRIVATE'),
+        sharedWithFriends: friendSharing.sharedWithFriends,
+        shareWithAll: friendSharing.shareWithAll,
+        sharingFriendIds: friendSharing.sharingFriendIds,
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
           : undefined,
@@ -494,6 +508,15 @@ export default function CreateStrategyForm({
               </View>
             )}
           </View>
+        )}
+
+        {!isGlobal && (
+          <FriendShareSelector
+            contentType={isSetPiece ? 'setPiece' : 'strategy'}
+            contentId={editingStrategy?._id}
+            value={friendSharing}
+            onChange={setFriendSharing}
+          />
         )}
 
         <View style={styles.formCard}>

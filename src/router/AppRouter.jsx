@@ -43,6 +43,8 @@ const GoalkeeperMethodology = lazy(() => import('@/pages/GoalkeeperMethodology')
 const WellnessTemplates = lazy(() => import('@/pages/WellnessTemplates'));
 const WellnessManagement = lazy(() => import('@/pages/WellnessManagement'));
 const Profile = lazy(() => import('@/pages/Profile'));
+const Friends = lazy(() => import('@/pages/Friends'));
+const Notifications = lazy(() => import('@/pages/Notifications'));
 const ClubDashboard = lazy(() => import('@/pages/club/Dashboard'));
 
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
@@ -56,6 +58,7 @@ const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 const TrainingSessionShare = lazy(() => import('@/pages/public/TrainingSessionShare'));
 const SetPieceShare = lazy(() => import('@/pages/public/SetPieceShare'));
+const FriendshipAccept = lazy(() => import('@/pages/public/FriendshipAccept'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
 const OpsDashboard = lazy(() => import('@/pages/OpsDashboard'));
@@ -101,6 +104,7 @@ export default function AppRouter() {
       <Route path="/public/training-session/:token" element={lazy_(<TrainingSessionShare />)} />
       <Route path="/public/set-piece/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/public/match-sheet-abp/:token" element={lazy_(<SetPieceShare />)} />
+      <Route path="/friendship/accept/:token" element={lazy_(<FriendshipAccept />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
 
       {/* Subscription (auth required, no app layout) */}
@@ -203,6 +207,8 @@ export default function AppRouter() {
         <Route path="/statistics" element={lazy_(<Statistics />)} />
         <Route path="/nutrition" element={lazy_(<DemoSubscribeGate><Nutrition /></DemoSubscribeGate>)} />
         <Route path="/profile" element={lazy_(<Profile />)} />
+        <Route path="/friends" element={lazy_(<Friends />)} />
+        <Route path="/notifications" element={lazy_(<Notifications />)} />
         <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
         
       </Route>
