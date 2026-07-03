@@ -49,10 +49,10 @@ export function getNavSections(t, options = {}) {
           to: '/players', label: t('menu.players', 'Jugadores'), Icon: MdPeople,
           keywords: ['jugadores', 'players', 'plantilla', 'equipo']
         },
-        {
+        ...(!options.isDemo ? [{
           to: '/friends', label: t('friends.title', 'Amigos'), Icon: MdPeople,
           keywords: ['amigos', 'friends', 'solicitudes', 'compartido']
-        },
+        }] : []),
       ],
     },
     {
