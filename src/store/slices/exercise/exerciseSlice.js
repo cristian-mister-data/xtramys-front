@@ -12,6 +12,19 @@ import {
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
 
+const upsertExercise = (list, exercise) => {
+  const index = list.findIndex((item) => sameId(getItemId(item), getItemId(exercise)));
+  if (index === -1) return [...list, exercise];
+  const next = [...list];
+  next[index] = { ...next[index], ...exercise };
+  return next;
+};
+
+const replaceExercise = (list, exercise) =>
+  list.map((item) => sameId(getItemId(item), getItemId(exercise)) ? { ...item, ...exercise } : item);
+
+const folderId = (folder) => getItemId(folder) || folder;
+
 const applyFavorite = (state, exerciseId, favorito) => {
   if (!exerciseId || typeof favorito !== 'boolean') return;
   const lists = [state.exercises, state.currentFolderExercises, state.globalExercises];
@@ -81,7 +94,10 @@ const exerciseSlice = createSlice({
       .addCase(createEjercicio.pending, (state) => { state.loading = true; })
       .addCase(createEjercicio.fulfilled, (state, action) => {
         state.loading = false;
-        state.exercises = [...state.exercises, action.payload];
+        state.exercises = upsertExercise(state.exercises, action.payload);
+        if (state.currentFolder && sameId(folderId(action.payload?.folder), getItemId(state.currentFolder))) {
+          state.currentFolderExercises = upsertExercise(state.currentFolderExercises, action.payload);
+        }
       })
       .addCase(createEjercicio.rejected, (state, action) => {
         state.loading = false;
@@ -91,8 +107,10 @@ const exerciseSlice = createSlice({
       .addCase(updateEjercicio.pending, (state) => { state.loading = true; })
       .addCase(updateEjercicio.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.exercises.findIndex((e) => e._id === action.payload._id);
-        if (index !== -1) state.exercises[index] = action.payload;
+        state.exercises = upsertExercise(state.exercises, action.payload);
+        state.currentFolderExercises = replaceExercise(state.currentFolderExercises, action.payload);
+        state.globalExercises = replaceExercise(state.globalExercises, action.payload);
+        if (sameId(getItemId(state.exercise), getItemId(action.payload))) state.exercise = { ...state.exercise, ...action.payload };
       })
       .addCase(updateEjercicio.rejected, (state, action) => {
         state.loading = false;

@@ -3,7 +3,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { MdPlayCircleOutline, MdLightMode, MdDarkMode, MdNotifications } from 'react-icons/md';
+import {
+  MdAdminPanelSettings,
+  MdDarkMode,
+  MdLightMode,
+  MdLogin,
+  MdNotifications,
+  MdPlayCircleOutline,
+  MdSearch,
+} from 'react-icons/md';
 import { useThemeMode } from '@/theme/ThemeContext.jsx';
 import { Button, Field, Input, Label, Row, Stack, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -15,10 +23,14 @@ import {
   confirmEmailChange,
   resendEmailChangeCode,
   cancelEmailChange,
+  listAdminUsers,
+  impersonateUser,
 } from '@/api/auth';
 import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
+import { RESET_STORE } from '@/store/actionTypes';
+import { saveToken, saveUser } from '@/auth/storage';
 import { createPortalSession, createCheckoutSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
@@ -519,6 +531,77 @@ const SocialBadge = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.3px;
 `;
+
+const AdminSearchWrap = styled.div`
+  position: relative;
+  margin-bottom: 14px;
+  svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const AdminSearchInput = styled(Input)`
+  padding-left: 38px;
+`;
+
+const AdminUserList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+`;
+
+const AdminUserRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  color: ${({ theme }) => theme.colors.text};
+  opacity: ${({ $disabled }) => ($disabled ? 0.65 : 1)};
+  text-align: left;
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceElevated};
+  }
+`;
+
+const AdminUserName = styled.div`
+  font-weight: 700;
+  font-size: 14px;
+`;
+
+const AdminUserEmail = styled.div`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 12px;
+  margin-top: 2px;
+  word-break: break-all;
+`;
+
+const AdminUserMeta = styled.div`
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+`;
+
+const AdminPill = styled.span`
+  border-radius: 999px;
+  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(148, 163, 184, 0.14)' : '#e2e8f0'};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+`;
+
 export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
@@ -526,6 +609,7 @@ export default function Profile() {
   const { openTutorial } = useTutorial();
   const user = useSelector((s) => s.usuario?.user);
   const { mode, toggleTheme } = useThemeMode();
+  const isAdmin = user?.role === 'admin';
 
   const [editing, setEditing] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -552,6 +636,11 @@ export default function Profile() {
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [emailResending, setEmailResending] = useState(false);
   const [emailVerifyError, setEmailVerifyError] = useState('');
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState('');
+  const [adminUserQuery, setAdminUserQuery] = useState('');
+  const [impersonatingUserId, setImpersonatingUserId] = useState(null);
 
 
 
@@ -576,6 +665,31 @@ export default function Profile() {
     dispatch(checkSubscription());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    setAdminUsersLoading(true);
+    setAdminUsersError('');
+    listAdminUsers()
+      .then((data) => {
+        if (!alive) return;
+        const users = Array.isArray(data) ? data : (data?.users || data?.usuarios || []);
+        setAdminUsers(users);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        const message = err?.message || 'No se pudo cargar el panel admin';
+        setAdminUsersError(message);
+        toast.error(message);
+      })
+      .finally(() => {
+        if (alive) setAdminUsersLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [isAdmin]);
+
 
 
   useEffect(() => {
@@ -591,7 +705,34 @@ export default function Profile() {
     return <Muted>{t('message.loading', 'Cargando...')}</Muted>;
   }
 
-  const isAdmin = user.role === 'admin';
+  const normalizedAdminQuery = adminUserQuery.trim().toLowerCase();
+  const filteredAdminUsers = normalizedAdminQuery
+    ? adminUsers.filter((item) => {
+      const haystack = `${item.nombre || ''} ${item.apellido || ''} ${item.correo || ''} ${item.role || ''}`.toLowerCase();
+      return haystack.includes(normalizedAdminQuery);
+    })
+    : adminUsers;
+
+  const handleImpersonate = async (target) => {
+    if (!target?._id || target._id === user._id) return;
+    setImpersonatingUserId(target._id);
+    try {
+      const data = await impersonateUser(target._id);
+      const nextUser = data?.usuario;
+      if (data?.token) saveToken(data.token);
+      if (nextUser) {
+        saveUser(nextUser);
+        dispatch({ type: RESET_STORE });
+        dispatch(setUser(nextUser));
+        toast.success(`Has entrado como ${nextUser.correo}`);
+        navigate('/season');
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.mensaje || 'No se pudo acceder a esa cuenta');
+    } finally {
+      setImpersonatingUserId(null);
+    }
+  };
 
   const handleSave = async () => {
     const normalizedNew = String(correo || '').trim().toLowerCase();
@@ -965,6 +1106,64 @@ export default function Profile() {
       </LeftColumn>
 
       <RightColumn>
+        {isAdmin ? (
+          <FormCard>
+            <CardHeader>
+              <CardTitle><MdAdminPanelSettings size={22} /> Panel admin</CardTitle>
+            </CardHeader>
+            <AdminSearchWrap>
+              <MdSearch size={18} />
+              <AdminSearchInput
+                value={adminUserQuery}
+                onChange={(e) => setAdminUserQuery(e.target.value)}
+                placeholder="Buscar usuario por nombre, correo o rol"
+              />
+            </AdminSearchWrap>
+            {!adminUsersLoading && !adminUsersError ? (
+              <Muted style={{ marginBottom: 10 }}>
+                {adminUsers.length} usuarios cargados
+              </Muted>
+            ) : null}
+            <AdminUserList>
+              {adminUsersError ? (
+                <Muted>{adminUsersError}</Muted>
+              ) : adminUsersLoading ? (
+                <Muted>Cargando usuarios...</Muted>
+              ) : filteredAdminUsers.length ? (
+                filteredAdminUsers.map((item) => {
+                  const isCurrentUser = item._id === user._id;
+                  const isBusy = impersonatingUserId === item._id;
+                  return (
+                    <AdminUserRow key={item._id} $disabled={isCurrentUser || Boolean(impersonatingUserId)}>
+                      <div>
+                        <AdminUserName>
+                          {`${item.nombre || ''} ${item.apellido || ''}`.trim() || item.correo}
+                        </AdminUserName>
+                        <AdminUserEmail>{item.correo}</AdminUserEmail>
+                        <AdminUserMeta>
+                          <AdminPill>{item.role || 'user'}</AdminPill>
+                          <AdminPill>{item.plan || 'free'}</AdminPill>
+                          {item.clubMemberStatus ? <AdminPill>{item.clubMemberStatus}</AdminPill> : null}
+                        </AdminUserMeta>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => handleImpersonate(item)}
+                        disabled={isCurrentUser || Boolean(impersonatingUserId)}
+                      >
+                        <MdLogin size={18} />
+                        {isCurrentUser ? 'Actual' : isBusy ? 'Entrando...' : 'Entrar'}
+                      </Button>
+                    </AdminUserRow>
+                  );
+                })
+              ) : (
+                <Muted>No hay usuarios con esa busqueda.</Muted>
+              )}
+            </AdminUserList>
+          </FormCard>
+        ) : null}
+
         <FormCard>
           <CardHeader>
             <CardTitle>👤 {t('profile.personalInfo', 'Información personal')}</CardTitle>

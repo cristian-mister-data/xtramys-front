@@ -118,6 +118,25 @@ export const logout = () => api.post('/auth/logout').then((res) => {
   return res.data;
 });
 
+export const listAdminUsers = () =>
+  api.get('/auth/support/users', { cache: false })
+    .then((res) => res.data)
+    .catch((err) => {
+      if (err?.status !== 404) throw err;
+      return api.get('/user/support/users', { cache: false }).then((res) => res.data);
+    });
+
+export const impersonateUser = (userId) =>
+  api.post(`/auth/support/impersonate/${userId}`)
+    .catch((err) => {
+      if (err?.status !== 404) throw err;
+      return api.post(`/user/support/impersonate/${userId}`);
+    })
+    .then((res) => {
+      clearMeCache();
+      return res.data;
+    });
+
 export { clearMeCache };
 
 export const acceptClubInvite = ({ correo, token }) =>
