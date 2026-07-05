@@ -163,8 +163,9 @@ export default function Notifications() {
     const { data } = await getNotifications();
     const currentUser = loadUser?.();
     const currentUserId = currentUser?._id || currentUser?.id;
-    setItems((data || []).filter((n) => !currentUserId || !n.user || String(n.user) === String(currentUserId)));
-    notifyNotificationsChanged();
+    const nextItems = (data || []).filter((n) => !currentUserId || !n.user || String(n.user) === String(currentUserId));
+    setItems(nextItems);
+    notifyNotificationsChanged({ unreadCount: nextItems.filter((n) => !n.read).length });
   };
 
   useEffect(() => { refresh().catch(() => {}); }, []);

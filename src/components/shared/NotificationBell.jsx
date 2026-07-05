@@ -39,19 +39,30 @@ export default function NotificationBell() {
   const navigate = useNavigate();
   const [count, setCount] = useState(0);
 
-  const refreshCount = useCallback(async () => {
-    const { data } = await getUnreadCount();
+  const refreshCount = useCallback(async (force = false) => {
+    const { data } = await getUnreadCount({ force });
     setCount(data.count || 0);
   }, []);
 
   useEffect(() => {
     refreshCount().catch(() => {});
-    const id = setInterval(() => refreshCount().catch(() => {}), 60000);
-    const onChanged = () => refreshCount().catch(() => {});
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') refreshCount().catch(() => {});
+    }, 120000);
+    const onChanged = (event) => {
+      if (typeof event.detail?.unreadCount === 'number') {
+        setCount(event.detail.unreadCount);
+        return;
+      }
+      refreshCount(true).catch(() => {});
+    };
+    const onFocus = () => refreshCount().catch(() => {});
     window.addEventListener(NOTIFICATION_CHANGED_EVENT, onChanged);
+    window.addEventListener('focus', onFocus);
     return () => {
       clearInterval(id);
       window.removeEventListener(NOTIFICATION_CHANGED_EVENT, onChanged);
+      window.removeEventListener('focus', onFocus);
     };
   }, [refreshCount]);
 
