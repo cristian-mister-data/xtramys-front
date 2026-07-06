@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   TextInput,
   Image,
+  Linking,
 } from 'react-native';
 import { cdnUrl } from '@/config';
 import { useTranslation } from 'react-i18next';
@@ -772,6 +773,18 @@ export default function MatchSheetDetailModal({
                   </View>
                 )}
 
+                {matchSheet.partidoUrl && (
+                  <View style={styles.detailCard}>
+                    <View style={styles.detailCardHeader}>
+                      <Ionicons name="link-outline" size={18} color={theme.colors.primary} />
+                      <Text style={styles.detailCardTitle}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => Linking.openURL(matchSheet.partidoUrl)}>
+                      <Text style={[styles.detailCardContent, styles.matchLink]}>{matchSheet.partidoUrl}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 {/* Goles */}
                 {matchSheet.goles && matchSheet.goles.length > 0 && (
                   <View style={styles.detailCard}>
@@ -1293,6 +1306,10 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     lineHeight: 20,
+  },
+  matchLink: {
+    color: theme.colors.primary,
+    textDecorationLine: 'underline',
   },
   setPiecesList: {
     gap: 12,

@@ -72,6 +72,15 @@ const getInjuryColor = (injury) => {
   return '#ef4444';
 };
 
+const getInjuryStatusLabel = (injury, t) => {
+  if (injury?.fechaFin) {
+    const endDate = new Date(injury.fechaFin);
+    if (endDate <= new Date()) return t ? t('injury.statusRecovered', 'Recuperada') : 'Recuperada';
+  }
+  if (injury?.fechaFinPrevista) return t ? t('injury.statusRecovering', 'Recuperación') : 'Recuperación';
+  return t ? t('injury.statusActive', 'Activa') : 'Activa';
+};
+
 const uniqueByZone = (injuries) => {
   const map = new Map();
   (injuries || []).forEach((injury) => {
@@ -90,13 +99,13 @@ const shapesForSide = (shapes, side, laterality) => {
   return laterality === 'derecha' ? [shapes[1]] : [shapes[0]];
 };
 
-function BodyFigure({ side, injuries }) {
+function BodyFigure({ side, injuries, compact, theme, t }) {
   const zones = side === 'front' ? FRONT_ZONES : BACK_ZONES;
   const bodyImage = side === 'front' ? bodyFrontImage : bodyBackImage;
 
   return (
     <View style={styles.figurePane}>
-      <Text style={styles.figureTitle}>{side === 'front' ? 'FRONTAL' : 'POSTERIOR'}</Text>
+      <Text style={styles.figureTitle}>{side === 'front' ? (t ? t('injury.bodyFront', 'FRONTAL') : 'FRONTAL') : (t ? t('injury.bodyBack', 'POSTERIOR') : 'POSTERIOR')}</Text>
       <View style={styles.bodyImageFrame}>
         <Image source={bodyImage} style={styles.bodyImage} resizeMode="contain" />
         <Svg viewBox="0 0 180 410" width="100%" height="100%" style={styles.bodyOverlay} pointerEvents="none">
@@ -104,6 +113,7 @@ function BodyFigure({ side, injuries }) {
             const zoneValue = getZoneValue(injury);
             const shapes = zones[zoneValue] || [];
             const color = getInjuryColor(injury);
+            const displayColor = compact ? (theme.colors.primary || '#3b82f6') : color;
             return shapesForSide(shapes, side, injury.lado).map((shape, shapeIndex) => (
               <Ellipse
                 key={`${zoneValue}-${injury.lado || ''}-${injuryIndex}-${shapeIndex}`}
@@ -111,10 +121,10 @@ function BodyFigure({ side, injuries }) {
                 cy={shape.cy}
                 rx={shape.rx}
                 ry={shape.ry}
-                fill={color}
-                fillOpacity="0.24"
-                stroke={color}
-                strokeWidth="3"
+                fill={displayColor}
+                fillOpacity={compact ? "0.6" : "0.24"}
+                stroke={compact ? theme.colors.primary || '#3b82f6' : color}
+                strokeWidth={compact ? "4" : "3"}
               />
             ));
           })}
@@ -135,22 +145,34 @@ export default function BodyInjuryMap({ injuries = [], t, compact = false }) {
       compact && styles.compactContainer,
     ]}>
       <View style={styles.mapGrid}>
-        <BodyFigure side="front" injuries={markedInjuries} />
+        <BodyFigure side="front" injuries={markedInjuries} compact={compact} theme={theme} t={t} />
         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-        <BodyFigure side="back" injuries={markedInjuries} />
+        <BodyFigure side="back" injuries={markedInjuries} compact={compact} theme={theme} t={t} />
       </View>
-      <View style={styles.legendRow}>
-        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>Activa</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>Recuperación</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#10b981' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>Recuperada</Text></View>
-      </View>
+      {!compact && (
+        <View style={styles.legendRow}>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>{t ? t('injury.statusActive', 'Activa') : 'Activa'}</Text></View>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>{t ? t('injury.statusRecovering', 'Recuperación') : 'Recuperación'}</Text></View>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: '#10b981' }]} /><Text style={[styles.legendText, { color: theme.colors.textSecondary }]}>{t ? t('injury.statusRecovered', 'Recuperada') : 'Recuperada'}</Text></View>
+        </View>
+      )}
       {markedInjuries.length > 0 && (
         <View style={styles.zoneTags}>
-          {markedInjuries.map((injury) => (
-            <View key={`${getZoneValue(injury)}-${injury._id || getZoneLabel(injury, t)}`} style={[styles.zoneTag, { borderColor: getInjuryColor(injury), backgroundColor: `${getInjuryColor(injury)}18` }]}>
-              <Text style={[styles.zoneTagText, { color: getInjuryColor(injury) }]}>{getZoneLabel(injury, t)}</Text>
-            </View>
-          ))}
+          {markedInjuries.map((injury) => {
+            const displayColor = compact ? (theme.colors.primary || '#3b82f6') : getInjuryColor(injury);
+            return (
+              <View key={`${getZoneValue(injury)}-${injury._id || getZoneLabel(injury, t)}`} style={{ alignItems: 'center', gap: 6, flexDirection: 'row' }}>
+                <View style={[styles.zoneTag, { borderColor: displayColor, backgroundColor: `${displayColor}18` }]}>
+                  <Text style={[styles.zoneTagText, { color: displayColor }]}>{getZoneLabel(injury, t)}</Text>
+                </View>
+                {compact && (
+                  <View style={[styles.zoneTag, { borderColor: getInjuryColor(injury), backgroundColor: `${getInjuryColor(injury)}18` }]}>
+                    <Text style={[styles.zoneTagText, { color: getInjuryColor(injury) }]}>{getInjuryStatusLabel(injury, t)}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
     </View>

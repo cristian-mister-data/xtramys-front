@@ -3162,7 +3162,7 @@ export default function EditMatchSheetModal({
                 multiline
                 rows={4}
               />
-              <Text style={styles.inputLabel}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
+              <Text style={styles.label}>{t('matchSheet.fields.matchLink', 'Enlace del partido')}</Text>
               <TextInput
                 style={styles.textInput}
                 value={partidoUrl}

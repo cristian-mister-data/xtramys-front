@@ -170,7 +170,7 @@ const ExternalLink = styled.a`
   align-items: center;
   gap: 8px;
   max-width: 100%;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.mode === 'dark' ? theme.colors.text : theme.colors.primary};
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;

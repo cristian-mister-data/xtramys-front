@@ -992,6 +992,11 @@
     "saveError": "Error al guardar el análisis: {{msg}}"
   },
   "injury": {
+    "bodyFront": "FRONTAL",
+    "bodyBack": "POSTERIOR",
+    "statusActive": "Activa",
+    "statusRecovering": "Recuperación",
+    "statusRecovered": "Recuperada",
     "injuries": "Lesiones",
     "injury": "Lesión",
     "noTeam": "No hay ningún equipo",
@@ -3501,11 +3506,7 @@
       "yellowCardsAbbr": "T. Amarillas",
       "redCardsAbbr": "T. Rojas",
       "total": "Total",
-      "attended": "Asistió",
-      "missed": "Faltó",
       "attendance": "Asistencia",
-      "active": "Activas",
-      "recovered": "Recuperadas",
       "daysOff": "Días Baja",
       "injuryDetailStart": "Inicio",
       "injuryDetailEstimated": "Prevista",
@@ -3513,8 +3514,6 @@
       "injuryDetailDesc": "Detalle",
       "relapseRegistered": "Recaída registrada",
       "noMeasurements": "No hay mediciones registradas.",
-      "totalReports": "Total Reportes",
-      "averageScore": "Puntuación Media",
       "noRecords": "No hay registros.",
       "weight": "Peso"
     },

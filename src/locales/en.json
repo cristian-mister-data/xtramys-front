@@ -989,6 +989,11 @@
     "saveError": "Error saving analysis: {{msg}}"
   },
   "injury": {
+    "bodyFront": "FRONT",
+    "bodyBack": "BACK",
+    "statusActive": "Active",
+    "statusRecovering": "Recovering",
+    "statusRecovered": "Recovered",
     "injuries": "Injuries",
     "injury": "Injury",
     "noTeam": "No team",
@@ -3495,11 +3500,7 @@
       "yellowCardsAbbr": "Yellow Cards",
       "redCardsAbbr": "Red Cards",
       "total": "Total",
-      "attended": "Attended",
-      "missed": "Missed",
       "attendance": "Attendance",
-      "active": "Active",
-      "recovered": "Recovered",
       "daysOff": "Days Off",
       "injuryDetailStart": "Start",
       "injuryDetailEstimated": "Estimated",
@@ -3507,8 +3508,6 @@
       "injuryDetailDesc": "Details",
       "relapseRegistered": "Relapse registered",
       "noMeasurements": "No measurements registered.",
-      "totalReports": "Total Reports",
-      "averageScore": "Average Score",
       "noRecords": "No records.",
       "weight": "Weight"
     },

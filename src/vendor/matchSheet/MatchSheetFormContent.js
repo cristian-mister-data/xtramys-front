@@ -1005,7 +1005,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: theme.colors.text,
     marginBottom: 4,
     fontWeight: '500',
   },
