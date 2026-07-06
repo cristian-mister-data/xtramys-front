@@ -19,6 +19,7 @@ import { confirmAction } from '@/ui/confirm';
 import Modal from '@/ui/Modal';
 import {
   changePassword,
+  setLocalPassword,
   requestEmailChange,
   confirmEmailChange,
   resendEmailChangeCode,
@@ -993,6 +994,44 @@ export default function Profile() {
     }
   };
 
+  const handleSetLocalPassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error(t('profile.passwordFieldsRequired', 'Rellena todos los campos de contrasena'));
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error(t('reset.minLength', 'La contrasena debe tener al menos 8 caracteres'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(t('profile.passwordsDoNotMatch', 'Las contrasenas no coinciden'));
+      return;
+    }
+
+    const ok = await confirmAction(t(
+      'profile.confirmSetLocalPassword',
+      'Estas seguro? Si asignas una contrasena, ya no podras iniciar sesion con Google.'
+    ));
+    if (!ok) return;
+
+    setChangingPassword(true);
+    try {
+      const updated = await setLocalPassword({
+        userId: user._id,
+        password: newPassword,
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+      dispatch(setUser(updated));
+      saveUser(updated);
+      toast.success(t('profile.passwordUpdated', 'Contrasena actualizada correctamente'));
+    } catch (error) {
+      toast.error(error.message || t('profile.passwordUpdateError', 'No se pudo actualizar la contrasena'));
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const initials = `${(user.nombre || '?').charAt(0)}${(user.apellido || '').charAt(0)}`.toUpperCase();
 
   const isSocialAuth = user?.authProvider !== 'local' && user?.authProvider !== undefined;
@@ -1472,6 +1511,39 @@ export default function Profile() {
             <ActionRow>
               <Button type="button" onClick={handleChangePassword} disabled={changingPassword}>
                 {changingPassword ? t('common.saving', 'Guardando...') : t('profile.updatePassword', 'Actualizar contraseña')}
+              </Button>
+            </ActionRow>
+          </FormCard>
+        )}
+
+        {isGoogle && (
+          <FormCard>
+            <CardHeader>
+              <CardTitle>🔒 {t('profile.setLocalPassword', 'Asignar contraseña a cuenta')}</CardTitle>
+            </CardHeader>
+            <Stack style={{ gap: 12 }}>
+              <Field>
+                <Label>{t('reset.newPassword', 'Nueva contraseña')}</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </Field>
+              <Field>
+                <Label>{t('profile.confirmNewPassword', 'Confirmar nueva contraseña')}</Label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </Field>
+            </Stack>
+            <ActionRow>
+              <Button type="button" onClick={handleSetLocalPassword} disabled={changingPassword}>
+                {changingPassword ? t('common.saving', 'Guardando...') : t('profile.setLocalPassword', 'Asignar contraseña a cuenta')}
               </Button>
             </ActionRow>
           </FormCard>

@@ -138,6 +138,8 @@
     "passwordsDoNotMatch": "Passwords do not match",
     "passwordUpdated": "Password updated successfully",
     "passwordUpdateError": "Could not update password",
+    "setLocalPassword": "Set account password",
+    "confirmSetLocalPassword": "Are you sure? If you set a password, you will no longer be able to log in with Google.",
     "account": "Account",
     "emailChangeTitle": "Verify new email",
     "emailChangeSubtitle": "We have sent a 6-digit code to {{email}}. Until you verify it, your current email remains active.",

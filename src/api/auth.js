@@ -69,6 +69,12 @@ export const resetPassword = ({ correo, token, nuevaContraseña }) =>
 export const changePassword = ({ userId, contraseñaActual, nuevaContraseña }) =>
   api.post(`/user/${userId}/password`, { contraseñaActual, nuevaContraseña }).then((res) => res.data);
 
+
+export const setLocalPassword = ({ userId, password }) =>
+  api.post(`/user/${userId}/password/local`, { ['nuevaContrase\u00f1a']: password }).then((res) => {
+    clearMeCache();
+    return res.data;
+  });
 // Cambio de email con verificación por código de 6 dígitos.
 export const requestEmailChange = ({ userId, nuevoCorreo }) =>
   api.post(`/user/${userId}/email-change/request`, {

@@ -141,6 +141,8 @@
     "passwordsDoNotMatch": "Las contraseñas no coinciden",
     "passwordUpdated": "Contraseña actualizada correctamente",
     "passwordUpdateError": "No se pudo actualizar la contraseña",
+    "setLocalPassword": "Asignar contraseña a cuenta",
+    "confirmSetLocalPassword": "¿Estás seguro? Si asignas una contraseña, ya no podrás iniciar sesión con Google.",
     "account": "Cuenta",
     "emailChangeTitle": "Verificar nuevo correo",
     "emailChangeSubtitle": "Hemos enviado un código de 6 dígitos a {{email}}. Hasta que lo verifiques, tu correo actual seguirá activo.",
