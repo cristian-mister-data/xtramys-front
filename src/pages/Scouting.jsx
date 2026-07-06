@@ -135,6 +135,24 @@ const TagButton = styled.button`
   cursor: pointer;
 `;
 
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 600px) {
+    padding: 36px 18px;
+  }
+`;
+
 const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -440,7 +458,29 @@ export default function Scouting() {
       </Grid>
 
       {!loading && filtered.length === 0 ? (
-        <Muted style={{ textAlign: 'center', padding: 24 }}>Sin informes de scouting.</Muted>
+        <EmptyState>
+          <MdPersonSearch size={56} />
+          <div style={{ fontWeight: 600, fontSize: 16 }}>
+            {reports.length === 0
+              ? 'No hay informes de scouting'
+              : 'Sin resultados con esa búsqueda'}
+          </div>
+          <Muted>
+            {reports.length === 0
+              ? 'Crea tu primer informe para comenzar'
+              : 'Prueba con otra búsqueda.'}
+          </Muted>
+          {reports.length === 0 && (
+            <CanMutate>
+              <Button $variant="primary" onClick={openCreate}>
+                <Row $gap={6} style={{ alignItems: 'center' }}>
+                  <MdAdd size={18} />
+                  Crear informe
+                </Row>
+              </Button>
+            </CanMutate>
+          )}
+        </EmptyState>
       ) : null}
 
       <Modal
