@@ -14845,8 +14845,13 @@ export default function Field(props = {}) {
   const [actualClones, setActualClones] = useState(
     (initialElements ?? []).map((clone) => {
       const normalizedClone = { ...clone };
-      if (normalizedClone.type === 'player' && normalizedClone.playersWithNumber === undefined) {
-        normalizedClone.playersWithNumber = initialConfig?.playersWithNumber ?? true;
+      if (normalizedClone.type === 'player') {
+        if (normalizedClone.playersWithNumber === undefined) {
+          normalizedClone.playersWithNumber = initialConfig?.playersWithNumber ?? true;
+        }
+        if (normalizedClone.preserveVisualStyle === undefined) {
+          normalizedClone.preserveVisualStyle = true;
+        }
       }
       if (
         typeof normalizedClone.xRatio === 'number' &&
@@ -15000,7 +15005,12 @@ export default function Field(props = {}) {
     setPendingPalettePlayerSettings(null);
     setClones((prev) =>
       prev.map((clone) => {
-        if (clone.type !== 'player' || clone.playerData || typeof clone.paletteIndex !== 'number') {
+        if (
+          clone.type !== 'player' ||
+          clone.playerData ||
+          clone.preserveVisualStyle ||
+          typeof clone.paletteIndex !== 'number'
+        ) {
           return clone;
         }
         const setting = getBoardPaletteIconSettings(paletteIcons[clone.paletteIndex], settingsToApply);
@@ -16513,8 +16523,39 @@ export default function Field(props = {}) {
     if (canvasRef.current) {
       try {
         const savedClones = clones.map((clone) => (
-          clone?.type === 'player' ? { ...clone, playersWithNumber } : clone
+          clone?.type === 'player'
+            ? { ...clone, playersWithNumber, preserveVisualStyle: true }
+            : clone
         ));
+        const teamPlayersConfig = {
+          color: teamPlayerStyle.color,
+          goalkeeperColor: teamPlayerStyle.goalkeeperColor,
+          size: teamPlayerStyle.size,
+          numberColor: teamPlayerStyle.numberColor,
+          textColor: teamPlayerStyle.textColor,
+          textBackgroundColor: teamPlayerStyle.textBackgroundColor,
+          showPosition: teamPlayerStyle.showPosition,
+          differentiateGoalkeeper: teamPlayerStyle.differentiateGoalkeeper,
+          goalkeeperStripeColor: teamPlayerStyle.goalkeeperStripeColor,
+          showPhotos: teamPlayerStyle.showPhotos,
+          shape: teamPlayerStyle.shape,
+          hasStripes: teamPlayerStyle.hasStripes,
+          hasBib: teamPlayerStyle.hasBib,
+          bibColor: teamPlayerStyle.bibColor,
+          stripeColor: teamPlayerStyle.stripeColor,
+        };
+        const configToSave = {
+          ...initialConfig,
+          playersWithNumber,
+          connectors,
+          teamPlayers: teamPlayersConfig,
+          boardSettings: normalizeBoardSettings({
+            ...boardSettings,
+            teamPlayers: teamPlayersConfig,
+          }),
+          formationSettings,
+          showPhotos: teamPlayerStyle.showPhotos,
+        };
         let imageBase64 = '';
         if (Platform.OS === 'web') {
           imageBase64 = await captureViewShotBase64(canvasRef);
@@ -16552,7 +16593,7 @@ export default function Field(props = {}) {
         }
 
         if (saveCallback) {
-          saveCallback(savedClones, selectedField, imageBase64, { playersWithNumber, connectors, teamPlayers: { showPhotos: teamPlayerStyle.showPhotos }, showPhotos: teamPlayerStyle.showPhotos });
+          saveCallback(savedClones, selectedField, imageBase64, configToSave);
         }
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);
