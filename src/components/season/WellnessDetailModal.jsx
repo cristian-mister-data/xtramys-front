@@ -174,6 +174,7 @@ export default function WellnessDetailModal({
   const [toggling, setToggling] = useState(false);
   const [data, setData] = useState(null);
   const [expected, setExpected] = useState('');
+  const [manualAverage, setManualAverage] = useState('');
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -182,6 +183,7 @@ export default function WellnessDetailModal({
       const res = await getWellnessSession(sessionId);
       setData(res.data);
       setExpected(res.data?.expectedWellness ?? '');
+      setManualAverage(res.data?.manualAverageWellness ?? '');
     } catch {
       setData({ totalResponses: 0, averageWellness: null, responses: [], wellnessToken: null });
     } finally {
@@ -194,13 +196,17 @@ export default function WellnessDetailModal({
     if (!open) {
       setData(null);
       setExpected('');
+      setManualAverage('');
     }
   }, [open, sessionId, load]);
 
   const handleSaveConfig = async () => {
     setSaving(true);
     try {
-      const payload = { expectedWellness: expected === '' ? null : Number(expected) };
+      const payload = {
+        expectedWellness: expected === '' ? null : Number(expected),
+        manualAverageWellness: manualAverage === '' ? null : Number(manualAverage),
+      };
       await updateWellnessSession(sessionId, payload);
       await load();
       onUpdate?.();
@@ -359,6 +365,19 @@ export default function WellnessDetailModal({
                     <MdSave /> {saving ? t('common.saving', 'Guardando...') : t('common.save', 'Guardar')}
                   </Button>
                 </Row>
+              </Field>
+              <Field style={{ marginTop: 12 }}>
+                <Label>{t('session.manualAverageWellness', 'Media manual de la sesión (1-10)')}</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  value={manualAverage}
+                  onChange={(e) => setManualAverage(e.target.value)}
+                  placeholder={t('session.manualAverageWellnessPlaceholder', 'Sin media manual')}
+                  style={{ maxWidth: 150 }}
+                />
               </Field>
             </Card>
           </Section>

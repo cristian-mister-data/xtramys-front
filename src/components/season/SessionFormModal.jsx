@@ -255,467 +255,486 @@ function hydrateExercises(session) {
       } else if (e?._id) {
         ids.push(e._id);
         if (Array.isArray(e.teamAssignments)) teamsMap[e._id] = e.teamAssignments;
+      }
+    });
   }
 
   return { ids, restMap, obsMap, teamsMap };
 }
 
 function getPlayerId(p) {
-  return typeof p === 'object' ? p?._id : p;
-}
+        return typeof p === 'object' ? p?._id : p;
+      }
 
 export default function SessionFormModal({
-  open,
-  mode = 'create',
-  session = null,
-  defaultDate = null,
-  loading = false,
-  onClose,
-  onSubmit,
-  onDelete,
-}) {
-  const { t } = useTranslation();
-  const theme = useTheme();
-  const dispatch = useDispatch();
+        open,
+        mode = 'create',
+        session = null,
+        defaultDate = null,
+        loading = false,
+        onClose,
+        onSubmit,
+        onDelete,
+      }) {
+      const { t } = useTranslation();
+      const theme = useTheme();
+      const dispatch = useDispatch();
 
-  const user = useSelector((s) => s.usuario.user);
-  const userId = user?._id;
-  const playersRaw = useSelector((s) => s.player.players);
-  const exercisesRaw = useSelector((s) => s.exercise.exercises);
-  const globalExercisesRaw = useSelector((s) => s.exercise.globalExercises);
-  const foldersFlat = useSelector((s) => s.exercise.foldersFlat) || [];
-  const players = useMemo(() => playersRaw || [], [playersRaw]);
-  const exercises = useMemo(() => exercisesRaw || [], [exercisesRaw]);
-  const globalExercises = useMemo(() => globalExercisesRaw || [], [globalExercisesRaw]);
-  const selectableExercises = useMemo(() => {
-    const map = new Map();
-    const folderById = new Map(foldersFlat.map((folder) => [String(folder._id), folder]));
-    [...exercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
-      const id = exercise._id || exercise.id;
-      if (!id) return;
-      const prev = map.get(String(id));
-      const folderId = folderIdOf(exercise.folder);
-      const folder = folderId ? (typeof exercise.folder === 'object' ? exercise.folder : folderById.get(String(folderId))) : null;
-      map.set(String(id), {
-        ...prev,
-        ...exercise,
-        folder: folder || exercise.folder,
-        folderPathLabel: folder ? buildFolderPath(folder, folderById) : undefined,
-        favorito: Boolean(prev?.favorito || exercise.favorito),
-      });
-    });
-    return Array.from(map.values());
-  }, [exercises, globalExercises, foldersFlat]);
+      const user = useSelector((s) => s.usuario.user);
+      const userId = user?._id;
+      const playersRaw = useSelector((s) => s.player.players);
+      const exercisesRaw = useSelector((s) => s.exercise.exercises);
+      const globalExercisesRaw = useSelector((s) => s.exercise.globalExercises);
+      const foldersFlat = useSelector((s) => s.exercise.foldersFlat) || [];
+      const players = useMemo(() => playersRaw || [], [playersRaw]);
+      const exercises = useMemo(() => exercisesRaw || [], [exercisesRaw]);
+      const globalExercises = useMemo(() => globalExercisesRaw || [], [globalExercisesRaw]);
+      const selectableExercises = useMemo(() => {
+        const map = new Map();
+        const folderById = new Map(foldersFlat.map((folder) => [String(folder._id), folder]));
+        [...exercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
+          const id = exercise._id || exercise.id;
+          if (!id) return;
+          const prev = map.get(String(id));
+          const folderId = folderIdOf(exercise.folder);
+          const folder = folderId ? (typeof exercise.folder === 'object' ? exercise.folder : folderById.get(String(folderId))) : null;
+          map.set(String(id), {
+            ...prev,
+            ...exercise,
+            folder: folder || exercise.folder,
+            folderPathLabel: folder ? buildFolderPath(folder, folderById) : undefined,
+            favorito: Boolean(prev?.favorito || exercise.favorito),
+          });
+        });
+        return Array.from(map.values());
+      }, [exercises, globalExercises, foldersFlat]);
 
-  // Form state
-  const [fecha, setFecha] = useState('');
-  const [horaInicio, setHoraInicio] = useState('17:00');
-  const [horaFin, setHoraFin] = useState('18:30');
-  const [observaciones, setObservaciones] = useState('');
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
-  const [extraPlayerIds, setExtraPlayerIds] = useState([]);
-  const [selectedExerciseIds, setSelectedExerciseIds] = useState([]);
-  const [exerciseRest, setExerciseRest] = useState({});
-  const [exerciseObs, setExerciseObs] = useState({});
-  const [exerciseTeams, setExerciseTeams] = useState({});
-  const [expectedWellness, setExpectedWellness] = useState(null);
-  const [error, setError] = useState('');
+      // Form state
+      const [fecha, setFecha] = useState('');
+      const [horaInicio, setHoraInicio] = useState('17:00');
+      const [horaFin, setHoraFin] = useState('18:30');
+      const [observaciones, setObservaciones] = useState('');
+      const [selectedPlayers, setSelectedPlayers] = useState([]);
+      const [extraPlayerIds, setExtraPlayerIds] = useState([]);
+      const [selectedExerciseIds, setSelectedExerciseIds] = useState([]);
+      const [exerciseRest, setExerciseRest] = useState({});
+      const [exerciseObs, setExerciseObs] = useState({});
+      const [exerciseTeams, setExerciseTeams] = useState({});
+      const [expectedWellness, setExpectedWellness] = useState(null);
+      const [manualAverageWellness, setManualAverageWellness] = useState('');
+      const [error, setError] = useState('');
 
-  // Modal state
-  const [playersModalOpen, setPlayersModalOpen] = useState(false);
-  const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
-  const [teamModalExId, setTeamModalExId] = useState(null);
+      // Modal state
+      const [playersModalOpen, setPlayersModalOpen] = useState(false);
+      const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
+      const [teamModalExId, setTeamModalExId] = useState(null);
 
-  const rosterPlayers = useMemo(() => players.filter((p) => !p.extra), [players]);
-  const extraPlayersAvailable = useMemo(() => players.filter((p) => p.extra === true), [players]);
+      const rosterPlayers = useMemo(() => players.filter((p) => !p.extra), [players]);
+      const extraPlayersAvailable = useMemo(() => players.filter((p) => p.extra === true), [players]);
 
-  // Load exercises from API on open
-  useEffect(() => {
-    if (open && userId && exercises.length === 0) {
-      dispatch(fetchEjerciciosUsuario({ user: userId }));
-    }
-    if (open && globalExercises.length === 0) {
-      dispatch(fetchGlobalExercises({}));
-    }
-    if (open && userId && foldersFlat.length === 0) {
-      dispatch(fetchExerciseFoldersFlat({ user: userId }));
-    }
-  }, [open, userId, exercises.length, globalExercises.length, foldersFlat.length, dispatch]);
-
-  // Hydrate form when opening
-  useEffect(() => {
-    if (!open) return;
-    if (mode === 'edit' && session) {
-      setFecha(isoToDate(session.fecha));
-      setHoraInicio(session.horaInicio || '17:00');
-      setHoraFin(session.horaFin || '18:30');
-      setObservaciones(typeof session.observaciones === 'string'
-        ? session.observaciones
-        : normalizeTextValue(session.observacionesGenerales || ''));
-      setSelectedPlayers((session.jugadores || []).map(getPlayerId).filter(Boolean));
-      setExtraPlayerIds((session.jugadoresExtras || []).map(getPlayerId).filter(Boolean));
-      const { ids, restMap, obsMap, teamsMap } = hydrateExercises(session);
-      setSelectedExerciseIds(ids);
-      setExerciseRest(restMap);
-      setExerciseObs(obsMap);
-      setExerciseTeams(teamsMap);
-      setExpectedWellness(session.expectedWellness ?? null);
-    } else {
-      setFecha(defaultDate ? isoToDate(defaultDate) : isoToDate(new Date()));
-      setHoraInicio('17:00');
-      setHoraFin('18:30');
-      setObservaciones('');
-      setSelectedPlayers([]);
-      setExtraPlayerIds([]);
-      setSelectedExerciseIds([]);
-      setExerciseRest({});
-      setExerciseObs({});
-      setExerciseTeams({});
-      setExpectedWellness(null);
-    }
-    setError('');
-  }, [open, mode, session, defaultDate]);
-
-  const exerciseById = useMemo(() => {
-    const m = new Map();
-    selectableExercises.forEach((e) => m.set(e._id, e));
-    return m;
-  }, [selectableExercises]);
-
-  const duration = useMemo(() => computeDuration(horaInicio, horaFin), [horaInicio, horaFin]);
-
-  // ----- Exercise helpers -----
-  const moveExercise = (idx, dir) => {
-    setSelectedExerciseIds((prev) => {
-      const next = [...prev];
-      const target = idx + dir;
-      if (target < 0 || target >= next.length) return prev;
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
-  };
-
-  const removeExercise = (id) => {
-    setSelectedExerciseIds((prev) => prev.filter((x) => x !== id));
-    setExerciseRest((prev) => { const n = { ...prev }; delete n[id]; return n; });
-    setExerciseObs((prev) => { const n = { ...prev }; delete n[id]; return n; });
-    setExerciseTeams((prev) => { const n = { ...prev }; delete n[id]; return n; });
-  };
-
-  const handleExercisesPicked = (ids) => {
-    // append new (preserve existing order)
-    setSelectedExerciseIds((prev) => {
-      const set = new Set(prev);
-      const additions = ids.filter((x) => !set.has(x));
-      return [...prev, ...additions];
-    });
-  };
-
-  // ----- Players -----
-  const toggleExtra = (id) => {
-    setExtraPlayerIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  };
-
-  // ----- Wellness -----
-  const toggleWellness = (n) => {
-    setExpectedWellness((prev) => (prev === n ? null : n));
-  };
-
-  // ----- Submit -----
-  const handleSubmit = (e) => {
-    e?.preventDefault?.();
-    setError('');
-    if (!fecha) {
-      showMissingFieldsToast(t, [t('session.date', 'Fecha')]);
-      return;
-    }
-
-    const ejerciciosDetalle = selectedExerciseIds.map((id, idx) => ({
-      ejercicio: id,
-      orden: idx,
-      tiempoDescanso: Number(exerciseRest[id]) || 0,
-      teamAssignments: exerciseTeams[id] || [],
-    }));
-
-    const observacionesArr = selectedExerciseIds
-      .filter((id) => (exerciseObs[id] || '').trim())
-      .map((id) => ({ ejercicioId: id, observacion: exerciseObs[id].trim() }));
-
-    const payload = {
-      fecha,
-      horaInicio,
-      horaFin,
-      jugadores: selectedPlayers,
-      jugadoresExtras: extraPlayerIds,
-      ejercicios: selectedExerciseIds,
-      ejerciciosDetalle,
-      observaciones: observacionesArr.length > 0
-        ? observacionesArr
-        : (observaciones.trim() || ''),
-      observacionesGenerales: observaciones.trim() || undefined,
-      expectedWellness,
-    };
-
-    onSubmit?.(payload);
-  };
-
-  return (
-    <>
-      <Modal
-        open={open}
-        onClose={onClose}
-        title={mode === 'edit'
-          ? t('session.edit', 'Editar entrenamiento')
-          : t('session.create', 'Nuevo entrenamiento')}
-        width={FORM_MODAL_WIDTH}
-        footer={
-          <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-            {mode === 'edit' ? (
-              <Button type="button" $variant="danger" onClick={() => onDelete?.(session)}>
-                <MdDelete /> {t('edition.delete', 'Eliminar')}
-              </Button>
-            ) : <span />}
-            <Row style={{ gap: 8 }}>
-              <Button type="button" $variant="ghost" onClick={onClose}>
-                {t('common.cancel', 'Cancelar')}
-              </Button>
-              <Button type="button" onClick={handleSubmit} disabled={loading}>
-                {loading
-                  ? t('common.saving', 'Guardando...')
-                  : (mode === 'edit' ? t('common.save', 'Guardar') : t('common.create', 'Crear'))}
-              </Button>
-            </Row>
-          </Row>
+      // Load exercises from API on open
+      useEffect(() => {
+        if (open && userId && exercises.length === 0) {
+          dispatch(fetchEjerciciosUsuario({ user: userId }));
         }
-      >
-        <form onSubmit={handleSubmit}>
-          <Stack $gap={16}>
-            {/* Date + time */}
-            <SectionCard>
-              <SectionTitle>{t('session.scheduleSection', 'Fecha y horario')}</SectionTitle>
-              <Grid3>
-                <Field>
-                  <Label>{t('session.date', 'Fecha')}</Label>
-                  <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-                </Field>
-                <Field>
-                  <Label>{t('session.startTime', 'Inicio')}</Label>
-                  <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
-                </Field>
-                <Field>
-                  <Label>{t('session.endTime', 'Fin')}</Label>
-                  <Input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
-                </Field>
-              </Grid3>
-              {duration && (
-                <Muted style={{ marginTop: 8 }}>
-                  {t('session.duration', 'Duración')}: <strong>{duration}</strong>
-                </Muted>
-              )}
-            </SectionCard>
+        if (open && globalExercises.length === 0) {
+          dispatch(fetchGlobalExercises({}));
+        }
+        if (open && userId && foldersFlat.length === 0) {
+          dispatch(fetchExerciseFoldersFlat({ user: userId }));
+        }
+      }, [open, userId, exercises.length, globalExercises.length, foldersFlat.length, dispatch]);
 
-            {/* Players */}
-            <SectionCard>
-              <SectionTitle>{t('session.playersSection', 'Jugadores convocados')}</SectionTitle>
-              <Button type="button" $variant="secondary" onClick={() => setPlayersModalOpen(true)}>
-                <MdGroups /> {t('session.selectPlayers', 'Seleccionar jugadores')} ({selectedPlayers.length})
-              </Button>
-              {selectedPlayers.length > 0 && (
-                <PlayerChips>
-                  {selectedPlayers.slice(0, 12).map((id) => {
-                    const p = rosterPlayers.find((x) => x._id === id);
-                    if (!p) return null;
-                    return <Chip key={id}>{p.dorsal ? `${p.dorsal} · ` : ''}{getPlayerFullName(p)}</Chip>;
-                  })}
-                  {selectedPlayers.length > 12 && <Chip>+{selectedPlayers.length - 12}</Chip>}
-                </PlayerChips>
-              )}
+      // Hydrate form when opening
+      useEffect(() => {
+        if (!open) return;
+        if (mode === 'edit' && session) {
+          setFecha(isoToDate(session.fecha));
+          setHoraInicio(session.horaInicio || '17:00');
+          setHoraFin(session.horaFin || '18:30');
+          setObservaciones(typeof session.observaciones === 'string'
+            ? session.observaciones
+            : normalizeTextValue(session.observacionesGenerales || ''));
+          setSelectedPlayers((session.jugadores || []).map(getPlayerId).filter(Boolean));
+          setExtraPlayerIds((session.jugadoresExtras || []).map(getPlayerId).filter(Boolean));
+          const { ids, restMap, obsMap, teamsMap } = hydrateExercises(session);
+          setSelectedExerciseIds(ids);
+          setExerciseRest(restMap);
+          setExerciseObs(obsMap);
+          setExerciseTeams(teamsMap);
+          setExpectedWellness(session.expectedWellness ?? null);
+          setManualAverageWellness(session.manualAverageWellness ?? '');
+        } else {
+          setFecha(defaultDate ? isoToDate(defaultDate) : isoToDate(new Date()));
+          setHoraInicio('17:00');
+          setHoraFin('18:30');
+          setObservaciones('');
+          setSelectedPlayers([]);
+          setExtraPlayerIds([]);
+          setSelectedExerciseIds([]);
+          setExerciseRest({});
+          setExerciseObs({});
+          setExerciseTeams({});
+          setExpectedWellness(null);
+          setManualAverageWellness('');
+        }
+        setError('');
+      }, [open, mode, session, defaultDate]);
 
-              {extraPlayersAvailable.length > 0 && (
-                <div style={{ marginTop: 14 }}>
-                  <SectionTitle>{t('session.extrasSection', 'Jugadores extras')}</SectionTitle>
-                  <PlayerChips>
-                    {extraPlayersAvailable.map((p) => {
-                      const sel = extraPlayerIds.includes(p._id);
-                      return (
-                        <ToggleChip
-                          type="button"
-                          key={p._id}
-                          $sel={sel}
-                          onClick={() => toggleExtra(p._id)}
-                        >
-                          {sel ? <MdCheckCircle size={14} /> : null}
-                          {getPlayerFullName(p)}
-                        </ToggleChip>
-                      );
-                    })}
-                  </PlayerChips>
-                </div>
-              )}
-            </SectionCard>
+      const exerciseById = useMemo(() => {
+        const m = new Map();
+        selectableExercises.forEach((e) => m.set(e._id, e));
+        return m;
+      }, [selectableExercises]);
 
-            {/* Exercises */}
-            <SectionCard>
-              <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <SectionTitle style={{ marginBottom: 0 }}>
-                  {t('session.exercisesSection', 'Ejercicios')} ({selectedExerciseIds.length})
-                </SectionTitle>
-                <Button type="button" $variant="secondary" onClick={() => setExerciseModalOpen(true)}>
-                  <MdAdd /> {t('session.addExercise', 'Añadir ejercicio')}
-                </Button>
+      const duration = useMemo(() => computeDuration(horaInicio, horaFin), [horaInicio, horaFin]);
+
+      // ----- Exercise helpers -----
+      const moveExercise = (idx, dir) => {
+        setSelectedExerciseIds((prev) => {
+          const next = [...prev];
+          const target = idx + dir;
+          if (target < 0 || target >= next.length) return prev;
+          [next[idx], next[target]] = [next[target], next[idx]];
+          return next;
+        });
+      };
+
+      const removeExercise = (id) => {
+        setSelectedExerciseIds((prev) => prev.filter((x) => x !== id));
+        setExerciseRest((prev) => { const n = { ...prev }; delete n[id]; return n; });
+        setExerciseObs((prev) => { const n = { ...prev }; delete n[id]; return n; });
+        setExerciseTeams((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      };
+
+      const handleExercisesPicked = (ids) => {
+        // append new (preserve existing order)
+        setSelectedExerciseIds((prev) => {
+          const set = new Set(prev);
+          const additions = ids.filter((x) => !set.has(x));
+          return [...prev, ...additions];
+        });
+      };
+
+      // ----- Players -----
+      const toggleExtra = (id) => {
+        setExtraPlayerIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+      };
+
+      // ----- Wellness -----
+      const toggleWellness = (n) => {
+        setExpectedWellness((prev) => (prev === n ? null : n));
+      };
+
+      // ----- Submit -----
+      const handleSubmit = (e) => {
+        e?.preventDefault?.();
+        setError('');
+        if (!fecha) {
+          showMissingFieldsToast(t, [t('session.date', 'Fecha')]);
+          return;
+        }
+
+        const ejerciciosDetalle = selectedExerciseIds.map((id, idx) => ({
+          ejercicio: id,
+          orden: idx,
+          tiempoDescanso: Number(exerciseRest[id]) || 0,
+          teamAssignments: exerciseTeams[id] || [],
+        }));
+
+        const observacionesArr = selectedExerciseIds
+          .filter((id) => (exerciseObs[id] || '').trim())
+          .map((id) => ({ ejercicioId: id, observacion: exerciseObs[id].trim() }));
+
+        const payload = {
+          fecha,
+          horaInicio,
+          horaFin,
+          jugadores: selectedPlayers,
+          jugadoresExtras: extraPlayerIds,
+          ejercicios: selectedExerciseIds,
+          ejerciciosDetalle,
+          observaciones: observacionesArr.length > 0
+            ? observacionesArr
+            : (observaciones.trim() || ''),
+          observacionesGenerales: observaciones.trim() || undefined,
+          expectedWellness,
+          manualAverageWellness: manualAverageWellness === '' ? null : Number(manualAverageWellness),
+        };
+
+        onSubmit?.(payload);
+      };
+
+      return (
+        <>
+          <Modal
+            open={open}
+            onClose={onClose}
+            title={mode === 'edit'
+              ? t('session.edit', 'Editar entrenamiento')
+              : t('session.create', 'Nuevo entrenamiento')}
+            width={FORM_MODAL_WIDTH}
+            footer={
+              <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+                {mode === 'edit' ? (
+                  <Button type="button" $variant="danger" onClick={() => onDelete?.(session)}>
+                    <MdDelete /> {t('edition.delete', 'Eliminar')}
+                  </Button>
+                ) : <span />}
+                <Row style={{ gap: 8 }}>
+                  <Button type="button" $variant="ghost" onClick={onClose}>
+                    {t('common.cancel', 'Cancelar')}
+                  </Button>
+                  <Button type="button" onClick={handleSubmit} disabled={loading}>
+                    {loading
+                      ? t('common.saving', 'Guardando...')
+                      : (mode === 'edit' ? t('common.save', 'Guardar') : t('common.create', 'Crear'))}
+                  </Button>
+                </Row>
               </Row>
+            }
+          >
+            <form onSubmit={handleSubmit}>
+              <Stack $gap={16}>
+                {/* Date + time */}
+                <SectionCard>
+                  <SectionTitle>{t('session.scheduleSection', 'Fecha y horario')}</SectionTitle>
+                  <Grid3>
+                    <Field>
+                      <Label>{t('session.date', 'Fecha')}</Label>
+                      <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                    </Field>
+                    <Field>
+                      <Label>{t('session.startTime', 'Inicio')}</Label>
+                      <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+                    </Field>
+                    <Field>
+                      <Label>{t('session.endTime', 'Fin')}</Label>
+                      <Input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
+                    </Field>
+                  </Grid3>
+                  {duration && (
+                    <Muted style={{ marginTop: 8 }}>
+                      {t('session.duration', 'Duración')}: <strong>{duration}</strong>
+                    </Muted>
+                  )}
+                </SectionCard>
 
-              {selectedExerciseIds.length === 0 ? (
-                <Muted style={{ textAlign: 'center', padding: '16px 0' }}>
-                  {t('session.noExercisesSelected', 'No hay ejercicios seleccionados')}
-                </Muted>
-              ) : (
-                selectedExerciseIds.map((id, idx) => {
-                  const ex = exerciseById.get(id);
-                  const isLast = idx === selectedExerciseIds.length - 1;
-                  const hasTeams = ex?.equipos > 0;
-                  const teamsAssigned = (exerciseTeams[id] || []).some(
-                    (t) => (t.players?.length || 0) + (t.extraPlayers?.length || 0) > 0,
-                  );
-                  return (
-                    <ExerciseRow key={id}>
-                      <ExHeader>
-                        <Index>{idx + 1}</Index>
-                        <Thumb>
-                          {ex?.imagen ? <img src={ex.imagen} alt="" /> : <MdImage size={22} />}
-                        </Thumb>
-                        <ExBody>
-                          <ExName>{ex?.nombre || t('session.unknownExercise', 'Ejercicio')}</ExName>
-                          {(ex?.folderPathLabel || ex?.folder?.nombre) && <ExMeta>{ex.folderPathLabel || ex.folder.nombre}</ExMeta>}
-                        </ExBody>
-                        <Row $gap={4}>
-                          <IconBtn type="button" disabled={idx === 0} onClick={() => moveExercise(idx, -1)} title={t('common.moveUp', 'Subir')}>
-                            <MdArrowUpward size={16} />
-                          </IconBtn>
-                          <IconBtn type="button" disabled={isLast} onClick={() => moveExercise(idx, 1)} title={t('common.moveDown', 'Bajar')}>
-                            <MdArrowDownward size={16} />
-                          </IconBtn>
-                          <IconBtn type="button" onClick={() => removeExercise(id)} title={t('common.remove', 'Eliminar')}>
-                            <MdDelete size={16} />
-                          </IconBtn>
-                        </Row>
-                      </ExHeader>
+                {/* Players */}
+                <SectionCard>
+                  <SectionTitle>{t('session.playersSection', 'Jugadores convocados')}</SectionTitle>
+                  <Button type="button" $variant="secondary" onClick={() => setPlayersModalOpen(true)}>
+                    <MdGroups /> {t('session.selectPlayers', 'Seleccionar jugadores')} ({selectedPlayers.length})
+                  </Button>
+                  {selectedPlayers.length > 0 && (
+                    <PlayerChips>
+                      {selectedPlayers.slice(0, 12).map((id) => {
+                        const p = rosterPlayers.find((x) => x._id === id);
+                        if (!p) return null;
+                        return <Chip key={id}>{p.dorsal ? `${p.dorsal} · ` : ''}{getPlayerFullName(p)}</Chip>;
+                      })}
+                      {selectedPlayers.length > 12 && <Chip>+{selectedPlayers.length - 12}</Chip>}
+                    </PlayerChips>
+                  )}
 
-                      <Stack $gap={8} style={{ marginTop: 10 }}>
-                        {!isLast && (
-                          <Field>
-                            <Label>{t('session.restMinutes', 'Descanso (min)')}</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exerciseRest[id] ?? ''}
-                              onChange={(e) => {
-                                const v = e.target.value.replace(/[^0-9]/g, '');
-                                setExerciseRest((prev) => ({ ...prev, [id]: v === '' ? '' : Number(v) }));
-                              }}
-                              placeholder="0"
-                              style={{ maxWidth: 120 }}
-                            />
-                          </Field>
-                        )}
+                  {extraPlayersAvailable.length > 0 && (
+                    <div style={{ marginTop: 14 }}>
+                      <SectionTitle>{t('session.extrasSection', 'Jugadores extras')}</SectionTitle>
+                      <PlayerChips>
+                        {extraPlayersAvailable.map((p) => {
+                          const sel = extraPlayerIds.includes(p._id);
+                          return (
+                            <ToggleChip
+                              type="button"
+                              key={p._id}
+                              $sel={sel}
+                              onClick={() => toggleExtra(p._id)}
+                            >
+                              {sel ? <MdCheckCircle size={14} /> : null}
+                              {getPlayerFullName(p)}
+                            </ToggleChip>
+                          );
+                        })}
+                      </PlayerChips>
+                    </div>
+                  )}
+                </SectionCard>
 
-                        {hasTeams && (
-                          <Button
-                            type="button"
-                            $variant={teamsAssigned ? 'primary' : 'secondary'}
-                            onClick={() => setTeamModalExId(id)}
-                            style={{ alignSelf: 'flex-start' }}
-                          >
-                            <MdGroups />
-                            {teamsAssigned
-                              ? t('session.teamsAssigned', 'Equipos asignados ✓')
-                              : t('session.assignTeams', 'Asignar equipos')}
-                          </Button>
-                        )}
+                {/* Exercises */}
+                <SectionCard>
+                  <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <SectionTitle style={{ marginBottom: 0 }}>
+                      {t('session.exercisesSection', 'Ejercicios')} ({selectedExerciseIds.length})
+                    </SectionTitle>
+                    <Button type="button" $variant="secondary" onClick={() => setExerciseModalOpen(true)}>
+                      <MdAdd /> {t('session.addExercise', 'Añadir ejercicio')}
+                    </Button>
+                  </Row>
 
-                        <Field>
-                          <Label>{t('session.observation', 'Observación')}</Label>
-                          <TextArea
-                            rows={2}
-                            value={exerciseObs[id] || ''}
-                            onChange={(e) => setExerciseObs((prev) => ({ ...prev, [id]: e.target.value }))}
-                            placeholder={t('session.observationPlaceholder', 'Notas sobre este ejercicio...')}
-                          />
-                        </Field>
-                      </Stack>
-                    </ExerciseRow>
-                  );
-                })
-              )}
-            </SectionCard>
+                  {selectedExerciseIds.length === 0 ? (
+                    <Muted style={{ textAlign: 'center', padding: '16px 0' }}>
+                      {t('session.noExercisesSelected', 'No hay ejercicios seleccionados')}
+                    </Muted>
+                  ) : (
+                    selectedExerciseIds.map((id, idx) => {
+                      const ex = exerciseById.get(id);
+                      const isLast = idx === selectedExerciseIds.length - 1;
+                      const hasTeams = ex?.equipos > 0;
+                      const teamsAssigned = (exerciseTeams[id] || []).some(
+                        (t) => (t.players?.length || 0) + (t.extraPlayers?.length || 0) > 0,
+                      );
+                      return (
+                        <ExerciseRow key={id}>
+                          <ExHeader>
+                            <Index>{idx + 1}</Index>
+                            <Thumb>
+                              {ex?.imagen ? <img src={ex.imagen} alt="" /> : <MdImage size={22} />}
+                            </Thumb>
+                            <ExBody>
+                              <ExName>{ex?.nombre || t('session.unknownExercise', 'Ejercicio')}</ExName>
+                              {(ex?.folderPathLabel || ex?.folder?.nombre) && <ExMeta>{ex.folderPathLabel || ex.folder.nombre}</ExMeta>}
+                            </ExBody>
+                            <Row $gap={4}>
+                              <IconBtn type="button" disabled={idx === 0} onClick={() => moveExercise(idx, -1)} title={t('common.moveUp', 'Subir')}>
+                                <MdArrowUpward size={16} />
+                              </IconBtn>
+                              <IconBtn type="button" disabled={isLast} onClick={() => moveExercise(idx, 1)} title={t('common.moveDown', 'Bajar')}>
+                                <MdArrowDownward size={16} />
+                              </IconBtn>
+                              <IconBtn type="button" onClick={() => removeExercise(id)} title={t('common.remove', 'Eliminar')}>
+                                <MdDelete size={16} />
+                              </IconBtn>
+                            </Row>
+                          </ExHeader>
 
-            {/* General notes */}
-            <SectionCard>
-              <SectionTitle>{t('session.generalNotes', 'Observaciones generales')}</SectionTitle>
-              <TextArea
-                rows={3}
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                placeholder={t('session.notesPlaceholder', 'Notas generales del entrenamiento...')}
-              />
-            </SectionCard>
+                          <Stack $gap={8} style={{ marginTop: 10 }}>
+                            {!isLast && (
+                              <Field>
+                                <Label>{t('session.restMinutes', 'Descanso (min)')}</Label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={exerciseRest[id] ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value.replace(/[^0-9]/g, '');
+                                    setExerciseRest((prev) => ({ ...prev, [id]: v === '' ? '' : Number(v) }));
+                                  }}
+                                  placeholder="0"
+                                  style={{ maxWidth: 120 }}
+                                />
+                              </Field>
+                            )}
 
-            {/* Wellness control */}
-            <SectionCard>
-              <SectionTitle>{t('session.wellnessSection', 'Control wellness esperado')}</SectionTitle>
-              <Muted>
-                {t('session.wellnessHelp', 'Selecciona el nivel de carga esperado (1 muy bajo - 10 muy alto)')}
-              </Muted>
-              <WellnessRow>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <WellBtn
-                    key={n}
-                    type="button"
-                    $sel={expectedWellness === n}
-                    $color={wellnessColor(n, theme)}
-                    onClick={() => toggleWellness(n)}
-                  >
-                    {n}
-                  </WellBtn>
-                ))}
-              </WellnessRow>
-            </SectionCard>
+                            {hasTeams && (
+                              <Button
+                                type="button"
+                                $variant={teamsAssigned ? 'primary' : 'secondary'}
+                                onClick={() => setTeamModalExId(id)}
+                                style={{ alignSelf: 'flex-start' }}
+                              >
+                                <MdGroups />
+                                {teamsAssigned
+                                  ? t('session.teamsAssigned', 'Equipos asignados ✓')
+                                  : t('session.assignTeams', 'Asignar equipos')}
+                              </Button>
+                            )}
 
-            {error ? <ErrorText>{error}</ErrorText> : null}
-          </Stack>
-        </form>
-      </Modal>
+                            <Field>
+                              <Label>{t('session.observation', 'Observación')}</Label>
+                              <TextArea
+                                rows={2}
+                                value={exerciseObs[id] || ''}
+                                onChange={(e) => setExerciseObs((prev) => ({ ...prev, [id]: e.target.value }))}
+                                placeholder={t('session.observationPlaceholder', 'Notas sobre este ejercicio...')}
+                              />
+                            </Field>
+                          </Stack>
+                        </ExerciseRow>
+                      );
+                    })
+                  )}
+                </SectionCard>
 
-      {/* Sub-modals */}
-      <PlayerSelectionModal
-        open={playersModalOpen}
-        onClose={() => setPlayersModalOpen(false)}
-        players={rosterPlayers}
-        selectedIds={selectedPlayers}
-        onConfirm={(ids) => setSelectedPlayers(ids)}
-        title={t('session.selectPlayers', 'Seleccionar jugadores')}
-      />
+                {/* General notes */}
+                <SectionCard>
+                  <SectionTitle>{t('session.generalNotes', 'Observaciones generales')}</SectionTitle>
+                  <TextArea
+                    rows={3}
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    placeholder={t('session.notesPlaceholder', 'Notas generales del entrenamiento...')}
+                  />
+                </SectionCard>
 
-      <ExerciseSelectorModal
-        open={exerciseModalOpen}
-        onClose={() => setExerciseModalOpen(false)}
-        exercises={selectableExercises}
-        selectedIds={selectedExerciseIds}
-        onConfirm={handleExercisesPicked}
-        excludeIds={selectedExerciseIds}
-      />
+                {/* Wellness control */}
+                <SectionCard>
+                  <SectionTitle>{t('session.wellnessSection', 'Control wellness esperado')}</SectionTitle>
+                  <Muted>
+                    {t('session.wellnessHelp', 'Selecciona el nivel de carga esperado (1 muy bajo - 10 muy alto)')}
+                  </Muted>
+                  <WellnessRow>
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                      <WellBtn
+                        key={n}
+                        type="button"
+                        $sel={expectedWellness === n}
+                        $color={wellnessColor(n, theme)}
+                        onClick={() => toggleWellness(n)}
+                      >
+                        {n}
+                      </WellBtn>
+                    ))}
+                  </WellnessRow>
+                  <Field style={{ marginTop: 12 }}>
+                    <Label>{t('session.manualAverageWellness', 'Media manual de la sesión (1-10)')}</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      step="0.1"
+                      value={manualAverageWellness}
+                      onChange={(e) => setManualAverageWellness(e.target.value)}
+                      placeholder={t('session.manualAverageWellnessPlaceholder', 'Sin media manual')}
+                      style={{ maxWidth: 180, height: '26px', minHeight: '26px', padding: '0 6px', fontSize: '13px' }}
+                    />
+                  </Field>
+                </SectionCard>
 
-      <TeamAssignmentModal
-        open={!!teamModalExId}
-        onClose={() => setTeamModalExId(null)}
-        exercise={teamModalExId ? exerciseById.get(teamModalExId) : null}
-        rosterPlayers={rosterPlayers.filter((p) => selectedPlayers.includes(p._id))}
-        extraPlayers={extraPlayersAvailable.filter((p) => extraPlayerIds.includes(p._id))}
-        initialAssignments={teamModalExId ? (exerciseTeams[teamModalExId] || []) : []}
-        onConfirm={(assignments) => {
-          setExerciseTeams((prev) => ({ ...prev, [teamModalExId]: assignments }));
-        }}
-      />
-    </>
-  );
-}
+                {error ? <ErrorText>{error}</ErrorText> : null}
+              </Stack>
+            </form>
+          </Modal>
+
+          {/* Sub-modals */}
+          <PlayerSelectionModal
+            open={playersModalOpen}
+            onClose={() => setPlayersModalOpen(false)}
+            players={rosterPlayers}
+            selectedIds={selectedPlayers}
+            onConfirm={(ids) => setSelectedPlayers(ids)}
+            title={t('session.selectPlayers', 'Seleccionar jugadores')}
+          />
+
+          <ExerciseSelectorModal
+            open={exerciseModalOpen}
+            onClose={() => setExerciseModalOpen(false)}
+            exercises={selectableExercises}
+            selectedIds={selectedExerciseIds}
+            onConfirm={handleExercisesPicked}
+            excludeIds={selectedExerciseIds}
+          />
+
+          <TeamAssignmentModal
+            open={!!teamModalExId}
+            onClose={() => setTeamModalExId(null)}
+            exercise={teamModalExId ? exerciseById.get(teamModalExId) : null}
+            rosterPlayers={rosterPlayers.filter((p) => selectedPlayers.includes(p._id))}
+            extraPlayers={extraPlayersAvailable.filter((p) => extraPlayerIds.includes(p._id))}
+            initialAssignments={teamModalExId ? (exerciseTeams[teamModalExId] || []) : []}
+            onConfirm={(assignments) => {
+              setExerciseTeams((prev) => ({ ...prev, [teamModalExId]: assignments }));
+            }}
+          />
+        </>
+      );
+    }

@@ -457,6 +457,7 @@ export default function Home({ navigation: navigationProp }) {
         jugadores: sessionData.jugadores || [],
         jugadoresExtras: sessionData.jugadoresExtras || [],
         expectedWellness: sessionData.expectedWellness,
+        manualAverageWellness: sessionData.manualAverageWellness,
         ejerciciosFuerza: sessionData.ejerciciosFuerza || [],
       },
     }));

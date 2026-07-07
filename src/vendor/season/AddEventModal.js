@@ -1420,6 +1420,7 @@ export default function AddEventModal({
     horaFin: '18:30',
     observaciones: '',
     expectedWellness: null,
+    manualAverageWellness: '',
   });
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [exerciseObservations, setExerciseObservations] = useState({});
@@ -1981,6 +1982,7 @@ export default function AddEventModal({
         jugadores: selectedPlayers.length > 0 ? selectedPlayers : [],
         jugadoresExtras: extraPlayers.length > 0 ? extraPlayers : [],
         expectedWellness: sessionData.expectedWellness,
+        manualAverageWellness: sessionData.manualAverageWellness === '' ? null : Number(sessionData.manualAverageWellness),
       });
       clearFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT);
       onClose();
@@ -4421,6 +4423,15 @@ export default function AddEventModal({
             </TouchableOpacity>
           ))}
         </View>
+        <Text style={[styles.inputLabel, { marginTop: 12 }]}>{t('session.manualAverageWellness')}</Text>
+        <TextInput
+          style={styles.textInput}
+          value={String(sessionData.manualAverageWellness ?? '')}
+          onChangeText={(text) => setSessionData(prev => ({ ...prev, manualAverageWellness: text }))}
+          placeholder={t('session.manualAverageWellnessPlaceholder')}
+          placeholderTextColor={theme.colors.textMuted}
+          keyboardType="numeric"
+        />
       </View>
 
     </KeyboardAwareScrollView>

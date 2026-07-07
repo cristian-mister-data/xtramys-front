@@ -1402,7 +1402,8 @@ export default function Training({ canMutate }) {
       horaInicio: sessionData.horaInicio || null,
       horaFin: sessionData.horaFin || null,
       fecha: sessionData.fecha,
-      expectedWellness: sessionData.expectedWellness
+      expectedWellness: sessionData.expectedWellness,
+      manualAverageWellness: sessionData.manualAverageWellness
     }));
     
     dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
@@ -1487,7 +1488,8 @@ export default function Training({ canMutate }) {
           ejerciciosFuerza: updatedData.ejerciciosFuerza || [],
           jugadores: updatedData.jugadores || [],
           jugadoresExtras: updatedData.jugadoresExtras || [],
-          expectedWellness: updatedData.expectedWellness
+          expectedWellness: updatedData.expectedWellness,
+          manualAverageWellness: updatedData.manualAverageWellness
         }
       }));
       

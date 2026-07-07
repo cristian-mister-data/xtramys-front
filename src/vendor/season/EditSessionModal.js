@@ -64,13 +64,13 @@ export default function EditSessionModal({
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [loading, setLoading] = useState(false);
-  
+
   // Detectar dispositivo móvil
   const { width } = useWindowDimensions();
   const isMobile = width < 500;
   const IS_MOBILE = width < 430;
   const IS_TABLET = width > 700;
-  
+
   // Estados del formulario
   const [fecha, setFecha] = useState(new Date());
   const [horaInicio, setHoraInicio] = useState('17:00');
@@ -83,37 +83,38 @@ export default function EditSessionModal({
   const [exerciseTeamAssignments, setExerciseTeamAssignments] = useState({});
   const [showTeamAssignmentModal, setShowTeamAssignmentModal] = useState(false);
   const [currentExerciseForTeams, setCurrentExerciseForTeams] = useState(null);
-  
+
   // Estados para ejercicios de fuerza
   const [selectedStrengthExercises, setSelectedStrengthExercises] = useState([]);
   const [strengthExerciseObservations, setStrengthExerciseObservations] = useState({});
   const [strengthExerciseRestTimes, setStrengthExerciseRestTimes] = useState({});
   const [showStrengthExerciseSelectorModal, setShowStrengthExerciseSelectorModal] = useState(false);
-  
+
   // Estados para jugadores extras
   const [extraPlayers, setExtraPlayers] = useState([]);
-  
+
   // Filtrar jugadores de plantilla y extras disponibles
-  const rosterPlayers = useMemo(() => 
+  const rosterPlayers = useMemo(() =>
     (players || []).filter(p => !p.extra),
     [players]
   );
-  
-  const extraPlayersAvailable = useMemo(() => 
+
+  const extraPlayersAvailable = useMemo(() =>
     (players || []).filter(p => p.extra === true),
     [players]
   );
-  
+
   // Estados para wellness
   const [expectedWellness, setExpectedWellness] = useState(null);
-  
+  const [manualAverageWellness, setManualAverageWellness] = useState('');
+
   // Pickers y modales
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [showPlayerSelectorModal, setShowPlayerSelectorModal] = useState(false);
   const [showExerciseSelectorModal, setShowExerciseSelectorModal] = useState(false);
-  
+
   // Estados para video de ejercicio
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -127,12 +128,12 @@ export default function EditSessionModal({
   ), [exercises, session]);
 
   const exerciseMap = useMemo(() => buildExerciseMap(availableExercises), [availableExercises]);
-  
+
   // Cargar disponibilidad de videos para todos los ejercicios
   useEffect(() => {
     const loadVideoAvailability = async () => {
       if (!availableExercises || availableExercises.length === 0) return;
-      
+
       const availability = {};
       await Promise.all(
         availableExercises.map(async (exercise) => {
@@ -148,7 +149,7 @@ export default function EditSessionModal({
       );
       setExerciseVideoAvailability(availability);
     };
-    
+
     if (visible && availableExercises?.length > 0) {
       loadVideoAvailability();
     }
@@ -158,10 +159,10 @@ export default function EditSessionModal({
     setExerciseForVideo(exercise);
     setShowVideoModal(true);
     setIsGeneratingVideo(true);
-    
+
     try {
       const videos = await getVideosByExercise(exercise._id);
-      
+
       if (videos && videos.length > 0) {
         const video = videos[0];
         setSelectedVideo(video);
@@ -180,7 +181,7 @@ export default function EditSessionModal({
       setIsGeneratingVideo(false);
     }
   };
-  
+
   const closeVideoModal = () => {
     setShowVideoModal(false);
     setSelectedVideo(null);
@@ -196,45 +197,46 @@ export default function EditSessionModal({
       setHoraFin(session.horaFin || '18:30');
       const generalObservationFromArray = Array.isArray(session.observaciones)
         ? (session.observaciones.find((item) => {
+          if (!item || typeof item !== 'object') return false;
+          const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
+          if (exerciseId) return false;
+          const text = item.observacion || item.text || item.note || '';
+          return typeof text === 'string' && text.trim();
+        })?.observacion
+          || session.observaciones.find((item) => {
             if (!item || typeof item !== 'object') return false;
             const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
             if (exerciseId) return false;
-            const text = item.observacion || item.text || item.note || '';
-            return typeof text === 'string' && text.trim();
-          })?.observacion
-            || session.observaciones.find((item) => {
-              if (!item || typeof item !== 'object') return false;
-              const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
-              if (exerciseId) return false;
-              return typeof item.text === 'string' && item.text.trim();
-            })?.text
-            || session.observaciones.find((item) => {
-              if (!item || typeof item !== 'object') return false;
-              const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
-              if (exerciseId) return false;
-              return typeof item.note === 'string' && item.note.trim();
-            })?.note
-            || '')
+            return typeof item.text === 'string' && item.text.trim();
+          })?.text
+          || session.observaciones.find((item) => {
+            if (!item || typeof item !== 'object') return false;
+            const exerciseId = getEntityId(item.ejercicioId || item.ejercicio);
+            if (exerciseId) return false;
+            return typeof item.note === 'string' && item.note.trim();
+          })?.note
+          || '')
         : '';
       setObservaciones(session.observacionesGenerales || (typeof session.observaciones === 'string' ? session.observaciones : '') || generalObservationFromArray || '');
-      
+
       // Cargar jugadores (extraer IDs)
       const playerIds = (session.jugadores || []).map(j => typeof j === 'object' ? j._id : j);
       setSelectedPlayers(playerIds);
-      
+
       // Cargar jugadores extras (extraer IDs - ahora son ObjectIds)
       const extraPlayerIds = (session.jugadoresExtras || []).map(j => typeof j === 'object' ? j._id : j);
       setExtraPlayers(extraPlayerIds);
-      
+
       // Cargar wellness esperado
       setExpectedWellness(session.expectedWellness || null);
-      
+      setManualAverageWellness(session.manualAverageWellness ?? '');
+
       // Cargar ejercicios - manejar diferentes formatos
       const exerciseIds = [];
       const obs = {};
       const rest = {};
       const teams = {};
-      
+
       // Primero intentar cargar desde ejerciciosDetalle (estructura nueva con orden y descanso)
       if (session.ejerciciosDetalle && session.ejerciciosDetalle.length > 0) {
         session.ejerciciosDetalle.forEach(ej => {
@@ -245,7 +247,7 @@ export default function EditSessionModal({
             teams[exId] = ej.teamAssignments || [];
           }
         });
-      } 
+      }
       // Si no hay ejerciciosDetalle, cargar desde ejercicios (array de IDs o objetos populados)
       else if (session.ejercicios && session.ejercicios.length > 0) {
         session.ejercicios.forEach(ej => {
@@ -256,7 +258,7 @@ export default function EditSessionModal({
           }
         });
       }
-      
+
       // Cargar observaciones si vienen en el formato array de objetos {ejercicioId, observacion}
       if (Array.isArray(session.observaciones)) {
         session.observaciones.forEach(o => {
@@ -266,12 +268,12 @@ export default function EditSessionModal({
           }
         });
       }
-      
+
       setSelectedExercises(exerciseIds);
       setExerciseObservations(obs);
       setExerciseRestTimes(rest);
       setExerciseTeamAssignments(teams);
-      
+
       // Cargar ejercicios de fuerza
       const strengthIds = [];
       const strengthObs = {};
@@ -307,6 +309,7 @@ export default function EditSessionModal({
     setStrengthExerciseObservations(draft.strengthExerciseObservations || {});
     setStrengthExerciseRestTimes(draft.strengthExerciseRestTimes || {});
     setExpectedWellness(draft.expectedWellness ?? null);
+    setManualAverageWellness(draft.manualAverageWellness ?? '');
     setSelectedExercises([...new Set([...(draft.selectedExercises || []), ...(addExerciseId ? [addExerciseId] : [])])]);
   }, [visible]);
 
@@ -328,6 +331,7 @@ export default function EditSessionModal({
       strengthExerciseObservations,
       strengthExerciseRestTimes,
       expectedWellness,
+      manualAverageWellness,
       originPath: window.location.pathname,
     });
     setShowExerciseSelectorModal(false);
@@ -505,6 +509,7 @@ export default function EditSessionModal({
         jugadores: selectedPlayers,
         jugadoresExtras: extraPlayers,
         expectedWellness,
+        manualAverageWellness: manualAverageWellness === '' ? null : Number(manualAverageWellness),
       });
       clearFormDraft(STORAGE_KEYS.TRAINING_SESSION_DRAFT);
       onClose();
@@ -521,7 +526,7 @@ export default function EditSessionModal({
       animationType="slide"
       transparent
       onRequestClose={onClose}
-   >
+    >
       <View style={styles.modalBg}>
         <View style={styles.modalContent}>
           {/* Header */}
@@ -551,7 +556,7 @@ export default function EditSessionModal({
             {/* Horario */}
             <View style={styles.timeSection}>
               <Text style={styles.sectionTitle}>{t('session.schedule')}</Text>
-              
+
               <View style={styles.timeRow}>
                 <View style={styles.timeItem}>
                   <Text style={styles.timeLabel}>{t('session.startTimeTitle')}</Text>
@@ -563,11 +568,11 @@ export default function EditSessionModal({
                     <Text style={styles.timeText}>{horaInicio}</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.timeDivider}>
                   <Ionicons name="arrow-forward" size={20} color={theme.colors.textMuted} />
                 </View>
-                
+
                 <View style={styles.timeItem}>
                   <Text style={styles.timeLabel}>{t('session.endTimeTitle')}</Text>
                   <TouchableOpacity
@@ -579,7 +584,7 @@ export default function EditSessionModal({
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               {/* Duración calculada */}
               {horaInicio && horaFin && (
                 <View style={styles.durationBadge}>
@@ -592,7 +597,7 @@ export default function EditSessionModal({
                       if (totalMinutes <= 0) return '--';
                       const hours = Math.floor(totalMinutes / 60);
                       const mins = totalMinutes % 60;
-                      return hours > 0 
+                      return hours > 0
                         ? `${hours}h ${mins > 0 ? mins + 'min' : ''}`
                         : `${mins} min`;
                     })()}
@@ -604,7 +609,7 @@ export default function EditSessionModal({
             {/* Sección de Jugadores */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('common.players')}</Text>
-              
+
               <TouchableOpacity
                 style={styles.playerSelectorBtn}
                 onPress={() => setShowPlayerSelectorModal(true)}
@@ -617,7 +622,7 @@ export default function EditSessionModal({
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
               </TouchableOpacity>
-              
+
               {/* Chips de jugadores seleccionados */}
               {selectedPlayers.length > 0 && (
                 <View style={styles.selectedPlayersChips}>
@@ -637,11 +642,11 @@ export default function EditSessionModal({
                   )}
                 </View>
               )}
-              
+
               {/* Jugadores Extras */}
               <Text style={styles.formSectionSubtitle}>{t('session.extraPlayers') || 'Jugadores Extras'}</Text>
               <Text style={styles.extraPlayersSubtitle}>{t('schedule.extraPlayersSubtitleNew') || 'Selecciona jugadores extras de la lista'}</Text>
-              
+
               {extraPlayersAvailable.length === 0 ? (
                 <View style={styles.noExtraPlayersInfo}>
                   <Ionicons name="information-circle-outline" size={20} color={theme.colors.textMuted} />
@@ -689,7 +694,7 @@ export default function EditSessionModal({
             {/* Sección de Ejercicios */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('common.exercises')}</Text>
-              
+
               {/* Botón añadir ejercicio */}
               <TouchableOpacity
                 style={styles.addExerciseBtn}
@@ -705,7 +710,7 @@ export default function EditSessionModal({
                   {selectedExercises.map((exId, index) => {
                     const exercise = exerciseMap.get(getEntityId(exId));
                     if (!exercise) return null;
-                    
+
                     const handleMoveUp = () => {
                       if (index === 0) return;
                       const newOrder = [...selectedExercises];
@@ -719,7 +724,7 @@ export default function EditSessionModal({
                       [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
                       setSelectedExercises(newOrder);
                     };
-                    
+
                     return (
                       <View key={exId} style={styles.exerciseItem}>
                         {/* Layout móvil: todo apilado verticalmente */}
@@ -738,7 +743,7 @@ export default function EditSessionModal({
                                 <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
                               </TouchableOpacity>
                             </View>
-                            
+
                             {/* Imagen y tipo */}
                             <View style={styles.exerciseImageRowMobile}>
                               {exercise.imagen ? (
@@ -808,7 +813,7 @@ export default function EditSessionModal({
                                 )}
                               </View>
                             </View>
-                            
+
                             {/* Controles de orden */}
                             <View style={styles.exerciseOrderControls}>
                               <TouchableOpacity
@@ -834,7 +839,7 @@ export default function EditSessionModal({
                             </View>
                           </View>
                         )}
-                        
+
                         {/* Tiempo de descanso - solo si no es el último ejercicio */}
                         {index < selectedExercises.length - 1 && (
                           <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
@@ -853,7 +858,7 @@ export default function EditSessionModal({
                             />
                           </View>
                         )}
-                        
+
                         {/* Botón de asignación de equipos - solo si el ejercicio tiene equipos */}
                         {exercise.equipos > 0 && (
                           <TouchableOpacity
@@ -874,7 +879,7 @@ export default function EditSessionModal({
                             )}
                           </TouchableOpacity>
                         )}
-                        
+
                         {/* Observaciones del ejercicio */}
                         <View style={styles.exerciseObsField}>
                           <Text style={styles.exerciseFieldLabel}>{t('common.observations')}:</Text>
@@ -905,7 +910,7 @@ export default function EditSessionModal({
             {/* Sección de Ejercicios de Fuerza */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('session.strengthExercises')}</Text>
-              
+
               {/* Botón añadir ejercicio de fuerza */}
               <TouchableOpacity
                 style={[styles.addExerciseBtn, { borderColor: theme.colors.purple }]}
@@ -922,7 +927,7 @@ export default function EditSessionModal({
                     const exercise = STRENGTH_EXERCISES.find(e => e.id === seId);
                     if (!exercise) return null;
                     const sectionInfo = getSectionForExercise(seId);
-                    
+
                     const handleMoveUpStrength = () => {
                       if (index === 0) return;
                       const newOrder = [...selectedStrengthExercises];
@@ -936,7 +941,7 @@ export default function EditSessionModal({
                       [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
                       setSelectedStrengthExercises(newOrder);
                     };
-                    
+
                     const handleRemoveStrengthExercise = (id) => {
                       setSelectedStrengthExercises(prev => prev.filter(x => x !== id));
                       const newObs = { ...strengthExerciseObservations };
@@ -946,7 +951,7 @@ export default function EditSessionModal({
                       setStrengthExerciseObservations(newObs);
                       setStrengthExerciseRestTimes(newRest);
                     };
-                    
+
                     return (
                       <View key={seId} style={styles.exerciseItem}>
                         {isMobile ? (
@@ -1037,7 +1042,7 @@ export default function EditSessionModal({
                             </View>
                           </View>
                         )}
-                        
+
                         {/* Tiempo de descanso */}
                         {index < selectedStrengthExercises.length - 1 && (
                           <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
@@ -1056,7 +1061,7 @@ export default function EditSessionModal({
                             />
                           </View>
                         )}
-                        
+
                         {/* Observaciones */}
                         <View style={styles.exerciseObsField}>
                           <Text style={styles.exerciseFieldLabel}>{t('common.observations')}:</Text>
@@ -1103,7 +1108,7 @@ export default function EditSessionModal({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('session.wellnessControl')}</Text>
               <Text style={styles.wellnessSubtitle}>{t('session.wellnessSubtitle')}</Text>
-              
+
               {/* Wellness Esperado */}
               <View style={styles.wellnessSelector}>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
@@ -1126,35 +1131,44 @@ export default function EditSessionModal({
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={[styles.wellnessLabel, { marginTop: 12 }]}>{t('session.manualAverageWellness')}</Text>
+              <TextInput
+                style={styles.exerciseFieldInput}
+                value={String(manualAverageWellness)}
+                onChangeText={setManualAverageWellness}
+                placeholder={t('session.manualAverageWellnessPlaceholder')}
+                placeholderTextColor={theme.colors.textMuted}
+                keyboardType="numeric"
+              />
             </View>
 
             {/* Botones */}
           </KeyboardAwareScrollView>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={onClose}
-              >
-                <Text style={styles.cancelBtnText}>{t('session.cancel')}</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.saveBtn, (loading || canMutate === false) && styles.saveBtnDisabled]}
-                onPress={handleSave}
-                disabled={loading || canMutate === false}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name={canMutate === false ? 'lock-closed' : 'checkmark'} size={20} color="#fff" />
-                    <Text style={styles.saveBtnText}>
-                      {canMutate === false ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('session.save')}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelBtnText}>{t('session.cancel')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, (loading || canMutate === false) && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={loading || canMutate === false}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Ionicons name={canMutate === false ? 'lock-closed' : 'checkmark'} size={20} color="#fff" />
+                  <Text style={styles.saveBtnText}>
+                    {canMutate === false ? t('subscription.availableWithSubscription', 'Disponible con suscripción') : t('session.save')}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Date/Time Pickers */}
           {Platform.OS === 'ios' ? (
@@ -1430,105 +1444,105 @@ export default function EditSessionModal({
                         });
                         return (
                           <>
-                      <View style={styles.teamAssignmentTeamHeader}>
-                        <View style={[styles.teamAssignmentTeamBadge, { backgroundColor: '#0f766e' }]}>
-                          <Ionicons name="swap-horizontal" size={14} color="#fff" />
-                        </View>
-                        <Text style={styles.teamAssignmentTeamTitle}>{t('session.comodines', 'Comodines')}</Text>
-                        <Text style={styles.teamAssignmentTeamCount}>
-                          ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0) + getExerciseComodines(exId)})
-                        </Text>
-                      </View>
-
-                      <View style={styles.teamAssignmentComodinesRow}>
-                        <View style={styles.teamAssignmentComodinesLabel}>
-                          <Ionicons name="swap-horizontal" size={16} color="#0f766e" />
-                          <Text style={styles.teamAssignmentComodinesText}>{t('session.comodines', 'Comodines')}</Text>
-                        </View>
-                        <View style={styles.teamAssignmentComodinesStepper}>
-                          <TouchableOpacity
-                            style={[styles.teamAssignmentComodinesBtn, getExerciseComodines(currentExerciseForTeams._id) === 0 && styles.teamAssignmentComodinesBtnDisabled]}
-                            disabled={getExerciseComodines(currentExerciseForTeams._id) === 0}
-                            onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) - 1)}
-                          >
-                            <Feather name="minus" size={16} color={getExerciseComodines(currentExerciseForTeams._id) === 0 ? theme.colors.textMuted : '#0f766e'} />
-                          </TouchableOpacity>
-                          <Text style={styles.teamAssignmentComodinesValue}>{getExerciseComodines(currentExerciseForTeams._id)}</Text>
-                          <TouchableOpacity
-                            style={styles.teamAssignmentComodinesBtn}
-                            onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) + 1)}
-                          >
-                            <Feather name="plus" size={16} color="#0f766e" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      <View style={styles.teamAssignmentPlayersList}>
-                        {allAvailable.map(player => {
-                          const isSelected = player.isExtra
-                            ? currentAssignment.extraPlayers?.includes(player.extraPlayerId)
-                            : currentAssignment.players?.includes(player.id);
-                          const isDisabled = assignedElsewhere.includes(player.id);
-                          return (
-                            <TouchableOpacity
-                              key={player.id}
-                              style={[
-                                styles.teamAssignmentPlayerChip,
-                                isSelected && styles.teamAssignmentPlayerChipSelected,
-                                isDisabled && styles.teamAssignmentPlayerChipDisabled,
-                                player.isExtra && styles.teamAssignmentPlayerChipExtra,
-                                isSelected && player.isExtra && styles.teamAssignmentPlayerChipExtraSelected
-                              ]}
-                              disabled={isDisabled}
-                              onPress={() => {
-                                const newAssignments = (exerciseTeamAssignments[exId] || []).map(ta => ({
-                                  ...ta,
-                                  players: [...(ta.players || [])],
-                                  extraPlayers: [...(ta.extraPlayers || [])]
-                                }));
-                                let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
-                                if (assignmentIndex === -1) {
-                                  newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
-                                  assignmentIndex = newAssignments.length - 1;
-                                }
-                                if (player.isExtra) {
-                                  const currentExtras = newAssignments[assignmentIndex].extraPlayers || [];
-                                  newAssignments[assignmentIndex].extraPlayers = currentExtras.includes(player.extraPlayerId)
-                                    ? currentExtras.filter(n => n !== player.extraPlayerId)
-                                    : [...currentExtras, player.extraPlayerId];
-                                } else {
-                                  const currentPlayers = newAssignments[assignmentIndex].players || [];
-                                  newAssignments[assignmentIndex].players = currentPlayers.includes(player.id)
-                                    ? currentPlayers.filter(id => id !== player.id)
-                                    : [...currentPlayers, player.id];
-                                }
-                                setExerciseTeamAssignments(prev => ({ ...prev, [exId]: newAssignments }));
-                              }}
-                            >
-                              {player.dorsal && (
-                                <Text style={[
-                                  styles.teamAssignmentPlayerDorsal,
-                                  isSelected && styles.teamAssignmentPlayerDorsalSelected
-                                ]}>
-                                  {player.dorsal}
-                                </Text>
-                              )}
-                              {player.isExtra && (
-                                <Ionicons name="person-add-outline" size={14} color={isSelected ? "#fff" : theme.colors.warning} style={{ marginRight: 4 }} />
-                              )}
-                              <Text style={[
-                                styles.teamAssignmentPlayerName,
-                                isSelected && styles.teamAssignmentPlayerNameSelected,
-                                isDisabled && styles.teamAssignmentPlayerNameDisabled
-                              ]} numberOfLines={1}>
-                                {player.name}
+                            <View style={styles.teamAssignmentTeamHeader}>
+                              <View style={[styles.teamAssignmentTeamBadge, { backgroundColor: '#0f766e' }]}>
+                                <Ionicons name="swap-horizontal" size={14} color="#fff" />
+                              </View>
+                              <Text style={styles.teamAssignmentTeamTitle}>{t('session.comodines', 'Comodines')}</Text>
+                              <Text style={styles.teamAssignmentTeamCount}>
+                                ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0) + getExerciseComodines(exId)})
                               </Text>
-                              {isSelected && (
-                                <MaterialIcons name="check" size={16} color="#fff" style={{ marginLeft: 4 }} />
-                              )}
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                            </View>
+
+                            <View style={styles.teamAssignmentComodinesRow}>
+                              <View style={styles.teamAssignmentComodinesLabel}>
+                                <Ionicons name="swap-horizontal" size={16} color="#0f766e" />
+                                <Text style={styles.teamAssignmentComodinesText}>{t('session.comodines', 'Comodines')}</Text>
+                              </View>
+                              <View style={styles.teamAssignmentComodinesStepper}>
+                                <TouchableOpacity
+                                  style={[styles.teamAssignmentComodinesBtn, getExerciseComodines(currentExerciseForTeams._id) === 0 && styles.teamAssignmentComodinesBtnDisabled]}
+                                  disabled={getExerciseComodines(currentExerciseForTeams._id) === 0}
+                                  onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) - 1)}
+                                >
+                                  <Feather name="minus" size={16} color={getExerciseComodines(currentExerciseForTeams._id) === 0 ? theme.colors.textMuted : '#0f766e'} />
+                                </TouchableOpacity>
+                                <Text style={styles.teamAssignmentComodinesValue}>{getExerciseComodines(currentExerciseForTeams._id)}</Text>
+                                <TouchableOpacity
+                                  style={styles.teamAssignmentComodinesBtn}
+                                  onPress={() => updateExerciseComodines(currentExerciseForTeams._id, getExerciseComodines(currentExerciseForTeams._id) + 1)}
+                                >
+                                  <Feather name="plus" size={16} color="#0f766e" />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                            <View style={styles.teamAssignmentPlayersList}>
+                              {allAvailable.map(player => {
+                                const isSelected = player.isExtra
+                                  ? currentAssignment.extraPlayers?.includes(player.extraPlayerId)
+                                  : currentAssignment.players?.includes(player.id);
+                                const isDisabled = assignedElsewhere.includes(player.id);
+                                return (
+                                  <TouchableOpacity
+                                    key={player.id}
+                                    style={[
+                                      styles.teamAssignmentPlayerChip,
+                                      isSelected && styles.teamAssignmentPlayerChipSelected,
+                                      isDisabled && styles.teamAssignmentPlayerChipDisabled,
+                                      player.isExtra && styles.teamAssignmentPlayerChipExtra,
+                                      isSelected && player.isExtra && styles.teamAssignmentPlayerChipExtraSelected
+                                    ]}
+                                    disabled={isDisabled}
+                                    onPress={() => {
+                                      const newAssignments = (exerciseTeamAssignments[exId] || []).map(ta => ({
+                                        ...ta,
+                                        players: [...(ta.players || [])],
+                                        extraPlayers: [...(ta.extraPlayers || [])]
+                                      }));
+                                      let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === 0);
+                                      if (assignmentIndex === -1) {
+                                        newAssignments.push({ teamNumber: 0, players: [], extraPlayers: [], comodines: 0 });
+                                        assignmentIndex = newAssignments.length - 1;
+                                      }
+                                      if (player.isExtra) {
+                                        const currentExtras = newAssignments[assignmentIndex].extraPlayers || [];
+                                        newAssignments[assignmentIndex].extraPlayers = currentExtras.includes(player.extraPlayerId)
+                                          ? currentExtras.filter(n => n !== player.extraPlayerId)
+                                          : [...currentExtras, player.extraPlayerId];
+                                      } else {
+                                        const currentPlayers = newAssignments[assignmentIndex].players || [];
+                                        newAssignments[assignmentIndex].players = currentPlayers.includes(player.id)
+                                          ? currentPlayers.filter(id => id !== player.id)
+                                          : [...currentPlayers, player.id];
+                                      }
+                                      setExerciseTeamAssignments(prev => ({ ...prev, [exId]: newAssignments }));
+                                    }}
+                                  >
+                                    {player.dorsal && (
+                                      <Text style={[
+                                        styles.teamAssignmentPlayerDorsal,
+                                        isSelected && styles.teamAssignmentPlayerDorsalSelected
+                                      ]}>
+                                        {player.dorsal}
+                                      </Text>
+                                    )}
+                                    {player.isExtra && (
+                                      <Ionicons name="person-add-outline" size={14} color={isSelected ? "#fff" : theme.colors.warning} style={{ marginRight: 4 }} />
+                                    )}
+                                    <Text style={[
+                                      styles.teamAssignmentPlayerName,
+                                      isSelected && styles.teamAssignmentPlayerNameSelected,
+                                      isDisabled && styles.teamAssignmentPlayerNameDisabled
+                                    ]} numberOfLines={1}>
+                                      {player.name}
+                                    </Text>
+                                    {isSelected && (
+                                      <MaterialIcons name="check" size={16} color="#fff" style={{ marginLeft: 4 }} />
+                                    )}
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
                           </>
                         );
                       })()}
@@ -1539,28 +1553,28 @@ export default function EditSessionModal({
                       const exId = currentExerciseForTeams._id;
                       const teamAssignments = exerciseTeamAssignments[exId] || [];
                       const currentAssignment = teamAssignments.find(ta => ta.teamNumber === teamNumber) || { teamNumber, players: [], extraPlayers: [] };
-                      
+
                       // Combinar jugadores y extras disponibles
                       const rosterForTeams = selectedPlayers.length > 0
                         ? players.filter(p => !p.extra && selectedPlayers.includes(p._id))
                         : players.filter(p => !p.extra);
                       const allAvailable = [
-                        ...rosterForTeams.map(p => ({ 
-                          id: p._id, 
+                        ...rosterForTeams.map(p => ({
+                          id: p._id,
                           name: getPlayerFullName(p) || p.dorsal?.toString() || 'Sin nombre',
                           dorsal: p.dorsal,
-                          isExtra: false 
+                          isExtra: false
                         })),
                         ...extraPlayers.map(extraId => {
                           // Buscar el jugador extra por su ID en la lista de jugadores extras disponibles
                           const extraPlayer = extraPlayersAvailable.find(p => p._id === extraId);
                           const playerName = extraPlayer ? getPlayerFullName(extraPlayer) : extraId;
-                          return { 
-                            id: `extra_${extraId}`, 
+                          return {
+                            id: `extra_${extraId}`,
                             name: playerName,
                             extraPlayerId: extraId,
                             dorsal: extraPlayer?.dorsal || null,
-                            isExtra: true 
+                            isExtra: true
                           };
                         })
                       ];
@@ -1586,18 +1600,18 @@ export default function EditSessionModal({
                               <Text style={styles.teamAssignmentTeamBadgeText}>{teamNumber}</Text>
                             </View>
                             <Text style={styles.teamAssignmentTeamTitle}>{t('session.team')} {teamNumber}</Text>
-                          <Text style={styles.teamAssignmentTeamCount}>
+                            <Text style={styles.teamAssignmentTeamCount}>
                               ({(currentAssignment.players?.length || 0) + (currentAssignment.extraPlayers?.length || 0)} jugadores)
                             </Text>
                           </View>
 
                           <View style={styles.teamAssignmentPlayersList}>
                             {allAvailable.map(player => {
-                              const isSelected = player.isExtra 
+                              const isSelected = player.isExtra
                                 ? currentAssignment.extraPlayers?.includes(player.extraPlayerId)
                                 : currentAssignment.players?.includes(player.id);
                               const isDisabled = assignedElsewhere.includes(player.id);
-                              
+
                               return (
                                 <TouchableOpacity
                                   key={player.id}
@@ -1617,7 +1631,7 @@ export default function EditSessionModal({
                                       extraPlayers: [...(ta.extraPlayers || [])]
                                     }));
                                     let assignmentIndex = newAssignments.findIndex(ta => ta.teamNumber === teamNumber);
-                                    
+
                                     if (assignmentIndex === -1) {
                                       newAssignments.push({ teamNumber, players: [], extraPlayers: [] });
                                       assignmentIndex = newAssignments.length - 1;
@@ -1654,14 +1668,14 @@ export default function EditSessionModal({
                                     </Text>
                                   )}
                                   {player.isExtra && (
-                                    <Ionicons 
-                                      name="person-add-outline" 
-                                      size={14} 
-                                      color={isSelected ? "#fff" : theme.colors.warning} 
+                                    <Ionicons
+                                      name="person-add-outline"
+                                      size={14}
+                                      color={isSelected ? "#fff" : theme.colors.warning}
                                       style={{ marginRight: 4 }}
                                     />
                                   )}
-                                  <Text 
+                                  <Text
                                     style={[
                                       styles.teamAssignmentPlayerName,
                                       isSelected && styles.teamAssignmentPlayerNameSelected,
@@ -1766,7 +1780,7 @@ const makeStyles = (theme) => StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-  
+
   // Form
   formGroup: {
     marginBottom: 20,
@@ -1792,7 +1806,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 15,
     color: theme.colors.text,
   },
-  
+
   // Time Section
   timeSection: {
     backgroundColor: theme.colors.background,
@@ -1856,7 +1870,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
     color: theme.colors.success,
   },
-  
+
   // Info Box
   infoBox: {
     flexDirection: 'row',
@@ -1873,7 +1887,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     lineHeight: 18,
   },
-  
+
   // Summary Box
   summaryBox: {
     backgroundColor: theme.colors.background,
@@ -1904,7 +1918,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
   },
-  
+
   // Buttons
   buttonRow: {
     flexDirection: 'row',
@@ -1960,7 +1974,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  
+
   // Section styles
   section: {
     backgroundColor: theme.colors.background,
@@ -1968,7 +1982,7 @@ const makeStyles = (theme) => StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  
+
   // Exercise styles
   addExerciseBtn: {
     flexDirection: 'row',
@@ -2086,7 +2100,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: 8,
   },
-  
+
   // Player styles
   playerSelectorBtn: {
     flexDirection: 'row',
@@ -2135,7 +2149,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textSecondary,
     fontWeight: '500',
   },
-  
+
   // Jugadores Extras
   formSectionSubtitle: {
     fontSize: 13,
@@ -2215,7 +2229,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.warning,
     fontWeight: '500',
   },
-  
+
   // Observations
   observationsInput: {
     backgroundColor: theme.colors.surface,
@@ -2228,7 +2242,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     minHeight: 100,
   },
-  
+
   // Selector Modal
   selectorModalBg: {
     flex: 1,
@@ -2310,7 +2324,7 @@ const makeStyles = (theme) => StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: 8,
   },
-  
+
   // Estilos para modal de DateTimePicker en iOS
   datePickerModalBg: {
     flex: 1,
@@ -2346,7 +2360,7 @@ const makeStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.primary,
   },
-  
+
   // Estilos para imagen de ejercicio
   exerciseImage: {
     width: 50,
@@ -2374,7 +2388,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  
+
   // Badge de video en ejercicio
   exerciseVideoBadge: {
     backgroundColor: '#E91E63',
@@ -2393,7 +2407,7 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.textMuted,
     shadowColor: theme.colors.textMuted,
   },
-  
+
   // Modal de video
   videoModalBg: {
     flex: 1,
@@ -2444,7 +2458,7 @@ const makeStyles = (theme) => StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  
+
   // Estilos para ejercicio en lista de seleccionados
   exerciseItemImage: {
     width: 50,
@@ -2483,7 +2497,7 @@ const makeStyles = (theme) => StyleSheet.create({
   orderBtnDisabled: {
     opacity: 0.5,
   },
-  
+
   // ============ ESTILOS MÓVIL PARA TARJETAS DE EJERCICIOS ============
   exerciseItemHeaderMobile: {
     flexDirection: 'row',
@@ -2543,7 +2557,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderColor: theme.colors.border,
   },
   // ============ FIN ESTILOS MÓVIL ============
-  
+
   // Estilos para la sección de Wellness
   wellnessSectionHeader: {
     marginBottom: 16,

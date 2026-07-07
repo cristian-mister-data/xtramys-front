@@ -85,6 +85,7 @@ const replaceExerciseInSession = (session, oldExerciseId, newExerciseId) => {
     jugadores: session.jugadores || [],
     jugadoresExtras: session.jugadoresExtras || [],
     expectedWellness: session.expectedWellness,
+    manualAverageWellness: session.manualAverageWellness,
   };
 };
 const mergeById = (...groups) => {

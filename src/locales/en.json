@@ -1584,6 +1584,8 @@
     "wellness": "Wellness",
     "expectedWellness": "Expected Wellness",
     "averageWellness": "Average",
+    "manualAverageWellness": "Manual session average",
+    "manualAverageWellnessPlaceholder": "No manual average",
     "responses": "Responses",
     "manageWellness": "Manage",
     "wellnessLinkActive": "Link active",

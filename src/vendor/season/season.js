@@ -381,6 +381,7 @@ export default function GestionEquipos() {
       jugadores: sessionData.jugadores || [],
       jugadoresExtras: sessionData.jugadoresExtras || [],
       expectedWellness: sessionData.expectedWellness,
+      manualAverageWellness: sessionData.manualAverageWellness,
       ejerciciosFuerza: sessionData.ejerciciosFuerza || [],
     }));
     
@@ -448,6 +449,7 @@ export default function GestionEquipos() {
         jugadores: sessionData.jugadores || [],
         jugadoresExtras: sessionData.jugadoresExtras || [],
         expectedWellness: sessionData.expectedWellness,
+        manualAverageWellness: sessionData.manualAverageWellness,
         ejerciciosFuerza: sessionData.ejerciciosFuerza || [],
       },
     }));

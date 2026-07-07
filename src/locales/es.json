@@ -1587,6 +1587,8 @@
     "wellness": "Wellness",
     "expectedWellness": "Wellness Esperado",
     "averageWellness": "Promedio",
+    "manualAverageWellness": "Media manual de la sesión",
+    "manualAverageWellnessPlaceholder": "Sin media manual",
     "responses": "Respuestas",
     "manageWellness": "Gestionar",
     "wellnessLinkActive": "Link activo",

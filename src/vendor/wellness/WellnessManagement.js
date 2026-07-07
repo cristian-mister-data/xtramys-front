@@ -542,7 +542,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
         ? await getPreWellnessRange(selectedTeam._id, rangeFromDate.toISOString(), rangeToDate.toISOString())
         : await getWellnessRange(selectedTeam._id, rangeFromDate.toISOString(), rangeToDate.toISOString());
 
-      const sessionsWithResponses = (data.sessions || []).filter(s => s.totalResponses > 0);
+      const sessionsWithResponses = (data.sessions || []).filter(s => s.totalResponses > 0 || s.averageWellness != null);
       if (sessionsWithResponses.length === 0) {
         Alert.alert(t('message.info'), t('wellness.noDataInRange', 'No hay datos de wellness en el rango seleccionado'));
         return;
