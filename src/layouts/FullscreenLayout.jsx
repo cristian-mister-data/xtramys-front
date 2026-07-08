@@ -11,6 +11,11 @@ const Shell = styled.div`
   background: #4a8c3f;
   overflow: hidden;
   display: flex;
+
+  html[data-native="true"] & {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 `;
 
 const Inner = styled.div`

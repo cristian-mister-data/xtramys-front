@@ -1695,18 +1695,18 @@ function OptionsMenu({
   const { width, height } = Dimensions.get('window');
   const isTablet = width >= 768;
 
-  // Tama�os fijos del men� (sin escalar seg�n la imagen)
+  // Tamaños fijos del menú (sin escalar según la imagen)
   const menuWidth = isTablet ? 160 : isMobile ? 120 : 145;
-  const menuItemHeight = isTablet ? 42 : isMobile ? 32 : 38;
-  const fontSize = isTablet ? 14 : isMobile ? 11 : 13;
-  const iconSize = isTablet ? 18 : isMobile ? 14 : 16;
+  const menuItemHeight = isTablet ? 42 : isMobile ? 26 : 38;
+  const fontSize = isTablet ? 14 : isMobile ? 9 : 13;
+  const iconSize = isTablet ? 18 : isMobile ? 11 : 16;
   const horizontalPadding = isTablet ? 14 : isMobile ? 8 : 12;
-  const verticalPadding = isTablet ? 10 : isMobile ? 6 : 9;
-  const iconTextGap = isTablet ? 12 : isMobile ? 6 : 10;
+  const verticalPadding = isTablet ? 10 : isMobile ? 3 : 9;
+  const iconTextGap = isTablet ? 12 : isMobile ? 5 : 10;
 
   if (!visible) return null;
 
-  // Calcular el n�mero de items visibles
+  // Calcular el número de items visibles
   const itemCount = [
     true, // Duplicar
     onRotate,
@@ -1721,50 +1721,13 @@ function OptionsMenu({
 
   const estimatedMenuHeight = itemCount * menuItemHeight;
 
-  // Ajustar posici�n para que no se salga de la pantalla
-  let adjustedX = position.x;
-  let adjustedY = position.y;
-
-  // Offset para que el men� aparezca al lado del icono, no encima
-  const offsetX = 10; // Peque�o margen a la derecha
-
-  // Ajuste horizontal - intentar mostrar a la derecha del elemento
-  if (adjustedX + menuWidth + offsetX > width - 10) {
-    // Si no cabe a la derecha, mostrarlo a la izquierda
-    adjustedX = adjustedX - menuWidth - offsetX;
-  } else {
-    adjustedX = adjustedX + offsetX;
-  }
-
-  // Asegurar que no se salga por la izquierda
-  if (adjustedX < 10) {
-    adjustedX = 10;
-  }
-
-  // Ajuste vertical - centrar el men� verticalmente respecto al punto de toque
-  // En m�vil, mostrar m�s abajo para no interferir con los botones flotantes
-  const verticalOffset = isMobile ? 60 : 0; // Offset adicional para m�vil
-  adjustedY = adjustedY - estimatedMenuHeight / 2 + verticalOffset;
-
-  // Asegurar que no se salga por arriba
-  if (adjustedY < 10) {
-    adjustedY = 10;
-  }
-
-  // Asegurar que no se salga por abajo
-  if (adjustedY + estimatedMenuHeight > height - 10) {
-    adjustedY = height - estimatedMenuHeight - 10;
-  }
-
   const smartMargin = 10;
   const smartOffsetX = 8;
   const anchorX = Number.isFinite(position.x) ? position.x : 0;
   const anchorY = Number.isFinite(position.y) ? position.y : 0;
   const openRight = anchorX + smartOffsetX + menuWidth <= width - smartMargin;
-  adjustedX = openRight ? anchorX + smartOffsetX : anchorX - menuWidth - smartOffsetX;
-  adjustedY = anchorY - Math.min(24, estimatedMenuHeight / 2);
-  adjustedX = Math.max(smartMargin, Math.min(adjustedX, width - menuWidth - smartMargin));
-  adjustedY = Math.max(smartMargin, Math.min(adjustedY, height - estimatedMenuHeight - smartMargin));
+  const adjustedX = Math.max(smartMargin, Math.min(openRight ? anchorX + smartOffsetX : anchorX - menuWidth - smartOffsetX, width - menuWidth - smartMargin));
+  const adjustedY = Math.max(smartMargin, Math.min(anchorY - Math.min(24, estimatedMenuHeight / 2), height - estimatedMenuHeight - smartMargin));
 
   // Estilos multiplataforma optimizados
   const menuStyle = {
@@ -1775,6 +1738,7 @@ function OptionsMenu({
     zIndex: 1000,
     left: adjustedX,
     top: adjustedY,
+    maxHeight: Math.min(estimatedMenuHeight, height - 20),
     // Sombra multiplataforma
     ...Platform.select({
       ios: {
@@ -1787,8 +1751,10 @@ function OptionsMenu({
         elevation: 10,
       },
     }),
-    // Borde para mejor definici�n
+    // Borde para mejor definición
     borderColor: '#e0e0e0',
+    borderWidth: 1,
+    overflow: 'hidden',
   };
 
   const menuItemStyle = {
@@ -1814,7 +1780,7 @@ function OptionsMenu({
     color: '#2c3e50',
     fontWeight: '600',
     flexShrink: 0,
-    // Optimizaci�n multiplataforma
+    // Optimizacin multiplataforma
     includeFontPadding: false,
     verticalAlign: 'middle',
   };
@@ -1843,7 +1809,12 @@ function OptionsMenu({
   );
 
   return (
-    <>
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <Pressable
         onPress={onClose}
         style={{
@@ -1852,11 +1823,13 @@ function OptionsMenu({
           left: 0,
           right: 0,
           bottom: 0,
+          backgroundColor: 'transparent',
           zIndex: 999,
         }}
       />
 
       <View style={menuStyle}>
+        <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
         <MenuItem
           onPress={() => {
             onDuplicate();
@@ -1952,8 +1925,9 @@ function OptionsMenu({
           label={t('tacticalBoard.menu.delete')}
           isLast={true}
         />
+        </ScrollView>
       </View>
-    </>
+    </Modal>
   );
 }
 

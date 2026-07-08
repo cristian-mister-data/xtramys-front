@@ -1,11 +1,17 @@
 // Configuración de URLs y modo de auth.
 // Vite expone variables que empiezan por VITE_ en import.meta.env
 
+import { isNative } from '@/platform/capacitor';
+
 const isDev = import.meta.env.DEV;
 const rawBackendUrl = import.meta.env.VITE_BACKEND_URL;
-const backendUrl = rawBackendUrl ? rawBackendUrl.replace(/\/+$/, '') : '';
+const configuredBackendUrl = rawBackendUrl ? rawBackendUrl.replace(/\/+$/, '') : '';
 
 const PROD_FALLBACK = 'https://api.xtramys.com';
+const pointsToLocalhost = (url) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/i.test(url);
+const backendUrl = !isDev && pointsToLocalhost(configuredBackendUrl)
+  ? PROD_FALLBACK
+  : configuredBackendUrl;
 
 // BACKEND_URL: usado para apiBase (wellness/prewellness) y generación de enlaces.
 // En desarrollo sin VITE_BACKEND_URL → '' (mismo origen / Vite proxy).
@@ -47,7 +53,7 @@ export function cdnUrl(url) {
 
 // 'cookie' = JWT en cookie httpOnly + credentials: 'include'
 // 'bearer' = JWT en Authorization: Bearer (legacy)
-export const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE || 'cookie').toLowerCase();
+export const AUTH_MODE = (isNative ? 'bearer' : (import.meta.env.VITE_AUTH_MODE || 'cookie')).toLowerCase();
 export const USE_COOKIE_AUTH = AUTH_MODE === 'cookie';
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';

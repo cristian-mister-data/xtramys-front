@@ -26,6 +26,26 @@ export const GlobalStyles = createGlobalStyle`
     overflow-x: hidden;
   }
 
+  html[data-native="true"] body {
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html[data-native="true"] input,
+  html[data-native="true"] textarea,
+  html[data-native="true"] select {
+    -webkit-user-select: text;
+    user-select: text;
+    font-size: 16px;
+  }
+
+  html[data-native="true"] button,
+  html[data-native="true"] a {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   #root {
     overflow-x: clip;
   }

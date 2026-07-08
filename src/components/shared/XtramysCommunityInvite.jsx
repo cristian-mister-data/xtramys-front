@@ -126,7 +126,7 @@ export function XtramysCommunityCard({ compact = false }) {
     try {
       await copyText(XTRAMYS_COMMUNITY_URL);
       toast.success(t('community.copySuccess', 'Enlace copiado'));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('community.copyError', 'No se pudo copiar el enlace'));
     }
   };
@@ -172,7 +172,7 @@ export default function XtramysCommunityInvite({ userId }) {
     if (!userId) return;
     try {
       if (!window.localStorage.getItem(seenKey(userId))) setOpen(true);
-    } catch (error) {
+    } catch (_error) {
       setOpen(true);
     }
   }, [userId]);
@@ -180,7 +180,7 @@ export default function XtramysCommunityInvite({ userId }) {
   const close = () => {
     try {
       window.localStorage.setItem(seenKey(userId), 'true');
-    } catch (error) {
+    } catch (_error) {
       // ponytail: localStorage can fail in private mode; the profile card still exposes the link.
     }
     setOpen(false);

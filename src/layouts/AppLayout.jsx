@@ -1,8 +1,8 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MdVisibility, MdClose } from 'react-icons/md';
+import { MdClose, MdDescription, MdHome, MdPeople, MdPerson, MdShield, MdTimer, MdVisibility } from 'react-icons/md';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
@@ -28,6 +28,23 @@ const Shell = styled.div`
       'content';
     grid-template-rows: 56px 1fr;
   }
+
+  @media (max-width: 700px) {
+    grid-template-areas:
+      'header'
+      'content'
+      'bottom';
+    grid-template-rows: 56px minmax(0, 1fr) auto;
+  }
+
+  html[data-native="true"] & {
+    grid-template-areas:
+      'header'
+      'content';
+    grid-template-rows: 56px minmax(0, 1fr);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 `;
 
 const Main = styled.main`
@@ -45,6 +62,14 @@ const Main = styled.main`
 
   @media (max-width: 600px) {
     padding: 12px;
+  }
+
+  @media (max-width: 700px) {
+    padding-bottom: calc(12px + 72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-native="true"] & {
+    padding-bottom: 16px;
   }
 `;
 
@@ -74,6 +99,50 @@ const SupervisionBanner = styled.div`
   }
 `;
 
+const BottomNav = styled.nav`
+  grid-area: bottom;
+  display: none;
+  grid-template-columns: repeat(${({ $count }) => $count || 5}, minmax(0, 1fr));
+  gap: 2px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: ${({ theme }) => theme.colors.headerBg};
+  border-top: 1px solid ${({ theme }) => theme.colors.headerBorder};
+  z-index: ${({ theme }) => theme.zIndex.sticky};
+
+  @media (max-width: 700px) {
+    display: grid;
+  }
+
+  html[data-native="true"] & {
+    display: none !important;
+  }
+`;
+
+const BottomItem = styled(NavLink)`
+  min-width: 0;
+  min-height: 54px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &.active {
+    color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.primarySoft};
+  }
+`;
+
 export default function AppLayout() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -82,10 +151,23 @@ export default function AppLayout() {
   const supervising = useSelector((s) => s.usuario.supervising);
   const supervisedUser = useSelector((s) => s.usuario.user);
   const userId = supervisedUser?._id || supervisedUser?.id || supervisedUser?.correo;
+  const isClubAdmin = supervisedUser?.role === 'club_admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const requestedTeamsSeasonRef = useRef(null);
   const hideSearch = location.pathname.startsWith('/club/dashboard');
+  const bottomItems = isClubAdmin
+    ? [
+        { to: '/club/dashboard', label: t('menu.myClub', 'Mi Club'), Icon: MdShield },
+        { to: '/profile', label: t('menu.profile', 'Perfil'), Icon: MdPerson },
+      ]
+    : [
+        { to: '/app', label: t('menu.home', 'Inicio'), Icon: MdHome },
+        { to: '/players', label: t('menu.players', 'Jugadores'), Icon: MdPeople },
+        { to: '/training', label: t('menu.training', 'Entrenos'), Icon: MdTimer },
+        { to: '/match-sheets', label: t('menu.matchSheetsShort', 'Partidos'), Icon: MdDescription },
+        { to: '/profile', label: t('menu.profile', 'Perfil'), Icon: MdPerson },
+      ];
 
   // Cargar equipos de la temporada actual a nivel global.
   // Antes cada página lo hacía por su cuenta (training, injuries, home,
@@ -137,6 +219,14 @@ export default function AppLayout() {
         <Main>
           <Outlet />
         </Main>
+        <BottomNav $count={bottomItems.length} aria-label={t('common.mobileNavigation', 'Navegación móvil')}>
+          {bottomItems.map(({ to, label, Icon }) => (
+            <BottomItem key={to} to={to}>
+              <Icon aria-hidden="true" />
+              <span>{label}</span>
+            </BottomItem>
+          ))}
+        </BottomNav>
         <XtramysCommunityInvite userId={userId} />
       </Shell>
     </TutorialProvider>

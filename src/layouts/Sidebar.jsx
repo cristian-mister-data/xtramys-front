@@ -159,6 +159,10 @@ const Footer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  html[data-native="true"] & {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
 `;
 
 const UserCard = styled.div`

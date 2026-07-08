@@ -21,15 +21,6 @@ export const setSubscriptionRequiredHandler = (h) => {
   _onSubscriptionRequired = h;
 };
 
-let _lastWarning = { key: '', at: 0 };
-
-function shouldLogWarning(key) {
-  const now = Date.now();
-  if (_lastWarning.key === key && now - _lastWarning.at < 5000) return false;
-  _lastWarning = { key, at: now };
-  return true;
-}
-
 function classifyNetworkError(error) {
   if (!error.response) {
     if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) return 'TIMEOUT';
@@ -207,7 +198,8 @@ function attachGetCache(config) {
 }
 
 function shouldRetryRequest(error) {
-  const config = error.config || {};
+  const config = error?.config;
+  if (!config) return false;
   const method = String(config.method || 'get').toLowerCase();
   if (!RETRYABLE_METHODS.has(method)) return false;
   if (config.__retryCount >= 2) return false;

@@ -6,6 +6,11 @@ const Wrap = styled.div`
   width: 100%;
   overflow-y: auto;
   background: #f0f4f8;
+
+  html[data-native="true"] & {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 `;
 
 export default function AuthLayout() {

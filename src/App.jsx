@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
-import { setUser, clearUserState, subscriptionRequired } from './store/slices/user/userSlice';
+import { subscriptionRequired } from './store/slices/user/userSlice';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
 import { saveToken } from './auth/storage';
@@ -53,6 +53,8 @@ const isConnectivityError = (error) => (
   error?.message === 'La petición ha tardado demasiado'
 );
 
+const isAuthRoute = () => window.location.pathname.startsWith('/auth/');
+
 const SESSION_RECHECK_INTERVAL_MS = 5 * 60 * 1000;
 const IGNORED_WARNINGS = [
   'accessibilityDisabled is deprecated',
@@ -93,7 +95,7 @@ export default function App() {
       dispatch(subscriptionRequired());
     });
     setNetworkErrorHandler((type) => {
-      if (type === 'OFFLINE' || type === 'TIMEOUT') {
+      if ((type === 'OFFLINE' || type === 'TIMEOUT') && !isAuthRoute()) {
         apiUnavailableRef.current = true;
         setApiUnavailable(true);
       }
@@ -124,7 +126,7 @@ export default function App() {
           setApiUnavailable(false);
         })
         .catch((error) => {
-          if (isConnectivityError(error)) {
+          if (isConnectivityError(error) && !isAuthRoute()) {
             apiUnavailableRef.current = true;
             setApiUnavailable(true);
             return;

@@ -10,6 +10,8 @@ dist-ssr
 *.log
 coverage
 .idea
+android
+ios
 
 # Reserved Windows device name accidentally created by tooling; cannot be
 # safely deleted from the working tree, must not be indexed.
@@ -17,3 +19,26 @@ coverage
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Android / iOS generated builds and binaries
+*.apk
+*.aab
+*.aar
+*.ipa
+
+# Capacitor / Native build artifacts & local configurations
+/android/.gradle
+/android/build
+/android/app/build
+/android/local.properties
+/android/app/src/main/assets/public
+/android/app/src/main/assets/capacitor.config.json
+/android/app/src/main/assets/capacitor.plugins.json
+/android/app/src/main/res/xml/config.xml
+/android/capacitor-cordova-android-plugins
+
+# iOS specific build folders
+/ios/App/build
+/ios/App/Pods
+/ios/App/Podfile.lock
+
