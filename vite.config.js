@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => {
       { find: /^expo-file-system(\/legacy)?$/, replacement: path.resolve(__dirname, './src/shims/expo-file-system.js') },
       { find: 'expo-asset', replacement: path.resolve(__dirname, './src/shims/expo-asset.js') },
       { find: 'react-native-fs', replacement: path.resolve(__dirname, './src/shims/react-native-fs.js') },
+      { find: 'react-native-safe-area-context', replacement: path.resolve(__dirname, './src/shims/react-native-safe-area-context.js') },
       { find: 'expo-linear-gradient', replacement: path.resolve(__dirname, './src/shims/expo-linear-gradient.js') },
       { find: 'expo-media-library', replacement: path.resolve(__dirname, './src/shims/expo-media-library.js') },
       { find: 'expo-sharing', replacement: path.resolve(__dirname, './src/shims/expo-sharing.js') },
