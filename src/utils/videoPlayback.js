@@ -3,6 +3,7 @@ import { ensureMp4Blob } from '@/utils/videoUtils';
 import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
+import { toast } from '@/ui/toast';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -167,6 +168,83 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
   } catch (error) {
     if (isSameOrigin) throw error;
     // Cross-origin R2 without CORS for fetch can still be downloaded/opened by anchor.
+  }
+
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  if (isCapacitor) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const fileName = `${sanitizeVideoFilename(filenameBase)}.${extension}`;
+      const isAndroid = window.Capacitor.getPlatform() === 'android';
+
+      // Download the video
+      const response = await fetch(href);
+      const blob = await response.blob();
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      });
+
+      if (isAndroid) {
+        // Android: Use custom VideoSaver plugin with MediaStore API
+        // This writes directly to the gallery via ContentResolver — the
+        // official Android 10+ approach. No album/permission issues.
+        try {
+          const { registerPlugin } = await import('@capacitor/core');
+          const VideoSaver = registerPlugin('VideoSaver');
+          const mimeType = extension === 'webm' ? 'video/webm' : 'video/mp4';
+          await VideoSaver.saveToGallery({
+            data: base64Data,
+            fileName: sanitizeVideoFilename(filenameBase),
+            mimeType
+          });
+          toast.success('Vídeo guardado en la galería.');
+        } catch (saveErr) {
+          console.error('VideoSaver plugin failed:', saveErr);
+          // Fallback: save to Documents
+          try {
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64Data,
+              directory: Directory.Documents
+            });
+            toast.success('Vídeo guardado en Documentos.');
+          } catch (docErr) {
+            toast.error('Error al guardar el vídeo: ' + docErr.message);
+          }
+        }
+      } else {
+        // iOS: Use @capacitor-community/media plugin
+        const { Media } = await import('@capacitor-community/media');
+        const writeResult = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache
+        });
+        try {
+          await Media.requestPermissions();
+          await Media.saveVideo({ path: writeResult.uri });
+          toast.success('Vídeo guardado en la galería.');
+        } catch (iosMediaErr) {
+          console.warn('iOS Media.saveVideo failed, saving to Documents:', iosMediaErr);
+          await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Documents
+          });
+          toast.success('Vídeo guardado en Documentos.');
+        }
+      }
+    } catch (capErr) {
+      console.error('Capacitor video download error:', capErr);
+      toast.error('Error al descargar video: ' + capErr.message);
+    }
+    if (objectUrl) {
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    }
+    return;
   }
 
   const anchor = document.createElement('a');

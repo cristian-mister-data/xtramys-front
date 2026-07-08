@@ -14,6 +14,7 @@ import {
   StatusBar,
   BackHandler,
 } from 'react-native';
+import { toast } from '@/ui/toast';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -1865,12 +1866,84 @@ export default function VideoRecorder({
       showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
 
       if (Platform.OS === 'web') {
+        const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
         const safeName =
           (videoNombre || editingVideoName || 'video')
             .trim()
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
             .replace(/\s+/g, '_') || 'video';
         const ext = (localVideoMime || '').includes('mp4') ? 'mp4' : 'webm';
+
+        if (isCapacitor) {
+          try {
+            const { Filesystem, Directory } = await import('@capacitor/filesystem');
+            const fileName = `${safeName}.${ext}`;
+            const isAndroid = window.Capacitor.getPlatform() === 'android';
+
+            // Download the video to base64 (localVideoPath is usually a blob URL)
+            const response = await fetch(localVideoPath);
+            const blob = await response.blob();
+            const base64Data = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onerror = reject;
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.readAsDataURL(blob);
+            });
+
+            if (isAndroid) {
+              // Android: Use custom VideoSaver plugin with MediaStore API
+              try {
+                const { registerPlugin } = await import('@capacitor/core');
+                const VideoSaver = registerPlugin('VideoSaver');
+                const mimeType = ext === 'webm' ? 'video/webm' : 'video/mp4';
+                await VideoSaver.saveToGallery({
+                  data: base64Data,
+                  fileName: safeName,
+                  mimeType
+                });
+                toast.success('Vídeo guardado en la galería.');
+              } catch (saveErr) {
+                console.error('VideoSaver plugin failed:', saveErr);
+                try {
+                  await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64Data,
+                    directory: Directory.Documents
+                  });
+                  toast.success('Vídeo guardado en Documentos.');
+                } catch (docErr) {
+                  toast.error('Error al guardar el vídeo: ' + docErr.message);
+                }
+              }
+            } else {
+              // iOS: Use @capacitor-community/media plugin
+              const { Media } = await import('@capacitor-community/media');
+              const cacheResult = await Filesystem.writeFile({
+                path: fileName,
+                data: base64Data,
+                directory: Directory.Cache
+              });
+              try {
+                await Media.requestPermissions();
+                await Media.saveVideo({ path: cacheResult.uri });
+                toast.success('Vídeo guardado en la galería.');
+              } catch (iosErr) {
+                console.warn('iOS Media.saveVideo failed, saving to Documents:', iosErr);
+                await Filesystem.writeFile({
+                  path: fileName,
+                  data: base64Data,
+                  directory: Directory.Documents
+                });
+                toast.success('Vídeo guardado en Documentos.');
+              }
+            }
+          } catch (capErr) {
+            console.error('Capacitor local video download error:', capErr);
+            toast.error('Error al descargar video: ' + capErr.message);
+          }
+          return;
+        }
+
         const a = document.createElement('a');
         a.href = localVideoPath;
         a.download = `${safeName}.${ext}`;

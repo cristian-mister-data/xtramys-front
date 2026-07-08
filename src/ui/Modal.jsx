@@ -80,6 +80,9 @@ const Header = styled.div`
 
   @media (max-width: 600px) {
     padding: 14px 16px;
+    html[data-native="true"] & {
+      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+    }
   }
 `;
 
@@ -146,6 +149,10 @@ const Footer = styled.div`
   @media (max-width: 600px) {
     padding: 12px 16px 16px;
     flex-wrap: wrap;
+
+    html[data-native="true"] & {
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
 
     > button,
     > a {

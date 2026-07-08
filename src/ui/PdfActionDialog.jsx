@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { toast } from '@/ui/toast';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -344,9 +345,10 @@ function createActionBtn(primary, label, desc, iconName, onClick, autoFocus) {
 export function showPdfActions(blob, fileName) {
   injectAnimations();
   const fullFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
-  const canShare = typeof navigator !== 'undefined' &&
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  const canShare = isCapacitor || (typeof navigator !== 'undefined' &&
     typeof navigator.share === 'function' &&
-    typeof navigator.canShare === 'function';
+    typeof navigator.canShare === 'function');
 
   const container = el('div', {
     position: 'fixed', inset: '0', zIndex: '2147483647',
@@ -376,21 +378,78 @@ export function showPdfActions(blob, fileName) {
   const onKey = (e) => { if (e.key === 'Escape') cancel(); };
   document.addEventListener('keydown', onKey);
 
+  const blobToBase64 = (b) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(b);
+    });
+  };
+
+  const handleCapacitorPdf = async (action) => {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const { Share } = await import('@capacitor/share');
+
+      const dataUrl = await blobToBase64(blob);
+      const base64Data = dataUrl.split(',')[1];
+
+      if (action === 'download') {
+        try {
+          await Filesystem.writeFile({
+            path: fullFileName,
+            data: base64Data,
+            directory: Directory.Documents
+          });
+          toast.success('El archivo PDF se ha descargado y guardado en la carpeta de Documentos de tu dispositivo.');
+          return true;
+        } catch (dirErr) {
+          console.warn('Failed writing to Documents directory, falling back to Share sheet:', dirErr);
+        }
+      }
+
+      const writeResult = await Filesystem.writeFile({
+        path: fullFileName,
+        data: base64Data,
+        directory: Directory.Cache
+      });
+
+      await Share.share({
+        title: fullFileName,
+        url: writeResult.uri,
+        dialogTitle: fullFileName,
+      });
+      return true;
+    } catch (err) {
+      console.error('Error handling PDF in Capacitor:', err);
+      return false;
+    }
+  };
+
   const downloadOnly = async () => {
-    await downloadBlob(blob, fullFileName);
+    if (isCapacitor) {
+      await handleCapacitorPdf('download');
+    } else {
+      await downloadBlob(blob, fullFileName);
+    }
     resolveOnce('download');
   };
 
   const downloadAndShare = async () => {
-    await downloadBlob(blob, fullFileName);
-    try {
-      const file = new File([blob], fullFileName, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: fullFileName });
-      }
-    } catch (shareErr) {
-      if (shareErr.name !== 'AbortError') {
-        console.warn('[showPdfActions:share]', shareErr);
+    if (isCapacitor) {
+      await handleCapacitorPdf('share');
+    } else {
+      await downloadBlob(blob, fullFileName);
+      try {
+        const file = new File([blob], fullFileName, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fullFileName });
+        }
+      } catch (shareErr) {
+        if (shareErr.name !== 'AbortError') {
+          console.warn('[showPdfActions:share]', shareErr);
+        }
       }
     }
     resolveOnce('share');

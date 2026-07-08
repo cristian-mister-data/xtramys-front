@@ -16,6 +16,10 @@ const Stack = styled.div`
   gap: 10px;
   z-index: ${({ theme }) => theme.zIndex.toast};
   pointer-events: none;
+
+  html[data-native="true"] & {
+    top: calc(16px + env(safe-area-inset-top, 0px));
+  }
 `;
 
 const palette = (type, theme) => {
