@@ -37,6 +37,7 @@ import api from '@/api/client';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 import ImageCropper from '@/components/season/ImageCropper';
 import { useTutorial } from '@/components/shared/TutorialProvider';
+import { XtramysCommunityCard } from '@/components/shared/XtramysCommunityInvite';
 import flagEs from '@/images/spain.png';
 import flagEn from '@/images/united-kingdom.png';
 
@@ -1108,6 +1109,7 @@ export default function Profile() {
             <CardTitle>⚙️ {t('profile.account', 'Cuenta')}</CardTitle>
           </CardHeader>
           <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+            <XtramysCommunityCard compact />
             <AccountBtn type="button" onClick={() => navigate('/notifications')}>
               <MdNotifications size={20} />
               <div style={{ flex: 1, textAlign: 'left' }}>

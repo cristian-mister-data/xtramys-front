@@ -171,6 +171,18 @@
     "langSpanishSecondary": "Spanish",
     "langEnglishSecondary": "English"
   },
+  "community": {
+    "modalTitle": "Xtramys Community",
+    "eyebrow": "Xtramys Community",
+    "title": "Join the Xtramys community",
+    "description": "Share questions, improvements, and real use cases with other coaches using Xtramys.",
+    "join": "Join",
+    "joinAria": "Open the Xtramys community in WhatsApp",
+    "copy": "Copy link",
+    "copySuccess": "Link copied",
+    "copyError": "Could not copy the link",
+    "close": "Close"
+  },
   "supervision": {
     "supervising": "Supervising",
     "readOnly": "Read-only mode",

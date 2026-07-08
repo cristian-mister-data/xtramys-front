@@ -7,6 +7,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { TutorialProvider } from '@/components/shared/TutorialProvider';
+import XtramysCommunityInvite from '@/components/shared/XtramysCommunityInvite';
 import { useTranslation } from 'react-i18next';
 
 const Shell = styled.div`
@@ -80,6 +81,7 @@ export default function AppLayout() {
   const seasonId = useSelector((s) => s.season.season?._id);
   const supervising = useSelector((s) => s.usuario.supervising);
   const supervisedUser = useSelector((s) => s.usuario.user);
+  const userId = supervisedUser?._id || supervisedUser?.id || supervisedUser?.correo;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const requestedTeamsSeasonRef = useRef(null);
@@ -135,6 +137,7 @@ export default function AppLayout() {
         <Main>
           <Outlet />
         </Main>
+        <XtramysCommunityInvite userId={userId} />
       </Shell>
     </TutorialProvider>
   );
