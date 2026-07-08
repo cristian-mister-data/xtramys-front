@@ -16,6 +16,11 @@ const NOT_IMPL = (name) => () => {
 
 const isBlob = (value) => typeof Blob !== 'undefined' && value instanceof Blob;
 
+const isCapacitorPath = (path) => {
+  if (typeof path !== 'string') return false;
+  return path.startsWith('file://') || path.startsWith('/CACHE') || (path.startsWith('/') && !path.startsWith('/virtual/'));
+};
+
 const RNFS = {
   CachesDirectoryPath: '/virtual/caches',
   DocumentDirectoryPath: '/virtual/documents',
@@ -23,6 +28,16 @@ const RNFS = {
   mkdir: async () => {},
   unlink: async (path) => {
     if (!path) return;
+    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    if (isCapacitor && isCapacitorPath(path)) {
+      try {
+        const { Filesystem } = await import('@capacitor/filesystem');
+        await Filesystem.deleteFile({ path });
+      } catch (err) {
+        console.warn('[RNFS shim] Failed deleting native file:', err);
+      }
+      return;
+    }
     // Blob URL devuelta por videoUtils.generateVideo
     if (typeof path === 'string' && path.startsWith('blob:')) {
       try { URL.revokeObjectURL(path); } catch (_) {}
@@ -39,6 +54,16 @@ const RNFS = {
   },
   exists: async (path) => {
     if (typeof path === 'string' && (path.startsWith('blob:') || path.startsWith('data:'))) return true;
+    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    if (isCapacitor && isCapacitorPath(path)) {
+      try {
+        const { Filesystem } = await import('@capacitor/filesystem');
+        await Filesystem.stat({ path });
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
     return frames.has(path);
   },
   readDir: async (path) => {
@@ -78,6 +103,21 @@ const RNFS = {
   // soportamos lecturas desde el almacén interno de frames.
   readFile: async (path, encoding = 'base64') => {
     if (!path) throw new Error('react-native-fs.readFile: empty path');
+    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    if (isCapacitor && isCapacitorPath(path)) {
+      try {
+        const { Filesystem } = await import('@capacitor/filesystem');
+        const result = await Filesystem.readFile({ path });
+        if (encoding === 'base64') return result.data;
+        if (encoding === 'utf8') {
+          return atob(result.data);
+        }
+        return result.data;
+      } catch (err) {
+        console.error('[RNFS shim] Failed reading native file:', err);
+        throw err;
+      }
+    }
     let value = path;
     if (frames.has(path)) value = frames.get(path);
     if (typeof value === 'string' && value.startsWith('data:')) {

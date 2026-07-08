@@ -282,6 +282,13 @@ export const getVideoFolders = listVideoFolders;
 export const getVideoFoldersFlat = getAllVideoFoldersFlat;
 export const getVideoFolder = getVideoFolderById;
 
+
+
+
+
+
+
+
 export const getGlobalVideoFolders = async (lang = null) => {
   try {
     const params = lang ? { lang } : {};
@@ -319,28 +326,62 @@ const stub =
 export const proxyUploadToR2 = async (localVideoPath) => {
   if (!localVideoPath) throw new Error('No hay archivo de vídeo para subir');
 
-  const fileResponse = await fetch(localVideoPath);
-  if (!fileResponse.ok) {
-    throw new Error(`No se pudo leer el vídeo generado: ${fileResponse.status}`);
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  if (isCapacitor) {
+    try {
+      const { Filesystem } = await import('@capacitor/filesystem');
+      // Read the file as base64 natively
+      const readFileResult = await Filesystem.readFile({ path: localVideoPath });
+      const base64Data = readFileResult.data;
+
+      // Post the base64 data as a JSON payload to bypass CapacitorHttp binary bugs
+      const response = await api.post('/video/proxy-upload', {
+        fileData: base64Data,
+        contentType: 'video/mp4'
+      }, {
+        timeout: 180000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.data;
+    } catch (err) {
+      console.error('[proxyUploadToR2] Native Capacitor upload failed:', err);
+      throw err;
+    }
   }
 
-  const blob = await fileResponse.blob();
-  if (!blob || blob.size === 0) {
-    throw new Error('El vídeo generado está vacío');
+  let arrayBuffer;
+  let contentType = 'video/mp4';
+
+  try {
+    const fileResponse = await fetch(localVideoPath);
+    if (!fileResponse.ok) {
+      throw new Error(`No se pudo leer el vídeo generado (HTTP ${fileResponse.status})`);
+    }
+    const blob = await fileResponse.blob();
+    if (!blob || blob.size === 0) {
+      throw new Error('El vídeo generado está vacío');
+    }
+    contentType = blob.type || 'video/mp4';
+    arrayBuffer = await blob.arrayBuffer();
+  } catch (fetchErr) {
+    console.error('[proxyUploadToR2] Error fetching localVideoPath:', fetchErr);
+    throw new Error(`No se pudo leer el vídeo generado: ${fetchErr.message}`);
   }
 
-  const contentType = blob.type || 'video/webm';
-  const response = await api.post('/video/proxy-upload', blob, {
-    timeout: 120000,
-    headers: { 'Content-Type': contentType },
-    transformRequest: [(data) => data],
-  });
-  return response.data;
+  try {
+    const response = await api.post('/video/proxy-upload', arrayBuffer, {
+      timeout: 120000,
+      headers: { 'Content-Type': 'application/octet-stream' },
+      transformRequest: [(data) => data],
+    });
+    return response.data;
+  } catch (uploadErr) {
+    console.error('[proxyUploadToR2] Axios post failed:', uploadErr);
+    throw uploadErr;
+  }
 };
 
 // Regenera el MP4 server-side a partir de los keyframes guardados.
-// Mirror de misterdata: si el backend encola un job, hacemos polling.
-let _activeVideoPollController = null;
 export const regenerateVideoWithField = async (videoId, fieldImageData = null, playerOverlays = null) => {
   if (_activeVideoPollController) {
     _activeVideoPollController.abort();

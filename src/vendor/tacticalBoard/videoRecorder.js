@@ -71,6 +71,7 @@ import i18n from '@/i18n';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cdnUrl } from '@/config';
+import { triggerVideoDownload } from '@/utils/videoPlayback';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
 const LINE_TYPE_ELEMENTS = new Set([
@@ -87,6 +88,41 @@ const VIDEO_CAPTURE_EXTENSION = 'jpg';
 const VIDEO_CAPTURE_QUALITY = 0.97;
 const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
 const STREAMING_ENCODE_BACKLOG = 6;
+
+const yieldForMobilePaint = () => new Promise((resolve) => {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    resolve();
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => setTimeout(finish, 0));
+  }
+  setTimeout(finish, 32);
+});
+
+const isNativeAndroid = () =>
+  typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android';
+
+const captureVideoFrame = (canvas) => {
+  if (isNativeAndroid()) {
+    return canvas.toDataURL(
+      `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`,
+      VIDEO_CAPTURE_QUALITY,
+    );
+  }
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Canvas toBlob failed'));
+      },
+      `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`,
+      VIDEO_CAPTURE_QUALITY,
+    );
+  });
+};
 
 const PLAYER_VISUAL_FIELDS = [
   'color',
@@ -1461,21 +1497,23 @@ export default function VideoRecorder({
         }
       };
 
-      try {
-        streamingEncoder = await createStreamingVideoEncoder({
-          speed: videoSpeed,
-          frameCount: totalFrames,
-          onProgress: (encodeProgress) => {
-            encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
-            updateLinearProgress();
-          },
-        });
-      } catch (streamingError) {
-        console.info(
-          '[videoRecorder] WebCodecs streaming no disponible, se usara fallback',
-          streamingError,
-        );
-        streamingEncoder = null;
+      if (!isNativeAndroid()) {
+        try {
+          streamingEncoder = await createStreamingVideoEncoder({
+            speed: videoSpeed,
+            frameCount: totalFrames,
+            onProgress: (encodeProgress) => {
+              encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
+              updateLinearProgress();
+            },
+          });
+        } catch (streamingError) {
+          console.info(
+            '[videoRecorder] WebCodecs streaming no disponible, se usara fallback',
+            streamingError,
+          );
+          streamingEncoder = null;
+        }
       }
 
       setGenerationPhase('generationCapturing');
@@ -1489,9 +1527,9 @@ export default function VideoRecorder({
           return;
         }
 
-        // Yield to the browser every 4 frames to prevent throttling
+        // Yield to the browser every 4 frames to keep mobile WebView painting progress.
         if (i % 4 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await yieldForMobilePaint();
         }
 
         const frame = allFrames[i];
@@ -1503,16 +1541,7 @@ export default function VideoRecorder({
           viewMode,
         });
 
-        const frameCapture = await new Promise((resolve, reject) => {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error('Canvas toBlob failed'));
-            },
-            `image/${VIDEO_CAPTURE_FORMAT === 'jpg' ? 'jpeg' : 'png'}`,
-            VIDEO_CAPTURE_QUALITY,
-          );
-        });
+        const frameCapture = await captureVideoFrame(canvas);
 
         if (i === 0) {
           try {
@@ -1535,12 +1564,15 @@ export default function VideoRecorder({
         }
 
         updateLinearProgress();
+        if (i % 4 === 3) {
+          await yieldForMobilePaint();
+        }
       }
 
       // 5. Finalizar/codificar el vídeo
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await yieldForMobilePaint();
       setGenerationPhase('generationEncoding');
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await yieldForMobilePaint();
       let outputPath;
       let encodedMime;
 
@@ -1599,7 +1631,10 @@ export default function VideoRecorder({
       await new Promise((resolve) => setTimeout(resolve, 120));
 
       // 7. Reproducir video local
-      const fileUri = Platform.OS === 'android' ? `file://${outputPath}` : outputPath;
+      let fileUri = outputPath;
+      if (Platform.OS === 'android' && !outputPath.startsWith('file://') && !outputPath.startsWith('http') && !outputPath.startsWith('blob:')) {
+        fileUri = `file://${outputPath}`;
+      }
       setLocalVideoPath(outputPath);
       setVideoUrl(fileUri);
       setCurrentVideoId(null);
@@ -1627,8 +1662,6 @@ export default function VideoRecorder({
         onGoToLastKeyframe();
       }
     } catch (error) {
-      streamingEncoder?.abort?.();
-      if (generationCancelledRef.current) return;
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
     } finally {
@@ -1690,8 +1723,26 @@ export default function VideoRecorder({
       };
       const thumbnailToSave = videoThumbnailRef.current || videoThumbnail;
       if (thumbnailToSave) videoData.thumbnail = thumbnailToSave;
-      if (isEditingVideo && !localVideoPath) {
-        videoData.r2Key = '';
+
+      const pendingVideoPath = localVideoPath;
+      if (pendingVideoPath) {
+        uploadingPathRef.current = pendingVideoPath;
+        const exists = await RNFS.exists(pendingVideoPath);
+        if (!exists) throw new Error(`R2 upload: archivo local no existe: ${pendingVideoPath}`);
+
+        let key = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const uploadResult = await proxyUploadToR2(pendingVideoPath);
+            key = uploadResult.r2Key;
+            break;
+          } catch (uploadErr) {
+            console.warn(`R2 proxy upload intento ${attempt} fallo:`, uploadErr.message);
+            if (attempt < 2) await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
+        if (!key) throw new Error('R2 upload fallo tras 2 intentos');
+        videoData.r2Key = key;
       }
 
       // Guardar en BD primero (rápido, solo JSON)
@@ -1736,9 +1787,9 @@ export default function VideoRecorder({
 
         // Subir el vídeo generado a R2. En web esperamos a que termine para
         // que Mis Vídeos y Análisis Rival ya tengan una URL reproducible.
-        // En móvil se mantiene fire-and-forget como antes.
+        // En movil tambien esperamos para no crear registros sin video reproducible.
         const videoPathToUpload = localVideoPath;
-        if (videoPathToUpload && savedVideoId) {
+        if (videoPathToUpload && savedVideoId && !videoData.r2Key) {
           // Marcar como "subiendo" ANTES de limpiar el state para que el useEffect
           // cleanup no borre el archivo durante la subida
           uploadingPathRef.current = videoPathToUpload;
@@ -1776,23 +1827,20 @@ export default function VideoRecorder({
                 throw new Error('R2 upload falló tras 2 intentos');
               }
             } catch (err) {
-              console.warn('R2 background upload failed:', err.message);
-              if (Platform.OS === 'web') throw err;
+              console.warn('R2 upload failed:', err.message);
+              throw err;
             } finally {
               uploadingPathRef.current = null;
               RNFS.unlink(videoPathToUpload).catch(() => {});
             }
           };
 
-          if (Platform.OS === 'web') {
-            await uploadSavedVideo();
-          } else {
-            uploadSavedVideo();
-          }
+          await uploadSavedVideo();
         } else if (localVideoPath) {
           // No hay savedVideoId, limpiar archivo local
           RNFS.unlink(localVideoPath).catch(() => {});
           setLocalVideoPath(null);
+          uploadingPathRef.current = null;
         }
 
         // Notificar al componente padre sobre el video guardado (para asociar a ejercicio/estrategia nuevo)
@@ -1850,6 +1898,7 @@ export default function VideoRecorder({
         }
       }
     } finally {
+      uploadingPathRef.current = null;
       setIsSaving(false);
     }
   };
@@ -1866,94 +1915,12 @@ export default function VideoRecorder({
       showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
 
       if (Platform.OS === 'web') {
-        const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
         const safeName =
           (videoNombre || editingVideoName || 'video')
             .trim()
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
             .replace(/\s+/g, '_') || 'video';
-        const ext = (localVideoMime || '').includes('mp4') ? 'mp4' : 'webm';
-
-        if (isCapacitor) {
-          try {
-            const { Filesystem, Directory } = await import('@capacitor/filesystem');
-            const fileName = `${safeName}.${ext}`;
-            const isAndroid = window.Capacitor.getPlatform() === 'android';
-
-            // Download the video to base64 (localVideoPath is usually a blob URL)
-            const response = await fetch(localVideoPath);
-            const blob = await response.blob();
-            const base64Data = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onerror = reject;
-              reader.onload = () => resolve(reader.result.split(',')[1]);
-              reader.readAsDataURL(blob);
-            });
-
-            if (isAndroid) {
-              // Android: Use custom VideoSaver plugin with MediaStore API
-              try {
-                const { registerPlugin } = await import('@capacitor/core');
-                const VideoSaver = registerPlugin('VideoSaver');
-                const mimeType = ext === 'webm' ? 'video/webm' : 'video/mp4';
-                await VideoSaver.saveToGallery({
-                  data: base64Data,
-                  fileName: safeName,
-                  mimeType
-                });
-                toast.success('Vídeo guardado en la galería.');
-              } catch (saveErr) {
-                console.error('VideoSaver plugin failed:', saveErr);
-                try {
-                  await Filesystem.writeFile({
-                    path: fileName,
-                    data: base64Data,
-                    directory: Directory.Documents
-                  });
-                  toast.success('Vídeo guardado en Documentos.');
-                } catch (docErr) {
-                  toast.error('Error al guardar el vídeo: ' + docErr.message);
-                }
-              }
-            } else {
-              // iOS: Use @capacitor-community/media plugin
-              const { Media } = await import('@capacitor-community/media');
-              const cacheResult = await Filesystem.writeFile({
-                path: fileName,
-                data: base64Data,
-                directory: Directory.Cache
-              });
-              try {
-                await Media.requestPermissions();
-                await Media.saveVideo({ path: cacheResult.uri });
-                toast.success('Vídeo guardado en la galería.');
-              } catch (iosErr) {
-                console.warn('iOS Media.saveVideo failed, saving to Documents:', iosErr);
-                await Filesystem.writeFile({
-                  path: fileName,
-                  data: base64Data,
-                  directory: Directory.Documents
-                });
-                toast.success('Vídeo guardado en Documentos.');
-              }
-            }
-          } catch (capErr) {
-            console.error('Capacitor local video download error:', capErr);
-            toast.error('Error al descargar video: ' + capErr.message);
-          }
-          return;
-        }
-
-        const a = document.createElement('a');
-        a.href = localVideoPath;
-        a.download = `${safeName}.${ext}`;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        await new Promise((r) => setTimeout(r, 0));
-        a.click();
-        setTimeout(() => {
-          if (a.parentNode) a.parentNode.removeChild(a);
-        }, 100);
+        await triggerVideoDownload(localVideoPath, safeName);
         setTimeout(
           () =>
             showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'),

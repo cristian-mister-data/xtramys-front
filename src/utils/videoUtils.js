@@ -255,6 +255,10 @@ function getSortedFrameKeys(framesDir) {
 function dataUrlToBytes(dataUrl) {
   const commaIndex = dataUrl.indexOf(',');
   const payload = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+  return base64ToBytes(payload);
+}
+
+function base64ToBytes(payload) {
   const binary = atob(payload);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index++) {
@@ -577,6 +581,7 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
 // está, luego VP9 (alta calidad/compresión), VP8 y por último cualquier mp4.
 const pickMime = () => {
   const candidates = [
+    'video/mp4;codecs=avc1.42E01E',
     'video/mp4;codecs=avc1.640033', // H.264 high profile
     'video/mp4;codecs=h264',
     'video/webm;codecs=vp9',
@@ -686,28 +691,99 @@ const isMobileBrowser = () =>
   /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
   ('ontouchstart' in window && window.innerWidth < 1280);
 
+const isNativeAndroid = () =>
+  typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android';
+
+const isNativeApp = () =>
+  typeof window !== 'undefined' &&
+  window.Capacitor?.getPlatform &&
+  window.Capacitor.getPlatform() !== 'web';
+
+async function generateVideoWithNativeAndroid(framesDir, frameCount, speed = 1, onProgress) {
+  const { registerPlugin } = await import('@capacitor/core');
+  const NativeVideoEncoder = registerPlugin('NativeVideoEncoder');
+  const fps = SPEED_TO_FPS[speed] || 30;
+  const { store, keys } = getSortedFrameKeys(framesDir);
+  const frames = [];
+
+  for (let index = 0; index < keys.length; index++) {
+    frames.push(await RNFS.readFile(keys[index], 'base64'));
+    onProgress?.(Math.min(0.35, ((index + 1) / keys.length) * 0.35));
+    if (index % 6 === 0) await yieldToBrowser();
+  }
+
+  const result = await NativeVideoEncoder.encodeFrames({ frames, fps });
+  if (!result?.data) throw new Error('El encoder nativo no devolvio video');
+  onProgress?.(0.95);
+
+  const videoBlob = new Blob([base64ToBytes(result.data)], { type: 'video/mp4' });
+  if (!videoBlob.size) throw new Error('El video nativo generado esta vacio');
+
+  for (const key of keys) store.delete(key);
+
+  return {
+    outputPath: URL.createObjectURL(videoBlob),
+    frameCount: keys.length || frameCount,
+    mimeType: 'video/mp4',
+  };
+}
+
 export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress) => {
-  try {
-    return await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);
-  } catch (webCodecsError) {
-    if (!String(webCodecsError?.message || '').includes('H.264 WebCodecs no soportado')) {
-      console.info('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
-    }
-    if (isMobileBrowser()) {
-      console.info('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
-      return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
-    }
+  let result;
+  if (isNativeAndroid()) {
+    result = await generateVideoWithNativeAndroid(framesDir, frameCount, speed, onProgress);
+  } else {
     try {
-      return await generateVideoWithFFmpeg(framesDir, frameCount, speed, onProgress);
-    } catch (ffmpegError) {
-      console.info('[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback', ffmpegError);
-      return generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
+      result = await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);
+    } catch (webCodecsError) {
+      if (!String(webCodecsError?.message || '').includes('H.264 WebCodecs no soportado')) {
+        console.info('[videoUtils] WebCodecs falló, usando fallback', webCodecsError);
+      }
+      if (isMobileBrowser() && !isNativeApp()) {
+        console.info('[videoUtils] Skip FFmpeg on mobile (30MB+ WASM), using MediaRecorder');
+        result = generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
+      } else {
+        try {
+          result = await generateVideoWithFFmpeg(framesDir, frameCount, speed, onProgress);
+        } catch (ffmpegError) {
+          if (isNativeApp()) throw ffmpegError;
+          console.info('[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback', ffmpegError);
+          result = generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
+        }
+      }
     }
   }
-};
 
-export const uploadToR2 = async () => {
-  throw new Error('uploadToR2 no implementado en web');
+  // If Capacitor, save the temporary blob to a native file so the native player can read it
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  if (isCapacitor && result && result.outputPath) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const response = await fetch(result.outputPath);
+      const blob = await response.blob();
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      });
+      const tempFileName = `temp_recording_${Date.now()}.mp4`;
+      const writeResult = await Filesystem.writeFile({
+        path: tempFileName,
+        data: base64Data,
+        directory: Directory.Cache
+      });
+      
+      // Revoke the old blob URL to free memory
+      try { URL.revokeObjectURL(result.outputPath); } catch (_) {}
+
+      result.outputPath = writeResult.uri; // Replace with file:// URI
+    } catch (err) {
+      console.warn('[generateVideo] Failed saving temporary cache file for native player:', err);
+    }
+  }
+
+  return result;
 };
 
 export const generateVideoWithDiagnostics = generateVideo;

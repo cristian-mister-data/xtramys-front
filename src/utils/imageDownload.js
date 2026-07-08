@@ -1,4 +1,6 @@
 import api from '@/api/client';
+import { toast } from '@/ui/toast';
+import { showFileActions } from '@/ui/fileActionDialog';
 
 const IMAGE_EXTENSIONS = {
   'image/jpeg': 'jpg',
@@ -44,10 +46,64 @@ function triggerAnchorDownload(href, filename, { newTab = false } = {}) {
   document.body.removeChild(anchor);
 }
 
+const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = reject;
+  reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
+  reader.readAsDataURL(blob);
+});
+
+async function shareNativeBlob(blob, fileName) {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+  const { Share } = await import('@capacitor/share');
+  const writeResult = await Filesystem.writeFile({
+    path: fileName,
+    data: await blobToBase64(blob),
+    directory: Directory.Cache,
+  });
+  await Share.share({ title: fileName, url: writeResult.uri, dialogTitle: fileName });
+}
+
+async function saveNativeImageBlob(blob, fileName, mimeType) {
+  if (window.Capacitor.getPlatform() === 'android') {
+    const { registerPlugin } = await import('@capacitor/core');
+    const VideoSaver = registerPlugin('VideoSaver');
+    await VideoSaver.saveImageToGallery({
+      data: await blobToBase64(blob),
+      fileName,
+      mimeType,
+    });
+    toast.success('Imagen guardada en Galeria.');
+    return;
+  }
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+  await Filesystem.writeFile({
+    path: fileName,
+    data: await blobToBase64(blob),
+    directory: Directory.Documents,
+  });
+  toast.success('Imagen guardada en Documentos.');
+}
+
+async function handleNativeImage(blob, fileName, mimeType) {
+  await showFileActions({
+    fileName,
+    kind: 'image',
+    title: 'Imagen lista',
+    onDownload: () => saveNativeImageBlob(blob, fileName, mimeType),
+    onShare: async () => {
+      await saveNativeImageBlob(blob, fileName, mimeType);
+      await shareNativeBlob(blob, fileName);
+    },
+  });
+}
+
 export async function downloadImageSource(src, filenameBase = 'image') {
   if (!src) throw new Error('No image source to download');
 
   const baseName = sanitizeFilenamePart(filenameBase);
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
 
   if (/^https?:\/\//i.test(src)) {
     const fallbackExtension = extensionFromUrl(src) || 'png';
@@ -61,6 +117,10 @@ export async function downloadImageSource(src, filenameBase = 'image') {
       });
       const contentType = response.headers?.['content-type'] || response.data?.type || '';
       const extension = IMAGE_EXTENSIONS[String(contentType).toLowerCase()] || fallbackExtension;
+      if (isCapacitor) {
+        await handleNativeImage(response.data, `${baseName}.${extension}`, contentType || `image/${extension}`);
+        return;
+      }
       const objectUrl = URL.createObjectURL(response.data);
       triggerAnchorDownload(objectUrl, `${baseName}.${extension}`);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
@@ -73,5 +133,11 @@ export async function downloadImageSource(src, filenameBase = 'image') {
   }
 
   const dataUri = src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
+  if (isCapacitor) {
+    const blob = await fetch(dataUri).then((res) => res.blob());
+    const extension = extensionFromDataUri(dataUri);
+    await handleNativeImage(blob, `${baseName}.${extension}`, blob.type || `image/${extension}`);
+    return;
+  }
   triggerAnchorDownload(dataUri, `${baseName}.${extensionFromDataUri(dataUri)}`);
 }
