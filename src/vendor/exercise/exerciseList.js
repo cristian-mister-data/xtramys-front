@@ -1798,19 +1798,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     return duplicated;
   }, [dispatch, buildDuplicateName, i18n.language, t, idUsuario]);
 
-  const handleEditAsNewExercise = useCallback(async (exercise) => {
-    setLoadingData(true);
-    let originalVideos = [];
-    try {
-      if (exercise._id || exercise.id) {
-        originalVideos = await getVideosByExercise(exercise._id || exercise.id);
-      }
-    } catch (err) {
-      console.warn('Error fetching original exercise videos:', err);
-    } finally {
-      setLoadingData(false);
-    }
-
+  const handleEditAsNewExercise = useCallback((exercise) => {
+    const sourceExerciseId = exercise?._id || exercise?.id;
     const duplicateName = buildDuplicateName(exercise?.nombre || t('exercise.exerciseName'));
     const cloned = {
       ...exercise,
@@ -1818,8 +1807,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       id: undefined,
       nombre: duplicateName,
       isGlobal: false,
+      visibility: 'PRIVATE',
+      clubId: null,
+      folder: null,
+      videos: [],
       usuario: idUsuario,
-      pendingVideoIds: (originalVideos || []).map(v => v._id || v.id).filter(Boolean),
+      sourceExerciseIdForVideos: sourceExerciseId,
     };
     setEditingExercise(cloned);
     setCreating(true);
@@ -2258,7 +2251,12 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     // Condición OR (en lugar de sólo `creating`) replica el patrón de
     // strategyList: si tras volver del editor del campo `creating` no se
     // restauró pero sí `editingExercise`, igualmente mostramos el form.
-    const formKey = editingExercise ? `edit-${editingExercise._id}` : 'create-new';
+    const formExerciseId = editingExercise?._id || editingExercise?.id;
+    const formKey = formExerciseId
+      ? `edit-${formExerciseId}`
+      : editingExercise?.sourceExerciseIdForVideos
+        ? `copy-${editingExercise.sourceExerciseIdForVideos}`
+        : 'create-new';
 
     return (
       <AppLayout>

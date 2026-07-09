@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
+import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { fetchExerciseFoldersFlat, createExerciseFolder, fetchGlobalFolders } from '@/store/slices/exercise/exerciseThunks';
@@ -49,6 +49,9 @@ export default function CreateExerciseForm({
   const chevronColor = theme?.colors?.textSecondary || '#666';
   const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
   const onWarningColor = theme?.colors?.onWarning || '#fff';
+  const editingExerciseId = editingExercise?._id || editingExercise?.id || null;
+  const formDraftId = editingExerciseId || (editingExercise?.sourceExerciseIdForVideos ? `copy:${editingExercise.sourceExerciseIdForVideos}` : null);
+  const isNewExercise = !editingExerciseId;
   
   const [name, setName] = useState(editingExercise ? editingExercise.nombre || '' : '');
   const [duration, setDuration] = useState(editingExercise ? String(editingExercise.tiempo ?? '') : '');
@@ -83,7 +86,7 @@ export default function CreateExerciseForm({
   const __pendingFieldResult = (() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
-      const editingId = editingExercise?._id || editingExercise?.id || null;
+      const editingId = formDraftId;
       const draftMatches = __pendingFormDraft && (__pendingFormDraft.editingId || null) === editingId && __pendingFormDraft.kind === 'exercise';
       if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === 'exercise') return fr;
     } catch {}
@@ -126,10 +129,10 @@ export default function CreateExerciseForm({
   });
   const [visibility, setVisibility] = useState(editingExercise?.visibility || 'PRIVATE');
   const isRestoringDraft = useMemo(() => {
-    const editingId = editingExercise?._id || editingExercise?.id || null;
+    const editingId = formDraftId;
     const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
     return !!(draft && (draft.editingId || null) === editingId && draft.kind === 'exercise');
-  }, [editingExercise]);
+  }, [formDraftId]);
 
   const [friendSharing, setFriendSharing] = useState({
     sharedWithFriends: !!editingExercise?.sharedWithFriends,
@@ -196,7 +199,7 @@ export default function CreateExerciseForm({
   // componente se monta tras volver del editor (en web la navegación
   // desmonta esta pantalla).
   useEffect(() => {
-    const editingId = editingExercise?._id || editingExercise?.id || null;
+    const editingId = formDraftId;
     const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
     const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'exercise';
@@ -254,7 +257,7 @@ export default function CreateExerciseForm({
   const handleOpenField = () => {
     setLoadingField(true);
 
-    const editingId = editingExercise?._id || editingExercise?.id || null;
+    const editingId = formDraftId;
     saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
       kind: 'exercise',
       editingId,
@@ -298,7 +301,7 @@ export default function CreateExerciseForm({
       },
       // Callback para cuando se guarda un video - guardar ID para asociar después
       onVideoSaved: (videoId) => {
-        if (videoId && !editingExercise?._id && !editingExercise?.id) {
+        if (videoId && isNewExercise) {
           // Si es un ejercicio nuevo, guardar el ID del video para asociar después
           pendingVideoIds.current.push(videoId);
           saveFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, {
@@ -328,7 +331,7 @@ export default function CreateExerciseForm({
       // del ejercicio queremos los botones Guardar/Cancelar.
       sandbox: false,
       // Pasar el ID del ejercicio si estamos editando, para poder asociar videos
-      ejercicioId: editingExercise?._id || editingExercise?.id || null,
+      ejercicioId: editingExerciseId,
       isGlobalExercise: isGlobal && isAdmin,
     });
   };
@@ -365,6 +368,7 @@ export default function CreateExerciseForm({
 
       const selectedFolder = exerciseFoldersFlat.find(f => f._id === folderId);
       const safeFolderId = selectedFolder?.isGlobal && !isGlobal ? '' : folderId;
+      const normalizedImagen = typeof imagen === 'string' && imagen ? normalizeImageSource(imagen) : imagen;
 
       const newExercise = {
         nombre: trimmedName,
@@ -378,13 +382,14 @@ export default function CreateExerciseForm({
         numeroJugadores: playerNumbers ? Number(playerNumbers) : undefined,
         equipos: teams ? Number(teams) : undefined,
         usuario: idUsuario,
-        _id: editingExercise ? editingExercise._id : undefined,
-        imagen: imagen,
+        _id: editingExerciseId || undefined,
+        imagen: normalizedImagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
         pizarraConfig: pizarraConfig || null,
         isGlobal: isAdmin ? isGlobal : false,
         visibility: !isAdmin && userClubId ? visibility : (editingExercise?.visibility || 'PRIVATE'),
+        sourceExerciseIdForVideos: isNewExercise ? editingExercise?.sourceExerciseIdForVideos : undefined,
         sharedWithFriends: friendSharing.sharedWithFriends,
         shareWithAll: friendSharing.shareWithAll,
         sharingFriendIds: friendSharing.sharingFriendIds,
@@ -426,7 +431,7 @@ export default function CreateExerciseForm({
         <TouchableOpacity onPress={handleCancelPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={26} color={theme?.colors?.text || '#fff'} />
         </TouchableOpacity>
-        <Text style={styles.title}>{editingExercise ? t('exercise.editExercise') : t('exercise.createExercise')}</Text>
+        <Text style={styles.title}>{isNewExercise ? t('exercise.createExercise') : t('exercise.editExercise')}</Text>
       </LinearGradient>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
@@ -507,7 +512,7 @@ export default function CreateExerciseForm({
         {!isGlobal && (
           <FriendShareSelector
             contentType="exercise"
-            contentId={editingExercise?._id}
+            contentId={editingExerciseId || undefined}
             value={friendSharing}
             onChange={setFriendSharing}
             skipLoadFromDb={isRestoringDraft}
