@@ -28,6 +28,7 @@ import { toast } from '@/ui/toast';
 import {
   getStrengthExerciseImage,
   getStrengthExerciseVideoUrl,
+  getStrengthExerciseVideoUrls,
   getSectionForExercise,
   checkVideoAvailability,
 } from '@/data/strengthExercises';
@@ -122,10 +123,12 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [hasVideo, setHasVideo] = useState(false);
   const [checkingVideo, setCheckingVideo] = useState(false);
+  const [videoFallbackIndex, setVideoFallbackIndex] = useState(0);
   const playerRef = useRef(null);
 
   const imageSource = exercise ? getStrengthExerciseImage(exercise) : null;
   const sectionInfo = exercise ? getSectionForExercise(exercise) : null;
+  const videoUrls = useMemo(() => exercise ? getStrengthExerciseVideoUrls(exercise) : [], [exercise?.id, exercise?.image]);
 
   const player = useVideoPlayer(videoUri, (p) => {
     p.loop = true;
@@ -152,6 +155,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
       setVideoUri(null);
       setLoadingVideo(false);
       setHasVideo(false);
+      setVideoFallbackIndex(0);
     }
   }, [visible]);
 
@@ -159,6 +163,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
     if (!exercise) return;
     setLoadingVideo(true);
     try {
+      setVideoFallbackIndex(0);
       const uri = await getOrCacheVideo(exercise);
       setVideoUri(uri);
       setShowVideo(true);
@@ -179,15 +184,37 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
     setVideoUri(null);
   }, []);
 
+  const handleVideoError = useCallback(() => {
+    setVideoFallbackIndex((index) => {
+      const nextIndex = index + 1;
+      if (nextIndex < videoUrls.length) {
+        setVideoUri(videoUrls[nextIndex]);
+        return nextIndex;
+      }
+      toast.error(t('exercise.videoPlayError', 'No se pudo reproducir el video.'));
+      setShowVideo(false);
+      setVideoUri(null);
+      return index;
+    });
+  }, [t, videoUrls]);
+
   const handleDownloadVideo = useCallback(async () => {
     if (!exercise) return;
 
     setDownloading(true);
     try {
       toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
-      const remoteUrl = getStrengthExerciseVideoUrl(exercise);
-      await downloadResolvedVideo({ videoUrl: remoteUrl }, exercise.nombre || exercise.id || 'video');
-      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
+      let lastError;
+      for (const remoteUrl of videoUrls.length ? videoUrls : [getStrengthExerciseVideoUrl(exercise)]) {
+        try {
+          await downloadResolvedVideo({ videoUrl: remoteUrl }, exercise.nombre || exercise.id || 'video');
+          toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
+          return;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError;
     } catch (error) {
       console.error('Download video error:', error);
       toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
@@ -388,9 +415,17 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
       if (fileInfo.exists) {
         fileUri = cachedPath;
       } else {
-        const remoteUrl = getStrengthExerciseVideoUrl(exercise);
-        const result = await FileSystem.downloadAsync(remoteUrl, cachedPath);
-        fileUri = result.uri;
+        let lastError;
+        for (const remoteUrl of videoUrls.length ? videoUrls : [getStrengthExerciseVideoUrl(exercise)]) {
+          try {
+            const result = await FileSystem.downloadAsync(remoteUrl, cachedPath);
+            fileUri = result.uri;
+            break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        if (!fileUri) throw lastError;
       }
       
       const isAvailable = await Sharing.isAvailableAsync();
@@ -400,7 +435,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
     } catch (error) {
       console.error('Share error:', error);
     }
-  }, [exercise]);
+  }, [exercise, videoUrls]);
 
   if (!exercise) return null;
 
@@ -475,6 +510,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
                   fullscreenOptions={{}}
                   allowsPictureInPicture
                   contentFit="contain"
+                  onError={handleVideoError}
                 />
               </View>
               <TouchableOpacity style={styles.closeVideoBtn} onPress={handleCloseVideo}>

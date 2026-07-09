@@ -376,8 +376,9 @@ export default function MatchSheetList({ canMutate }) {
 
   // Estados para creaci�n/edici�n de ficha
 
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
+  const mobileFilterMaxHeight = Math.max(320, screenHeight - insets.top - insets.bottom - 16);
 
   // Filtrar fichas de partido y ordenarlas: primeros los pr�ximos (m�s cercanos ? m�s lejanos),
   // luego los partidos pasados (m�s cercanos al presente ? m�s lejanos). Las fichas sin fecha quedan al final.
@@ -1200,8 +1201,30 @@ export default function MatchSheetList({ canMutate }) {
             animationType="slide"
             onRequestClose={() => setFiltersVisible(false)}
           >
-            <View style={styles.mobileMenuOverlay}>
-              <KeyboardAwareScrollView style={[styles.filtersSection, styles.filtersSectionMobile, { marginTop: 'auto', marginBottom: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' }]} showsVerticalScrollIndicator={false}>
+            <View style={[
+              styles.mobileMenuOverlay,
+              {
+                paddingTop: insets.top,
+                paddingRight: insets.right,
+                paddingBottom: insets.bottom,
+                paddingLeft: insets.left,
+              },
+            ]}>
+              <KeyboardAwareScrollView
+                style={[
+                  styles.filtersSection,
+                  styles.filtersSectionMobile,
+                  {
+                    marginTop: 'auto',
+                    marginBottom: 0,
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                    maxHeight: mobileFilterMaxHeight,
+                  },
+                ]}
+                contentContainerStyle={{ paddingBottom: 12 }}
+                showsVerticalScrollIndicator={false}
+              >
                 <View style={styles.filtersHeader}>
                   <View>
                     <Text style={styles.filtersTitle}>{t('matchSheet.actions.filters')}</Text>

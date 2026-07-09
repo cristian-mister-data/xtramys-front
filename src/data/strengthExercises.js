@@ -564,6 +564,7 @@ export const getStrengthExerciseImage = (exerciseOrImageName) => {
   return imageMap[imageName] || null;
 };
 
+
 /**
  * Obtener la URL de la imagen de un ejercicio de fuerza (para uso en HTML/PDF)
  * NOTA: Las imágenes NO están en R2, esta función se mantiene solo para compatibilidad
@@ -573,13 +574,106 @@ export const getStrengthExerciseImageUrl = (exerciseOrImageName) => {
   return `${R2_BASE_URL}/${encodeURIComponent(imageName)}`;
 };
 
+// IDs de ejercicios cuyos videos no existen en el servidor R2
+export const MISSING_VIDEO_IDS = new Set([
+  'MC14', 'MT05', 'MT08', 'MT09', 'MT12', 'MT13', 'CAE01', 'CAE02', 'CAE04',
+  'CAE06', 'CAE07', 'CAE10', 'CAF01', 'CAF02', 'CAF05', 'CAF07', 'CAF08',
+  'CAF11', 'CAF12', 'CAF16', 'CAF17', 'CAF18', 'CAF19', 'CAF20', 'CAR05',
+  'CDD11'
+]);
+
+// Mapeos explícitos para nombres incorrectos o desplazados de R2
+export const VIDEO_NAME_MAPPINGS = {
+  'CAE05': 'CAE06. BEAR CRAWL “DINÁMICO”.mp4',
+  'CAE08': 'CAE09. DEAD BUG.mp4',
+  'CAE09': 'CAE10. DEAD BUG (CARGA).mp4',
+  'CAE11': 'CAE12. ROLL OUT (FITBALL).mp4',
+  'CAE12': 'CAE13. ROLL OUT (BARRA).mp4',
+  'CAE13': 'CAE14.  FALL OUT RODILLAS (TRX).mp4',
+  'CDD08': 'DD08. BOUND LATERAL REACTIVO.mp4',
+  'MT07': 'MT07. EXCÉNTRICO GEMELO-SÓLEO.mp4',
+  'DDRR17': 'DDRR17. ZANC LAT DINÁMICA (M-KTB-BARRA).mp4',
+  'DDRR18': 'DDRR17. ZANC LAT DINÁMICA (M-KTB-BARRA).mp4',
+  'DDRR19': 'DDRR18. SQ SPLIT SALTO UNIP (M-KTB-BARRA).mp4',
+  'EV06': 'EV06. PRESS MILITAR CABALLERO (M-KTB-B).mp4',
+  'EV07': 'EV07. PRESS MILITAR ZANCADA (M-KTB-B).mp4',
+  'DR05': 'DR05. SENTADILLA SUMO (M-KTB).mp4',
+  'DR07': 'DR07. SENTADILLA GOBLET (M-KTB).mp4',
+};
+
+const extractId = (str) => {
+  if (!str) return '';
+  const match = str.match(/^([A-Z0-9]+)[\.\s]/i);
+  return match ? match[1] : '';
+};
+
 /**
  * Obtener la URL del video de un ejercicio de fuerza en Cloudflare R2
  */
 export const getStrengthExerciseVideoUrl = (exerciseOrImageName) => {
-  const imageName = typeof exerciseOrImageName === 'string' ? exerciseOrImageName : exerciseOrImageName.image;
-  const videoName = imageName.replace('.webp', '.mp4');
-  return `${R2_BASE_URL}/${encodeURIComponent(videoName)}`;
+  const urls = getStrengthExerciseVideoUrls(exerciseOrImageName);
+  return urls.length ? urls[0] : '';
+};
+
+export const getStrengthExerciseVideoUrls = (exerciseOrImageName) => {
+  if (!exerciseOrImageName) return [];
+  
+  let id = '';
+  let imageName = '';
+  if (typeof exerciseOrImageName === 'string') {
+    imageName = exerciseOrImageName;
+    id = extractId(imageName);
+  } else {
+    imageName = exerciseOrImageName.image || '';
+    id = exerciseOrImageName.id || extractId(imageName);
+  }
+
+  if (MISSING_VIDEO_IDS.has(id)) {
+    return [];
+  }
+
+  // 1. Si existe mapeo explícito en VIDEO_NAME_MAPPINGS
+  if (id && VIDEO_NAME_MAPPINGS[id]) {
+    return [`${R2_BASE_URL}/${encodeURIComponent(VIDEO_NAME_MAPPINGS[id])}`];
+  }
+
+  const baseName = imageName.replace(/\.webp$/i, '');
+  const cleanSpaces = (str) => str.replace(/\s+/g, ' ').trim();
+  const underscoreSpaces = (str) => str.replace(/\s+/g, '_');
+  const removeAccents = (str) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const candidates = [];
+  
+  const transforms = [
+    (s) => s,
+    (s) => cleanSpaces(s),
+    (s) => underscoreSpaces(s),
+    (s) => removeAccents(s),
+    (s) => cleanSpaces(removeAccents(s)),
+    (s) => underscoreSpaces(removeAccents(s)),
+  ];
+
+  for (const transform of transforms) {
+    const transformed = transform(baseName);
+    const nfc = transformed.normalize('NFC');
+    const nfd = transformed.normalize('NFD');
+    
+    candidates.push(nfc);
+    candidates.push(nfd);
+    candidates.push(nfc.toLowerCase());
+    candidates.push(nfd.toLowerCase());
+  }
+
+  const uniqueCandidates = [...new Set(candidates)];
+  const names = [];
+  for (const cand of uniqueCandidates) {
+    names.push(`${cand}.mp4`);
+    names.push(`${cand}.MP4`);
+    names.push(`${cand}.mov`);
+    names.push(`${cand}.MOV`);
+  }
+
+  return [...new Set(names)].map((videoName) => `${R2_BASE_URL}/${encodeURIComponent(videoName)}`);
 };
 
 /**
@@ -595,8 +689,21 @@ const videoAvailabilityCache = {};
  * - Errores de red NO se cachean y devuelven true (optimista) para mostrar el botón
  */
 export const checkVideoAvailability = async (exerciseOrImageName) => {
-  const imageName = typeof exerciseOrImageName === 'string' ? exerciseOrImageName : exerciseOrImageName.image;
-  const videoName = imageName.replace('.webp', '.mp4');
+  if (!exerciseOrImageName) return false;
+
+  let id = '';
+  let imageName = '';
+  if (typeof exerciseOrImageName === 'string') {
+    imageName = exerciseOrImageName;
+    id = extractId(imageName);
+  } else {
+    imageName = exerciseOrImageName.image || '';
+    id = exerciseOrImageName.id || extractId(imageName);
+  }
+
+  if (MISSING_VIDEO_IDS.has(id)) {
+    return false;
+  }
 
   // Web: omitir el HEAD preflight. R2 puede no permitir HEAD CORS y eso bloquea
   // la aparición del botón de play. Devolvemos true optimista; si el archivo no
@@ -604,6 +711,10 @@ export const checkVideoAvailability = async (exerciseOrImageName) => {
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     return true;
   }
+
+  const videoUrls = getStrengthExerciseVideoUrls(exerciseOrImageName);
+  if (videoUrls.length === 0) return false;
+  const videoName = videoUrls[0];
 
   const cached = videoAvailabilityCache[videoName];
   if (cached === true) return true;
@@ -616,14 +727,15 @@ export const checkVideoAvailability = async (exerciseOrImageName) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const url = `${R2_BASE_URL}/${encodeURIComponent(videoName)}`;
-    const response = await fetch(url, { method: 'HEAD', signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      videoAvailabilityCache[videoName] = true;
-      return true;
+    for (const url of videoUrls) {
+      const response = await fetch(url, { method: 'HEAD', signal: controller.signal });
+      if (response.ok) {
+        clearTimeout(timeoutId);
+        videoAvailabilityCache[videoName] = true;
+        return true;
+      }
     }
+    clearTimeout(timeoutId);
     videoAvailabilityCache[videoName] = { available: false, time: Date.now() };
     return false;
   } catch {

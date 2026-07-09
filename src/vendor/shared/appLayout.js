@@ -23,7 +23,7 @@ export default function AppLayout({ children, scrollEnabled = true, backgroundCo
   return (
     <SafeAreaView
       style={{ flex: 1, minHeight: '100%', backgroundColor: bg, width: '100%' }}
-      edges={['left', 'right', 'bottom']}
+      edges={['left', 'right']}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
