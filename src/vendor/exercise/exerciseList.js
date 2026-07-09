@@ -1712,7 +1712,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => sameId(getOwnerId(ex), idUsuario));
+        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => !ex.isGlobal && (sameId(getOwnerId(ex), idUsuario) || !getOwnerId(ex)));
       }
       if (listFilter === 'club') {
         return ejercicios.filter(ex => ex.visibility === 'CLUB');
@@ -1746,7 +1746,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario))), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario) || !getOwnerId(f))), lang);
     if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
     return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);

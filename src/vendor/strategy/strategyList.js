@@ -117,7 +117,7 @@ const buildFolderPath = (folder, folderById, lang) => {
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
-  return sameId(getOwnerId(item), userId);
+  return sameId(getOwnerId(item), userId) || (!item.isGlobal && !getOwnerId(item));
 };
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem, canEditVideoItem, isSetPiece = false }) {
@@ -1596,7 +1596,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return strategies.filter(st => matchesKind(st) && !st.isGlobal && (isDemo || sameId(getOwnerId(st), idUsuario)));
+        return strategies.filter(st => matchesKind(st) && !st.isGlobal && (isDemo || sameId(getOwnerId(st), idUsuario) || !getOwnerId(st)));
       }
       if (listFilter === 'club') {
         return strategies.filter(st => matchesKind(st) && st.visibility === 'CLUB');
@@ -1621,7 +1621,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario))), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario) || !getOwnerId(f))), lang);
     if (listFilter === 'club') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB'), lang);
     return sortByLocalizedName((isDemo ? strategyFolders : mergeById(strategyFolders, globalFolders)).filter((f) => !f.parentFolder && !f.isGlobal), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario, filters.titulo, lang, isDemo]);

@@ -1,6 +1,8 @@
 // components/pages/season/TrainingSessionDetailModal.js
 // Modal de detalle de sesión de entrenamiento con PDF
 import { useState, useMemo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+
 import {
   View,
   Text,
@@ -67,6 +69,8 @@ export default function TrainingSessionDetailModal({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const user = useSelector(state => state.usuario.user);
+  const idUsuario = user?._id || user?.id || "";
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -338,6 +342,7 @@ export default function TrainingSessionDetailModal({
         folder: null,
         isGlobal: false,
         visibility: 'PRIVATE',
+        usuario: idUsuario,
         sourceExerciseIdForVideos: selectedImageExercise._id || selectedImageExercise.id,
       },
     });
