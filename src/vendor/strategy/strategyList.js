@@ -1859,19 +1859,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     return duplicated;
   }, [dispatch, buildDuplicateName, i18n.language, t]);
 
-  const handleEditAsNewStrategy = useCallback(async (strategy) => {
-    setLoadingData(true);
-    let originalVideos = [];
-    try {
-      if (strategy._id || strategy.id) {
-        originalVideos = await getVideosByStrategy(strategy._id || strategy.id);
-      }
-    } catch (err) {
-      console.warn('Error fetching original strategy videos:', err);
-    } finally {
-      setLoadingData(false);
-    }
-
+  const handleEditAsNewStrategy = useCallback((strategy) => {
+    const sourceStrategyId = strategy?._id || strategy?.id;
     const duplicateName = buildDuplicateName(strategy?.nombre || t('strategy.strategyName'));
     const cloned = {
       ...strategy,
@@ -1879,8 +1868,11 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       id: undefined,
       nombre: duplicateName,
       isGlobal: false,
+      visibility: 'PRIVATE',
+      folder: null,
+      videos: [],
       usuario: idUsuario,
-      pendingVideoIds: (originalVideos || []).map(v => v._id || v.id).filter(Boolean),
+      sourceStrategyIdForVideos: sourceStrategyId,
     };
     setEditingStrategy(cloned);
     setCreating(true);

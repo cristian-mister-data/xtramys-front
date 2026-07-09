@@ -338,6 +338,7 @@ export default function TrainingSessionDetailModal({
         folder: null,
         isGlobal: false,
         visibility: 'PRIVATE',
+        sourceExerciseIdForVideos: selectedImageExercise._id || selectedImageExercise.id,
       },
     });
     saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
