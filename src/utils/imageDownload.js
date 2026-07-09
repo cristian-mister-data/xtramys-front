@@ -65,11 +65,12 @@ async function shareNativeBlob(blob, fileName) {
 }
 
 async function saveNativeImageBlob(blob, fileName, mimeType) {
+  const data = await blobToBase64(blob);
   if (window.Capacitor.getPlatform() === 'android') {
     const { registerPlugin } = await import('@capacitor/core');
     const VideoSaver = registerPlugin('VideoSaver');
     await VideoSaver.saveImageToGallery({
-      data: await blobToBase64(blob),
+      data,
       fileName,
       mimeType,
     });
@@ -78,19 +79,27 @@ async function saveNativeImageBlob(blob, fileName, mimeType) {
   }
 
   const { Filesystem, Directory } = await import('@capacitor/filesystem');
-  await Filesystem.writeFile({
+  const { Media } = await import('@capacitor-community/media');
+  const writeResult = await Filesystem.writeFile({
     path: fileName,
-    data: await blobToBase64(blob),
-    directory: Directory.Documents,
+    data,
+    directory: Directory.Cache,
   });
-  toast.success('Imagen guardada en Documentos.');
+  await Media.requestPermissions();
+  try {
+    await Media.savePhoto({ path: writeResult.uri });
+  } catch {
+    await Media.savePhoto({ path: String(writeResult.uri).startsWith('file://') ? writeResult.uri : `file://${writeResult.uri}` });
+  }
+  toast.success('Imagen guardada en Galeria.');
 }
 
-async function handleNativeImage(blob, fileName, mimeType) {
+async function handleNativeImage(blob, fileName, mimeType, options = {}) {
   await showFileActions({
     fileName,
     kind: 'image',
     title: 'Imagen lista',
+    onOpen: options.onDialogOpen,
     onDownload: () => saveNativeImageBlob(blob, fileName, mimeType),
     onShare: async () => {
       await saveNativeImageBlob(blob, fileName, mimeType);
@@ -99,7 +108,7 @@ async function handleNativeImage(blob, fileName, mimeType) {
   });
 }
 
-export async function downloadImageSource(src, filenameBase = 'image') {
+export async function downloadImageSource(src, filenameBase = 'image', options = {}) {
   if (!src) throw new Error('No image source to download');
 
   const baseName = sanitizeFilenamePart(filenameBase);
@@ -118,7 +127,7 @@ export async function downloadImageSource(src, filenameBase = 'image') {
       const contentType = response.headers?.['content-type'] || response.data?.type || '';
       const extension = IMAGE_EXTENSIONS[String(contentType).toLowerCase()] || fallbackExtension;
       if (isCapacitor) {
-        await handleNativeImage(response.data, `${baseName}.${extension}`, contentType || `image/${extension}`);
+        await handleNativeImage(response.data, `${baseName}.${extension}`, contentType || `image/${extension}`, options);
         return;
       }
       const objectUrl = URL.createObjectURL(response.data);
@@ -136,7 +145,7 @@ export async function downloadImageSource(src, filenameBase = 'image') {
   if (isCapacitor) {
     const blob = await fetch(dataUri).then((res) => res.blob());
     const extension = extensionFromDataUri(dataUri);
-    await handleNativeImage(blob, `${baseName}.${extension}`, blob.type || `image/${extension}`);
+    await handleNativeImage(blob, `${baseName}.${extension}`, blob.type || `image/${extension}`, options);
     return;
   }
   triggerAnchorDownload(dataUri, `${baseName}.${extensionFromDataUri(dataUri)}`);

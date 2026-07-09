@@ -23,7 +23,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Asset } from 'expo-asset';
-import { ensureMp4Blob } from '@/utils/videoUtils';
+import { downloadResolvedVideo } from '@/utils/videoPlayback';
+import { toast } from '@/ui/toast';
 import {
   getStrengthExerciseImage,
   getStrengthExerciseVideoUrl,
@@ -180,74 +181,16 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
 
   const handleDownloadVideo = useCallback(async () => {
     if (!exercise) return;
+
     setDownloading(true);
-    setDownloadProgress(0);
     try {
-      // Web: descargar como archivo .mp4 normal del navegador.
-      if (Platform.OS === 'web') {
-        const remoteUrl = getStrengthExerciseVideoUrl(exercise);
-        const res = await fetch(remoteUrl);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        let blob = await res.blob();
-        try {
-          blob = await ensureMp4Blob(blob);
-        } catch (conversionError) {
-          console.warn('StrengthExerciseViewer: no se pudo convertir a MP4, usando blob original', conversionError);
-        }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${exercise.id || 'video'}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          try { document.body.removeChild(a); } catch {}
-          try { URL.revokeObjectURL(url); } catch {}
-        }, 1500);
-        return;
-      }
-      await ensureCacheDir();
-      const cachedPath = getCachedVideoPath(exercise.id);
-      const fileInfo = await FileSystem.getInfoAsync(cachedPath);
-      
-      let fileUri;
-      if (fileInfo.exists && fileInfo.size > 0) {
-        fileUri = cachedPath;
-      } else {
-        const remoteUrl = getStrengthExerciseVideoUrl(exercise);
-        const callback = (dp) => {
-          const progress = dp.totalBytesWritten / dp.totalBytesExpectedToWrite;
-          setDownloadProgress(progress);
-        };
-        const downloadResumable = FileSystem.createDownloadResumable(remoteUrl, cachedPath, {}, callback);
-        const result = await downloadResumable.downloadAsync();
-        fileUri = result.uri;
-      }
-      
-      if (Platform.OS === 'android') {
-        try {
-          const asset = await MediaLibrary.createAssetAsync(fileUri);
-          Alert.alert(t('message.success'), t('strengthExercises.savedToGallery'));
-        } catch (saveErr) {
-          const isAvailable = await Sharing.isAvailableAsync();
-          if (isAvailable) {
-            await Sharing.shareAsync(fileUri, { mimeType: 'video/mp4' });
-          } else {
-            throw saveErr;
-          }
-        }
-      } else {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(t('message.error'), t('strengthExercises.saveError'));
-          return;
-        }
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
-        Alert.alert(t('message.success'), t('strengthExercises.savedToGallery'));
-      }
+      toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
+      const remoteUrl = getStrengthExerciseVideoUrl(exercise);
+      await downloadResolvedVideo({ videoUrl: remoteUrl }, exercise.nombre || exercise.id || 'video');
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (error) {
       console.error('Download video error:', error);
-      Alert.alert(t('message.error'), t('strengthExercises.downloadError'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setDownloading(false);
       setDownloadProgress(0);
@@ -256,8 +199,75 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
 
   const handleDownloadImage = useCallback(async () => {
     if (!exercise || !imageSource) return;
+
+    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    if (isCapacitor) {
+      setDownloading(true);
+      try {
+        toast.success(t('strengthExercises.imageDownloadStarted', 'Preparando la imagen para guardarla...'));
+        const asset = Asset.fromModule(imageSource);
+        await asset.downloadAsync();
+        const localUri = asset.localUri || asset.uri;
+
+        if (!localUri) throw new Error('No se pudo resolver la ruta local de la imagen');
+
+        const response = await fetch(localUri);
+        const blob = await response.blob();
+        const filename = `${exercise.id || 'image'}.png`;
+        const mimeType = blob.type || 'image/png';
+
+        const { registerPlugin } = await import('@capacitor/core');
+        const VideoSaver = registerPlugin('VideoSaver');
+        const blobToBase64 = (b) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
+          reader.readAsDataURL(b);
+        });
+        const base64Data = await blobToBase64(blob);
+
+        if (window.Capacitor.getPlatform() === 'android') {
+          await VideoSaver.saveImageToGallery({
+            data: base64Data,
+            fileName: filename,
+            mimeType
+          });
+          toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
+        } else {
+          // iOS
+          const { Filesystem, Directory } = await import('@capacitor/filesystem');
+          const { Media } = await import('@capacitor-community/media');
+          const writeResult = await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: Directory.Cache
+          });
+          try {
+            await Media.requestPermissions();
+            await Media.savePhoto({ path: writeResult.uri });
+            toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
+          } catch (iosMediaErr) {
+            console.warn('iOS Media.savePhoto failed, saving to Documents:', iosMediaErr);
+            await Filesystem.writeFile({
+              path: filename,
+              data: base64Data,
+              directory: Directory.Documents
+            });
+            toast.success(t('strengthExercises.imageSavedToDocuments', 'Imagen guardada en Documentos.'));
+          }
+        }
+      } catch (error) {
+        console.error('Download image error:', error);
+        toast.error(t('strengthExercises.imageDownloadError', 'No se pudo guardar la imagen. Intentalo de nuevo.'));
+      } finally {
+        setDownloading(false);
+      }
+      return;
+    }
+
     setDownloading(true);
     try {
+      toast.success(t('strengthExercises.imageDownloadStarted', 'Preparando la imagen para guardarla...'));
       // Web: descargar la imagen como PNG en alta calidad (2x upscale,
       // suavizado de alta calidad). PNG es lossless: sin pérdida sobre el
       // .webp original, y al 2x se ve más nítido al imprimir / compartir.
@@ -311,6 +321,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
           try { document.body.removeChild(a); } catch {}
           try { URL.revokeObjectURL(blobUrl); } catch {}
         }, 1500);
+        toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
         return;
       }
       // Obtener la imagen local desde el bundle usando expo-asset
@@ -337,11 +348,12 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
         if (Platform.OS === 'android') {
           try {
             await MediaLibrary.createAssetAsync(tempPath);
-            Alert.alert(t('message.success'), t('strengthExercises.savedToGallery'));
+            toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
           } catch (saveErr) {
             const isAvailable = await Sharing.isAvailableAsync();
             if (isAvailable) {
               await Sharing.shareAsync(tempPath, { mimeType: 'image/webp' });
+              toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
             } else {
               throw saveErr;
             }
@@ -353,14 +365,14 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
             return;
           }
           await MediaLibrary.createAssetAsync(tempPath);
-          Alert.alert(t('message.success'), t('strengthExercises.savedToGallery'));
+          toast.success(t('strengthExercises.imageSavedToGallery', 'Imagen guardada en la galeria.'));
         }
       } else {
         throw new Error('Could not resolve local image URI');
       }
     } catch (error) {
       console.error('Download image error:', error);
-      Alert.alert(t('message.error'), t('strengthExercises.downloadError'));
+      toast.error(t('strengthExercises.imageDownloadError', 'No se pudo guardar la imagen. Intentalo de nuevo.'));
     } finally {
       setDownloading(false);
     }

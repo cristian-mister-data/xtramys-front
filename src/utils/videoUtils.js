@@ -44,19 +44,26 @@ async function webmToMp4(webmBlob) {
   const outputName = 'output.mp4';
   await ff.writeFile(inputName, await fetchFile(webmBlob));
   await ff.exec([
-    '-i', inputName,
-    '-c:v', 'libx264',
-    '-preset', 'fast',
-    '-crf', '18',
-    '-tune', 'animation',
-    '-pix_fmt', 'yuv420p',
-    '-movflags', '+faststart',
+    '-i',
+    inputName,
+    '-c:v',
+    'libx264',
+    '-preset',
+    'fast',
+    '-crf',
+    '18',
+    '-tune',
+    'animation',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
     '-an',
     outputName,
   ]);
   const data = await ff.readFile(outputName);
-  await ff.deleteFile(inputName).catch(() => { });
-  await ff.deleteFile(outputName).catch(() => { });
+  await ff.deleteFile(inputName).catch(() => {});
+  await ff.deleteFile(outputName).catch(() => {});
   return new Blob([data], { type: 'video/mp4' });
 }
 
@@ -68,7 +75,15 @@ async function webmToMp4(webmBlob) {
 export async function ensureMp4Blob(blob) {
   const type = blob?.type || '';
   if (type.includes('mp4')) return blob;
-  // Intentar convertir si es webm o tipo desconocido
+  if (blob && blob.size > 8) {
+    try {
+      const header = await blob.slice(4, 8).arrayBuffer();
+      const bytes = new Uint8Array(header);
+      if (bytes[0] === 0x66 && bytes[1] === 0x74 && bytes[2] === 0x79 && bytes[3] === 0x70) {
+        return blob;
+      }
+    } catch (_) {}
+  }
   try {
     return await webmToMp4(blob);
   } catch (e) {
@@ -79,7 +94,7 @@ export async function ensureMp4Blob(blob) {
 
 export const warmUpFFmpeg = () => {
   if (isMobileBrowser()) return;
-  const run = () => getFFmpeg().catch(() => { });
+  const run = () => getFFmpeg().catch(() => {});
   if (typeof window !== 'undefined' && window.requestIdleCallback) {
     window.requestIdleCallback(run, { timeout: 3000 });
     return;
@@ -118,13 +133,14 @@ function applyHighQualityCanvas2D(context) {
 }
 
 // Carga una URL/dataURL/objectURL en una HTMLImageElement
-const loadImage = (sourceUrl, crossOrigin = false) => new Promise((resolve, reject) => {
-  const img = new Image();
-  if (crossOrigin) img.crossOrigin = 'anonymous';
-  img.onload = () => resolve(img);
-  img.onerror = (e) => reject(e);
-  img.src = typeof sourceUrl === 'string' ? cdnUrl(sourceUrl) : sourceUrl;
-});
+const loadImage = (sourceUrl, crossOrigin = false) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    if (crossOrigin) img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = typeof sourceUrl === 'string' ? cdnUrl(sourceUrl) : sourceUrl;
+  });
 
 async function loadFrameImage(source) {
   if (typeof createImageBitmap === 'function') {
@@ -132,14 +148,14 @@ async function loadFrameImage(source) {
       try {
         const image = await createImageBitmap(source);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) { }
+      } catch (_) {}
     }
     if (typeof source === 'string' && source.startsWith('data:')) {
       try {
         const blob = await (await fetch(source)).blob();
         const image = await createImageBitmap(blob);
         return { image, width: image.width, height: image.height, close: () => image.close?.() };
-      } catch (_) { }
+      } catch (_) {}
     }
   }
 
@@ -165,26 +181,32 @@ async function loadFrameImage(source) {
     image,
     width: image.naturalWidth || image.width,
     height: image.naturalHeight || image.height,
-    close: () => { },
+    close: () => {},
   };
 }
 
-const yieldToBrowser = () => new Promise((resolve) => {
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    resolve();
-  };
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => setTimeout(finish, 0));
-  }
-  setTimeout(finish, 32);
-});
+const yieldToBrowser = () =>
+  new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => setTimeout(finish, 0));
+    }
+    setTimeout(finish, 32);
+  });
 
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
-async function waitForEncoderQueue(encoder, getProgressCount, maxQueueSize = 24, stallTimeoutMs = 2500) {
+async function waitForEncoderQueue(
+  encoder,
+  getProgressCount,
+  maxQueueSize = 24,
+  stallTimeoutMs = 2500,
+) {
   let lastQueueSize = encoder.encodeQueueSize;
   let lastProgressCount = getProgressCount();
   let lastActivityAt = nowMs();
@@ -210,9 +232,14 @@ async function waitForEncoderQueue(encoder, getProgressCount, maxQueueSize = 24,
 async function waitForEncoderFlush(encoder, getProgressCount, totalFrames, stallTimeoutMs = 2500) {
   let finished = false;
   let failure = null;
-  const flushPromise = encoder.flush()
-    .then(() => { finished = true; })
-    .catch((error) => { failure = error; });
+  const flushPromise = encoder
+    .flush()
+    .then(() => {
+      finished = true;
+    })
+    .catch((error) => {
+      failure = error;
+    });
   let lastProgressCount = getProgressCount();
   let lastActivityAt = nowMs();
 
@@ -278,10 +305,7 @@ async function frameSourceToBytes(source) {
 function getVideoBitrate(width, height) {
   const area = Math.max(1, width * height);
   const ref = 1920 * 1080;
-  return Math.max(
-    14_000_000,
-    Math.min(52_000_000, Math.round((area / ref) * 24_000_000)),
-  );
+  return Math.max(14_000_000, Math.min(52_000_000, Math.round((area / ref) * 24_000_000)));
 }
 
 function getFrameFileExtension(source, key = '') {
@@ -316,7 +340,7 @@ async function getWebCodecsConfig(width, height, fps) {
     'avc1.64001f',
     'avc1.4d401f',
     'avc1.42001f',
-    'avc1.42e01f'
+    'avc1.42e01f',
   ];
 
   for (const hw of hardwareOptions) {
@@ -363,7 +387,9 @@ async function generateVideoWithWebCodecs(framesDir, frameCount, speed = 1, onPr
       // Progreso real: 0 → 0.97 según frames efectivamente codificados
       onProgress?.(Math.min(0.97, (encodedCount / totalFrames) * 0.97));
     },
-    error: (error) => { encoderError = error; },
+    error: (error) => {
+      encoderError = error;
+    },
   });
 
   encoder.configure(config);
@@ -382,7 +408,9 @@ async function generateVideoWithWebCodecs(framesDir, frameCount, speed = 1, onPr
           timestamp: index * frameDurationUs,
           duration: frameDurationUs,
         });
-        encoder.encode(frame, { keyFrame: index === 0 || index % Math.max(1, Math.round(fps)) === 0 });
+        encoder.encode(frame, {
+          keyFrame: index === 0 || index % Math.max(1, Math.round(fps)) === 0,
+        });
         frame.close();
       } finally {
         if (index !== 0) frameImage.close();
@@ -455,7 +483,9 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
         const denominator = Math.max(1, frameCount || submittedCount);
         onProgress?.(Math.min(0.99, encodedCount / denominator));
       },
-      error: (error) => { encoderError = error; },
+      error: (error) => {
+        encoderError = error;
+      },
     });
     encoder.configure(config);
   };
@@ -532,24 +562,31 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
     }
 
     const progressHandler = ({ progress }) => {
-      const normalizedProgress = Number.isFinite(progress)
-        ? Math.max(0, Math.min(1, progress))
-        : 0;
+      const normalizedProgress = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 0;
       onProgress?.(0.4 + normalizedProgress * 0.55);
     };
 
     ff.on('progress', progressHandler);
     try {
       await ff.exec([
-        '-framerate', String(fps),
-        '-start_number', '0',
-        '-i', `${inputPrefix}%04d.${frameExtension}`,
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-crf', '18',
-        '-tune', 'animation',
-        '-pix_fmt', 'yuv420p',
-        '-movflags', '+faststart',
+        '-framerate',
+        String(fps),
+        '-start_number',
+        '0',
+        '-i',
+        `${inputPrefix}%04d.${frameExtension}`,
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
+        '-crf',
+        '18',
+        '-tune',
+        'animation',
+        '-pix_fmt',
+        'yuv420p',
+        '-movflags',
+        '+faststart',
         '-an',
         outputName,
       ]);
@@ -571,9 +608,9 @@ async function generateVideoWithFFmpeg(framesDir, frameCount, speed = 1, onProgr
     };
   } finally {
     for (const fileName of writtenFiles) {
-      await ff.deleteFile(fileName).catch(() => { });
+      await ff.deleteFile(fileName).catch(() => {});
     }
-    await ff.deleteFile(outputName).catch(() => { });
+    await ff.deleteFile(outputName).catch(() => {});
   }
 }
 
@@ -626,11 +663,18 @@ async function generateVideoWithMediaRecorder(framesDir, frameCount, speed = 1, 
   // sobre el campo (líneas, números) sin artefactos visibles.
   const targetBitrate = getVideoBitrate(width, height);
 
-  const recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: targetBitrate } : undefined);
+  const recorder = new MediaRecorder(
+    stream,
+    mime ? { mimeType: mime, videoBitsPerSecond: targetBitrate } : undefined,
+  );
   const chunks = [];
-  recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size) chunks.push(e.data);
+  };
 
-  const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
+  const stopped = new Promise((resolve) => {
+    recorder.onstop = resolve;
+  });
 
   recorder.start();
 
@@ -747,39 +791,13 @@ export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress
           result = await generateVideoWithFFmpeg(framesDir, frameCount, speed, onProgress);
         } catch (ffmpegError) {
           if (isNativeApp()) throw ffmpegError;
-          console.info('[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback', ffmpegError);
+          console.info(
+            '[videoUtils] FFmpeg directo falló, usando MediaRecorder fallback',
+            ffmpegError,
+          );
           result = generateVideoWithMediaRecorder(framesDir, frameCount, speed, onProgress);
         }
       }
-    }
-  }
-
-  // If Capacitor, save the temporary blob to a native file so the native player can read it
-  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
-  if (isCapacitor && result && result.outputPath) {
-    try {
-      const { Filesystem, Directory } = await import('@capacitor/filesystem');
-      const response = await fetch(result.outputPath);
-      const blob = await response.blob();
-      const base64Data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = reject;
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(blob);
-      });
-      const tempFileName = `temp_recording_${Date.now()}.mp4`;
-      const writeResult = await Filesystem.writeFile({
-        path: tempFileName,
-        data: base64Data,
-        directory: Directory.Cache
-      });
-      
-      // Revoke the old blob URL to free memory
-      try { URL.revokeObjectURL(result.outputPath); } catch (_) {}
-
-      result.outputPath = writeResult.uri; // Replace with file:// URI
-    } catch (err) {
-      console.warn('[generateVideo] Failed saving temporary cache file for native player:', err);
     }
   }
 

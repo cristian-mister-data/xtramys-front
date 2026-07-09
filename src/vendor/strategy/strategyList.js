@@ -57,6 +57,8 @@ import {
 import { persistFavoriteState } from '@/utils/favoritePersistence';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import { getSharedWithMe } from '@/api/sharedContent';
+import { useInAppNotification } from '@/utils/useInAppNotification';
+import { toast } from '@/ui/toast';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -178,6 +180,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingVideo, setDownloadingVideo] = useState(false);
   const [sharingSetPiece, setSharingSetPiece] = useState(false);
+  const { showNotification, NotificationToast } = useInAppNotification();
 
   // Video player hook
   const player = useVideoPlayer(videoUrl || '', player => {
@@ -238,13 +241,14 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
     if (downloadingVideo) return;
 
     setDownloadingVideo(true);
+    toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
     try {
       const videoObj = typeof video === 'object' && video ? video : { id: video };
       await downloadResolvedVideo(videoObj, getLocalizedVideoName(videoObj));
-      Alert.alert(t('message.success'), t('video.savedToGallery'));
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (error) {
       console.error('Error descargando video:', error);
-      Alert.alert(t('message.error'), t('video.downloadError'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setDownloadingVideo(false);
     }
@@ -732,6 +736,9 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
           </View>
         </View>
       </Modal>
+
+      {/* Notificación toast respetando espacio nativo - igual que Mis Videos */}
+      {NotificationToast}
     </Modal>
   );
 }

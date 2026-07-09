@@ -569,14 +569,15 @@ export default function AnalysisDetailModal({
   const handleDownloadVideo = async (videoId, videoName) => {
     if (!videoId) return;
     try {
+      toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
       const cleanName = sanitizeVideoQuestionName(videoName) || t('rivalAnalysis.video', 'video');
       const name = cleanName.toLowerCase().endsWith('.mp4')
         ? cleanName.slice(0, -4)
         : cleanName;
       await downloadResolvedVideo(videoId, name);
-      toast.success(t('rivalAnalysis.actions.downloadStarted', 'Descarga iniciada'));
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (err) {
-      toast.error(err?.message || t('rivalAnalysis.actions.downloadError', 'No se pudo descargar el vídeo'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     }
   };
 

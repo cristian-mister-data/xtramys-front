@@ -7,15 +7,13 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import RNFS from 'react-native-fs';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import api from '@/utils/api';
 import { uploadToR2 } from '@/utils/videoUtils';
+import { triggerVideoDownload } from '@/utils/videoPlayback';
 
 // Props recibidas desde la pantalla de pizarra:
 // localVideoPath — ruta del MP4 generado en el dispositivo
@@ -108,19 +106,8 @@ const VideoPreviewScreen = ({
   const handleDownload = useCallback(async () => {
     if (isDownloaded) return;
 
-    // Permiso solo en Android 9 (API 28) y anteriores
-    if (Platform.OS === 'android' && Platform.Version < 29) {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
-      );
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        Alert.alert('Permiso denegado', 'Permiso de almacenamiento denegado');
-        return;
-      }
-    }
-
     try {
-      await CameraRoll.save(localVideoPath, { type: 'video' });
+      await triggerVideoDownload(localVideoPath, 'video');
       setIsDownloaded(true);
       Alert.alert('Éxito', 'Guardado en tu galería');
     } catch (e) {

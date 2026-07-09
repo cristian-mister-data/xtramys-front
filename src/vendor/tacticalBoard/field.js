@@ -1691,6 +1691,7 @@ function OptionsMenu({
   isMobile = false,
 }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   // Detectar si es tablet
   const { width, height } = Dimensions.get('window');
   const isTablet = width >= 768;
@@ -1723,11 +1724,22 @@ function OptionsMenu({
 
   const smartMargin = 10;
   const smartOffsetX = 8;
+  const safeLeft = smartMargin + insets.left;
+  const safeRight = width - smartMargin - insets.right;
+  const safeTop = smartMargin + insets.top;
+  const safeBottom = height - smartMargin - insets.bottom;
+  const safeHeight = Math.max(menuItemHeight, safeBottom - safeTop);
   const anchorX = Number.isFinite(position.x) ? position.x : 0;
   const anchorY = Number.isFinite(position.y) ? position.y : 0;
-  const openRight = anchorX + smartOffsetX + menuWidth <= width - smartMargin;
-  const adjustedX = Math.max(smartMargin, Math.min(openRight ? anchorX + smartOffsetX : anchorX - menuWidth - smartOffsetX, width - menuWidth - smartMargin));
-  const adjustedY = Math.max(smartMargin, Math.min(anchorY - Math.min(24, estimatedMenuHeight / 2), height - estimatedMenuHeight - smartMargin));
+  const openRight = anchorX + smartOffsetX + menuWidth <= safeRight;
+  const adjustedX = Math.max(
+    safeLeft,
+    Math.min(openRight ? anchorX + smartOffsetX : anchorX - menuWidth - smartOffsetX, safeRight - menuWidth),
+  );
+  const adjustedY = Math.max(
+    safeTop,
+    Math.min(anchorY - Math.min(24, estimatedMenuHeight / 2), safeBottom - estimatedMenuHeight),
+  );
 
   // Estilos multiplataforma optimizados
   const menuStyle = {
@@ -1738,7 +1750,7 @@ function OptionsMenu({
     zIndex: 1000,
     left: adjustedX,
     top: adjustedY,
-    maxHeight: Math.min(estimatedMenuHeight, height - 20),
+    maxHeight: Math.min(estimatedMenuHeight, safeHeight),
     // Sombra multiplataforma
     ...Platform.select({
       ios: {
@@ -2986,10 +2998,11 @@ function ConnectorsModal({
             style={[
               styles.proModalContainerSide,
               {
-                top: insets.top,
+                top: 0,
                 bottom: 0,
-                paddingBottom:
-                  Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
+                paddingTop: insets.top,
+                paddingRight: insets.right,
+                paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
               },
               isMobile && {
                 width: SCREEN_WIDTH * 0.8,
@@ -3580,10 +3593,11 @@ function SettingsPanel({
             style={[
               styles.proModalContainerSide,
               {
-                top: insets.top,
+                top: 0,
                 bottom: 0,
-                paddingBottom:
-                  Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
+                paddingTop: insets.top,
+                paddingRight: insets.right,
+                paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
               },
               isMobile && {
                 width: SCREEN_WIDTH * 0.75,
@@ -4398,10 +4412,11 @@ function LeftEditPanel({
             style={[
               styles.proModalContainerSide,
               {
-                top: insets.top,
+                top: 0,
                 bottom: 0,
-                paddingBottom:
-                  Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
+                paddingTop: insets.top,
+                paddingRight: insets.right,
+                paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
               },
               isMobile && { width: Math.min(240, SCREEN_WIDTH * 0.5) },
             ]}
@@ -5990,8 +6005,10 @@ function FormationModal({
         borderRadius: 16,
       }
     : {
-        top: insets.top,
+        top: 0,
         bottom: 0,
+        paddingTop: insets.top,
+        paddingRight: insets.right,
         paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom,
         width: 380,
         borderRadius: 0,
@@ -6880,6 +6897,10 @@ function FormationModal({
                   backgroundColor: 'rgba(0,0,0,0.5)',
                   justifyContent: 'center',
                   alignItems: 'center',
+                  paddingTop: insets.top,
+                  paddingRight: insets.right,
+                  paddingBottom: insets.bottom,
+                  paddingLeft: insets.left,
                 }}
               >
                 <View
@@ -13060,6 +13081,13 @@ export default function Field(props = {}) {
   const dimensions = useScreenDimensions();
   const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
   const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
+  const insets = useSafeAreaInsets();
+  const safeArea = {
+    top: Math.max(insets.top || 0, 0),
+    right: Math.max(insets.right || 0, 0),
+    bottom: Math.max(insets.bottom || 0, 0),
+    left: Math.max(insets.left || 0, 0),
+  };
 
   // Compacta la pizarra tambien en tablet.
   const isMobile = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) < 1024;
@@ -15355,12 +15383,10 @@ export default function Field(props = {}) {
   const { imageWidth, imageHeight } = useMemo(() => {
     let w, h;
     if (isMobile) {
-      const topButtonsSpace = 34;
-      const bottomButtonsSpace = 44;
-      const videoPanelW = 0;
-      const sideMargin = 6;
-      const usableWidth = SCREEN_WIDTH - sideMargin * 2 - videoPanelW - sidebarWidth;
-      const usableHeight = SCREEN_HEIGHT - topButtonsSpace - bottomButtonsSpace;
+      const sideMargin = 4;
+      const usableWidth =
+        SCREEN_WIDTH - sideMargin * 2 - sidebarWidth - safeArea.left - safeArea.right;
+      const usableHeight = SCREEN_HEIGHT - 12 - safeArea.top - safeArea.bottom;
 
       w = usableWidth;
       h = w * aspect;
@@ -15375,8 +15401,10 @@ export default function Field(props = {}) {
       const horizontalMargin = 16;
       const PANEL_HEIGHT = 150;
 
-      const maxFieldHeight = SCREEN_HEIGHT - verticalMargin - PANEL_HEIGHT - 8;
-      const maxFieldWidth = SCREEN_WIDTH - horizontalMargin * 2 - sidebarWidth;
+      const maxFieldHeight =
+        SCREEN_HEIGHT - verticalMargin - PANEL_HEIGHT - 8 - safeArea.top - safeArea.bottom;
+      const maxFieldWidth =
+        SCREEN_WIDTH - horizontalMargin * 2 - sidebarWidth - safeArea.left - safeArea.right;
 
       w = maxFieldWidth;
       h = w * aspect;
@@ -15387,7 +15415,7 @@ export default function Field(props = {}) {
       }
     }
     return { imageWidth: w, imageHeight: h };
-  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible, sidebarWidth]);
+  }, [isMobile, SCREEN_WIDTH, SCREEN_HEIGHT, aspect, videoRecorderVisible, sidebarWidth, safeArea.top, safeArea.right, safeArea.bottom, safeArea.left]);
 
   const activeBallTrajectoryPrompts = useMemo(() => {
     if (!videoRecorderVisible) return [];
@@ -20906,6 +20934,10 @@ export default function Field(props = {}) {
     const topBtnSize = isMobile ? 28 : 56;
     const topBtnRadius = isMobile ? 14 : 28;
     const topIconSize = isMobile ? 14 : 24;
+    const topOffset = isMobile ? Math.max(10, safeArea.top - 18) : 20 + safeArea.top;
+    const bottomOffset = (isMobile ? 10 : 20) + safeArea.bottom;
+    const leftOffset = (isMobile ? 10 : 20) + safeArea.left;
+    const rightOffset = (isMobile ? 10 : 20) + safeArea.right;
 
     return (
       <>
@@ -20915,8 +20947,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
-                left: isMobile ? 10 : 20,
+                bottom: bottomOffset,
+                left: leftOffset,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -20933,8 +20965,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
-                left: isMobile ? 52 : 90,
+                bottom: bottomOffset,
+                left: (isMobile ? 52 : 90) + safeArea.left,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -20952,8 +20984,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
-                left: isMobile ? 94 : 160,
+                bottom: bottomOffset,
+                left: (isMobile ? 94 : 160) + safeArea.left,
                 backgroundColor: '#2176ff',
                 width: buttonSize,
                 height: buttonSize,
@@ -20971,8 +21003,8 @@ export default function Field(props = {}) {
           style={[
             styles.floatingButton,
             {
-              top: isMobile ? 6 : 20,
-              left: isMobile ? 10 : 20,
+              top: topOffset,
+              left: leftOffset,
               backgroundColor: canUndo ? '#3498db' : '#7f8c8d',
               width: topBtnSize,
               height: topBtnSize,
@@ -20990,8 +21022,8 @@ export default function Field(props = {}) {
           style={[
             styles.floatingButton,
             {
-              top: isMobile ? 6 : 20,
-              left: isMobile ? 44 : 90,
+              top: topOffset,
+              left: (isMobile ? 44 : 90) + safeArea.left,
               backgroundColor: canRedo ? '#3498db' : '#7f8c8d',
               width: topBtnSize,
               height: topBtnSize,
@@ -21009,8 +21041,8 @@ export default function Field(props = {}) {
           style={[
             styles.floatingButton,
             {
-              top: isMobile ? 6 : 20,
-              left: isMobile ? 78 : 160,
+              top: topOffset,
+              left: (isMobile ? 78 : 160) + safeArea.left,
               backgroundColor: '#9b59b6',
               width: topBtnSize,
               height: topBtnSize,
@@ -21029,7 +21061,7 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
+                bottom: bottomOffset,
                 left: '50%',
                 marginLeft: isMobile ? -18 : -28,
                 width: buttonSize,
@@ -21069,8 +21101,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
-                right: isMobile ? 48 : 90,
+                bottom: bottomOffset,
+                right: (isMobile ? 48 : 90) + safeArea.right,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21087,8 +21119,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                bottom: isMobile ? 10 : 20,
-                right: isMobile ? 10 : 20,
+                bottom: bottomOffset,
+                right: rightOffset,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21121,11 +21153,11 @@ export default function Field(props = {}) {
               {
                 ...(isMobile
                   ? {
-                      top: 6,
-                      left: 112,
+                      top: topOffset,
+                      left: 112 + safeArea.left,
                     }
                   : {
-                      top: 20,
+                      top: topOffset,
                       left: '50%',
                       marginLeft: -28,
                     }),
@@ -21147,8 +21179,8 @@ export default function Field(props = {}) {
             style={[
               styles.floatingButton,
               {
-                top: isMobile ? 6 : 20,
-                right: isMobile ? 150 : 230,
+                top: topOffset,
+                right: (isMobile ? 150 : 230) + safeArea.right,
                 backgroundColor: selectionInteractionMode === 'move' ? '#27ae60' : '#f39c12',
                 width: buttonSize,
                 height: buttonSize,
@@ -21171,8 +21203,8 @@ export default function Field(props = {}) {
               styles.floatingButton,
               styles.floatingButtonPrimary,
               {
-                top: isMobile ? 6 : 20,
-                right: isMobile ? 48 : 90,
+                top: topOffset,
+                right: (isMobile ? 48 : 90) + safeArea.right,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21190,8 +21222,8 @@ export default function Field(props = {}) {
               styles.floatingButton,
               styles.floatingButtonDanger,
               {
-                top: isMobile ? 6 : 20,
-                right: isMobile ? 10 : 20,
+                top: topOffset,
+                right: rightOffset,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21210,8 +21242,8 @@ export default function Field(props = {}) {
               styles.floatingButton,
               styles.floatingButtonDanger,
               {
-                top: isMobile ? 6 : 20,
-                right: isMobile ? 10 : 20,
+                top: topOffset,
+                right: rightOffset,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21230,8 +21262,8 @@ export default function Field(props = {}) {
               styles.floatingButton,
               styles.floatingButtonDanger,
               {
-                top: isMobile ? 6 : 20,
-                right: isMobile ? 10 : 20,
+                top: topOffset,
+                right: rightOffset,
                 width: buttonSize,
                 height: buttonSize,
                 borderRadius: buttonRadius,
@@ -21248,7 +21280,7 @@ export default function Field(props = {}) {
           <View
             style={{
               position: 'absolute',
-              right: isMobile ? 10 : 20,
+              right: rightOffset,
               ...(isMobile
                 ? {
                     top: 0,
@@ -21461,7 +21493,7 @@ export default function Field(props = {}) {
               transform: [{ translateY: slideAnim }],
               paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
               marginBottom: -insets.bottom,
-              paddingRight: isMobile ? 60 : 80,
+              paddingRight: (isMobile ? 60 : 80) + insets.right,
             },
             isMobile && {
               borderTopLeftRadius: 14,
@@ -21675,7 +21707,7 @@ export default function Field(props = {}) {
             style={{
               position: 'absolute',
               top: 10,
-              right: isMobile ? 35 : 45,
+              right: (isMobile ? 35 : 45) + insets.right,
               width: isMobile ? 28 : 32,
               height: isMobile ? 28 : 32,
               borderRadius: isMobile ? 14 : 16,
@@ -21687,7 +21719,7 @@ export default function Field(props = {}) {
           >
             <Feather name="settings" size={isMobile ? 16 : 18} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={onClose}>
+          <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 + insets.right }} onPress={onClose}>
             <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
@@ -21763,7 +21795,7 @@ export default function Field(props = {}) {
               transform: [{ translateY: slideAnim }],
               paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
               marginBottom: -insets.bottom,
-              paddingRight: isMobile ? 34 : 40,
+              paddingRight: (isMobile ? 34 : 40) + insets.right,
             },
             isMobile && {
               borderTopLeftRadius: 14,
@@ -21847,7 +21879,7 @@ export default function Field(props = {}) {
             })}
           </ScrollView>
           <TouchableOpacity
-            style={{ position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10 }}
+            style={{ position: 'absolute', top: isMobile ? 6 : 10, right: (isMobile ? 6 : 10) + insets.right }}
             onPress={onClose}
           >
             <Feather name="x" size={isMobile ? 18 : 24} color="#fff" />
@@ -21963,7 +21995,7 @@ export default function Field(props = {}) {
               transform: [{ translateY: slideAnim }],
               paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
               marginBottom: -insets.bottom,
-              paddingRight: isMobile ? 34 : 40,
+              paddingRight: (isMobile ? 34 : 40) + insets.right,
             },
             isMobile && {
               borderTopLeftRadius: 14,
@@ -22046,7 +22078,7 @@ export default function Field(props = {}) {
               ))
             )}
           </ScrollView>
-          <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={onClose}>
+          <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 + insets.right }} onPress={onClose}>
             <Feather name="x" size={isMobile ? 20 : 24} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
@@ -22108,7 +22140,7 @@ export default function Field(props = {}) {
               transform: [{ translateY: slideAnim }],
               paddingBottom: (isMobile ? 4 : 14) + insets.bottom,
               marginBottom: -insets.bottom,
-              paddingRight: isMobile ? 34 : 40,
+              paddingRight: (isMobile ? 34 : 40) + insets.right,
             },
             isMobile && {
               borderTopLeftRadius: 14,
@@ -22206,7 +22238,7 @@ export default function Field(props = {}) {
             </Pressable>
           </ScrollView>
           <TouchableOpacity
-            style={{ position: 'absolute', top: isMobile ? 6 : 10, right: isMobile ? 6 : 10 }}
+            style={{ position: 'absolute', top: isMobile ? 6 : 10, right: (isMobile ? 6 : 10) + insets.right }}
             onPress={onClose}
           >
             <Feather name="x" size={isMobile ? 18 : 24} color="#fff" />
@@ -22499,7 +22531,7 @@ export default function Field(props = {}) {
   const shouldHideBottomButtons = paletteVisible || zoomVisible;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#4a8c3f' }}>
+    <SafeAreaView edges={[]} style={{ flex: 1, backgroundColor: '#4a8c3f' }}>
       <View
         ref={containerRef}
         style={{
@@ -22581,8 +22613,8 @@ export default function Field(props = {}) {
             onPress={handleDeselectDrawingTool}
             style={{
               position: 'absolute',
-              top: isMobile ? 58 : 82,
-              right: isMobile ? 12 : 24,
+              top: (isMobile ? 58 : 82) + safeArea.top,
+              right: (isMobile ? 12 : 24) + safeArea.right,
               minWidth: isMobile ? 42 : 54,
               height: isMobile ? 36 : 42,
               borderRadius: 999,
@@ -22612,10 +22644,10 @@ export default function Field(props = {}) {
         <View
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: isMobile ? safeArea.top : 0,
+            left: isMobile ? safeArea.left : 0,
+            right: isMobile ? safeArea.right : 0,
+            bottom: isMobile ? safeArea.bottom : 0,
             flexDirection: showPlayersSidebar ? 'row' : 'column',
             alignItems: 'stretch',
             justifyContent: 'center',
@@ -22643,6 +22675,7 @@ export default function Field(props = {}) {
                   marginBottom: isMobile ? 4 : 8,
                   overflow: 'visible',
                   touchAction: isMobile ? 'none' : 'auto',
+                  transform: isMobile ? [{ translateY: -24 }] : undefined,
                 },
               ]}
             >
@@ -24271,7 +24304,7 @@ export default function Field(props = {}) {
         {eraserMode && (
           <TouchableOpacity
             onPress={() => setEraserMode(false)}
-            style={[styles.eraserModeIndicator, { top: isMobile ? 6 : 30, left: isMobile ? 112 : 230 }]}
+            style={[styles.eraserModeIndicator, { top: (isMobile ? 6 : 30) + safeArea.top, left: (isMobile ? 112 : 230) + safeArea.left }]}
             activeOpacity={0.7}
           >
             <MaterialIcons name="cleaning-services" size={16} color="#fff" />

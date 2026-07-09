@@ -40,10 +40,8 @@ function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, child
   );
 }
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
 import RNFS from 'react-native-fs';
 import { captureRef } from 'react-native-view-shot';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
@@ -765,6 +763,7 @@ export default function VideoRecorder({
   onSavingChange = null,
 }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const user = useSelector((state) => state.usuario.user);
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1912,75 +1911,22 @@ export default function VideoRecorder({
 
     try {
       setIsGenerating(true);
-      showNotification(t('videoRecorder.downloading') || 'Descargando video...', 'success');
+      showNotification(t('videoRecorder.downloading', 'Preparando el vídeo para guardarlo...'), 'success');
 
-      if (Platform.OS === 'web') {
-        const safeName =
-          (videoNombre || editingVideoName || 'video')
-            .trim()
-            .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
-            .replace(/\s+/g, '_') || 'video';
-        await triggerVideoDownload(localVideoPath, safeName);
-        setTimeout(
-          () =>
-            showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'),
-          150,
-        );
-        return;
-      }
-
-      if (Platform.OS === 'android') {
-        try {
-          const asset = await MediaLibrary.createAssetAsync(localVideoPath);
-          await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          setTimeout(
-            () =>
-              showNotification(
-                t('videoRecorder.downloadComplete') || 'Descarga iniciada',
-                'success',
-              ),
-            150,
-          );
-        } catch (saveErr) {
-          const isAvailable = await Sharing.isAvailableAsync();
-          if (isAvailable) {
-            await Sharing.shareAsync(
-              Platform.OS === 'android' ? `file://${localVideoPath}` : localVideoPath,
-              { mimeType: 'video/mp4' },
-            );
-            setTimeout(
-              () =>
-                showNotification(
-                  t('videoRecorder.downloadComplete') || 'Descarga iniciada',
-                  'success',
-                ),
-              150,
-            );
-          } else {
-            throw saveErr;
-          }
-        }
-      } else {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          showNotification(
-            t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo',
-            'error',
-          );
-          return;
-        }
-        const asset = await MediaLibrary.createAssetAsync(localVideoPath);
-        await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        setTimeout(
-          () =>
-            showNotification(t('videoRecorder.downloadComplete') || 'Descarga iniciada', 'success'),
-          150,
-        );
-      }
+      const safeName =
+        (videoNombre || editingVideoName || 'video')
+          .trim()
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+          .replace(/\s+/g, '_') || 'video';
+      await triggerVideoDownload(localVideoPath, safeName);
+      setTimeout(
+        () => showNotification(t('videoRecorder.downloadComplete', 'Vídeo guardado en la galería.'), 'success'),
+        150,
+      );
     } catch (error) {
       console.error('Error descargando video:', error);
       showNotification(
-        t('videoRecorder.couldNotDownload') || 'No se pudo descargar el archivo',
+        t('videoRecorder.couldNotDownload', 'No se pudo guardar el vídeo. Inténtalo de nuevo.'),
         'error',
       );
     } finally {
@@ -2205,7 +2151,22 @@ export default function VideoRecorder({
   return (
     <>
       {/* Video Recorder Panel */}
-      <View style={IS_MOBILE ? styles.panelMobile : styles.panelDesktop}>
+      <View
+        style={[
+          IS_MOBILE ? styles.panelMobile : styles.panelDesktop,
+          IS_MOBILE
+            ? {
+                height: 78 + insets.bottom,
+                paddingLeft: 10 + insets.left,
+                paddingRight: 10 + insets.right,
+                paddingBottom: 8 + insets.bottom,
+              }
+            : {
+                left: 16 + insets.left,
+                top: 80 + insets.top,
+              },
+        ]}
+      >
         {/* Header */}
         {!IS_MOBILE && (
           <View style={styles.header}>
@@ -2498,7 +2459,17 @@ export default function VideoRecorder({
         animationType="fade"
         onRequestClose={closeSaveModal}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            {
+              paddingTop: insets.top,
+              paddingRight: insets.right,
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+            },
+          ]}
+        >
           <View style={styles.saveModal}>
             {/* Header del modal */}
             <View
@@ -2699,7 +2670,18 @@ export default function VideoRecorder({
         animationType="fade"
         onRequestClose={closeCreateFolderModal}
       >
-        <View style={[styles.modalOverlay, styles.createFolderModalOverlay]}>
+        <View
+          style={[
+            styles.modalOverlay,
+            styles.createFolderModalOverlay,
+            {
+              paddingTop: insets.top,
+              paddingRight: insets.right,
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+            },
+          ]}
+        >
           <View style={styles.createFolderModal}>
             {/* Header */}
             <View style={[styles.modalHeader, styles.createFolderModalHeader]}>
@@ -2829,7 +2811,17 @@ export default function VideoRecorder({
           generationCancelledRef.current = true;
         }}
       >
-        <View style={styles.progressOverlay}>
+        <View
+          style={[
+            styles.progressOverlay,
+            {
+              paddingTop: insets.top,
+              paddingRight: insets.right,
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+            },
+          ]}
+        >
           <View style={styles.progressModal}>
             <View style={styles.progressIconWrap}>
               <Feather name="film" size={24} color="#2563EB" />

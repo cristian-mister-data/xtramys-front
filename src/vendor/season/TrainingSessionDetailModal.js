@@ -26,6 +26,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { createTrainingSessionShareLink, getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getSessionWellnessStats, getSessionPreWellnessStats } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { toast } from '@/ui/toast';
 import { getFieldById } from '@/utils/fieldTypes';
 import ImageZoom from 'react-native-image-pan-zoom';
 import WellnessDetailModal from './WellnessDetailModal';
@@ -396,11 +397,13 @@ export default function TrainingSessionDetailModal({
     
     try {
       setIsDownloading(true);
+      toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
       const fileName = `${exerciseForVideo?.nombre || selectedVideo.nombre || 'video'}`;
       await downloadResolvedVideo(selectedVideo, fileName);
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (error) {
       console.error('Error en downloadVideo:', error);
-      Alert.alert(t('message.error'), t('exercise.videoPlayError') || 'Error downloading video');
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setIsDownloading(false);
     }

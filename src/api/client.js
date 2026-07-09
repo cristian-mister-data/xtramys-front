@@ -30,7 +30,8 @@ function classifyNetworkError(error) {
   const url = error.config?.url || '';
   const isAuthRoute = url.includes('/auth/');
   const isPasswordChangeRoute = /\/user\/[^/]+\/password(?:\?|$)/.test(url);
-  if (status === 401 && !isAuthRoute && !isPasswordChangeRoute) return 'SESSION_EXPIRED';
+  const hasStoredSession = !!loadToken() || !!loadUser();
+  if (status === 401 && !isAuthRoute && !isPasswordChangeRoute && hasStoredSession) return 'SESSION_EXPIRED';
   if (status >= 500) return 'SERVER_ERROR';
   return null;
 }

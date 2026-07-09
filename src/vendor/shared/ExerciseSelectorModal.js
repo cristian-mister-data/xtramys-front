@@ -30,7 +30,8 @@ import {
   regenerateVideoWithField,
   getReadyDownloadUrl,
 } from '@/utils/api';
-import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { toast } from '@/ui/toast';
 import { getFieldById } from '@/utils/fieldTypes';
 import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import {
@@ -464,9 +465,13 @@ export default function ExerciseSelectorModal({
     setSelectedImage(null);
   }, []);
   const downloadVideo = async () => {
-    if (!selectedVideo?._id) return;
+    if (!selectedVideo) return;
     try {
       setIsDownloading(true);
+      toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
+      await downloadResolvedVideo(selectedVideo, selectedVideo.nombre || 'video');
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
+      return;
       const url = await resolvePlayableVideoUrl(selectedVideo);
       if (!url) throw new Error('No se pudo obtener el vídeo');
       const resp = await fetch(url);
@@ -498,7 +503,7 @@ export default function ExerciseSelectorModal({
         reader.readAsDataURL(blob);
       }
     } catch {
-      Alert.alert(t('message.error'), t('video.saveFailed'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setIsDownloading(false);
     }

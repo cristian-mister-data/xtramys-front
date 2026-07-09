@@ -50,8 +50,9 @@ import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { generateSessionPDF } from './SessionPDF';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField } from '@/utils/api';
-import { resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { getVideosByExercise, getVideoStreamUrl, regenerateVideoWithField } from '@/utils/api';
+import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
+import { toast } from '@/ui/toast';
 import { getFieldById } from '@/utils/fieldTypes';
 import ExerciseSelectorModal from '@/vendor/shared/ExerciseSelectorModal';
 import { STRENGTH_EXERCISES, getStrengthExerciseImage, getSectionForExercise } from '@/data/strengthExercises';
@@ -1098,56 +1099,17 @@ export default function Training({ canMutate }) {
 
   // Función para descargar video
   const handleDownloadVideo = async () => {
-    if (!selectedVideoMain?._id) return;
+    if (!selectedVideoMain) return;
     
     try {
       setIsDownloadingVideo(true);
-      
-      const downloadUrl = getVideoDownloadUrl(selectedVideoMain._id);
-      const fileName = `video_${Date.now()}.mp4`;
-      const fileUri = FileSystem.documentDirectory + fileName;
-      
-      const downloadResumable = FileSystem.createDownloadResumable(
-        downloadUrl,
-        fileUri,
-        {},
-        (downloadProgress) => {
-          const progress = downloadProgress.totalBytesWritten / (downloadProgress.totalBytesExpectedToWrite || 1);
-        }
-      );
-      
-      const result = await downloadResumable.downloadAsync();
-      
-      if (!result || !result.uri) {
-        throw new Error('No se pudo descargar el archivo');
-      }
-      
-      if (Platform.OS === 'android') {
-        try {
-          const asset = await MediaLibrary.createAssetAsync(result.uri);
-          await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-          Alert.alert(t('message.success'), t('video.savedToGallery'));
-        } catch (saveErr) {
-          const isAvailable = await Sharing.isAvailableAsync();
-          if (isAvailable) {
-            await Sharing.shareAsync(result.uri, { mimeType: 'video/mp4' });
-          } else {
-            throw saveErr;
-          }
-        }
-      } else {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(t('message.error'), t('video.permissionRequired'));
-          return;
-        }
-        const asset = await MediaLibrary.createAssetAsync(result.uri);
-        await MediaLibrary.createAlbumAsync('xtramys', asset, false);
-        Alert.alert(t('message.success'), t('video.savedToGallery') || 'Video guardado en la galería');
-      }
+      toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
+      const downloadName = exerciseForVideoMain?.nombre || selectedVideoMain.nombre || 'video';
+      await downloadResolvedVideo(selectedVideoMain, downloadName);
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (error) {
       console.error('Error descargando video:', error);
-      Alert.alert(t('message.error'), t('video.saveFailed'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setIsDownloadingVideo(false);
     }

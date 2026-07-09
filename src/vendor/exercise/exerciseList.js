@@ -36,6 +36,8 @@ import {
 import { persistFavoriteState } from '@/utils/favoritePersistence';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import { getSharedWithMe } from '@/api/sharedContent';
+import { useInAppNotification } from '@/utils/useInAppNotification';
+import { toast } from '@/ui/toast';
 
 // Tamaños de campo para móvil/tablet
 const FIELD_WIDTH_MOBILE = 80;
@@ -172,6 +174,8 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const [videoUrl, setVideoUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadingVideo, setDownloadingVideo] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
+  const { showNotification, NotificationToast } = useInAppNotification();
 
   // Video player hook
   const player = useVideoPlayer(videoUrl || '', player => {
@@ -225,13 +229,14 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     if (downloadingVideo) return;
 
     setDownloadingVideo(true);
+    toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
     try {
       const videoObj = typeof video === 'object' && video ? video : { id: video };
       await downloadResolvedVideo(videoObj, getLocalizedVideoName(videoObj));
-      Alert.alert(t('message.success'), t('video.savedToGallery'));
+      toast.success(t('myVideos.downloadStarted', 'Video guardado en la galeria.'));
     } catch (error) {
       console.error('Error descargando video:', error);
-      Alert.alert(t('message.error'), t('video.downloadError'));
+      toast.error(t('myVideos.downloadError', 'No se pudo guardar el video. Intentalo de nuevo.'));
     } finally {
       setDownloadingVideo(false);
     }
@@ -307,6 +312,8 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
   // Función para guardar la imagen del campo en la galería
   const saveImageToGallery = async () => {
+    if (savingImage) return;
+    setSavingImage(true);
     try {
       if (!exercise.imagen) {
         Alert.alert(t('message.error'), t('exercise.imageSaveError'));
@@ -315,7 +322,11 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
       // Web: descargar como archivo, evitando lecturas CORS del CDN.
       if (Platform.OS === 'web') {
-        await downloadImageSource(exercise.imagen, `exercise_${exercise.nombre || 'image'}_${Date.now()}`);
+        await downloadImageSource(
+          exercise.imagen,
+          `exercise_${exercise.nombre || 'image'}_${Date.now()}`,
+          { onDialogOpen: () => setSavingImage(false) },
+        );
         return;
       }
 
@@ -373,6 +384,8 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     } catch (error) {
       console.error('Error guardando imagen:', error);
       Alert.alert(t('message.error'), t('exercise.imageSaveError'));
+    } finally {
+      setSavingImage(false);
     }
   };
 
@@ -400,9 +413,14 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                   <TouchableOpacity
                     style={styles.modalImageButton}
                     onPress={saveImageToGallery}
+                    disabled={savingImage}
                     activeOpacity={0.7}
                   >
-                    <MaterialIcons name="image" size={20} color={theme.colors.successSoftText} />
+                    {savingImage ? (
+                      <ActivityIndicator size="small" color={theme.colors.successSoftText} />
+                    ) : (
+                      <MaterialIcons name="image" size={20} color={theme.colors.successSoftText} />
+                    )}
                   </TouchableOpacity>
                 </>
               )}
@@ -449,8 +467,9 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                 >
                   <Base64ImagePreview
                     imageUrl={exercise?.imagen}
-                    forceWidth={IS_MOBILE ? DETAIL_FIELD_WIDTH_MOBILE : DETAIL_FIELD_WIDTH}
-                    forceHeight={IS_MOBILE ? DETAIL_FIELD_HEIGHT_MOBILE : DETAIL_FIELD_HEIGHT}
+                    aspect={0.6}
+                    maxWidth={IS_TABLET ? 560 : IS_MOBILE ? screenWidth - 72 : 420}
+                    horizontalInset={IS_MOBILE ? 72 : 96}
                   />
                   <View style={styles.zoomOverlay}>
                     <MaterialIcons name="zoom-in" size={24} color="#fff" />
@@ -484,7 +503,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                   <View style={[styles.statCard, styles.dimensionsStat]}>
                     <Ionicons name="resize-outline" size={20} color="#673AB7" />
                     <View style={styles.statContent}>
-                      <Text style={styles.statValue}>{exercise.dimensiones}</Text>
+                      <Text style={styles.statValue} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{exercise.dimensiones}</Text>
                       <Text style={styles.statLabel}>{t('exercise.fieldDimensions')}</Text>
                     </View>
                   </View>
@@ -712,6 +731,9 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
           )}
         </View>
       </Modal>
+
+      {/* Notificación toast respetando espacio nativo - igual que Mis Videos */}
+      {NotificationToast}
     </Modal>
   );
 }
@@ -3700,6 +3722,7 @@ const makeStyles = (theme) => StyleSheet.create({
     position: 'relative',
     borderRadius: 12,
     overflow: 'hidden',
+    alignItems: 'center',
   },
   zoomOverlay: {
     position: 'absolute',
@@ -3717,6 +3740,7 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 24,
     gap: 12,
   },
@@ -3729,6 +3753,7 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
+    minWidth: 135,
   },
   playersStat: {
     borderLeftWidth: 4,
@@ -3744,6 +3769,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   statContent: {
     marginLeft: 12,
+    flex: 1,
+    minWidth: 0,
   },
   statValue: {
     fontSize: 20,

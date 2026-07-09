@@ -103,7 +103,7 @@ const userSlice = createSlice({
         s.authChecked = true;
         s.user = null;
         s.isAuthenticated = false;
-        s.error = a.payload?.message || a.error.message;
+        s.error = a.payload?.status === 401 ? null : (a.payload?.message || a.error.message);
         s.subscriptionStatus = null;
         s.plan = 'free';
       })

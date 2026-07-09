@@ -13,7 +13,7 @@ const el = (tag, style = {}, attrs = {}, text = '') => {
   return node;
 };
 
-export function showFileActions({ fileName, title, kind = 'file', onDownload, onShare }) {
+export function showFileActions({ fileName, title, kind = 'file', onDownload, onShare, onOpen }) {
   if (typeof document === 'undefined') return onDownload?.();
   let resolveRef;
   const done = new Promise((resolve) => { resolveRef = resolve; });
@@ -117,5 +117,6 @@ export function showFileActions({ fileName, title, kind = 'file', onDownload, on
   overlay.appendChild(panel);
   container.appendChild(overlay);
   document.body.appendChild(container);
+  onOpen?.();
   return done;
 }
