@@ -53,8 +53,9 @@ function ensureToastStyles() {
   style.textContent = `
     #${TOAST_ROOT_ID} {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: calc(20px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 2147483600;
       display: flex;
       flex-direction: column;
@@ -96,7 +97,7 @@ function ensureToastStyles() {
       padding: 12px;
       pointer-events: auto;
       opacity: 0;
-      transform: translate3d(18px, -6px, 0) scale(0.98);
+      transform: translate3d(0, -20px, 0) scale(0.98);
       transition: opacity 160ms ease, transform 160ms ease;
       overflow: hidden;
     }
@@ -117,7 +118,7 @@ function ensureToastStyles() {
     }
     .xtramys-toast[data-state="closing"] {
       opacity: 0;
-      transform: translate3d(18px, -6px, 0) scale(0.98);
+      transform: translate3d(0, -20px, 0) scale(0.98);
     }
     .xtramys-toast__bar {
       align-self: stretch;
@@ -208,20 +209,45 @@ function ensureToastStyles() {
       color: #ffffff;
     }
     .xtramys-toast--success {
-      --xtramys-toast-accent: #15803d;
+      --xtramys-toast-accent: #10b981;
       --xtramys-toast-soft: #dcfce7;
     }
     .xtramys-toast--error {
-      --xtramys-toast-accent: #b91c1c;
+      --xtramys-toast-accent: #ef4444;
       --xtramys-toast-soft: #fee2e2;
     }
     .xtramys-toast--warning {
-      --xtramys-toast-accent: #b45309;
+      --xtramys-toast-accent: #f59e0b;
       --xtramys-toast-soft: #fef3c7;
     }
     .xtramys-toast--info {
-      --xtramys-toast-accent: #0369a1;
+      --xtramys-toast-accent: #3b82f6;
       --xtramys-toast-soft: #e0f2fe;
+    }
+    .xtramys-toast--simple {
+      grid-template-columns: 32px 1fr !important;
+      align-items: center !important;
+      background: var(--xtramys-toast-accent) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+    }
+    .xtramys-toast--simple .xtramys-toast__bar {
+      display: none !important;
+    }
+    .xtramys-toast--simple .xtramys-toast__close {
+      display: none !important;
+    }
+    .xtramys-toast--simple .xtramys-toast__title {
+      color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+    .xtramys-toast--simple .xtramys-toast__message {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+    .xtramys-toast--simple .xtramys-toast__icon {
+      background: rgba(255, 255, 255, 0.22) !important;
+      color: #ffffff !important;
     }
     @media (prefers-color-scheme: dark) {
       .xtramys-toast {
@@ -236,17 +262,36 @@ function ensureToastStyles() {
       .xtramys-toast__close:hover { background: rgba(148, 163, 184, 0.16); color: #f8fafc; }
       .xtramys-toast__button { background: #1c2742; border-color: #3b4970; color: #e2e8f0; }
       .xtramys-toast__button:hover { background: #22304f; border-color: #64748b; }
+      .xtramys-toast--simple {
+        background: var(--xtramys-toast-accent) !important;
+        color: #ffffff !important;
+        border: none !important;
+      }
+      .xtramys-toast--simple .xtramys-toast__title {
+        color: #ffffff !important;
+      }
+      .xtramys-toast--simple .xtramys-toast__message {
+        color: rgba(255, 255, 255, 0.9) !important;
+      }
+      .xtramys-toast--simple .xtramys-toast__icon {
+        background: rgba(255, 255, 255, 0.22) !important;
+        color: #ffffff !important;
+      }
     }
     @media (max-width: 600px) {
       #${TOAST_ROOT_ID} {
-        top: 12px;
+        top: calc(12px + env(safe-area-inset-top, 0px));
         right: 12px;
         left: 12px;
         width: auto;
+        transform: none;
       }
       .xtramys-toast {
         grid-template-columns: 4px 30px 1fr auto;
         padding: 11px;
+      }
+      .xtramys-toast--simple {
+        grid-template-columns: 30px 1fr !important;
       }
       .xtramys-toast__actions {
         justify-content: stretch;
@@ -309,10 +354,18 @@ function showToast({ title, message, tone = 'info', buttons = [], duration, onCl
     return null;
   }
 
+  const isSimple = buttons.length === 0;
   const toast = document.createElement('div');
-  toast.className = `xtramys-toast xtramys-toast--${tone}`;
+  toast.className = `xtramys-toast xtramys-toast--${tone} ${isSimple ? 'xtramys-toast--simple' : 'xtramys-toast--interactive'}`;
   toast.dataset.state = 'entering';
   toast.setAttribute('role', buttons.length > 0 ? 'alertdialog' : (tone === 'error' ? 'alert' : 'status'));
+
+  if (isSimple) {
+    toast.addEventListener('click', () => {
+      dismissToast(toast);
+      if (typeof onClose === 'function') onClose();
+    });
+  }
 
   const bar = document.createElement('div');
   bar.className = 'xtramys-toast__bar';
@@ -343,7 +396,8 @@ function showToast({ title, message, tone = 'info', buttons = [], duration, onCl
   closeButton.type = 'button';
   closeButton.setAttribute('aria-label', i18n.t('message.closeNotification', 'Cerrar notificación'));
   closeButton.textContent = 'x';
-  closeButton.addEventListener('click', () => {
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
     dismissToast(toast);
     if (typeof onClose === 'function') onClose();
   });

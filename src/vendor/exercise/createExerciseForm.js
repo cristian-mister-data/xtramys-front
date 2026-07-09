@@ -117,7 +117,7 @@ export default function CreateExerciseForm({
 
   // Estado para admin: ejercicio global
   const user = useSelector(state => state.usuario.user);
-  const idUsuario = user?._id || "";
+  const idUsuario = user?._id || user?.id || "";
   const isAdmin = user?.role === 'admin';
   const userClubId = user?.clubId || null;
   const [isGlobal, setIsGlobal] = useState(() => {

@@ -57,6 +57,7 @@ import { showMissingFieldsToast } from '@/utils/validationToast';
 
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const getOwnerId = (item) => item?.usuario?._id || item?.usuario?.id || item?.usuario || item?.user?._id || item?.user?.id || item?.user;
 const VIDEO_FAVORITES_STORAGE_KEY = 'xtramys.videoFavorites';
 const VIDEO_UNFAVORITES_STORAGE_KEY = 'xtramys.videoUnfavorites';
 const areStringSetsEqual = (a = new Set(), b = new Set()) => {
@@ -102,7 +103,7 @@ const buildFolderPath = (folder, folderById, lang) => {
 const canEditClubOwnedItem = (item, user, isAdmin) => {
   if (!item) return false;
   if (isAdmin) return true;
-  return sameId(item.usuario, user?._id);
+  return sameId(getOwnerId(item), user?._id || user?.id);
 };
 const mergeVideosById = (...groups) => {
   const map = new Map();
@@ -403,7 +404,7 @@ export default function MyVideos({ canMutate = true } = {}) {
       if (sourceFilter === 'global') {
         loadedFolders = loadedFolders.filter(f => f.isGlobal);
       } else if (sourceFilter === 'mine') {
-        loadedFolders = loadedFolders.filter(f => !f.isGlobal && (isDemo || sameId(f.usuario, user?._id)));
+        loadedFolders = loadedFolders.filter(f => !f.isGlobal && (isDemo || sameId(getOwnerId(f), user?._id || user?.id)));
       } else if (sourceFilter === 'club') {
         loadedFolders = loadedFolders.filter(f => !f.isGlobal && f.visibility === 'CLUB');
       } else if (isDemo) {

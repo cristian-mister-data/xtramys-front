@@ -58,6 +58,9 @@ const buildTheme = (sc) => {
   };
 };
 
+const getOwnerId = (item) => item?.usuario?._id || item?.usuario?.id || item?.usuario || item?.user?._id || item?.user?.id || item?.user;
+const sameId = (a, b) => String(a || '') === String(b || '');
+
 /* ═══════════════════════════════════════════════════════════
    MAIN COMPONENT
    Props:
@@ -74,6 +77,9 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
   const dispatch = useDispatch();
   const { width } = useWindowDimensions();
   const isWide = width > 700;
+  const user = useSelector((st) => st.usuario?.user);
+  const userId = user?._id || user?.id || '';
+  const isAdmin = user?.role === 'admin';
 
   const isExercise = type === 'exercise';
 
@@ -95,6 +101,12 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
   const [search, setSearch] = useState('');
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [folderPath, setFolderPath] = useState([]);
+  const canLinkItem = useCallback((item) => {
+    if (!item) return false;
+    if (isAdmin) return true;
+    if (item.isGlobal) return false;
+    return sameId(getOwnerId(item), userId);
+  }, [isAdmin, userId]);
 
   /* ── Load data when opening ── */
   useEffect(() => {
@@ -118,7 +130,7 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
       try {
         const result = isExercise ? await getAllExercises() : await getAllStrategies();
         if (Array.isArray(result)) {
-          setItems(result);
+          setItems(result.filter(canLinkItem));
         } else {
           const user = isExercise
             ? result?.userExercises || result?.exercises || []
@@ -128,7 +140,7 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
             : result?.globalStrategies || [];
           // Merge, deduplicate
           const userIds = new Set(user.map((x) => x._id));
-          setItems([...user, ...global.filter((g) => !userIds.has(g._id))]);
+          setItems([...user, ...global.filter((g) => !userIds.has(g._id))].filter(canLinkItem));
         }
       } catch (err) {
         console.warn('[LinkSelectorModal] Error loading items:', err);
@@ -137,7 +149,7 @@ export default function LinkSelectorModal({ type, visible, onClose, onSelect }) 
       }
     };
     loadItems();
-  }, [visible, isExercise]);
+  }, [visible, isExercise, canLinkItem]);
 
   /* ── Reset on close ── */
   useEffect(() => {

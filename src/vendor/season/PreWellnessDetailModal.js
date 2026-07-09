@@ -32,6 +32,7 @@ import {
   getWellnessTemplates,
   getPreWellnessFormUrl,
 } from '@/utils/api';
+import { useInAppNotification } from '@/utils/useInAppNotification';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -77,6 +78,7 @@ export default function PreWellnessDetailModal({
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const { showNotification, NotificationToast } = useInAppNotification();
 
   const sessionId = session?._id;
   const sessionDate = session?.fecha;
@@ -142,10 +144,10 @@ export default function PreWellnessDetailModal({
       if (onUpdate) {
         await onUpdate(response?.expectedPreWellness ?? expectedPreWellness);
       }
-      Alert.alert(t('message.success'), t('session.responseSaved') || 'Configuración guardada');
+      showNotification(t('session.responseSaved') || 'Configuración guardada', 'success');
     } catch (error) {
       console.error('Error guardando pre-wellness:', error);
-      Alert.alert(t('message.error'), t('session.responseError') || 'No se pudo guardar');
+      showNotification(t('session.responseError') || 'No se pudo guardar', 'error');
     } finally {
       setSaving(false);
     }
@@ -156,10 +158,10 @@ export default function PreWellnessDetailModal({
     try {
       await generatePreWellnessLink(sessionId, 48, selectedTemplate, questions);
       await loadPreWellnessData();
-      Alert.alert(t('message.success'), t('session.linkGenerated'));
+      showNotification(t('session.linkGenerated'), 'success');
     } catch (error) {
       console.error('Error generando enlace:', error);
-      Alert.alert(t('message.error'), t('session.responseError') || 'No se pudo generar el enlace');
+      showNotification(t('session.responseError') || 'No se pudo generar el enlace', 'error');
     } finally {
       setGenerating(false);
     }
@@ -184,7 +186,7 @@ export default function PreWellnessDetailModal({
     if (!preWellnessData?.preWellnessToken) return;
     const link = getPreWellnessFormUrl(preWellnessData.preWellnessToken);
     await Clipboard.setStringAsync(link);
-    Alert.alert(t('message.success'), t('session.linkCopied'));
+    showNotification(t('session.linkCopied'), 'success');
   };
 
   const handleToggleLink = async () => {
@@ -196,13 +198,13 @@ export default function PreWellnessDetailModal({
       await togglePreWellnessLink(sessionId, newState);
       await loadPreWellnessData();
       if (onUpdate) onUpdate();
-      Alert.alert(
-        t('message.success'),
-        newState ? t('session.linkActivated') : t('session.linkDeactivated')
+      showNotification(
+        newState ? t('session.linkActivated') : t('session.linkDeactivated'),
+        'success'
       );
     } catch (error) {
       console.error('Error toggling link:', error);
-      Alert.alert(t('message.error'), t('session.responseError'));
+      showNotification(t('session.responseError'), 'error');
     } finally {
       setToggling(false);
     }
@@ -223,7 +225,7 @@ export default function PreWellnessDetailModal({
               await loadPreWellnessData();
               if (onUpdate) onUpdate();
             } catch (error) {
-              Alert.alert(t('message.error'), t('session.responseDeleteError') || 'No se pudo eliminar la respuesta');
+              showNotification(t('session.responseDeleteError') || 'No se pudo eliminar la respuesta', 'error');
             }
           },
         },
@@ -266,7 +268,7 @@ export default function PreWellnessDetailModal({
 
   const handleGeneratePDF = async () => {
     if (!preWellnessData?.responses?.length) {
-      Alert.alert(t('message.info'), t('session.noResponses') || 'No hay respuestas para exportar');
+      showNotification(t('session.noResponses') || 'No hay respuestas para exportar', 'info');
       return;
     }
     setGeneratingPDF(true);
@@ -275,7 +277,7 @@ export default function PreWellnessDetailModal({
       await generateWellnessSessionPdf(session, expectedPreWellness, preWellnessData, t, lang, true);
     } catch (error) {
       console.error('Error generating pre-wellness PDF:', error);
-      Alert.alert(t('message.error'), t('session.pdfError') || 'Error al generar el PDF');
+      showNotification(t('session.pdfError') || 'Error al generar el PDF', 'error');
     } finally {
       setGeneratingPDF(false);
     }
@@ -648,6 +650,7 @@ export default function PreWellnessDetailModal({
             </View>
           </View>
         </Modal>
+        {NotificationToast}
       </View>
     </Modal>
   );

@@ -3,6 +3,14 @@ const imageCache = new Map();
 const pendingPromises = new Map();
 const urlVersions = new Map();
 
+function normalizeRemoteImageUrl(url) {
+  try {
+    return new URL(url).href;
+  } catch {
+    return encodeURI(url);
+  }
+}
+
 /**
  * Normalizes and fetches a remote image URL, caching its base64 representation.
  * Returns a promise resolving to the base64 string or the original URL on error.
@@ -13,20 +21,21 @@ export async function prefetchAndCacheImage(url) {
     // Already base64 or local path
     return url;
   }
+  const normalizedUrl = normalizeRemoteImageUrl(url);
 
   // Use the versioned URL as the cache key to respect cache busting
-  if (imageCache.has(url)) {
-    return imageCache.get(url);
+  if (imageCache.has(normalizedUrl)) {
+    return imageCache.get(normalizedUrl);
   }
 
   // If there's a pending promise, return it
-  if (pendingPromises.has(url)) {
-    return pendingPromises.get(url);
+  if (pendingPromises.has(normalizedUrl)) {
+    return pendingPromises.get(normalizedUrl);
   }
 
   const promise = (async () => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(normalizedUrl);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const blob = await response.blob();
       const base64 = await new Promise((resolve, reject) => {
@@ -35,18 +44,18 @@ export async function prefetchAndCacheImage(url) {
         reader.onerror = () => reject(new Error("Blob read failed"));
         reader.readAsDataURL(blob);
       });
-      imageCache.set(url, base64);
-      pendingPromises.delete(url);
+      imageCache.set(normalizedUrl, base64);
+      pendingPromises.delete(normalizedUrl);
       return base64;
     } catch (error) {
-      console.warn("[prefetchAndCacheImage] Error prefetching image:", url, error);
-      pendingPromises.delete(url);
+      console.warn("[prefetchAndCacheImage] Error prefetching image:", normalizedUrl, error);
+      pendingPromises.delete(normalizedUrl);
       // Return original url as fallback so the browser can try loading it directly
-      return url;
+      return normalizedUrl;
     }
   })();
 
-  pendingPromises.set(url, promise);
+  pendingPromises.set(normalizedUrl, promise);
   return promise;
 }
 
@@ -59,7 +68,7 @@ export function getVersionedUrl(url) {
   if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
 
   // Strip existing version query parameters to have a clean base URL
-  const cleanUrl = url.split('?')[0];
+  const cleanUrl = normalizeRemoteImageUrl(url.split('?')[0]);
 
   const version = urlVersions.get(cleanUrl);
   if (version) {
@@ -74,7 +83,7 @@ export function getVersionedUrl(url) {
 export function bumpUrlVersion(url) {
   if (!url || typeof url !== 'string') return;
   // Use the clean base URL for indexing
-  const cleanUrl = url.split('?')[0];
+  const cleanUrl = normalizeRemoteImageUrl(url.split('?')[0]);
   const newVersion = Date.now();
   urlVersions.set(cleanUrl, newVersion);
   

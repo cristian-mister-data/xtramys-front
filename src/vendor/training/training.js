@@ -37,7 +37,7 @@ import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 import { fetchMatchSheetsByTeam } from '@/store/slices/matchSheet/matchSheetThunks';
 import OrganizeSeasonForm from './organizeSeasonForm';
-import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
+import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import ImageZoom from 'react-native-image-pan-zoom';
@@ -1769,15 +1769,7 @@ export default function Training({ canMutate }) {
                       {ejercicio?.imagen ? (
                         <Image
                           source={{
-                            uri: (() => {
-                              if (ejercicio.imagen.startsWith('http')) {
-                                const timestamp = new Date().getTime();
-                                return ejercicio.imagen.includes('?')
-                                  ? `${ejercicio.imagen}&t=${timestamp}`
-                                  : `${ejercicio.imagen}?t=${timestamp}`;
-                              }
-                              return `data:image/png;base64,${ejercicio.imagen}`;
-                            })()
+                            uri: normalizeImageSource(ejercicio.imagen, { cacheBust: true })
                           }}
                           style={styles.proExerciseMiniImage}
                         />

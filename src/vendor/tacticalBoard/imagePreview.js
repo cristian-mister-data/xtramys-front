@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Image, useWindowDimensions, Text, ActivityIndicator } from 'react-native';
 import { prefetchAndCacheImage, getVersionedUrl } from '@/utils/imageCache';
 
+function normalizeHttpUrl(url) {
+  try {
+    return new URL(url).href;
+  } catch {
+    return encodeURI(url);
+  }
+}
+
 export function normalizeImageSource(imageSource, { cacheBust = false } = {}) {
   const normalizedSource = typeof imageSource === 'string' ? imageSource.trim() : imageSource;
   if (!normalizedSource) return '';
@@ -26,11 +34,12 @@ export function normalizeImageSource(imageSource, { cacheBust = false } = {}) {
   );
 
   if (isHttpUrl) {
-    if (!cacheBust) return normalizedSource;
+    const url = normalizeHttpUrl(normalizedSource);
+    if (!cacheBust) return url;
     const timestamp = new Date().getTime();
-    return normalizedSource.includes('?')
-      ? `${normalizedSource}&t=${timestamp}`
-      : `${normalizedSource}?t=${timestamp}`;
+    return url.includes('?')
+      ? `${url}&t=${timestamp}`
+      : `${url}?t=${timestamp}`;
   }
 
   if (isUri) return normalizedSource;
@@ -52,6 +61,7 @@ export default function Base64ImagePreview({
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [displayUri, setDisplayUri] = useState('');
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const imageSource = imageUrl || base64;
 
@@ -60,19 +70,22 @@ export default function Base64ImagePreview({
     if (!imageSource) {
       setDisplayUri('');
       setLoading(false);
+      setFailed(false);
       return;
     }
 
     const load = async () => {
+      setFailed(false);
+      const normalized = normalizeImageSource(imageSource);
       // Si ya es base64 o local, renderizar directo
-      if (!imageSource.startsWith('http://') && !imageSource.startsWith('https://')) {
-        setDisplayUri(normalizeImageSource(imageSource));
+      if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+        setDisplayUri(normalized);
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      const versionedUrl = getVersionedUrl(imageSource);
+      const versionedUrl = getVersionedUrl(normalized);
       try {
         const cachedUri = await prefetchAndCacheImage(versionedUrl);
         if (active) {
@@ -130,7 +143,7 @@ export default function Base64ImagePreview({
     ? Array.isArray(style) ? style : [style]
     : [];
 
-  if (!imageSource) {
+  if (!imageSource || failed) {
     return (
       <View style={[computedStyle, ...baseStyle]}>
         <Text style={{ color: '#64748b', fontSize: 12 }}>No hay imagen disponible</Text>
@@ -144,6 +157,7 @@ export default function Base64ImagePreview({
         <Image
           source={{ uri: displayUri }}
           style={imageStyle}
+          onError={() => setFailed(true)}
         />
       ) : null}
 

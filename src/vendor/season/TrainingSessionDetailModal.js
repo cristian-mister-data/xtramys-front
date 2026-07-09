@@ -683,9 +683,7 @@ export default function TrainingSessionDetailModal({
                           >
                             <Image
                               source={{
-                                uri: ejercicio.imagen.startsWith('http')
-                                  ? `${ejercicio.imagen}?t=${Date.now()}`
-                                  : `data:image/png;base64,${ejercicio.imagen}`
+                                uri: normalizeImageSource(ejercicio.imagen, { cacheBust: true })
                               }}
                               style={styles.exerciseImage}
                               resizeMode="cover"
@@ -1004,9 +1002,7 @@ export default function TrainingSessionDetailModal({
             >
               <Image
                 source={{
-                  uri: selectedImage.startsWith('http')
-                    ? `${selectedImage}?t=${Date.now()}`
-                    : `data:image/png;base64,${selectedImage}`
+                  uri: normalizeImageSource(selectedImage, { cacheBust: true })
                 }}
                 style={[styles.fullImage, { width: modalImageWidth, height: modalImageHeight }]}
                 resizeMode="contain"

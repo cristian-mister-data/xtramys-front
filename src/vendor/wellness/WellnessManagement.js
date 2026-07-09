@@ -26,6 +26,7 @@ import { savePdfToDownloads } from '@/utils/pdfDownload';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import i18n from '@/i18n';
 import AppLayout from '@/vendor/shared/appLayout';
+import { useInAppNotification } from '@/utils/useInAppNotification';
 import { fetchEntrenamientosPorEquipo } from '@/store/slices/session/sessionThunks';
 import {
   getWellnessTemplates,
@@ -74,6 +75,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
   const dispatch = useDispatch();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { showNotification, NotificationToast } = useInAppNotification();
   const THEME = useMemo(() => ({
     primary: theme.colors.primary,
     primaryLight: theme.colors.primaryLight,
@@ -228,7 +230,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
 
   const handleSaveTemplate = async () => {
     if (!templateName.trim()) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.nameRequired'));
+      showNotification(t('wellnessTemplates.nameRequired'), 'error');
       return;
     }
 
@@ -240,7 +242,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
           description: templateDescription.trim(),
           questions: templateQuestions,
         });
-        Alert.alert(t('message.success'), t('wellnessTemplates.updated'));
+        showNotification(t('wellnessTemplates.updated'), 'success');
       } else {
         await createWellnessTemplate({
           name: templateName.trim(),
@@ -248,13 +250,13 @@ export default function WellnessManagement({ navigation, canMutate }) {
           type: selectedTemplateType,
           questions: templateQuestions,
         });
-        Alert.alert(t('message.success'), t('wellnessTemplates.created'));
+        showNotification(t('wellnessTemplates.created'), 'success');
       }
       setShowTemplateModal(false);
       loadTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      Alert.alert(t('message.error'), error.response?.data?.message || t('wellnessTemplates.saveError'));
+      showNotification(error.response?.data?.message || t('wellnessTemplates.saveError'), 'error');
     } finally {
       setSavingTemplate(false);
     }
@@ -272,10 +274,10 @@ export default function WellnessManagement({ navigation, canMutate }) {
           onPress: async () => {
             try {
               await deleteWellnessTemplate(template._id);
-              Alert.alert(t('message.success'), t('wellnessTemplates.deleted'));
+              showNotification(t('wellnessTemplates.deleted'), 'success');
               loadTemplates();
             } catch (error) {
-              Alert.alert(t('message.error'), t('wellnessTemplates.deleteError'));
+              showNotification(t('wellnessTemplates.deleteError'), 'error');
             }
           }
         }
@@ -286,20 +288,20 @@ export default function WellnessManagement({ navigation, canMutate }) {
   const handleSetDefault = async (template) => {
     try {
       await setDefaultWellnessTemplate(template._id);
-      Alert.alert(t('message.success'), t('wellnessTemplates.setAsDefault'));
+      showNotification(t('wellnessTemplates.setAsDefault'), 'success');
       loadTemplates();
     } catch (error) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.setDefaultError'));
+      showNotification(t('wellnessTemplates.setDefaultError'), 'error');
     }
   };
 
   const handleDuplicate = async (template) => {
     try {
       await duplicateWellnessTemplate(template._id);
-      Alert.alert(t('message.success'), t('wellnessTemplates.duplicated'));
+      showNotification(t('wellnessTemplates.duplicated'), 'success');
       loadTemplates();
     } catch (error) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.duplicateError'));
+      showNotification(t('wellnessTemplates.duplicateError'), 'error');
     }
   };
 
@@ -346,10 +348,10 @@ export default function WellnessManagement({ navigation, canMutate }) {
       } else {
         await generateWellnessLink(selectedSession._id, 48);
       }
-      Alert.alert(t('message.success'), t('session.linkGenerated'));
+      showNotification(t('session.linkGenerated'), 'success');
       await loadSessionWellnessData(selectedSession._id, wellnessType);
     } catch (error) {
-      Alert.alert(t('message.error'), t('session.responseError'));
+      showNotification(t('session.responseError'), 'error');
     } finally {
       setGeneratingLink(false);
     }
@@ -368,13 +370,13 @@ export default function WellnessManagement({ navigation, canMutate }) {
       } else {
         await toggleWellnessLink(selectedSession._id, !currentActive);
       }
-      Alert.alert(
-        t('message.success'), 
-        !currentActive ? t('session.linkActivated') : t('session.linkDeactivated')
+      showNotification(
+        !currentActive ? t('session.linkActivated') : t('session.linkDeactivated'),
+        'success'
       );
       await loadSessionWellnessData(selectedSession._id, wellnessType);
     } catch (error) {
-      Alert.alert(t('message.error'), t('session.responseError'));
+      showNotification(t('session.responseError'), 'error');
     } finally {
       setTogglingLink(false);
     }
@@ -415,7 +417,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
       ? getPreWellnessFormUrl(token, currentLang)
       : getWellnessFormUrl(token, currentLang);
     await Clipboard.setStringAsync(link);
-    Alert.alert(t('message.success'), t('session.linkCopied'));
+    showNotification(t('session.linkCopied'), 'success');
   };
 
   const handleDeleteResponse = async (responseId, playerName) => {
@@ -436,7 +438,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
               }
               await loadSessionWellnessData(selectedSession._id, wellnessType);
             } catch (error) {
-              Alert.alert(t('message.error'), t('session.responseDeleteError'));
+              showNotification(t('session.responseDeleteError'), 'error');
             }
           }
         }
@@ -482,10 +484,10 @@ export default function WellnessManagement({ navigation, canMutate }) {
         });
       }
       await loadSessionWellnessData(selectedSession._id, wellnessType);
-      Alert.alert(t('message.success'), t('session.responseSaved'));
+      showNotification(t('session.responseSaved'), 'success');
     } catch (error) {
       console.error('Error saving config:', error);
-      Alert.alert(t('message.error'), t('session.responseError'));
+      showNotification(t('session.responseError'), 'error');
     } finally {
       setSavingConfig(false);
     }
@@ -507,7 +509,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
     const isPreWellness = wellnessType === 'pre';
     const responses = sessionWellnessData?.responses || [];
     if (responses.length === 0) {
-      Alert.alert(t('message.info'), t('session.noResponses'));
+      showNotification(t('session.noResponses'), 'info');
       return;
     }
 
@@ -521,7 +523,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
       await generateWellnessSessionPdf(selectedSession, expectedValue, sessionWellnessData, t, lang, isPreWellness);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      Alert.alert(t('message.error'), t('session.pdfError'));
+      showNotification(t('session.pdfError'), 'error');
     } finally {
       setGeneratingPDF(false);
     }
@@ -531,7 +533,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
   const handleGenerateRangePDF = async () => {
     const selectedTeam = equipos.find(e => e.seleccionado === true);
     if (!selectedTeam?._id) {
-      Alert.alert(t('message.error'), t('wellness.noTeamSelected', 'Selecciona un equipo primero'));
+      showNotification(t('wellness.noTeamSelected', 'Selecciona un equipo primero'), 'error');
       return;
     }
 
@@ -544,7 +546,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
 
       const sessionsWithResponses = (data.sessions || []).filter(s => s.totalResponses > 0 || s.averageWellness != null);
       if (sessionsWithResponses.length === 0) {
-        Alert.alert(t('message.info'), t('wellness.noDataInRange', 'No hay datos de wellness en el rango seleccionado'));
+        showNotification(t('wellness.noDataInRange', 'No hay datos de wellness en el rango seleccionado'), 'info');
         return;
       }
 
@@ -563,7 +565,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
       setShowRangePDFModal(false);
     } catch (error) {
       console.error('Error generating range PDF:', error);
-      Alert.alert(t('message.error'), t('session.pdfError'));
+      showNotification(t('session.pdfError'), 'error');
     } finally {
       setGeneratingRangePDF(false);
     }
@@ -1530,6 +1532,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
             </View>
           </View>
         </Modal>
+        {NotificationToast}
       </View>
     </AppLayout>
   );

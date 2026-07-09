@@ -7,6 +7,7 @@ import { subscriptionRequired } from './store/slices/user/userSlice';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
 import { saveToken } from './auth/storage';
+import { useLocalNotifications } from './hooks/useLocalNotifications';
 
 const ApiUnavailable = ({ checking, onRetry }) => (
   <div style={{
@@ -77,6 +78,8 @@ export default function App() {
   const apiUnavailableRef = useRef(false);
   const [apiUnavailable, setApiUnavailable] = useState(false);
   const [checkingApi, setCheckingApi] = useState(false);
+
+  useLocalNotifications();
 
   const user = useSelector((s) => s.usuario?.user);
   const userLanguage = user?.idioma;

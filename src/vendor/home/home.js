@@ -20,6 +20,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 // Brand gradient stops (kept literal per migration rules — brand identity).
 const BRAND_GRADIENT = ['#1a237e', '#3949ab', '#5c6bc0'];
@@ -129,17 +130,19 @@ export default function Home({ navigation: navigationProp }) {
 
   // Obtener usuario desde Redux y fallback a AsyncStorage para pantallas vendor.
   useEffect(() => {
-    if (user?._id) {
-      setIdUsuario(user._id);
+    const reduxUserId = user?._id || user?.id;
+    if (reduxUserId) {
+      setIdUsuario(reduxUserId);
       return;
     }
 
     (async () => {
       const stored = await AsyncStorage.getItem('usuario');
-      const u = JSON.parse(stored || '{}')?._id;
+      const parsed = JSON.parse(stored || '{}');
+      const u = parsed?._id || parsed?.id;
       if (u) setIdUsuario(u);
     })();
-  }, [user?._id]);
+  }, [user?._id, user?.id]);
 
   // Cargar temporada seleccionada solo una vez al inicio
   useEffect(() => {
@@ -1050,7 +1053,7 @@ export default function Home({ navigation: navigationProp }) {
                         <View key={getEntityId(ejercicio) + index} style={[styles.sessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
                           {ejercicio?.imagen ? (
                             <Image
-                              source={{ uri: ejercicio.imagen.startsWith('http') ? ejercicio.imagen : `data:image/png;base64,${ejercicio.imagen}` }}
+                              source={{ uri: normalizeImageSource(ejercicio.imagen) }}
                               style={styles.sessionExerciseMiniImage}
                             />
                           ) : (
@@ -1140,7 +1143,7 @@ export default function Home({ navigation: navigationProp }) {
                           <View key={getEntityId(ejercicio) + index} style={[styles.lastSessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
                             {ejercicio?.imagen ? (
                               <Image
-                                source={{ uri: ejercicio.imagen.startsWith('http') ? ejercicio.imagen : `data:image/png;base64,${ejercicio.imagen}` }}
+                                source={{ uri: normalizeImageSource(ejercicio.imagen) }}
                                 style={styles.lastSessionExerciseMiniImage}
                               />
                             ) : (

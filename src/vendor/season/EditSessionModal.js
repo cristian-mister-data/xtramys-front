@@ -41,6 +41,7 @@ import {
   mergeExercises,
 } from '@/utils/sessionExercises';
 import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -748,7 +749,7 @@ export default function EditSessionModal({
                             <View style={styles.exerciseImageRowMobile}>
                               {exercise.imagen ? (
                                 <Image
-                                  source={{ uri: exercise.imagen }}
+                                  source={{ uri: normalizeImageSource(exercise.imagen) }}
                                   style={styles.exerciseItemImageMobile}
                                   resizeMode="cover"
                                 />
@@ -790,7 +791,7 @@ export default function EditSessionModal({
                               {/* Imagen del ejercicio */}
                               {exercise.imagen ? (
                                 <Image
-                                  source={{ uri: exercise.imagen }}
+                                  source={{ uri: normalizeImageSource(exercise.imagen) }}
                                   style={styles.exerciseItemImage}
                                   resizeMode="cover"
                                 />

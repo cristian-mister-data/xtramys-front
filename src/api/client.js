@@ -218,7 +218,7 @@ function attachInterceptors(instance) {
     (config) => {
       const method = String(config.method || 'get').toLowerCase();
       const user = loadUser?.();
-      const cacheUserKey = `${user?._id || ''}:${user?.accessMode || user?.plan || ''}`;
+      const cacheUserKey = `${user?._id || user?.id || ''}:${user?.accessMode || user?.plan || ''}`;
       if (cacheUserKey !== lastCacheUserKey) {
         lastCacheUserKey = cacheUserKey;
         clearGetCache();

@@ -17,6 +17,7 @@ import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppLayout from '@/vendor/shared/appLayout';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import { useInAppNotification } from '@/utils/useInAppNotification';
 import {
   getWellnessTemplates,
   createWellnessTemplate,
@@ -33,6 +34,7 @@ export default function WellnessTemplates({ navigation }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { showNotification, NotificationToast } = useInAppNotification();
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState([]);
   const [selectedType, setSelectedType] = useState('pre'); // 'pre' o 'post'
@@ -57,7 +59,7 @@ export default function WellnessTemplates({ navigation }) {
       setTemplates(data);
     } catch (error) {
       console.error('Error loading templates:', error);
-      Alert.alert(t('message.error'), t('wellnessTemplates.loadError'));
+      showNotification(t('wellnessTemplates.loadError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -109,7 +111,7 @@ export default function WellnessTemplates({ navigation }) {
 
   const handleSave = async () => {
     if (!templateName.trim()) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.nameRequired'));
+      showNotification(t('wellnessTemplates.nameRequired'), 'error');
       return;
     }
 
@@ -121,7 +123,7 @@ export default function WellnessTemplates({ navigation }) {
           description: templateDescription.trim(),
           questions,
         });
-        Alert.alert(t('message.success'), t('wellnessTemplates.updated'));
+        showNotification(t('wellnessTemplates.updated'), 'success');
       } else {
         await createWellnessTemplate({
           name: templateName.trim(),
@@ -129,13 +131,13 @@ export default function WellnessTemplates({ navigation }) {
           type: selectedType,
           questions,
         });
-        Alert.alert(t('message.success'), t('wellnessTemplates.created'));
+        showNotification(t('wellnessTemplates.created'), 'success');
       }
       setShowEditModal(false);
       loadTemplates();
     } catch (error) {
       console.error('Error saving template:', error);
-      Alert.alert(t('message.error'), error.response?.data?.message || t('wellnessTemplates.saveError'));
+      showNotification(error.response?.data?.message || t('wellnessTemplates.saveError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -153,10 +155,10 @@ export default function WellnessTemplates({ navigation }) {
           onPress: async () => {
             try {
               await deleteWellnessTemplate(template._id);
-              Alert.alert(t('message.success'), t('wellnessTemplates.deleted'));
+              showNotification(t('wellnessTemplates.deleted'), 'success');
               loadTemplates();
             } catch (error) {
-              Alert.alert(t('message.error'), t('wellnessTemplates.deleteError'));
+              showNotification(t('wellnessTemplates.deleteError'), 'error');
             }
           },
         },
@@ -167,20 +169,20 @@ export default function WellnessTemplates({ navigation }) {
   const handleSetDefault = async (template) => {
     try {
       await setDefaultWellnessTemplate(template._id);
-      Alert.alert(t('message.success'), t('wellnessTemplates.setAsDefault'));
+      showNotification(t('wellnessTemplates.setAsDefault'), 'success');
       loadTemplates();
     } catch (error) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.setDefaultError'));
+      showNotification(t('wellnessTemplates.setDefaultError'), 'error');
     }
   };
 
   const handleDuplicate = async (template) => {
     try {
       await duplicateWellnessTemplate(template._id);
-      Alert.alert(t('message.success'), t('wellnessTemplates.duplicated'));
+      showNotification(t('wellnessTemplates.duplicated'), 'success');
       loadTemplates();
     } catch (error) {
-      Alert.alert(t('message.error'), t('wellnessTemplates.duplicateError'));
+      showNotification(t('wellnessTemplates.duplicateError'), 'error');
     }
   };
 
@@ -434,6 +436,7 @@ export default function WellnessTemplates({ navigation }) {
             </View>
           </View>
         </Modal>
+        {NotificationToast}
       </View>
     </AppLayout>
   );

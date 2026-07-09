@@ -43,6 +43,7 @@ import { PlayerSelectionModal, getPlayerInjuryStatus } from '@/vendor/shared/tra
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
 import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -3999,7 +4000,7 @@ export default function AddEventModal({
                       <View style={styles.exerciseImageRowMobile}>
                         {exercise.imagen ? (
                           <Image
-                            source={{ uri: exercise.imagen }}
+                            source={{ uri: normalizeImageSource(exercise.imagen) }}
                             style={styles.exerciseItemImageMobile}
                             resizeMode="cover"
                           />
@@ -4055,7 +4056,7 @@ export default function AddEventModal({
                         {/* Imagen del ejercicio */}
                         {exercise.imagen ? (
                           <Image
-                            source={{ uri: exercise.imagen }}
+                            source={{ uri: normalizeImageSource(exercise.imagen) }}
                             style={styles.exerciseItemImage}
                             resizeMode="cover"
                           />

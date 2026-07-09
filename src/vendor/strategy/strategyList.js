@@ -79,6 +79,7 @@ const openExternalUrl = (url) => {
 };
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const getOwnerId = (item) => item?.usuario?._id || item?.usuario?.id || item?.usuario || item?.user?._id || item?.user?.id || item?.user;
 const mergeById = (...groups) => {
   const map = new Map();
   groups.flat().filter(Boolean).forEach((item) => {
@@ -116,7 +117,7 @@ const buildFolderPath = (folder, folderById, lang) => {
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
-  return sameId(item.usuario, userId);
+  return sameId(getOwnerId(item), userId);
 };
 
 function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem, canEditVideoItem, isSetPiece = false }) {
@@ -1292,7 +1293,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
   const [viewingStrategy, setViewingStrategy] = useState(null);
   const [sharedStrategies, setSharedStrategies] = useState([]);
-  const [idUsuario, setIdUsuario] = useState("");
+  const [idUsuario, setIdUsuario] = useState(user?._id || user?.id || "");
   const [userRole, setUserRole] = useState('user');
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const canEditStrategyItem = useCallback((item) => !item?.sharedByFriend && canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
@@ -1417,7 +1418,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
         const usuario = await AsyncStorage.getItem('usuario');
         if (!usuario) return;
         const parsed = JSON.parse(usuario);
-        const u = parsed?._id;
+        const u = parsed?._id || parsed?.id;
         setIdUsuario(u);
         setUserRole(parsed?.role || 'user');
       } catch (e) {
@@ -1595,7 +1596,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return strategies.filter(st => matchesKind(st) && !st.isGlobal && (isDemo || sameId(st.usuario, idUsuario)));
+        return strategies.filter(st => matchesKind(st) && !st.isGlobal && (isDemo || sameId(getOwnerId(st), idUsuario)));
       }
       if (listFilter === 'club') {
         return strategies.filter(st => matchesKind(st) && st.visibility === 'CLUB');
@@ -1620,7 +1621,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter((f) => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario))), lang);
     if (listFilter === 'club') return sortByLocalizedName(strategyFolders.filter((f) => !f.parentFolder && f.visibility === 'CLUB'), lang);
     return sortByLocalizedName((isDemo ? strategyFolders : mergeById(strategyFolders, globalFolders)).filter((f) => !f.parentFolder && !f.isGlobal), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, strategyFolders, idUsuario, filters.titulo, lang, isDemo]);

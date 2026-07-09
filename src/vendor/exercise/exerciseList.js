@@ -58,6 +58,7 @@ const openExternalUrl = (url) => {
 };
 const getItemId = (item) => item?._id || item?.id;
 const sameId = (a, b) => String(a || '') === String(b || '');
+const getOwnerId = (item) => item?.usuario?._id || item?.usuario?.id || item?.usuario || item?.user?._id || item?.user?.id || item?.user;
 const getSessionExerciseId = (item) => {
   if (!item) return '';
   if (typeof item === 'string' || typeof item === 'number') return String(item);
@@ -111,7 +112,7 @@ const sortByLocalizedName = (items, lang) => [...items].sort((a, b) =>
 const canEditClubOwnedItem = (item, userId, userRole) => {
   if (!item) return false;
   if (userRole === 'admin') return true;
-  return sameId(item.usuario, userId);
+  return sameId(getOwnerId(item), userId);
 };
 
 function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEditVideo, userRole, canMutate, canEditItem }) {
@@ -424,7 +425,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
                   </TouchableOpacity>
                 </>
               )}
-              {canMutate !== false && canEditItem?.(exercise) && (
+              {canMutate !== false && (canEditItem?.(exercise) || (exercise?.isGlobal && userRole !== 'admin')) && (
                 <TouchableOpacity
                   style={styles.modalEditButton}
                   onPress={() => onEdit(exercise)}
@@ -1354,7 +1355,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   });
   const [viewingExercise, setViewingExercise] = useState(null);
   const [sharedExercises, setSharedExercises] = useState([]);
-  const idUsuario = user?._id || "";
+  const idUsuario = user?._id || user?.id || "";
   const userRole = user?.role || "user";
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const canEditExerciseItem = useCallback((item) => !item?.sharedByFriend && canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
@@ -1711,7 +1712,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => sameId(ex.usuario, idUsuario));
+        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => sameId(getOwnerId(ex), idUsuario));
       }
       if (listFilter === 'club') {
         return ejercicios.filter(ex => ex.visibility === 'CLUB');
@@ -1745,7 +1746,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'shared') return [];
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
-    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(f.usuario, idUsuario))), lang);
+    if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario))), lang);
     if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
     return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);
@@ -1826,7 +1827,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
   const handleEditAssociatedVideo = useCallback(async (video, parentExercise) => {
     try {
-      if (!canEditExerciseItem(parentExercise) || !canEditExerciseItem(video)) return;
+      const canEditParent = canEditExerciseItem(parentExercise) || (parentExercise?.isGlobal && userRole !== 'admin');
+      if (!canEditParent) return;
       let editableVideoId = video?._id || video?.id;
 
       if (!editableVideoId) {
@@ -2225,7 +2227,6 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         onEditVideo={handleEditAssociatedVideo}
         onEdit={async (exercise) => {
           if (canMutate === false) return;
-          if (!canEditExerciseItem(exercise)) return;
           // Si el ejercicio es global y el usuario no es admin, duplicar primero
           if (exercise.isGlobal && userRole !== 'admin') {
             try {
@@ -2241,6 +2242,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
               return;
             }
           } else {
+            if (!canEditExerciseItem(exercise)) return;
             setEditingExercise(exercise);
           }
           setCreating(true);

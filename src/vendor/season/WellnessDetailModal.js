@@ -26,6 +26,7 @@ import { savePdfToDownloads } from '@/utils/pdfDownload';
 import api from '@/api/client';
 import { getWellnessTemplates, getWellnessFormUrl } from '@/utils/api';
 import { BACKEND_URL } from '@/config';
+import { useInAppNotification } from '@/utils/useInAppNotification';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -71,6 +72,7 @@ export default function WellnessDetailModal({
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const { showNotification, NotificationToast } = useInAppNotification();
   
   // Extraer sessionId y sessionDate de la sesión
   const sessionId = session?._id;
@@ -144,10 +146,10 @@ export default function WellnessDetailModal({
       if (onUpdate) {
         await onUpdate(response.data?.expectedWellness ?? expectedWellness);
       }
-      Alert.alert(t('message.success'), t('session.responseSaved') || 'Configuración guardada');
+      showNotification(t('session.responseSaved') || 'Configuración guardada', 'success');
     } catch (error) {
       console.error('Error guardando wellness:', error);
-      Alert.alert(t('message.error'), t('session.responseError') || 'No se pudo guardar');
+      showNotification(t('session.responseError') || 'No se pudo guardar', 'error');
     } finally {
       setSaving(false);
     }
@@ -164,10 +166,10 @@ export default function WellnessDetailModal({
       // Recargar datos para obtener el nuevo token
       await loadWellnessData();
       
-      Alert.alert(t('message.success'), t('session.linkGenerated'));
+      showNotification(t('session.linkGenerated'), 'success');
     } catch (error) {
       console.error('Error generando enlace:', error);
-      Alert.alert(t('message.error'), t('session.responseError') || 'No se pudo generar el enlace');
+      showNotification(t('session.responseError') || 'No se pudo generar el enlace', 'error');
     } finally {
       setGenerating(false);
     }
@@ -201,7 +203,7 @@ export default function WellnessDetailModal({
     const currentLang = t('lang') === 'en' ? 'en' : 'es';
     const link = getWellnessFormUrl(wellnessData.wellnessToken, currentLang);
     await Clipboard.setStringAsync(link);
-    Alert.alert(t('message.success'), t('session.linkCopied'));
+    showNotification(t('session.linkCopied'), 'success');
   };
 
   // Activar/Desactivar enlace
@@ -216,13 +218,13 @@ export default function WellnessDetailModal({
       await api.post(`/wellness/session/${sessionId}/toggle-link`, { active: newState });
       await loadWellnessData();
       if (onUpdate) onUpdate();
-      Alert.alert(
-        t('message.success'), 
-        newState ? t('session.linkActivated') : t('session.linkDeactivated')
+      showNotification(
+        newState ? t('session.linkActivated') : t('session.linkDeactivated'),
+        'success'
       );
     } catch (error) {
       console.error('Error toggling link:', error);
-      Alert.alert(t('message.error'), t('session.responseError'));
+      showNotification(t('session.responseError'), 'error');
     } finally {
       setToggling(false);
     }
@@ -244,7 +246,7 @@ export default function WellnessDetailModal({
               await loadWellnessData();
               if (onUpdate) onUpdate();
             } catch (error) {
-              Alert.alert(t('message.error'), t('session.responseDeleteError') || 'No se pudo eliminar la respuesta');
+              showNotification(t('session.responseDeleteError') || 'No se pudo eliminar la respuesta', 'error');
             }
           }
         }
@@ -293,7 +295,7 @@ export default function WellnessDetailModal({
   // Generar PDF de wellness
   const handleGeneratePDF = async () => {
     if (!wellnessData || !wellnessData.responses || wellnessData.responses.length === 0) {
-      Alert.alert(t('message.info'), t('session.noResponses') || 'No hay respuestas para exportar');
+      showNotification(t('session.noResponses') || 'No hay respuestas para exportar', 'info');
       return;
     }
 
@@ -303,7 +305,7 @@ export default function WellnessDetailModal({
       await generateWellnessSessionPdf(session, expectedWellness, wellnessData, t, lang, false);
     } catch (error) {
       console.error('Error generating wellness PDF:', error);
-      Alert.alert(t('message.error'), t('session.pdfError') || 'Error al generar el PDF');
+      showNotification(t('session.pdfError') || 'Error al generar el PDF', 'error');
     } finally {
       setGeneratingPDF(false);
     }
@@ -691,6 +693,7 @@ export default function WellnessDetailModal({
             </View>
           </View>
         </Modal>
+        {NotificationToast}
       </View>
     </Modal>
   );

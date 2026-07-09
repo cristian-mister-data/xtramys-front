@@ -51,7 +51,7 @@ export default function RequireSeason({ children }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const user = useSelector((state) => state.usuario.user);
-  const userId = user?._id;
+  const userId = user?._id || user?.id;
   const isClubAdmin = user?.role === 'club_admin';
   const isClubCoach = user?.role === 'user' && !!user?.clubId;
   const hasPendingCoachSetup = isClubCoach && user?.coachSetupCompleted === false;
