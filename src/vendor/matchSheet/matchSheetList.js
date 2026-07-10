@@ -707,7 +707,7 @@ export default function MatchSheetList({ canMutate }) {
                 onPress={() => setFiltersVisible(!filtersVisible)}
                 style={[styles.headerActionBtn, filtersVisible && styles.headerActionBtnActive]}
               >
-                <MaterialIcons name="filter-list" size={20} color={filtersVisible ? '#fff' : theme.colors.primary} />
+                <MaterialIcons name="filter-list" size={20} color={filtersVisible ? '#fff' : theme.colors.textSecondary} />
                 {activeFiltersCount > 0 && (
                   <View style={styles.mobileMenuBadge}>
                     <Text style={styles.mobileMenuBadgeText}>{activeFiltersCount}</Text>
@@ -3503,12 +3503,12 @@ const makeStyles = (theme) => StyleSheet.create({
   headerActionBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primarySoft,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: theme.colors.primarySoft,
+    borderColor: theme.colors.border,
   },
   headerActionBtnActive: {
     backgroundColor: theme.colors.primary,
@@ -3520,7 +3520,7 @@ const makeStyles = (theme) => StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 20,
+    borderRadius: 8,
     backgroundColor: theme.colors.primary,
   },
   headerCreateBtnText: {

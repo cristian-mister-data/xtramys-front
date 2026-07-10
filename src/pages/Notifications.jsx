@@ -12,9 +12,12 @@ import RNWebPage from './_RNWebPage';
 const Page = styled.div`
   width: min(1120px, 100%);
   margin: 0 auto;
-  padding: 0 clamp(12px, 3vw, 28px) 32px;
+  padding: 20px clamp(12px, 3vw, 28px) 32px;
   display: grid;
   gap: 18px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
 `;
 const TopGrid = styled.div`
   display: grid;

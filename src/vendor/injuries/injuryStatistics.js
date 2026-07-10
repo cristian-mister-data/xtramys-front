@@ -161,27 +161,31 @@ const ChartRenderer = ({ type, data, chartWidth, chartHeight, isMobile, selected
 
   if (type === 'barV') {
     const barData = {
-      labels: filteredData.map(d => d.name.substring(0, 8)),
+      labels: filteredData.map(d => d.name.substring(0, 14)),
       datasets: [{
         data: filteredData.map(d => d.count),
         colors: filteredData.map(d => () => d.color),
       }],
     };
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ marginVertical: 8 }}>
         <BarChart
           data={barData}
-          width={Math.max(chartWidth, filteredData.length * 60)}
+          width={Math.max(chartWidth, filteredData.length * 80)}
           height={chartHeight}
           chartConfig={{
             ...chartConfig,
-            barPercentage: 0.7,
+            barPercentage: 0.6,
           }}
           fromZero
           showValuesOnTopOfBars
           withCustomBarColorFromData
           flatColor
-          style={{ borderRadius: 8 }}
+          style={{
+            borderRadius: 8,
+            paddingRight: 16,
+            paddingBottom: 10,
+          }}
         />
       </ScrollView>
     );
