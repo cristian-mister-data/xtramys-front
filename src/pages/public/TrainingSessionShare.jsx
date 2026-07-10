@@ -316,6 +316,28 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
             Reproducir video
           </button>
         )}
+
+        {exercise.videoUrl && (
+          <a
+            className="watchBtn"
+            style={{
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#ef4444',
+              marginTop: primaryVideo ? '8px' : '0px'
+            }}
+            href={exercise.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg style={{ marginRight: 6 }} width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.108C19.52 3.5 12 3.5 12 3.5s-7.52 0-9.388.555A3.002 3.002 0 0 0 .503 6.163C0 8.03 0 12 0 12s0 3.97.503 5.837a3.002 3.002 0 0 0 2.11 2.108C4.48 20.5 12 20.5 12 20.5s7.52 0 9.388-.555a3.002 3.002 0 0 0 2.11-2.108C24 15.97 24 12 24 12s0-3.97-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            Enlace de video
+          </a>
+        )}
       </div>
     </article>
   );

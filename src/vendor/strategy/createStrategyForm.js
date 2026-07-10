@@ -399,6 +399,8 @@ export default function CreateStrategyForm({
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '' } }
           : undefined,
+        videoId: editingStrategy ? (editingStrategy.videoId?._id || editingStrategy.videoId) : undefined,
+        sourceStrategyIdForVideos: editingStrategy?.sourceStrategyIdForVideos || undefined,
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
       

@@ -67,11 +67,23 @@ export default function SetPieceShare() {
         <section style={styles.list}>
           {setPieces.map((setPiece, index) => {
             const image = normalizeImageSource(setPiece.customImage || setPiece.imagen);
+            const hasVideo = setPiece.video?.url || setPiece.videoUrl;
             return (
               <article key={`${setPiece.strategyId || index}`} style={styles.boardCard}>
-                <button type="button" style={styles.boardButton} onClick={() => openVideo(setPiece.video, setPiece.nombre)}>
+                <button
+                  type="button"
+                  style={styles.boardButton}
+                  onClick={() => {
+                    if (setPiece.video?.url) {
+                      openVideo(setPiece.video, setPiece.nombre);
+                    } else if (setPiece.videoUrl) {
+                      window.open(setPiece.videoUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  disabled={!hasVideo}
+                >
                   {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <span style={styles.muted}>Sin grafico</span>}
-                  {setPiece.video?.url ? <span style={styles.playBadge}>Ver video</span> : null}
+                  {hasVideo ? <span style={styles.playBadge}>Ver video</span> : null}
                 </button>
                 <h2 style={styles.cardTitle}>{setPiece.nombre}</h2>
                 {setPiece.descripcion ? <p style={styles.videoDesc}>{setPiece.descripcion}</p> : null}
@@ -97,9 +109,20 @@ export default function SetPieceShare() {
       </section>
 
       <section style={styles.boardCard}>
-        <button type="button" style={styles.boardButton} onClick={() => openVideo(video, setPiece.nombre)}>
+        <button
+          type="button"
+          style={styles.boardButton}
+          onClick={() => {
+            if (video?.url) {
+              openVideo(video, setPiece.nombre);
+            } else if (setPiece.videoUrl) {
+              window.open(setPiece.videoUrl, '_blank', 'noopener,noreferrer');
+            }
+          }}
+          disabled={!(video?.url || setPiece.videoUrl)}
+        >
           {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <span style={styles.muted}>Sin grafico</span>}
-          {video?.url ? <span style={styles.playBadge}>Ver video</span> : null}
+          {(video?.url || setPiece.videoUrl) ? <span style={styles.playBadge}>Ver video</span> : null}
         </button>
       </section>
 

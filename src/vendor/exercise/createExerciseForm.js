@@ -397,6 +397,7 @@ export default function CreateExerciseForm({
         translations: (isAdmin && isGlobal)
           ? { en: { nombre: nameEn || '', descripcion: descriptionEn || '', objetivo: objectiveEn || '', materialNecesario: materialNecesarioEn || '' } }
           : undefined,
+        videoId: editingExercise ? (editingExercise.videoId?._id || editingExercise.videoId) : undefined,
         // Incluir IDs de videos pendientes para asociar después de crear el ejercicio
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };

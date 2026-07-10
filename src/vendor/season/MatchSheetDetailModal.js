@@ -237,6 +237,11 @@ export default function MatchSheetDetailModal({
     if (setPieceVideoUrl) player.play();
   });
   
+  const openExternalUrl = (url) => {
+    if (!url) return;
+    Linking.openURL(url).catch((err) => console.error("Error opening URL:", err));
+  };
+  
   // Hook reutilizable para PDFs
   const {
     generatingPDF,
@@ -598,6 +603,17 @@ export default function MatchSheetDetailModal({
                           <View style={{ flex: 1, minWidth: 0 }}>
                             <Text style={styles.setPieceDetailTitle} numberOfLines={1}>{setPiece.nombre}</Text>
                             {!!setPiece.descripcion && <Text style={styles.setPieceDetailDesc} numberOfLines={2}>{setPiece.descripcion}</Text>}
+                            {!!setPiece.videoUrl && (
+                              <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}
+                                onPress={() => openExternalUrl(setPiece.videoUrl)}
+                              >
+                                <Ionicons name="logo-youtube" size={16} color="#ef4444" style={{ marginRight: 6 }} />
+                                <Text style={{ color: theme.colors.primary, fontSize: 13, textDecorationLine: 'underline' }} numberOfLines={1}>
+                                  {setPiece.videoUrl}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                           {!!getVideoId(setPiece) && (
                             <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece)}>

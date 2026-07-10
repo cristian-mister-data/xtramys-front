@@ -1912,6 +1912,7 @@ export default function EditMatchSheetModal({
         customFieldType: sp.customFieldType || '',
         pizarraConfig: sp.pizarraConfig || null,
         videoId: getSetPieceVideoId(sp),
+        videoUrl: sp.videoUrl || '',
         assignments: (sp.assignments || []).map((assignment) => {
           const playerId = typeof assignment.player === 'object' ? assignment.player?._id : assignment.player;
           const player = players.find((p) => p._id === playerId) || assignment.player;
@@ -2024,7 +2025,8 @@ export default function EditMatchSheetModal({
         customElements: setPiece.customElements || [],
         customFieldType: setPiece.customFieldType || setPiece.tipoCampo || 'full',
         pizarraConfig: setPiece.pizarraConfig || null,
-        videoId: Array.isArray(setPiece.videos) ? setPiece.videos[0] : undefined,
+        videoId: setPiece.videoId || (Array.isArray(setPiece.videos) && setPiece.videos.length > 0 ? setPiece.videos[0] : undefined),
+        videoUrl: setPiece.videoUrl || '',
         assignments: slots.map((slot) => ({ ...slot, player: null, playerName: '' })),
       },
     ]);

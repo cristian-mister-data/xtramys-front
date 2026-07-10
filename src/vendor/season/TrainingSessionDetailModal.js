@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   Image,
   Platform,
+  Linking,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
@@ -75,6 +76,11 @@ export default function TrainingSessionDetailModal({
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
+  
+  const openExternalUrl = (url) => {
+    if (!url) return;
+    Linking.openURL(url).catch((err) => console.error("Error opening URL:", err));
+  };
   
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [sharingSession, setSharingSession] = useState(false);
@@ -745,6 +751,17 @@ export default function TrainingSessionDetailModal({
                               >
                                 <Feather name="play-circle" size={14} color="#fff" />
                                 <Text style={styles.exerciseVideoBtnText}>{t('exercise.video')}</Text>
+                              </TouchableOpacity>
+                            )}
+                            
+                            {/* Botón de video externo (link) - solo mostrar si tiene videoUrl */}
+                            {!!ejercicio.videoUrl && (
+                              <TouchableOpacity
+                                style={[styles.exerciseVideoBtn, { backgroundColor: '#ef4444' }]}
+                                onPress={() => openExternalUrl(ejercicio.videoUrl)}
+                              >
+                                <Ionicons name="logo-youtube" size={14} color="#fff" />
+                                <Text style={styles.exerciseVideoBtnText}>{t('exercise.videoLink', 'Video')}</Text>
                               </TouchableOpacity>
                             )}
                           </View>
