@@ -1048,7 +1048,7 @@ export default function InjuriesManagement({ navigation, canMutate }) {
                     {showPlayerSelector && (
                       <View style={styles.optionsContainer}>
                         <ScrollView style={styles.optionsScroll} showsVerticalScrollIndicator={false}>
-                          {jugadores?.map((player) => (
+                           {(jugadores || []).filter(p => p.activo !== false || formData.jugador === p._id).map((player) => (
                             <TouchableOpacity
                               key={player._id}
                               style={[

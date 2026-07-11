@@ -372,6 +372,7 @@ export function MatchSheetPDFButtons({
         {matchSheet.convocados && matchSheet.convocados.length > 0 && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.successSoft }]}
+            title={t('matchSheet.pdf.callupButton', 'PDF convocatoria')}
             onPress={() => {
               if (generatingPDF) return;
               onCallUpPress();
@@ -389,6 +390,7 @@ export function MatchSheetPDFButtons({
         {matchSheet.alineacion && matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.primarySoft }]}
+            title={t('matchSheet.pdf.lineupButton', 'PDF alineación')}
             onPress={() => {
               if (generatingPDF) return;
               onLineupPress();
@@ -406,6 +408,7 @@ export function MatchSheetPDFButtons({
         {showMatchSheetButton && (
           <TouchableOpacity
             style={[styles.compactButton, { backgroundColor: theme.colors.warningSoft }]}
+            title={t('matchSheet.pdf.matchSheetButton', 'PDF ficha completa')}
             onPress={() => {
               if (generatingPDF) return;
               onMatchSheetPress();

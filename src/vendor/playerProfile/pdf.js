@@ -44,8 +44,44 @@ const s = StyleSheet.create({
   grid4: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: SPACING.sm,
     marginBottom: SPACING.md,
+  },
+  personalGrid: {
+    marginBottom: SPACING.md,
+  },
+  personalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  personalCard: {
+    width: '48.5%',
+    minHeight: 58,
+    borderWidth: 1,
+    borderColor: '#dbe3ee',
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+  },
+  personalCardFull: {
+    width: '100%',
+  },
+  personalLabelText: {
+    fontSize: 7.5,
+    lineHeight: 9,
+    color: '#64748b',
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+  },
+  personalValueText: {
+    fontSize: 11,
+    lineHeight: 13,
+    color: '#0f172a',
+    fontFamily: 'Helvetica-Bold',
+    marginTop: 4,
   },
   profileHero: {
     backgroundColor: '#0f172a',
@@ -153,29 +189,6 @@ const s = StyleSheet.create({
     color: '#ffffff',
     fontFamily: 'Helvetica-Bold',
   },
-  infoStatCard: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoStatLabel: {
-    fontSize: 8,
-    color: '#64748b',
-    textTransform: 'uppercase',
-    marginBottom: 4,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
-  },
-  infoStatValue: {
-    fontSize: 12,
-    color: '#0f172a',
-    fontFamily: 'Helvetica-Bold',
-  },
   statCard: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -185,7 +198,7 @@ const s = StyleSheet.create({
     borderColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 54,
   },
   statValue: {
     fontSize: 14,
@@ -193,7 +206,7 @@ const s = StyleSheet.create({
     color: '#1f2937',
   },
   statLabel: {
-    fontSize: 7.5,
+    fontSize: 8,
     color: '#64748b',
     textTransform: 'uppercase',
     marginTop: 3,
@@ -364,6 +377,24 @@ const ProfileGeneralPage = ({
     anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
   const displayWeight = latestAntro?.peso || player.peso;
   const profileInjuries = playerInjuryList(injuries, player);
+  const personalItems = [
+    player.apodo ? [t('player.nickname', 'Apodo'), player.apodo] : null,
+    [t('player.height', 'Altura'), player.altura ? `${player.altura} cm` : '-'],
+    [t('player.profile.weight', 'Peso'), displayWeight ? `${displayWeight} kg` : '-'],
+    [t('player.sex', 'Sexo'), player.sexo || '-'],
+    [
+      t('player.profile.type', 'Tipo'),
+      player.esExtra || player.extra
+        ? t('player.profile.extraPlayer', 'Extra')
+        : t('player.profile.rosterPlayer', 'Plantilla'),
+    ],
+    (player.extra || player.esExtra) && player.procedenciaExtra
+      ? [t('player.extraOrigin', 'Procedencia del jugador extra'), player.procedenciaExtra]
+      : null,
+    (player.extra || player.esExtra) && player.categoriaExtra
+      ? [t('player.extraCategory', 'Categoría de procedencia'), player.categoriaExtra]
+      : null,
+  ].filter(Boolean);
 
   return (
     <Page size="A4" style={s.page}>
@@ -401,36 +432,31 @@ const ProfileGeneralPage = ({
           </View>
         </View>
 
-        <PdfSection title={t('player.profile.personalInfo', 'Información personal')}>
-          <View style={s.grid4}>
-            {player.apodo ? (
-              <View style={s.infoStatCard}>
-                <Text style={s.infoStatLabel}>{t('player.nickname', 'Apodo')}</Text>
-                <Text style={s.infoStatValue}>{player.apodo}</Text>
-              </View>
-            ) : null}
-            <View style={s.infoStatCard}>
-              <Text style={s.infoStatLabel}>{t('player.height', 'Altura')}</Text>
-              <Text style={s.infoStatValue}>{player.altura ? `${player.altura} cm` : '-'}</Text>
+        <View wrap={false}>
+          <PdfSection title={t('player.profile.personalInfo', 'Información personal')}>
+            <View style={s.personalGrid} wrap={false}>
+              {Array.from({ length: Math.ceil(personalItems.length / 2) }).map((_, rowIndex) => {
+                const rowItems = personalItems.slice(rowIndex * 2, rowIndex * 2 + 2);
+                return (
+                  <View key={`personal-row-${rowIndex}`} style={s.personalRow}>
+                    {rowItems.map(([label, value]) => (
+                      <View
+                        key={`${label}-${rowIndex}`}
+                        style={[
+                          s.personalCard,
+                          rowItems.length === 1 ? s.personalCardFull : null,
+                        ]}
+                      >
+                        <Text style={s.personalLabelText}>{label}</Text>
+                        <Text style={s.personalValueText}>{value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
             </View>
-            <View style={s.infoStatCard}>
-              <Text style={s.infoStatLabel}>{t('player.profile.weight', 'Peso')}</Text>
-              <Text style={s.infoStatValue}>{displayWeight ? `${displayWeight} kg` : '-'}</Text>
-            </View>
-            <View style={s.infoStatCard}>
-              <Text style={s.infoStatLabel}>{t('player.sex', 'Sexo')}</Text>
-              <Text style={s.infoStatValue}>{player.sexo || '-'}</Text>
-            </View>
-            <View style={s.infoStatCard}>
-              <Text style={s.infoStatLabel}>{t('player.profile.type', 'Tipo')}</Text>
-              <Text style={s.infoStatValue}>
-                {player.esExtra || player.extra
-                  ? t('player.profile.extraPlayer', 'Extra')
-                  : t('player.profile.rosterPlayer', 'Plantilla')}
-              </Text>
-            </View>
-          </View>
-        </PdfSection>
+          </PdfSection>
+        </View>
 
         {stats && (
           <View wrap={false}>

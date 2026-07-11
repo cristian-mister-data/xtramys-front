@@ -128,6 +128,7 @@ export default function RivalSelector({
       rivalId: rival._id,
       rival: rival.nombre,
       rivalEscudo: rival.escudo || null,
+      rivalEquipaciones: rival.equipaciones || null,
     });
     setOpen(false);
   };
@@ -163,6 +164,7 @@ export default function RivalSelector({
         rivalId: res._id,
         rival: res.nombre,
         rivalEscudo: res.escudo || null,
+        rivalEquipaciones: res.equipaciones || null,
       });
       setCreateOpen(false);
       setOpen(false);

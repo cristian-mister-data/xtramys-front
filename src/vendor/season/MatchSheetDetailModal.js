@@ -33,6 +33,8 @@ import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
 import { getScoutingReports, deleteScoutingReport } from '@/api/scouting';
 import ScoutingDetailModal from '@/components/scouting/ScoutingDetailModal';
+import MatchStatisticsModal from '@/components/season/MatchStatisticsModal';
+import { normalizeKits, normalizeRivalKits } from '@/utils/kits';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -218,6 +220,10 @@ export default function MatchSheetDetailModal({
   const theme = useTheme();
   const navigate = useNavigate();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const ownKits = normalizeKits(team?.equipaciones);
+  const rivalKits = normalizeRivalKits(matchSheet?.rivalId?.equipaciones);
+  const ownKit = matchSheet?.equipacionPropia || ownKits[matchSheet?.equipacionPropiaKey || 'first'];
+  const rivalKit = matchSheet?.equipacionRival || rivalKits[matchSheet?.equipacionRivalKey || 'first'];
   const currentLang = i18n.language || 'es';
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -263,6 +269,7 @@ export default function MatchSheetDetailModal({
 
   const [scoutingReports, setScoutingReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [statisticsVisible, setStatisticsVisible] = useState(false);
 
   useEffect(() => {
     if (!visible || !matchSheet?._id) {
@@ -527,13 +534,25 @@ export default function MatchSheetDetailModal({
               <TouchableOpacity
                 style={styles.modalEditButton}
                 onPress={openScouting}
+                title={t('matchSheet.actions.scouting', 'Abrir scouting')}
               >
                 <Ionicons name="person-add-outline" size={20} color={theme.colors.text} />
               </TouchableOpacity>
+              {canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.modalEditButton}
+                  onPress={() => setStatisticsVisible(true)}
+                  accessibilityLabel={t('matchSheet.statistics.add', 'Añadir estadísticas')}
+                  title={t('matchSheet.statistics.add', 'Añadir estadísticas')}
+                >
+                  <Ionicons name="stats-chart-outline" size={20} color={theme.colors.text} />
+                </TouchableOpacity>
+              )}
               {onEdit && (
                 <TouchableOpacity
                   style={styles.modalEditButton}
                   onPress={() => onEdit(matchSheet)}
+                  title={t('edition.edit', 'Editar ficha')}
                 >
                   <Ionicons name="pencil" size={20} color={theme.colors.text} />
                 </TouchableOpacity>
@@ -558,6 +577,13 @@ export default function MatchSheetDetailModal({
                     <Text style={styles.resultText}>{translateResult(matchSheet.resultado)}</Text>
                   </View>
                 )}
+              </View>
+              <View style={styles.kitMatchup}>
+                <View style={[styles.kitDetailSwatch, { borderRadius: ownKit.shape === 'circle' ? 18 : 6, backgroundColor: ownKit.primaryColor, borderColor: ownKit.secondaryColor }]} />
+                <Text style={styles.kitTeamName}>{team?.nombre || t('matchSheet.pdf.team', 'Equipo')}</Text>
+                <Text style={styles.kitVs}>VS</Text>
+                <Text style={styles.kitTeamName}>{matchSheet.rival}</Text>
+                <View style={[styles.kitDetailSwatch, { borderRadius: rivalKit.shape === 'circle' ? 18 : 6, backgroundColor: rivalKit.primaryColor, borderColor: rivalKit.secondaryColor }]} />
               </View>
             </View>
 
@@ -1090,6 +1116,12 @@ export default function MatchSheetDetailModal({
         }}
         onDelete={canMutate !== false ? handleDeleteScouting : undefined}
       />
+      <MatchStatisticsModal
+        visible={statisticsVisible}
+        matchSheet={matchSheet}
+        players={players}
+        onClose={() => setStatisticsVisible(false)}
+      />
     </Modal>
   );
 }
@@ -1160,6 +1192,33 @@ const makeStyles = (theme) => StyleSheet.create({
   // Match Sheet Detail Card
   matchSheetDetailCard: {
     marginBottom: 16,
+  },
+  kitMatchup: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  kitDetailSwatch: {
+    width: 36,
+    height: 36,
+    borderWidth: 4,
+  },
+  kitTeamName: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    maxWidth: 120,
+  },
+  kitVs: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
   },
   matchSheetDetailHeader: {
     flexDirection: 'row',

@@ -363,6 +363,7 @@ export default function TrainingSessionDetailModal({
   session,
   onEdit,
   onDelete,
+  onRepeat,
   onOpenWellness,
   onOpenPreWellness,
 }) {
@@ -417,6 +418,11 @@ export default function TrainingSessionDetailModal({
             </Button>
           )}
           <Row style={{ gap: 8 }}>
+            {onRepeat && (
+              <Button type="button" $variant="secondary" onClick={() => onRepeat(data)}>
+                <MdFitnessCenter /> {t('session.repeat', 'Repetir sesión')}
+              </Button>
+            )}
             <Button type="button" $variant="ghost" onClick={onClose}>
               {t('common.close', 'Cerrar')}
             </Button>

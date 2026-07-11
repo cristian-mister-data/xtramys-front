@@ -100,7 +100,7 @@ const SexBtn = styled.button`
 const emptyForm = {
   nombre: '', apellido: '', apodo: '', edad: '', posicion: '',
   dorsal: '', altura: '', sexo: 'M', foto: null, extra: false,
-  fechaNacimiento: '', pierna: '',
+  fechaNacimiento: '', pierna: '', procedenciaExtra: '', categoriaExtra: '',
 };
 
 export default function PlayerFormModal({
@@ -134,6 +134,8 @@ export default function PlayerFormModal({
         extra: !!player.extra,
         fechaNacimiento: player.fechaNacimiento ? player.fechaNacimiento.split('T')[0] : '',
         pierna: player.pierna || '',
+        procedenciaExtra: player.procedenciaExtra || '',
+        categoriaExtra: player.categoriaExtra || '',
       });
     } else {
       setData(emptyForm);
@@ -199,19 +201,16 @@ export default function PlayerFormModal({
     const missing = [];
     if (!data.nombre.trim()) missing.push(t('player.name', 'Nombre'));
     if (!data.apellido.trim()) missing.push(t('player.lastName', 'Apellido'));
-    if (!data.edad) missing.push(t('player.age', 'Edad'));
-    if (!data.posicion) missing.push(t('player.position', 'Posición'));
-    if (data.dorsal === '') missing.push(t('player.dorsal', 'Dorsal'));
     if (missing.length) {
       showMissingFieldsToast(t, missing);
       return;
     }
-    const dorsalNum = parseInt(data.dorsal, 10);
-    if (!Number.isFinite(dorsalNum)) {
+    const dorsalNum = data.dorsal === '' ? null : parseInt(data.dorsal, 10);
+    if (data.dorsal !== '' && !Number.isFinite(dorsalNum)) {
       setError(t('player.dorsalMustBeNumber', 'El dorsal debe ser un número'));
       return;
     }
-    const repeated = existingPlayers.some(
+    const repeated = dorsalNum != null && existingPlayers.some(
       (p) => p.dorsal === dorsalNum && (mode !== 'edit' || p._id !== player?._id),
     );
     if (repeated) {
@@ -222,13 +221,15 @@ export default function PlayerFormModal({
       nombre: data.nombre.trim(),
       apellido: data.apellido.trim(),
       apodo: data.apodo.trim(),
-      edad: parseInt(data.edad, 10),
-      posicion: data.posicion,
+      edad: data.edad === '' ? null : parseInt(data.edad, 10),
+      posicion: data.posicion || '',
       dorsal: dorsalNum,
       sexo: data.sexo || 'M',
       extra: !!data.extra,
       fechaNacimiento: data.fechaNacimiento || null,
       pierna: data.pierna || '',
+      procedenciaExtra: data.procedenciaExtra.trim(),
+      categoriaExtra: data.categoriaExtra.trim(),
     };
     if (data.altura) payload.altura = parseInt(data.altura, 10);
     else if (mode === 'edit') payload.altura = null;
@@ -371,6 +372,19 @@ export default function PlayerFormModal({
             />
             <span>⭐ {t('player.extraDescription', 'Jugador extra (no de plantilla)')}</span>
           </ToggleRow>
+
+          {data.extra ? (
+            <Grid>
+              <Field>
+                <Label>{t('player.extraOrigin', 'Procedencia del jugador extra')}</Label>
+                <Input value={data.procedenciaExtra} onChange={set('procedenciaExtra')} placeholder={t('player.extraOriginPlaceholder', 'Filial, club de origen...')} />
+              </Field>
+              <Field>
+                <Label>{t('player.extraCategory', 'Categoría de procedencia')}</Label>
+                <Input value={data.categoriaExtra} onChange={set('categoriaExtra')} placeholder={t('player.extraCategoryPlaceholder', 'Ej. Cadete, Juvenil...')} />
+              </Field>
+            </Grid>
+          ) : null}
 
           {error ? <ErrorText>{error}</ErrorText> : null}
         </Stack>

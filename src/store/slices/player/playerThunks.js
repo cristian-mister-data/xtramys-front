@@ -10,7 +10,7 @@ const clearPlayerCache = () => playerCache.clear();
 export const fetchJugadoresEquipo = createAsyncThunk(
   'jugador/fetchJugadoresEquipo',
   async ({ team }) => playerCache.read(playerKey('team', { team }), async () => {
-    const res = await api.get(`/player/team/${team}`);
+    const res = await api.get(`/player/team/${team}?includeInactive=true`);
     return res.data;
   })
 );
@@ -55,6 +55,18 @@ export const updateJugador = createAsyncThunk('jugador/updateJugador', async ({ 
 
 export const deleteJugador = createAsyncThunk('jugador/deleteJugador', async (id) => {
   await api.delete(`/player/${id}`);
+  clearPlayerCache();
+  return id;
+});
+
+export const darDeBajaJugador = createAsyncThunk('jugador/darDeBajaJugador', async ({ id, motivo = '' }) => {
+  await api.post(`/player/${id}/deactivate`, { motivo });
+  clearPlayerCache();
+  return id;
+});
+
+export const darDeAltaJugador = createAsyncThunk('jugador/darDeAltaJugador', async ({ id }) => {
+  await api.post(`/player/${id}/activate`);
   clearPlayerCache();
   return id;
 });

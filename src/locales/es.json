@@ -1475,6 +1475,9 @@
     "bulkCreateError": "Error al crear sesiones",
     "deleteSuccess": "Sesión eliminada",
     "deleteError": "No se pudo eliminar la sesión",
+    "repeat": "Repetir sesión",
+    "repeatSuccess": "Sesión repetida. Revisa y guarda el nuevo entrenamiento.",
+    "repeatError": "No se pudo repetir la sesión",
     "bulkDeleteTitle": "Eliminar entrenamientos",
     "bulkDeleteMessage": "Se eliminarán {{count}} entrenamientos. Esta acción no se puede deshacer.",
     "bulkDeleteSuccess": "{{count}} entrenamientos eliminados",
@@ -2699,6 +2702,16 @@
     "selectTeamMessage": "Selecciona un equipo desde la sección de equipos",
     "createSubtitle": "Crea una nueva ficha de partido",
     "editSubtitle": "Modifica los datos del partido",
+    "statistics": {
+      "title": "Estadísticas del partido",
+      "add": "Añadir estadísticas",
+      "team": "Estadísticas del equipo",
+      "players": "Estadísticas por jugador",
+      "downloadPdf": "Descargar PDF",
+      "fields": {
+        "posesion": "Posesión %", "tiros": "Tiros", "tirosAPuerta": "Tiros a puerta", "corners": "Córners", "faltas": "Faltas", "fueras": "Fueras de juego", "minutosJugados": "Minutos", "goles": "Goles", "asistencias": "Asistencias", "pasesCompletados": "Pases", "recuperaciones": "Recuperaciones", "perdidas": "Pérdidas", "duelosGanados": "Duelos ganados", "duelosPerdidos": "Duelos perdidos", "valoracion": "Valoración"
+      }
+    },
     "tabs": {
       "data": "Datos",
       "abp": "ABP"
@@ -2747,6 +2760,8 @@
       "formation": "Alineación",
       "teamFormation": "Alineación del Equipo",
       "rivalFormation": "Alineación del Rival",
+      "ownKit": "Equipación propia",
+      "rivalKit": "Equipación rival",
       "selectFormation": "Seleccionar Alineación",
       "selectRivalFormation": "Seleccionar Alineación Rival",
       "coachNotes": "Notas del Entrenador",
@@ -3534,7 +3549,20 @@
     },
     "choosePhoto": "Elegir foto",
     "create": "Crear",
-    "extraDescription": "Jugador extra (no de plantilla)"
+    "extraDescription": "Jugador extra (no de plantilla)",
+    "extraOrigin": "Procedencia del jugador extra",
+    "extraOriginPlaceholder": "Filial, club de origen...",
+    "extraCategory": "Categoría de procedencia",
+    "extraCategoryPlaceholder": "Ej. Cadete, Juvenil...",
+    "inactivePlayers": "Jugadores de baja",
+    "deactivate": "Dar de baja",
+    "deactivateConfirmation": "¿Dar de baja a este jugador? Se conservará su historial.",
+    "deactivateSuccess": "Jugador dado de baja",
+    "deactivateError": "No se pudo dar de baja al jugador",
+    "activate": "Dar de alta",
+    "activateConfirmation": "¿Dar de alta de nuevo a este jugador?",
+    "activateSuccess": "Jugador dado de alta",
+    "activateError": "No se pudo dar de alta al jugador"
   },
   "nutrition": {
     "title": "Plan Nutricional",
@@ -5520,5 +5548,30 @@
     "categoryRequired": "Selecciona una categoría",
     "noActiveSeason": "No se encontró una temporada activa. Contacta al administrador del club.",
     "errorConfig": "Error al configurar tu perfil"
+  },
+  "kits": {
+    "title": "Equipaciones",
+    "first": "Primera equipación",
+    "second": "Segunda equipación",
+    "goalkeeperFirst": "Portero · primera",
+    "goalkeeperSecond": "Portero · segunda",
+    "shirt": "Camiseta",
+    "circle": "Círculo",
+    "pattern": "Diseño",
+    "primary": "Principal",
+    "secondary": "Secundario",
+    "shorts": "Pantalón",
+    "boardTitle": "Equipaciones de la ABP",
+    "ownKit": "Equipación propia",
+    "rival": "Rival",
+    "defaultRival": "Rival por defecto",
+    "patterns": {
+      "solid": "Lisa",
+      "vertical": "Rayas verticales",
+      "horizontal": "Rayas horizontales",
+      "halves": "Mitades",
+      "diagonal": "Diagonal",
+      "sash": "Banda"
+    }
   }
 }

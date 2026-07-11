@@ -994,6 +994,7 @@ export default function Training({ canMutate }) {
   const [addEventModalVisible, setAddEventModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [repeatedSessionId, setRepeatedSessionId] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
   const [timeOverlayVisible, setTimeOverlayVisible] = useState(false);
   const [timeOverlayTarget, setTimeOverlayTarget] = useState(null);
@@ -1410,6 +1411,36 @@ export default function Training({ canMutate }) {
     setEditModalVisible(true);
   }
 
+  async function handleRepeatSession(session) {
+    const selectedTeam = equipos.find(e => e.seleccionado === true);
+    if (!selectedTeam?._id || !session) return;
+    try {
+      const created = await dispatch(createEntrenamiento({
+        equipo: selectedTeam._id,
+        fecha: new Date().toISOString(),
+        horaInicio: session.horaInicio || null,
+        horaFin: session.horaFin || null,
+        ejercicios: session.ejercicios || [],
+        ejerciciosDetalle: session.ejerciciosDetalle || [],
+        ejerciciosFuerza: session.ejerciciosFuerza || [],
+        jugadores: session.jugadores || [],
+        jugadoresExtras: session.jugadoresExtras || [],
+        observaciones: session.observaciones || [],
+        expectedWellness: session.expectedWellness,
+        manualAverageWellness: session.manualAverageWellness,
+      })).unwrap();
+      const repeated = Array.isArray(created) ? created[0] : created;
+      await dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
+      setSelectedSession(repeated);
+      setRepeatedSessionId(repeated?._id || null);
+      setDetailModalVisible(false);
+      setEditModalVisible(true);
+      toast.success(t('session.repeatSuccess', 'Sesión repetida. Revisa y guarda el nuevo entrenamiento.'));
+    } catch (error) {
+      toast.error(t('session.repeatError', 'No se pudo repetir la sesión'));
+    }
+  }
+
   const handleCreateExerciseFromSession = useCallback(() => {
     saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise: null, addToTrainingDraft: true });
     saveFormDraft(STORAGE_KEYS.FIELD_RESULT, { kind: 'exercise', editingId: null });
@@ -1459,9 +1490,23 @@ export default function Training({ canMutate }) {
       toast.success(t('session.updateSuccess'));
       setEditModalVisible(false);
       setSelectedSession(null);
+      setRepeatedSessionId(null);
     } catch (error) {
       toast.error(t('session.updateError'));
     }
+  }
+
+  async function handleCloseEditSession() {
+    if (repeatedSessionId) {
+      try {
+        await dispatch(deleteEntrenamiento(repeatedSessionId)).unwrap();
+        const selectedTeam = equipos.find(e => e.seleccionado === true);
+        if (selectedTeam?._id) dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
+      } catch { /* keep the draft visible if cleanup fails */ }
+      setRepeatedSessionId(null);
+    }
+    setEditModalVisible(false);
+    setSelectedSession(null);
   }
 
   async function handleDeleteSession(session) {
@@ -2396,6 +2441,7 @@ export default function Training({ canMutate }) {
         }}
         onEdit={handleEditSession}
         onDelete={handleDeleteSession}
+        onRepeat={canMutate !== false ? handleRepeatSession : undefined}
         onWellnessUpdate={handleWellnessUpdate}
         canMutate={canMutate}
       />
@@ -2407,10 +2453,7 @@ export default function Training({ canMutate }) {
         players={jugadoresDisponibles}
         exercises={ejerciciosDisponibles}
         injuries={injuries}
-        onClose={() => {
-          setEditModalVisible(false);
-          setSelectedSession(null);
-        }}
+        onClose={handleCloseEditSession}
         onSave={handleSaveSession}
         canMutate={canMutate}
         onCreateExerciseFromSession={handleCreateExerciseFromSession}

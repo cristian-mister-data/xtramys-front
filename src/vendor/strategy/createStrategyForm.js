@@ -9,6 +9,7 @@ import {
   BackHandler,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -24,6 +25,8 @@ import { linkVideoToStrategy } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
+import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -47,6 +50,8 @@ export default function CreateStrategyForm({
   const draftKind = isSetPiece ? 'setPiece' : 'strategy';
   const strategyFolders = useSelector(state => state.strategy.foldersFlat) || [];
   const strategyLoading = useSelector(state => state.strategy.loading);
+  const selectedTeam = useSelector(state => state.team.teams?.find(team => team.seleccionado)) || null;
+  const rivals = useSelector(state => state.rival.rivals) || [];
   const placeholderColor = theme?.colors?.inputPlaceholder || '#94a3b8';
   const iconColor = theme?.colors?.textMuted || '#9e9e9e';
   const chevronColor = theme?.colors?.textSecondary || '#666';
@@ -99,6 +104,31 @@ export default function CreateStrategyForm({
       ? __pendingFieldResult.pizarraConfig
       : (editingStrategy ? editingStrategy.pizarraConfig || null : null)
   );
+  const existingKitContext = pizarraConfig?.kitContext || editingStrategy?.pizarraConfig?.kitContext || {};
+  const [selectedRivalId, setSelectedRivalId] = useState(existingKitContext.rivalId || '');
+  const [ownKitKey, setOwnKitKey] = useState(existingKitContext.ownKitKey || 'first');
+  const [rivalKitKey, setRivalKitKey] = useState(existingKitContext.rivalKitKey || 'first');
+
+  useEffect(() => {
+    if (isSetPiece && selectedTeam?._id) dispatch(fetchRivalsByTeam({ teamId: selectedTeam._id }));
+  }, [dispatch, isSetPiece, selectedTeam?._id]);
+
+  const kitContext = useMemo(() => {
+    const ownKits = normalizeKits(selectedTeam?.equipaciones);
+    const rival = rivals.find(item => item._id === selectedRivalId) || null;
+    const rivalKits = normalizeRivalKits(rival?.equipaciones);
+    return {
+      teamId: selectedTeam?._id || null,
+      rivalId: rival?._id || null,
+      rivalName: rival?.nombre || '',
+      ownKitKey,
+      rivalKitKey,
+      own: ownKits[ownKitKey],
+      ownGoalkeeper: ownKits[ownKitKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+      rival: rivalKits[rivalKitKey],
+      rivalGoalkeeper: rivalKits[rivalKitKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+    };
+  }, [selectedTeam, rivals, selectedRivalId, ownKitKey, rivalKitKey]);
 
   // Estados para videos pendientes de asociar (para nuevas estrategias)
   const pendingVideoIds = useRef(editingStrategy?.pendingVideoIds || []);
@@ -333,7 +363,7 @@ export default function CreateStrategyForm({
     };
 
     const parsedConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
-    const safeConfig = isSetPiece ? { ...parsedConfig, setPieceMode: true } : parsedConfig;
+    const safeConfig = isSetPiece ? { ...parsedConfig, setPieceMode: true, kitContext, teamPlayers: { ...(parsedConfig.teamPlayers || {}), ...kitToBoardStyle(kitContext.own, kitContext.ownGoalkeeper) } } : parsedConfig;
     
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
@@ -389,7 +419,7 @@ export default function CreateStrategyForm({
         imagen: imagen,
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
-        pizarraConfig: pizarraConfig || null,
+        pizarraConfig: isSetPiece ? { ...(pizarraConfig || {}), setPieceMode: true, kitContext } : (pizarraConfig || null),
         isGlobal: isAdmin ? isGlobal : false,
         kind: isSetPiece ? 'setPiece' : 'strategy',
         visibility: !isAdmin && userClubId ? visibility : (editingStrategy?.visibility || 'PRIVATE'),
@@ -586,6 +616,8 @@ export default function CreateStrategyForm({
           </View>
         </View>
 
+
+
         <View style={styles.formCard}>
           <View style={styles.graphicSection}>
             {(stableFieldElements && stableFieldElements.length > 0) || stableImagen ? (
@@ -733,6 +765,26 @@ const makeStyles = (theme) => StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: theme?.colors?.border || '#334155',
+  },
+  kitChoice: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme?.colors?.border || '#334155',
+    backgroundColor: theme?.colors?.inputBg || '#1f2937',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  kitChoiceActive: {
+    borderColor: theme?.colors?.primary || '#2563eb',
+    backgroundColor: theme?.colors?.primarySoft || '#dbeafe',
+  },
+  kitChoiceText: {
+    color: theme?.colors?.text || '#e2e8f0',
+    fontSize: 13,
+    fontWeight: '600',
   },
   input: {
     backgroundColor: theme?.colors?.inputBg || '#1f2937',

@@ -40,6 +40,7 @@ import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
+import { kitToBoardStyle } from '@/utils/kits';
 import Svg, {
   Path,
   Polygon,
@@ -13237,6 +13238,35 @@ export default function Field(props = {}) {
 
   // Estado para Configuraci�n de la pizarra (colores y tama�os de iconos de jugadores)
   const [boardSettings, setBoardSettings] = useState(() => getDefaultBoardSettings());
+  const [userSettingsLoaded, setUserSettingsLoaded] = useState(false);
+  const appliedKitContextRef = useRef('');
+
+  useEffect(() => {
+    const context = initialConfig?.kitContext;
+    if (!setPieceMode || !context?.own || !userSettingsLoaded) return;
+    const signature = JSON.stringify(context);
+    if (appliedKitContextRef.current === signature) return;
+    appliedKitContextRef.current = signature;
+    const ownStyle = kitToBoardStyle(context.own, context.ownGoalkeeper);
+    const rivalStyle = kitToBoardStyle(context.rival, context.rivalGoalkeeper);
+    setTeamPlayerStyle(prev => ({ ...prev, ...ownStyle }));
+    setPaletteIcons(prev => prev.map(icon => {
+      const style = icon.id === 'icon1' ? ownStyle
+        : icon.id === 'icon2' ? rivalStyle
+          : icon.id === 'goalkeeper-1' ? { ...ownStyle, color: ownStyle.goalkeeperColor, stripeColor: ownStyle.goalkeeperStripeColor }
+            : icon.id === 'goalkeeper-2' ? { ...rivalStyle, color: rivalStyle.goalkeeperColor, stripeColor: rivalStyle.goalkeeperStripeColor }
+              : null;
+      return style ? { ...icon, ...style, shape: style.shape, hasStripes: style.hasStripes } : icon;
+    }));
+    setBoardSettings(prev => ({
+      ...prev,
+      teamPlayers: { ...prev.teamPlayers, ...ownStyle },
+      playerIcon1: { ...prev.playerIcon1, ...ownStyle },
+      playerIcon2: { ...prev.playerIcon2, ...rivalStyle },
+      goalkeeperIcon1: { ...prev.goalkeeperIcon1, color: ownStyle.goalkeeperColor, shape: ownStyle.shape, hasStripes: context.ownGoalkeeper?.pattern !== 'solid', stripeColor: ownStyle.goalkeeperStripeColor },
+      goalkeeperIcon2: { ...prev.goalkeeperIcon2, color: rivalStyle.goalkeeperColor, shape: rivalStyle.shape, hasStripes: context.rivalGoalkeeper?.pattern !== 'solid', stripeColor: rivalStyle.goalkeeperStripeColor },
+    }));
+  }, [initialConfig?.kitContext, setPieceMode, userSettingsLoaded]);
 
   // Estado para conectores (l�neas que conectan elementos)
   useEffect(() => {
@@ -13676,6 +13706,7 @@ export default function Field(props = {}) {
           const str = await AsyncStorage.getItem('usuario');
           if (!str) {
             userSettingsLoadedRef.current = true;
+            setUserSettingsLoaded(true);
             return;
           }
 
@@ -13892,10 +13923,12 @@ export default function Field(props = {}) {
 
           // Marcar que se cargaron los datos del usuario
           userSettingsLoadedRef.current = true;
+          setUserSettingsLoaded(true);
         } catch (err) {
           console.warn('Error loading user settings', err);
           // Marcar como cargado incluso si hay error para permitir que funcione
           userSettingsLoadedRef.current = true;
+          setUserSettingsLoaded(true);
         }
       };
 

@@ -22,6 +22,8 @@ const ListWrap = styled.button`
   padding: 12px 14px;
   cursor: pointer;
   transition: transform 0.05s, box-shadow 0.15s;
+  filter: ${({ $inactive }) => ($inactive ? 'grayscale(1) saturate(0.2)' : 'none')};
+  opacity: ${({ $inactive }) => ($inactive ? 0.62 : 1)};
   &:hover {
     transform: translateY(-1px);
     box-shadow: ${({ theme }) => theme.shadows.md};
@@ -120,6 +122,8 @@ const GridWrap = styled.button`
   cursor: pointer;
   padding: 0;
   transition: transform 0.05s, box-shadow 0.15s;
+  filter: ${({ $inactive }) => ($inactive ? 'grayscale(1) saturate(0.2)' : 'none')};
+  opacity: ${({ $inactive }) => ($inactive ? 0.62 : 1)};
   &:hover {
     transform: translateY(-1px);
     box-shadow: ${({ theme }) => theme.shadows.md};
@@ -201,7 +205,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
 
   if (viewMode === 'grid') {
     return (
-      <GridWrap onClick={onClick} type="button">
+      <GridWrap $inactive={player.activo === false} onClick={onClick} type="button">
         <GridHeader $colors={colors}>
           <GridAvatar $colors={colors}>
             {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}
@@ -221,7 +225,7 @@ export default function PlayerCard({ player, viewMode = 'list', onClick }) {
   }
 
   return (
-    <ListWrap onClick={onClick} type="button">
+    <ListWrap $inactive={player.activo === false} onClick={onClick} type="button">
       <Stripe $colors={colors} />
       <Avatar $colors={colors}>
         {player.foto ? <img src={cdnUrl(player.foto)} alt="" /> : getPlayerInitials(player)}

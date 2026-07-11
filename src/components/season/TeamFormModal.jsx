@@ -12,6 +12,8 @@ import {
   playersPerTeamOptions,
 } from './seasonHelpers';
 import ImageCropper from './ImageCropper';
+import KitDesigner from '@/components/shared/KitDesigner';
+import { DEFAULT_KITS, normalizeKits } from '@/utils/kits';
 
 const BadgeBox = styled.button`
   width: 96px;
@@ -82,13 +84,14 @@ export default function TeamFormModal({
 }) {
   const { t } = useTranslation();
   const fileRef = useRef(null);
-  const [form, setForm] = useState(() => initialValue || {
+  const [form, setForm] = useState(() => initialValue ? { ...initialValue, equipaciones: normalizeKits(initialValue.equipaciones) } : {
     nombre: '',
     categoriaKey: 'otro',
     categoriaCustom: '',
     tiempoPorParte: 45,
     jugadoresPorEquipo: 11,
     escudo: null,
+    equipaciones: normalizeKits(DEFAULT_KITS),
   });
   const [importPlayers, setImportPlayers] = useState(false);
   const [error, setError] = useState(null);
@@ -96,13 +99,14 @@ export default function TeamFormModal({
 
   useEffect(() => {
     if (open) {
-      setForm(initialValue || {
+      setForm(initialValue ? { ...initialValue, equipaciones: normalizeKits(initialValue.equipaciones) } : {
         nombre: '',
         categoriaKey: 'otro',
         categoriaCustom: '',
         tiempoPorParte: 45,
         jugadoresPorEquipo: 11,
         escudo: null,
+        equipaciones: normalizeKits(DEFAULT_KITS),
       });
       setImportPlayers(false);
       setError(null);
@@ -251,6 +255,11 @@ export default function TeamFormModal({
             />
             <Muted>{t('team.badgeHint', 'PNG/JPG cuadrada')}</Muted>
           </Row>
+        </Field>
+
+        <Field>
+          <Label>{t('kits.title', 'Equipaciones')}</Label>
+          <KitDesigner value={form.equipaciones} onChange={(equipaciones) => update({ equipaciones })} />
         </Field>
 
         {mode === 'create' && previousSeasonInfo?.hasPlayers && (

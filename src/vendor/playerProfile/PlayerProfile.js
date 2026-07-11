@@ -690,6 +690,18 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                     : t('player.profile.rosterPlayer')}
                 </Text>
               </View>
+              {(player.extra || player.esExtra) && player.procedenciaExtra ? (
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>{t('player.extraOrigin', 'Procedencia del jugador extra')}</Text>
+                  <Text style={styles.infoValue}>{player.procedenciaExtra}</Text>
+                </View>
+              ) : null}
+              {(player.extra || player.esExtra) && player.categoriaExtra ? (
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>{t('player.extraCategory', 'Categoría de procedencia')}</Text>
+                  <Text style={styles.infoValue}>{player.categoriaExtra}</Text>
+                </View>
+              ) : null}
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>{t('player.profile.team')}</Text>
                 <Text style={styles.infoValue}>{team?.nombre || '-'}</Text>

@@ -46,6 +46,7 @@ import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES, getDefaultFormation } from 
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { getPositionColor } from '@/components/player/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
+import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { cdnUrl } from '@/config';
@@ -1072,6 +1073,8 @@ export default function EditMatchSheetModal({
   const [rival, setRival] = useState('');
   const [rivalId, setRivalId] = useState(null);
   const [rivalEscudo, setRivalEscudo] = useState(null);
+  const [equipacionPropiaKey, setEquipacionPropiaKey] = useState('first');
+  const [equipacionRivalKey, setEquipacionRivalKey] = useState('first');
   const [fechaHora, setFechaHora] = useState(new Date());
   const [jornada, setJornada] = useState('');
   const [ubicacion, setUbicacion] = useState('local');
@@ -1089,6 +1092,9 @@ export default function EditMatchSheetModal({
   const [partidoUrl, setPartidoUrl] = useState('');
   const [alineacion, setAlineacion] = useState(() => getDefaultFormation(team?.jugadoresPorEquipo || 11));
   const [alineacionRival, setAlineacionRival] = useState('');
+  const ownKits = useMemo(() => normalizeKits(team?.equipaciones), [team?.equipaciones]);
+  const selectedRival = useMemo(() => rivals.find(item => String(item._id) === String(rivalId)) || null, [rivals, rivalId]);
+  const rivalKits = useMemo(() => normalizeRivalKits(selectedRival?.equipaciones || matchSheet?.rivalId?.equipaciones), [selectedRival?.equipaciones, matchSheet?.rivalId?.equipaciones]);
   
   // Estados para jugadores
   const [convocados, setConvocados] = useState([]);
@@ -1323,6 +1329,8 @@ export default function EditMatchSheetModal({
       setRival(matchSheet.rival || '');
       setRivalId(matchSheet.rivalId?._id || matchSheet.rivalId || null);
       setRivalEscudo(matchSheet.rivalId?.escudo || matchSheet.rivalEscudo || null);
+      setEquipacionPropiaKey(matchSheet.equipacionPropiaKey || 'first');
+      setEquipacionRivalKey(matchSheet.equipacionRivalKey || 'first');
       const matchDate = matchSheet.fechaHora ? new Date(matchSheet.fechaHora) : new Date();
       setFechaHora(matchDate);
       setJornada(matchSheet.jornada ? String(matchSheet.jornada) : '');
@@ -1389,6 +1397,8 @@ export default function EditMatchSheetModal({
       setRival('');
       setRivalId(null);
       setRivalEscudo(null);
+      setEquipacionPropiaKey('first');
+      setEquipacionRivalKey('first');
       const date = selectedDate ? new Date(selectedDate) : new Date();
       setFechaHora(date);
       setJornada('');
@@ -1649,6 +1659,8 @@ export default function EditMatchSheetModal({
       setRival('');
       setRivalId(null);
       setRivalEscudo(null);
+      setEquipacionPropiaKey('first');
+      setEquipacionRivalKey('first');
       setFechaHora(selectedDate ? new Date(selectedDate) : new Date());
       setJornada('');
       setUbicacion('local');
@@ -1910,7 +1922,22 @@ export default function EditMatchSheetModal({
         elementosCampo: sp.elementosCampo || [],
         customElements: sp.customElements || [],
         customFieldType: sp.customFieldType || '',
-        pizarraConfig: sp.pizarraConfig || null,
+        pizarraConfig: {
+          ...(sp.pizarraConfig || {}),
+          setPieceMode: true,
+          kitContext: {
+            teamId: team?._id || null,
+            rivalId: rivalId || null,
+            rivalName: rival.trim(),
+            ownKitKey: equipacionPropiaKey,
+            rivalKitKey: equipacionRivalKey,
+            own: ownKits[equipacionPropiaKey],
+            ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+            rival: rivalKits[equipacionRivalKey],
+            rivalGoalkeeper: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+          },
+          teamPlayers: { ...((sp.pizarraConfig || {}).teamPlayers || {}), ...kitToBoardStyle(ownKits[equipacionPropiaKey], ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']) },
+        },
         videoId: getSetPieceVideoId(sp),
         videoUrl: sp.videoUrl || '',
         assignments: (sp.assignments || []).map((assignment) => {
@@ -1936,6 +1963,12 @@ export default function EditMatchSheetModal({
         rival: rival.trim(),
         rivalId: rivalId,
         rivalEscudo: rivalEscudo,
+        equipacionPropiaKey,
+        equipacionRivalKey,
+        equipacionPropia: ownKits[equipacionPropiaKey],
+        equipacionPorteroPropia: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+        equipacionRival: rivalKits[equipacionRivalKey],
+        equipacionPorteroRival: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
         fechaHora: fechaHora.toISOString(),
         jornada: jornada ? Number(jornada) : null,
         ubicacion,
@@ -2200,8 +2233,20 @@ export default function EditMatchSheetModal({
       initialFieldType: boardSetPiece.customFieldType || boardSetPiece.tipoCampo || 'full',
       initialConfig: {
         ...(boardSetPiece.pizarraConfig || {}),
+        kitContext: {
+          teamId: team?._id || null,
+          rivalId: rivalId || null,
+          rivalName: (rival || '').trim(),
+          ownKitKey: equipacionPropiaKey,
+          rivalKitKey: equipacionRivalKey,
+          own: ownKits[equipacionPropiaKey],
+          ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+          rival: rivalKits[equipacionRivalKey],
+          rivalGoalkeeper: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+        },
         teamPlayers: {
           ...(boardSetPiece.pizarraConfig?.teamPlayers || {}),
+          ...kitToBoardStyle(ownKits[equipacionPropiaKey], ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']),
           showPhotos: Boolean(
             boardSetPiece.pizarraConfig?.teamPlayers?.showPhotos ||
             boardSetPiece.pizarraConfig?.showPhotos ||
@@ -2446,6 +2491,30 @@ export default function EditMatchSheetModal({
                 teamId={team?._id}
                 placeholder={t('schedule.selectRival')}
               />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('matchSheet.fields.ownKit', 'Equipación propia')}</Text>
+              <View style={styles.kitRow}>
+                {['first', 'second'].map((key) => (
+                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionPropiaKey === key && styles.kitOptionActive]} onPress={() => setEquipacionPropiaKey(key)}>
+                    <View style={[styles.kitSwatch, { borderRadius: ownKits[key].shape === 'circle' ? 12 : 4, backgroundColor: ownKits[key].primaryColor, borderColor: ownKits[key].secondaryColor }]} />
+                    <Text style={styles.kitOptionText}>{t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{t('matchSheet.fields.rivalKit', 'Equipación rival')}</Text>
+              <View style={styles.kitRow}>
+                {['first', 'second'].map((key) => (
+                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionRivalKey === key && styles.kitOptionActive]} onPress={() => setEquipacionRivalKey(key)}>
+                    <View style={[styles.kitSwatch, { borderRadius: rivalKits[key].shape === 'circle' ? 12 : 4, backgroundColor: rivalKits[key].primaryColor, borderColor: rivalKits[key].secondaryColor }]} />
+                    <Text style={styles.kitOptionText}>{t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {/* Fecha */}
@@ -3764,7 +3833,7 @@ export default function EditMatchSheetModal({
             visible={showConvocadosModal}
             onClose={() => setShowConvocadosModal(false)}
             title={t('schedule.selectCalled')}
-            players={players}
+            players={players.filter(p => p.activo !== false || convocados.includes(p._id))}
             selectedIds={convocados}
             excludeIds={[]}
             injuries={injuries}
@@ -3786,7 +3855,7 @@ export default function EditMatchSheetModal({
             visible={showNoConvocadosModal}
             onClose={() => setShowNoConvocadosModal(false)}
             title={t('schedule.selectNotCalled')}
-            players={players}
+            players={players.filter(p => p.activo !== false || noConvocados.includes(p._id))}
             selectedIds={noConvocados}
             excludeIds={[]}
             injuries={injuries}
@@ -4215,6 +4284,36 @@ const makeStyles = (theme) => StyleSheet.create({
   // Form
   formGroup: {
     marginBottom: 20,
+  },
+  kitRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  kitOption: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    backgroundColor: theme.colors.inputBg,
+  },
+  kitOptionActive: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+  },
+  kitSwatch: {
+    width: 24,
+    height: 24,
+    borderWidth: 3,
+  },
+  kitOptionText: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   label: {
     fontSize: 14,

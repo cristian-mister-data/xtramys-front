@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
-import { MdDelete, MdClose, MdBarChart, MdEdit } from 'react-icons/md';
+import { MdDelete, MdClose, MdBarChart, MdEdit, MdPersonOff, MdPersonAddAlt1 } from 'react-icons/md';
 import { Button, Row, Muted } from '@/ui/primitives';
 import {
   getPositionColor,
@@ -115,7 +115,7 @@ const FooterButton = styled(Button)`
   }
 `;
 
-export default function PlayerDetailModal({ open, player, onClose, onEdit, onDelete, onViewProfile }) {
+export default function PlayerDetailModal({ open, player, onClose, onEdit, onDelete, onDeactivate, onActivate, onViewProfile }) {
   const { t } = useTranslation();
   if (!player) return null;
   const colors = getPositionColor(player.posicion);
@@ -134,6 +134,18 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
               {t('edition.delete', 'Eliminar')}
             </FooterButton>
           )}
+          {player.activo !== false && onDeactivate ? (
+            <FooterButton type="button" $variant="secondary" onClick={() => onDeactivate(player)}>
+              <MdPersonOff size={16} />
+              {t('player.deactivate', 'Dar de baja')}
+            </FooterButton>
+          ) : null}
+          {player.activo === false && onActivate ? (
+            <FooterButton type="button" $variant="secondary" onClick={() => onActivate(player)}>
+              <MdPersonAddAlt1 size={16} />
+              {t('player.activate', 'Dar de alta')}
+            </FooterButton>
+          ) : null}
           <ActionsGroup>
             <FooterButton type="button" $variant="ghost" onClick={onClose}>
               <MdClose size={16} />
@@ -164,6 +176,8 @@ export default function PlayerDetailModal({ open, player, onClose, onEdit, onDel
           <HeaderSub>
             {getPositionIcon(player.posicion)} {translatePosition(player.posicion, t)}
             {player.extra ? ` · ⭐ ${t('player.extra', 'Extra')}` : ''}
+            {player.activo === false ? ` · ${t('player.inactivePlayers', 'Jugador de baja')}` : ''}
+            {player.extra && (player.procedenciaExtra || player.categoriaExtra) ? ` · ${[player.procedenciaExtra, player.categoriaExtra].filter(Boolean).join(' / ')}` : ''}
           </HeaderSub>
         </div>
       </Header>

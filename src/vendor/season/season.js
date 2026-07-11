@@ -49,6 +49,8 @@ import EditSessionModal from './EditSessionModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { toast } from '@/ui/toast';
+import KitDesigner from '@/components/shared/KitDesigner';
+import { DEFAULT_KITS, normalizeKits } from '@/utils/kits';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -190,7 +192,8 @@ export default function GestionEquipos() {
     categoriaCustom: '',
     tiempoPorParte: 45,
     jugadoresPorEquipo: 11,
-    escudo: null
+    escudo: null,
+    equipaciones: normalizeKits(DEFAULT_KITS)
   });
   const [showCreateCategoryOptions, setShowCreateCategoryOptions] = useState(false);
   const [showCreateTimeOptions, setShowCreateTimeOptions] = useState(false);
@@ -719,7 +722,8 @@ export default function GestionEquipos() {
       categoriaCustom: team.categoriaCustom || team.categoria || '',
       tiempoPorParte: team.tiempoPorParte || 45,
       jugadoresPorEquipo: team.jugadoresPorEquipo || 11,
-      escudo: team.escudo || null
+      escudo: team.escudo || null,
+      equipaciones: normalizeKits(team.equipaciones)
     });
     setEditTeamModalVisible(true);
   };
@@ -758,7 +762,8 @@ export default function GestionEquipos() {
           categoriaKey: teamToEdit.categoriaKey,
           categoriaCustom: teamToEdit.categoriaCustom || '',
           categoria: categoriaLegacy,
-          tiempoPorParte: teamToEdit.tiempoPorParte
+          tiempoPorParte: teamToEdit.tiempoPorParte,
+          equipaciones: teamToEdit.equipaciones
         }
       })).unwrap();
 
@@ -900,6 +905,7 @@ export default function GestionEquipos() {
         tiempoPorParte: newTeam.tiempoPorParte,
         jugadoresPorEquipo: newTeam.jugadoresPorEquipo,
         escudo: newTeam.escudo,
+        equipaciones: newTeam.equipaciones,
         importFromSeasonId: importPlayers && previousSeasonInfo?.previousSeason?._id 
           ? previousSeasonInfo.previousSeason._id 
           : null
@@ -915,7 +921,8 @@ export default function GestionEquipos() {
         categoriaCustom: '',
         tiempoPorParte: 45,
         jugadoresPorEquipo: 11,
-        escudo: null
+        escudo: null,
+        equipaciones: normalizeKits(DEFAULT_KITS)
       });
       setPreviousSeasonInfo(null);
       setImportPlayers(false);
@@ -1635,6 +1642,14 @@ export default function GestionEquipos() {
                   </>
                 )}
 
+                <Text style={styles.inputLabel}>{t('kits.title', 'Equipaciones')}</Text>
+                <View style={{ marginBottom: 16 }}>
+                  <KitDesigner
+                    value={teamToEdit?.equipaciones}
+                    onChange={(equipaciones) => setTeamToEdit(prev => ({ ...prev, equipaciones }))}
+                  />
+                </View>
+
                 <View style={[styles.modalActions, { marginBottom: 32 }]}>
                   <TouchableOpacity
                     style={styles.modalCancelButton}
@@ -1894,6 +1909,14 @@ export default function GestionEquipos() {
                   </View>
                 )}
 
+                <Text style={styles.inputLabel}>{t('kits.title', 'Equipaciones')}</Text>
+                <View style={{ marginBottom: 16 }}>
+                  <KitDesigner
+                    value={newTeam.equipaciones}
+                    onChange={(equipaciones) => setNewTeam(prev => ({ ...prev, equipaciones }))}
+                  />
+                </View>
+
                 <View style={styles.modalActions}>
                   <TouchableOpacity
                     style={styles.modalCancelButton}
@@ -1905,7 +1928,8 @@ export default function GestionEquipos() {
                         categoriaCustom: '',
                         tiempoPorParte: 45,
                         jugadoresPorEquipo: 11,
-                        escudo: null
+                        escudo: null,
+                        equipaciones: normalizeKits(DEFAULT_KITS)
                       });
                       setShowCreateCategoryOptions(false);
                       setShowCreateTimeOptions(false);

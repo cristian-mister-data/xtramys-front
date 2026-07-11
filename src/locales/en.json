@@ -1472,6 +1472,9 @@
     "bulkCreateError": "Error creating sessions",
     "deleteSuccess": "Session deleted",
     "deleteError": "Could not delete session",
+    "repeat": "Repeat session",
+    "repeatSuccess": "Session repeated. Review and save the new training.",
+    "repeatError": "Could not repeat the session",
     "bulkDeleteTitle": "Delete trainings",
     "bulkDeleteMessage": "{{count}} trainings will be deleted. This action cannot be undone.",
     "bulkDeleteSuccess": "{{count}} trainings deleted",
@@ -2694,6 +2697,16 @@
     "selectTeamMessage": "Select a team from the Teams section",
     "createSubtitle": "Create a new match sheet",
     "editSubtitle": "Modify match data",
+    "statistics": {
+      "title": "Match statistics",
+      "add": "Add statistics",
+      "team": "Team statistics",
+      "players": "Player statistics",
+      "downloadPdf": "Download PDF",
+      "fields": {
+        "posesion": "Possession %", "tiros": "Shots", "tirosAPuerta": "Shots on target", "corners": "Corners", "faltas": "Fouls", "fueras": "Offsides", "minutosJugados": "Minutes", "goles": "Goals", "asistencias": "Assists", "pasesCompletados": "Passes", "recuperaciones": "Recoveries", "perdidas": "Turnovers", "duelosGanados": "Duels won", "duelosPerdidos": "Duels lost", "valoracion": "Rating"
+      }
+    },
     "tabs": {
       "data": "Data",
       "abp": "Set Plays"
@@ -2742,6 +2755,8 @@
       "formation": "Lineup",
       "teamFormation": "Team Lineup",
       "rivalFormation": "Rival Lineup",
+      "ownKit": "Own kit",
+      "rivalKit": "Opponent kit",
       "selectFormation": "Select Lineup",
       "selectRivalFormation": "Select Rival Lineup",
       "coachNotes": "Coach Notes",
@@ -3528,7 +3543,20 @@
     },
     "choosePhoto": "Choose photo",
     "create": "Create",
-    "extraDescription": "Extra player (not from roster)"
+    "extraDescription": "Extra player (not from roster)",
+    "extraOrigin": "Extra player origin",
+    "extraOriginPlaceholder": "Reserve team, origin club...",
+    "extraCategory": "Origin category",
+    "extraCategoryPlaceholder": "e.g. U16, U18...",
+    "inactivePlayers": "Inactive players",
+    "deactivate": "Deactivate",
+    "deactivateConfirmation": "Deactivate this player? Their history will be kept.",
+    "deactivateSuccess": "Player deactivated",
+    "deactivateError": "Could not deactivate the player",
+    "activate": "Reactivate",
+    "activateConfirmation": "Reactivate this player?",
+    "activateSuccess": "Player reactivated",
+    "activateError": "Could not reactivate the player"
   },
   "nutrition": {
     "title": "Nutritional Plan",
@@ -5513,5 +5541,30 @@
     "categoryRequired": "Select a category",
     "noActiveSeason": "No active season found. Contact the club administrator.",
     "errorConfig": "Error setting up your profile"
+  },
+  "kits": {
+    "title": "Kits",
+    "first": "First kit",
+    "second": "Second kit",
+    "goalkeeperFirst": "Goalkeeper · first",
+    "goalkeeperSecond": "Goalkeeper · second",
+    "shirt": "Shirt",
+    "circle": "Circle",
+    "pattern": "Design",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "shorts": "Shorts",
+    "boardTitle": "Set-piece kits",
+    "ownKit": "Own kit",
+    "rival": "Opponent",
+    "defaultRival": "Default opponent",
+    "patterns": {
+      "solid": "Solid",
+      "vertical": "Vertical stripes",
+      "horizontal": "Horizontal stripes",
+      "halves": "Halves",
+      "diagonal": "Diagonal",
+      "sash": "Sash"
+    }
   }
 }

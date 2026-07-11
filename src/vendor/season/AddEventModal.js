@@ -1230,8 +1230,8 @@ export default function AddEventModal({
   const isMobile = width < 500;
   
   // Separar jugadores de plantilla y extras
-  const rosterPlayers = useMemo(() => players.filter(p => !p.extra), [players]);
-  const extraPlayersAvailable = useMemo(() => players.filter(p => p.extra), [players]);
+  const rosterPlayers = useMemo(() => players.filter(p => !p.extra && p.activo !== false), [players]);
+  const extraPlayersAvailable = useMemo(() => players.filter(p => p.extra && p.activo !== false), [players]);
   
   // Estados para ficha de partido
   const [matchData, setMatchData] = useState({

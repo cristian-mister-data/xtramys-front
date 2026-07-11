@@ -64,6 +64,7 @@ export default function TrainingSessionDetailModal({
   onClose,
   onEdit,
   onDelete,
+  onRepeat,
   onWellnessUpdate, // Callback para cuando se actualice el wellness
   canMutate = true,
 }) {
@@ -440,6 +441,7 @@ export default function TrainingSessionDetailModal({
                 style={styles.headerSecondaryButton}
                 onPress={handleShareSession}
                 disabled={sharingSession}
+                title={t('session.share', 'Compartir sesión')}
               >
                 {sharingSession ? (
                   <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -451,6 +453,7 @@ export default function TrainingSessionDetailModal({
                 style={styles.headerSecondaryButton}
                 onPress={handleGeneratePDF}
                 disabled={generatingPDF}
+                title={t('session.downloadPdf', 'Descargar PDF')}
               >
                 {generatingPDF ? (
                   <ActivityIndicator size="small" color="#d32f2f" />
@@ -462,8 +465,19 @@ export default function TrainingSessionDetailModal({
                 <TouchableOpacity
                   style={styles.headerSecondaryButton}
                   onPress={() => onEdit(session)}
+                  title={t('edition.edit', 'Editar sesión')}
                 >
                   <MaterialIcons name="edit" size={20} color={theme.colors.text} />
+                </TouchableOpacity>
+              )}
+              {onRepeat && canMutate !== false && (
+                <TouchableOpacity
+                  style={styles.headerSecondaryButton}
+                  onPress={() => onRepeat(session)}
+                  accessibilityLabel={t('session.repeat', 'Repetir sesión')}
+                  title={t('session.repeat', 'Repetir sesión')}
+                >
+                  <MaterialIcons name="replay" size={20} color={theme.colors.text} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity

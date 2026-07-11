@@ -1,5 +1,5 @@
 import React from 'react';
-import { Svg, Polygon, Line, Ellipse, Circle, Defs, RadialGradient, Stop, Path } from '@react-pdf/renderer';
+import { Svg, Polygon, Line, Ellipse, Circle, Defs, RadialGradient, Stop, Path, Rect } from '@react-pdf/renderer';
 import {
   Document, Page, Text, View, Image, StyleSheet,
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, PdfSection, renderPdf
@@ -8,6 +8,7 @@ import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 import { format } from 'date-fns';
 import i18n from '@/i18n';
 import { translatePosition } from '@/components/player/playerHelpers';
+import { DEFAULT_KITS, DEFAULT_RIVAL_KITS } from '@/utils/kits';
 
 
 const s = StyleSheet.create({
@@ -29,6 +30,36 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: COLORS.bgSoft, fontSize: 10, fontFamily: 'Helvetica-Bold', color: COLORS.primary, borderWidth: 1, borderColor: COLORS.borderLight, textAlign: 'center', marginBottom: 4 }
 });
 
+const PdfKit = ({ kit, size = 42 }) => {
+  const primary = kit?.primaryColor || '#2563eb';
+  const secondary = kit?.secondaryColor || '#ffffff';
+  const shorts = kit?.shortsColor || primary;
+  const pattern = kit?.pattern || 'solid';
+  if (kit?.shape === 'circle') return <Svg width={size} height={size}><Circle cx={size / 2} cy={size / 2} r={size * .42} fill={primary} stroke="#334155" strokeWidth="1" />{pattern !== 'solid' ? <Line x1={size * .25} y1={size * .75} x2={size * .75} y2={size * .25} stroke={secondary} strokeWidth={size * .14} /> : null}</Svg>;
+  return <Svg width={size} height={size * 1.15} viewBox="0 0 48 56">
+    <Path d="M15 5 L20 2 L28 2 L33 5 L44 10 L39 20 L34 17 L34 40 L14 40 L14 17 L9 20 L4 10 Z" fill={primary} stroke="#334155" strokeWidth="1" />
+    {pattern === 'halves' ? <Path d="M24 2 L28 2 L33 5 L44 10 L39 20 L34 17 L34 40 L24 40 Z" fill={secondary} /> : null}
+    {pattern === 'vertical' ? <><Rect x="13.5" y="5.5" width="3" height="34" fill={secondary} /><Rect x="22.5" y="2.5" width="3" height="37.5" fill={secondary} /><Rect x="31.5" y="5.5" width="3" height="34" fill={secondary} /></> : null}
+    {pattern === 'horizontal' ? <><Rect x="14" y="15" width="20" height="5" fill={secondary} /><Rect x="14" y="27" width="20" height="5" fill={secondary} /></> : null}
+    {(pattern === 'diagonal' || pattern === 'sash') ? <Line x1="13" y1="36" x2="35" y2="9" stroke={secondary} strokeWidth={pattern === 'sash' ? 8 : 5} /> : null}
+    <Path d="M15 42 L23 42 L24 47 L25 42 L33 42 L35 54 L25 54 L24 51 L23 54 L13 54 Z" fill={shorts} stroke="#334155" strokeWidth="1" />
+  </Svg>;
+};
+
+const PdfKitMatchup = ({ matchSheet, team }) => {
+  const own = matchSheet.equipacionPropia 
+    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
+    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
+  const rival = matchSheet.equipacionRival 
+    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
+    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first'];
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: COLORS.borderLight, justifyContent: 'center' }}>
+    <PdfKit kit={own} size={28} /><Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: COLORS.text }}>{team?.nombre || 'Equipo'}</Text>
+    <Text style={{ fontSize: 9, color: COLORS.textMuted }}>VS</Text>
+    <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: COLORS.text }}>{matchSheet.rival}</Text><PdfKit kit={rival} size={28} />
+  </View>;
+};
+
 const getPositionColor = (pos) => {
   const position = pos?.toUpperCase() || '';
   if (position === 'POR' || position === 'PORTERO') return '#10b981';
@@ -41,20 +72,20 @@ const getPositionColor = (pos) => {
 };
 
 const FORMATION_POSITIONS = {
-  '1-4-4-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MI', x: 10, y: 46 }, { pos: 'MC', x: 35, y: 50 }, { pos: 'MC', x: 65, y: 50 }, { pos: 'MD', x: 90, y: 46 }, { pos: 'DC', x: 35, y: 22 }, { pos: 'DC', x: 65, y: 22 }],
-  '1-4-3-3': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MC', x: 25, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 75, y: 50 }, { pos: 'EI', x: 15, y: 22 }, { pos: 'DC', x: 50, y: 18 }, { pos: 'ED', x: 85, y: 22 }],
-  '1-4-2-3-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 35, y: 56 }, { pos: 'MCD', x: 65, y: 56 }, { pos: 'MI', x: 15, y: 36 }, { pos: 'MCO', x: 50, y: 32 }, { pos: 'MD', x: 85, y: 36 }, { pos: 'DC', x: 50, y: 14 }],
-  '1-3-5-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'CAI', x: 6, y: 50 }, { pos: 'MC', x: 28, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 72, y: 50 }, { pos: 'CAD', x: 94, y: 50 }, { pos: 'DC', x: 35, y: 20 }, { pos: 'DC', x: 65, y: 20 }],
-  '1-3-4-3': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'MI', x: 12, y: 50 }, { pos: 'MC', x: 38, y: 48 }, { pos: 'MC', x: 62, y: 48 }, { pos: 'MD', x: 88, y: 50 }, { pos: 'EI', x: 18, y: 22 }, { pos: 'DC', x: 50, y: 18 }, { pos: 'ED', x: 82, y: 22 }],
-  '1-4-5-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MI', x: 10, y: 46 }, { pos: 'MC', x: 30, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 70, y: 50 }, { pos: 'MD', x: 90, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
-  '1-5-3-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'CAI', x: 6, y: 68 }, { pos: 'DFC', x: 28, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 72, y: 76 }, { pos: 'CAD', x: 94, y: 68 }, { pos: 'MC', x: 28, y: 48 }, { pos: 'MC', x: 50, y: 44 }, { pos: 'MC', x: 72, y: 48 }, { pos: 'DC', x: 35, y: 20 }, { pos: 'DC', x: 65, y: 20 }],
-  '1-5-4-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'CAI', x: 6, y: 68 }, { pos: 'DFC', x: 28, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 72, y: 76 }, { pos: 'CAD', x: 94, y: 68 }, { pos: 'MI', x: 15, y: 46 }, { pos: 'MC', x: 38, y: 48 }, { pos: 'MC', x: 62, y: 48 }, { pos: 'MD', x: 85, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
-  '1-4-1-4-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 50, y: 58 }, { pos: 'MI', x: 10, y: 40 }, { pos: 'MC', x: 35, y: 42 }, { pos: 'MC', x: 65, y: 42 }, { pos: 'MD', x: 90, y: 40 }, { pos: 'DC', x: 50, y: 18 }],
-  '1-3-4-1-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'MI', x: 12, y: 54 }, { pos: 'MC', x: 38, y: 52 }, { pos: 'MC', x: 62, y: 52 }, { pos: 'MD', x: 88, y: 54 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
-  '1-4-3-2-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MC', x: 25, y: 54 }, { pos: 'MC', x: 50, y: 50 }, { pos: 'MC', x: 75, y: 54 }, { pos: 'MI', x: 25, y: 34 }, { pos: 'MD', x: 75, y: 34 }, { pos: 'DC', x: 50, y: 16 }],
-  '1-4-1-2-1-2': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 50, y: 58 }, { pos: 'MC', x: 30, y: 46 }, { pos: 'MC', x: 70, y: 46 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
-  '1-3-3-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MI', x: 15, y: 46 }, { pos: 'MC', x: 50, y: 42 }, { pos: 'MD', x: 85, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
-  '1-3-2-1': [{ pos: 'POR', x: 50, y: 90 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MC', x: 32, y: 46 }, { pos: 'MC', x: 68, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-4-4-2': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MI', x: 10, y: 46 }, { pos: 'MC', x: 35, y: 50 }, { pos: 'MC', x: 65, y: 50 }, { pos: 'MD', x: 90, y: 46 }, { pos: 'DC', x: 35, y: 22 }, { pos: 'DC', x: 65, y: 22 }],
+  '1-4-3-3': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MC', x: 25, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 75, y: 50 }, { pos: 'EI', x: 15, y: 22 }, { pos: 'DC', x: 50, y: 18 }, { pos: 'ED', x: 85, y: 22 }],
+  '1-4-2-3-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 35, y: 56 }, { pos: 'MCD', x: 65, y: 56 }, { pos: 'MI', x: 15, y: 36 }, { pos: 'MCO', x: 50, y: 32 }, { pos: 'MD', x: 85, y: 36 }, { pos: 'DC', x: 50, y: 14 }],
+  '1-3-5-2': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'CAI', x: 6, y: 50 }, { pos: 'MC', x: 28, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 72, y: 50 }, { pos: 'CAD', x: 94, y: 50 }, { pos: 'DC', x: 35, y: 20 }, { pos: 'DC', x: 65, y: 20 }],
+  '1-3-4-3': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'MI', x: 12, y: 50 }, { pos: 'MC', x: 38, y: 48 }, { pos: 'MC', x: 62, y: 48 }, { pos: 'MD', x: 88, y: 50 }, { pos: 'EI', x: 18, y: 22 }, { pos: 'DC', x: 50, y: 18 }, { pos: 'ED', x: 82, y: 22 }],
+  '1-4-5-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MI', x: 10, y: 46 }, { pos: 'MC', x: 30, y: 50 }, { pos: 'MC', x: 50, y: 46 }, { pos: 'MC', x: 70, y: 50 }, { pos: 'MD', x: 90, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-5-3-2': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'CAI', x: 6, y: 68 }, { pos: 'DFC', x: 28, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 72, y: 76 }, { pos: 'CAD', x: 94, y: 68 }, { pos: 'MC', x: 28, y: 48 }, { pos: 'MC', x: 50, y: 44 }, { pos: 'MC', x: 72, y: 48 }, { pos: 'DC', x: 35, y: 20 }, { pos: 'DC', x: 65, y: 20 }],
+  '1-5-4-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'CAI', x: 6, y: 68 }, { pos: 'DFC', x: 28, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 72, y: 76 }, { pos: 'CAD', x: 94, y: 68 }, { pos: 'MI', x: 15, y: 46 }, { pos: 'MC', x: 38, y: 48 }, { pos: 'MC', x: 62, y: 48 }, { pos: 'MD', x: 85, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-4-1-4-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 50, y: 58 }, { pos: 'MI', x: 10, y: 40 }, { pos: 'MC', x: 35, y: 42 }, { pos: 'MC', x: 65, y: 42 }, { pos: 'MD', x: 90, y: 40 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-3-4-1-2': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'DFC', x: 25, y: 76 }, { pos: 'DFC', x: 50, y: 80 }, { pos: 'DFC', x: 75, y: 76 }, { pos: 'MI', x: 12, y: 54 }, { pos: 'MC', x: 38, y: 52 }, { pos: 'MC', x: 62, y: 52 }, { pos: 'MD', x: 88, y: 54 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
+  '1-4-3-2-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MC', x: 25, y: 54 }, { pos: 'MC', x: 50, y: 50 }, { pos: 'MC', x: 75, y: 54 }, { pos: 'MI', x: 25, y: 34 }, { pos: 'MD', x: 75, y: 34 }, { pos: 'DC', x: 50, y: 16 }],
+  '1-4-1-2-1-2': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'LI', x: 10, y: 70 }, { pos: 'DFC', x: 32, y: 74 }, { pos: 'DFC', x: 68, y: 74 }, { pos: 'LD', x: 90, y: 70 }, { pos: 'MCD', x: 50, y: 58 }, { pos: 'MC', x: 30, y: 46 }, { pos: 'MC', x: 70, y: 46 }, { pos: 'MCO', x: 50, y: 34 }, { pos: 'DC', x: 35, y: 18 }, { pos: 'DC', x: 65, y: 18 }],
+  '1-3-3-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MI', x: 15, y: 46 }, { pos: 'MC', x: 50, y: 42 }, { pos: 'MD', x: 85, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
+  '1-3-2-1': [{ pos: 'POR', x: 50, y: 95 }, { pos: 'DFC', x: 20, y: 72 }, { pos: 'DFC', x: 50, y: 76 }, { pos: 'DFC', x: 80, y: 72 }, { pos: 'MC', x: 32, y: 46 }, { pos: 'MC', x: 68, y: 46 }, { pos: 'DC', x: 50, y: 18 }],
 };
 
 const getPlayersPerTeam = (matchSheet, team, explicitValue) => {
@@ -72,7 +103,7 @@ const buildFormationPositions = (formation) => {
   const rows = String(formation || '').split('-').map(Number).filter(Number.isFinite);
   if (rows.length < 2 || rows[0] !== 1) return null;
 
-  const yByRows = rows.length === 4 ? [90, 72, 45, 18] : rows.length === 5 ? [90, 74, 56, 36, 16] : null;
+  const yByRows = rows.length === 4 ? [95, 72, 45, 18] : rows.length === 5 ? [95, 74, 56, 36, 16] : null;
   if (!yByRows) return null;
 
   return rows.flatMap((amount, rowIndex) => {
@@ -103,7 +134,7 @@ const formatTimeSafe = (dateStr) => {
 };
 
 // 2D SVG Field Component
-const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, showPhotos, showNames, width = 340, titulares = [] }) => {
+const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, showPhotos, showNames, width = 340, titulares = [], kit, goalkeeperKit }) => {
   const height = width * 1.35;
   const W = width;
   const H = height;
@@ -192,17 +223,40 @@ const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, show
         }
 
         const proj = project(assignedPlayer?.x ?? pos.x, assignedPlayer?.y ?? pos.y);
-        const color = getPositionColor(pos.pos);
+        const isGoalkeeper = pos.pos === 'POR' || pos.pos === 'PORTERO';
+        const activeKit = isGoalkeeper ? goalkeeperKit : kit;
+        const color = activeKit?.primaryColor || getPositionColor(pos.pos);
+        
+        const kitTextColor = (() => {
+          const prim = (activeKit?.primaryColor || color).toLowerCase();
+          const sec = (activeKit?.secondaryColor || '#ffffff').toLowerCase();
+          const isLightPrim = ['#ffffff', '#fff', '#fcfcfc', '#f3f4f6', '#e5e7eb', '#fef08a', '#fde047', '#fffae6'].includes(prim);
+          if (isLightPrim) {
+            return (sec === '#ffffff' || sec === '#fff') ? '#111827' : sec;
+          }
+          return sec;
+        })();
 
         return (
           <View key={index} style={{ position: 'absolute', left: proj.x - 22, top: proj.y - 28, width: 44, alignItems: 'center' }}>
             {showPhotos && player?.foto ? (
               <Image src={player.foto} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: color, backgroundColor: '#fff' }} />
             ) : (
-              <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-                <Svg viewBox="0 0 24 24" width={32} height={32}>
-                  <Path d="M6 3.5 L7.5 2 L12 4.5 L16.5 2 L18 3.5 L22 6 L19.5 9.5 L17.5 8 L17.5 21 L6.5 21 L6.5 8 L4.5 9.5 L2 6 Z" fill={color} stroke={'#ffffff'} strokeWidth={1.5} />
-                </Svg>
+              <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <PdfKit kit={activeKit || { shape: 'shirt', primaryColor: color, secondaryColor: '#ffffff' }} size={28} />
+                {player?.dorsal !== undefined && player?.dorsal !== null && (
+                  <Text style={{
+                    position: 'absolute',
+                    top: (activeKit?.shape === 'circle') ? 11 : 6,
+                    fontSize: (activeKit?.shape === 'circle') ? 9 : 8,
+                    fontFamily: 'Helvetica-Bold',
+                    color: kitTextColor,
+                    textAlign: 'center',
+                    width: '100%'
+                  }}>
+                    {player.dorsal}
+                  </Text>
+                )}
               </View>
             )}
             {showNames && (
@@ -223,6 +277,13 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
   const playersPerTeam = getPlayersPerTeam(matchSheet, team, jugadoresPorEquipo);
   const resolvedFormation = formation || getDefaultFormation(playersPerTeam);
   
+  const ownKit = matchSheet.equipacionPropia 
+    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
+    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
+  const ownGoalkeeperKit = matchSheet.equipacionPorteroPropia 
+    || team?.equipaciones?.[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
+    || DEFAULT_KITS[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+  
   return (
     <Page size="A4" style={[baseStyles.page, { flexDirection: 'row', padding: 0 }]}>
       <View style={{ width: '65%', padding: SPACING.md, backgroundColor: COLORS.bgSoft }}>
@@ -237,7 +298,18 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
           </View>
         </View>
 
-        <SoccerField lineup={lineup} players={players} formation={resolvedFormation} jugadoresPorEquipo={playersPerTeam} showPhotos={showPhotos} showNames={showNames} width={360} titulares={matchSheet.alineacionTitulares} />
+        <SoccerField 
+          lineup={lineup} 
+          players={players} 
+          formation={resolvedFormation} 
+          jugadoresPorEquipo={playersPerTeam} 
+          showPhotos={showPhotos} 
+          showNames={showNames} 
+          width={360} 
+          titulares={matchSheet.alineacionTitulares} 
+          kit={ownKit}
+          goalkeeperKit={ownGoalkeeperKit}
+        />
 
         <View style={{ alignItems: 'center', marginTop: 16 }}>
           <Text style={s.chip}>{resolvedFormation}</Text>
@@ -252,6 +324,21 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
             <View style={{ width: 76, height: 76, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><Text style={{fontSize: 24}}>🛡️</Text></View>
           )}
           <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#fff', marginTop: 8 }}>{team?.nombre || 'Equipo'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.14)' }}>
+            <PdfKit 
+              kit={matchSheet.equipacionPropia 
+                || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
+                || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first']} 
+              size={30} 
+            />
+            <Text style={{ color: '#fff', fontSize: 8 }}>VS</Text>
+            <PdfKit 
+              kit={matchSheet.equipacionRival 
+                || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
+                || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first']} 
+              size={30} 
+            />
+          </View>
         </View>
 
         <View style={{ marginBottom: 20 }}>
@@ -306,6 +393,7 @@ const CallUpPage = ({ matchSheet, team, players, convocados = [], noConvocados =
     <Page size="A4" style={baseStyles.page}>
       <PdfHeader title="CONVOCATORIA" subtitle={`vs ${matchSheet.rival}`} />
       <View style={baseStyles.content}>
+        <PdfKitMatchup matchSheet={matchSheet} team={team} />
         <View style={s.grid4}>
           <View style={s.statCard}><Text style={s.statLabel}>Fecha Partido</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatDateSafe(matchSheet.fechaHora)} - {formatTimeSafe(matchSheet.fechaHora)}</Text></View>
           <View style={s.statCard}><Text style={s.statLabel}>Cita</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{fechaQuedada ? formatDateSafe(fechaQuedada) : formatDateSafe(matchSheet.fechaHora)} - {horaQuedada || formatTimeSafe(matchSheet.fechaHora)}</Text></View>
@@ -432,10 +520,25 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
   const ownFormation = matchSheet.alineacion || getDefaultFormation(playersPerTeam);
   const rivalFormation = matchSheet.alineacionRival || getDefaultFormation(playersPerTeam);
 
+  const ownKit = matchSheet.equipacionPropia 
+    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
+    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
+  const ownGoalkeeperKit = matchSheet.equipacionPorteroPropia 
+    || team?.equipaciones?.[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
+    || DEFAULT_KITS[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+
+  const rivalKit = matchSheet.equipacionRival 
+    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
+    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first'];
+  const rivalGoalkeeperKit = matchSheet.equipacionPorteroRival 
+    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
+    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+
   return (
     <Page size="A4" style={baseStyles.page}>
       <PdfHeader title={translations.matchSheetTitle || "FICHA DE PARTIDO"} subtitle={`${team?.nombre || translations.team || 'Local'} vs ${matchSheet.rival}`} />
       <View style={baseStyles.content}>
+        <PdfKitMatchup matchSheet={matchSheet} team={team} />
         <View style={s.grid4}>
           <View style={s.statCard}><Text style={s.statLabel}>{translations.date || 'Fecha'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatDateSafe(matchSheet.fechaHora)}</Text></View>
           <View style={s.statCard}><Text style={s.statLabel}>{translations.time || 'Hora'}</Text><Text style={[s.statValue, { fontSize: FONT_SIZE.md, marginTop: 4 }]}>{formatTimeSafe(matchSheet.fechaHora) || '-'}</Text></View>
@@ -471,6 +574,8 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
                   showNames={true}
                   width={230}
                   titulares={titulares}
+                  kit={ownKit}
+                  goalkeeperKit={ownGoalkeeperKit}
                 />
               </PdfSection>
             </View>
@@ -485,6 +590,8 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
                   showNames={true}
                   width={230}
                   titulares={[]}
+                  kit={rivalKit}
+                  goalkeeperKit={rivalGoalkeeperKit}
                 />
               </PdfSection>
             </View>

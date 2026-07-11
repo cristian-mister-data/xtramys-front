@@ -96,13 +96,13 @@ export default function EditSessionModal({
 
   // Filtrar jugadores de plantilla y extras disponibles
   const rosterPlayers = useMemo(() =>
-    (players || []).filter(p => !p.extra),
-    [players]
+    (players || []).filter(p => !p.extra && (p.activo !== false || session?.jugadores?.includes(p._id) || session?.jugadores?.some(j => (j._id || j) === p._id))),
+    [players, session]
   );
 
   const extraPlayersAvailable = useMemo(() =>
-    (players || []).filter(p => p.extra === true),
-    [players]
+    (players || []).filter(p => p.extra === true && (p.activo !== false || session?.jugadoresExtras?.includes(p._id) || session?.jugadoresExtras?.some(j => (j._id || j) === p._id))),
+    [players, session]
   );
 
   // Estados para wellness

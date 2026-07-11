@@ -51,6 +51,10 @@ import ImageCropper from '../../components/season/ImageCropper';
 import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
 import CanMutate from '@/components/shared/CanMutate';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import KitDesigner, { KitPreview } from '@/components/shared/KitDesigner';
+import { DEFAULT_RIVAL_KITS, normalizeRivalKits } from '@/utils/kits';
+
+const defaultRivalKits = () => normalizeRivalKits(DEFAULT_RIVAL_KITS);
 
 // ---------- styles ----------
 const Container = styled.div`
@@ -332,6 +336,7 @@ export default function Rivals() {
   const [editing, setEditing] = useState(null);
   const [nombre, setNombre] = useState('');
   const [escudo, setEscudo] = useState('');
+  const [equipaciones, setEquipaciones] = useState(defaultRivalKits);
   const [saving, setSaving] = useState(false);
   const [viewing, setViewing] = useState(null);
   const [cropperSrc, setCropperSrc] = useState(null);
@@ -375,6 +380,7 @@ export default function Rivals() {
     setEditing(null);
     setNombre('');
     setEscudo('');
+    setEquipaciones(defaultRivalKits());
     setModalOpen(true);
   };
 
@@ -382,6 +388,7 @@ export default function Rivals() {
     setEditing(rival);
     setNombre(rival.nombre || '');
     setEscudo(rival.escudo || '');
+    setEquipaciones(normalizeRivalKits(rival.equipaciones));
     setModalOpen(true);
     setViewing(null);
   };
@@ -391,6 +398,7 @@ export default function Rivals() {
     setEditing(null);
     setNombre('');
     setEscudo('');
+    setEquipaciones(defaultRivalKits());
   };
 
   const handlePickImage = () => {
@@ -435,6 +443,7 @@ export default function Rivals() {
         escudo: escudo || '',
         equipo: selectedTeam._id,
         usuario: userId,
+        equipaciones,
       };
       if (editing) {
         await dispatch(updateRival({ ...payload, _id: editing._id })).unwrap();
@@ -663,6 +672,11 @@ export default function Rivals() {
               style={{ display: 'none' }}
             />
           </Field>
+
+          <Field>
+            <Label>{t('kits.title', 'Equipaciones')}</Label>
+            <KitDesigner value={equipaciones} onChange={setEquipaciones} />
+          </Field>
         </Stack>
         {cropperSrc && (
           <ImageCropper
@@ -720,6 +734,9 @@ export default function Rivals() {
                 <MdShield size={120} color={theme.colors.textMuted} />
               )}
             </DetailEscudo>
+            <Row $gap={8} style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+              {Object.values(normalizeRivalKits(viewing.equipaciones)).map((kit, index) => <KitPreview key={index} kit={kit} />)}
+            </Row>
 
             <LinkedSection>
               <LinkedSectionTitle>

@@ -19,6 +19,8 @@ import PlayerSelectionModal from '@/features/matchSheet/modals/PlayerSelectionMo
 import JornadaModal from '@/features/matchSheet/modals/JornadaModal';
 import { generateMatchSheetPDF, generateLineupPDF, generateCallUpPDF } from '@/features/matchSheet/pdf';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { KitPreview } from '@/components/shared/KitDesigner';
+import { normalizeKits, normalizeRivalKits } from '@/utils/kits';
 
 const EMPTY = [];
 
@@ -144,6 +146,10 @@ function buildEmpty(playerCount = 11, timePerHalf = 45) {
     goles: [], golesRival: [],
     tarjetasAmarillas: [], tarjetasRojas: [], cambios: [],
     partidoUrl: '',
+    equipacionPropiaKey: 'first', equipacionRivalKey: 'first',
+    equipacionPropia: null, equipacionRival: null,
+    equipacionPorteroPropia: null, equipacionPorteroRival: null,
+    rivalEquipaciones: null,
   };
 }
 
@@ -210,18 +216,30 @@ export default function MatchSheetFormModal({
         alineacion: match.alineacion || getDefaultFormation(initialPlayerCount),
         torneoId: match.torneoId?._id || match.torneoId || null,
         rivalId: match.rivalId?._id || match.rivalId || null,
+        rivalEquipaciones: match.rivalId?.equipaciones || null,
         fechaHora: match.fechaHora || new Date().toISOString(),
       });
     } else {
+      const teamKits = normalizeKits(team?.equipaciones);
       setForm({
         ...buildEmpty(initialPlayerCount, initialTimePerHalf),
         fechaHora: defaultDate || new Date().toISOString(),
+        equipacionPropia: teamKits.first,
+        equipacionPorteroPropia: teamKits.goalkeeperFirst,
       });
     }
     setError('');
   }, [open, mode, match, defaultDate, team?.jugadoresPorEquipo, team?.tiempoPorParte]);
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const selectOwnKit = (key) => {
+    const kits = normalizeKits(team?.equipaciones);
+    update({ equipacionPropiaKey: key, equipacionPropia: kits[key], equipacionPorteroPropia: kits[key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] });
+  };
+  const selectRivalKit = (key, source = form.rivalEquipaciones) => {
+    const kits = normalizeRivalKits(source);
+    update({ equipacionRivalKey: key, equipacionRival: kits[key], equipacionPorteroRival: kits[key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] });
+  };
 
   // Auto resultado
   useEffect(() => {
@@ -368,8 +386,29 @@ export default function MatchSheetFormModal({
                 selectedRivalName={form.rival}
                 selectedRivalCrest={form.rivalEscudo}
                 teamId={teamId}
-                onSelect={(payload) => update(payload)}
+                onSelect={(payload) => {
+                  const kits = normalizeRivalKits(payload.rivalEquipaciones);
+                  update({ ...payload, equipacionRivalKey: 'first', equipacionRival: kits.first, equipacionPorteroRival: kits.goalkeeperFirst });
+                }}
               />
+            </Field>
+            <Field>
+              <Label>{t('matchSheet.fields.ownKit', 'Equipación propia')}</Label>
+              <ChipRow>
+                {['first', 'second'].map((key) => <Chip key={key} type="button" $active={form.equipacionPropiaKey === key} onClick={() => selectOwnKit(key)}>
+                  <KitPreview kit={normalizeKits(team?.equipaciones)[key]} />
+                  {t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}
+                </Chip>)}
+              </ChipRow>
+            </Field>
+            <Field>
+              <Label>{t('matchSheet.fields.rivalKit', 'Equipación rival')}</Label>
+              <ChipRow>
+                {['first', 'second'].map((key) => <Chip key={key} type="button" $active={form.equipacionRivalKey === key} onClick={() => selectRivalKit(key)}>
+                  <KitPreview kit={normalizeRivalKits(form.rivalEquipaciones)[key]} />
+                  {t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}
+                </Chip>)}
+              </ChipRow>
             </Field>
             <Field>
               <Label>{t('matchSheet.fields.dateTime', 'Fecha y hora')}</Label>
