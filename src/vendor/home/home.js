@@ -43,6 +43,7 @@ import TrainingSessionDetailModal from '@/vendor/season/TrainingSessionDetailMod
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
 import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import EditSessionModal from '@/vendor/season/EditSessionModal';
+import { toast } from '@/ui/toast';
 
 // Función para detectar si es móvil
 const isMobileDevice = () => {
@@ -466,7 +467,7 @@ export default function Home({ navigation: navigationProp }) {
     }));
     if (result.error) throw new Error(result.error.message);
     dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id }));
-    Alert.alert(t('message.success'), t('season.sessionUpdated'));
+    toast.success(t('season.sessionUpdated'));
   };
 
   // Handler para eliminar sesión
@@ -478,9 +479,9 @@ export default function Home({ navigation: navigationProp }) {
       setDetailSessionVisible(false);
       setSelectedSessionForDetail(null);
       dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id }));
-      Alert.alert(t('message.success'), t('season.sessionDeleted'));
+      toast.success(t('season.sessionDeleted'));
     } catch (error) {
-      Alert.alert(t('message.error'), t('season.sessionDeleteError'));
+      toast.error(t('season.sessionDeleteError'));
     }
   };
 

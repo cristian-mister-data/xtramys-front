@@ -25,6 +25,7 @@ import * as Sharing from 'expo-sharing';
 import { Asset } from 'expo-asset';
 import { downloadResolvedVideo } from '@/utils/videoPlayback';
 import { toast } from '@/ui/toast';
+import { isNative } from '@/platform/capacitor';
 import {
   getStrengthExerciseImage,
   getStrengthExerciseVideoUrl,
@@ -227,8 +228,7 @@ export default function StrengthExerciseViewer({ visible, onClose, exercise }) {
   const handleDownloadImage = useCallback(async () => {
     if (!exercise || !imageSource) return;
 
-    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
-    if (isCapacitor) {
+    if (isNative) {
       setDownloading(true);
       try {
         toast.success(t('strengthExercises.imageDownloadStarted', 'Preparando la imagen para guardarla...'));

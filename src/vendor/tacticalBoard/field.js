@@ -8718,13 +8718,23 @@ const DraggableIcon = React.memo(
                             icon.playerData?.position === 'goalkeeper' ||
                             icon.playerData?.demarcacion === 'POR'
                       }
-                      differentiateGoalkeeper={differentiateGoalkeeper}
+                      differentiateGoalkeeper={
+                        icon.preserveVisualStyle && icon.differentiateGoalkeeper !== undefined
+                          ? icon.differentiateGoalkeeper
+                          : differentiateGoalkeeper
+                      }
                       goalkeeperStripeColor={
                         icon.playerData
-                          ? goalkeeperStripeColor
+                          ? (icon.preserveVisualStyle && icon.goalkeeperStripeColor
+                            ? icon.goalkeeperStripeColor
+                            : goalkeeperStripeColor)
                           : icon.goalkeeperStripeColor || goalkeeperStripeColor
                       }
-                      showPhotos={(showPhotos || icon.showPhotos) && icon.playerData}
+                      showPhotos={
+                        (icon.preserveVisualStyle && icon.showPhotos !== undefined
+                          ? icon.showPhotos
+                          : showPhotos || icon.showPhotos) && icon.playerData
+                      }
                       photoUrl={icon.photoUrl || cdnUrl(icon.playerData?.foto || '')}
                     />
 
@@ -13227,7 +13237,6 @@ export default function Field(props = {}) {
 
   // Estado para Configuraci�n de la pizarra (colores y tama�os de iconos de jugadores)
   const [boardSettings, setBoardSettings] = useState(() => getDefaultBoardSettings());
-  const [pendingPalettePlayerSettings, setPendingPalettePlayerSettings] = useState(null);
 
   // Estado para conectores (l�neas que conectan elementos)
   useEffect(() => {
@@ -13396,34 +13405,12 @@ export default function Field(props = {}) {
 
   // Guardado inmediato de boardSettings (bot�n Guardar en panel de ajustes)
   // Ahora acepta un par�metro opcional settingsParam para evitar efectos de estado stale
-  const getBoardPaletteIconSettings = useCallback((paletteIcon, settings) => {
-    if (!paletteIcon || !settings) return null;
-    if (paletteIcon.id === 'icon1') return settings.playerIcon1;
-    if (paletteIcon.id === 'icon2') return settings.playerIcon2;
-    if (paletteIcon.id === 'icon3') return settings.playerIcon3;
-    if (paletteIcon.id === 'goalkeeper-1') {
-      return { ...DEFAULT_GOALKEEPER_ICON_1_SETTINGS, ...settings.goalkeeperIcon1 };
-    }
-    if (paletteIcon.id === 'goalkeeper-2') {
-      return { ...DEFAULT_GOALKEEPER_ICON_2_SETTINGS, ...settings.goalkeeperIcon2 };
-    }
-    if (paletteIcon.id === 'neutral-player') {
-      return { ...getDefaultNeutralPlayerSettings(), ...settings.playerIcon4 };
-    }
-    return null;
-  }, []);
-
-  const applyBoardSettingsToPlacedPalettePlayers = useCallback((settingsToApply) => {
-    setPendingPalettePlayerSettings(settingsToApply || null);
-  }, []);
-
   const handleApplyBoardSettings = useCallback((settingsToApply) => {
     if (!settingsToApply) return;
     settingsToApply = normalizeBoardSettings(settingsToApply);
     if (settingsToApply?.playerIcon1?.size) {
       setStandardSize(settingsToApply.playerIcon1.size);
     }
-    applyBoardSettingsToPlacedPalettePlayers(settingsToApply);
     setPaletteIcons((prev) =>
       prev.map((icon) => {
         const setting =
@@ -13498,14 +13485,13 @@ export default function Field(props = {}) {
           : prev.bibColor,
       stripeColor: settingsToApply.teamPlayers.stripeColor || prev.stripeColor || '#ffffff',
     }));
-  }, [applyBoardSettingsToPlacedPalettePlayers]);
+  }, []);
   const handleSaveBoardSettings = useCallback(
     async (settingsParam) => {
       const settingsToSave = normalizeBoardSettings(settingsParam || boardSettings);
       if (settingsToSave?.playerIcon1?.size) {
         setStandardSize(settingsToSave.playerIcon1.size);
       }
-      applyBoardSettingsToPlacedPalettePlayers(settingsToSave);
       try {
         const str = await AsyncStorage.getItem('usuario');
         if (!str) return;
@@ -13678,7 +13664,7 @@ export default function Field(props = {}) {
         );
       }
     },
-    [applyBoardSettingsToPlacedPalettePlayers, dispatch, boardSettings, t],
+    [dispatch, boardSettings, t],
   );
 
   // Cargar Configuraci�n guardada del usuario al entrar a la pantalla
@@ -13757,7 +13743,6 @@ export default function Field(props = {}) {
               },
               teamPlayers: { ...prev.teamPlayers, ...usuario.boardSettings.teamPlayers },
             }));
-            applyBoardSettingsToPlacedPalettePlayers(usuario.boardSettings);
 
             // Actualizar tambi�n los iconos de la paleta y teamPlayerStyle con los valores del usuario
             setPaletteIcons((prev) =>
@@ -13915,7 +13900,7 @@ export default function Field(props = {}) {
       };
 
       loadUserSettings();
-    }, [applyBoardSettingsToPlacedPalettePlayers]),
+    }, []),
   );
 
   // Helper: clear multi-select
@@ -14102,6 +14087,12 @@ export default function Field(props = {}) {
       if (snap.locked !== undefined) clone.locked = snap.locked;
       if (snap.zIndex !== undefined) clone.zIndex = snap.zIndex;
       if (snap.paletteIndex !== undefined) clone.paletteIndex = snap.paletteIndex;
+      if (snap.preserveVisualStyle !== undefined) clone.preserveVisualStyle = snap.preserveVisualStyle;
+      if (snap.differentiateGoalkeeper !== undefined) {
+        clone.differentiateGoalkeeper = snap.differentiateGoalkeeper;
+      }
+      if (snap.showPhotos !== undefined) clone.showPhotos = snap.showPhotos;
+      if (snap.photoUrl !== undefined) clone.photoUrl = snap.photoUrl;
 
       // Jugador
       if (snap.type === 'player') {
@@ -14999,45 +14990,6 @@ export default function Field(props = {}) {
       }, 0);
     }
   }, []); // SIN dependencias — identidad 100% estable
-
-  // Función UNDO optimizada (restaura clones y conectores)
-  useEffect(() => {
-    if (!pendingPalettePlayerSettings) return;
-    const settingsToApply = pendingPalettePlayerSettings;
-    setPendingPalettePlayerSettings(null);
-    setClones((prev) =>
-      prev.map((clone) => {
-        if (
-          clone.type !== 'player' ||
-          clone.playerData ||
-          clone.preserveVisualStyle ||
-          typeof clone.paletteIndex !== 'number'
-        ) {
-          return clone;
-        }
-        const setting = getBoardPaletteIconSettings(paletteIcons[clone.paletteIndex], settingsToApply);
-        if (!setting) return clone;
-        return {
-          ...clone,
-          color: setting.color !== undefined ? setting.color : clone.color,
-          backgroundColor:
-            setting.backgroundColor !== undefined ? setting.backgroundColor : clone.backgroundColor,
-          numberColor:
-            setting.numberColor !== undefined
-              ? setting.numberColor
-              : clone.numberColor || DEFAULT_PLAYER_NUMBER_COLOR,
-          size: setting.size !== undefined ? setting.size : clone.size,
-          shape: setting.shape || clone.shape || 'circle',
-          hasStripes: setting.hasStripes !== undefined ? setting.hasStripes : clone.hasStripes,
-          hasBib: setting.hasBib !== undefined ? setting.hasBib : clone.hasBib,
-          bibColor: setting.bibColor !== undefined ? setting.bibColor : clone.bibColor,
-          stripeColor: setting.stripeColor || clone.stripeColor || '#ffffff',
-          goalkeeperStripeColor:
-            setting.goalkeeperStripeColor || setting.stripeColor || clone.goalkeeperStripeColor,
-        };
-      }),
-    );
-  }, [getBoardPaletteIconSettings, paletteIcons, pendingPalettePlayerSettings, setClones]);
 
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
@@ -16526,7 +16478,14 @@ export default function Field(props = {}) {
       try {
         const savedClones = clones.map((clone) => (
           clone?.type === 'player'
-            ? { ...clone, playersWithNumber, preserveVisualStyle: true }
+            ? {
+              ...clone,
+              playersWithNumber,
+              preserveVisualStyle: true,
+              differentiateGoalkeeper:
+                clone.differentiateGoalkeeper ?? teamPlayerStyle.differentiateGoalkeeper,
+              showPhotos: clone.showPhotos ?? teamPlayerStyle.showPhotos,
+            }
             : clone
         ));
         const teamPlayersConfig = {

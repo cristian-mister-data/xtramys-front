@@ -1,8 +1,9 @@
 import i18n from '@/i18n';
+import { isNative } from '@/platform/capacitor';
 
 const canNativeShare = () => (
   typeof window !== 'undefined' &&
-  (!!window.Capacitor || (typeof navigator !== 'undefined' && typeof navigator.share === 'function'))
+  (isNative || (typeof navigator !== 'undefined' && typeof navigator.share === 'function'))
 );
 
 const el = (tag, style = {}, attrs = {}, text = '') => {

@@ -1,6 +1,7 @@
 import api from '@/api/client';
 import { toast } from '@/ui/toast';
 import { showFileActions } from '@/ui/fileActionDialog';
+import { isNative } from '@/platform/capacitor';
 
 const IMAGE_EXTENSIONS = {
   'image/jpeg': 'jpg',
@@ -112,8 +113,6 @@ export async function downloadImageSource(src, filenameBase = 'image', options =
   if (!src) throw new Error('No image source to download');
 
   const baseName = sanitizeFilenamePart(filenameBase);
-  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
-
   if (/^https?:\/\//i.test(src)) {
     const fallbackExtension = extensionFromUrl(src) || 'png';
     const fallbackFilename = `${baseName}.${fallbackExtension}`;
@@ -126,7 +125,7 @@ export async function downloadImageSource(src, filenameBase = 'image', options =
       });
       const contentType = response.headers?.['content-type'] || response.data?.type || '';
       const extension = IMAGE_EXTENSIONS[String(contentType).toLowerCase()] || fallbackExtension;
-      if (isCapacitor) {
+      if (isNative) {
         await handleNativeImage(response.data, `${baseName}.${extension}`, contentType || `image/${extension}`, options);
         return;
       }
@@ -142,7 +141,7 @@ export async function downloadImageSource(src, filenameBase = 'image', options =
   }
 
   const dataUri = src.startsWith('data:') ? src : `data:image/png;base64,${src}`;
-  if (isCapacitor) {
+  if (isNative) {
     const blob = await fetch(dataUri).then((res) => res.blob());
     const extension = extensionFromDataUri(dataUri);
     await handleNativeImage(blob, `${baseName}.${extension}`, blob.type || `image/${extension}`, options);

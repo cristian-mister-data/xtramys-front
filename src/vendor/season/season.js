@@ -48,6 +48,7 @@ import EditMatchSheetModal from './EditMatchSheetModal';
 import EditSessionModal from './EditSessionModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
+import { toast } from '@/ui/toast';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -466,7 +467,7 @@ export default function GestionEquipos() {
       setSelectedSession({ ...selectedSession, ...sessionData });
     }
     
-    Alert.alert(t('message.success'), t('season.sessionUpdated'));
+    toast.success(t('season.sessionUpdated'));
   };
 
   // Handler para eliminar sesión de entrenamiento
@@ -489,9 +490,9 @@ export default function GestionEquipos() {
       // Recargar sesiones
       dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id }));
       
-      Alert.alert(t('message.success'), t('season.sessionDeleted'));
+      toast.success(t('season.sessionDeleted'));
     } catch (error) {
-      Alert.alert(t('message.error'), t('season.sessionDeleteError') + ': ' + error.message);
+      toast.error(t('season.sessionDeleteError') + ': ' + error.message);
     }
   };
 

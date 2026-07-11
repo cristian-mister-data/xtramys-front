@@ -1369,7 +1369,7 @@ export default function Training({ canMutate }) {
     }));
     
     dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
-    Alert.alert(t('message.success'), t('session.createSuccess'));
+    toast.success(t('session.createSuccess'));
     setAddEventModalVisible(false);
   }
 
@@ -1456,11 +1456,11 @@ export default function Training({ canMutate }) {
       }));
       
       dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
-      Alert.alert(t('message.success'), t('session.updateSuccess'));
+      toast.success(t('session.updateSuccess'));
       setEditModalVisible(false);
       setSelectedSession(null);
     } catch (error) {
-      Alert.alert(t('message.error'), t('session.updateError'));
+      toast.error(t('session.updateError'));
     }
   }
 
@@ -1472,11 +1472,11 @@ export default function Training({ canMutate }) {
     try {
       await dispatch(deleteEntrenamiento(session._id)).unwrap();
       dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
-      Alert.alert(t('message.success'), t('session.deleteSuccess'));
+      toast.success(t('session.deleteSuccess'));
       setDetailModalVisible(false);
       setSelectedSession(null);
     } catch (error) {
-      Alert.alert(t('message.error'), t('session.deleteError'));
+      toast.error(t('session.deleteError'));
     }
   }
 

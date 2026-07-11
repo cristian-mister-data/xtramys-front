@@ -3,6 +3,7 @@ import { ensureMp4Blob } from '@/utils/videoUtils';
 import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
+import { isNative } from '@/platform/capacitor';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -45,11 +46,16 @@ const isBackendApiUrl = (url) => {
   }
 };
 
+const getFetchOptionsForUrl = (url) => {
+  const isBackend = isBackendApiUrl(url);
+  return {
+    credentials: isBackend && USE_COOKIE_AUTH ? 'include' : 'omit',
+    headers: isBackend ? getAuthHeaders() : {},
+  };
+};
+
 const fetchVideoBlob = async (url) => {
-  const response = await fetch(url, {
-    credentials: USE_COOKIE_AUTH ? 'include' : 'same-origin',
-    headers: getAuthHeaders(),
-  });
+  const response = await fetch(url, getFetchOptionsForUrl(url));
   if (!response.ok) throw new Error(`No se pudo cargar el video (${response.status})`);
   const contentType = response.headers.get('content-type') || '';
   if (!acceptsVideoResponse(contentType, url)) {
@@ -62,7 +68,7 @@ const fetchVideoBlob = async (url) => {
 };
 
 const maybeObjectUrl = async (url, { objectUrl = true } = {}) => {
-  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  const isCapacitor = isNativeCapacitor();
   if (isCapacitor) {
     if (isBackendApiUrl(url)) {
       const token = loadToken?.();
@@ -121,9 +127,7 @@ const blobToBase64 = (blob) =>
 
 const isNativeLocalVideoUrl = (url) => /^file:|^capacitor:|^content:/i.test(String(url || ''));
 const isNativeCapacitor = () =>
-  typeof window !== 'undefined' &&
-  !!window.Capacitor &&
-  window.Capacitor.getPlatform?.() !== 'web';
+  isNative && typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() !== 'web';
 
 const normalizeBase64 = (data) =>
   String(data || '').includes(',')
@@ -203,7 +207,7 @@ async function resolveWithRetry(url, options, attempts = 3, delayMs = 1000) {
 export async function triggerVideoDownload(url, filenameBase = 'video') {
   if (!url) throw new Error('No hay URL de video para descargar');
 
-  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  const isCapacitor = isNativeCapacitor();
   if (isCapacitor) {
     try {
       const isAndroid = window.Capacitor.getPlatform() === 'android';
@@ -238,10 +242,7 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
         base64Data = await readNativeLocalVideo(finalUrl);
         contentType = 'video/mp4';
       } else {
-        const response = await fetch(finalUrl, {
-          credentials: USE_COOKIE_AUTH ? 'include' : 'same-origin',
-          headers: isBackendApiUrl(finalUrl) ? getAuthHeaders() : {},
-        });
+        const response = await fetch(finalUrl, getFetchOptionsForUrl(finalUrl));
         if (!response.ok) throw new Error(`No se pudo descargar el video (${response.status})`);
         contentType = response.headers.get('content-type') || '';
         if (!acceptsVideoResponse(contentType, finalUrl)) {
@@ -317,10 +318,7 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
   const isSameOrigin = targetUrl.origin === window.location.origin;
 
   try {
-    const response = await fetch(targetUrl.href, {
-      credentials: USE_COOKIE_AUTH ? 'include' : 'same-origin',
-      headers: isBackendApiUrl(targetUrl.href) ? getAuthHeaders() : {},
-    });
+    const response = await fetch(targetUrl.href, getFetchOptionsForUrl(targetUrl.href));
     if (!response.ok) throw new Error(`No se pudo descargar el video (${response.status})`);
     const contentType = response.headers.get('content-type') || '';
     if (!acceptsVideoResponse(contentType, targetUrl.href)) {

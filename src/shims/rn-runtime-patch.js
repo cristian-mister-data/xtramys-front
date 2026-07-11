@@ -278,6 +278,33 @@ function ensureToastStyles() {
         color: #ffffff !important;
       }
     }
+    html[data-theme="dark"] .xtramys-toast {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+      border-color: rgba(148, 163, 184, 0.2) !important;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38), 0 4px 12px rgba(0, 0, 0, 0.22) !important;
+    }
+    html[data-theme="dark"] .xtramys-toast__title { color: #f8fafc !important; }
+    html[data-theme="dark"] .xtramys-toast__message { color: #cbd5e1 !important; }
+    html[data-theme="dark"] .xtramys-toast__close { color: #94a3b8 !important; }
+    html[data-theme="dark"] .xtramys-toast__close:hover { background: rgba(148, 163, 184, 0.16) !important; color: #f8fafc !important; }
+    html[data-theme="dark"] .xtramys-toast__button { background: #334155 !important; border-color: #475569 !important; color: #e2e8f0 !important; }
+    html[data-theme="dark"] .xtramys-toast__button:hover { background: #475569 !important; border-color: #64748b !important; }
+    html[data-theme="dark"] .xtramys-toast--simple {
+      background: var(--xtramys-toast-accent) !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
+    html[data-theme="dark"] .xtramys-toast--simple .xtramys-toast__title {
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .xtramys-toast--simple .xtramys-toast__message {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+    html[data-theme="dark"] .xtramys-toast--simple .xtramys-toast__icon {
+      background: rgba(255, 255, 255, 0.22) !important;
+      color: #ffffff !important;
+    }
     @media (max-width: 600px) {
       #${TOAST_ROOT_ID} {
         top: calc(12px + env(safe-area-inset-top, 0px));
@@ -314,6 +341,7 @@ function ensureToastRoot(placement = 'top-right') {
     root.id = rootId;
     root.setAttribute('aria-live', 'polite');
     root.setAttribute('aria-relevant', 'additions');
+    root.setAttribute('data-theme-aware', 'true');
     document.body.appendChild(root);
   }
   return root;
@@ -402,7 +430,11 @@ function showToast({ title, message, tone = 'info', buttons = [], duration, onCl
     if (typeof onClose === 'function') onClose();
   });
 
-  toast.append(bar, icon, content, closeButton);
+  if (isSimple) {
+    toast.append(icon, content);
+  } else {
+    toast.append(bar, icon, content, closeButton);
+  }
 
   if (buttons.length > 0) {
     const actions = document.createElement('div');
