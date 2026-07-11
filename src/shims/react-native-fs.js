@@ -6,7 +6,7 @@
 //
 // Persistir el almacén en `globalThis` para que sobreviva HMR y cualquier
 // reimport del shim devuelva la misma instancia.
-const G = (typeof globalThis !== 'undefined' ? globalThis : window);
+const G = typeof globalThis !== 'undefined' ? globalThis : window;
 if (!G.__rnfsFrames) G.__rnfsFrames = new Map();
 const frames = G.__rnfsFrames;
 
@@ -18,8 +18,17 @@ const isBlob = (value) => typeof Blob !== 'undefined' && value instanceof Blob;
 
 const isCapacitorPath = (path) => {
   if (typeof path !== 'string') return false;
-  return path.startsWith('file://') || path.startsWith('/CACHE') || (path.startsWith('/') && !path.startsWith('/virtual/'));
+  return (
+    path.startsWith('file://') ||
+    path.startsWith('/CACHE') ||
+    (path.startsWith('/') && !path.startsWith('/virtual/'))
+  );
 };
+
+const isNative =
+  typeof window !== 'undefined' &&
+  window.Capacitor?.getPlatform &&
+  window.Capacitor.getPlatform() !== 'web';
 
 const RNFS = {
   CachesDirectoryPath: '/virtual/caches',
@@ -28,7 +37,7 @@ const RNFS = {
   mkdir: async () => {},
   unlink: async (path) => {
     if (!path) return;
-    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    const isCapacitor = isNative;
     if (isCapacitor && isCapacitorPath(path)) {
       try {
         const { Filesystem } = await import('@capacitor/filesystem');
@@ -40,7 +49,9 @@ const RNFS = {
     }
     // Blob URL devuelta por videoUtils.generateVideo
     if (typeof path === 'string' && path.startsWith('blob:')) {
-      try { URL.revokeObjectURL(path); } catch (_) {}
+      try {
+        URL.revokeObjectURL(path);
+      } catch (_) {}
       return;
     }
     if (frames.has(path)) {
@@ -53,8 +64,9 @@ const RNFS = {
     }
   },
   exists: async (path) => {
-    if (typeof path === 'string' && (path.startsWith('blob:') || path.startsWith('data:'))) return true;
-    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    if (typeof path === 'string' && (path.startsWith('blob:') || path.startsWith('data:')))
+      return true;
+    const isCapacitor = isNative;
     if (isCapacitor && isCapacitorPath(path)) {
       try {
         const { Filesystem } = await import('@capacitor/filesystem');
@@ -103,7 +115,7 @@ const RNFS = {
   // soportamos lecturas desde el almacén interno de frames.
   readFile: async (path, encoding = 'base64') => {
     if (!path) throw new Error('react-native-fs.readFile: empty path');
-    const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+    const isCapacitor = isNative;
     if (isCapacitor && isCapacitorPath(path)) {
       try {
         const { Filesystem } = await import('@capacitor/filesystem');
@@ -144,7 +156,9 @@ const RNFS = {
       if (encoding === 'utf8') return binary;
       return binary;
     }
-    throw new Error(`react-native-fs.readFile: unsupported source on web (${String(path).slice(0, 60)})`);
+    throw new Error(
+      `react-native-fs.readFile: unsupported source on web (${String(path).slice(0, 60)})`,
+    );
   },
   writeFile: NOT_IMPL('writeFile'),
   stat: NOT_IMPL('stat'),

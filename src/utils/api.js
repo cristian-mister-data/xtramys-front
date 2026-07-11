@@ -282,13 +282,6 @@ export const getVideoFolders = listVideoFolders;
 export const getVideoFoldersFlat = getAllVideoFoldersFlat;
 export const getVideoFolder = getVideoFolderById;
 
-
-
-
-
-
-
-
 export const getGlobalVideoFolders = async (lang = null) => {
   try {
     const params = lang ? { lang } : {};
@@ -326,8 +319,11 @@ const stub =
 export const proxyUploadToR2 = async (localVideoPath) => {
   if (!localVideoPath) throw new Error('No hay archivo de vídeo para subir');
 
-  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
-  if (isCapacitor) {
+  const isNative =
+    typeof window !== 'undefined' &&
+    window.Capacitor?.getPlatform &&
+    window.Capacitor.getPlatform() !== 'web';
+  if (isNative) {
     try {
       const { Filesystem } = await import('@capacitor/filesystem');
       // Read the file as base64 natively
@@ -335,13 +331,17 @@ export const proxyUploadToR2 = async (localVideoPath) => {
       const base64Data = readFileResult.data;
 
       // Post the base64 data as a JSON payload to bypass CapacitorHttp binary bugs
-      const response = await api.post('/video/proxy-upload', {
-        fileData: base64Data,
-        contentType: 'video/mp4'
-      }, {
-        timeout: 180000,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.post(
+        '/video/proxy-upload',
+        {
+          fileData: base64Data,
+          contentType: 'video/mp4',
+        },
+        {
+          timeout: 180000,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
       return response.data;
     } catch (err) {
       console.error('[proxyUploadToR2] Native Capacitor upload failed:', err);
@@ -382,7 +382,11 @@ export const proxyUploadToR2 = async (localVideoPath) => {
 };
 
 // Regenera el MP4 server-side a partir de los keyframes guardados.
-export const regenerateVideoWithField = async (videoId, fieldImageData = null, playerOverlays = null) => {
+export const regenerateVideoWithField = async (
+  videoId,
+  fieldImageData = null,
+  playerOverlays = null,
+) => {
   if (_activeVideoPollController) {
     _activeVideoPollController.abort();
   }
