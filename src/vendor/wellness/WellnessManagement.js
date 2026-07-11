@@ -70,6 +70,45 @@ const getWellnessColor = (value) => {
   return '#276e15';
 };
 
+// Helper para parsear fecha y hora
+function buildStartDateTime(fechaStr, horaStr) {
+  if (!fechaStr) return null;
+  let y, m, d;
+  const mFecha = fechaStr.slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mFecha) {
+    y = Number(mFecha[1]);
+    m = Number(mFecha[2]) - 1;
+    d = Number(mFecha[3]);
+  } else {
+    const tmp = new Date(fechaStr);
+    if (isNaN(tmp.getTime())) return null;
+    y = tmp.getFullYear();
+    m = tmp.getMonth();
+    d = tmp.getDate();
+  }
+  let hh = 0, mm = 0;
+  if (horaStr && typeof horaStr === 'string') {
+    const clean = horaStr.trim();
+    const sep = clean.includes(':') ? ':' : (clean.includes('-') ? '-' : null);
+    if (sep) {
+      const parts = clean.split(sep);
+      if (parts.length === 2) {
+        let H = Number(parts[0]);
+        let M = Number(parts[1]);
+        if (Number.isInteger(H) && Number.isInteger(M) && H >= 0 && H <= 24 && M >= 0 && M <= 59) {
+          if (H === 24 && M === 0) {
+            return new Date(y, m, d + 1, 0, 0, 0, 0);
+          }
+          if (!(H === 24 && M !== 0)) {
+            hh = H; mm = M;
+          }
+        }
+      }
+    }
+  }
+  return new Date(y, m, d, hh, mm, 0, 0);
+}
+
 export default function WellnessManagement({ navigation, canMutate }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -144,6 +183,15 @@ export default function WellnessManagement({ navigation, canMutate }) {
   const [showToPicker, setShowToPicker] = useState(false);
   const [generatingRangePDF, setGeneratingRangePDF] = useState(false);
 
+  // Estados para filtros de rango de fechas y sub-pestañas en sesiones
+  const [sessionsFilterTab, setSessionsFilterTab] = useState('futuros'); // 'futuros' | 'pasados'
+  const [dateFilter, setDateFilter] = useState(null); // null = sin filtro, {startDate, endDate} = rango de fechas
+  const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState(null);
+  const [tempEndDate, setTempEndDate] = useState(null);
+  const [datePickerVisibleStart, setDatePickerVisibleStart] = useState(false);
+  const [datePickerVisibleEnd, setDatePickerVisibleEnd] = useState(false);
+
   // Cargar sesiones del equipo seleccionado al montar
   useEffect(() => {
     const selectedTeam = equipos.find(e => e.seleccionado === true);
@@ -152,13 +200,46 @@ export default function WellnessManagement({ navigation, canMutate }) {
     }
   }, [equipos, dispatch]);
 
-  // Filtrar sesiones con wellness configurado o respuestas
+  // Filtrar sesiones con wellness configurado o respuestas por tab y rango de fechas
   const sessionsWithData = useMemo(() => {
-    return sessions
-      .filter(s => s.fecha)
-      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-      .slice(0, 50); // Limitar a últimas 50
-  }, [sessions]);
+    const now = new Date();
+    
+    // 1. Filtrar las sesiones por rango de fecha primero si existe el filtro
+    let list = sessions.filter(s => s.fecha);
+    
+    if (dateFilter) {
+      const startDate = new Date(dateFilter.startDate);
+      const endDate = new Date(dateFilter.endDate);
+      list = list.filter(s => {
+        const sessionDate = new Date(s.fecha);
+        return sessionDate >= startDate && sessionDate <= endDate;
+      });
+    }
+    
+    // 2. Clasificar en futuros/pasados
+    const futuros = [];
+    const pasados = [];
+    
+    list.forEach(e => {
+      const start = buildStartDateTime(e.fecha, e.horaInicio);
+      if (!start) {
+        futuros.push(e);
+        return;
+      }
+      if (start < now) {
+        pasados.push(e);
+      } else {
+        futuros.push(e);
+      }
+    });
+
+    // 3. Ordenar y retornar según el tab activo
+    if (sessionsFilterTab === 'futuros') {
+      return futuros.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    } else {
+      return pasados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    }
+  }, [sessions, dateFilter, sessionsFilterTab]);
 
   // Cargar templates cuando cambia el tipo
   useEffect(() => {
@@ -622,6 +703,80 @@ export default function WellnessManagement({ navigation, canMutate }) {
       <Text style={styles.sectionSubtitle}>
         {t('wellness.selectSessionToManage')}
       </Text>
+      
+      {/* Selector de sub-pestañas Próximos / Realizados */}
+      <View style={styles.proTabsContainer}>
+        <View style={[styles.proTabs, { backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : theme.colors.border }]}>
+          <TouchableOpacity
+            style={[styles.proTab, sessionsFilterTab === 'futuros' && [styles.proTabActive, { backgroundColor: theme.colors.surface }]]}
+            onPress={() => setSessionsFilterTab('futuros')}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons 
+              name="upcoming" 
+              size={18} 
+              color={sessionsFilterTab === 'futuros' ? theme.colors.primary : theme.colors.textSecondary} 
+            />
+            <Text style={[styles.proTabText, sessionsFilterTab === 'futuros' && [styles.proTabTextActive, { color: theme.colors.primary }]]}>
+              {t('session.upcoming')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.proTab, sessionsFilterTab === 'pasados' && [styles.proTabActive, { backgroundColor: theme.colors.surface }]]}
+            onPress={() => setSessionsFilterTab('pasados')}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons 
+              name="history" 
+              size={18} 
+              color={sessionsFilterTab === 'pasados' ? theme.colors.primary : theme.colors.textSecondary} 
+            />
+            <Text style={[styles.proTabText, sessionsFilterTab === 'pasados' && [styles.proTabTextActive, { color: theme.colors.primary }]]}>
+              {t('session.completed')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Barra de filtros de fecha */}
+      <View style={styles.proFiltersBar}>
+        <TouchableOpacity
+          style={[
+            styles.proFilterButton, 
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            dateFilter && [styles.proFilterButtonActive, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]
+          ]}
+          onPress={() => {
+            setTempStartDate(dateFilter?.startDate || null);
+            setTempEndDate(dateFilter?.endDate || null);
+            setDateRangeModalVisible(true);
+          }}
+        >
+          <MaterialIcons 
+            name="date-range" 
+            size={18} 
+            color={dateFilter ? theme.colors.onPrimary : theme.colors.textSecondary} 
+          />
+          <Text style={[
+            styles.proFilterButtonText, 
+            { color: theme.colors.textSecondary },
+            dateFilter && [styles.proFilterButtonTextActive, { color: theme.colors.onPrimary }]
+          ]}>
+            {dateFilter
+              ? `${new Date(dateFilter.startDate).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })} - ${new Date(dateFilter.endDate).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' })}`
+              : t('session.filterByDateRange')
+            }
+          </Text>
+          {dateFilter && (
+            <TouchableOpacity
+              style={styles.proClearFilterBtn}
+              onPress={() => setDateFilter(null)}
+            >
+              <MaterialIcons name="close" size={14} color={theme.colors.onPrimary} />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </View>
       
       <ScrollView style={styles.sessionsList} showsVerticalScrollIndicator={false}>
         {sessionsWithData.length === 0 ? (
@@ -1422,6 +1577,200 @@ export default function WellnessManagement({ navigation, canMutate }) {
     );
   };
 
+  const renderDateRangeModal = () => {
+    return (
+      <Modal
+        visible={dateRangeModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {
+          setDateRangeModalVisible(false);
+          setTempStartDate(null);
+          setTempEndDate(null);
+          setDatePickerVisibleStart(false);
+          setDatePickerVisibleEnd(false);
+        }}
+      >
+        <View style={styles.dateRangeModalBg}>
+          <View style={[styles.dateRangeModalContent, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 1 }]}>
+            <View style={[styles.dateRangeModalHeader, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }]}>
+              <Text style={[styles.dateRangeModalTitle, { color: theme.colors.text }]}>{t('session.filterByDateRange')}</Text>
+              <TouchableOpacity
+                style={[styles.dateRangeModalCloseBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                onPress={() => {
+                  setDateRangeModalVisible(false);
+                  setTempStartDate(null);
+                  setTempEndDate(null);
+                  setDatePickerVisibleStart(false);
+                  setDatePickerVisibleEnd(false);
+                }}
+              >
+                <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.dateRangeModalBody, { backgroundColor: theme.colors.surface }]}>
+              <View style={styles.dateRangeSection}>
+                <Text style={[styles.dateRangeSectionTitle, { color: theme.colors.textSecondary }]}>{t('session.selectDates')}</Text>
+
+                <TouchableOpacity
+                  style={[styles.createDatePicker, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}
+                  onPress={() => setDatePickerVisibleStart(true)}
+                >
+                  <View style={styles.createDatePickerContent}>
+                    <MaterialIcons name="calendar-today" size={24} color={theme.colors.primary} />
+                    <View style={styles.createDateTextContainer}>
+                      <Text style={[styles.createDateLabel, { color: theme.colors.textSecondary }]}>{t('session.startDate')}</Text>
+                      <Text style={[styles.createDateValue, { color: theme.colors.text }]}>
+                        {tempStartDate
+                          ? tempStartDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                          : t('session.selectDate')
+                        }
+                      </Text>
+                    </View>
+                    <MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.textSecondary} />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.createDatePicker, { marginTop: 12, backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}
+                  onPress={() => setDatePickerVisibleEnd(true)}
+                >
+                  <View style={styles.createDatePickerContent}>
+                    <MaterialIcons name="event" size={24} color={theme.colors.primary} />
+                    <View style={styles.createDateTextContainer}>
+                      <Text style={[styles.createDateLabel, { color: theme.colors.textSecondary }]}>{t('session.endDate')}</Text>
+                      <Text style={[styles.createDateValue, { color: theme.colors.text }]}>
+                        {tempEndDate
+                          ? tempEndDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                          : t('session.selectDate')
+                        }
+                      </Text>
+                    </View>
+                    <MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.textSecondary} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {tempStartDate && tempEndDate && (
+                <View style={[styles.dateRangePreview, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.dateRangePreviewTitle, { color: theme.colors.primary }]}>{t('session.selectedRange')}</Text>
+                  <Text style={[styles.dateRangePreviewText, { color: theme.colors.text }]}>
+                    {(() => {
+                      const start = new Date(tempStartDate);
+                      start.setHours(0, 0, 0, 0);
+                      const end = new Date(tempEndDate);
+                      end.setHours(0, 0, 0, 0);
+                      const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                      return t('session.daysCount', { count: diffDays });
+                    })()}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={[styles.dateRangeModalFooter, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt }]}>
+              <TouchableOpacity
+                style={[styles.dateRangeCancelBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                onPress={() => {
+                  setDateRangeModalVisible(false);
+                  setTempStartDate(null);
+                  setTempEndDate(null);
+                  setDatePickerVisibleStart(false);
+                  setDatePickerVisibleEnd(false);
+                }}
+              >
+                <Text style={[styles.dateRangeCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+
+              {dateFilter && (
+                <TouchableOpacity
+                  style={[styles.dateRangeCancelBtn, { backgroundColor: theme.colors.surface, borderColor: '#ef4444' }]}
+                  onPress={() => {
+                    setDateFilter(null);
+                    setDateRangeModalVisible(false);
+                    setTempStartDate(null);
+                    setTempEndDate(null);
+                    setDatePickerVisibleStart(false);
+                    setDatePickerVisibleEnd(false);
+                  }}
+                >
+                  <MaterialIcons name="filter-alt-off" size={18} color={theme.colors.error} style={{ marginRight: 4 }} />
+                  <Text style={[styles.dateRangeCancelText, { color: '#ef4444' }]}>{t('session.clearDateFilter')}</Text>
+                </TouchableOpacity>
+              )}
+
+              {tempStartDate && tempEndDate && (
+                <TouchableOpacity
+                  style={[styles.dateRangeApplyBtn, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => {
+                    const startDate = new Date(tempStartDate);
+                    startDate.setHours(0, 0, 0, 0);
+                    
+                    const endDate = new Date(tempEndDate);
+                    endDate.setHours(23, 59, 59, 999);
+                    
+                    setDateFilter({
+                      startDate: startDate,
+                      endDate: endDate
+                    });
+                    setDateRangeModalVisible(false);
+                    setTempStartDate(null);
+                    setTempEndDate(null);
+                    setDatePickerVisibleStart(false);
+                    setDatePickerVisibleEnd(false);
+                  }}
+                >
+                  <Text style={styles.dateRangeApplyText}>{t('session.applyFilter')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <DateTimePickerModal
+              isVisible={datePickerVisibleStart}
+              mode="date"
+              date={tempStartDate || new Date()}
+              onConfirm={(date) => {
+                setTempStartDate(date);
+                setDatePickerVisibleStart(false);
+              }}
+              onCancel={() => setDatePickerVisibleStart(false)}
+              locale={i18n.language}
+              confirmTextIOS={t('common.confirm')}
+              cancelTextIOS={t('common.cancel')}
+              headerTextIOS={t('session.selectStartDate')}
+            />
+
+            <DateTimePickerModal
+              isVisible={datePickerVisibleEnd}
+              mode="date"
+              date={tempEndDate || tempStartDate || new Date()}
+              onConfirm={(date) => {
+                setTempEndDate(date);
+                setDatePickerVisibleEnd(false);
+              }}
+              onCancel={() => setDatePickerVisibleEnd(false)}
+              locale={i18n.language}
+              confirmTextIOS={t('common.confirm')}
+              cancelTextIOS={t('common.cancel')}
+              headerTextIOS={t('session.selectEndDate')}
+            />
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <AppLayout>
       <View style={styles.container}>
@@ -1443,6 +1792,7 @@ export default function WellnessManagement({ navigation, canMutate }) {
         
         {renderTemplateModal()}
         {renderSessionModal()}
+        {renderDateRangeModal()}
 
         {/* Modal PDF por rango de fechas */}
         <Modal visible={showRangePDFModal} animationType="slide" transparent>
@@ -2493,6 +2843,217 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 2,
+  },
+
+  // --- Pro Tabs Styles ---
+  proTabsContainer: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  proTabs: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 3,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceAlt : theme.colors.border,
+  },
+  proTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 11,
+    gap: 6,
+  },
+  proTabActive: {
+    backgroundColor: theme.colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  proTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  proTabTextActive: {
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+
+  // --- Pro Filters Bar ---
+  proFiltersBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  proFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    flexShrink: 1,
+  },
+  proFilterButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  proFilterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flexShrink: 1,
+  },
+  proFilterButtonTextActive: {
+    color: '#ffffff',
+  },
+  proClearFilterBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // --- Date Range Filter Styles ---
+  dateRangeModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  dateRangeModalContent: {
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 15,
+    overflow: 'hidden',
+  },
+  dateRangeModalHeader: {
+    position: 'relative',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  dateRangeModalCloseBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  dateRangeModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  dateRangeModalBody: {
+    padding: 20,
+  },
+  dateRangeSection: {
+    marginBottom: 20,
+  },
+  dateRangeSectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  createDatePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  createDatePickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 12,
+  },
+  createDateTextContainer: {
+    flex: 1,
+  },
+  createDateLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  createDateValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  dateRangePreview: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1.5,
+  },
+  dateRangePreviewTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateRangePreviewText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dateRangeModalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 8,
+  },
+  dateRangeCancelBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateRangeCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dateRangeApplyBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateRangeApplyText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

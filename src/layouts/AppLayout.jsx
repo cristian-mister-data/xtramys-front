@@ -32,9 +32,8 @@ const Shell = styled.div`
   @media (max-width: 700px) {
     grid-template-areas:
       'header'
-      'content'
-      'bottom';
-    grid-template-rows: 56px minmax(0, 1fr) auto;
+      'content';
+    grid-template-rows: 56px minmax(0, 1fr);
   }
 
   html[data-native="true"] & {
@@ -65,7 +64,7 @@ const Main = styled.main`
   }
 
   @media (max-width: 700px) {
-    padding-bottom: calc(12px + 72px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   html[data-native="true"] & {
@@ -110,7 +109,7 @@ const BottomNav = styled.nav`
   z-index: ${({ theme }) => theme.zIndex.sticky};
 
   @media (max-width: 700px) {
-    display: grid;
+    display: none !important;
   }
 
   html[data-native="true"] & {
