@@ -261,11 +261,21 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
       const mimeType = mediaBlob?.type || (extension === 'webm' ? 'video/webm' : 'video/mp4');
 
       if (isAndroid) {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
         const { registerPlugin } = await import('@capacitor/core');
         const VideoSaver = registerPlugin('VideoSaver');
         const canStreamDirectly = /^https?:\/\//i.test(finalUrl) && (!isBackendApiUrl(finalUrl) || !USE_COOKIE_AUTH);
+        let sourceUri;
+        if (!canStreamDirectly) {
+          const cached = await Filesystem.writeFile({
+            path: finalFileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
+          sourceUri = cached.uri;
+        }
         await VideoSaver.saveToGallery({
-          ...(canStreamDirectly ? { url: finalUrl } : { data: base64Data }),
+          ...(canStreamDirectly ? { url: finalUrl } : { sourceUri }),
           fileName: finalFileName,
           mimeType,
         });

@@ -13,6 +13,12 @@ const Container = styled.div`
   border-radius: 12px;
   padding: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  min-width: 0;
+
+  @media (max-width: 480px) {
+    padding: 12px;
+    gap: 12px;
+  }
 `;
 
 const TabContainer = styled.div`
@@ -21,6 +27,7 @@ const TabContainer = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   padding-bottom: 8px;
   overflow-x: auto;
+  min-width: 0;
 `;
 
 const Tab = styled.button`
@@ -33,6 +40,11 @@ const Tab = styled.button`
   background: ${({ $active, theme }) => $active ? theme.colors.primarySoft : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.textSecondary};
   white-space: nowrap;
+
+  @media (max-width: 480px) {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
   
   &:hover {
     background: ${({ $active, theme }) => $active ? theme.colors.primarySoft : theme.colors.backgroundAlt};
@@ -45,6 +57,7 @@ const MainGrid = styled.div`
   gap: 20px;
   @media (max-width: 650px) {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 `;
 
@@ -58,6 +71,11 @@ const PreviewPane = styled.div`
   border: 1.5px dashed ${({ theme }) => theme.colors.border};
   padding: 24px;
   min-height: 200px;
+
+  @media (max-width: 480px) {
+    min-height: 150px;
+    padding: 14px;
+  }
 `;
 
 const EditorPane = styled.div`
@@ -74,6 +92,7 @@ const ShapeSelector = styled.div`
   padding: 3px;
   gap: 3px;
   align-self: flex-start;
+  max-width: 100%;
 `;
 
 const ShapeOption = styled.button`
@@ -86,6 +105,10 @@ const ShapeOption = styled.button`
   border: 1.5px solid ${({ $active, theme }) => $active ? theme.colors.primary : 'transparent'};
   cursor: pointer;
   transition: all 0.2s ease;
+
+  @media (max-width: 360px) {
+    padding: 6px 8px;
+  }
 `;
 
 const PatternList = styled.div`
@@ -146,6 +169,12 @@ const ColorRow = styled.div`
   border-radius: 8px;
   padding: 8px 12px;
   gap: 12px;
+
+  @media (max-width: 420px) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
 `;
 
 const ColorLabel = styled.div`
@@ -158,6 +187,7 @@ const ColorPickerContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
 `;
 
 const ColorPreviewBox = styled.div`
