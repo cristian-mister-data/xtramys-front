@@ -7,13 +7,15 @@ import { isNative } from '@/platform/capacitor';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
-  if (typeof videoOrId === 'string') return /^(https?:|blob:|file:|capacitor:|content:)/i.test(videoOrId) ? null : videoOrId;
+  if (typeof videoOrId === 'string')
+    return /^(https?:|blob:|file:|capacitor:|content:)/i.test(videoOrId) ? null : videoOrId;
   return videoOrId._id || videoOrId.id || videoOrId.videoId || null;
 };
 
 const getKnownUrl = (videoOrId) => {
   if (!videoOrId) return null;
-  if (typeof videoOrId === 'string') return /^(https?:|blob:|file:|capacitor:|content:)/i.test(videoOrId) ? videoOrId : null;
+  if (typeof videoOrId === 'string')
+    return /^(https?:|blob:|file:|capacitor:|content:)/i.test(videoOrId) ? videoOrId : null;
   return (
     videoOrId.videoUrl ||
     videoOrId.streamUrl ||
@@ -155,6 +157,11 @@ const readNativeLocalVideo = async (sourceUrl) => {
   return blobToBase64(await response.blob());
 };
 
+const saveIOSVideo = async (path) => {
+  const { Media } = await import('@capacitor-community/media');
+  await Media.saveVideo({ path });
+};
+
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   const { playerOverlays, ...urlOptions } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
@@ -204,7 +211,7 @@ async function resolveWithRetry(url, options, attempts = 3, delayMs = 1000) {
   return '';
 }
 
-export async function triggerVideoDownload(url, filenameBase = 'video') {
+export async function triggerVideoDownload(url, filenameBase = 'video', options = {}) {
   if (!url) throw new Error('No hay URL de video para descargar');
 
   const isCapacitor = isNativeCapacitor();
@@ -221,15 +228,23 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
         }
       }
 
-      if (isAndroid && /^https?:\/\//i.test(finalUrl) && (!isBackendApiUrl(finalUrl) || !USE_COOKIE_AUTH)) {
-        const { registerPlugin } = await import('@capacitor/core');
-        const VideoSaver = registerPlugin('VideoSaver');
+      if (
+        !options.normalizeForGallery &&
+        /^https?:\/\//i.test(finalUrl) &&
+        (!isBackendApiUrl(finalUrl) || !USE_COOKIE_AUTH)
+      ) {
         const extension = extensionFrom('', finalUrl);
-        await VideoSaver.saveToGallery({
-          url: finalUrl,
-          fileName: `${sanitizeVideoFilename(filenameBase)}.${extension}`,
-          mimeType: extension === 'webm' ? 'video/webm' : 'video/mp4',
-        });
+        if (isAndroid) {
+          const { registerPlugin } = await import('@capacitor/core');
+          const VideoSaver = registerPlugin('VideoSaver');
+          await VideoSaver.saveToGallery({
+            url: finalUrl,
+            fileName: `${sanitizeVideoFilename(filenameBase)}.${extension}`,
+            mimeType: extension === 'webm' ? 'video/webm' : 'video/mp4',
+          });
+        } else {
+          await saveIOSVideo(finalUrl);
+        }
         return;
       }
 
@@ -260,57 +275,22 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
       const finalFileName = `${sanitizeVideoFilename(filenameBase)}.${extension}`;
       const mimeType = mediaBlob?.type || (extension === 'webm' ? 'video/webm' : 'video/mp4');
 
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const writeResult = await Filesystem.writeFile({
+        path: finalFileName,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
       if (isAndroid) {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
         const { registerPlugin } = await import('@capacitor/core');
         const VideoSaver = registerPlugin('VideoSaver');
-        const canStreamDirectly = /^https?:\/\//i.test(finalUrl) && (!isBackendApiUrl(finalUrl) || !USE_COOKIE_AUTH);
-        let sourceUri;
-        if (!canStreamDirectly) {
-          const cached = await Filesystem.writeFile({
-            path: finalFileName,
-            data: base64Data,
-            directory: Directory.Cache,
-          });
-          sourceUri = cached.uri;
-        }
         await VideoSaver.saveToGallery({
-          ...(canStreamDirectly ? { url: finalUrl } : { sourceUri }),
+          sourceUri: writeResult.uri,
           fileName: finalFileName,
           mimeType,
         });
       } else {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        const { Media } = await import('@capacitor-community/media');
-
-        const saveToIOSPhotos = async (videoPath) => {
-          await Media.requestPermissions();
-          try {
-            await Media.saveVideo({ path: videoPath });
-          } catch {
-            if (!String(videoPath).startsWith('file://')) {
-              await Media.saveVideo({ path: `file://${videoPath}` });
-            } else {
-              throw new Error('Media.saveVideo failed for all path formats');
-            }
-          }
-        };
-
-        if (base64Data) {
-          const writeResult = await Filesystem.writeFile({
-            path: finalFileName,
-            data: base64Data,
-            directory: Directory.Cache,
-          });
-          await saveToIOSPhotos(writeResult.uri);
-        } else {
-          const cacheResult = await Filesystem.downloadFile({
-            url: finalUrl,
-            path: finalFileName,
-            directory: Directory.Cache,
-          });
-          await saveToIOSPhotos(cacheResult.path);
-        }
+        await saveIOSVideo(writeResult.uri);
       }
     } catch (capErr) {
       console.error('Capacitor video download error:', capErr);
@@ -360,24 +340,43 @@ export async function triggerVideoDownload(url, filenameBase = 'video') {
 export async function downloadResolvedVideo(videoOrId, filenameBase = 'video') {
   const videoId = getId(videoOrId);
   let url = getKnownUrl(videoOrId) || '';
+  const normalizeForGallery = Boolean(
+    videoId ||
+    (videoOrId &&
+      typeof videoOrId === 'object' &&
+      (videoOrId.type === 'tactical' || videoOrId.fieldType || videoOrId.keyframes?.length)),
+  );
+  const downloadOptions = { normalizeForGallery };
 
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
     url = getVideoStreamUrl(videoId);
     try {
       const blob = await fetchVideoBlob(url);
-      await triggerVideoDownload(isNativeCapacitor() ? url : URL.createObjectURL(blob), filenameBase);
+      await triggerVideoDownload(
+        isNativeCapacitor() ? url : URL.createObjectURL(blob),
+        filenameBase,
+        downloadOptions,
+      );
       return url;
     } catch {
       if (videoId.startsWith('preview_')) {
         await new Promise((res) => setTimeout(res, 2000));
         try {
           const blob2 = await fetchVideoBlob(url);
-          await triggerVideoDownload(isNativeCapacitor() ? url : URL.createObjectURL(blob2), filenameBase);
+          await triggerVideoDownload(
+            isNativeCapacitor() ? url : URL.createObjectURL(blob2),
+            filenameBase,
+            downloadOptions,
+          );
           return url;
         } catch {
           await new Promise((res) => setTimeout(res, 3000));
           const blob3 = await fetchVideoBlob(url);
-          await triggerVideoDownload(isNativeCapacitor() ? url : URL.createObjectURL(blob3), filenameBase);
+          await triggerVideoDownload(
+            isNativeCapacitor() ? url : URL.createObjectURL(blob3),
+            filenameBase,
+            downloadOptions,
+          );
           return url;
         }
       }
@@ -392,6 +391,6 @@ export async function downloadResolvedVideo(videoOrId, filenameBase = 'video') {
 
   if (!url) url = await resolvePlayableVideoUrl(videoOrId);
 
-  await triggerVideoDownload(url, filenameBase);
+  await triggerVideoDownload(url, filenameBase, downloadOptions);
   return url;
 }

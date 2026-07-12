@@ -73,22 +73,22 @@ async function webmToMp4(webmBlob) {
  * Exportado para uso en el shim de expo-file-system.
  */
 export async function ensureMp4Blob(blob) {
-  const type = blob?.type || '';
-  if (type.includes('mp4')) return blob;
+  let isMp4 = false;
+  let isWebm = false;
   if (blob && blob.size > 8) {
     try {
-      const header = await blob.slice(4, 8).arrayBuffer();
-      const bytes = new Uint8Array(header);
-      if (bytes[0] === 0x66 && bytes[1] === 0x74 && bytes[2] === 0x79 && bytes[3] === 0x70) {
-        return blob;
-      }
+      const bytes = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+      isMp4 = bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
+      isWebm = bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
     } catch (_) {}
   }
+  if (isMp4) return blob.type === 'video/mp4' ? blob : new Blob([blob], { type: 'video/mp4' });
+  if (!isWebm && blob?.type?.includes('mp4')) return blob;
   try {
     return await webmToMp4(blob);
   } catch (e) {
     console.warn('[ensureMp4Blob] FFmpeg conversion failed, returning original blob', e);
-    return blob;
+    return isWebm && blob.type !== 'video/webm' ? new Blob([blob], { type: 'video/webm' }) : blob;
   }
 }
 

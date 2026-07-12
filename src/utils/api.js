@@ -325,17 +325,31 @@ export const proxyUploadToR2 = async (localVideoPath) => {
     window.Capacitor.getPlatform() !== 'web';
   if (isNative) {
     try {
-      const { Filesystem } = await import('@capacitor/filesystem');
-      // Read the file as base64 natively
-      const readFileResult = await Filesystem.readFile({ path: localVideoPath });
-      const base64Data = readFileResult.data;
+      let base64Data;
+      let contentType = 'video/mp4';
+
+      if (/^(blob:|data:)/i.test(localVideoPath)) {
+        const fileResponse = await fetch(localVideoPath);
+        const blob = await fileResponse.blob();
+        if (!blob.size) throw new Error('El vídeo generado está vacío');
+        contentType = blob.type || contentType;
+        base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        const { Filesystem } = await import('@capacitor/filesystem');
+        base64Data = (await Filesystem.readFile({ path: localVideoPath })).data;
+      }
 
       // Post the base64 data as a JSON payload to bypass CapacitorHttp binary bugs
       const response = await api.post(
         '/video/proxy-upload',
         {
           fileData: base64Data,
-          contentType: 'video/mp4',
+          contentType,
         },
         {
           timeout: 180000,

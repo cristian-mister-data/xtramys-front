@@ -6,6 +6,7 @@ import { DEFAULT_KITS, KIT_PATTERNS, normalizeKits } from '@/utils/kits';
 
 // Styled Components
 const Container = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -23,14 +24,16 @@ const Container = styled.div`
 
 const TabContainer = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   padding-bottom: 8px;
-  overflow-x: auto;
   min-width: 0;
 `;
 
 const Tab = styled.button`
+  flex: 1 1 132px;
+  min-width: 0;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 13px;
@@ -39,11 +42,17 @@ const Tab = styled.button`
   border: 1.5px solid ${({ $active, theme }) => $active ? theme.colors.primary : 'transparent'};
   background: ${({ $active, theme }) => $active ? theme.colors.primarySoft : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.textSecondary};
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
 
   @media (max-width: 480px) {
+    flex-basis: calc(50% - 4px);
     padding: 7px 10px;
     font-size: 12px;
+  }
+
+  @media (max-width: 340px) {
+    flex-basis: 100%;
   }
   
   &:hover {
@@ -55,6 +64,7 @@ const MainGrid = styled.div`
   display: grid;
   grid-template-columns: 180px 1fr;
   gap: 20px;
+  min-width: 0;
   @media (max-width: 650px) {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -82,20 +92,24 @@ const EditorPane = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 `;
 
 const ShapeSelector = styled.div`
   display: flex;
+  flex-wrap: wrap;
   background: ${({ theme }) => theme.colors.backgroundAlt};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   padding: 3px;
   gap: 3px;
-  align-self: flex-start;
+  width: 100%;
   max-width: 100%;
 `;
 
 const ShapeOption = styled.button`
+  flex: 1 1 110px;
+  min-width: 0;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -105,6 +119,7 @@ const ShapeOption = styled.button`
   border: 1.5px solid ${({ $active, theme }) => $active ? theme.colors.primary : 'transparent'};
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow-wrap: anywhere;
 
   @media (max-width: 360px) {
     padding: 6px 8px;
@@ -115,6 +130,7 @@ const PatternList = styled.div`
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  max-width: 100%;
   padding-bottom: 6px;
   
   &::-webkit-scrollbar {
@@ -158,9 +174,11 @@ const ColorRows = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 `;
 
 const ColorRow = styled.div`
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -169,25 +187,27 @@ const ColorRow = styled.div`
   border-radius: 8px;
   padding: 8px 12px;
   gap: 12px;
-
-  @media (max-width: 420px) {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
-  }
+  min-width: 0;
 `;
 
 const ColorLabel = styled.div`
+  flex: 0 0 96px;
   font-size: 13px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textSecondary};
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const ColorPickerContainer = styled.div`
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 `;
 
 const ColorPreviewBox = styled.div`
@@ -201,6 +221,9 @@ const ColorPreviewBox = styled.div`
 
 const ColorTextInput = styled.input`
   width: 86px;
+  min-width: 0;
+  max-width: 120px;
+  flex: 0 1 86px;
   height: 28px;
   font-family: monospace;
   font-size: 12px;
