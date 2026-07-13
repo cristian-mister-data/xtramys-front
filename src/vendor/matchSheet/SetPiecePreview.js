@@ -1,20 +1,85 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg from 'react-native-svg';
 import { useTheme } from 'styled-components';
 import { cdnUrl } from '@/config';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { applySetPieceKitsToElements } from '@/utils/kits';
+import { decomposeFieldId, getAspectForView, isVisibleInView, ratioToDisplay } from '@/vendor/tacticalBoard/fields';
+import { renderIconCanvas } from '@/vendor/tacticalBoard/field/icon-renderers';
+import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
+import { BatchLinesRenderer } from '@/vendor/tacticalBoard/field/line-renderers';
+import { BatchShapesRenderer } from '@/vendor/tacticalBoard/field/shape-renderers';
+import { ConnectorsRenderer } from '@/vendor/tacticalBoard/field/connectors';
 
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
 
-export default function SetPiecePreview({ setPiece, players = [], height = 240, onSlotPress, selectedSlotId, showAssignments = false }) {
+export default function SetPiecePreview({ setPiece, players = [], height = 240, kitContext, onSlotPress, selectedSlotId, showAssignments = false }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme, height), [theme, height]);
-  const elements = Array.isArray(setPiece?.customElements) && setPiece.customElements.length
+  const [boardWidth, setBoardWidth] = useState(0);
+  const sourceElements = Array.isArray(setPiece?.customElements) && setPiece.customElements.length
     ? setPiece.customElements
     : (Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : []);
   const assignments = Array.isArray(setPiece?.assignments) ? setPiece.assignments : [];
   const image = normalizeImageSource(setPiece?.customImage || setPiece?.imagen || '');
+  const field = decomposeFieldId(setPiece?.customFieldType || setPiece?.tipoCampo || 'full');
+  const fieldAspect = getAspectForView(field.viewMode);
+  const effectiveKitContext = kitContext || setPiece?.pizarraConfig?.kitContext;
+  const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
+  const assignmentBySlot = new Map(assignments.map((assignment) => [String(assignment.slotId), assignment]));
+  const elements = applySetPieceKitsToElements(sourceElements.map((element, index) => {
+    if (element?.type !== 'player') return element;
+    const assignment = assignmentBySlot.get(String(element.id || element._id || '')) || assignments[index];
+    const playerId = getId(assignment?.player);
+    const player = players.find((item) => String(item._id || item.id) === String(playerId)) || assignment?.player;
+    const playerName = typeof player === 'object'
+      ? (getPlayerFullName(player) || player.fullName || player.name || assignment?.playerName)
+      : assignment?.playerName;
+    if (!playerName) return element;
+    const playerData = typeof player === 'object'
+      ? { ...player, nombre: playerName, fullName: playerName }
+      : { nombre: playerName, fullName: playerName };
+    return {
+      ...element,
+      number: playerData.dorsal || playerData.number || assignment?.number || element.number,
+      playerData,
+      photoUrl: assignment?.photoUrl || (playerData.foto ? cdnUrl(playerData.foto) : element.photoUrl),
+    };
+  }), effectiveKitContext, showPhotos).map((element) => ({
+    ...element,
+    xRatio: element.xRatio ?? (typeof element.x === 'number' ? element.x / 1280 : undefined),
+    yRatio: element.yRatio ?? (typeof element.y === 'number' ? element.y / (1280 * fieldAspect) : undefined),
+  }));
+  const fieldLayout = useMemo(() => {
+    const width = boardWidth || 1;
+    const naturalHeight = width * fieldAspect;
+    const fieldWidth = naturalHeight <= height ? width : height / fieldAspect;
+    const fieldHeight = fieldWidth * fieldAspect;
+    return {
+      width: fieldWidth,
+      height: fieldHeight,
+      left: (width - fieldWidth) / 2,
+      top: (height - fieldHeight) / 2,
+    };
+  }, [boardWidth, fieldAspect, height]);
+  // La captura guardada es la imagen oficial de la ficha; no la reconstruimos
+  // encima con elementos vivos porque duplicaría/Desplazaría los nombres.
+  const liveBoard = elements.length > 0 && !image;
+  const straightLines = elements.filter((element) => element.type === 'straight-line' || element.type === 'straight-arrow');
+  const curveLines = elements.filter((element) => element.type === 'curve-line' || element.type === 'curve-arrow');
+  const circles = elements.filter((element) => element.type === 'circle');
+  const rectangles = elements.filter((element) => element.type === 'rectangle');
+  const customShapes = elements.filter((element) => element.type === 'custom-shape' && element.isCustomShapeComplete);
+  const freeTexts = elements.filter((element) => element.type === 'free-text');
+  const pointElements = elements.filter((element) =>
+    element.xRatio !== undefined &&
+    element.yRatio !== undefined &&
+    isVisibleInView(element.xRatio, element.yRatio, field.viewMode, 0.03) &&
+    !['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle', 'rectangle', 'custom-shape', 'free-text'].includes(element.type)
+  ).sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+  const emptySelection = new Set();
 
   const markers = showAssignments ? assignments.map((assignment) => {
     const element = elements.find((item) => String(item.id || item._id || '') === String(assignment.slotId));
@@ -34,8 +99,131 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
 
   return (
     <View>
-      <View style={styles.board}>
-        {image ? (
+      <View style={styles.board} onLayout={(event) => setBoardWidth(event.nativeEvent.layout.width)}>
+        {boardWidth > 0 && liveBoard ? (
+          <View style={{ position: 'absolute', left: fieldLayout.left, top: fieldLayout.top, width: fieldLayout.width, height: fieldLayout.height, overflow: 'hidden' }}>
+            <FieldSVGRenderer
+              lineType={field.lineType}
+              viewMode={field.viewMode}
+              width={fieldLayout.width}
+              height={fieldLayout.height}
+            />
+            <Svg
+              pointerEvents="none"
+              style={{ position: 'absolute', inset: 0, width: fieldLayout.width, height: fieldLayout.height }}
+            >
+              <BatchShapesRenderer
+                circles={circles}
+                rectangles={rectangles}
+                customShapes={customShapes}
+                imageWidth={fieldLayout.width}
+                imageHeight={fieldLayout.height}
+                selectedCloneIdsSet={emptySelection}
+                selectedCloneId={null}
+                multiSelectMode={false}
+                viewMode={field.viewMode}
+              />
+              <BatchLinesRenderer
+                straightLines={straightLines}
+                curveLines={curveLines}
+                imageWidth={fieldLayout.width}
+                imageHeight={fieldLayout.height}
+                selectedCloneIdsSet={emptySelection}
+                multiSelectMode={false}
+                viewMode={field.viewMode}
+              />
+            </Svg>
+            <ConnectorsRenderer
+              connectors={setPiece?.pizarraConfig?.connectors || []}
+              clones={elements}
+              imageWidth={fieldLayout.width}
+              imageHeight={fieldLayout.height}
+              viewMode={field.viewMode}
+            />
+            {pointElements.map((element) => {
+              const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
+              const size = (element.size || 24) * Math.min(fieldLayout.width, fieldLayout.height) / 500;
+              return (
+                <View
+                  key={`element-${element.id || element._id}`}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: point.x - size / 2,
+                    top: point.y - size / 2,
+                    width: size,
+                    height: size,
+                    overflow: 'visible',
+                    zIndex: element.zIndex || 300,
+                  }}
+                >
+                  {renderIconCanvas(
+                    element,
+                    size,
+                    element.rotation || 0,
+                    element.number,
+                    setPiece?.pizarraConfig?.playersWithNumber ?? true,
+                    element.displayLabel,
+                    element.numberColor,
+                    element.isGoalkeeper === true,
+                    element.differentiateGoalkeeper !== false,
+                    element.goalkeeperStripeColor,
+                    element.showPhotos === true,
+                    element.photoUrl || cdnUrl(element.playerData?.foto || ''),
+                  )}
+                  {element.playerData && (
+                    <Text
+                      selectable={false}
+                      numberOfLines={1}
+                      style={{
+                        position: 'absolute',
+                        bottom: -Math.max(18, size * 0.85),
+                        left: -Math.max(20, size),
+                        right: -Math.max(20, size),
+                        textAlign: 'center',
+                        fontSize: Math.max(8, Math.min(10, size * 0.45)),
+                        color: element.textColor || '#000',
+                        backgroundColor:
+                          element.textBackgroundColor === 'transparent'
+                            ? 'transparent'
+                            : element.textBackgroundColor || '#fff',
+                        paddingHorizontal: element.textBackgroundColor === 'transparent' ? 0 : 2,
+                        paddingVertical: element.textBackgroundColor === 'transparent' ? 0 : 1,
+                        borderRadius: 3,
+                        borderWidth: element.textBackgroundColor === 'transparent' ? 0 : 0.5,
+                        borderColor: '#ccc',
+                      }}
+                    >
+                      {getPlayerFullName(element.playerData) || element.playerData.fullName || element.playerData.name}
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+            {freeTexts.map((element) => {
+              const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
+              const scale = Math.min(fieldLayout.width, fieldLayout.height) / 500;
+              return (
+                <Text
+                  key={`text-${element.id || element._id}`}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    left: point.x,
+                    top: point.y,
+                    color: element.color || '#000',
+                    backgroundColor: element.backgroundColor || 'transparent',
+                    fontSize: (element.fontSize || 18) * scale,
+                    fontWeight: element.fontWeight || 'normal',
+                    transform: [{ rotate: `${element.rotation || 0}deg` }],
+                  }}
+                >
+                  {element.text || ''}
+                </Text>
+              );
+            })}
+          </View>
+        ) : image ? (
           <Image source={{ uri: image }} style={styles.image} resizeMode="contain" />
         ) : (
           <View style={styles.emptyImage}>
@@ -56,7 +244,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
               selected && styles.markerSelected,
             ]}
           >
-            {hasPlayer && item.player?.foto ? (
+            {hasPlayer && showPhotos && item.player?.foto ? (
               <Image source={{ uri: cdnUrl(item.player.foto) }} style={styles.photo} />
             ) : hasPlayer ? (
               <View style={styles.initials}>

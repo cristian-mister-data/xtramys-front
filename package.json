@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite .",
     "build": "vite build",
+    "check:set-piece-kits": "node scripts/check-set-piece-kits.mjs",
     "preview": "vite preview --port 4173",
     "mobile": "npm run build && npx cap sync",
     "android": "npm run build && npx cap sync android && npx cap open android",

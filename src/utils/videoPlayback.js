@@ -12,6 +12,19 @@ const getId = (videoOrId) => {
   return videoOrId._id || videoOrId.id || videoOrId.videoId || null;
 };
 
+export const getSetPieceVideoId = (setPiece) => {
+  const video = setPiece?.videoId || (Array.isArray(setPiece?.videos) ? setPiece.videos[0] : null);
+  return typeof video === 'object' ? (video?._id || video?.id || null) : (video || null);
+};
+
+export const getSetPieceVideoCandidates = (setPiece, availableSetPieces = []) => {
+  const strategyId = setPiece?.strategyId || setPiece?._id || setPiece?.id;
+  const source = availableSetPieces.find((item) =>
+    String(item?._id || item?.id || '') === String(strategyId || ''),
+  );
+  return [...new Set([getSetPieceVideoId(setPiece), getSetPieceVideoId(source)].filter(Boolean).map(String))];
+};
+
 const getKnownUrl = (videoOrId) => {
   if (!videoOrId) return null;
   if (typeof videoOrId === 'string')
@@ -163,7 +176,7 @@ const saveIOSVideo = async (path) => {
 };
 
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
-  const { playerOverlays, ...urlOptions } = options || {};
+  const { playerOverlays, onProgress, ...urlOptions } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
@@ -171,6 +184,15 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   }
   if (knownUrl && !playerOverlays) return maybeObjectUrl(knownUrl, urlOptions);
   if (!videoId) return '';
+
+  if (playerOverlays?.length) {
+    try {
+      return await regenerateVideoInBrowser(videoId, { playerOverlays, onProgress });
+    } catch (error) {
+      console.warn('[videoPlayback] No se pudo recrear el vídeo personalizado en el dispositivo:', error);
+      throw new Error('No se pudo recrear el vídeo con la equipación y los jugadores de la ficha');
+    }
+  }
 
   const metadata = await getVideoById(videoId).catch(() => null);
   let directUrl = metadata?.video?.videoUrl || metadata?.video?.streamUrl;
@@ -182,13 +204,12 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
     return maybeObjectUrl(directUrl, urlOptions);
   }
 
-  if (playerOverlays?.length && directUrl) return maybeObjectUrl(directUrl, urlOptions);
   if (directUrl) return maybeObjectUrl(directUrl, urlOptions);
   if (metadata?.video?.hasStoredVideo)
     return resolveWithRetry(getVideoStreamUrl(videoId), urlOptions);
 
   try {
-    return await regenerateVideoInBrowser(videoId);
+    return await regenerateVideoInBrowser(videoId, { onProgress });
   } catch (error) {
     console.warn('[videoPlayback] No se pudo regenerar el video en navegador:', error);
     return maybeObjectUrl(getVideoStreamUrl(videoId), urlOptions);

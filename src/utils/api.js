@@ -5,6 +5,8 @@ import * as videoApi from '@/api/video';
 import api, { apiBase } from '@/api/client';
 import { pollJobUntilDone } from '@/api/client';
 import { API_URL, BACKEND_URL } from '@/config';
+
+let _activeVideoPollController = null;
 export {
   generateVideo,
   getJobStatus,
@@ -60,9 +62,11 @@ export const listVideos = async (filters = {}) => {
 
 export const getMyVideos = listVideos; // alias (algunos consumidores legacy)
 
-export const getVideoById = async (videoId) => {
+export const getVideoById = async (videoId, { optional = false } = {}) => {
   try {
-    const response = await api.get(`/video/${videoId}`);
+    const response = await api.get(`/video/${videoId}`, {
+      params: optional ? { optional: '1' } : undefined,
+    });
     return response.data;
   } catch (error) {
     console.warn('Error getting video:', error);
@@ -432,6 +436,9 @@ export const regenerateVideoWithField = async (
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error('Video generation cancelled');
+    }
+    if (error.code === 'CLIENT_REGEN_REQUIRED') {
+      return error.data || { success: false, status: 'client_required' };
     }
     console.warn('Error regenerating video:', error);
     throw error;

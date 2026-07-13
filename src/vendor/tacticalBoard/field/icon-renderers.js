@@ -183,6 +183,7 @@ export function renderIconCanvas(
   goalkeeperStripeColor = '#ffffff',
   showPhotos = false,
   photoUrl = null,
+  uniqueId = undefined,
 ) {
   const color = isValidHexColor(icon.color) ? icon.color : '#000000';
   const style = rotation
@@ -201,13 +202,17 @@ export function renderIconCanvas(
   const neutralBackgroundColor = icon.backgroundColor || NEUTRAL_PLAYER_COLORS.background;
   const playerShape = icon.shape || 'circle';
   const isJersey = playerShape === 'jersey';
-  const hasPlayerStripes = icon.hasStripes === true;
   const playerStripeColor = icon.stripeColor || '#ffffff';
+  const kitPattern = icon.kitPattern || (icon.hasStripes === true ? 'vertical' : 'solid');
+  const hasPlayerStripes = icon.hasStripes === true || kitPattern !== 'solid';
+  const kitSecondaryColor = icon.kitSecondaryColor || playerStripeColor;
   const jerseyPath =
     'M35,10 Q50,20 65,10 L82,20 L95,42 L78,54 L70,45 L70,90 L30,90 L30,45 L22,54 L5,42 L18,20 Z';
-  const clipId = `player-shape-${String(icon.id || icon.idBase || icon.paletteIndex || 'preview').replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const cleanId = String(icon.uniqueId || icon.id || icon.idBase || icon.paletteIndex || 'preview').replace(/[^a-zA-Z0-9_-]/g, '-');
+  const clipSuffix = uniqueId ? String(uniqueId).replace(/[^a-zA-Z0-9_-]/g, '-') : 'fallback';
+  const clipId = `player-shape-${cleanId}-${clipSuffix}`;
 
-  // Determinar qu mostrar: displayLabel (posicin) o number
+  // Determinar qué mostrar: displayLabel o number
   const displayText = displayLabel !== undefined ? displayLabel : isNeutral ? 'N' : number;
   const drawGoalkeeperVerticalStripes = isGoalkeeper && differentiateGoalkeeper;
   const drawPlayerVerticalStripes = hasPlayerStripes && !drawGoalkeeperVerticalStripes;
@@ -228,7 +233,7 @@ export function renderIconCanvas(
   // Determinar si mostrar rayas de portero
   const showGoalkeeperStripes = isGoalkeeper && differentiateGoalkeeper && !showPhotos;
 
-  // Determinar si mostrar foto (solo si showPhotos est� activo y hay foto)
+  // Determinar si mostrar foto
   const shouldShowPhoto = showPhotos && photoUrl;
   const nonSelectableWebStyle =
     Platform.OS === 'web'
@@ -245,7 +250,7 @@ export function renderIconCanvas(
   switch (icon.type) {
     case 'player':
       if (!shouldShowPhoto) {
-        const strokeColor = '#222';
+        const strokeColor = icon.kitSecondaryColor && !isJersey ? kitSecondaryColor : '#222';
         const strokeWidth = 1;
         const textValue = displayText === undefined ? '' : String(displayText);
         return (
@@ -285,24 +290,20 @@ export function renderIconCanvas(
                   </Mask>
                 )}
               </Defs>
-              {/* 1. Base player body */}
+              {/* 1. Base player body fill */}
               {isNeutral ? (
                 isJersey ? (
                   <Path
                     d={jerseyPath}
                     transform={`scale(${size / 100})`}
                     fill={neutralBackgroundColor}
-                    stroke={strokeColor}
-                    strokeWidth={strokeWidth}
                   />
                 ) : (
                   <Circle
                     cx={halfSize}
                     cy={halfSize}
-                    r={Math.max(0, halfSize - strokeWidth / 2)}
+                    r={halfSize}
                     fill={neutralBackgroundColor}
-                    stroke={strokeColor}
-                    strokeWidth={strokeWidth}
                   />
                 )
               ) : isJersey ? (
@@ -310,23 +311,19 @@ export function renderIconCanvas(
                   d={jerseyPath}
                   transform={`scale(${size / 100})`}
                   fill={color}
-                  stroke={strokeColor}
-                  strokeWidth={strokeWidth}
                 />
               ) : (
                 <Circle
                   cx={halfSize}
                   cy={halfSize}
-                  r={Math.max(0, halfSize - strokeWidth / 2)}
+                  r={halfSize}
                   fill={color}
-                  stroke={strokeColor}
-                  strokeWidth={strokeWidth}
                 />
               )}
 
-              {/* 2. Stripes (underneath the bib) */}
-              {drawVerticalStripes && (
-                <>
+              {/* 2. Stripes (underneath the bib and outline) */}
+              {drawVerticalStripes && kitPattern === 'vertical' && (
+                <G clipPath={`url(#${clipId})`}>
                   {[-0.22, 0, 0.22].map((offset) => (
                     <Rect
                       key={`player-stripe-${offset}`}
@@ -336,9 +333,98 @@ export function renderIconCanvas(
                       height={size}
                       fill={verticalStripeColor}
                       opacity={0.9}
-                      clipPath={`url(#${clipId})`}
                     />
                   ))}
+                </G>
+              )}
+              {drawPlayerVerticalStripes && kitPattern === 'horizontal' && (
+                <G clipPath={`url(#${clipId})`}>
+                  {[0.28, 0.48, 0.68].map((offset) => (
+                    <Rect
+                      key={`player-horizontal-${offset}`}
+                      x={0}
+                      y={size * offset}
+                      width={size}
+                      height={Math.max(2, size * 0.08)}
+                      fill={kitSecondaryColor}
+                    />
+                  ))}
+                </G>
+              )}
+              {drawPlayerVerticalStripes && kitPattern === 'halves' && (
+                <G clipPath={`url(#${clipId})`}>
+                  <Rect
+                    x={halfSize}
+                    y={0}
+                    width={halfSize}
+                    height={size}
+                    fill={kitSecondaryColor}
+                  />
+                </G>
+              )}
+              {drawPlayerVerticalStripes && kitPattern === 'diagonal' && (
+                <G clipPath={`url(#${clipId})`}>
+                  <Path
+                    d="M -20 110 L 120 -30 L 120 0 L -20 140 Z M 10 110 L 150 -30 L 150 0 L 10 140 Z M -50 110 L 90 -30 L 90 0 L -50 140 Z"
+                    transform={`scale(${size / 100})`}
+                    fill={kitSecondaryColor}
+                  />
+                </G>
+              )}
+              {drawPlayerVerticalStripes && kitPattern === 'sash' && (
+                <G clipPath={`url(#${clipId})`}>
+                  <Path
+                    d="M 0 15 L 100 85 L 100 100 L 0 30 Z"
+                    transform={`scale(${size / 100})`}
+                    fill={kitSecondaryColor}
+                  />
+                </G>
+              )}
+
+              {/* 2.5. Outline / Stroke of the base player body (drawn on top of stripes to keep borders clean) */}
+              {isNeutral ? (
+                isJersey ? (
+                  <Path
+                    d={jerseyPath}
+                    transform={`scale(${size / 100})`}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth={strokeWidth}
+                  />
+                ) : (
+                  <Circle
+                    cx={halfSize}
+                    cy={halfSize}
+                    r={Math.max(0, halfSize - strokeWidth / 2)}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth={strokeWidth}
+                  />
+                )
+              ) : isJersey ? (
+                <Path
+                  d={jerseyPath}
+                  transform={`scale(${size / 100})`}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                />
+              ) : (
+                <Circle
+                  cx={halfSize}
+                  cy={halfSize}
+                  r={Math.max(0, halfSize - strokeWidth / 2)}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                />
+              )}
+
+              {isJersey && icon.kitSecondaryColor && (
+                <>
+                  <Path d="M18,20 L5,42" transform={`scale(${size / 100})`} stroke={kitSecondaryColor} strokeWidth={2.5} />
+                  <Path d="M82,20 L95,42" transform={`scale(${size / 100})`} stroke={kitSecondaryColor} strokeWidth={2.5} />
+                  <Path d="M40,12 L50,24 L60,12" transform={`scale(${size / 100})`} fill="none" stroke={kitSecondaryColor} strokeWidth={3} />
                 </>
               )}
               {/* 3. Bib (Peto) on top of the base body and stripes */}
@@ -965,6 +1051,7 @@ const MemoizedIcon = React.memo(
     showPhotos,
     photoUrl,
   }) => {
+    const uniqueId = React.useId();
     return renderIconCanvas(
       icon,
       size,
@@ -978,6 +1065,7 @@ const MemoizedIcon = React.memo(
       goalkeeperStripeColor,
       showPhotos,
       photoUrl,
+      uniqueId,
     );
   },
   (prevProps, nextProps) => {
@@ -999,6 +1087,8 @@ const MemoizedIcon = React.memo(
       prevProps.icon.hasBib === nextProps.icon.hasBib &&
       prevProps.icon.bibColor === nextProps.icon.bibColor &&
       prevProps.icon.stripeColor === nextProps.icon.stripeColor &&
+      prevProps.icon.kitPattern === nextProps.icon.kitPattern &&
+      prevProps.icon.kitSecondaryColor === nextProps.icon.kitSecondaryColor &&
       prevProps.icon.isNeutral === nextProps.icon.isNeutral &&
       prevProps.icon._lastUpdate === nextProps.icon._lastUpdate &&
       prevProps.playersWithNumber === nextProps.playersWithNumber &&
@@ -1867,6 +1957,13 @@ const DraggableIcon = React.memo(
       icon.numberColor !== nextIcon.numberColor ||
       icon.textColor !== nextIcon.textColor ||
       icon.textBackgroundColor !== nextIcon.textBackgroundColor ||
+      icon.shape !== nextIcon.shape ||
+      icon.hasStripes !== nextIcon.hasStripes ||
+      icon.stripeColor !== nextIcon.stripeColor ||
+      icon.kitPattern !== nextIcon.kitPattern ||
+      icon.kitSecondaryColor !== nextIcon.kitSecondaryColor ||
+      icon.isGoalkeeper !== nextIcon.isGoalkeeper ||
+      icon.preserveVisualStyle !== nextIcon.preserveVisualStyle ||
       icon._lastUpdate !== nextIcon._lastUpdate
     )
       return false;

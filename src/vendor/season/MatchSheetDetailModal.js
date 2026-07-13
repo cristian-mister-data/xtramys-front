@@ -2,6 +2,7 @@
 // Modal de detalle de ficha de partido con PDFs de alineación y convocatoria
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   View,
   Text,
@@ -10,7 +11,6 @@ import {
   Modal,
   ScrollView,
   Alert,
-  ActivityIndicator,
   useWindowDimensions,
   TextInput,
   Image,
@@ -19,7 +19,7 @@ import {
 import { cdnUrl } from '@/config';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import useMatchSheetPDF from '@/vendor/matchSheet/useMatchSheetPDF';
@@ -27,14 +27,15 @@ import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/M
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
-import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import { resolvePlayableVideoUrl, revokeVideoObjectUrl, getSetPieceVideoCandidates, getSetPieceVideoId } from '@/utils/videoPlayback';
 import { generateSetPiecesPdf } from '@/vendor/strategy/pdf';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
-import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
+import { createMatchSheetSetPiecesShareLink, getVideoById } from '@/utils/api';
 import { getScoutingReports, deleteScoutingReport } from '@/api/scouting';
 import ScoutingDetailModal from '@/components/scouting/ScoutingDetailModal';
 import MatchStatisticsModal from '@/components/season/MatchStatisticsModal';
-import { normalizeKits, normalizeRivalKits } from '@/utils/kits';
+import { applySetPieceKitsToElements, normalizeKits, normalizeRivalKits } from '@/utils/kits';
+import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -221,9 +222,37 @@ export default function MatchSheetDetailModal({
   const navigate = useNavigate();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const ownKits = normalizeKits(team?.equipaciones);
-  const rivalKits = normalizeRivalKits(matchSheet?.rivalId?.equipaciones);
   const ownKit = matchSheet?.equipacionPropia || ownKits[matchSheet?.equipacionPropiaKey || 'first'];
+  const rivals = useSelector((state) => state.rival?.rivals) || [];
+  const rivalId = typeof matchSheet?.rivalId === 'object' ? matchSheet?.rivalId?._id : matchSheet?.rivalId;
+  const selectedRival = rivals.find(item => String(item._id) === String(rivalId)) || null;
+  const rivalEquipment = selectedRival?.equipaciones || (
+    typeof matchSheet?.rivalId === 'object' ? matchSheet?.rivalId?.equipaciones : null
+  );
+  const rivalKits = normalizeRivalKits(rivalEquipment);
   const rivalKit = matchSheet?.equipacionRival || rivalKits[matchSheet?.equipacionRivalKey || 'first'];
+
+  const getSetPieceKitContext = (setPiece) => {
+    const original = setPiece?.pizarraConfig?.kitContext || {};
+    const ownKey = matchSheet?.equipacionPropiaKey || 'first';
+    const rivalKey = matchSheet?.equipacionRivalKey || 'first';
+    const hasRivalKit = Boolean(rivalEquipment || matchSheet?.equipacionRival);
+    const ownGoalkeeper = matchSheet?.equipacionPorteroPropia || ownKits[ownKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+    return {
+      ...original,
+      teamId: team?._id || null,
+      rivalId: rivalId || null,
+      rivalName: matchSheet?.rival || original.rivalName || '',
+      ownKitKey: ownKey,
+      rivalKitKey: rivalKey,
+      own: ownKit,
+      ownGoalkeeper,
+      rival: hasRivalKit ? (matchSheet?.equipacionRival || rivalKits[rivalKey]) : original.rival,
+      rivalGoalkeeper: hasRivalKit
+        ? (matchSheet?.equipacionPorteroRival || rivalKits[rivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'])
+        : original.rivalGoalkeeper,
+    };
+  };
   const currentLang = i18n.language || 'es';
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
@@ -238,10 +267,18 @@ export default function MatchSheetDetailModal({
   const [setPieceVideoUrl, setSetPieceVideoUrl] = useState(null);
   const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
   const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
+  const [videoGenerationProgress, setVideoGenerationProgress] = useState(0);
+  const [videoGenerationPhase, setVideoGenerationPhase] = useState('');
+  const [isVideoGenerating, setIsVideoGenerating] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState('data');
+  const [detailSetPieces, setDetailSetPieces] = useState(() => matchSheet?.setPieces || []);
   const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
     if (setPieceVideoUrl) player.play();
   });
+
+  useEffect(() => {
+    setDetailSetPieces(matchSheet?.setPieces || []);
+  }, [matchSheet?.setPieces, visible]);
   
   const openExternalUrl = (url) => {
     if (!url) return;
@@ -378,6 +415,36 @@ export default function MatchSheetDetailModal({
   };
 
   const buildSetPiecePlayerOverlays = (setPiece) => {
+    const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
+    const source = setPiece?.customElements?.length ? setPiece.customElements : (setPiece?.elementosCampo || []);
+    const styledPlayers = applySetPieceKitsToElements(source, getSetPieceKitContext(setPiece), showPhotos)
+      .filter((element) => element?.type === 'player');
+    const mergeVisuals = (overlays) => styledPlayers.map((element, index) => {
+      const matchOverlay = overlays.find((overlay) => String(overlay.slotId) === String(element.id || element._id || `slot-${index}`));
+      return {
+        slotId: String(element.id || element._id || `slot-${index}`),
+        number: String(matchOverlay?.number || element.number || element.playerNumber || ''),
+        xRatio: element.xRatio,
+        yRatio: element.yRatio,
+        x: element.x,
+        y: element.y,
+        color: element.color,
+        numberColor: element.numberColor,
+        shape: element.shape,
+        hasStripes: element.hasStripes,
+        stripeColor: element.stripeColor,
+        kitPattern: element.kitPattern,
+        kitSecondaryColor: element.kitSecondaryColor,
+        isGoalkeeper: element.isGoalkeeper,
+        differentiateGoalkeeper: element.differentiateGoalkeeper,
+        goalkeeperStripeColor: element.goalkeeperStripeColor,
+        preserveVisualStyle: true,
+        showPhotos,
+        hasBib: false,
+        playerData: matchOverlay?.playerData || element.playerData,
+        photoUrl: matchOverlay?.photoUrl || element.photoUrl,
+      };
+    });
     const bySlot = new Map((setPiece?.assignments || []).map((assignment) => [String(assignment.slotId || ''), assignment]));
     const boardPlayers = (setPiece?.customElements || [])
       .filter((element) => element?.type === 'player' && element.playerData)
@@ -404,12 +471,12 @@ export default function MatchSheetDetailModal({
             foto: player.foto || '',
           },
           photoUrl,
-          showPhotos: Boolean(photoUrl),
+          showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? element.showPhotos === true,
         };
       });
-    if (boardPlayers.length) return boardPlayers;
+    if (boardPlayers.length) return mergeVisuals(boardPlayers);
 
-    return (setPiece?.assignments || []).map((assignment) => {
+    const assignedPlayers = (setPiece?.assignments || []).map((assignment) => {
       const player = getAssignedPlayer(assignment);
       if (!player) return null;
       const name = getPlayerFullName(player);
@@ -430,10 +497,11 @@ export default function MatchSheetDetailModal({
           foto: player.foto || '',
         },
         photoUrl,
-        showPhotos: Boolean(photoUrl),
+        showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? assignment.showPhotos === true,
       };
     })
     .filter(Boolean);
+    return mergeVisuals(assignedPlayers);
   };
 
   const downloadSetPiecesPdf = async () => {
@@ -473,21 +541,53 @@ export default function MatchSheetDetailModal({
     return typeof video === 'object' ? video?._id : video;
   };
 
-  const playSetPieceVideo = async (setPiece) => {
-    const videoId = getVideoId(setPiece);
-    if (!videoId) return;
-    setLoadingSetPieceVideo(true);
+  const findAvailableSetPieceVideo = async (setPiece) => {
+    const requestedId = getSetPieceVideoId(setPiece);
+    for (const candidateId of getSetPieceVideoCandidates(setPiece, detailSetPieces)) {
+      const metadata = await getVideoById(candidateId, { optional: true }).catch(() => null);
+      if (metadata?.video) {
+        return {
+          videoId: candidateId,
+          metadata,
+          recovered: String(candidateId) !== String(requestedId || ''),
+        };
+      }
+    }
+    return null;
+  };
+
+  const playSetPieceVideo = async (setPiece, setPieceIndex) => {
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
+    setVideoGenerationProgress(0);
+    setVideoGenerationPhase('generationPreparing');
+    setIsVideoGenerating(true);
     try {
-      setSetPieceVideoUrl(await resolvePlayableVideoUrl(
+      const availableVideo = await findAvailableSetPieceVideo(setPiece);
+      if (!availableVideo) throw new Error('El video asociado a la ABP ya no existe');
+      const videoId = availableVideo.videoId;
+      if (availableVideo.recovered) {
+        setDetailSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? {
+          ...sp,
+          videoId,
+          pizarraConfig: { ...(sp.pizarraConfig || {}), matchVideoCopy: false },
+        } : sp));
+      }
+      const url = await resolvePlayableVideoUrl(
         videoId,
-        setPiece.pizarraConfig?.matchVideoCopy ? undefined : { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
-      ));
+        {
+          playerOverlays: buildSetPiecePlayerOverlays(setPiece),
+          onProgress: (progress, phase) => {
+            setVideoGenerationProgress(progress);
+            setVideoGenerationPhase(phase);
+          },
+        },
+      );
+      setSetPieceVideoUrl(url);
     } catch (error) {
       console.error('Error loading set piece video:', error);
       Alert.alert(t('message.error'), t('strategy.videoPlayError'));
     } finally {
-      setLoadingSetPieceVideo(false);
+      setIsVideoGenerating(false);
     }
   };
 
@@ -621,9 +721,9 @@ export default function MatchSheetDetailModal({
                     </View>
                   )}
                 </View>
-                {matchSheet.setPieces?.length ? (
+                {detailSetPieces.length ? (
                   <View style={styles.setPiecesList}>
-                    {matchSheet.setPieces.map((setPiece, index) => (
+                    {detailSetPieces.map((setPiece, index) => (
                       <View key={`${setPiece.strategyId || index}`} style={styles.setPieceDetailCard}>
                         <View style={styles.setPieceDetailHeader}>
                           <View style={{ flex: 1, minWidth: 0 }}>
@@ -642,13 +742,18 @@ export default function MatchSheetDetailModal({
                             )}
                           </View>
                           {!!getVideoId(setPiece) && (
-                            <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece)}>
+                            <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(setPiece, index)}>
                               <Ionicons name="play" size={16} color="#fff" />
                               <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
                             </TouchableOpacity>
                           )}
                         </View>
-                        <SetPiecePreview setPiece={setPiece} players={players} height={IS_MOBILE ? 180 : 260} />
+                        <SetPiecePreview
+                          setPiece={setPiece}
+                          players={players}
+                          height={IS_MOBILE ? 180 : 260}
+                          kitContext={getSetPieceKitContext(setPiece)}
+                        />
                       </View>
                     ))}
                   </View>
@@ -1060,7 +1165,20 @@ export default function MatchSheetDetailModal({
       </View>
 
       <Modal
-        visible={!!setPieceVideoUrl || loadingSetPieceVideo}
+        visible={isVideoGenerating}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsVideoGenerating(false)}
+      >
+        <View style={styles.progressOverlay}>
+          <View style={styles.progressModal}>
+            <LoadingSpinner theme={theme} text={t('common.loading', 'Cargando...')} />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!setPieceVideoUrl}
         transparent
         animationType="fade"
         onRequestClose={closeSetPieceVideo}
@@ -1073,16 +1191,9 @@ export default function MatchSheetDetailModal({
                 <Ionicons name="close" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
-            {loadingSetPieceVideo ? (
-              <View style={styles.videoGeneratingContainer}>
-                <ActivityIndicator color="#fff" />
-                <Text style={styles.videoGeneratingText}>{t('common.loading', 'Cargando...')}</Text>
-              </View>
-            ) : (
-              <View style={styles.videoPlayerContainer}>
-                <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
-              </View>
-            )}
+            <View style={styles.videoPlayerContainer}>
+              <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1789,5 +1900,95 @@ const makePlayerStyles = (theme) => StyleSheet.create({
     fontSize: 9,
     fontWeight: 'bold',
     color: theme.colors.textSecondary,
+  },
+  progressOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.58)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  progressModal: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 20,
+    width: '80%',
+    maxWidth: 320,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  progressIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  progressTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  progressStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  progressPhase: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+    paddingRight: 12,
+  },
+  progressBarOuter: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 18,
+  },
+  progressBarInner: {
+    height: '100%',
+    backgroundColor: '#2563EB',
+    borderRadius: 999,
+  },
+  progressPercent: {
+    minWidth: 48,
+    textAlign: 'right',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  progressCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    gap: 6,
+  },
+  progressCancelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

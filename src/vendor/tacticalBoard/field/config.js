@@ -1555,6 +1555,8 @@ export const DEFAULT_GOALKEEPER_ICON_1_SETTINGS = {
   shape: 'circle',
   hasStripes: true,
   stripeColor: '#dc2626',
+  kitPattern: 'vertical',
+  kitSecondaryColor: '#dc2626',
   numberColor: '#111827',
   isGoalkeeper: true,
   goalkeeperStripeColor: '#dc2626',
@@ -1565,6 +1567,8 @@ export const DEFAULT_GOALKEEPER_ICON_2_SETTINGS = {
   shape: 'circle',
   hasStripes: true,
   stripeColor: '#111827',
+  kitPattern: 'vertical',
+  kitSecondaryColor: '#111827',
   numberColor: '#ffffff',
   isGoalkeeper: true,
   goalkeeperStripeColor: '#111827',
@@ -1576,6 +1580,8 @@ export const getDefaultBoardSettings = () => ({
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   playerIcon2: {
@@ -1584,6 +1590,8 @@ export const getDefaultBoardSettings = () => ({
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   playerIcon3: {
@@ -1592,6 +1600,8 @@ export const getDefaultBoardSettings = () => ({
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   goalkeeperIcon1: {
@@ -1616,6 +1626,8 @@ export const getDefaultBoardSettings = () => ({
     hasBib: false,
     bibColor: NEUTRAL_PLAYER_COLORS.bib,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
   },
 });
 export const mergeIconSettings = (defaults, fallback, settings) => ({
@@ -1682,6 +1694,8 @@ export const getInitialIcons = () => [
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   {
@@ -1694,6 +1708,8 @@ export const getInitialIcons = () => [
     shape: 'circle',
     hasStripes: false,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   {

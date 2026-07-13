@@ -52,6 +52,10 @@ import {
   createStreamingVideoEncoder,
 } from '@/utils/videoUtils';
 import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
+import {
+  buildInterpolatedFrames as buildSharedInterpolatedFrames,
+  hydrateKeyframePlayerStyles as hydrateSharedKeyframePlayerStyles,
+} from '@/utils/videoFrameBuilder';
 import { getAspectForView, ratioToDisplay } from './fields';
 import { SPEED_TO_FPS } from '@/constants/video';
 import {
@@ -130,6 +134,8 @@ const PLAYER_VISUAL_FIELDS = [
   'shape',
   'hasStripes',
   'stripeColor',
+  'kitPattern',
+  'kitSecondaryColor',
   'hasBib',
   'bibColor',
   'goalkeeperStripeColor',
@@ -758,6 +764,7 @@ export default function VideoRecorder({
   presetFolderId = null, // Carpeta preseleccionada (se usa automáticamente)
   isGlobalExercise = false, // Si el ejercicio es global (app) - solo mostrar carpetas globales
   isGlobalStrategy = false, // Si la estrategia es global (app) - solo mostrar carpetas globales
+  onVideoSaved = null,
   onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
   onGeneratingChange = null, // Callback cuando el estado de generación cambia (isGenerating)
   onSavingChange = null,
@@ -911,10 +918,18 @@ export default function VideoRecorder({
 
   const getPlaybackFrames = useCallback(() => {
     const fps = SPEED_TO_FPS[videoSpeed] || 30;
-    const styledKeyframes = hydrateKeyframePlayerStyles(keyframes, elements);
+    const styledKeyframes = hydrateSharedKeyframePlayerStyles(keyframes, elements);
     return {
       fps,
-      frames: buildInterpolatedFrames(styledKeyframes, fps, 0.9, 0.1, videoSpeed, 0.5),
+      frames: buildSharedInterpolatedFrames(
+        styledKeyframes,
+        fps,
+        0.9,
+        0.1,
+        videoSpeed,
+        0.5,
+        IS_MOBILE ? 24 : 18,
+      ),
     };
   }, [elements, keyframes, videoSpeed]);
 
@@ -1032,6 +1047,8 @@ export default function VideoRecorder({
               if (elem.shape) snapshot.shape = elem.shape;
               if (elem.hasStripes !== undefined) snapshot.hasStripes = elem.hasStripes;
               if (elem.stripeColor) snapshot.stripeColor = elem.stripeColor;
+              if (elem.kitPattern) snapshot.kitPattern = elem.kitPattern;
+              if (elem.kitSecondaryColor) snapshot.kitSecondaryColor = elem.kitSecondaryColor;
               if (elem.hasBib !== undefined) snapshot.hasBib = elem.hasBib;
               if (elem.bibColor) snapshot.bibColor = elem.bibColor;
               if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
@@ -1688,7 +1705,7 @@ export default function VideoRecorder({
       const refW = fieldWidth || 1280;
       const refH = fieldHeight || 720;
       const normalizedKeyframes = normalizeKeyframesForServer(
-        hydrateKeyframePlayerStyles(keyframes, elements),
+        hydrateSharedKeyframePlayerStyles(keyframes, elements),
         refW,
         refH,
         fieldDisplayWidth || refW,
@@ -1843,8 +1860,9 @@ export default function VideoRecorder({
         }
 
         // Notificar al componente padre sobre el video guardado (para asociar a ejercicio/estrategia nuevo)
-        if (global.fieldCallbacks?.onVideoSaved && savedVideoId) {
-          global.fieldCallbacks.onVideoSaved(savedVideoId);
+        if (savedVideoId) {
+          if (onVideoSaved) onVideoSaved(savedVideoId);
+          else global.fieldCallbacks?.onVideoSaved?.(savedVideoId);
         }
         window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
 

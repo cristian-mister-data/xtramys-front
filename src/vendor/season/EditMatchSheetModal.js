@@ -1,6 +1,6 @@
 // components/pages/season/EditMatchSheetModal.js
 // Modal para editar fichas de partido desde temporadas
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ const isMobileDevice = () => {
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useDispatch, useSelector } from 'react-redux';
@@ -46,13 +46,17 @@ import { ALINEACIONES_BY_PLAYER_COUNT, ALINEACIONES, getDefaultFormation } from 
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { getPositionColor } from '@/components/player/playerHelpers';
 import RivalSelector from '@/vendor/shared/RivalSelector';
-import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
+import { applySetPieceKitsToElements, kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
-import { resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
+import {
+  getSetPieceVideoCandidates,
+  getSetPieceVideoId,
+  resolvePlayableVideoUrl,
+  revokeVideoObjectUrl,
+} from '@/utils/videoPlayback';
 import { cdnUrl } from '@/config';
 import { duplicateVideoForEdit, getTacticalVideo, getVideoById, getVideoForEdit } from '@/utils/api';
-
-const MATCH_SET_PIECE_FIELD_RESULT = 'matchSetPieceFieldResult';
+import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
@@ -1061,9 +1065,13 @@ export default function EditMatchSheetModal({
   const [selectedSetPieces, setSelectedSetPieces] = useState([]);
   const [activeSetPieceSlot, setActiveSetPieceSlot] = useState(null);
   const [boardParams, setBoardParams] = useState(null);
+  const initializedMatchSheetRef = useRef(null);
   const [setPieceVideoUrl, setSetPieceVideoUrl] = useState(null);
   const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
   const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
+  const [videoGenerationProgress, setVideoGenerationProgress] = useState(0);
+  const [videoGenerationPhase, setVideoGenerationPhase] = useState('');
+  const [isVideoGenerating, setIsVideoGenerating] = useState(false);
   const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
     if (setPieceVideoUrl) player.play();
   });
@@ -1094,7 +1102,30 @@ export default function EditMatchSheetModal({
   const [alineacionRival, setAlineacionRival] = useState('');
   const ownKits = useMemo(() => normalizeKits(team?.equipaciones), [team?.equipaciones]);
   const selectedRival = useMemo(() => rivals.find(item => String(item._id) === String(rivalId)) || null, [rivals, rivalId]);
-  const rivalKits = useMemo(() => normalizeRivalKits(selectedRival?.equipaciones || matchSheet?.rivalId?.equipaciones), [selectedRival?.equipaciones, matchSheet?.rivalId?.equipaciones]);
+  const rivalEquipment = selectedRival?.equipaciones || (
+    rivalId && String(matchSheet?.rivalId?._id || '') === String(rivalId)
+      ? matchSheet.rivalId.equipaciones
+      : null
+  );
+  const rivalKits = useMemo(() => normalizeRivalKits(rivalEquipment), [rivalEquipment]);
+  const getMatchSetPieceKitContext = (setPiece) => {
+    const original = setPiece?.pizarraConfig?.kitContext || {};
+    return {
+      ...original,
+      teamId: team?._id || null,
+      rivalId: rivalId || null,
+      rivalName: rival.trim(),
+      ownKitKey: equipacionPropiaKey,
+      rivalKitKey: equipacionRivalKey,
+      own: ownKits[equipacionPropiaKey],
+      ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+      // Un rival escrito a mano no tiene equipaciones: se conserva la original de cada ABP.
+      rival: rivalEquipment ? rivalKits[equipacionRivalKey] : original.rival,
+      rivalGoalkeeper: rivalEquipment
+        ? rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']
+        : original.rivalGoalkeeper,
+    };
+  };
   
   // Estados para jugadores
   const [convocados, setConvocados] = useState([]);
@@ -1324,7 +1355,15 @@ export default function EditMatchSheetModal({
 
   // Cargar datos al abrir
   useEffect(() => {
-    if (visible && matchSheet) {
+    if (!visible) {
+      initializedMatchSheetRef.current = null;
+      return;
+    }
+    const sheetKey = String(matchSheet?._id || 'new');
+    if (initializedMatchSheetRef.current === sheetKey) return;
+    initializedMatchSheetRef.current = sheetKey;
+
+    if (matchSheet) {
       // Datos básicos
       setRival(matchSheet.rival || '');
       setRivalId(matchSheet.rivalId?._id || matchSheet.rivalId || null);
@@ -1392,7 +1431,7 @@ export default function EditMatchSheetModal({
       // Descuento (tiempo añadido)
       setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo !== undefined ? String(matchSheet.descuentoPrimerTiempo) : '0');
       setDescuentoSegundoTiempo(matchSheet.descuentoSegundoTiempo !== undefined ? String(matchSheet.descuentoSegundoTiempo) : '0');
-    } else if (visible && !matchSheet) {
+    } else {
       // Modo crear: resetear todo
       setRival('');
       setRivalId(null);
@@ -1443,34 +1482,6 @@ export default function EditMatchSheetModal({
   }, [visible, matchSheet]);
 
   useEffect(() => {
-    if (!visible || typeof sessionStorage === 'undefined') return;
-    try {
-      const raw = sessionStorage.getItem(MATCH_SET_PIECE_FIELD_RESULT);
-      if (!raw) return;
-      sessionStorage.removeItem(MATCH_SET_PIECE_FIELD_RESULT);
-      const result = JSON.parse(raw);
-      if (result?.setPieceIndex == null) return;
-
-      const playerElements = (result.updatedElements || []).filter(el => el.type === 'player' && el.playerData);
-      const newAssignments = playerElements.map((el, idx) => ({
-        slotId: String(el.id || el._id || `slot-${idx}`),
-        number: String(el.number || el.playerNumber || el.numero || el.text || el.label || ''),
-        player: el.playerData?._id || el.playerData?.id || null,
-        playerName: getPlayerFullName(el.playerData),
-      }));
-
-      setSelectedSetPieces((prev) => prev.map((sp, index) => index === result.setPieceIndex ? {
-        ...sp,
-        customImage: result.imageBase64 || sp.customImage || '',
-        customElements: result.updatedElements || sp.customElements || [],
-        customFieldType: result.updatedFieldType || sp.customFieldType || '',
-        pizarraConfig: { ...(result.updatedConfig || sp.pizarraConfig || {}), setPieceMode: true },
-        assignments: newAssignments,
-      } : sp));
-    } catch {}
-  }, [visible]);
-
-  useEffect(() => {
     if (!visible) return;
     let mounted = true;
     const loadSetPieces = async () => {
@@ -1507,7 +1518,7 @@ export default function EditMatchSheetModal({
 
   // Helper para obtener nombre de jugador
   const getPlayerName = (playerId) => {
-    const player = players.find(p => p._id === playerId);
+    const player = players.find(p => String(p._id || p.id) === String(playerId));
     // fallback text should also be localizable
     return player ? getPlayerFullName(player) : t('common.player');
   };
@@ -1518,6 +1529,36 @@ export default function EditMatchSheetModal({
   };
 
   const buildSetPiecePlayerOverlays = (setPiece) => {
+    const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
+    const source = setPiece?.customElements?.length ? setPiece.customElements : (setPiece?.elementosCampo || []);
+    const styledPlayers = applySetPieceKitsToElements(source, getMatchSetPieceKitContext(setPiece), showPhotos)
+      .filter((element) => element?.type === 'player');
+    const mergeVisuals = (overlays) => styledPlayers.map((element, index) => {
+      const matchOverlay = overlays.find((overlay) => String(overlay.slotId) === String(element.id || element._id || `slot-${index}`));
+      return {
+        slotId: String(element.id || element._id || `slot-${index}`),
+        number: String(matchOverlay?.number || element.number || element.playerNumber || ''),
+        xRatio: element.xRatio,
+        yRatio: element.yRatio,
+        x: element.x,
+        y: element.y,
+        color: element.color,
+        numberColor: element.numberColor,
+        shape: element.shape,
+        hasStripes: element.hasStripes,
+        stripeColor: element.stripeColor,
+        kitPattern: element.kitPattern,
+        kitSecondaryColor: element.kitSecondaryColor,
+        isGoalkeeper: element.isGoalkeeper,
+        differentiateGoalkeeper: element.differentiateGoalkeeper,
+        goalkeeperStripeColor: element.goalkeeperStripeColor,
+        preserveVisualStyle: true,
+        showPhotos,
+        hasBib: false,
+        playerData: matchOverlay?.playerData || element.playerData,
+        photoUrl: matchOverlay?.photoUrl || element.photoUrl,
+      };
+    });
     const bySlot = new Map((setPiece?.assignments || []).map((assignment) => [String(assignment.slotId), assignment]));
     const boardPlayers = (setPiece?.customElements || [])
       .filter((element) => element?.type === 'player' && element.playerData)
@@ -1544,12 +1585,12 @@ export default function EditMatchSheetModal({
             foto: player.foto || '',
           },
           photoUrl,
-          showPhotos: Boolean(photoUrl) || assignment?.showPhotos || element.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || false,
+          showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? element.showPhotos === true,
         };
       });
-    if (boardPlayers.length) return boardPlayers;
+    if (boardPlayers.length) return mergeVisuals(boardPlayers);
 
-    return (setPiece?.assignments || []).map((assignment) => {
+    const assignedPlayers = (setPiece?.assignments || []).map((assignment) => {
       const player = getAssignedPlayer(assignment);
       if (!player) return null;
       const name = getPlayerFullName(player);
@@ -1570,10 +1611,11 @@ export default function EditMatchSheetModal({
           foto: player.foto || '',
         },
         photoUrl,
-        showPhotos: Boolean(photoUrl) || assignment.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || false,
+        showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? assignment.showPhotos === true,
       };
     })
     .filter(Boolean);
+    return mergeVisuals(assignedPlayers);
   };
 
   // Jugadores de la convocatoria para eventos (goles, tarjetas)
@@ -1919,23 +1961,21 @@ export default function EditMatchSheetModal({
         descripcion: sp.descripcion || '',
         imagen: sp.imagen || '',
         customImage: sp.customImage || '',
-        elementosCampo: sp.elementosCampo || [],
-        customElements: sp.customElements || [],
+        elementosCampo: applySetPieceKitsToElements(
+          sp.elementosCampo || [],
+          getMatchSetPieceKitContext(sp),
+          sp.pizarraConfig?.teamPlayers?.showPhotos ?? sp.pizarraConfig?.showPhotos ?? false,
+        ),
+        customElements: applySetPieceKitsToElements(
+          sp.customElements || [],
+          getMatchSetPieceKitContext(sp),
+          sp.pizarraConfig?.teamPlayers?.showPhotos ?? sp.pizarraConfig?.showPhotos ?? false,
+        ),
         customFieldType: sp.customFieldType || '',
         pizarraConfig: {
           ...(sp.pizarraConfig || {}),
           setPieceMode: true,
-          kitContext: {
-            teamId: team?._id || null,
-            rivalId: rivalId || null,
-            rivalName: rival.trim(),
-            ownKitKey: equipacionPropiaKey,
-            rivalKitKey: equipacionRivalKey,
-            own: ownKits[equipacionPropiaKey],
-            ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-            rival: rivalKits[equipacionRivalKey],
-            rivalGoalkeeper: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-          },
+          kitContext: getMatchSetPieceKitContext(sp),
           teamPlayers: { ...((sp.pizarraConfig || {}).teamPlayers || {}), ...kitToBoardStyle(ownKits[equipacionPropiaKey], ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']) },
         },
         videoId: getSetPieceVideoId(sp),
@@ -1954,7 +1994,7 @@ export default function EditMatchSheetModal({
             playerName: player ? getPlayerFullName(player) : (assignment.playerName || ''),
             foto: player?.foto || assignment.foto || '',
             photoUrl: assignment.photoUrl || (player?.foto ? cdnUrl(player.foto) : ''),
-            showPhotos: assignment.showPhotos === true || Boolean(assignment.photoUrl || player?.foto),
+            showPhotos: assignment.showPhotos === true,
           };
         }),
       }));
@@ -1967,8 +2007,8 @@ export default function EditMatchSheetModal({
         equipacionRivalKey,
         equipacionPropia: ownKits[equipacionPropiaKey],
         equipacionPorteroPropia: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-        equipacionRival: rivalKits[equipacionRivalKey],
-        equipacionPorteroRival: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+        equipacionRival: rivalEquipment ? rivalKits[equipacionRivalKey] : null,
+        equipacionPorteroRival: rivalEquipment ? rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] : null,
         fechaHora: fechaHora.toISOString(),
         jornada: jornada ? Number(jornada) : null,
         ubicacion,
@@ -2095,7 +2135,7 @@ export default function EditMatchSheetModal({
         ...element,
         number: element.number || assignment?.number || player.dorsal || '',
         photoUrl: assignment?.photoUrl || (player.foto ? cdnUrl(player.foto) : element.photoUrl),
-        showPhotos: Boolean(assignment?.photoUrl || player.foto || element.photoUrl) || assignment?.showPhotos || setPiece?.pizarraConfig?.teamPlayers?.showPhotos || setPiece?.pizarraConfig?.showPhotos || element.showPhotos,
+        showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false,
         playerData: {
           ...player,
           nombre: getPlayerFullName(player),
@@ -2106,25 +2146,49 @@ export default function EditMatchSheetModal({
     });
   };
 
-  const getSetPieceVideoId = (setPiece) => {
-    const video = setPiece?.videoId || (Array.isArray(setPiece?.videos) ? setPiece.videos[0] : null);
-    return typeof video === 'object' ? (video?._id || video?.id) : video;
+  const findAvailableSetPieceVideo = async (setPiece) => {
+    const requestedId = getSetPieceVideoId(setPiece);
+    for (const candidateId of getSetPieceVideoCandidates(setPiece, availableSetPieces)) {
+      const metadata = await getVideoById(candidateId, { optional: true }).catch(() => null);
+      if (metadata?.video) {
+        return {
+          videoId: candidateId,
+          metadata,
+          recovered: String(candidateId) !== String(requestedId || ''),
+        };
+      }
+    }
+    return null;
   };
 
   const openSetPieceBoard = async (setPieceIndex) => {
     const setPiece = selectedSetPieces[setPieceIndex];
     if (!setPiece) return;
-    let boardSetPiece = setPiece;
+    const availableVideo = await findAvailableSetPieceVideo(setPiece);
+    let boardSetPiece = availableVideo?.recovered ? {
+      ...setPiece,
+      videoId: availableVideo.videoId,
+      pizarraConfig: { ...(setPiece.pizarraConfig || {}), matchVideoCopy: false },
+    } : setPiece;
     let editVideoData = null;
-    let editableVideoId = getSetPieceVideoId(setPiece);
+    let editableVideoId = availableVideo?.videoId || null;
     let didDuplicateVideo = false;
-    let videoMetadata = null;
+    let videoMetadata = availableVideo?.metadata || null;
+
+    if (!availableVideo && getSetPieceVideoId(setPiece)) {
+      boardSetPiece = {
+        ...setPiece,
+        videoId: null,
+        pizarraConfig: { ...(setPiece.pizarraConfig || {}), matchVideoCopy: false },
+      };
+      setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? boardSetPiece : sp));
+    }
 
     if (editableVideoId) {
       try {
-        if (!setPiece.pizarraConfig?.matchVideoCopy) {
-          videoMetadata = await getVideoById(editableVideoId).catch(() => null);
-          if (videoMetadata?.video?.type !== 'tactical') {
+        if (!boardSetPiece.pizarraConfig?.matchVideoCopy || videoMetadata?.video?.type === 'tactical') {
+          videoMetadata = videoMetadata || await getVideoById(editableVideoId).catch(() => null);
+          if (videoMetadata?.video) {
             try {
               const duplicated = await duplicateVideoForEdit(editableVideoId, {
                 nombre: `${setPiece.nombre || t('setPieces.title')}_ficha`,
@@ -2137,16 +2201,16 @@ export default function EditMatchSheetModal({
           }
           if (editableVideoId && didDuplicateVideo) {
             boardSetPiece = {
-              ...setPiece,
+              ...boardSetPiece,
               videoId: editableVideoId,
-              pizarraConfig: { ...(setPiece.pizarraConfig || {}), matchVideoCopy: true },
+              pizarraConfig: { ...(boardSetPiece.pizarraConfig || {}), matchVideoCopy: true },
             };
             setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? boardSetPiece : sp));
           }
         }
 
         if (editableVideoId) {
-          const isTacticalVideo = videoMetadata?.video?.type === 'tactical';
+          const isTacticalVideo = !didDuplicateVideo && videoMetadata?.video?.type === 'tactical';
           const result = isTacticalVideo
             ? await getTacticalVideo(editableVideoId).catch(() => null)
             : await getVideoForEdit(editableVideoId);
@@ -2177,7 +2241,7 @@ export default function EditMatchSheetModal({
       }
     }
 
-    global.fieldCallbacks = {
+    const boardCallbacks = {
       onSave: (updatedElements, updatedFieldType, imageBase64, updatedConfig) => {
         const playerElements = (updatedElements || []).filter(el => el.type === 'player' && el.playerData);
         const newAssignments = playerElements.map((el, idx) => ({
@@ -2191,7 +2255,7 @@ export default function EditMatchSheetModal({
           playerName: getPlayerFullName(el.playerData),
           foto: el.playerData?.foto || '',
           photoUrl: el.photoUrl || (el.playerData?.foto ? cdnUrl(el.playerData.foto) : ''),
-          showPhotos: Boolean(el.photoUrl || el.playerData?.foto) || el.showPhotos === true || updatedConfig?.teamPlayers?.showPhotos === true || updatedConfig?.showPhotos === true,
+          showPhotos: el.showPhotos === true,
         }));
         const showPhotos = newAssignments.some((assignment) => assignment.showPhotos && assignment.photoUrl);
 
@@ -2213,7 +2277,6 @@ export default function EditMatchSheetModal({
           assignments: newAssignments,
         } : sp));
         setBoardParams(null);
-        global.fieldCallbacks = null;
       },
       onVideoSaved: (savedVideoId) => {
         if (!savedVideoId) return;
@@ -2225,33 +2288,19 @@ export default function EditMatchSheetModal({
       },
       onCancel: () => {
         setBoardParams(null);
-        global.fieldCallbacks = null;
       },
     };
     setBoardParams({
+      boardKey: `${setPieceIndex}-${boardSetPiece.strategyId || boardSetPiece._id || 'new'}-${editableVideoId || 'board'}`,
       initialElements: withAssignedPlayers(boardSetPiece),
       initialFieldType: boardSetPiece.customFieldType || boardSetPiece.tipoCampo || 'full',
       initialConfig: {
         ...(boardSetPiece.pizarraConfig || {}),
-        kitContext: {
-          teamId: team?._id || null,
-          rivalId: rivalId || null,
-          rivalName: (rival || '').trim(),
-          ownKitKey: equipacionPropiaKey,
-          rivalKitKey: equipacionRivalKey,
-          own: ownKits[equipacionPropiaKey],
-          ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-          rival: rivalKits[equipacionRivalKey],
-          rivalGoalkeeper: rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-        },
+        kitContext: getMatchSetPieceKitContext(boardSetPiece),
         teamPlayers: {
           ...(boardSetPiece.pizarraConfig?.teamPlayers || {}),
           ...kitToBoardStyle(ownKits[equipacionPropiaKey], ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']),
-          showPhotos: Boolean(
-            boardSetPiece.pizarraConfig?.teamPlayers?.showPhotos ||
-            boardSetPiece.pizarraConfig?.showPhotos ||
-            boardSetPiece.assignments?.some((assignment) => assignment.photoUrl || assignment.foto || (assignment.showPhotos && assignment.photoUrl))
-          ),
+          showPhotos: boardSetPiece.pizarraConfig?.teamPlayers?.showPhotos ?? boardSetPiece.pizarraConfig?.showPhotos ?? false,
         },
         playersWithNumber: boardSetPiece.pizarraConfig?.playersWithNumber ?? true,
         setPieceMode: true,
@@ -2264,6 +2313,7 @@ export default function EditMatchSheetModal({
       matchSheetPlayers: convocadosPlayers,
       editVideoData,
       deferEditVideoOpen: true,
+      ...boardCallbacks,
     });
   };
 
@@ -2271,22 +2321,38 @@ export default function EditMatchSheetModal({
     setSelectedSetPieces((prev) => prev.filter((_, index) => index !== setPieceIndex));
   };
 
-  const playSetPieceVideo = async (setPiece) => {
-    const videoId = getSetPieceVideoId(setPiece);
-    if (!videoId) return;
-    setLoadingSetPieceVideo(true);
+  const playSetPieceVideo = async (setPiece, setPieceIndex) => {
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
+    setVideoGenerationProgress(0);
+    setVideoGenerationPhase('generationPreparing');
+    setIsVideoGenerating(true);
     try {
+      const availableVideo = await findAvailableSetPieceVideo(setPiece);
+      if (!availableVideo) throw new Error('El video asociado a la ABP ya no existe');
+      const videoId = availableVideo.videoId;
+      if (availableVideo.recovered) {
+        setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? {
+          ...sp,
+          videoId,
+          pizarraConfig: { ...(sp.pizarraConfig || {}), matchVideoCopy: false },
+        } : sp));
+      }
       const url = await resolvePlayableVideoUrl(
         videoId,
-        { playerOverlays: buildSetPiecePlayerOverlays(setPiece) },
+        {
+          playerOverlays: buildSetPiecePlayerOverlays(setPiece),
+          onProgress: (progress, phase) => {
+            setVideoGenerationProgress(progress);
+            setVideoGenerationPhase(phase);
+          },
+        },
       );
       setSetPieceVideoUrl(url);
     } catch (error) {
       console.error('Error loading set piece video:', error);
       Alert.alert(t('message.error'), t('strategy.videoPlayError'));
     } finally {
-      setLoadingSetPieceVideo(false);
+      setIsVideoGenerating(false);
     }
   };
 
@@ -2347,13 +2413,14 @@ export default function EditMatchSheetModal({
               setPiece={sp}
               players={players}
               height={isMobile ? 180 : 260}
+              kitContext={getMatchSetPieceKitContext(sp)}
             />
             <TouchableOpacity style={styles.setPieceBoardBtn} onPress={() => openSetPieceBoard(setPieceIndex)}>
               <Ionicons name="expand-outline" size={17} color={theme.colors.primary} />
               <Text style={styles.setPieceBoardBtnText}>{t('setPieces.openBoard')}</Text>
             </TouchableOpacity>
             {!!sp.videoId && (
-              <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(sp)}>
+              <TouchableOpacity style={styles.setPieceVideoBtn} onPress={() => playSetPieceVideo(sp, setPieceIndex)}>
                 <Ionicons name="play-circle-outline" size={18} color="#fff" />
                 <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver vídeo'}</Text>
               </TouchableOpacity>
@@ -3282,16 +3349,13 @@ export default function EditMatchSheetModal({
           <Modal
             visible={!!boardParams}
             animationType="fade"
-            onRequestClose={() => {
-              setBoardParams(null);
-              global.fieldCallbacks = null;
-            }}
+            onRequestClose={() => boardParams?.onCancel?.()}
           >
             <SafeAreaProvider style={{ flex: 1 }}>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 {boardParams ? (
                   <Field
-                    key={`match-set-piece-${boardParams.estrategiaId || 'new'}`}
+                    key={`match-set-piece-${boardParams.boardKey || 'new'}`}
                     {...boardParams}
                     navigation={{ goBack: () => {}, navigate: () => {}, addListener: () => () => {} }}
                   />
@@ -3301,7 +3365,20 @@ export default function EditMatchSheetModal({
           </Modal>
 
           <Modal
-            visible={!!setPieceVideoUrl || loadingSetPieceVideo}
+            visible={isVideoGenerating}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setIsVideoGenerating(false)}
+          >
+            <View style={styles.progressOverlay}>
+              <View style={styles.progressModal}>
+                <LoadingSpinner theme={theme} text={t('common.loading', 'Cargando...')} />
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            visible={!!setPieceVideoUrl}
             transparent
             animationType="fade"
             onRequestClose={closeSetPieceVideo}
@@ -3314,16 +3391,9 @@ export default function EditMatchSheetModal({
                     <Ionicons name="close" size={22} color="#fff" />
                   </TouchableOpacity>
                 </View>
-                {loadingSetPieceVideo ? (
-                  <View style={styles.videoGeneratingContainer}>
-                    <ActivityIndicator color="#fff" />
-                    <Text style={styles.videoGeneratingText}>{t('common.loading', 'Cargando...')}</Text>
-                  </View>
-                ) : (
-                  <View style={styles.videoPlayerContainer}>
-                    <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
-                  </View>
-                )}
+                <View style={styles.videoPlayerContainer}>
+                  <VideoView player={setPieceVideoPlayer} style={styles.videoPlayer} allowsFullscreen allowsPictureInPicture />
+                </View>
               </View>
             </View>
           </Modal>
@@ -5294,6 +5364,96 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: theme.colors.primary,
+  },
+  progressOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.58)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  progressModal: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 20,
+    width: '80%',
+    maxWidth: 320,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  progressIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  progressTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  progressStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  progressPhase: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+    paddingRight: 12,
+  },
+  progressBarOuter: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 18,
+  },
+  progressBarInner: {
+    height: '100%',
+    backgroundColor: '#2563EB',
+    borderRadius: 999,
+  },
+  progressPercent: {
+    minWidth: 48,
+    textAlign: 'right',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  progressCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    gap: 6,
+  },
+  progressCancelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });
 

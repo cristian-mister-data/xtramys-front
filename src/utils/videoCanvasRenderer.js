@@ -80,6 +80,43 @@ function drawJerseyBibPath(ctx, cx, cy, size) {
   ctx.closePath();
 }
 
+function drawKitPattern(ctx, cx, cy, size, pattern, color, isJersey) {
+  const s = size / 100;
+  ctx.fillStyle = color;
+  if (pattern === 'vertical') {
+    if (isJersey) {
+      [-20, 0, 20].forEach((offset) => ctx.fillRect(cx + offset * s - 5 * s, cy - size / 2, 10 * s, size));
+    } else {
+      const r = size / 2;
+      [-0.5, -0.1, 0.3].forEach((f) => ctx.fillRect(cx + size * f, cy - r, size * 0.15, size));
+    }
+  } else if (pattern === 'horizontal') {
+    [-18, 0, 18].forEach((offset) => ctx.fillRect(cx - size / 2, cy + offset * s - 4 * s, size, 8 * s));
+  } else if (pattern === 'halves') {
+    ctx.fillRect(cx, cy - size / 2, size / 2, size);
+  } else if (pattern === 'diagonal' || pattern === 'sash') {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-Math.PI / 4);
+    const offsets = pattern === 'sash' ? [0] : [-28 * s, 0, 28 * s];
+    offsets.forEach((offset) => ctx.fillRect(-size, offset - 7 * s, size * 2, 14 * s));
+    ctx.restore();
+  }
+  if (isJersey) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, 2.5 * s);
+    ctx.beginPath();
+    ctx.moveTo(cx - 32 * s, cy - 30 * s);
+    ctx.lineTo(cx - 45 * s, cy - 8 * s);
+    ctx.moveTo(cx + 32 * s, cy - 30 * s);
+    ctx.lineTo(cx + 45 * s, cy - 8 * s);
+    ctx.moveTo(cx - 10 * s, cy - 38 * s);
+    ctx.lineTo(cx, cy - 28 * s);
+    ctx.lineTo(cx + 10 * s, cy - 38 * s);
+    ctx.stroke();
+  }
+}
+
 
 function setLineDash(ctx, elem, scale) {
   if (elem.lineType === 'dotted') {
@@ -232,25 +269,21 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
       drawJerseyPath(ctx, p.x, p.y, size);
       ctx.fillStyle = shirtColor;
       ctx.fill();
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 1;
-      ctx.stroke();
     } else {
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.fillStyle = shirtColor;
       ctx.fill();
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 1;
-      ctx.stroke();
     }
 
-    const sColor = elem.isGoalkeeper
+    const sColor = elem.kitSecondaryColor || (elem.isGoalkeeper
       ? (elem.goalkeeperStripeColor || '#ffffff')
-      : (elem.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff'));
-    const drawVerticalStripes = elem.hasStripes || elem.isGoalkeeper;
+      : (elem.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff')));
+    const kitPattern = elem.kitPattern || (elem.hasStripes || elem.isGoalkeeper ? 'vertical' : 'solid');
+    const drawPattern =
+      elem.hasStripes || kitPattern !== 'solid' || elem.isGoalkeeper || (isJersey && elem.kitSecondaryColor);
 
-    if (drawVerticalStripes) {
+    if (drawPattern) {
       ctx.save();
       if (isJersey) {
         drawJerseyPath(ctx, p.x, p.y, size);
@@ -259,18 +292,22 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       }
       ctx.clip();
-      ctx.fillStyle = sColor;
-      if (isJersey) {
-        const s = size / 100;
-        ctx.fillRect(p.x - 25 * s, p.y - 50 * s, 10 * s, 100 * s);
-        ctx.fillRect(p.x - 5 * s, p.y - 50 * s, 10 * s, 100 * s);
-        ctx.fillRect(p.x + 15 * s, p.y - 50 * s, 10 * s, 100 * s);
-      } else {
-        for (const f of [-0.5, -0.1, 0.3]) {
-          ctx.fillRect(p.x + size * f, p.y - r, size * 0.15, size);
-        }
-      }
+      drawKitPattern(ctx, p.x, p.y, size, kitPattern, sColor, isJersey);
       ctx.restore();
+    }
+
+    // Draw the outline/stroke on top of the pattern
+    if (isJersey) {
+      drawJerseyPath(ctx, p.x, p.y, size);
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
     if (hasBib) {
@@ -280,7 +317,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
         drawJerseyBibPath(ctx, p.x, p.y, size);
         ctx.fillStyle = bibColor;
         ctx.fill();
-        ctx.strokeStyle = '#222';
+      ctx.strokeStyle = elem.kitSecondaryColor && !isJersey ? elem.kitSecondaryColor : '#222';
         ctx.lineWidth = 1;
         ctx.stroke();
       } else {
@@ -345,18 +382,18 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
 
   if (elem.playerData && (elem.playerData.nombre || elem.playerData.name)) {
     const name = elem.playerData.nombre || elem.playerData.name;
-    const fs = size * 0.3;
+    const fs = size * 0.36;
     ctx.font = `${fs}px ${FONT_STACK}`;
     const tw = ctx.measureText(name).width;
-    const pad = 2;
-    const ny = p.y + r + fs / 2 + 3;
+    const pad = 1;
+    const ny = p.y + r + fs / 2 + 1;
     const bg = elem.textBackgroundColor || '#fff';
 
     ctx.fillStyle = bg === 'transparent' ? 'rgba(255,255,255,0)' : bg;
     if (bg !== 'transparent') {
       ctx.fillRect(p.x - tw / 2 - pad, ny - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
       ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.75;
       ctx.strokeRect(p.x - tw / 2 - pad, ny - fs / 2 - pad, tw + pad * 2, fs + pad * 2);
     }
     ctx.fillStyle = elem.textColor || '#000';

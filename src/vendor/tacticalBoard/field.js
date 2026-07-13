@@ -33,7 +33,7 @@ import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import { kitToBoardStyle } from '@/utils/kits';
+import { applySetPieceKitsToElements, kitToBoardStyle } from '@/utils/kits';
 import Svg, { Path, Polygon, Rect, Circle, Ellipse, G } from 'react-native-svg';
 import ViewShot from 'react-native-view-shot';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -265,7 +265,11 @@ export default function Field(props = {}) {
   // (p.ej. <Field sandbox /> en TacticalBoardPage standalone) se usan
   // s�lo como FALLBACK para los flags que no est�n en params, para no
   // pisar las navegaciones reales desde ejercicios/estrategias.
-  const mergedParams = { ...(props || {}), ...(route.params || {}) };
+  // La pizarra incrustada ya recibe todos sus datos desde la ficha. Mezclar aquí
+  // params de una navegación anterior puede cambiarle campo, elementos y equipaciones.
+  const mergedParams = props?.embeddedBoard
+    ? { ...(props || {}) }
+    : { ...(props || {}), ...(route.params || {}) };
 
   const {
     initialElements = [],
@@ -286,9 +290,9 @@ export default function Field(props = {}) {
     isGlobalStrategy = false, // Si la estrategia es global (admin)
     matchSheetPlayers = null,
     embeddedBoard = false,
-    // Eliminar onSave y onCancel de los par�metros para evitar el warning
-    // onSave,
-    // onCancel
+    onSave: onSaveProp = null,
+    onCancel: onCancelProp = null,
+    onVideoSaved = null,
   } = mergedParams;
 
   // Obtener editVideoData de global si no viene en params
@@ -311,15 +315,15 @@ export default function Field(props = {}) {
   const [saveCallback, setSaveCallback] = useState(null);
   const [cancelCallback, setCancelCallback] = useState(null);
 
-  // Efecto para registrar callbacks desde global
+  // Los callbacks directos aíslan las pizarras incrustadas; global queda como compatibilidad legacy.
   useEffect(() => {
     // Capturar referencias locales: si pasamos `() => global.fieldCallbacks.onSave`
     // a setState, React lo trata como functional updater y lo invoca al flush.
     // Para entonces el cleanup (strict mode doble mount) ya puede haber nulado
     // global.fieldCallbacks → crash. Capturando aqu� evitamos ese race.
     const cb = global.fieldCallbacks;
-    const savedOnSave = cb && cb.onSave ? cb.onSave : null;
-    const savedOnCancel = cb && cb.onCancel ? cb.onCancel : null;
+    const savedOnSave = onSaveProp || cb?.onSave || null;
+    const savedOnCancel = onCancelProp || cb?.onCancel || null;
 
     // En modo sandbox o edici�n de video, saltar loading pero registrar callbacks si existen
     if (sandbox || editVideoData) {
@@ -338,7 +342,7 @@ export default function Field(props = {}) {
     // mode dev el efecto se ejecuta dos veces (mount→cleanup→mount), y si
     // nulamos en el primer cleanup el segundo mount no encuentra los
     // callbacks. El pr�ximo `handleOpenField` siempre reasigna fresco.
-  }, [sandbox, editVideoData]);
+  }, [sandbox, editVideoData, onSaveProp, onCancelProp]);
 
   // Abrir autom�ticamente el grabador de video si se solicita
   useEffect(() => {
@@ -503,6 +507,26 @@ export default function Field(props = {}) {
 
   // Filtrar iconos seg�n el modo estrategia
   const filteredIcons = useMemo(() => {
+    if (setPieceMode) {
+      const playerRoles = [
+        ['icon1', 'own', t('tacticalBoard.icons.ownTeam', 'Mi equipo')],
+        ['goalkeeper-1', 'ownGoalkeeper', t('tacticalBoard.icons.ownGoalkeeper', 'Mi portero')],
+        ['icon2', 'rival', t('tacticalBoard.icons.rivalTeam', 'Equipo rival')],
+        ['goalkeeper-2', 'rivalGoalkeeper', t('tacticalBoard.icons.rivalGoalkeeper', 'Portero rival')],
+      ];
+      const players = playerRoles.map(([id, kitRole, label]) => ({
+        ...INITIAL_ICONS.find((icon) => icon.id === id),
+        kitRole,
+        label,
+        showLabel: true,
+      }));
+      const tools = INITIAL_ICONS.filter((icon) =>
+        icon.type !== 'player' &&
+        icon.type !== 'team-players' &&
+        icon.type !== 'coaching-staff'
+      ).map((icon) => ({ ...icon }));
+      return [...players, ...tools];
+    }
     if (isStrategyMode) {
       // En modo estrategia, solo mostrar: jugadores, team-players, materiales (para bal�n), flechas, l�neas, figuras
       return INITIAL_ICONS.filter(
@@ -520,9 +544,13 @@ export default function Field(props = {}) {
       ).map((i) => ({ ...i }));
     }
     return INITIAL_ICONS.map((i) => ({ ...i }));
-  }, [isStrategyMode, INITIAL_ICONS]);
+  }, [isStrategyMode, setPieceMode, INITIAL_ICONS, t]);
 
-  const [paletteIcons, setPaletteIcons] = useState(filteredIcons);
+  const [paletteIcons, setPaletteIcons] = useState(() => applySetPieceKitsToElements(
+    filteredIcons,
+    setPieceMode ? initialConfig?.kitContext : null,
+    false,
+  ));
   const [drawingStraightArrow, setDrawingStraightArrow] = useState(false);
   const [drawingStraightLine, setDrawingStraightLine] = useState(false);
   const [drawingCurveLine, setDrawingCurveLine] = useState(false);
@@ -592,6 +620,8 @@ export default function Field(props = {}) {
     hasBib: false,
     bibColor: NEUTRAL_PLAYER_COLORS.bib,
     stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
   });
   // Estado para Configuraci�n de materiales de entrenamiento (colores personalizados)
   const [materialsConfig, setMaterialsConfig] = useState({
@@ -631,32 +661,14 @@ export default function Field(props = {}) {
     appliedKitContextRef.current = signature;
     const ownStyle = kitToBoardStyle(context.own, context.ownGoalkeeper);
     const rivalStyle = kitToBoardStyle(context.rival, context.rivalGoalkeeper);
+    const showPhotos = initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos;
     setTeamPlayerStyle((prev) => ({ ...prev, ...ownStyle }));
-    setPaletteIcons((prev) =>
-      prev.map((icon) => {
-        const style =
-          icon.id === 'icon1'
-            ? ownStyle
-            : icon.id === 'icon2'
-              ? rivalStyle
-              : icon.id === 'goalkeeper-1'
-                ? {
-                    ...ownStyle,
-                    color: ownStyle.goalkeeperColor,
-                    stripeColor: ownStyle.goalkeeperStripeColor,
-                  }
-                : icon.id === 'goalkeeper-2'
-                  ? {
-                      ...rivalStyle,
-                      color: rivalStyle.goalkeeperColor,
-                      stripeColor: rivalStyle.goalkeeperStripeColor,
-                    }
-                  : null;
-        return style
-          ? { ...icon, ...style, shape: style.shape, hasStripes: style.hasStripes }
-          : icon;
-      }),
-    );
+    setPaletteIcons((prev) => applySetPieceKitsToElements(prev, context, false));
+    setActualClones((prev) => applySetPieceKitsToElements(prev, context, showPhotos));
+    setVideoKeyframes((prev) => prev.map((keyframe) => ({
+      ...keyframe,
+      elements: applySetPieceKitsToElements(keyframe.elements || [], context, showPhotos),
+    })));
     setBoardSettings((prev) => ({
       ...prev,
       teamPlayers: { ...prev.teamPlayers, ...ownStyle },
@@ -668,6 +680,8 @@ export default function Field(props = {}) {
         shape: ownStyle.shape,
         hasStripes: context.ownGoalkeeper?.pattern !== 'solid',
         stripeColor: ownStyle.goalkeeperStripeColor,
+        kitPattern: context.ownGoalkeeper?.pattern || 'solid',
+        kitSecondaryColor: ownStyle.goalkeeperStripeColor,
       },
       goalkeeperIcon2: {
         ...prev.goalkeeperIcon2,
@@ -675,9 +689,11 @@ export default function Field(props = {}) {
         shape: rivalStyle.shape,
         hasStripes: context.rivalGoalkeeper?.pattern !== 'solid',
         stripeColor: rivalStyle.goalkeeperStripeColor,
+        kitPattern: context.rivalGoalkeeper?.pattern || 'solid',
+        kitSecondaryColor: rivalStyle.goalkeeperStripeColor,
       },
     }));
-  }, [initialConfig?.kitContext, setPieceMode, userSettingsLoaded]);
+  }, [initialConfig, setPieceMode, userSettingsLoaded]);
 
   // Estado para conectores (l�neas que conectan elementos)
   useEffect(() => {
@@ -703,6 +719,8 @@ export default function Field(props = {}) {
           bibColor:
             paletteIcon.bibColor !== undefined ? paletteIcon.bibColor : prev.clone?.bibColor,
           stripeColor: paletteIcon.stripeColor ?? prev.clone?.stripeColor,
+          kitPattern: paletteIcon.kitPattern ?? prev.clone?.kitPattern,
+          kitSecondaryColor: paletteIcon.kitSecondaryColor ?? prev.clone?.kitSecondaryColor,
           goalkeeperStripeColor:
             paletteIcon.goalkeeperStripeColor ?? prev.clone?.goalkeeperStripeColor,
           _lastUpdate: Date.now(),
@@ -782,6 +800,8 @@ export default function Field(props = {}) {
         hasBib: teamPlayerStyle.hasBib,
         bibColor: teamPlayerStyle.bibColor,
         stripeColor: teamPlayerStyle.stripeColor,
+        kitPattern: teamPlayerStyle.kitPattern,
+        kitSecondaryColor: teamPlayerStyle.kitSecondaryColor,
       },
     }));
   }, [teamPlayerStyle]);
@@ -874,6 +894,9 @@ export default function Field(props = {}) {
           hasBib: setting.hasBib !== undefined ? setting.hasBib : icon.hasBib,
           bibColor: setting.bibColor !== undefined ? setting.bibColor : icon.bibColor,
           stripeColor: setting.stripeColor || icon.stripeColor || '#ffffff',
+          kitPattern: setting.kitPattern || icon.kitPattern || 'solid',
+          kitSecondaryColor:
+            setting.kitSecondaryColor || setting.stripeColor || icon.kitSecondaryColor,
           goalkeeperStripeColor:
             setting.goalkeeperStripeColor || setting.stripeColor || icon.goalkeeperStripeColor,
         };
@@ -916,6 +939,11 @@ export default function Field(props = {}) {
           ? settingsToApply.teamPlayers.bibColor
           : prev.bibColor,
       stripeColor: settingsToApply.teamPlayers.stripeColor || prev.stripeColor || '#ffffff',
+      kitPattern: settingsToApply.teamPlayers.kitPattern || prev.kitPattern || 'solid',
+      kitSecondaryColor:
+        settingsToApply.teamPlayers.kitSecondaryColor ||
+        settingsToApply.teamPlayers.stripeColor ||
+        prev.kitSecondaryColor,
     }));
   }, []);
   const handleSaveBoardSettings = useCallback(
@@ -953,6 +981,11 @@ export default function Field(props = {}) {
                     playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
                   shape: playerSettings.shape || icon.shape || 'circle',
                   stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
+                  kitPattern: playerSettings.kitPattern || icon.kitPattern || 'solid',
+                  kitSecondaryColor:
+                    playerSettings.kitSecondaryColor ||
+                    playerSettings.stripeColor ||
+                    icon.kitSecondaryColor,
                 };
               }
               if (icon.id === 'icon2') {
@@ -964,6 +997,11 @@ export default function Field(props = {}) {
                     playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
                   shape: playerSettings.shape || icon.shape || 'circle',
                   stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
+                  kitPattern: playerSettings.kitPattern || icon.kitPattern || 'solid',
+                  kitSecondaryColor:
+                    playerSettings.kitSecondaryColor ||
+                    playerSettings.stripeColor ||
+                    icon.kitSecondaryColor,
                 };
               }
               if (icon.id === 'icon3') {
@@ -990,6 +1028,11 @@ export default function Field(props = {}) {
                       : icon.bibColor,
                   stripeColor:
                     settingsToSave.playerIcon3.stripeColor || icon.stripeColor || '#ffffff',
+                  kitPattern: settingsToSave.playerIcon3.kitPattern || icon.kitPattern || 'solid',
+                  kitSecondaryColor:
+                    settingsToSave.playerIcon3.kitSecondaryColor ||
+                    settingsToSave.playerIcon3.stripeColor ||
+                    icon.kitSecondaryColor,
                 };
               }
               if (icon.id === 'goalkeeper-1' && settingsToSave.goalkeeperIcon1) {
@@ -1086,6 +1129,11 @@ export default function Field(props = {}) {
                 ? settingsToSave.teamPlayers.bibColor
                 : prev.bibColor,
             stripeColor: settingsToSave.teamPlayers.stripeColor || prev.stripeColor || '#ffffff',
+            kitPattern: settingsToSave.teamPlayers.kitPattern || prev.kitPattern || 'solid',
+            kitSecondaryColor:
+              settingsToSave.teamPlayers.kitSecondaryColor ||
+              settingsToSave.teamPlayers.stripeColor ||
+              prev.kitSecondaryColor,
           }));
 
           // Mostrar mensaje temporal de confirmacin
@@ -1195,6 +1243,11 @@ export default function Field(props = {}) {
                       playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
                     shape: playerSettings.shape || icon.shape || 'circle',
                     stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
+                    kitPattern: playerSettings.kitPattern || icon.kitPattern || 'solid',
+                    kitSecondaryColor:
+                      playerSettings.kitSecondaryColor ||
+                      playerSettings.stripeColor ||
+                      icon.kitSecondaryColor,
                   };
                 }
                 if (icon.id === 'icon2' && usuario.boardSettings.playerIcon2) {
@@ -1206,6 +1259,11 @@ export default function Field(props = {}) {
                       playerSettings.numberColor ?? icon.numberColor ?? DEFAULT_PLAYER_NUMBER_COLOR,
                     shape: playerSettings.shape || icon.shape || 'circle',
                     stripeColor: playerSettings.stripeColor || icon.stripeColor || '#ffffff',
+                    kitPattern: playerSettings.kitPattern || icon.kitPattern || 'solid',
+                    kitSecondaryColor:
+                      playerSettings.kitSecondaryColor ||
+                      playerSettings.stripeColor ||
+                      icon.kitSecondaryColor,
                   };
                 }
                 if (icon.id === 'icon3' && usuario.boardSettings.playerIcon3) {
@@ -1234,6 +1292,12 @@ export default function Field(props = {}) {
                       usuario.boardSettings.playerIcon3.stripeColor ||
                       icon.stripeColor ||
                       '#ffffff',
+                    kitPattern:
+                      usuario.boardSettings.playerIcon3.kitPattern || icon.kitPattern || 'solid',
+                    kitSecondaryColor:
+                      usuario.boardSettings.playerIcon3.kitSecondaryColor ||
+                      usuario.boardSettings.playerIcon3.stripeColor ||
+                      icon.kitSecondaryColor,
                   };
                 }
                 if (icon.id === 'goalkeeper-1' && usuario.boardSettings.goalkeeperIcon1) {
@@ -1330,6 +1394,12 @@ export default function Field(props = {}) {
                   tp.stripeColor !== undefined && tp.stripeColor !== null
                     ? tp.stripeColor
                     : '#ffffff',
+                kitPattern:
+                  tp.kitPattern !== undefined && tp.kitPattern !== null ? tp.kitPattern : 'solid',
+                kitSecondaryColor:
+                  tp.kitSecondaryColor !== undefined && tp.kitSecondaryColor !== null
+                    ? tp.kitSecondaryColor
+                    : tp.stripeColor || '#ffffff',
               });
             }
           }
@@ -1465,7 +1535,11 @@ export default function Field(props = {}) {
     });
 
     // Resetear iconos de paleta a valores iniciales
-    setPaletteIcons(filteredIcons.map((i) => ({ ...i })));
+    setPaletteIcons(applySetPieceKitsToElements(
+      filteredIcons.map((icon) => ({ ...icon })),
+      setPieceMode ? initialConfig?.kitContext : null,
+      false,
+    ));
 
     // Resetear contadores de iconos
     iconCounters.current = {};
@@ -1481,7 +1555,7 @@ export default function Field(props = {}) {
     lastSavedStateRef.current = '[]';
     setCanUndo((prev) => (prev === false ? prev : false));
     setCanRedo((prev) => (prev === false ? prev : false));
-  }, [exitDrawingMode, filteredIcons]);
+  }, [exitDrawingMode, filteredIcons, initialConfig?.kitContext, setPieceMode]);
 
   // Funci�n para cerrar el grabador de video
 
@@ -1553,6 +1627,8 @@ export default function Field(props = {}) {
         if (snap.hasBib !== undefined) clone.hasBib = snap.hasBib;
         if (snap.bibColor) clone.bibColor = snap.bibColor;
         if (snap.stripeColor) clone.stripeColor = snap.stripeColor;
+        if (snap.kitPattern) clone.kitPattern = snap.kitPattern;
+        if (snap.kitSecondaryColor) clone.kitSecondaryColor = snap.kitSecondaryColor;
         if (snap.goalkeeperStripeColor) clone.goalkeeperStripeColor = snap.goalkeeperStripeColor;
         if (snap.displayLabel) clone.displayLabel = snap.displayLabel;
         if (snap.ownerType) clone.ownerType = snap.ownerType;
@@ -1988,7 +2064,11 @@ export default function Field(props = {}) {
       if (currentEditVideoData.keyframes && currentEditVideoData.keyframes.length > 0) {
         const loadedKeyframes = currentEditVideoData.keyframes.map((kf) => ({
           timestamp: kf.timestamp,
-          elements: applyAssignedPlayersToKeyframeElements(kf.elements || []),
+          elements: applySetPieceKitsToElements(
+            applyAssignedPlayersToKeyframeElements(kf.elements || []),
+            setPieceMode ? initialConfig?.kitContext : null,
+            initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos,
+          ),
           connectors: kf.connectors || [],
           ballTrajectoryType: kf.ballTrajectoryType || 'ground',
           ballTrajectoryById: kf.ballTrajectoryById || {},
@@ -2021,7 +2101,7 @@ export default function Field(props = {}) {
       }
       return true;
     },
-    [applyAssignedPlayersToKeyframeElements, snapshotToClone],
+    [applyAssignedPlayersToKeyframeElements, initialConfig, setPieceMode, snapshotToClone],
   );
 
   const loadEditVideoDataRef = useRef(loadEditVideoDataIntoBoard);
@@ -2120,6 +2200,9 @@ export default function Field(props = {}) {
       const hasBib = options.hasBib !== undefined ? options.hasBib : teamPlayerStyle.hasBib;
       const bibColor = options.bibColor || teamPlayerStyle.bibColor || NEUTRAL_PLAYER_COLORS.bib;
       const stripeColor = options.stripeColor || teamPlayerStyle.stripeColor || '#ffffff';
+      const kitPattern = options.kitPattern || teamPlayerStyle.kitPattern || 'solid';
+      const kitSecondaryColor =
+        options.kitSecondaryColor || teamPlayerStyle.kitSecondaryColor || stripeColor;
       const realPlayers = options.realPlayers || null; // Array de jugadores reales si se seleccionaron
 
       const newPlayers = formation.positions.map((pos, idx) => {
@@ -2168,6 +2251,8 @@ export default function Field(props = {}) {
           hasBib,
           bibColor,
           stripeColor,
+          kitPattern,
+          kitSecondaryColor,
           textColor, // Color del texto del nombre
           textBackgroundColor, // Color del fondo del nombre
           xRatio: finalX,
@@ -2215,6 +2300,8 @@ export default function Field(props = {}) {
       teamPlayerStyle.hasBib,
       teamPlayerStyle.bibColor,
       teamPlayerStyle.stripeColor,
+      teamPlayerStyle.kitPattern,
+      teamPlayerStyle.kitSecondaryColor,
       standardSize,
       playersWithNumber,
       t,
@@ -2292,7 +2379,11 @@ export default function Field(props = {}) {
 
   // Estado real de clones
   const [actualClones, setActualClones] = useState(
-    (initialElements ?? []).map((clone) => {
+    applySetPieceKitsToElements(
+      initialElements ?? [],
+      setPieceMode ? initialConfig?.kitContext : null,
+      initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos,
+    ).map((clone) => {
       const normalizedClone = { ...clone };
       if (normalizedClone.type === 'player') {
         if (normalizedClone.playersWithNumber === undefined) {
@@ -3207,6 +3298,11 @@ export default function Field(props = {}) {
           bibColor:
             currentPaletteIcon.bibColor !== undefined ? currentPaletteIcon.bibColor : icon.bibColor,
           stripeColor: currentPaletteIcon.stripeColor || icon.stripeColor || '#ffffff',
+          kitPattern: currentPaletteIcon.kitPattern || icon.kitPattern || 'solid',
+          kitSecondaryColor:
+            currentPaletteIcon.kitSecondaryColor ||
+            currentPaletteIcon.stripeColor ||
+            icon.kitSecondaryColor,
           goalkeeperStripeColor:
             currentPaletteIcon.goalkeeperStripeColor || icon.goalkeeperStripeColor || '#ffffff',
           zIndex: getNextZIndex(icon.type),
@@ -3320,7 +3416,7 @@ export default function Field(props = {}) {
             number,
             playerData: { ...player, uniqueId: player.uniqueId },
             photoUrl: player.foto ? cdnUrl(player.foto) : c.photoUrl,
-            showPhotos: teamPlayerStyle.showPhotos || Boolean(player.foto),
+            showPhotos: teamPlayerStyle.showPhotos,
             preserveVisualStyle: true,
             isGoalkeeper: keepsGoalkeeperStyle === true,
             displayLabel:
@@ -3362,7 +3458,7 @@ export default function Field(props = {}) {
                     uniqueId: player.uniqueId,
                   },
                   photoUrl: player.foto ? cdnUrl(player.foto) : elem.photoUrl,
-                  showPhotos: teamPlayerStyle.showPhotos || Boolean(player.foto),
+                  showPhotos: teamPlayerStyle.showPhotos,
                   preserveVisualStyle: true,
                   isGoalkeeper: keepsGoalkeeperStyle === true,
                   displayLabel:
@@ -3420,6 +3516,8 @@ export default function Field(props = {}) {
           hasBib: teamPlayerStyle.hasBib === true,
           bibColor: teamPlayerStyle.bibColor || NEUTRAL_PLAYER_COLORS.bib,
           stripeColor: teamPlayerStyle.stripeColor || '#ffffff',
+          kitPattern: teamPlayerStyle.kitPattern || 'solid',
+          kitSecondaryColor: teamPlayerStyle.kitSecondaryColor || teamPlayerStyle.stripeColor,
           paletteIndex: 0, // No importa mucho
           thickness: 1,
           playerData: player, // Guardar los datos del jugador
@@ -3586,6 +3684,8 @@ export default function Field(props = {}) {
       hasBib: teamPlayerStyle.hasBib === true,
       bibColor: teamPlayerStyle.bibColor || NEUTRAL_PLAYER_COLORS.bib,
       stripeColor: teamPlayerStyle.stripeColor || '#ffffff',
+      kitPattern: teamPlayerStyle.kitPattern || 'solid',
+      kitSecondaryColor: teamPlayerStyle.kitSecondaryColor || teamPlayerStyle.stripeColor,
       playerData: player,
       isPalettePlayer: true, // Marca especial para indicar que es de la paleta
     };
@@ -3869,6 +3969,18 @@ export default function Field(props = {}) {
     [drawingCustomShape, isPreviewingPoint, previewPoint],
   );
 
+  const unlockOrientationAndGoBack = useCallback(async () => {
+    try {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      setTimeout(() => {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
+      }, 300);
+    } catch (e) {
+      // Device may not support orientation lock
+    }
+    if (!embeddedBoard) navigation.goBack();
+  }, [navigation, embeddedBoard]);
+
   const handleGuardarGrafico = async () => {
     setSelectedCloneId(null);
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -3909,6 +4021,8 @@ export default function Field(props = {}) {
           hasBib: teamPlayerStyle.hasBib,
           bibColor: teamPlayerStyle.bibColor,
           stripeColor: teamPlayerStyle.stripeColor,
+          kitPattern: teamPlayerStyle.kitPattern,
+          kitSecondaryColor: teamPlayerStyle.kitSecondaryColor,
         };
         const configToSave = {
           ...initialConfig,
@@ -3923,11 +4037,7 @@ export default function Field(props = {}) {
           showPhotos: teamPlayerStyle.showPhotos,
         };
         let imageBase64 = '';
-        if (Platform.OS === 'web') {
-          imageBase64 = await captureViewShotBase64(canvasRef);
-        }
-
-        if (!imageBase64 && Platform.OS === 'web' && typeof document !== 'undefined') {
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
           const aspectVal = getAspectForView(viewMode);
           const aspect = aspectVal ? 1 / aspectVal : referenceWidth / referenceHeight;
           const { width: exportWidth, height: exportHeight } = getVideoDimensions(aspect);
@@ -4116,19 +4226,6 @@ export default function Field(props = {}) {
     }
     setIsSavingVideoEdit(false);
   }, [clearBoardState, unlockOrientationAndGoBack, isSetPieceOrStrategy, handleGuardarGrafico]);
-
-  // Funcin para cerrar el grabador de video
-  const unlockOrientationAndGoBack = useCallback(async () => {
-    try {
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      setTimeout(() => {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-      }, 300);
-    } catch (e) {
-      // Device may not support orientation lock
-    }
-    if (!embeddedBoard) navigation.goBack();
-  }, [navigation, embeddedBoard]);
 
   const handleCloseVideoRecorder = useCallback(() => {
     boardPreviewPlaybackIdRef.current += 1;
@@ -6143,6 +6240,12 @@ export default function Field(props = {}) {
               bibColor: iconEdited.bibColor !== undefined ? iconEdited.bibColor : cl.bibColor,
               stripeColor:
                 iconEdited.stripeColor !== undefined ? iconEdited.stripeColor : cl.stripeColor,
+              kitPattern:
+                iconEdited.kitPattern !== undefined ? iconEdited.kitPattern : cl.kitPattern,
+              kitSecondaryColor:
+                iconEdited.kitSecondaryColor !== undefined
+                  ? iconEdited.kitSecondaryColor
+                  : cl.kitSecondaryColor,
               goalkeeperStripeColor:
                 iconEdited.goalkeeperStripeColor !== undefined
                   ? iconEdited.goalkeeperStripeColor
@@ -6235,6 +6338,12 @@ export default function Field(props = {}) {
           bibColor: iconEdited.bibColor !== undefined ? iconEdited.bibColor : prev.bibColor,
           stripeColor:
             iconEdited.stripeColor !== undefined ? iconEdited.stripeColor : prev.stripeColor,
+          kitPattern:
+            iconEdited.kitPattern !== undefined ? iconEdited.kitPattern : prev.kitPattern,
+          kitSecondaryColor:
+            iconEdited.kitSecondaryColor !== undefined
+              ? iconEdited.kitSecondaryColor
+              : prev.kitSecondaryColor,
           goalkeeperStripeColor:
             iconEdited.goalkeeperStripeColor !== undefined
               ? iconEdited.goalkeeperStripeColor
@@ -6285,6 +6394,9 @@ export default function Field(props = {}) {
               hasBib: iconEdited.hasBib !== undefined ? iconEdited.hasBib : ic.hasBib,
               bibColor: iconEdited.bibColor !== undefined ? iconEdited.bibColor : ic.bibColor,
               stripeColor: iconEdited.stripeColor || ic.stripeColor,
+              kitPattern: iconEdited.kitPattern || ic.kitPattern || 'solid',
+              kitSecondaryColor:
+                iconEdited.kitSecondaryColor || iconEdited.stripeColor || ic.kitSecondaryColor,
               goalkeeperStripeColor: iconEdited.goalkeeperStripeColor || ic.goalkeeperStripeColor,
             };
           }
@@ -6390,6 +6502,14 @@ export default function Field(props = {}) {
                   iconEdited.stripeColor !== undefined
                     ? iconEdited.stripeColor
                     : prev.clone?.stripeColor,
+                kitPattern:
+                  iconEdited.kitPattern !== undefined
+                    ? iconEdited.kitPattern
+                    : prev.clone?.kitPattern,
+                kitSecondaryColor:
+                  iconEdited.kitSecondaryColor !== undefined
+                    ? iconEdited.kitSecondaryColor
+                    : prev.clone?.kitSecondaryColor,
                 goalkeeperStripeColor:
                   iconEdited.goalkeeperStripeColor !== undefined
                     ? iconEdited.goalkeeperStripeColor
@@ -8389,6 +8509,7 @@ export default function Field(props = {}) {
             presetFolderId={presetFolderId}
             isGlobalExercise={isGlobalExercise}
             isGlobalStrategy={isGlobalStrategy}
+            onVideoSaved={onVideoSaved}
             onEditVideoSaved={isEditingVideo ? handleEditVideoSaved : null}
             onSavingChange={setIsSavingVideoEdit}
           />

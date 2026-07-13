@@ -1018,6 +1018,8 @@ export function createFieldPalettes(dependencies) {
       onLongPress,
       playersWithNumber = true,
     }) => {
+      const buttonWidth = icon.showLabel ? (isMobile ? 66 : 82) : iconSize;
+      const buttonHeight = icon.showLabel ? iconSize + (isMobile ? 20 : 24) : iconSize;
       return (
         <Pressable
           onPress={() => onPress(icon, idx)}
@@ -1025,8 +1027,9 @@ export function createFieldPalettes(dependencies) {
           style={[
             styles.paletteIconButton,
             {
-              width: iconSize,
-              height: iconSize,
+              width: buttonWidth,
+              height: buttonHeight,
+              flexDirection: 'column',
             },
             isSelected && styles.paletteIconButtonSelected,
             isMobile &&
@@ -1052,6 +1055,22 @@ export function createFieldPalettes(dependencies) {
                   : undefined
             }
           />
+          {icon.showLabel && (
+            <Text
+              style={{
+                width: buttonWidth - 4,
+                marginTop: 2,
+                color: '#fff',
+                fontSize: isMobile ? 8 : 10,
+                lineHeight: isMobile ? 9 : 11,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}
+              numberOfLines={2}
+            >
+              {icon.label}
+            </Text>
+          )}
         </Pressable>
       );
     },
@@ -1071,7 +1090,11 @@ export function createFieldPalettes(dependencies) {
         prevProps.icon.shape === nextProps.icon.shape &&
         prevProps.icon.hasStripes === nextProps.icon.hasStripes &&
         prevProps.icon.stripeColor === nextProps.icon.stripeColor &&
+        prevProps.icon.kitPattern === nextProps.icon.kitPattern &&
+        prevProps.icon.kitSecondaryColor === nextProps.icon.kitSecondaryColor &&
         prevProps.icon.isNeutral === nextProps.icon.isNeutral &&
+        prevProps.icon.label === nextProps.icon.label &&
+        prevProps.icon.showLabel === nextProps.icon.showLabel &&
         prevProps.icon.lineType === nextProps.icon.lineType &&
         prevProps.icon.fillColor === nextProps.icon.fillColor
       );

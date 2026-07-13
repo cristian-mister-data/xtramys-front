@@ -256,11 +256,12 @@ const ActionIconButton = styled.button`
 `;
 
 // Vector shirt SVG component
-export const ShirtSvg = ({ pattern, primary, secondary, shape, size = 120 }) => {
+export const ShirtSvg = ({ pattern, primary, secondary, numberColor = '#ffffff', shape, size = 120 }) => {
   if (shape === 'circle') {
     return (
       <svg viewBox="0 0 100 100" width={size} height={size}>
         <circle cx="50" cy="50" r="42" fill={primary} stroke={secondary} strokeWidth="6" />
+        <text x="50" y="57" textAnchor="middle" fill={numberColor} fontSize="24" fontWeight="800">10</text>
       </svg>
     );
   }
@@ -313,6 +314,7 @@ export const ShirtSvg = ({ pattern, primary, secondary, shape, size = 120 }) => 
       
       {/* V-neck collar */}
       <path d="M 40 18 L 50 28 L 60 18" fill="none" stroke={secondary} strokeWidth="3" strokeLinecap="round" />
+      <text x="50" y="61" textAnchor="middle" fill={numberColor} fontSize="22" fontWeight="800">10</text>
     </svg>
   );
 };
@@ -335,7 +337,7 @@ export const ShortsSvg = ({ color, size = 120 }) => {
 export function KitPreview({ kit = DEFAULT_KITS.first, size = 68 }) {
   return (
     <PreviewPane style={{ minHeight: 'auto', padding: 8, background: 'transparent', border: 'none' }}>
-      <ShirtSvg pattern={kit.pattern} primary={kit.primaryColor} secondary={kit.secondaryColor} shape={kit.shape} size={size} />
+      <ShirtSvg pattern={kit.pattern} primary={kit.primaryColor} secondary={kit.secondaryColor} numberColor={kit.numberColor} shape={kit.shape} size={size} />
       {kit.shape === 'shirt' && <ShortsSvg color={kit.shortsColor} size={size} />}
     </PreviewPane>
   );
@@ -420,6 +422,7 @@ export default function KitDesigner({ value, onChange }) {
             pattern={currentKit.pattern}
             primary={currentKit.primaryColor}
             secondary={currentKit.secondaryColor}
+            numberColor={currentKit.numberColor}
             shape={currentKit.shape}
             size={90}
           />
@@ -484,6 +487,11 @@ export default function KitDesigner({ value, onChange }) {
               label={currentKit.shape === 'circle' ? t('kits.borderColor', 'Color del borde') : t('kits.secondary', 'Secundario')}
               value={currentKit.secondaryColor}
               onChange={(secondaryColor) => updateCurrentKit({ secondaryColor })}
+            />
+            <ColorInputRow
+              label={t('kits.numberColor', 'Dorsal')}
+              value={currentKit.numberColor}
+              onChange={(numberColor) => updateCurrentKit({ numberColor })}
             />
             {currentKit.shape === 'shirt' && (
               <ColorInputRow
