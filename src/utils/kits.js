@@ -152,3 +152,37 @@ export function applySetPiecePlayerOverlays(elements = [], overlays = []) {
 
   return result;
 }
+
+export function getSetPieceVideoSignature(overlays = []) {
+  const text = (value) => String(value ?? '');
+  const number = (value) => Number.isFinite(Number(value)) ? Number(value) : null;
+  const media = (value) => text(value).replace(/\?.*$/, '');
+
+  return JSON.stringify(overlays.map((overlay) => ({
+    slotId: text(overlay.slotId),
+    number: text(overlay.number),
+    exactSlot: overlay.exactSlot === true,
+    xRatio: number(overlay.xRatio),
+    yRatio: number(overlay.yRatio),
+    x: number(overlay.x),
+    y: number(overlay.y),
+    color: text(overlay.color),
+    numberColor: text(overlay.numberColor),
+    shape: text(overlay.shape),
+    hasStripes: overlay.hasStripes === true,
+    stripeColor: text(overlay.stripeColor),
+    kitPattern: text(overlay.kitPattern),
+    kitSecondaryColor: text(overlay.kitSecondaryColor),
+    isGoalkeeper: overlay.isGoalkeeper === true,
+    differentiateGoalkeeper: overlay.differentiateGoalkeeper === true,
+    goalkeeperStripeColor: text(overlay.goalkeeperStripeColor),
+    showPhotos: overlay.showPhotos === true,
+    photoUrl: media(overlay.photoUrl),
+    player: {
+      id: text(overlay.playerData?._id || overlay.playerData?.id),
+      name: text(overlay.playerData?.nombre || overlay.playerData?.name || overlay.playerData?.fullName),
+      position: text(overlay.playerData?.demarcacion || overlay.playerData?.posicion || overlay.playerData?.position),
+      photo: media(overlay.playerData?.foto),
+    },
+  })));
+}

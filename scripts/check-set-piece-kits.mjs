@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applySetPieceKitsToElements, applySetPiecePlayerOverlays } from '../src/utils/kits.js';
+import { applySetPieceKitsToElements, applySetPiecePlayerOverlays, getSetPieceVideoSignature } from '../src/utils/kits.js';
 import { buildInterpolatedFrames } from '../src/utils/videoFrameBuilder.js';
+import { getPlayerRenderMetrics } from '../src/utils/playerRenderMetrics.js';
 
 const elements = [
   { id: 'icon1-clone-legacy', type: 'player', paletteIndex: 0, color: '#000000', showPhotos: true },
@@ -38,6 +39,28 @@ assert.equal(overlaidFrame[0].xRatio, 0.4);
 assert.equal(overlaidFrame[1].playerData.nombre, 'Eva');
 assert.equal(overlaidFrame[1].color, '#654321');
 
+const signatureOverlay = {
+  slotId: 'player-1',
+  number: '10',
+  xRatio: 0.4,
+  color: '#123456',
+  photoUrl: 'https://cdn.example/player.webp?token=one',
+  playerData: { _id: 'player-id', nombre: 'Ana', foto: 'player.webp', ignored: true },
+};
+assert.equal(
+  getSetPieceVideoSignature([signatureOverlay]),
+  getSetPieceVideoSignature([{ ...signatureOverlay, xRatio: '0.4', photoUrl: 'https://cdn.example/player.webp?token=two', extra: true }]),
+);
+assert.notEqual(
+  getSetPieceVideoSignature([signatureOverlay]),
+  getSetPieceVideoSignature([{ ...signatureOverlay, color: '#654321' }]),
+);
+
+const playerMetrics = getPlayerRenderMetrics({ shape: 'jersey' }, 0.5);
+assert.equal(playerMetrics.size, 13);
+assert.equal(playerMetrics.radius, 6.5);
+assert.equal(playerMetrics.nameFontSize, 4.68);
+
 const originalRival = [{ id: 'icon2-clone-legacy', type: 'player', color: '#aa0000' }];
 assert.equal(
   applySetPieceKitsToElements(originalRival, { own: kitContext.own }, false)[0].color,
@@ -62,6 +85,7 @@ assert.match(apiSource, /let _activeVideoPollController = null;/);
 const playbackSource = readFileSync(new URL('../src/utils/videoPlayback.js', import.meta.url), 'utf8');
 assert.match(playbackSource, /getSetPieceVideoCandidates/);
 assert.match(playbackSource, /getSetPieceVideoId\(source\)/);
+assert.match(playbackSource, /resolveMatchSheetSetPieceVideo/);
 assert.doesNotMatch(playbackSource, /regenerateVideoWithField/);
 
 const localRegeneratorSource = readFileSync(new URL('../src/utils/localVideoRegenerator.js', import.meta.url), 'utf8');
@@ -71,8 +95,22 @@ assert.match(localRegeneratorSource, /holdDuration:\s*0\.1/);
 assert.match(localRegeneratorSource, /if \(!playerOverlays\.length\)/);
 
 const matchSheetSource = readFileSync(new URL('../src/vendor/season/EditMatchSheetModal.js', import.meta.url), 'utf8');
-assert.match(matchSheetSource, /availableVideo\.recovered/);
 assert.match(matchSheetSource, /matchVideoCopy: false/);
+assert.match(matchSheetSource, /resolveMatchSheetSetPieceVideo/);
+assert.match(matchSheetSource, /boardOpeningRef\.current = true/);
+assert.match(matchSheetSource, /finally\s*\{[\s\S]*boardOpeningRef\.current = false/);
+assert.match(matchSheetSource, /boardModalGuardUntilRef\.current = Date\.now\(\) \+ 2000/);
+assert.match(matchSheetSource, /onRequestClose=\{handleMatchSheetRequestClose\}/);
+assert.match(matchSheetSource, /loadingSetPieceVideoIndex === setPieceIndex/);
+assert.match(matchSheetSource, /setPiecePreviewLoadingOverlay/);
+
+const matchSheetDetailSource = readFileSync(new URL('../src/vendor/season/MatchSheetDetailModal.js', import.meta.url), 'utf8');
+assert.match(matchSheetDetailSource, /resolveMatchSheetSetPieceVideo/);
+
+const loadingSpinnerSource = readFileSync(new URL('../src/vendor/shared/LoadingSpinner.js', import.meta.url), 'utf8');
+assert.match(loadingSpinnerSource, /animateTransform/);
+assert.match(loadingSpinnerSource, /repeatCount:\s*'indefinite'/);
+assert.doesNotMatch(loadingSpinnerSource, /@keyframes/);
 
 const sharedFrames = buildInterpolatedFrames([
   {
@@ -100,6 +138,16 @@ assert.equal(buildInterpolatedFrames(fourKeyframes, 30, 0.9, 0.1, 1, 0.5).length
 
 const previewSource = readFileSync(new URL('../src/vendor/matchSheet/SetPiecePreview.js', import.meta.url), 'utf8');
 assert.match(previewSource, /assignment\?\.playerName/);
-assert.match(previewSource, /fontSize:\s*Math\.max\(8/);
+assert.match(previewSource, /const liveBoard = elements\.length > 0;/);
+assert.match(previewSource, /decomposeFieldId\(setPiece\?\.customFieldType \|\| setPiece\?\.tipoCampo \|\| 'full'\)/);
+assert.doesNotMatch(previewSource, /halfLeft|halfRight|autoFramed/);
+assert.match(previewSource, /getPlayerRenderMetrics\(element, scale\)/);
+assert.match(previewSource, /top:\s*size/);
+assert.match(previewSource, /fontSize:\s*nameFontSize/);
+assert.match(previewSource, /element\.matchSheetAssigned && element\.playerData/);
+assert.match(previewSource, /assignment\?\.player \|\| element\.playerData/);
+assert.match(previewSource, /if \(!assignment \|\|/);
+assert.doesNotMatch(previewSource, /isOwnSetPiecePlayer/);
+assert.doesNotMatch(previewSource, /\|\| assignments\[index\]/);
 
 console.log('set-piece kit check ok');

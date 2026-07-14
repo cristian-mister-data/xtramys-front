@@ -764,6 +764,7 @@ export default function VideoRecorder({
   presetFolderId = null, // Carpeta preseleccionada (se usa automáticamente)
   isGlobalExercise = false, // Si el ejercicio es global (app) - solo mostrar carpetas globales
   isGlobalStrategy = false, // Si la estrategia es global (app) - solo mostrar carpetas globales
+  isMatchSheetVideo = false,
   onVideoSaved = null,
   onEditVideoSaved = null, // Callback tras guardar exitosamente en modo edición
   onGeneratingChange = null, // Callback cuando el estado de generación cambia (isGenerating)
@@ -1774,6 +1775,7 @@ export default function VideoRecorder({
           ejercicioId: ejercicioId,
           estrategiaId: estrategiaId,
           folderId: selectedFolderId,
+          isMatchSheetVideo,
           ...(shouldBeGlobal && { isGlobal: true }),
         });
       }

@@ -110,7 +110,27 @@ async function renderFramesToDirectory(video, frames, renderConfig, onProgress) 
   return framesDir;
 }
 
-async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null) {
+async function persistGeneratedVideo(outputPath, persistVideo) {
+  if (!persistVideo) return null;
+
+  let upload = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      upload = await proxyUploadToR2(outputPath);
+      if (upload?.r2Key) break;
+    } catch (error) {
+      if (attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  const r2Key = upload?.r2Key;
+  if (!r2Key) throw new Error('No se pudo guardar el vídeo generado');
+
+  if (!upload?.videoUrl) throw new Error('No se pudo obtener la URL del vídeo generado');
+  return { r2Key, videoUrl: upload.videoUrl };
+}
+
+async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null) {
   onProgress?.(5, 'generationPreparing');
   const response = await getVideoForEdit(videoId);
   let video = response?.success ? response.video : null;
@@ -158,28 +178,38 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
         onProgress?.(nextProgress, 'generationFinalizing');
       }
     );
-    if (!playerOverlays.length) {
+    let persistedVideo = null;
+    if (persistVideo) {
+      persistedVideo = await persistGeneratedVideo(outputPath, persistVideo);
+    } else if (!playerOverlays.length) {
       const upload = await proxyUploadToR2(outputPath);
       if (upload?.r2Key) await updateVideo(videoId, { r2Key: upload.r2Key });
     }
     onProgress?.(100, 'generationComplete');
-    return outputPath;
+    return { outputPath, persistedVideo };
   } finally {
     RNFS.unlink(framesDir).catch(() => {});
   }
 }
 
 const localRegenerationListeners = new Map();
+const localRegenerationSavedListeners = new Map();
 
-export function regenerateVideoInBrowser(videoId, { playerOverlays = [], onProgress } = {}) {
+export function regenerateVideoInBrowser(videoId, { playerOverlays = [], onProgress, persistVideo } = {}) {
   if (!videoId) throw new Error('No hay video para regenerar');
-  const cacheKey = `${videoId}:${JSON.stringify(playerOverlays)}`;
+  const cacheKey = `${videoId}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
 
   if (onProgress) {
     if (!localRegenerationListeners.has(cacheKey)) {
       localRegenerationListeners.set(cacheKey, new Set());
     }
     localRegenerationListeners.get(cacheKey).add(onProgress);
+  }
+  if (persistVideo?.onSaved) {
+    if (!localRegenerationSavedListeners.has(cacheKey)) {
+      localRegenerationSavedListeners.set(cacheKey, new Set());
+    }
+    localRegenerationSavedListeners.get(cacheKey).add(persistVideo.onSaved);
   }
 
   if (!localRegenerationById.has(cacheKey)) {
@@ -198,11 +228,29 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], onProgr
 
     localRegenerationById.set(
       cacheKey,
-      regenerateStoredVideo(videoId, playerOverlays, triggerProgress).finally(() => {
-        localRegenerationById.delete(cacheKey);
-        localRegenerationListeners.delete(cacheKey);
-      }),
+      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo)
+        .then(async (result) => {
+          if (result.persistedVideo) {
+            const listeners = localRegenerationSavedListeners.get(cacheKey) || [];
+            await Promise.all([...listeners].map((listener) => listener({
+              ...result.persistedVideo,
+              url: result.outputPath,
+            })));
+          }
+          return result.outputPath;
+        })
+        .finally(() => {
+          localRegenerationById.delete(cacheKey);
+          localRegenerationListeners.delete(cacheKey);
+          localRegenerationSavedListeners.delete(cacheKey);
+        }),
     );
   }
   return localRegenerationById.get(cacheKey);
+}
+
+// Compatibilidad con consumidores antiguos: las URLs persistidas viven en el
+// video de la ficha, no en una caché de memoria del navegador.
+export function isCachedRegeneratedVideoUrl() {
+  return false;
 }

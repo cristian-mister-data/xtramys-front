@@ -4,6 +4,7 @@ import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
 import { isNative } from '@/platform/capacitor';
+import { getSetPieceVideoSignature } from '@/utils/kits';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -24,6 +25,78 @@ export const getSetPieceVideoCandidates = (setPiece, availableSetPieces = []) =>
   );
   return [...new Set([getSetPieceVideoId(setPiece), getSetPieceVideoId(source)].filter(Boolean).map(String))];
 };
+
+export async function resolveMatchSheetSetPieceVideo({
+  setPiece,
+  availableSetPieces = [],
+  playerOverlays = [],
+  onProgress,
+  onSaved,
+}) {
+  const signature = getSetPieceVideoSignature(playerOverlays);
+  const requestedVideoId = getSetPieceVideoId(setPiece);
+  const config = setPiece?.pizarraConfig || {};
+  const storedSourceId = config.matchVideoSourceId;
+  const storedCandidate = Boolean(config.matchVideoUrl)
+    && config.matchVideoCopySignature === signature
+    && (!storedSourceId || !requestedVideoId || String(storedSourceId) === String(requestedVideoId));
+  const requestedMetadata = storedCandidate && requestedVideoId
+    ? await getVideoById(requestedVideoId, { optional: true }).catch(() => null)
+    : null;
+  const currentSourceUpdatedAt = requestedMetadata?.video?.updatedAt;
+  const sourceVersionMatches = !requestedMetadata?.video
+    || !currentSourceUpdatedAt
+    || (config.matchVideoSourceUpdatedAt
+      && String(config.matchVideoSourceUpdatedAt) === String(currentSourceUpdatedAt));
+
+  if (storedCandidate && sourceVersionMatches) {
+    return {
+      url: await resolvePlayableVideoUrl(config.matchVideoUrl),
+      videoId: requestedVideoId,
+      recovered: false,
+      reused: true,
+    };
+  }
+
+  let availableVideo = requestedMetadata?.video
+    ? { videoId: requestedVideoId, metadata: requestedMetadata, recovered: false }
+    : null;
+  if (!availableVideo) {
+    for (const candidateId of getSetPieceVideoCandidates(setPiece, availableSetPieces)) {
+      const metadata = await getVideoById(candidateId, { optional: true }).catch(() => null);
+      if (!metadata?.video) continue;
+      availableVideo = {
+        videoId: candidateId,
+        metadata,
+        recovered: String(candidateId) !== String(requestedVideoId || ''),
+      };
+      break;
+    }
+  }
+  if (!availableVideo) throw new Error('El video asociado a la ABP ya no existe');
+
+  const sourceVideoId = availableVideo.videoId;
+  const sourceUpdatedAt = availableVideo.metadata?.video?.updatedAt;
+  const url = await resolvePlayableVideoUrl(sourceVideoId, {
+    playerOverlays,
+    persistVideo: onSaved ? {
+      onSaved: (artifact) => onSaved({
+        ...artifact,
+        signature,
+        sourceVideoId,
+        sourceUpdatedAt,
+      }),
+    } : null,
+    onProgress,
+  });
+
+  return {
+    url,
+    videoId: sourceVideoId,
+    recovered: availableVideo.recovered,
+    reused: false,
+  };
+}
 
 const getKnownUrl = (videoOrId) => {
   if (!videoOrId) return null;
@@ -176,7 +249,7 @@ const saveIOSVideo = async (path) => {
 };
 
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
-  const { playerOverlays, onProgress, ...urlOptions } = options || {};
+  const { playerOverlays, onProgress, persistVideo, ...urlOptions } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
@@ -185,9 +258,9 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   if (knownUrl && !playerOverlays) return maybeObjectUrl(knownUrl, urlOptions);
   if (!videoId) return '';
 
-  if (playerOverlays?.length) {
+  if (playerOverlays?.length || persistVideo) {
     try {
-      return await regenerateVideoInBrowser(videoId, { playerOverlays, onProgress });
+      return await regenerateVideoInBrowser(videoId, { playerOverlays, onProgress, persistVideo });
     } catch (error) {
       console.warn('[videoPlayback] No se pudo recrear el vídeo personalizado en el dispositivo:', error);
       throw new Error('No se pudo recrear el vídeo con la equipación y los jugadores de la ficha');

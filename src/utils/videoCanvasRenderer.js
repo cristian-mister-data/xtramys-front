@@ -1,5 +1,6 @@
 import ballImgSrc from '@/images/ball.png';
 import { ratioToDisplay } from '@/vendor/tacticalBoard/fields/fieldConfigs';
+import { getPlayerRenderMetrics } from '@/utils/playerRenderMetrics';
 
 const FONT_STACK = 'Arial, Helvetica, sans-serif';
 let currentViewMode = 'entire';
@@ -226,9 +227,7 @@ function strokePolyline(ctx, points, elem, scale) {
 
 function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   const p = pos(elem, cw, ch);
-  const baseSize = (elem.baseSize || 24) + (elem.shape === 'jersey' ? 2 : 0);
-  const size = baseSize * scale;
-  const r = size / 2;
+  const { size, radius: r, nameFontSize } = getPlayerRenderMetrics(elem, scale);
   const color = elem.color || '#2176ff';
   const numberColor = elem.numberColor || '#ffffff';
   const isNeutral =
@@ -382,7 +381,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
 
   if (elem.playerData && (elem.playerData.nombre || elem.playerData.name)) {
     const name = elem.playerData.nombre || elem.playerData.name;
-    const fs = size * 0.36;
+    const fs = nameFontSize;
     ctx.font = `${fs}px ${FONT_STACK}`;
     const tw = ctx.measureText(name).width;
     const pad = 1;

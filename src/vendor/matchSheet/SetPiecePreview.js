@@ -6,6 +6,7 @@ import { cdnUrl } from '@/config';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { applySetPieceKitsToElements } from '@/utils/kits';
+import { getPlayerRenderMetrics } from '@/utils/playerRenderMetrics';
 import { decomposeFieldId, getAspectForView, isVisibleInView, ratioToDisplay } from '@/vendor/tacticalBoard/fields';
 import { renderIconCanvas } from '@/vendor/tacticalBoard/field/icon-renderers';
 import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
@@ -14,6 +15,7 @@ import { BatchShapesRenderer } from '@/vendor/tacticalBoard/field/shape-renderer
 import { ConnectorsRenderer } from '@/vendor/tacticalBoard/field/connectors';
 
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
+const isPlayerObject = (value) => value !== null && typeof value === 'object';
 
 export default function SetPiecePreview({ setPiece, players = [], height = 240, kitContext, onSlotPress, selectedSlotId, showAssignments = false }) {
   const theme = useTheme();
@@ -29,23 +31,26 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
   const effectiveKitContext = kitContext || setPiece?.pizarraConfig?.kitContext;
   const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
   const assignmentBySlot = new Map(assignments.map((assignment) => [String(assignment.slotId), assignment]));
-  const elements = applySetPieceKitsToElements(sourceElements.map((element, index) => {
+  const elements = applySetPieceKitsToElements(sourceElements.map((element) => {
     if (element?.type !== 'player') return element;
-    const assignment = assignmentBySlot.get(String(element.id || element._id || '')) || assignments[index];
+    const assignment = assignmentBySlot.get(String(element.id || element._id || ''));
     const playerId = getId(assignment?.player);
-    const player = players.find((item) => String(item._id || item.id) === String(playerId)) || assignment?.player;
-    const playerName = typeof player === 'object'
+    const player = players.find((item) => String(item._id || item.id) === String(playerId)) || assignment?.player || element.playerData;
+    const playerName = isPlayerObject(player)
       ? (getPlayerFullName(player) || player.fullName || player.name || assignment?.playerName)
       : assignment?.playerName;
-    if (!playerName) return element;
-    const playerData = typeof player === 'object'
+    if (!assignment || !(assignment.player || assignment.playerName || element.playerData) || !playerName) {
+      return { ...element, playerData: undefined, photoUrl: undefined, matchSheetAssigned: false };
+    }
+    const playerData = isPlayerObject(player)
       ? { ...player, nombre: playerName, fullName: playerName }
       : { nombre: playerName, fullName: playerName };
     return {
       ...element,
       number: playerData.dorsal || playerData.number || assignment?.number || element.number,
       playerData,
-      photoUrl: assignment?.photoUrl || (playerData.foto ? cdnUrl(playerData.foto) : element.photoUrl),
+      photoUrl: assignment?.photoUrl || element.photoUrl || (playerData.foto ? cdnUrl(playerData.foto) : undefined),
+      matchSheetAssigned: true,
     };
   }), effectiveKitContext, showPhotos).map((element) => ({
     ...element,
@@ -64,9 +69,8 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       top: (height - fieldHeight) / 2,
     };
   }, [boardWidth, fieldAspect, height]);
-  // La captura guardada es la imagen oficial de la ficha; no la reconstruimos
-  // encima con elementos vivos porque duplicaría/Desplazaría los nombres.
-  const liveBoard = elements.length > 0 && !image;
+  // Los elementos vivos reflejan jugadores y equipaciones; la captura solo cubre ABP antiguas sin datos editables.
+  const liveBoard = elements.length > 0;
   const straightLines = elements.filter((element) => element.type === 'straight-line' || element.type === 'straight-arrow');
   const curveLines = elements.filter((element) => element.type === 'curve-line' || element.type === 'curve-arrow');
   const circles = elements.filter((element) => element.type === 'circle');
@@ -92,7 +96,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       x: element?.xRatio ?? (typeof element?.x === 'number' ? element.x / 1280 : undefined),
       y: element?.yRatio ?? (typeof element?.y === 'number' ? element.y / 832 : undefined),
     };
-  }) : [];
+  }).filter((item) => item.element) : [];
   const positioned = markers.filter((item) => item.x !== undefined && item.y !== undefined);
   const fallback = markers.filter((item) => item.x === undefined || item.y === undefined);
   const MarkerRoot = onSlotPress ? TouchableOpacity : View;
@@ -142,7 +146,8 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
             />
             {pointElements.map((element) => {
               const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
-              const size = (element.size || 24) * Math.min(fieldLayout.width, fieldLayout.height) / 500;
+              const scale = Math.min(fieldLayout.width, fieldLayout.height) / 500;
+              const { size, nameFontSize } = getPlayerRenderMetrics(element, scale);
               return (
                 <View
                   key={`element-${element.id || element._id}`}
@@ -171,31 +176,39 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     element.showPhotos === true,
                     element.photoUrl || cdnUrl(element.playerData?.foto || ''),
                   )}
-                  {element.playerData && (
-                    <Text
-                      selectable={false}
-                      numberOfLines={1}
+                  {element.matchSheetAssigned && element.playerData && (
+                    <View
+                      pointerEvents="none"
                       style={{
                         position: 'absolute',
-                        bottom: -Math.max(18, size * 0.85),
-                        left: -Math.max(20, size),
-                        right: -Math.max(20, size),
-                        textAlign: 'center',
-                        fontSize: Math.max(8, Math.min(10, size * 0.45)),
-                        color: element.textColor || '#000',
-                        backgroundColor:
-                          element.textBackgroundColor === 'transparent'
-                            ? 'transparent'
-                            : element.textBackgroundColor || '#fff',
-                        paddingHorizontal: element.textBackgroundColor === 'transparent' ? 0 : 2,
-                        paddingVertical: element.textBackgroundColor === 'transparent' ? 0 : 1,
-                        borderRadius: 3,
-                        borderWidth: element.textBackgroundColor === 'transparent' ? 0 : 0.5,
-                        borderColor: '#ccc',
+                        top: size,
+                        left: -100,
+                        right: -100,
+                        alignItems: 'center',
                       }}
                     >
-                      {getPlayerFullName(element.playerData) || element.playerData.fullName || element.playerData.name}
-                    </Text>
+                      <Text
+                        selectable={false}
+                        numberOfLines={1}
+                        style={{
+                          fontFamily: 'Arial, Helvetica, sans-serif',
+                          fontSize: nameFontSize,
+                          lineHeight: nameFontSize,
+                          textAlign: 'center',
+                          color: element.textColor || '#000',
+                          backgroundColor:
+                            element.textBackgroundColor === 'transparent'
+                              ? 'transparent'
+                              : element.textBackgroundColor || '#fff',
+                          paddingHorizontal: element.textBackgroundColor === 'transparent' ? 0 : 1,
+                          paddingVertical: element.textBackgroundColor === 'transparent' ? 0 : 1,
+                          borderWidth: element.textBackgroundColor === 'transparent' ? 0 : 0.75,
+                          borderColor: '#ccc',
+                        }}
+                      >
+                        {getPlayerFullName(element.playerData) || element.playerData.fullName || element.playerData.name}
+                      </Text>
+                    </View>
                   )}
                 </View>
               );
@@ -231,7 +244,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
           </View>
         )}
         {positioned.map((item) => {
-          const hasPlayer = item.player && typeof item.player === 'object';
+          const hasPlayer = isPlayerObject(item.player);
           const selected = String(selectedSlotId || '') === String(item.slotId);
           const pressProps = onSlotPress ? { onPress: () => onSlotPress(item.slotId), activeOpacity: 0.85 } : {};
           return (
