@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   Alert,
+  ActivityIndicator,
   useWindowDimensions,
   TextInput,
   Image,
@@ -27,7 +28,12 @@ import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/M
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
 import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
-import { resolveMatchSheetSetPieceVideo, revokeVideoObjectUrl, getSetPieceVideoId } from '@/utils/videoPlayback';
+import {
+  resolveMatchSheetSetPieceVideo,
+  revokeVideoObjectUrl,
+  getSetPieceVideoId,
+  downloadResolvedVideo,
+} from '@/utils/videoPlayback';
 import { generateSetPiecesPdf } from '@/vendor/strategy/pdf';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
@@ -269,9 +275,11 @@ export default function MatchSheetDetailModal({
   const [setPieceVideoTitle, setSetPieceVideoTitle] = useState('');
   const [loadingSetPieceVideo, setLoadingSetPieceVideo] = useState(false);
   const [loadingSetPieceIndex, setLoadingSetPieceIndex] = useState(null);
+  const [downloadingSetPieceIndex, setDownloadingSetPieceIndex] = useState(null);
   const [videoGenerationProgress, setVideoGenerationProgress] = useState(0);
   const [videoGenerationPhase, setVideoGenerationPhase] = useState('');
   const [activeDetailTab, setActiveDetailTab] = useState('data');
+  const [statisticsMatchSheet, setStatisticsMatchSheet] = useState(matchSheet);
   const [detailSetPieces, setDetailSetPieces] = useState(() => matchSheet?.setPieces || []);
   const detailSetPiecesRef = useRef(matchSheet?.setPieces || []);
   const detailMatchSheetIdRef = useRef(String(matchSheet?._id || ''));
@@ -283,6 +291,7 @@ export default function MatchSheetDetailModal({
   useEffect(() => {
     if (!visible || !matchSheet?._id) return;
     let mounted = true;
+    setStatisticsMatchSheet(matchSheet);
     const matchSheetId = String(matchSheet._id);
     if (detailMatchSheetIdRef.current !== matchSheetId) {
       const initialSetPieces = matchSheet.setPieces || [];
@@ -293,9 +302,12 @@ export default function MatchSheetDetailModal({
 
     getMatchSheet(matchSheet._id)
       .then((response) => {
-        if (!mounted || !Array.isArray(response.data?.setPieces)) return;
-        detailSetPiecesRef.current = response.data.setPieces;
-        setDetailSetPieces(response.data.setPieces);
+        if (!mounted || !response.data) return;
+        setStatisticsMatchSheet(response.data);
+        if (Array.isArray(response.data.setPieces)) {
+          detailSetPiecesRef.current = response.data.setPieces;
+          setDetailSetPieces(response.data.setPieces);
+        }
       })
       .catch((error) => console.warn('No se pudieron actualizar las ABP de la ficha:', error));
     return () => {
@@ -677,6 +689,40 @@ export default function MatchSheetDetailModal({
     }
   };
 
+  const getSetPieceDownloadName = (setPiece) => {
+    const baseName = String(setPiece?.nombre || t('setPieces.title') || 'ABP').trim();
+    const rivalName = String(matchSheet?.rival || '').trim();
+    return rivalName ? `${baseName} - ${rivalName}` : baseName;
+  };
+
+  const downloadSetPieceVideo = async (setPiece, setPieceIndex) => {
+    if (loadingSetPieceVideo || downloadingSetPieceIndex !== null) return;
+    setDownloadingSetPieceIndex(setPieceIndex);
+    setVideoGenerationProgress(0);
+    setVideoGenerationPhase('generationPreparing');
+    try {
+      const playerOverlays = buildSetPiecePlayerOverlays(setPiece);
+      const result = await resolveMatchSheetSetPieceVideo({
+        setPiece,
+        availableSetPieces: detailSetPieces,
+        playerOverlays,
+        onSaved: canMutate === false
+          ? null
+          : (artifact) => persistSetPieceVideo(artifact, setPieceIndex),
+        onProgress: (progress, phase) => {
+          setVideoGenerationProgress(progress);
+          setVideoGenerationPhase(phase);
+        },
+      });
+      await downloadResolvedVideo(result.url, getSetPieceDownloadName(setPiece));
+    } catch (error) {
+      console.error('Error downloading set piece video:', error);
+      Alert.alert(t('message.error'), t('strategy.videoPlayError'));
+    } finally {
+      setDownloadingSetPieceIndex(null);
+    }
+  };
+
   const closeSetPieceVideo = () => {
     if (setPieceVideoUrl) revokeVideoObjectUrl(setPieceVideoUrl);
     setSetPieceVideoUrl(null);
@@ -828,17 +874,41 @@ export default function MatchSheetDetailModal({
                             )}
                           </View>
                           {!!getVideoId(setPiece) && (
-                            <TouchableOpacity
-                              style={[
-                                styles.setPieceVideoBtn,
-                                loadingSetPieceIndex === index && styles.setPieceVideoBtnDisabled,
-                              ]}
-                              onPress={() => playSetPieceVideo(setPiece, index)}
-                              disabled={loadingSetPieceVideo}
-                            >
-                              <Ionicons name="play" size={16} color="#fff" />
-                              <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
-                            </TouchableOpacity>
+                            <View style={styles.setPieceInlineActions}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.setPieceDownloadBtn,
+                                  downloadingSetPieceIndex === index && styles.setPieceVideoBtnDisabled,
+                                ]}
+                                onPress={() => downloadSetPieceVideo(setPiece, index)}
+                                disabled={loadingSetPieceVideo || downloadingSetPieceIndex !== null}
+                              >
+                                {downloadingSetPieceIndex === index ? (
+                                  <LoadingSpinner
+                                    theme={theme}
+                                    text={t('common.loading', 'Cargando...')}
+                                    size={16}
+                                    strokeWidth={3}
+                                    hideText
+                                    gap={0}
+                                  />
+                                ) : (
+                                  <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
+                                )}
+                                <Text style={styles.setPieceDownloadBtnText}>MP4</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  styles.setPieceVideoBtn,
+                                  loadingSetPieceIndex === index && styles.setPieceVideoBtnDisabled,
+                                ]}
+                                onPress={() => playSetPieceVideo(setPiece, index)}
+                                disabled={loadingSetPieceVideo || downloadingSetPieceIndex !== null}
+                              >
+                                <Ionicons name="play" size={16} color="#fff" />
+                                <Text style={styles.setPieceVideoBtnText}>{t('strategy.play') || 'Ver'}</Text>
+                              </TouchableOpacity>
+                            </View>
                           )}
                         </View>
                         <View style={styles.setPiecePreviewWrap}>
@@ -1318,9 +1388,10 @@ export default function MatchSheetDetailModal({
       />
       <MatchStatisticsModal
         visible={statisticsVisible}
-        matchSheet={matchSheet}
+        matchSheet={statisticsMatchSheet || matchSheet}
         players={players}
         onClose={() => setStatisticsVisible(false)}
+        onSaved={setStatisticsMatchSheet}
       />
     </Modal>
   );
@@ -1632,6 +1703,31 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   setPieceVideoBtnDisabled: {
     opacity: 0.7,
+  },
+  setPieceInlineActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+  },
+  setPieceDownloadBtn: {
+    minWidth: 58,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  setPieceDownloadBtnText: {
+    color: theme.colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
   setPieceVideoBtnText: {
     color: '#fff',

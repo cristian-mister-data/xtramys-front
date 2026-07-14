@@ -53,6 +53,7 @@ import {
   getSetPieceVideoId,
   resolveMatchSheetSetPieceVideo,
   revokeVideoObjectUrl,
+  downloadResolvedVideo,
 } from '@/utils/videoPlayback';
 import { cdnUrl } from '@/config';
 import { duplicateVideoForEdit, getTacticalVideo, getVideoById, getVideoForEdit } from '@/utils/api';
@@ -1078,6 +1079,7 @@ export default function EditMatchSheetModal({
   const [videoGenerationPhase, setVideoGenerationPhase] = useState('');
   const [isVideoGenerating, setIsVideoGenerating] = useState(false);
   const [loadingSetPieceVideoIndex, setLoadingSetPieceVideoIndex] = useState(null);
+  const [downloadingSetPieceVideoIndex, setDownloadingSetPieceVideoIndex] = useState(null);
   const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
     if (setPieceVideoUrl) player.play();
   });
@@ -1682,6 +1684,8 @@ export default function EditMatchSheetModal({
 
   // Cancelar y resetear todos los cambios
   const handleCancel = () => {
+    if (boardOpeningRef.current || boardParams) return;
+
     if (matchSheet) {
       // Modo edición: restaurar datos originales
       const getIds = (arr) => (arr || []).map(j => typeof j === 'object' ? j._id : j);
@@ -2469,6 +2473,38 @@ export default function EditMatchSheetModal({
     }
   };
 
+  const getMatchSetPieceDownloadName = (setPiece) => {
+    const baseName = String(setPiece?.nombre || t('setPieces.title') || 'ABP').trim();
+    const rivalName = String(rival || matchSheet?.rival || '').trim();
+    return rivalName ? `${baseName} - ${rivalName}` : baseName;
+  };
+
+  const downloadSetPieceVideo = async (setPiece, setPieceIndex) => {
+    if (isVideoGenerating || downloadingSetPieceVideoIndex !== null) return;
+    setVideoGenerationProgress(0);
+    setVideoGenerationPhase('generationPreparing');
+    setDownloadingSetPieceVideoIndex(setPieceIndex);
+    try {
+      const playerOverlays = buildSetPiecePlayerOverlays(setPiece);
+      const result = await resolveMatchSheetSetPieceVideo({
+        setPiece,
+        availableSetPieces,
+        playerOverlays,
+        onSaved: (artifact) => persistGeneratedSetPieceVideo(artifact, setPieceIndex),
+        onProgress: (progress, phase) => {
+          setVideoGenerationProgress(progress);
+          setVideoGenerationPhase(phase);
+        },
+      });
+      await downloadResolvedVideo(result.url, getMatchSetPieceDownloadName(setPiece));
+    } catch (error) {
+      console.error('Error downloading set piece video:', error);
+      Alert.alert(t('message.error'), t('strategy.videoPlayError'));
+    } finally {
+      setDownloadingSetPieceVideoIndex(null);
+    }
+  };
+
   const closeSetPieceVideo = () => {
     if (setPieceVideoUrl) revokeVideoObjectUrl(setPieceVideoUrl);
     setSetPieceVideoUrl(null);
@@ -2557,18 +2593,42 @@ export default function EditMatchSheetModal({
               </Text>
             </TouchableOpacity>
             {!!sp.videoId && (
-              <TouchableOpacity
-                style={[styles.setPieceVideoBtn, isVideoGenerating && styles.setPieceVideoBtnDisabled]}
-                onPress={() => playSetPieceVideo(sp, setPieceIndex)}
-                disabled={isVideoGenerating}
-              >
-                {loadingSetPieceVideoIndex === setPieceIndex ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons name="play-circle-outline" size={18} color="#fff" />
-                )}
-                <Text style={styles.setPieceVideoBtnText}>{loadingSetPieceVideoIndex === setPieceIndex ? t('common.loading', 'Cargando...') : (t('strategy.play') || 'Ver vídeo')}</Text>
-              </TouchableOpacity>
+              <View style={styles.setPieceActionRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.setPieceDownloadBtn,
+                    downloadingSetPieceVideoIndex !== null && styles.setPieceVideoBtnDisabled,
+                  ]}
+                  onPress={() => downloadSetPieceVideo(sp, setPieceIndex)}
+                  disabled={isVideoGenerating || downloadingSetPieceVideoIndex !== null}
+                >
+                  {downloadingSetPieceVideoIndex === setPieceIndex ? (
+                    <LoadingSpinner
+                      theme={theme}
+                      text={t('common.loading', 'Cargando...')}
+                      size={16}
+                      strokeWidth={3}
+                      hideText
+                      gap={0}
+                    />
+                  ) : (
+                    <Ionicons name="download-outline" size={18} color={theme.colors.primary} />
+                  )}
+                  <Text style={styles.setPieceDownloadBtnText}>MP4</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.setPieceVideoBtn, isVideoGenerating && styles.setPieceVideoBtnDisabled]}
+                  onPress={() => playSetPieceVideo(sp, setPieceIndex)}
+                  disabled={isVideoGenerating || downloadingSetPieceVideoIndex !== null}
+                >
+                  {loadingSetPieceVideoIndex === setPieceIndex ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="play-circle-outline" size={18} color="#fff" />
+                  )}
+                  <Text style={styles.setPieceVideoBtnText}>{loadingSetPieceVideoIndex === setPieceIndex ? t('common.loading', 'Cargando...') : (t('strategy.play') || 'Ver vídeo')}</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         ))}
@@ -2584,18 +2644,19 @@ export default function EditMatchSheetModal({
     onClose();
   };
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent
-      onRequestClose={handleMatchSheetRequestClose}
-   >
+    <>
+      <Modal
+        visible={visible}
+        animationType="fade"
+        transparent
+        onRequestClose={handleMatchSheetRequestClose}
+      >
       <View style={styles.modalBg}>
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{matchSheet?._id ? t('matchSheet.editMatch') : t('matchSheet.fields.createMatchSheet')}</Text>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <TouchableOpacity style={styles.closeBtn} onPress={handleMatchSheetRequestClose}>
               <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -3500,24 +3561,6 @@ export default function EditMatchSheetModal({
             </View>
 
           <Modal
-            visible={!!boardParams}
-            animationType="fade"
-            onRequestClose={() => boardParams?.onCancel?.()}
-          >
-            <SafeAreaProvider style={{ flex: 1 }}>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                {boardParams ? (
-                  <Field
-                    key={`match-set-piece-${boardParams.boardKey || 'new'}`}
-                    {...boardParams}
-                    navigation={{ goBack: () => {}, navigate: () => {}, addListener: () => () => {} }}
-                  />
-                ) : null}
-              </GestureHandlerRootView>
-            </SafeAreaProvider>
-          </Modal>
-
-          <Modal
             visible={openingSetPieceBoardIndex !== null}
             transparent={true}
             animationType="fade"
@@ -4418,7 +4461,26 @@ export default function EditMatchSheetModal({
           </Modal>
         </View>
       </View>
-    </Modal>
+      </Modal>
+
+      <Modal
+        visible={!!boardParams}
+        animationType="fade"
+        onRequestClose={() => boardParams?.onCancel?.()}
+      >
+        <SafeAreaProvider style={{ flex: 1 }}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            {boardParams ? (
+              <Field
+                key={`match-set-piece-${boardParams.boardKey || 'new'}`}
+                {...boardParams}
+                navigation={{ goBack: () => {}, navigate: () => {}, addListener: () => () => {} }}
+              />
+            ) : null}
+          </GestureHandlerRootView>
+        </SafeAreaProvider>
+      </Modal>
+    </>
   );
 }
 
@@ -4850,6 +4912,32 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: theme.colors.primary,
+  },
+  setPieceActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+  },
+  setPieceDownloadBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+    minWidth: 58,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  setPieceDownloadBtnText: {
+    color: theme.colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
   setPieceVideoBtnText: {
     color: '#fff',

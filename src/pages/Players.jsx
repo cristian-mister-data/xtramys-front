@@ -270,6 +270,37 @@ const Grid = styled.div`
   }
 `;
 
+const InactiveSection = styled.section`
+  margin-top: 12px;
+  padding-top: 18px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const InactiveHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    color: ${({ theme }) => theme.colors.text};
+  }
+
+  span {
+    min-width: 28px;
+    padding: 4px 9px;
+    border-radius: ${({ theme }) => theme.radius.full};
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+  }
+`;
+
 const EmptyCard = styled(Card)`
   display: flex;
   flex-direction: column;
@@ -358,6 +389,25 @@ export default function Players() {
         return (a.nombre || '').localeCompare(b.nombre || '');
       });
   }, [players, search, positionFilter, typeFilter, sortBy]);
+
+  const activePlayers = filtered.filter((player) => player.activo !== false);
+  const inactivePlayers = filtered.filter((player) => player.activo === false);
+
+  const renderPlayers = (items) => {
+    const Container = viewMode === 'list' ? List : Grid;
+    return (
+      <Container>
+        {items.map((player) => (
+          <PlayerCard
+            key={player._id}
+            player={player}
+            viewMode={viewMode}
+            onClick={() => setDetailPlayer(player)}
+          />
+        ))}
+      </Container>
+    );
+  };
 
   const handleCreate = async (payload) => {
     try {
@@ -581,25 +631,25 @@ export default function Players() {
                 </CanMutate>
               ) : null}
             </EmptyCard>
-          ) : viewMode === 'list' ? (
-            <List>
-              {filtered.map((p) => (
-                <PlayerCard key={p._id} player={p} viewMode="list" onClick={() => setDetailPlayer(p)} />
-              ))}
-            </List>
           ) : (
-            <Grid>
-              {filtered.map((p) => (
-                <PlayerCard key={p._id} player={p} viewMode="grid" onClick={() => setDetailPlayer(p)} />
-              ))}
-            </Grid>
+            <>
+              {activePlayers.length > 0 ? renderPlayers(activePlayers) : null}
+              <Row>
+                <Muted style={{ fontSize: 12 }}>
+                  {activePlayers.length} {t('player.players', 'jugadores').toLowerCase()}
+                </Muted>
+              </Row>
+              {inactivePlayers.length > 0 ? (
+                <InactiveSection>
+                  <InactiveHeader>
+                    <h2>{t('player.inactivePlayers', 'Jugadores de baja')}</h2>
+                    <span>{inactivePlayers.length}</span>
+                  </InactiveHeader>
+                  {renderPlayers(inactivePlayers)}
+                </InactiveSection>
+              ) : null}
+            </>
           )}
-
-          <Row>
-            <Muted style={{ fontSize: 12 }}>
-              {filtered.length} {t('player.players', 'jugadores').toLowerCase()}
-            </Muted>
-          </Row>
         </>
       )}
 

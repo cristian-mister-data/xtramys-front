@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
-import { updateMatchSheet } from '@/api/matchSheet';
+import { useDispatch } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { updateMatchSheet } from '@/store/slices/matchSheet/matchSheetThunks';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const TEAM_FIELDS = ['posesion', 'tiros', 'tirosAPuerta', 'corners', 'faltas', 'fueras', 'pasesCompletados', 'recuperaciones', 'perdidas', 'duelosGanados', 'duelosPerdidos'];
@@ -13,7 +15,11 @@ const valueOf = (value) => value == null ? '' : String(value);
 
 export default function MatchStatisticsModal({ visible, matchSheet, players = [], onClose, onSaved }) {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(theme, width, insets.top, insets.bottom), [theme, width, insets.top, insets.bottom]);
   const [teamStats, setTeamStats] = useState({});
   const [events, setEvents] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -26,16 +32,25 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
     if (!visible) return;
     setTeamStats({ ...(matchSheet?.estadisticas || {}) });
     const old = new Map((matchSheet?.eventos || []).map((item) => [idOf(item.player), { ...item }]));
-    setEvents(roster.map((player) => ({ player: player._id, ...(old.get(String(player._id)) || {}) })));
+    setEvents(roster.map((player) => ({ ...(old.get(String(player._id)) || {}), player: player._id })));
   }, [visible, matchSheet, roster]);
 
   const setNumber = (setter, key, raw) => setter((prev) => ({ ...prev, [key]: raw === '' ? '' : Number(raw) }));
   const save = async () => {
     setSaving(true);
     try {
-      const response = await updateMatchSheet(matchSheet._id, { estadisticas: teamStats, eventos: events });
-      onSaved?.(response.data);
+      const normalizedEvents = events.map((event) => ({ ...event, player: idOf(event.player) }));
+      const updatedMatchSheet = await dispatch(updateMatchSheet({
+        id: matchSheet._id,
+        data: { estadisticas: teamStats, eventos: normalizedEvents },
+      })).unwrap();
+      onSaved?.(updatedMatchSheet);
       onClose?.();
+    } catch (error) {
+      Alert.alert(
+        t('message.error', 'Error'),
+        (typeof error === 'string' ? error : error?.response?.data?.message) || t('matchSheet.statistics.saveError', 'No se pudieron guardar las estadísticas.'),
+      );
     } finally { setSaving(false); }
   };
   const downloadPdf = async () => {
@@ -160,19 +175,359 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(target, { mimeType: 'application/pdf', dialogTitle: fileName });
   };
 
-  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-    <View style={styles.overlay}><View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}><Text style={[styles.title, { color: theme.colors.text }]}>{t('matchSheet.statistics.title', 'Estadísticas del partido')}</Text><TouchableOpacity title={t('common.close', 'Cerrar')} onPress={onClose}><Ionicons name="close" size={24} color={theme.colors.text} /></TouchableOpacity></View>
-      <ScrollView contentContainerStyle={styles.body}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('matchSheet.statistics.team', 'Estadísticas del equipo')}</Text>
-        <View style={styles.grid}>{TEAM_FIELDS.map((key) => <Field key={key} label={t(`matchSheet.statistics.fields.${key}`, key)} value={valueOf(teamStats[key])} onChange={(raw) => setNumber(setTeamStats, key, raw)} />)}</View>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('matchSheet.statistics.players', 'Estadísticas por jugador')}</Text>
-        {events.map((event) => { const player = players.find((p) => String(p._id) === String(event.player)); return <View key={event.player} style={styles.playerBlock}><Text style={[styles.playerName, { color: theme.colors.text }]}>{getPlayerFullName(player) || player?.nombre || event.player}</Text><View style={styles.grid}>{PLAYER_FIELDS.map((key) => <Field key={key} label={t(`matchSheet.statistics.fields.${key}`, key)} value={valueOf(event[key])} onChange={(raw) => setEvents((prev) => prev.map((item) => String(item.player) === String(event.player) ? { ...item, [key]: raw === '' ? '' : Number(raw) } : item))} />)}</View></View>; })}
-      </ScrollView>
-      <View style={[styles.footer, { borderTopColor: theme.colors.border }]}><TouchableOpacity title={t('matchSheet.statistics.downloadPdf', 'Descargar PDF')} style={[styles.secondary, { borderColor: theme.colors.border }]} onPress={downloadPdf}><Ionicons name="download-outline" size={18} color={theme.colors.text} /><Text style={{ color: theme.colors.text }}>{t('matchSheet.statistics.downloadPdf', 'Descargar PDF')}</Text></TouchableOpacity><TouchableOpacity title={t('common.save', 'Guardar')} style={styles.primary} onPress={save} disabled={saving}><Text style={styles.primaryText}>{saving ? t('common.saving', 'Guardando...') : t('common.save', 'Guardar')}</Text></TouchableOpacity></View>
-    </View></View>
-  </Modal>;
+  const matchMeta = [
+    matchSheet?.rival,
+    matchSheet?.fechaHora ? new Date(matchSheet.fechaHora).toLocaleDateString() : null,
+  ].filter(Boolean).join(' · ');
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={saving ? undefined : onClose}>
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="stats-chart" size={21} color={theme.colors.primary} />
+            </View>
+            <View style={styles.headerCopy}>
+              <Text style={styles.title}>{t('matchSheet.statistics.title', 'Estadísticas del partido')}</Text>
+              {!!matchMeta && <Text style={styles.subtitle} numberOfLines={1}>{matchMeta}</Text>}
+            </View>
+            <TouchableOpacity
+              accessibilityLabel={t('common.close', 'Cerrar')}
+              title={t('common.close', 'Cerrar')}
+              style={styles.closeButton}
+              onPress={onClose}
+              disabled={saving}
+            >
+              <Ionicons name="close" size={22} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.body}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIcon}>
+                  <Ionicons name="football-outline" size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.sectionCopy}>
+                  <Text style={styles.sectionTitle}>{t('matchSheet.statistics.team', 'Estadísticas del equipo')}</Text>
+                  <Text style={styles.sectionHint}>{t('matchSheet.statistics.teamHint', 'Resumen global del rendimiento del equipo')}</Text>
+                </View>
+                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{TEAM_FIELDS.length}</Text></View>
+              </View>
+              <View style={styles.grid}>
+                {TEAM_FIELDS.map((key) => (
+                  <StatField
+                    key={key}
+                    styles={styles}
+                    theme={theme}
+                    label={t(`matchSheet.statistics.fields.${key}`, key)}
+                    value={valueOf(teamStats[key])}
+                    onChange={(raw) => setNumber(setTeamStats, key, raw)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.playersSectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="people-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <View style={styles.sectionCopy}>
+                <Text style={styles.sectionTitle}>{t('matchSheet.statistics.players', 'Estadísticas por jugador')}</Text>
+                <Text style={styles.sectionHint}>{t('matchSheet.statistics.playersHint', 'Rendimiento individual de los jugadores convocados')}</Text>
+              </View>
+              <View style={styles.countBadge}><Text style={styles.countBadgeText}>{events.length}</Text></View>
+            </View>
+
+            <View style={styles.playerList}>
+              {events.map((event, index) => {
+                const player = players.find((item) => String(item._id) === String(event.player));
+                const playerName = getPlayerFullName(player) || player?.nombre || event.player;
+                return (
+                  <View key={event.player} style={styles.playerCard}>
+                    <View style={styles.playerHeader}>
+                      <View style={styles.playerNumber}>
+                        <Text style={styles.playerNumberText}>{player?.dorsal || index + 1}</Text>
+                      </View>
+                      <View style={styles.playerCopy}>
+                        <Text style={styles.playerName} numberOfLines={1}>{playerName}</Text>
+                        {!!player?.posicion && <Text style={styles.playerMeta}>{player.posicion}</Text>}
+                      </View>
+                    </View>
+                    <View style={styles.grid}>
+                      {PLAYER_FIELDS.map((key) => (
+                        <StatField
+                          key={key}
+                          styles={styles}
+                          theme={theme}
+                          label={t(`matchSheet.statistics.fields.${key}`, key)}
+                          value={valueOf(event[key])}
+                          onChange={(raw) => setEvents((prev) => prev.map((item) => (
+                            String(item.player) === String(event.player)
+                              ? { ...item, [key]: raw === '' ? '' : Number(raw) }
+                              : item
+                          )))}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              title={t('matchSheet.statistics.downloadPdf', 'Descargar PDF')}
+              style={styles.secondaryButton}
+              onPress={downloadPdf}
+              disabled={saving}
+            >
+              <Ionicons name="download-outline" size={18} color={theme.colors.text} />
+              <Text style={styles.secondaryButtonText}>{t('matchSheet.statistics.downloadPdf', 'Descargar PDF')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              title={t('common.save', 'Guardar')}
+              style={[styles.primaryButton, saving && styles.buttonDisabled]}
+              onPress={save}
+              disabled={saving}
+            >
+              {saving ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark" size={19} color="#fff" />}
+              <Text style={styles.primaryButtonText}>
+                {saving ? t('common.saving', 'Guardando...') : t('common.save', 'Guardar')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
-function Field({ label, value, onChange }) { const theme = useTheme(); return <View style={styles.field}><Text style={[styles.label, { color: theme.colors.textSecondary }]}>{label}</Text><TextInput style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, backgroundColor: theme.colors.backgroundAlt }]} value={value} keyboardType="numeric" onChangeText={onChange} /></View>; }
-const styles = StyleSheet.create({ overlay: { flex: 1, backgroundColor: 'rgba(2,6,23,.55)', justifyContent: 'center', padding: 12 }, container: { maxHeight: '94%', backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' }, header: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, title: { fontSize: 18, fontWeight: '800' }, body: { padding: 16, gap: 12 }, section: { fontSize: 14, fontWeight: '800', marginTop: 4 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, field: { minWidth: 120, flex: 1 }, label: { fontSize: 11, color: '#64748b', marginBottom: 4 }, input: { borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, minHeight: 38 }, playerBlock: { borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 10 }, playerName: { fontWeight: '700', marginBottom: 8 }, footer: { padding: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb', flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }, primary: { backgroundColor: '#2563eb', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 7 }, primaryText: { color: '#fff', fontWeight: '700' }, secondary: { flexDirection: 'row', gap: 6, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 7 } });
+function StatField({ styles, theme, label, value, onChange }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label} numberOfLines={1}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        value={value}
+        keyboardType="numeric"
+        inputMode="decimal"
+        placeholder="—"
+        placeholderTextColor={theme.colors.inputPlaceholder}
+        selectTextOnFocus
+        onChangeText={onChange}
+      />
+    </View>
+  );
+}
+
+const makeStyles = (theme, width, insetTop, insetBottom) => {
+  const isMobile = width < 600;
+  const isTablet = width >= 600 && width < 1024;
+  const horizontalPadding = isMobile ? 14 : isTablet ? 20 : 24;
+
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay || 'rgba(2, 6, 23, 0.68)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: isMobile ? 0 : isTablet ? 18 : 28,
+    },
+    container: {
+      width: '100%',
+      maxWidth: isTablet ? 920 : 1240,
+      height: isMobile ? '100%' : undefined,
+      maxHeight: isMobile ? '100%' : '94%',
+      backgroundColor: theme.colors.surface,
+      borderRadius: isMobile ? 0 : 18,
+      borderWidth: isMobile ? 0 : 1,
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 18 },
+      shadowOpacity: 0.3,
+      shadowRadius: 36,
+      elevation: 18,
+    },
+    header: {
+      minHeight: isMobile ? 72 : 82,
+      paddingHorizontal: horizontalPadding,
+      paddingTop: 14 + (isMobile ? insetTop : 0),
+      paddingBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: theme.colors.surface,
+    },
+    headerIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primarySoft,
+    },
+    headerCopy: { flex: 1, minWidth: 0 },
+    title: {
+      color: theme.colors.text,
+      fontSize: isMobile ? 17 : 20,
+      fontWeight: '800',
+      letterSpacing: -0.3,
+    },
+    subtitle: { color: theme.colors.textMuted, fontSize: 12, marginTop: 3 },
+    closeButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.backgroundAlt,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    scroll: { flex: 1 },
+    body: {
+      paddingHorizontal: horizontalPadding,
+      paddingTop: isMobile ? 16 : 22,
+      paddingBottom: 28,
+      gap: isMobile ? 16 : 20,
+    },
+    sectionCard: {
+      padding: isMobile ? 14 : 18,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.backgroundAlt,
+    },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+    playersSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 2 },
+    sectionIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primarySoft,
+    },
+    sectionCopy: { flex: 1, minWidth: 0 },
+    sectionTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '800' },
+    sectionHint: { color: theme.colors.textMuted, fontSize: 11, marginTop: 2 },
+    countBadge: {
+      minWidth: 30,
+      height: 26,
+      paddingHorizontal: 8,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primarySoft,
+    },
+    countBadgeText: {
+      color: theme.colors.primarySoftText || theme.colors.primary,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobile ? 10 : 12 },
+    field: {
+      flexGrow: 1,
+      flexBasis: isMobile ? '46%' : isTablet ? '30%' : 150,
+      minWidth: isMobile ? '46%' : isTablet ? 150 : 140,
+      maxWidth: isMobile ? undefined : isTablet ? '48%' : 210,
+    },
+    label: {
+      color: theme.colors.textSecondary,
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.35,
+      marginBottom: 6,
+    },
+    input: {
+      minHeight: isMobile ? 46 : 44,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 10,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    playerList: { gap: 12 },
+    playerCard: {
+      padding: isMobile ? 14 : 18,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceElevated || theme.colors.surface,
+    },
+    playerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingBottom: 14,
+      marginBottom: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    playerNumber: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary,
+    },
+    playerNumberText: { color: '#fff', fontSize: 13, fontWeight: '900' },
+    playerCopy: { flex: 1, minWidth: 0 },
+    playerName: { color: theme.colors.text, fontSize: 15, fontWeight: '800' },
+    playerMeta: { color: theme.colors.textMuted, fontSize: 11, marginTop: 2 },
+    footer: {
+      paddingHorizontal: horizontalPadding,
+      paddingVertical: isMobile ? 12 : 14,
+      paddingBottom: isMobile ? Math.max(18, insetBottom + 10) : 14,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      flexDirection: isMobile ? 'column' : 'row',
+      justifyContent: 'flex-end',
+      gap: 10,
+      backgroundColor: theme.colors.surface,
+    },
+    secondaryButton: {
+      minHeight: 46,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 11,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: theme.colors.backgroundAlt,
+    },
+    secondaryButtonText: { color: theme.colors.text, fontSize: 13, fontWeight: '700' },
+    primaryButton: {
+      minHeight: 46,
+      minWidth: isMobile ? undefined : 130,
+      paddingHorizontal: 20,
+      borderRadius: 11,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: theme.colors.primary,
+    },
+    primaryButtonText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+    buttonDisabled: { opacity: 0.72 },
+  });
+};

@@ -530,6 +530,24 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
     return playerStats;
   }, [player, visible, matchSheets, injuries, trainingSessions]);
 
+  const playerMatches = useMemo(() => {
+    if (!player?._id) return [];
+    const playerId = String(player._id);
+    const hasPlayer = (values = []) => values.some((value) => String(value?._id || value) === playerId);
+
+    return matchSheets
+      .filter((match) => match.fechaHora && new Date(match.fechaHora) < new Date())
+      .map((match) => {
+        const starter = hasPlayer(match.alineacionTitulares);
+        const entered = (match.cambios || []).some((change) => String(change.entra?._id || change.entra) === playerId);
+        if (!starter && !entered) return null;
+        const event = (match.eventos || []).find((item) => String(item.player?._id || item.player) === playerId) || null;
+        return { match, event, starter };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.match.fechaHora || 0) - new Date(a.match.fechaHora || 0));
+  }, [matchSheets, player?._id]);
+
   const latestAntro = anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
   const displayWeight = latestAntro?.peso || player.peso;
 
@@ -810,6 +828,74 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
                 <Text style={styles.statValue}>{stats?.cards?.red || 0}</Text>
               </View>
             </View>
+          </View>
+
+          {/* Historial de partidos y estadisticas asociadas al jugador */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="event-note" size={20} color="#3b82f6" />
+              <Text style={styles.sectionTitle}>{t('player.profile.matchHistory')}</Text>
+            </View>
+            {playerMatches.length > 0 ? (
+              <View style={styles.matchHistoryList}>
+                {playerMatches.map(({ match, event, starter }) => {
+                  const metrics = [
+                    'tiros',
+                    'tirosAPuerta',
+                    'pasesCompletados',
+                    'recuperaciones',
+                    'perdidas',
+                    'duelosGanados',
+                    'valoracion',
+                  ];
+                  const resultColor = match.resultado === 'Victoria'
+                    ? theme.colors.success
+                    : match.resultado === 'Derrota'
+                      ? theme.colors.error
+                      : theme.colors.warning;
+                  return (
+                    <View key={match._id} style={styles.matchHistoryCard}>
+                      <View style={styles.matchHistoryHeader}>
+                        <View style={styles.matchHistoryTitleWrap}>
+                          <Text style={styles.matchHistoryTitle} numberOfLines={1}>
+                            {team?.nombre || t('player.profile.team')} vs {match.rival || '-'}
+                          </Text>
+                          <Text style={styles.matchHistoryDate}>
+                            {match.fechaHora ? new Date(match.fechaHora).toLocaleDateString(getLocale()) : '-'}
+                          </Text>
+                        </View>
+                        <View style={[styles.matchResultBadge, { backgroundColor: `${resultColor}20` }]}>
+                          <Text style={[styles.matchResultText, { color: resultColor }]}>
+                            {match.golesFavor ?? '-'} - {match.golesContra ?? '-'}
+                          </Text>
+                        </View>
+                        <View style={styles.matchRoleBadge}>
+                          <Text style={styles.matchRoleText}>
+                            {starter ? t('player.profile.asStarter') : t('player.profile.asSubstitute')}
+                          </Text>
+                        </View>
+                      </View>
+                      {event ? (
+                        <View style={styles.matchMetricsGrid}>
+                          {metrics.map((key) => (
+                            <View key={key} style={styles.matchMetric}>
+                              <Text style={styles.matchMetricLabel} numberOfLines={1}>
+                                {t(`matchSheet.statistics.fields.${key}`, key)}
+                              </Text>
+                              <Text style={styles.matchMetricValue}>{event[key] ?? '-'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.matchNoStats}>{t('player.profile.noMatchStats')}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.noDataText}>{t('player.profile.noMatches')}</Text>
+            )}
           </View>
 
           {/* Entrenamientos */}
@@ -2335,6 +2421,88 @@ const makeStyles = (theme) =>
       fontSize: 14,
       color: theme.colors.text,
       fontWeight: '600',
+    },
+    matchHistoryList: {
+      gap: 12,
+    },
+    matchHistoryCard: {
+      padding: isMobileDevice() ? 12 : 14,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.backgroundAlt,
+    },
+    matchHistoryHeader: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 12,
+    },
+    matchHistoryTitleWrap: {
+      flex: 1,
+      minWidth: isMobileDevice() ? '100%' : 220,
+    },
+    matchHistoryTitle: {
+      color: theme.colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    matchHistoryDate: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      marginTop: 3,
+    },
+    matchResultBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    matchResultText: {
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    matchRoleBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: theme.colors.primarySoft,
+    },
+    matchRoleText: {
+      color: theme.colors.primary,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    matchMetricsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    matchMetric: {
+      flex: 1,
+      minWidth: isMobileDevice() ? '45%' : 110,
+      padding: 9,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    matchMetricLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 10,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    },
+    matchMetricValue: {
+      color: theme.colors.text,
+      fontSize: 17,
+      fontWeight: '800',
+      marginTop: 3,
+    },
+    matchNoStats: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontStyle: 'italic',
     },
     noDataText: {
       fontSize: 14,

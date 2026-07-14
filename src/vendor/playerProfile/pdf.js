@@ -46,42 +46,53 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: SPACING.md,
   },
-  personalGrid: {
+  personalBlock: {
     marginBottom: SPACING.md,
   },
   personalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+  },
+  personalRowSpaced: {
+    marginTop: 8,
   },
   personalCard: {
-    width: '48.5%',
-    minHeight: 58,
-    borderWidth: 1,
-    borderColor: '#dbe3ee',
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    justifyContent: 'space-between',
+    width: '23.5%',
+    height: 0,
+    // borderWidth: 1,
+    // borderColor: '#dbe3ee',
+    // borderRadius: 10,
+    // backgroundColor: '#f8fafc',
+    // paddingVertical: 10,
+    // paddingHorizontal: 10,
+    // alignItems: 'center',
+    // justifyContent: 'center',
+  },
+  personalCardWide: {
+    width: '48.8%',
   },
   personalCardFull: {
     width: '100%',
   },
   personalLabelText: {
-    fontSize: 7.5,
-    lineHeight: 9,
+    fontSize: 7.4,
+    lineHeight: 8.4,
     color: '#64748b',
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.2,
+    letterSpacing: 0.35,
+    width: '100%',
+    textAlign: 'center',
   },
   personalValueText: {
-    fontSize: 11,
-    lineHeight: 13,
+    fontSize: 12,
+    lineHeight: 13.5,
     color: '#0f172a',
     fontFamily: 'Helvetica-Bold',
-    marginTop: 4,
+    marginTop: 15,
+    marginBottom: 30,
+    width: '100%',
+    textAlign: 'center',
   },
   profileHero: {
     backgroundColor: '#0f172a',
@@ -378,23 +389,21 @@ const ProfileGeneralPage = ({
   const displayWeight = latestAntro?.peso || player.peso;
   const profileInjuries = playerInjuryList(injuries, player);
   const personalItems = [
-    player.apodo ? [t('player.nickname', 'Apodo'), player.apodo] : null,
     [t('player.height', 'Altura'), player.altura ? `${player.altura} cm` : '-'],
     [t('player.profile.weight', 'Peso'), displayWeight ? `${displayWeight} kg` : '-'],
     [t('player.sex', 'Sexo'), player.sexo || '-'],
-    [
-      t('player.profile.type', 'Tipo'),
-      player.esExtra || player.extra
-        ? t('player.profile.extraPlayer', 'Extra')
-        : t('player.profile.rosterPlayer', 'Plantilla'),
-    ],
-    (player.extra || player.esExtra) && player.procedenciaExtra
-      ? [t('player.extraOrigin', 'Procedencia del jugador extra'), player.procedenciaExtra]
-      : null,
-    (player.extra || player.esExtra) && player.categoriaExtra
-      ? [t('player.extraCategory', 'Categoría de procedencia'), player.categoriaExtra]
-      : null,
-  ].filter(Boolean);
+    [t('player.nickname', 'Apodo'), player.apodo || '-'],
+  ];
+  const extraPersonalItems = (player.extra || player.esExtra)
+    ? [
+      player.categoriaExtra
+        ? [t('player.extraCategory', 'Categoría'), player.categoriaExtra]
+        : null,
+      player.procedenciaExtra
+        ? [t('player.extraOrigin', 'Procedencia'), player.procedenciaExtra]
+        : null,
+    ].filter(Boolean)
+    : [];
 
   return (
     <Page size="A4" style={s.page}>
@@ -404,9 +413,9 @@ const ProfileGeneralPage = ({
           <View style={s.playerHeroInfo}>
             {fotoBase64 ? (
               <Image src={fotoBase64} style={s.profilePhoto} />
-            ) : (              <View style={s.profilePhotoEmpty}>
-                <Text style={{ color: '#94a3b8', fontSize: 10 }}>{t('player.profile.noPhoto', 'Sin foto')}</Text>
-              </View>
+            ) : (<View style={s.profilePhotoEmpty}>
+              <Text style={{ color: '#94a3b8', fontSize: 10 }}>{t('player.profile.noPhoto', 'Sin foto')}</Text>
+            </View>
             )}
             <View style={s.heroTextContainer}>
               <Text style={s.profileName}>{name}</Text>
@@ -414,7 +423,7 @@ const ProfileGeneralPage = ({
                 {player.dorsal ? <Text style={s.numberBadge}>#{player.dorsal}</Text> : null}
                 {player.posicion ? <Text style={s.positionBadge}>{translatePosition(player.posicion, t)}</Text> : null}
                 {player.pierna ? (
-                   <Text style={s.footBadge}>{translateFoot(player.pierna, t)}</Text>
+                  <Text style={s.footBadge}>{translateFoot(player.pierna, t)}</Text>
                 ) : null}
                 {teamName ? <Text style={s.teamBadge}>{teamName}</Text> : null}
               </View>
@@ -434,17 +443,24 @@ const ProfileGeneralPage = ({
 
         <View wrap={false}>
           <PdfSection title={t('player.profile.personalInfo', 'Información personal')}>
-            <View style={s.personalGrid} wrap={false}>
-              {Array.from({ length: Math.ceil(personalItems.length / 2) }).map((_, rowIndex) => {
-                const rowItems = personalItems.slice(rowIndex * 2, rowIndex * 2 + 2);
-                return (
-                  <View key={`personal-row-${rowIndex}`} style={s.personalRow}>
-                    {rowItems.map(([label, value]) => (
+            <View style={s.personalBlock} wrap={false}>
+              <View style={s.personalRow}>
+                {personalItems.map(([label, value]) => (
+                  <View key={label} style={s.personalCard}>
+                    <Text style={s.personalLabelText}>{label}</Text>
+                    <Text style={s.personalValueText}>{value}</Text>
+                  </View>
+                ))}
+              </View>
+              {extraPersonalItems.length > 0 ? (
+                <View style={{ marginTop: 50 }}>
+                  <View style={[s.personalRow, s.personalRowSpaced]}>
+                    {extraPersonalItems.map(([label, value]) => (
                       <View
-                        key={`${label}-${rowIndex}`}
+                        key={label}
                         style={[
                           s.personalCard,
-                          rowItems.length === 1 ? s.personalCardFull : null,
+                          extraPersonalItems.length === 1 ? s.personalCardFull : s.personalCardWide,
                         ]}
                       >
                         <Text style={s.personalLabelText}>{label}</Text>
@@ -452,14 +468,14 @@ const ProfileGeneralPage = ({
                       </View>
                     ))}
                   </View>
-                );
-              })}
+                </View>
+              ) : null}
             </View>
           </PdfSection>
         </View>
 
         {stats && (
-          <View wrap={false}>
+          <View style={{ marginTop: 20 }} wrap={false}>
             <PdfSection title={t('player.profile.matchStats', 'Estadísticas de Partidos')}>
               <View style={s.grid4}>
                 <View style={s.statCard}>
@@ -725,31 +741,31 @@ const AnthropometryPage = ({ player, team, data, t }) => {
             {(latest.sistema_pliegues === '8' ||
               latest.pliegues?.abdominal != null ||
               latest.pliegues?.cresta_iliaca != null) && (
-              <View style={s.grid3}>
-                <View style={s.card}>
-                  <Text style={s.statLabel}>{t('anthropometry.abdominal', 'Abdominal')}</Text>
-                  <Text style={s.statValue}>
-                    {latest.pliegues?.abdominal != null
-                      ? `${Number(latest.pliegues.abdominal).toFixed(1)} mm`
-                      : '-'}
-                  </Text>
+                <View style={s.grid3}>
+                  <View style={s.card}>
+                    <Text style={s.statLabel}>{t('anthropometry.abdominal', 'Abdominal')}</Text>
+                    <Text style={s.statValue}>
+                      {latest.pliegues?.abdominal != null
+                        ? `${Number(latest.pliegues.abdominal).toFixed(1)} mm`
+                        : '-'}
+                    </Text>
+                  </View>
+                  <View style={s.card}>
+                    <Text style={s.statLabel}>{t('anthropometry.crestaIliaca', 'Cresta Ilíaca')}</Text>
+                    <Text style={s.statValue}>
+                      {latest.pliegues?.cresta_iliaca != null
+                        ? `${Number(latest.pliegues.cresta_iliaca).toFixed(1)} mm`
+                        : '-'}
+                    </Text>
+                  </View>
+                  <View
+                    style={[s.card, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
+                  >
+                    <Text style={s.statLabel}></Text>
+                    <Text style={s.statValue}></Text>
+                  </View>
                 </View>
-                <View style={s.card}>
-                  <Text style={s.statLabel}>{t('anthropometry.crestaIliaca', 'Cresta Ilíaca')}</Text>
-                  <Text style={s.statValue}>
-                    {latest.pliegues?.cresta_iliaca != null
-                      ? `${Number(latest.pliegues.cresta_iliaca).toFixed(1)} mm`
-                      : '-'}
-                  </Text>
-                </View>
-                <View
-                  style={[s.card, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
-                >
-                  <Text style={s.statLabel}></Text>
-                  <Text style={s.statValue}></Text>
-                </View>
-              </View>
-            )}
+              )}
           </PdfSection>
         ) : (
           <Text style={{ fontSize: FONT_SIZE.sm, color: COLORS.textMuted }}>
