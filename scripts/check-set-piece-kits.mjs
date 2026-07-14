@@ -150,4 +150,8 @@ assert.match(previewSource, /if \(!assignment \|\|/);
 assert.doesNotMatch(previewSource, /isOwnSetPiecePlayer/);
 assert.doesNotMatch(previewSource, /\|\| assignments\[index\]/);
 
+const publicShareSource = readFileSync(new URL('../src/pages/public/SetPieceShare.jsx', import.meta.url), 'utf8');
+assert.match(publicShareSource, /<SetPiecePreview/);
+assert.match(publicShareSource, /kitContext=\{getKitContext\(setPiece\)\}/);
+
 console.log('set-piece kit check ok');

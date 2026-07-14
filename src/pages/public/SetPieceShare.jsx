@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { useParams } from 'react-router-dom';
 import { getPublicMatchSheetSetPieces, getPublicSetPiece } from '@/utils/api';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
+import { normalizeKits, normalizeRivalKits } from '@/utils/kits';
 
 async function resolveVideoSrc(src) {
   if (!src) throw new Error('No hay URL de video disponible.');
@@ -16,9 +19,11 @@ async function resolveVideoSrc(src) {
 
 export default function SetPieceShare() {
   const { token } = useParams();
+  const { width: viewportWidth } = useWindowDimensions();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const sharePreviewHeight = Math.max(260, Math.min(760, (viewportWidth - 80) * 0.65));
 
   useEffect(() => {
     const isMatchSheet = window.location.pathname.includes('/public/match-sheet-abp/');
@@ -57,6 +62,22 @@ export default function SetPieceShare() {
   if (data.matchSheet) {
     const matchSheet = data.matchSheet;
     const setPieces = matchSheet.setPieces || [];
+    const ownKey = matchSheet.equipacionPropiaKey || 'first';
+    const rivalKey = matchSheet.equipacionRivalKey || 'first';
+    const ownKits = normalizeKits(matchSheet.equipo?.equipaciones);
+    const rivalKits = normalizeRivalKits(matchSheet.rivalId?.equipaciones);
+    const getKitContext = (setPiece) => ({
+      ...(setPiece.pizarraConfig?.kitContext || {}),
+      teamId: matchSheet.equipo?._id || null,
+      rivalId: matchSheet.rivalId?._id || matchSheet.rivalId || null,
+      rivalName: matchSheet.rival || '',
+      ownKitKey: ownKey,
+      rivalKitKey: rivalKey,
+      own: matchSheet.equipacionPropia || ownKits[ownKey],
+      ownGoalkeeper: matchSheet.equipacionPorteroPropia || ownKits[ownKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+      rival: matchSheet.equipacionRival || rivalKits[rivalKey],
+      rivalGoalkeeper: matchSheet.equipacionPorteroRival || rivalKits[rivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+    });
     return (
       <main style={styles.shell}>
         <section style={styles.header}>
@@ -66,7 +87,6 @@ export default function SetPieceShare() {
         </section>
         <section style={styles.list}>
           {setPieces.map((setPiece, index) => {
-            const image = normalizeImageSource(setPiece.customImage || setPiece.imagen);
             const hasVideo = setPiece.video?.url || setPiece.videoUrl;
             return (
               <article key={`${setPiece.strategyId || index}`} style={styles.boardCard}>
@@ -82,7 +102,11 @@ export default function SetPieceShare() {
                   }}
                   disabled={!hasVideo}
                 >
-                  {image ? <img src={image} alt={setPiece.nombre} style={styles.board} /> : <span style={styles.muted}>Sin grafico</span>}
+                  <SetPiecePreview
+                    setPiece={setPiece}
+                    height={sharePreviewHeight}
+                    kitContext={getKitContext(setPiece)}
+                  />
                   {hasVideo ? <span style={styles.playBadge}>Ver video</span> : null}
                 </button>
                 <h2 style={styles.cardTitle}>{setPiece.nombre}</h2>
@@ -144,6 +168,8 @@ const styles = {
   title: { margin: '6px 0', fontSize: 'clamp(28px, 4vw, 48px)', lineHeight: 1.05, letterSpacing: 0 },
   desc: { margin: 0, maxWidth: 780, color: '#475569', fontSize: 16, fontWeight: 650 },
   boardCard: {
+    width: '100%',
+    boxSizing: 'border-box',
     maxWidth: 1200,
     margin: '0 auto',
     borderRadius: 18,
@@ -152,7 +178,7 @@ const styles = {
     padding: 14,
     boxShadow: '0 18px 60px rgba(15,23,42,0.12)',
   },
-  list: { maxWidth: 1200, margin: '0 auto', display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
+  list: { width: '100%', maxWidth: 1200, margin: '0 auto', display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   cardTitle: { margin: '12px 4px 4px', fontSize: 20, lineHeight: 1.2 },
   boardButton: { position: 'relative', width: '100%', border: 0, padding: 0, margin: 0, background: '#0b1220', borderRadius: 14, overflow: 'hidden', cursor: 'pointer', display: 'block' },
   board: { width: '100%', aspectRatio: '16 / 9', objectFit: 'contain', display: 'block' },
