@@ -1071,6 +1071,7 @@ export default function MatchSheetDetailModal({
                       ]}
                       titulares={matchSheet.alineacionTitulares?.map(p => typeof p === 'object' ? p._id : p) || []}
                       suplentes={matchSheet.alineacionSuplentes?.map(p => typeof p === 'object' ? p._id : p) || []}
+                      posicionesVisuales={matchSheet.posicionesVisuales || []}
                       formation={matchSheet.alineacion}
                       readOnly={true}
                       showPhotos={true}

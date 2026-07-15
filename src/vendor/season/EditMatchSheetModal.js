@@ -1147,6 +1147,7 @@ export default function EditMatchSheetModal({
   const [noConvocados, setNoConvocados] = useState([]);
   const [alineacionTitulares, setAlineacionTitulares] = useState([]);
   const [alineacionSuplentes, setAlineacionSuplentes] = useState([]);
+  const [posicionesVisuales, setPosicionesVisuales] = useState([]);
   
   // Estados para eventos
   const [goles, setGoles] = useState([]);
@@ -1432,6 +1433,7 @@ export default function EditMatchSheetModal({
       setNoConvocados(getIds(matchSheet.noConvocados));
       setAlineacionTitulares(getIds(matchSheet.alineacionTitulares));
       setAlineacionSuplentes(getIds(matchSheet.alineacionSuplentes));
+      setPosicionesVisuales(matchSheet.posicionesVisuales || []);
       
       // Eventos
       setGoles(matchSheet.goles || []);
@@ -1481,6 +1483,7 @@ export default function EditMatchSheetModal({
       setNoConvocados([]);
       setAlineacionTitulares([]);
       setAlineacionSuplentes([]);
+      setPosicionesVisuales([]);
       setGoles([]);
       setTarjetasAmarillas([]);
       setTarjetasRojas([]);
@@ -1721,6 +1724,7 @@ export default function EditMatchSheetModal({
       setNoConvocados(getIds(matchSheet.noConvocados));
       setAlineacionTitulares(getIds(matchSheet.alineacionTitulares));
       setAlineacionSuplentes(getIds(matchSheet.alineacionSuplentes));
+      setPosicionesVisuales(matchSheet.posicionesVisuales || []);
       setGoles(matchSheet.goles || []);
       setTarjetasAmarillas(matchSheet.tarjetasAmarillas || []);
       setTarjetasRojas(matchSheet.tarjetasRojas || []);
@@ -1762,6 +1766,7 @@ export default function EditMatchSheetModal({
       setNoConvocados([]);
       setAlineacionTitulares([]);
       setAlineacionSuplentes([]);
+      setPosicionesVisuales([]);
       setGoles([]);
       setTarjetasAmarillas([]);
       setTarjetasRojas([]);
@@ -2063,6 +2068,7 @@ export default function EditMatchSheetModal({
         noConvocados,
         alineacionTitulares,
         alineacionSuplentes,
+        posicionesVisuales,
         goles: golesNormalizados,
         tarjetasAmarillas: tarjetasAmarillasNorm,
         tarjetasRojas: tarjetasRojasNorm,
@@ -3226,6 +3232,8 @@ export default function EditMatchSheetModal({
                     formation={alineacion}
                     onTitularesChange={setAlineacionTitulares}
                     onSuplentesChange={setAlineacionSuplentes}
+                    posicionesVisuales={posicionesVisuales}
+                    onPosicionesVisualesChange={setPosicionesVisuales}
                     jugadoresPorEquipo={jugadoresPorEquipo}
                     containerWidth={isMobileDevice() ? Math.min(windowWidth - 32, 380) : windowWidth - 56}
                   />

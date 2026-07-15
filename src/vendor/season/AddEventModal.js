@@ -1263,6 +1263,7 @@ export default function AddEventModal({
   const [noConvocados, setNoConvocados] = useState([]);
   const [alineacionTitulares, setAlineacionTitulares] = useState([]);
   const [alineacionSuplentes, setAlineacionSuplentes] = useState([]);
+  const [posicionesVisuales, setPosicionesVisuales] = useState([]);
   
   // Estados para eventos del partido
   const [goles, setGoles] = useState([]);
@@ -1634,6 +1635,7 @@ export default function AddEventModal({
       setNoConvocados([]);
       setAlineacionTitulares([]);
       setAlineacionSuplentes([]);
+      setPosicionesVisuales([]);
       setGoles([]);
       setTarjetasAmarillas([]);
       setTarjetasRojas([]);
@@ -1901,6 +1903,7 @@ export default function AddEventModal({
         noConvocados: noConvocados.length > 0 ? noConvocados : undefined,
         alineacionTitulares: alineacionTitulares.length > 0 ? alineacionTitulares : undefined,
         alineacionSuplentes: alineacionSuplentes.length > 0 ? alineacionSuplentes : undefined,
+        posicionesVisuales: posicionesVisuales.length > 0 ? posicionesVisuales : undefined,
         goles: goles.length > 0 ? goles.map(g => ({
           jugador: typeof g.jugador === 'object' ? g.jugador._id : g.jugador,
           asistente: g.asistente ? (typeof g.asistente === 'object' ? g.asistente._id : g.asistente) : undefined,
@@ -2756,6 +2759,8 @@ export default function AddEventModal({
               formation={matchData.alineacion || getDefaultFormation(team?.jugadoresPorEquipo || 11)}
               onTitularesChange={setAlineacionTitulares}
               onSuplentesChange={setAlineacionSuplentes}
+              posicionesVisuales={posicionesVisuales}
+              onPosicionesVisualesChange={setPosicionesVisuales}
               jugadoresPorEquipo={jugadoresPorEquipo}
               containerWidth={width - 112}
             />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Svg, Polygon, Line, Ellipse, Circle, Defs, RadialGradient, Stop, Path, Rect } from '@react-pdf/renderer';
+import { Svg, Polygon, Line, Ellipse, Circle, ClipPath, Defs, G, RadialGradient, Stop, Path, Rect } from '@react-pdf/renderer';
 import {
   Document, Page, Text, View, Image, StyleSheet,
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, PdfSection, renderPdf
@@ -63,6 +63,14 @@ const getRivalKits = (matchSheet) => {
   };
 };
 
+const getNumberOutline = (color) => {
+  const hex = String(color || '').replace('#', '');
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return '#0f172a';
+  const value = parseInt(hex, 16);
+  const luminance = (((value >> 16) & 255) * 299 + ((value >> 8) & 255) * 587 + (value & 255) * 114) / 1000;
+  return luminance < 145 ? '#ffffff' : '#0f172a';
+};
+
 
 const s = StyleSheet.create({
   grid2: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.md, marginBottom: SPACING.md },
@@ -83,19 +91,44 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: COLORS.bgSoft, fontSize: 10, fontFamily: 'Helvetica-Bold', color: COLORS.primary, borderWidth: 1, borderColor: COLORS.borderLight, textAlign: 'center', marginBottom: 4 }
 });
 
-const PdfKit = ({ kit, size = 42 }) => {
+const PdfKit = ({ kit, size = 42, number, numberColor = kit?.numberColor || '#ffffff' }) => {
   const primary = kit?.primaryColor || '#2563eb';
   const secondary = kit?.secondaryColor || '#ffffff';
   const shorts = kit?.shortsColor || primary;
   const pattern = kit?.pattern || 'solid';
-  if (kit?.shape === 'circle') return <Svg width={size} height={size}><Circle cx={size / 2} cy={size / 2} r={size * .42} fill={primary} stroke="#334155" strokeWidth="1" />{pattern !== 'solid' ? <Line x1={size * .25} y1={size * .75} x2={size * .75} y2={size * .25} stroke={secondary} strokeWidth={size * .14} /> : null}</Svg>;
-  return <Svg width={size} height={size * 1.15} viewBox="0 0 48 56">
-    <Path d="M15 5 L20 2 L28 2 L33 5 L44 10 L39 20 L34 17 L34 40 L14 40 L14 17 L9 20 L4 10 Z" fill={primary} stroke="#334155" strokeWidth="1" />
-    {pattern === 'halves' ? <Path d="M24 2 L28 2 L33 5 L44 10 L39 20 L34 17 L34 40 L24 40 Z" fill={secondary} /> : null}
-    {pattern === 'vertical' ? <><Rect x="13.5" y="5.5" width="3" height="34" fill={secondary} /><Rect x="22.5" y="2.5" width="3" height="37.5" fill={secondary} /><Rect x="31.5" y="5.5" width="3" height="34" fill={secondary} /></> : null}
-    {pattern === 'horizontal' ? <><Rect x="14" y="15" width="20" height="5" fill={secondary} /><Rect x="14" y="27" width="20" height="5" fill={secondary} /></> : null}
-    {(pattern === 'diagonal' || pattern === 'sash') ? <Line x1="13" y1="36" x2="35" y2="9" stroke={secondary} strokeWidth={pattern === 'sash' ? 8 : 5} /> : null}
-    <Path d="M15 42 L23 42 L24 47 L25 42 L33 42 L35 54 L25 54 L24 51 L23 54 L13 54 Z" fill={shorts} stroke="#334155" strokeWidth="1" />
+  const shirtPath = 'M50 15 L28 25 L14 36 L24 50 L32 44 L32 85 Q32 88 35 88 L65 88 Q68 88 68 85 L68 44 L76 50 L86 36 L72 25 Z';
+  const clipId = `kit-${pattern}-${primary.replace('#', '')}-${secondary.replace('#', '')}`;
+
+  if (kit?.shape === 'circle') {
+    return <Svg width={size} height={size} viewBox="0 0 100 100">
+      <Circle cx="50" cy="50" r="42" fill={primary} stroke={secondary} strokeWidth="6" />
+      {number !== undefined && number !== null ? <>
+        <Text x="50" y="59" textAnchor="middle" fill={numberColor} stroke={getNumberOutline(numberColor)} strokeWidth="4" style={{ fontFamily: 'Helvetica-Bold', fontSize: 25 }}>{String(number)}</Text>
+        <Text x="50" y="59" textAnchor="middle" fill={numberColor} style={{ fontFamily: 'Helvetica-Bold', fontSize: 25 }}>{String(number)}</Text>
+      </> : null}
+    </Svg>;
+  }
+
+  return <Svg width={size} height={size * 1.28} viewBox="0 0 100 128">
+    <Defs><ClipPath id={clipId}><Path d={shirtPath} /></ClipPath></Defs>
+    <Path d={shirtPath} fill={primary} />
+    <G clipPath={`url(#${clipId})`}>
+      {pattern === 'halves' ? <Rect x="50" y="0" width="50" height="92" fill={secondary} /> : null}
+      {pattern === 'vertical' ? <><Rect x="27" y="0" width="10" height="92" fill={secondary} /><Rect x="45" y="0" width="10" height="92" fill={secondary} /><Rect x="63" y="0" width="10" height="92" fill={secondary} /></> : null}
+      {pattern === 'horizontal' ? <><Rect x="0" y="30" width="100" height="9" fill={secondary} /><Rect x="0" y="51" width="100" height="9" fill={secondary} /><Rect x="0" y="72" width="100" height="9" fill={secondary} /></> : null}
+      {pattern === 'diagonal' ? <Path d="M-25 105 L105 -25 L120 -10 L-10 120 Z M5 105 L135 -25 L150 -10 L20 120 Z M-55 105 L75 -25 L90 -10 L-40 120 Z" fill={secondary} /> : null}
+      {pattern === 'sash' ? <Path d="M0 15 L100 85 L100 102 L0 32 Z" fill={secondary} /> : null}
+    </G>
+    <Path d={shirtPath} fill="none" stroke="#334155" strokeWidth="2" />
+    <Path d="M14 36 L24 50 M86 36 L76 50" fill="none" stroke={secondary} strokeWidth="3" />
+    <Path d="M40 19 L50 29 L60 19" fill="none" stroke={secondary} strokeWidth="3" strokeLinecap="round" />
+    {number !== undefined && number !== null ? <>
+      <Text x="50" y="65" textAnchor="middle" fill={numberColor} stroke={getNumberOutline(numberColor)} strokeWidth="4" style={{ fontFamily: 'Helvetica-Bold', fontSize: 25 }}>{String(number)}</Text>
+      <Text x="50" y="65" textAnchor="middle" fill={numberColor} style={{ fontFamily: 'Helvetica-Bold', fontSize: 25 }}>{String(number)}</Text>
+    </> : null}
+    <Path d="M34 94 L66 94 L72 116 L53 116 L50 104 L47 116 L28 116 Z" fill={shorts} stroke="#334155" strokeWidth="2" />
+    <Rect x="30" y="119" width="16" height="7" rx="2" fill={shorts} stroke="#334155" strokeWidth="1.5" />
+    <Rect x="54" y="119" width="16" height="7" rx="2" fill={shorts} stroke="#334155" strokeWidth="1.5" />
   </Svg>;
 };
 
@@ -238,6 +271,9 @@ const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, show
   };
 
   const positions = getFormationPositions(formation, jugadoresPorEquipo);
+  const hasVisualLineup = Array.isArray(lineup) && lineup.length > 0;
+  const playerKitSize = width >= 300 ? 34 : 28;
+  const playerBoxHeight = playerKitSize * 1.28;
 
   return (
     <View style={{ width, height, position: 'relative', borderRadius: 12, overflow: 'hidden', marginHorizontal: 'auto' }}>
@@ -262,21 +298,24 @@ const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, show
       </Svg>
 
       {positions.map((pos, index) => {
-        const assignedPlayer = lineup?.find((l) => l.index === index);
+        const assignedPlayer = lineup?.find((l) => l.index === index || (l.x === pos.x && l.y === pos.y));
         let player = null;
         if (assignedPlayer?.player) {
-          player = players.find(p => p._id === assignedPlayer.player || p._id === assignedPlayer.player._id);
-        } else if (titulares && titulares[index]) {
+          const assignedId = typeof assignedPlayer.player === 'object' ? assignedPlayer.player._id : assignedPlayer.player;
+          player = players.find(p => String(p._id) === String(assignedId));
+        } else if (!hasVisualLineup && titulares && titulares[index]) {
           const titularId = titulares[index];
-          player = players.find(p => p._id === titularId || p._id === titularId._id);
+          const resolvedId = typeof titularId === 'object' ? titularId._id : titularId;
+          player = players.find(p => String(p._id) === String(resolvedId));
         }
 
         const proj = project(assignedPlayer?.x ?? pos.x, assignedPlayer?.y ?? pos.y);
-        const isGoalkeeper = pos.pos === 'POR' || pos.pos === 'PORTERO';
+        const tacticalPosition = assignedPlayer?.posicionTactica || pos.pos;
+        const isGoalkeeper = tacticalPosition === 'POR' || tacticalPosition === 'PORTERO';
         const activeKit = isGoalkeeper ? goalkeeperKit : kit;
         const color = activeKit?.primaryColor || getPositionColor(pos.pos);
         
-        const kitTextColor = (() => {
+        const kitTextColor = activeKit?.numberColor || (() => {
           const prim = (activeKit?.primaryColor || color).toLowerCase();
           const sec = (activeKit?.secondaryColor || '#ffffff').toLowerCase();
           const isLightPrim = ['#ffffff', '#fff', '#fcfcfc', '#f3f4f6', '#e5e7eb', '#fef08a', '#fde047', '#fffae6'].includes(prim);
@@ -287,25 +326,17 @@ const SoccerField = ({ lineup, players, formation, jugadoresPorEquipo = 11, show
         })();
 
         return (
-          <View key={index} style={{ position: 'absolute', left: proj.x - 22, top: proj.y - 28, width: 44, alignItems: 'center' }}>
+          <View key={index} style={{ position: 'absolute', left: proj.x - 24, top: proj.y - (width >= 300 ? 34 : 29), width: 48, alignItems: 'center' }}>
             {showPhotos && player?.foto ? (
               <Image src={player.foto} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: color, backgroundColor: '#fff' }} />
             ) : (
-              <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <PdfKit kit={activeKit || { shape: 'shirt', primaryColor: color, secondaryColor: '#ffffff' }} size={28} />
-                {player?.dorsal !== undefined && player?.dorsal !== null && (
-                  <Text style={{
-                    position: 'absolute',
-                    top: (activeKit?.shape === 'circle') ? 11 : 6,
-                    fontSize: (activeKit?.shape === 'circle') ? 9 : 8,
-                    fontFamily: 'Helvetica-Bold',
-                    color: kitTextColor,
-                    textAlign: 'center',
-                    width: '100%'
-                  }}>
-                    {player.dorsal}
-                  </Text>
-                )}
+              <View style={{ width: playerKitSize, height: playerBoxHeight, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <PdfKit
+                  kit={activeKit || { shape: 'shirt', primaryColor: color, secondaryColor: '#ffffff' }}
+                  size={playerKitSize}
+                  number={player?.dorsal}
+                  numberColor={kitTextColor}
+                />
               </View>
             )}
             {showNames && (
@@ -344,7 +375,7 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
         </View>
 
         <SoccerField 
-          lineup={lineup} 
+          lineup={lineup?.length ? lineup : matchSheet.posicionesVisuales}
           players={players} 
           formation={resolvedFormation} 
           jugadoresPorEquipo={playersPerTeam} 
@@ -590,7 +621,7 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
             <View style={{ flex: 1 }}>
               <PdfSection title={`${team?.nombre || 'Mi equipo'} (${ownFormation})`}>
                 <SoccerField
-                  lineup={[]}
+                  lineup={matchSheet.posicionesVisuales || []}
                   players={players}
                   formation={ownFormation}
                   jugadoresPorEquipo={playersPerTeam}

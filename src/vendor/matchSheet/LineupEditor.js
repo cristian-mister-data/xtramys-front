@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import Svg, { Rect, Line, Circle, Path, G, Defs, ClipPath, Ellipse } from 'react-native-svg';
 import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
+import { buildLineupAssignments, buildVisualPositions } from '@/utils/lineupPositions';
 import { getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 
 // Posiciones tácticas predefinidas para diferentes formaciones
@@ -680,6 +681,8 @@ export default function LineupEditor({
   formation = null,
   onTitularesChange,
   onSuplentesChange,
+  posicionesVisuales = [],
+  onPosicionesVisualesChange,
   suplentes = [],
   readOnly = false, // Modo solo lectura para ver detalles y PDF
   showPhotos = true,
@@ -785,15 +788,16 @@ export default function LineupEditor({
   // Inicializar asignaciones desde titulares existentes
   React.useEffect(() => {
     if (titulares.length > 0 && Object.keys(lineupAssignments).length === 0) {
-      const initialAssignments = {};
-      titulares.forEach((playerId, index) => {
-        if (index < formationPositions.length) {
-          initialAssignments[index] = playerId;
-        }
-      });
-      setLineupAssignments(initialAssignments);
+      setLineupAssignments(buildLineupAssignments(titulares, posicionesVisuales, formationPositions));
     }
-  }, [titulares, formationPositions.length]);
+  }, [titulares, posicionesVisuales, formationPositions, lineupAssignments]);
+
+  const notifyLineupChange = (assignments) => {
+    const newTitulares = formationPositions.map((_, idx) => assignments[idx]).filter(Boolean);
+    onTitularesChange?.(newTitulares);
+    onPosicionesVisualesChange?.(buildVisualPositions(assignments, formationPositions));
+    return newTitulares;
+  };
 
   // Manejar selección de jugador
   const handlePlayerSelect = (player) => {
@@ -819,8 +823,7 @@ export default function LineupEditor({
     setLineupAssignments(newAssignments);
     setSelectedPlayer(null);
 
-    const newTitulares = formationPositions.map((_, idx) => newAssignments[idx]).filter(Boolean);
-    onTitularesChange?.(newTitulares);
+    const newTitulares = notifyLineupChange(newAssignments);
 
     // Quitar el jugador de suplentes si estaba ahí (consistencia)
     if (suplentes.includes(selectedPlayer._id)) {
@@ -843,8 +846,7 @@ export default function LineupEditor({
     delete newAssignments[positionIndex];
     setLineupAssignments(newAssignments);
 
-    const newTitulares = formationPositions.map((_, idx) => newAssignments[idx]).filter(Boolean);
-    onTitularesChange?.(newTitulares);
+    notifyLineupChange(newAssignments);
   };
 
   // Añadir todos los no asignados como suplentes
@@ -860,6 +862,7 @@ export default function LineupEditor({
     setLineupAssignments({});
     setSelectedPlayer(null);
     onTitularesChange?.([]);
+    onPosicionesVisualesChange?.([]);
     onSuplentesChange?.([]);
   };
 
