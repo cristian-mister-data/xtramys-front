@@ -261,9 +261,9 @@ export default function MatchSheetDetailModal({
     };
   };
   const currentLang = i18n.language || 'es';
-  const { width: screenWidth } = useWindowDimensions();
-  const IS_MOBILE = screenWidth < 430;
-  const IS_TABLET = screenWidth > 700;
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const IS_MOBILE = Math.min(screenWidth, screenHeight) < 600;
+  const IS_TABLET = screenWidth > 700 && !IS_MOBILE;
   // onLayout mide el ancho real de la tarjeta de alineación para evitar overflow en cualquier dispositivo
   const [lineupCardWidth, setLineupCardWidth] = useState(0);
   const cardPadding = IS_MOBILE ? 8 : 16;
@@ -748,12 +748,18 @@ export default function MatchSheetDetailModal({
       transparent
       onRequestClose={onClose}
    >
-      <View style={styles.modalBg}>
-        <View style={IS_TABLET ? styles.viewModalContentTablet : styles.viewModalContent}>
+      <View style={[styles.modalBg, IS_MOBILE && styles.modalBgMobile]}>
+        <View style={[
+          IS_TABLET ? styles.viewModalContentTablet : styles.viewModalContent,
+          IS_MOBILE && styles.viewModalContentMobile,
+        ]}>
           {/* Header */}
-          <View style={[styles.modalHeader, IS_MOBILE && { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }]}>
+          <View style={[styles.modalHeader, IS_MOBILE && styles.modalHeaderMobile]}>
             <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 17 }]}>{t('matchSheet.title')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[
+              styles.modalHeaderActions,
+              IS_MOBILE && styles.modalHeaderActionsMobile,
+            ]}>
               <MatchSheetPDFButtons
                 matchSheet={matchSheet}
                 onLineupPress={() => openLineupPDFModal(matchSheet)}
@@ -798,7 +804,11 @@ export default function MatchSheetDetailModal({
             </View>
           </View>
 
-          <ScrollView style={[styles.modalBody, IS_MOBILE && { paddingHorizontal: 14 }]} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.modalBodyScroll}
+            contentContainerStyle={[styles.modalBody, IS_MOBILE && styles.modalBodyMobile]}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Card principal con rival y resultado */}
             <View style={styles.matchSheetDetailCard}>
               <View style={styles.matchSheetDetailHeader}>
@@ -839,8 +849,8 @@ export default function MatchSheetDetailModal({
               <View style={styles.detailCard}>
                 <View style={styles.detailCardHeader}>
                   <Ionicons name="football-outline" size={18} color={theme.colors.primary} />
-                  <Text style={styles.detailCardTitle}>{t('setPieces.matchTab')} ({matchSheet.setPieces?.length || 0})</Text>
-                  {!!matchSheet.setPieces?.length && (
+                  <Text style={styles.detailCardTitle}>{t('setPieces.matchTab')} ({detailSetPieces.length})</Text>
+                  {!!detailSetPieces.length && (
                     <View style={styles.setPieceActions}>
                       <TouchableOpacity style={[styles.setPieceActionBtn, { borderColor: theme.colors.error, backgroundColor: theme.colors.errorSoft }]} onPress={downloadSetPiecesPdf}>
                         <MaterialIcons name="picture-as-pdf" size={16} color={theme.colors.error} />
@@ -1406,6 +1416,10 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  modalBgMobile: {
+    padding: 0,
+    justifyContent: 'flex-start',
+  },
   viewModalContent: {
     backgroundColor: theme.colors.surface,
     borderRadius: 20,
@@ -1417,6 +1431,13 @@ const makeStyles = (theme) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 20,
+    overflow: 'hidden',
+  },
+  viewModalContentMobile: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    height: '100%',
+    borderRadius: 0,
   },
   viewModalContentTablet: {
     backgroundColor: theme.colors.surface,
@@ -1440,6 +1461,24 @@ const makeStyles = (theme) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  modalHeaderMobile: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  modalHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalHeaderActionsMobile: {
+    width: '100%',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -1455,10 +1494,18 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: theme.colors.backgroundAlt,
   },
+  modalBodyScroll: {
+    flex: 1,
+  },
   modalBody: {
     paddingHorizontal: 24,
     paddingVertical: 20,
     paddingBottom: 40,
+  },
+  modalBodyMobile: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
 
   // Match Sheet Detail Card

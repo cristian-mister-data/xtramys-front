@@ -250,7 +250,9 @@ export function renderIconCanvas(
   switch (icon.type) {
     case 'player':
       if (!shouldShowPhoto) {
-        const strokeColor = icon.kitSecondaryColor && !isJersey ? kitSecondaryColor : '#222';
+        const strokeColor = icon.kitSecondaryColor && !isJersey && kitPattern !== 'solid'
+          ? kitSecondaryColor
+          : '#222';
         const strokeWidth = 1;
         const textValue = displayText === undefined ? '' : String(displayText);
         return (

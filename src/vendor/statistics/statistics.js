@@ -1243,7 +1243,7 @@ export default function Statistics({ navigation: navigationProp }) {
 
   if (loading && !stats) {
     return (
-      <AppLayout>
+      <AppLayout scrollEnabled={false}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>{t('statistics.loading')}</Text>
@@ -1254,7 +1254,7 @@ export default function Statistics({ navigation: navigationProp }) {
 
   if (!stats) {
     return (
-      <AppLayout>
+      <AppLayout scrollEnabled={false}>
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconContainer}>
             <MaterialIcons name="analytics" size={48} color={theme.colors.primary} />
@@ -1267,7 +1267,7 @@ export default function Statistics({ navigation: navigationProp }) {
   }
 
   return (
-    <AppLayout>
+    <AppLayout scrollEnabled={false}>
       <KeyboardAwareScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}

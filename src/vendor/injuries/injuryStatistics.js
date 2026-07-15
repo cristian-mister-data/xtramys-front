@@ -168,7 +168,11 @@ const ChartRenderer = ({ type, data, chartWidth, chartHeight, isMobile, selected
       }],
     };
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ marginVertical: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator
+        style={{ marginVertical: 8, width: '100%', maxWidth: chartWidth }}
+      >
         <BarChart
           data={barData}
           width={Math.max(chartWidth, filteredData.length * 80)}
@@ -528,7 +532,7 @@ export default function InjuryStatistics() {
     );
   };
 
-  const chartWidth = isMobile ? Math.max(viewportWidth - 72, 260) : Math.min(viewportWidth * 0.62, 520);
+  const chartWidth = isMobile ? Math.max(viewportWidth - 72, 220) : Math.min(viewportWidth * 0.62, 520);
   const chartHeight = isMobile ? 180 : 220;
   const iconSizeLarge = isMobile ? 26 : 32;
   const iconSizeMedium = isMobile ? 20 : 24;
