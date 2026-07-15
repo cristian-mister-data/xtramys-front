@@ -8,7 +8,60 @@ import { getPlayerFullName, getPlayerFirstName } from '@/utils/playerHelpers';
 import { format } from 'date-fns';
 import i18n from '@/i18n';
 import { translatePosition } from '@/components/player/playerHelpers';
-import { DEFAULT_KITS, DEFAULT_RIVAL_KITS } from '@/utils/kits';
+import { DEFAULT_KITS, DEFAULT_RIVAL_KITS, normalizeKits, normalizeRivalKits } from '@/utils/kits';
+
+const hasKitCollection = (kits) => kits && typeof kits === 'object' && Object.keys(kits).length > 0;
+
+const resolveKit = ({ collection, snapshot, key, fallback, normalize }) => {
+  const normalized = hasKitCollection(collection) ? normalize(collection) : null;
+  const selectedKitExists = Boolean(collection?.[key] && typeof collection[key] === 'object');
+  return (selectedKitExists ? normalized?.[key] : null) || snapshot || fallback[key] || fallback.first;
+};
+
+const getOwnKits = (matchSheet, team) => {
+  const key = matchSheet?.equipacionPropiaKey === 'second' ? 'second' : 'first';
+  const goalkeeperKey = key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst';
+  return {
+    kit: resolveKit({
+      collection: team?.equipaciones,
+      snapshot: matchSheet?.equipacionPropia,
+      key,
+      fallback: DEFAULT_KITS,
+      normalize: normalizeKits,
+    }),
+    goalkeeperKit: resolveKit({
+      collection: team?.equipaciones,
+      snapshot: matchSheet?.equipacionPorteroPropia,
+      key: goalkeeperKey,
+      fallback: DEFAULT_KITS,
+      normalize: normalizeKits,
+    }),
+  };
+};
+
+const getRivalKits = (matchSheet) => {
+  const key = matchSheet?.equipacionRivalKey === 'second' ? 'second' : 'first';
+  const goalkeeperKey = key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst';
+  const rival = matchSheet?.rivalId && typeof matchSheet.rivalId === 'object'
+    ? matchSheet.rivalId
+    : null;
+  return {
+    kit: resolveKit({
+      collection: rival?.equipaciones,
+      snapshot: matchSheet?.equipacionRival,
+      key,
+      fallback: DEFAULT_RIVAL_KITS,
+      normalize: normalizeRivalKits,
+    }),
+    goalkeeperKit: resolveKit({
+      collection: rival?.equipaciones,
+      snapshot: matchSheet?.equipacionPorteroRival,
+      key: goalkeeperKey,
+      fallback: DEFAULT_RIVAL_KITS,
+      normalize: normalizeRivalKits,
+    }),
+  };
+};
 
 
 const s = StyleSheet.create({
@@ -47,12 +100,8 @@ const PdfKit = ({ kit, size = 42 }) => {
 };
 
 const PdfKitMatchup = ({ matchSheet, team }) => {
-  const own = matchSheet.equipacionPropia 
-    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
-    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
-  const rival = matchSheet.equipacionRival 
-    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
-    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first'];
+  const { kit: own } = getOwnKits(matchSheet, team);
+  const { kit: rival } = getRivalKits(matchSheet);
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: COLORS.bgSoft, borderWidth: 1, borderColor: COLORS.borderLight, justifyContent: 'center' }}>
     <PdfKit kit={own} size={28} /><Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: COLORS.text }}>{team?.nombre || 'Equipo'}</Text>
     <Text style={{ fontSize: 9, color: COLORS.textMuted }}>VS</Text>
@@ -277,12 +326,8 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
   const playersPerTeam = getPlayersPerTeam(matchSheet, team, jugadoresPorEquipo);
   const resolvedFormation = formation || getDefaultFormation(playersPerTeam);
   
-  const ownKit = matchSheet.equipacionPropia 
-    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
-    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
-  const ownGoalkeeperKit = matchSheet.equipacionPorteroPropia 
-    || team?.equipaciones?.[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
-    || DEFAULT_KITS[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+  const { kit: ownKit, goalkeeperKit: ownGoalkeeperKit } = getOwnKits(matchSheet, team);
+  const { kit: rivalKit } = getRivalKits(matchSheet);
   
   return (
     <Page size="A4" style={[baseStyles.page, { flexDirection: 'row', padding: 0 }]}>
@@ -325,19 +370,9 @@ const LineupPage = ({ matchSheet, team, players, lineup, formation, jugadoresPor
           )}
           <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#fff', marginTop: 8 }}>{team?.nombre || 'Equipo'}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.14)' }}>
-            <PdfKit 
-              kit={matchSheet.equipacionPropia 
-                || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
-                || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first']} 
-              size={30} 
-            />
+            <PdfKit kit={ownKit} size={30} />
             <Text style={{ color: '#fff', fontSize: 8 }}>VS</Text>
-            <PdfKit 
-              kit={matchSheet.equipacionRival 
-                || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
-                || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first']} 
-              size={30} 
-            />
+            <PdfKit kit={rivalKit} size={30} />
           </View>
         </View>
 
@@ -520,19 +555,8 @@ const MatchSheetPage = ({ matchSheet, team, players, titulares = [], suplentes =
   const ownFormation = matchSheet.alineacion || getDefaultFormation(playersPerTeam);
   const rivalFormation = matchSheet.alineacionRival || getDefaultFormation(playersPerTeam);
 
-  const ownKit = matchSheet.equipacionPropia 
-    || team?.equipaciones?.[matchSheet.equipacionPropiaKey || 'first'] 
-    || DEFAULT_KITS[matchSheet.equipacionPropiaKey || 'first'];
-  const ownGoalkeeperKit = matchSheet.equipacionPorteroPropia 
-    || team?.equipaciones?.[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
-    || DEFAULT_KITS[matchSheet.equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
-
-  const rivalKit = matchSheet.equipacionRival 
-    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey || 'first'] 
-    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey || 'first'];
-  const rivalGoalkeeperKit = matchSheet.equipacionPorteroRival 
-    || matchSheet.rivalId?.equipaciones?.[matchSheet.equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] 
-    || DEFAULT_RIVAL_KITS[matchSheet.equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
+  const { kit: ownKit, goalkeeperKit: ownGoalkeeperKit } = getOwnKits(matchSheet, team);
+  const { kit: rivalKit, goalkeeperKit: rivalGoalkeeperKit } = getRivalKits(matchSheet);
 
   return (
     <Page size="A4" style={baseStyles.page}>
