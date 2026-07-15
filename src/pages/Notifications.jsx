@@ -15,7 +15,9 @@ const Page = styled.div`
   padding: 20px clamp(12px, 3vw, 28px) 32px;
   display: grid;
   gap: 18px;
-  height: 100%;
+  grid-auto-rows: max-content;
+  align-content: start;
+  min-height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
 `;

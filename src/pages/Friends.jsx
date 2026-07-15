@@ -13,7 +13,9 @@ const Page = styled.div`
   padding: 20px clamp(12px, 3vw, 28px) 32px;
   display: grid;
   gap: 18px;
-  height: 100%;
+  grid-auto-rows: max-content;
+  align-content: start;
+  min-height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
 `;
@@ -26,6 +28,7 @@ const Invite = styled.section`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.md};
   padding: clamp(18px, 3vw, 26px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
   @media (max-width: 820px) { grid-template-columns: 1fr; }
 `;
 const Kicker = styled.div`
