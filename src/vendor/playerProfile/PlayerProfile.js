@@ -549,7 +549,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
   }, [matchSheets, player?._id]);
 
   const latestAntro = anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
-  const displayWeight = latestAntro?.peso || player.peso;
+  const displayWeight = latestAntro?.peso || player?.peso;
 
   const exportToPDF = async () => {
     if (!stats) {
