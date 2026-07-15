@@ -9,32 +9,49 @@ const Container = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   background: ${({ theme }) => theme.colors.background};
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  container-type: inline-size;
+  container-name: kit-designer;
 
   @media (max-width: 480px) {
-    padding: 12px;
-    gap: 12px;
+    padding: 14px;
+    gap: 16px;
+  }
+
+  @container kit-designer (max-width: 480px) {
+    padding: 14px;
+    gap: 16px;
   }
 `;
 
 const TabContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  padding-bottom: 8px;
+  padding-bottom: 12px;
   min-width: 0;
+
+  @media (max-width: 620px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @container kit-designer (max-width: 620px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 `;
 
 const Tab = styled.button`
-  flex: 1 1 132px;
   min-width: 0;
-  padding: 8px 16px;
+  min-height: 44px;
+  padding: 8px 10px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -46,13 +63,15 @@ const Tab = styled.button`
   overflow-wrap: anywhere;
 
   @media (max-width: 480px) {
-    flex-basis: calc(50% - 4px);
-    padding: 7px 10px;
+    min-height: 40px;
+    padding: 6px 8px;
     font-size: 12px;
   }
 
-  @media (max-width: 340px) {
-    flex-basis: 100%;
+  @container kit-designer (max-width: 480px) {
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 12px;
   }
   
   &:hover {
@@ -62,12 +81,18 @@ const Tab = styled.button`
 
 const MainGrid = styled.div`
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1.2fr);
+  gap: 24px;
   min-width: 0;
-  @media (max-width: 650px) {
+
+  @media (max-width: 700px) {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 18px;
+  }
+
+  @container kit-designer (max-width: 700px) {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 `;
 
@@ -79,19 +104,24 @@ const PreviewPane = styled.div`
   background: ${({ theme }) => theme.colors.backgroundAlt};
   border-radius: 10px;
   border: 1.5px dashed ${({ theme }) => theme.colors.border};
-  padding: 24px;
-  min-height: 200px;
+  padding: 20px;
+  min-height: 240px;
 
   @media (max-width: 480px) {
-    min-height: 150px;
-    padding: 14px;
+    min-height: 180px;
+    padding: 16px;
+  }
+
+  @container kit-designer (max-width: 480px) {
+    min-height: 180px;
+    padding: 16px;
   }
 `;
 
 const EditorPane = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   min-width: 0;
 `;
 
@@ -127,25 +157,25 @@ const ShapeOption = styled.button`
 `;
 
 const PatternList = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
-  overflow-x: auto;
   max-width: 100%;
-  padding-bottom: 6px;
-  
-  &::-webkit-scrollbar {
-    height: 6px;
+
+  @media (max-width: 380px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.borderStrong};
-    border-radius: 3px;
+
+  @container kit-designer (max-width: 480px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 `;
 
 const PatternOption = styled.button`
-  width: 54px;
-  height: 54px;
-  padding: 4px;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 6px;
   border-radius: 8px;
   border: 2px solid ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.border};
   background: ${({ $active, theme }) => $active ? theme.colors.primarySoft : theme.colors.surface};
@@ -171,10 +201,18 @@ const Subtitle = styled.div`
 `;
 
 const ColorRows = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+
+  @container kit-designer (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const ColorRow = styled.div`
@@ -191,7 +229,7 @@ const ColorRow = styled.div`
 `;
 
 const ColorLabel = styled.div`
-  flex: 0 0 96px;
+  flex: 0 1 96px;
   font-size: 13px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textSecondary};

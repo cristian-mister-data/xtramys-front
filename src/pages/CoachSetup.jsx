@@ -9,6 +9,7 @@ import { Card, Button, Field, Input, Label, Row, Stack, Muted, PageTitle } from 
 import { toast } from '@/ui/toast';
 import { setUser } from '@/store/slices/user/userSlice';
 import { saveUser } from '@/auth/storage';
+import KitDesigner from '@/components/shared/KitDesigner';
 
 const Page = styled.div`
   min-height: 100dvh;
@@ -172,14 +173,30 @@ export default function CoachSetup() {
   const [categoriaKey, setCategoriaKey] = useState('');
   const [tiempoPorParte, setTiempoPorParte] = useState(45);
   const [jugadoresPorEquipo, setJugadoresPorEquipo] = useState(11);
+  const [equipaciones, setEquipaciones] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const setupStepKey = user?._id ? `xtramys:coach-setup-step:${user._id}` : null;
 
   useEffect(() => {
     if (!user) return;
+    if (user.coachSetupCompleted === true) {
+      navigate('/app', { replace: true });
+      return;
+    }
     if (!user.clubId) {
       navigate('/app', { replace: true });
+      return;
     }
-  }, [user, navigate]);
+    if (setupStepKey) {
+      const savedStep = Number(sessionStorage.getItem(setupStepKey));
+      if (savedStep >= 1 && savedStep <= 3) setStep(savedStep);
+    }
+  }, [user, navigate, setupStepKey]);
+
+  useEffect(() => {
+    if (setupStepKey) sessionStorage.setItem(setupStepKey, String(step));
+  }, [setupStepKey, step]);
 
   const handleSubmit = async () => {
     if (!nombre.trim()) {
@@ -220,6 +237,7 @@ export default function CoachSetup() {
         apellido: apellido.trim(),
         tiempoPorParte,
         jugadoresPorEquipo,
+        equipaciones,
       });
 
       const updatedUser = {
@@ -230,6 +248,7 @@ export default function CoachSetup() {
       };
       saveUser(updatedUser);
       dispatch(setUser(updatedUser));
+      if (setupStepKey) sessionStorage.removeItem(setupStepKey);
 
       toast.success(t('coachSetup.success', 'Your team has been created. Welcome!'));
       navigate('/app', { replace: true });
@@ -380,6 +399,11 @@ export default function CoachSetup() {
                 </ConfigValue>
               </ConfigCard>
             </ConfigRow>
+
+            <Field style={{ marginTop: 20 }}>
+              <Label>{t('kits.title', 'Equipaciones')}</Label>
+              <KitDesigner value={equipaciones} onChange={setEquipaciones} />
+            </Field>
 
             <Row style={{ justifyContent: 'space-between', marginTop: 20 }}>
               <Button $variant="secondary" onClick={() => setStep(2)}>

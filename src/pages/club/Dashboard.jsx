@@ -2033,7 +2033,7 @@ export default function ClubDashboard() {
           <form onSubmit={handleSaveClubTeam}>
             <Stack $gap={16}>
               <InfoNotice>
-                Al guardar, el nombre y el escudo se actualizarÃ¡n en todos los equipos asociados a esta temporada del club.
+                Al guardar, el nombre y el escudo se actualizarán en todos los equipos asociados a esta temporada del club.
               </InfoNotice>
               <Field>
                 <Label>Nombre del equipo</Label>

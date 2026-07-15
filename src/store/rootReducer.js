@@ -13,7 +13,7 @@ import strategyReducer from './slices/strategy/strategySlice';
 import rivalReducer from './slices/rival/rivalSlice';
 import tournamentReducer from './slices/tournament/tournamentSlice';
 import userReducer from './slices/user/userSlice';
-import { RESET_STORE } from './actionTypes';
+import { RESET_STORE, RESET_WORKSPACE } from './actionTypes';
 
 const appReducer = combineReducers({
   season: seasonReducer,
@@ -36,6 +36,10 @@ const appReducer = combineReducers({
 const rootReducer = (state, action) => {
   if (action.type === RESET_STORE) {
     return appReducer(undefined, action);
+  }
+  if (action.type === RESET_WORKSPACE) {
+    const resetState = appReducer(undefined, { type: '@@RESET_WORKSPACE' });
+    return { ...resetState, usuario: state?.usuario || resetState.usuario };
   }
   return appReducer(state, action);
 };

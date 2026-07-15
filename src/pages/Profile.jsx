@@ -32,7 +32,7 @@ import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { RESET_STORE } from '@/store/actionTypes';
 import { saveToken, saveUser } from '@/auth/storage';
-import { createPortalSession, createCheckoutSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
+import { createPortalSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 import ImageCropper from '@/components/season/ImageCropper';
@@ -929,21 +929,8 @@ export default function Profile() {
   };
 
   const handleSubscribe = async () => {
-    setPortalLoading(true);
-    try {
-      const baseUrl = window.location.origin;
-      const data = await createCheckoutSession(baseUrl);
-      if (data?.url) {
-        sessionStorage.setItem('xtramys:postCheckoutPath', '/season/create');
-        window.location.href = data.url;
-      }
-    } catch (err) {
-            toast.error(err?.response?.data?.mensaje || t('subscription.startError', 'Error al iniciar suscripción'));
-    } finally {
-      setPortalLoading(false);
-    }
+    navigate('/subscribe');
   };
-
   const handleReactivateSubscription = async () => {
     setPortalLoading(true);
     try {

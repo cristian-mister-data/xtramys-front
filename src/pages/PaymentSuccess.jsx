@@ -1,8 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { checkSubscription } from '@/store/slices/user/userThunks';
+import { checkSubscription, fetchMe } from '@/store/slices/user/userThunks';
+import { RESET_WORKSPACE } from '@/store/actionTypes';
+import { clearSeasonCache } from '@/store/slices/season/seasonThunks';
 import { api } from '@/api/client';
 import styled, { keyframes } from 'styled-components';
 
@@ -129,14 +131,26 @@ export default function PaymentSuccess() {
   const [pollAttempts, setPollAttempts] = useState(0);
   const [activateAttempts, setActivateAttempts] = useState(0);
   const [error, setError] = useState('');
+  const workspaceRefreshed = useRef(false);
 
-  const MAX_POLL = 5;
+  // The return URL already contains a completed Stripe Checkout session.
+  // Activate it immediately; the webhook remains the normal async fallback.
+  const MAX_POLL = 0;
   const MAX_ACTIVATE = 3;
+
+  const refreshWorkspace = useCallback(async () => {
+    if (workspaceRefreshed.current) return;
+    workspaceRefreshed.current = true;
+    clearSeasonCache();
+    dispatch({ type: RESET_WORKSPACE });
+    await dispatch(fetchMe({ force: true })).unwrap();
+  }, [dispatch]);
 
   const getReturnPath = useCallback(() => {
     const storedPath = sessionStorage.getItem('xtramys:postCheckoutPath');
-    if (storedPath?.startsWith('/')) return storedPath;
-    if (checkoutContext === 'club' || user?.role === 'club_admin') return '/club/dashboard';
+    if (storedPath === '/club/dashboard' || checkoutContext === 'club' || user?.role === 'club_admin') {
+      return '/club/dashboard';
+    }
     return '/season/create';
   }, [checkoutContext, user?.role]);
 
@@ -153,6 +167,7 @@ export default function PaymentSuccess() {
       const res = await api.post('/stripe/activate-manually', { sessionId });
       if (res.data?.subscriptionStatus === 'active') {
         await dispatch(checkSubscription()).unwrap();
+        await refreshWorkspace();
         setStep('success');
         return;
       }
@@ -168,11 +183,11 @@ export default function PaymentSuccess() {
         setTimeout(() => tryManualActivate(), 3000);
       }
     }
-  }, [sessionId, activateAttempts, dispatch, t]);
+  }, [sessionId, activateAttempts, dispatch, refreshWorkspace, t]);
 
   useEffect(() => {
     if (subscriptionStatus === 'active') {
-      setStep('success');
+      refreshWorkspace().then(() => setStep('success')).catch(() => setStep('success'));
       return;
     }
     if (step === 'success' || step === 'failed') return;
@@ -190,7 +205,7 @@ export default function PaymentSuccess() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [step, pollAttempts, subscriptionStatus, dispatch, tryManualActivate]);
+  }, [step, pollAttempts, subscriptionStatus, dispatch, refreshWorkspace, tryManualActivate]);
 
   useEffect(() => {
     if (step === 'success') {

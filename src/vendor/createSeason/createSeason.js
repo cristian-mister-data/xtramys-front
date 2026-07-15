@@ -26,6 +26,7 @@ import { logoutThunk, fetchMe } from '@/store/slices/user/userThunks';
 import AppLayout from '@/vendor/shared/appLayout';
 import CustomAlertModal from '@/vendor/shared/customAlert';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import KitDesigner from '@/components/shared/KitDesigner';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -62,6 +63,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   const [jugadoresPorEquipo, setJugadoresPorEquipo] = useState(11);
   const [showPlayersPerTeamOptions, setShowPlayersPerTeamOptions] = useState(false);
   const [escudo, setEscudo] = useState(null);
+  const [equipaciones, setEquipaciones] = useState(null);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
 
   const dispatch = useDispatch();
@@ -150,22 +152,21 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   };
 
   const handleCrear = async () => {
-    if (!año || !teamName) return;
+    const missingFields = [];
+    if (!año?.trim()) missingFields.push(t('season.season'));
+    if (!teamName.trim()) missingFields.push(t('team.teamName'));
+    if (!isClubAdmin && !categoriaKey) missingFields.push(t('team.category'));
+    if (!isClubAdmin && categoriaKey === 'otro' && !categoriaCustom?.trim()) {
+      missingFields.push(t('team.customCategory'));
+    }
+    if (missingFields.length) {
+      showMissingFieldsToast(t, missingFields);
+      return;
+    }
     if (!idUsuario) {
       Alert.alert(t('message.error'), t('login.sessionExpired', 'La sesión ha caducado. Vuelve a iniciar sesión.'));
       return;
     }
-    if (!isClubAdmin) {
-      if (!categoriaKey) {
-        showMissingFieldsToast(t, [t('team.category')]);
-        return;
-      }
-      if (categoriaKey === 'otro' && !categoriaCustom?.trim()) {
-        showMissingFieldsToast(t, [t('team.customCategory')]);
-        return;
-      }
-    }
-
     setLoading(true);
     try {
       const categoriaLegacy = categoriaKey === 'otro' ? categoriaCustom : (categoriaKey || '');
@@ -180,6 +181,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
           tiempoPorParte,
           jugadoresPorEquipo,
           escudo,
+          equipaciones,
           user: idUsuario,
         })
       ).unwrap();
@@ -434,6 +436,12 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
                 <Ionicons name="chevron-forward" size={18} color={chevronColor} />
               </TouchableOpacity>
             </View>
+            {Platform.OS === 'web' && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.inputLabel}>{t('kits.title', 'Equipaciones')}</Text>
+                <KitDesigner value={equipaciones} onChange={setEquipaciones} />
+              </View>
+            )}
           </View>
 
           {/* Create button */}

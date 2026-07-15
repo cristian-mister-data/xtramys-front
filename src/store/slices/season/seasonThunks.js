@@ -7,6 +7,8 @@ const seasonCache = createReadCache({ ttlMs: 60000 });
 const seasonKey = (scope, payload) => seasonCache.key(`season:${scope}`, payload);
 const clearSeasonCache = () => seasonCache.clear();
 
+export { clearSeasonCache };
+
 export const fetchTemporadasUsuario = createAsyncThunk(
   'temporada/fetchTemporadasUsuario',
   async ({ usuario }) => {

@@ -1,1 +1,2 @@
 export const RESET_STORE = 'RESET_STORE';
+export const RESET_WORKSPACE = 'RESET_WORKSPACE';
