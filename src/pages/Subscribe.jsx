@@ -570,7 +570,7 @@ const CheckIcon = () => (
 const CLUB_MIN_QUANTITY = 5;
 const INDIVIDUAL_PRICE = 59;
 const INDIVIDUAL_OLD_PRICE = 59;
-const CLUB_PRICE_PER_USER = 49;
+const CLUB_PRICE_PER_USER = 35;
 
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
@@ -703,11 +703,17 @@ export default function Subscribe() {
 
             {isClubPlan ? (
               <>
-                <PriceRow>
+                <PriceRow style={{ alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '1.2rem', fontWeight: 600 }}>
+                    49€
+                  </span>
                   <Amount>{CLUB_PRICE_PER_USER}€</Amount>
                   <Period>/{t('subscription.userYear', 'usuario/año')}</Period>
                 </PriceRow>
-                <PriceSub>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
+                <div style={{ marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 6, backgroundColor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.2)', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold', color: '#ff6b00', width: 'fit-content' }}>
+                  🏆 {isEs ? 'Descuento especial final del mundial' : 'Special World Cup final discount'}
+                </div>
+                <PriceSub style={{ marginTop: 8 }}>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
 
                 <QtyContainer>
                   <QtyLabel>{t('subscription.qtyLabel', 'Número de Licencias (Entrenadores)')}</QtyLabel>
