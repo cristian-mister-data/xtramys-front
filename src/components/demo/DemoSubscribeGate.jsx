@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { getAccessMode } from '@/utils/subscriptionAccess';
+import { isNative } from '@/platform/capacitor';
 
 const GateContainer = styled.div`
   flex: 1;
@@ -36,7 +37,7 @@ const GateDescription = styled.p`
   font-size: 15px;
 `;
 
-const SubscribeButton = styled(Link)`
+const SubscribeButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,6 +46,8 @@ const SubscribeButton = styled(Link)`
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.primary || '#2563eb'};
   color: #fff;
+  border: 0;
+  font: inherit;
   font-weight: 700;
   text-decoration: none;
   transition: opacity 0.2s;
@@ -55,23 +58,32 @@ const SubscribeButton = styled(Link)`
 
 export default function DemoSubscribeGate({ children }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = useSelector((s) => s.usuario.user);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
 
   if (getAccessMode(user, subscriptionStatus) !== 'demo') return children;
 
+  const showOptions = () => {
+    navigate('/subscribe');
+  };
+
   return (
     <GateContainer>
       <GateCard>
         <GateTitle>
-          {t('subscription.requiredToView', 'Tienes que estar suscrito para verlo')}
+          {isNative
+            ? t('subscription.demoUnavailableTitle', 'Contenido no disponible en la demo')
+            : t('subscription.requiredToView', 'Tienes que estar suscrito para verlo')}
         </GateTitle>
         <GateDescription>
-          {t('subscription.demoNotice', 'Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.')}
+          {isNative
+            ? t('subscription.demoAppNotice', 'Esta sección no forma parte de tu acceso actual.')
+            : t('subscription.demoNotice', 'Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.')}
         </GateDescription>
-        <SubscribeButton to="/subscribe">
+        {!isNative && <SubscribeButton type="button" onClick={showOptions}>
           {t('subscription.viewSubscription', 'Ver suscripción')}
-        </SubscribeButton>
+        </SubscribeButton>}
       </GateCard>
     </GateContainer>
   );

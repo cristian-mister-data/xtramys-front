@@ -20,6 +20,7 @@ import {
 import { cdnUrl } from '@/config';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -226,6 +227,7 @@ export default function MatchSheetDetailModal({
 }) {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const navigate = useNavigate();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const ownKits = normalizeKits(team?.equipaciones);
@@ -489,7 +491,7 @@ export default function MatchSheetDetailModal({
         const player = getAssignedPlayer(assignment) || element.playerData || (assignment?.playerName ? { nombre: assignment.playerName, foto: assignment.foto || '' } : null);
         if (!player) return null;
         const name = getPlayerFullName(player);
-        const photoUrl = assignment?.photoUrl || element.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
+        const photoUrl = player.foto ? cdnUrl(player.foto) : '';
         return {
           slotId,
           number: String(assignment?.number || element.number || element.playerNumber || element.numero || element.text || element.label || ''),
@@ -517,7 +519,7 @@ export default function MatchSheetDetailModal({
       const player = getAssignedPlayer(assignment) || (assignment.playerName ? { nombre: assignment.playerName, foto: assignment.foto || '' } : null);
       if (!player) return null;
       const name = getPlayerFullName(player);
-      const photoUrl = assignment.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
+      const photoUrl = player.foto ? cdnUrl(player.foto) : '';
       return {
         slotId: assignment.slotId,
         number: assignment.number,
@@ -748,7 +750,16 @@ export default function MatchSheetDetailModal({
       transparent
       onRequestClose={onClose}
    >
-      <View style={[styles.modalBg, IS_MOBILE && styles.modalBgMobile]}>
+      <View style={[
+        styles.modalBg,
+        IS_MOBILE && styles.modalBgMobile,
+        {
+          paddingTop: Math.max(insets.top, IS_MOBILE ? 0 : 20),
+          paddingRight: Math.max(insets.right, IS_MOBILE ? 0 : 20),
+          paddingBottom: Math.max(insets.bottom, IS_MOBILE ? 0 : 20),
+          paddingLeft: Math.max(insets.left, IS_MOBILE ? 0 : 20),
+        },
+      ]}>
         <View style={[
           IS_TABLET ? styles.viewModalContentTablet : styles.viewModalContent,
           IS_MOBILE && styles.viewModalContentMobile,

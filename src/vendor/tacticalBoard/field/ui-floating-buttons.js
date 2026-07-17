@@ -63,7 +63,7 @@ export function createFloatingButtons(dependencies) {
     const topBtnSize = isMobile ? 28 : 56;
     const topBtnRadius = isMobile ? 14 : 28;
     const topIconSize = isMobile ? 14 : 24;
-    const topOffset = isMobile ? Math.max(10, safeArea.top - 18) : 20 + safeArea.top;
+    const topOffset = (isMobile ? 10 : 20) + safeArea.top;
     const bottomOffset = (isMobile ? 10 : 20) + safeArea.bottom;
     const leftOffset = (isMobile ? 10 : 20) + safeArea.left;
     const rightOffset = (isMobile ? 10 : 20) + safeArea.right;

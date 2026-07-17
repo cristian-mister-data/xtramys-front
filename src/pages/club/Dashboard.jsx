@@ -10,6 +10,7 @@ import { toast } from '@/ui/toast';
 import { startSupervision } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import Modal from '@/ui/Modal';
+import { isNative } from '@/platform/capacitor';
 
 const PaymentSpinner = styled.div`
   width: 50px;
@@ -669,7 +670,7 @@ export default function ClubDashboard() {
   const [isQtyOpen, setIsQtyOpen] = useState(false);
   const [newQty, setNewQty] = useState(6);
   const [updatingQty, setUpdatingQty] = useState(false);
-  const pendingLicensePayment = readPendingLicensePayment();
+  const pendingLicensePayment = isNative ? null : readPendingLicensePayment();
   const [isWaitingPayment, setIsWaitingPayment] = useState(Boolean(pendingLicensePayment?.targetQty));
   const [paymentUrl, setPaymentUrl] = useState(pendingLicensePayment?.paymentUrl || null);
   const [targetQty, setTargetQty] = useState(pendingLicensePayment?.targetQty || null);
@@ -1614,8 +1615,19 @@ export default function ClubDashboard() {
         </ResourceCard>
       </ResourcesGrid>
 
+      {isNative && (
+        <Card style={{ padding: 24, borderRadius: 16, marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+            {t('clubDashboard.webManagementTitle', 'Gestión de cuenta del club')}
+          </h2>
+          <p style={{ margin: '8px 0 16px', fontSize: 13, opacity: 0.75 }}>
+            {t('clubDashboard.webManagementNotice', 'Las opciones administrativas del plan están disponibles en la versión web.')}
+          </p>
+        </Card>
+      )}
+
       {/* {t('clubDashboard.subscriptionAndLicenses')} Card */}
-      {subStatus && subStatus.stripeSubscriptionId && (
+      {!isNative && subStatus && subStatus.stripeSubscriptionId && (
         <Card style={{ padding: 24, borderRadius: 16, marginBottom: 24 }}>
           <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -1791,7 +1803,7 @@ export default function ClubDashboard() {
       )}
 
       {/* HISTORIAL DE FACTURACIÓN */}
-      {subStatus && subStatus.invoices && subStatus.invoices.filter(inv => inv.status === 'paid').length > 0 && (
+      {!isNative && subStatus && subStatus.invoices && subStatus.invoices.filter(inv => inv.status === 'paid').length > 0 && (
         <Card style={{ padding: 24, borderRadius: 16, marginBottom: 24 }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>
             {t('clubDashboard.billingHistory')}
@@ -1990,7 +2002,7 @@ export default function ClubDashboard() {
                           </ActionBtn>
                         ) : null}
                         {/* Cancel license (suspend + reduce Stripe by 1) ? only if > 5 licenses */}
-                        {(isActive || member.clubMemberStatus === 'inactive') && maxCount > 5 && subStatus?.stripeSubscriptionId && !subStatus?.cancelAtPeriodEnd && (
+                        {!isNative && (isActive || member.clubMemberStatus === 'inactive') && maxCount > 5 && subStatus?.stripeSubscriptionId && !subStatus?.cancelAtPeriodEnd && (
                                                     <ActionBtn
                             $type="danger"
                             title={t('clubDashboard.suspendAndReduceTitle', 'Suspender acceso Y reducir 1 licencia de Stripe (ahorra dinero)')}

@@ -45,6 +45,37 @@ import {
   releaseBoardDrag,
 } from './config';
 import { ALLOW_MULTI_ELEMENT_DRAG, isBoardCloneOutsideForDelete } from './geometry';
+
+export function renderPlayerNameLabel(icon, isMobile = false) {
+  if (!icon.playerData) return null;
+  return (
+    <Text
+      selectable={false}
+      style={{
+        position: 'absolute',
+        bottom: -22,
+        left: -20,
+        right: -20,
+        textAlign: 'center',
+        fontSize: isMobile ? 8 : 10,
+        color: icon.textColor || '#000',
+        backgroundColor:
+          icon.textBackgroundColor === 'transparent'
+            ? 'transparent'
+            : icon.textBackgroundColor || '#fff',
+        paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
+        paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : 1,
+        borderRadius: 4,
+        borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
+        borderColor: '#ccc',
+        ...noTextSelectionStyle,
+      }}
+    >
+      {getPlayerFullName(icon.playerData) || icon.playerData.name}
+    </Text>
+  );
+}
+
 export function FieldCarouselModal({
   visible,
   FIELD_IMAGES,
@@ -1846,32 +1877,7 @@ const DraggableIcon = React.memo(
                       photoUrl={icon.photoUrl || cdnUrl(icon.playerData?.foto || '')}
                     />
 
-                    {icon.playerData && (
-                      <Text
-                        selectable={false}
-                        style={{
-                          position: 'absolute',
-                          bottom: -22,
-                          left: -20,
-                          right: -20,
-                          textAlign: 'center',
-                          fontSize: isMobile ? 8 : 10,
-                          color: icon.textColor || '#000',
-                          backgroundColor:
-                            icon.textBackgroundColor === 'transparent'
-                              ? 'transparent'
-                              : icon.textBackgroundColor || '#fff',
-                          paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
-                          paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : 1,
-                          borderRadius: 4,
-                          borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
-                          borderColor: '#ccc',
-                          ...noTextSelectionStyle,
-                        }}
-                      >
-                        {getPlayerFullName(icon.playerData) || icon.playerData.name}
-                      </Text>
-                    )}
+                    {renderPlayerNameLabel(icon, isMobile)}
                   </View>
                 </View>
               </PanGestureHandler>

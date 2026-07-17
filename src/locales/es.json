@@ -4,7 +4,8 @@
     "login": "Login",
     "email": "Correo",
     "username": "Usuario",
-    "noAccount": "¿No tienes cuenta?, Regístrate",
+    "noAccount": "¿No tienes cuenta?",
+    "createAccountAtWebsite": "Crea tu cuenta en",
     "password": "Contraseña",
     "rememberMe": "Recordarme",
     "buttonLogin": "Iniciar sesión",
@@ -1978,6 +1979,8 @@
   },
   "tacticalBoard": {
     "dragToDelete": "Soltar para eliminar",
+    "hideControls": "Ocultar controles",
+    "showControls": "Mostrar controles",
     "fieldTypes": {
       "full": "Campo entero",
       "half": "Medio campo",
@@ -5154,6 +5157,15 @@
     "availableWithSubscription": "Disponible con suscripción",
     "demoNotice": "Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.",
     "viewSubscription": "Ver suscripción",
+    "demoUnavailableTitle": "Contenido no disponible en la demo",
+    "demoAppNotice": "Esta sección no está incluida en tu acceso actual. Consulta las opciones disponibles en nuestro sitio web.",
+    "demoProfileNotice": "Consulta en nuestro sitio web las opciones disponibles para tu cuenta.",
+    "demoPlan": "Plan demo",
+    "accountAccess": "Acceso de cuenta",
+    "viewOptionsOnWeb": "Ver opciones en la web",
+    "manageOnWeb": "Gestionar en la web",
+    "openingWebsite": "Abriendo el sitio web de Xtramys...",
+    "openWebsite": "Abrir sitio web",
     "title": "Suscripción requerida",
     "plan": "Plan Individual",
     "cancelledBadge": "Cancelada",
@@ -5309,6 +5321,8 @@
     "shareWithClub": "Compartir con mi club"
   },
   "clubDashboard": {
+    "webManagementTitle": "Gestión de cuenta del club",
+    "webManagementNotice": "Las opciones administrativas del plan están disponibles en la versión web.",
     "confirmTotalCancel": "Confirmar cancelación total",
     "totalCancelTitle": "Cancelación total de la suscripción",
     "keepAccessUntil": "Conservarás el acceso para ti y todos tus entrenadores hasta el {{date}}.",

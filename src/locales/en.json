@@ -5,7 +5,8 @@
     "subtitle": "Access your account to continue",
     "email": "Email",
     "username": "Username",
-    "noAccount": "Don't have an account? Sign up",
+    "noAccount": "Don't have an account?",
+    "createAccountAtWebsite": "Create your account at",
     "password": "Password",
     "rememberMe": "Remember me",
     "buttonLogin": "Log in",
@@ -1975,6 +1976,8 @@
   },
   "tacticalBoard": {
     "dragToDelete": "Drop to delete",
+    "hideControls": "Hide controls",
+    "showControls": "Show controls",
     "fieldTypes": {
       "full": "Full Field",
       "half": "Half Field",
@@ -5148,6 +5151,15 @@
     "availableWithSubscription": "Available with subscription",
     "demoNotice": "This section is not included in the demo. Subscribe to unlock all content.",
     "viewSubscription": "View subscription",
+    "demoUnavailableTitle": "Content not available in the demo",
+    "demoAppNotice": "This section is not included in your current access. See the available options on our website.",
+    "demoProfileNotice": "See the options available for your account on our website.",
+    "demoPlan": "Demo plan",
+    "accountAccess": "Account access",
+    "viewOptionsOnWeb": "View options on the web",
+    "manageOnWeb": "Manage on the web",
+    "openingWebsite": "Opening the Xtramys website...",
+    "openWebsite": "Open website",
     "title": "Subscription required",
     "plan": "Individual Plan",
     "cancelledBadge": "Cancelled",
@@ -5303,6 +5315,8 @@
     "shareWithClub": "Share with my club"
   },
   "clubDashboard": {
+    "webManagementTitle": "Club account management",
+    "webManagementNotice": "Plan administration options are available on the web version.",
     "confirmTotalCancel": "Confirm total cancellation",
     "totalCancelTitle": "Total subscription cancellation",
     "keepAccessUntil": "You and all your coaches will retain access until {{date}}.",

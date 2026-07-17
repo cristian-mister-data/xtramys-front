@@ -17,6 +17,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 
@@ -63,6 +64,7 @@ export default function EditSessionModal({
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'es';
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [loading, setLoading] = useState(false);
 
@@ -528,7 +530,15 @@ export default function EditSessionModal({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.modalBg}>
+      <View
+        style={[
+          styles.modalBg,
+          {
+            paddingTop: Math.max(insets.top, isMobile ? 8 : 0),
+            paddingBottom: Math.max(insets.bottom, isMobile ? 8 : 0),
+          },
+        ]}
+      >
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={[styles.modalHeader, IS_MOBILE && { padding: 14 }]}>
@@ -1182,7 +1192,7 @@ export default function EditSessionModal({
                 onRequestClose={() => setShowDatePicker(false)}
               >
                 <View style={styles.datePickerModalBg}>
-                  <View style={styles.datePickerModalContent}>
+                  <View style={[styles.datePickerModalContent, { paddingBottom: Math.max(insets.bottom, 30) }]}>
                     <View style={styles.datePickerHeader}>
                       <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                         <Text style={styles.datePickerCancel}>{t('session.cancel')}</Text>
@@ -1212,7 +1222,7 @@ export default function EditSessionModal({
                 onRequestClose={() => setShowStartTimePicker(false)}
               >
                 <View style={styles.datePickerModalBg}>
-                  <View style={styles.datePickerModalContent}>
+                  <View style={[styles.datePickerModalContent, { paddingBottom: Math.max(insets.bottom, 30) }]}>
                     <View style={styles.datePickerHeader}>
                       <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
                         <Text style={styles.datePickerCancel}>{t('session.cancel')}</Text>
@@ -1243,7 +1253,7 @@ export default function EditSessionModal({
                 onRequestClose={() => setShowEndTimePicker(false)}
               >
                 <View style={styles.datePickerModalBg}>
-                  <View style={styles.datePickerModalContent}>
+                  <View style={[styles.datePickerModalContent, { paddingBottom: Math.max(insets.bottom, 30) }]}>
                     <View style={styles.datePickerHeader}>
                       <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
                         <Text style={styles.datePickerCancel}>{t('session.cancel')}</Text>
@@ -1698,7 +1708,7 @@ export default function EditSessionModal({
                     })}
                   </ScrollView>
 
-                  <View style={styles.teamAssignmentModalFooter}>
+                  <View style={[styles.teamAssignmentModalFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                     <TouchableOpacity
                       style={styles.teamAssignmentClearBtn}
                       onPress={() => {

@@ -29,6 +29,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
@@ -36,8 +37,6 @@ import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { applySetPieceKitsToElements, kitToBoardStyle } from '@/utils/kits';
 import Svg, { Path, Polygon, Rect, Circle, Ellipse, G } from 'react-native-svg';
 import ViewShot from 'react-native-view-shot';
-import * as ScreenOrientation from 'expo-screen-orientation';
-// Usar la API legacy
 
 import VideoRecorder from './videoRecorder';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -117,6 +116,15 @@ import {
 } from './field/geometry';
 import { styles } from './field/styles';
 import { DraggableIcon, MemoizedIcon } from './field/icon-renderers';
+
+const restoreFlexibleOrientation = async () => {
+  try {
+    await ScreenOrientation.lock({ orientation: 'portrait-primary' });
+    setTimeout(() => ScreenOrientation.unlock().catch(() => {}), 300);
+  } catch {
+    // Algunos navegadores y tablets no permiten bloquear la orientación.
+  }
+};
 import {
   BatchShapesRenderer,
   MemoizedCircleDetector,
@@ -366,18 +374,11 @@ export default function Field(props = {}) {
     let isMounted = true;
     let subscription = null;
     let reinforceInterval = null;
-    const isWebPlatform = Platform.OS === 'web';
-
+    const useLegacyWebOrientationListener = false;
     const lockToLandscape = async () => {
       if (!isMounted) return;
       try {
-        if (isWebPlatform && typeof window !== 'undefined' && window.screen?.orientation?.lock) {
-          await window.screen.orientation.lock('landscape');
-        }
-
-        if (ScreenOrientation?.lockAsync) {
-          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-        }
+        await ScreenOrientation.lock({ orientation: 'landscape' });
       } catch (error) {
         if (error?.name !== 'NotSupportedError' && error?.name !== 'AbortError') {
           console.warn('Error al bloquear orientación:', error);
@@ -406,7 +407,7 @@ export default function Field(props = {}) {
     const setupOrientationListener = async () => {
       try {
         if (
-          isWebPlatform &&
+          useLegacyWebOrientationListener &&
           typeof window !== 'undefined' &&
           window.screen?.orientation?.addEventListener
         ) {
@@ -418,13 +419,12 @@ export default function Field(props = {}) {
             }
           });
         } else {
-          subscription = ScreenOrientation.addOrientationChangeListener((event) => {
+          subscription = await ScreenOrientation.addListener('screenOrientationChange', (event) => {
             if (!isMounted) return;
-            const orientation = event.orientationInfo.orientation;
+            const orientation = event.type || '';
             // Si detectamos orientaci�n vertical, forzar landscape de nuevo
             if (
-              orientation === ScreenOrientation.Orientation.PORTRAIT_UP ||
-              orientation === ScreenOrientation.Orientation.PORTRAIT_DOWN
+              orientation.startsWith('portrait')
             ) {
               lockToLandscape();
             }
@@ -451,10 +451,10 @@ export default function Field(props = {}) {
       // Eliminar listener de orientaci�n
       if (subscription) {
         try {
-          if (isWebPlatform && window.screen?.orientation?.removeEventListener) {
+          if (useLegacyWebOrientationListener && window.screen?.orientation?.removeEventListener) {
             window.screen.orientation.removeEventListener('change', lockToLandscape);
           } else {
-            ScreenOrientation.removeOrientationChangeListener(subscription);
+            subscription.remove().catch(() => {});
           }
         } catch (error) {
           // Ignore cleanup failures
@@ -463,13 +463,7 @@ export default function Field(props = {}) {
       }
 
       // Forzar portrait primero (necesario en iOS), luego desbloquear a ALL
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
-        .then(() => {
-          setTimeout(() => {
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-          }, 300);
-        })
-        .catch(() => {});
+      restoreFlexibleOrientation();
     };
   }, []);
 
@@ -477,8 +471,9 @@ export default function Field(props = {}) {
   // (defined here, but runs after render when fieldLineType/viewMode are available)
 
   const dimensions = useScreenDimensions();
-  const SCREEN_WIDTH = dimensions?.width || Dimensions.get('window').width;
-  const SCREEN_HEIGHT = dimensions?.height || Dimensions.get('window').height;
+  const [boardLayout, setBoardLayout] = useState(null);
+  const SCREEN_WIDTH = boardLayout?.width || dimensions?.width || Dimensions.get('window').width;
+  const SCREEN_HEIGHT = boardLayout?.height || dimensions?.height || Dimensions.get('window').height;
   const insets = useSafeAreaInsets();
   const safeArea = {
     top: Math.max(insets.top || 0, 0),
@@ -596,6 +591,7 @@ export default function Field(props = {}) {
   const [selectedStaffIds, setSelectedStaffIds] = useState([]); // IDs de staff en el campo
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [zoomVisible, setZoomVisible] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(false);
   const [fieldImageReady, setFieldImageReady] = useState(false);
   const [isLoadingField, setIsLoadingField] = useState(true);
   const [isSavingVideoEdit, setIsSavingVideoEdit] = useState(false);
@@ -2020,9 +2016,9 @@ export default function Field(props = {}) {
           ...element,
           number: assigned.number ?? element.number,
           playerData: assigned.playerData,
-          photoUrl:
-            assigned.photoUrl ||
-            (assigned.playerData?.foto ? cdnUrl(assigned.playerData.foto) : element.photoUrl),
+          photoUrl: assigned.playerData?.foto
+            ? (assigned.photoUrl || cdnUrl(assigned.playerData.foto))
+            : undefined,
           preserveVisualStyle: true,
           displayLabel: assigned.displayLabel ?? element.displayLabel,
           textColor: assigned.textColor ?? element.textColor,
@@ -2830,7 +2826,7 @@ export default function Field(props = {}) {
   const [carouselModalVisible, setCarouselModalVisible] = useState(false);
 
   const hasSidebar = !!matchSheetPlayers;
-  const showPlayersSidebar = hasSidebar && !setPieceMode;
+  const showPlayersSidebar = hasSidebar && !setPieceMode && !controlsHidden;
   const isSetPieceOrStrategy = !!(isStrategyMode || setPieceMode || hasSidebar);
   const sidebarWidth = showPlayersSidebar ? (isMobile ? 180 : 280) : 0;
   const panelAnim = useRef(new Animated.Value(0)).current;
@@ -3971,14 +3967,7 @@ export default function Field(props = {}) {
   );
 
   const unlockOrientationAndGoBack = useCallback(async () => {
-    try {
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      setTimeout(() => {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-      }, 300);
-    } catch (e) {
-      // Device may not support orientation lock
-    }
+    await restoreFlexibleOrientation();
     if (!embeddedBoard) navigation.goBack();
   }, [navigation, embeddedBoard]);
 
@@ -4075,14 +4064,7 @@ export default function Field(props = {}) {
         // Limpiar keyframes al guardar
         setVideoKeyframes([]);
         // Liberar orientaci�n antes de navegar
-        try {
-          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-          setTimeout(() => {
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-          }, 300);
-        } catch (e) {
-          // Device may not support orientation lock
-        }
+        await restoreFlexibleOrientation();
         if (!embeddedBoard) navigation.goBack();
       } catch (error) {
         console.error('Error capturing field:', error);
@@ -4281,14 +4263,7 @@ export default function Field(props = {}) {
     const unsubscribe = navigation.addListener('beforeRemove', async () => {
       clearBoardState();
       // Forzar portrait primero (necesario en iOS), luego desbloquear
-      try {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-        setTimeout(() => {
-          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL).catch(() => {});
-        }, 300);
-      } catch (e) {
-        // Device may not support orientation lock
-      }
+      await restoreFlexibleOrientation();
     });
     return unsubscribe;
   }, [navigation, clearBoardState]);
@@ -6552,6 +6527,26 @@ export default function Field(props = {}) {
   // Ocultar solo botones inferiores cuando la paleta o zoom est� visible
   const shouldHideBottomButtons = paletteVisible || zoomVisible;
 
+  const toggleBoardControls = () => {
+    const nextHidden = !controlsHidden;
+    setControlsHidden(nextHidden);
+
+    if (nextHidden) {
+      setPaletteVisible(false);
+      setZoomVisible(false);
+      setInstructionMessage(null);
+      setOptionsMenu((current) => ({ ...current, visible: false }));
+      setMultiSelectMode(false);
+      setSelectedCloneId(null);
+      clearSelection();
+      handleDeselectDrawingTool();
+    }
+  };
+
+  const controlsToggleLabel = controlsHidden
+    ? t('tacticalBoard.showControls', 'Mostrar controles')
+    : t('tacticalBoard.hideControls', 'Ocultar controles');
+
   const {
     LineStyleModal,
     TeamPlayerSettingsModal,
@@ -6629,6 +6624,11 @@ export default function Field(props = {}) {
     >
       <View
         ref={containerRef}
+        onLayout={({ nativeEvent: { layout } }) => {
+          setBoardLayout((current) => (
+            current?.width === layout.width && current?.height === layout.height ? current : layout
+          ));
+        }}
         style={{
           flex: 1,
           width: '100%',
@@ -6652,8 +6652,45 @@ export default function Field(props = {}) {
               render "� al estar definido dentro de Field, su identidad
               cambia cada render y montar/desmontar TouchableOpacity hac�a
               que el primer click no llegara a disparar onPress. */}
+        <TouchableOpacity
+          onPress={toggleBoardControls}
+          activeOpacity={0.82}
+          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={controlsToggleLabel}
+          title={controlsToggleLabel}
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: safeArea.right + (isMobile ? 5 : 10),
+            width: isMobile ? 38 : 44,
+            height: isMobile ? 42 : 48,
+            transform: [{ translateY: isMobile ? -21 : -24 }],
+            borderRadius: isMobile ? 13 : 15,
+            backgroundColor: controlsHidden ? '#2176ff' : 'rgba(15, 23, 42, 0.88)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: controlsHidden
+              ? 'rgba(255, 255, 255, 0.72)'
+              : 'rgba(255, 255, 255, 0.3)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 5 },
+            shadowOpacity: 0.24,
+            shadowRadius: 10,
+            elevation: 12,
+            zIndex: 20000,
+          }}
+        >
+          <Ionicons
+            name={controlsHidden ? 'eye-outline' : 'eye-off-outline'}
+            size={isMobile ? 20 : 23}
+            color="#ffffff"
+          />
+        </TouchableOpacity>
+
         {FloatingButtons({
-          visible: !shouldHideFloatingButtons,
+          visible: !controlsHidden && !shouldHideFloatingButtons,
           hideBottomButtons: shouldHideBottomButtons,
           sandbox,
           isSetPieceOrStrategy,
@@ -6696,7 +6733,7 @@ export default function Field(props = {}) {
         })}
 
         {/* Bot�n de deseleccionar herramienta de dibujo - siempre visible */}
-        {(drawingStates.drawingStraightArrow ||
+        {!controlsHidden && (drawingStates.drawingStraightArrow ||
           drawingStates.drawingStraightLine ||
           drawingStates.drawingCurveLine ||
           drawingStates.drawingCurveArrow ||
@@ -6742,10 +6779,10 @@ export default function Field(props = {}) {
         <View
           style={{
             position: 'absolute',
-            top: isMobile ? safeArea.top : 0,
-            left: isMobile ? safeArea.left : 0,
-            right: isMobile ? safeArea.right : 0,
-            bottom: isMobile ? safeArea.bottom : 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             flexDirection: showPlayersSidebar ? 'row' : 'column',
             alignItems: 'stretch',
             justifyContent: 'center',
@@ -6756,6 +6793,10 @@ export default function Field(props = {}) {
             style={{
               flex: 1,
               height: '100%',
+              paddingTop: safeArea.top,
+              paddingRight: safeArea.right,
+              paddingBottom: safeArea.bottom,
+              paddingLeft: safeArea.left,
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'visible', // Permitir ver elementos fuera del campo
@@ -6773,13 +6814,6 @@ export default function Field(props = {}) {
                   marginBottom: isMobile ? 4 : 8,
                   overflow: 'visible',
                   touchAction: isMobile ? 'none' : 'auto',
-                  transform: isMobile
-                    ? [
-                        {
-                          translateY: -24,
-                        },
-                      ]
-                    : undefined,
                 },
               ]}
             >
@@ -8362,7 +8396,7 @@ export default function Field(props = {}) {
 
         {/* Men� de opciones para elementos seleccionados */}
         <OptionsMenu
-          visible={optionsMenu.visible}
+          visible={!controlsHidden && optionsMenu.visible}
           position={optionsMenu.position}
           onClose={() =>
             setOptionsMenu({
@@ -8431,7 +8465,7 @@ export default function Field(props = {}) {
           setTeamPlayerStyle={setTeamPlayerStyle}
         />
 
-        {instructionMessage?.visible && (
+        {!controlsHidden && instructionMessage?.visible && (
           <View style={styles.instructionOverlay}>
             <View style={styles.instructionContainer}>
               <View style={styles.instructionIconContainer}>
@@ -8454,7 +8488,7 @@ export default function Field(props = {}) {
         )}
 
         {/* Indicador de modo goma de borrar */}
-        {eraserMode && (
+        {!controlsHidden && eraserMode && (
           <TouchableOpacity
             onPress={() => setEraserMode(false)}
             style={[

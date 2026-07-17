@@ -10,6 +10,7 @@ import {
   Modal,
   Alert,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -45,7 +46,9 @@ export default function CreateStrategyForm({
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const { width } = useWindowDimensions();
+  const isNativeForm = width < 600;
+  const styles = useMemo(() => makeStyles(theme, isNativeForm), [theme, isNativeForm]);
   const isSetPiece = kind === 'setPiece';
   const draftKind = isSetPiece ? 'setPiece' : 'strategy';
   const strategyFolders = useSelector(state => state.strategy.foldersFlat) || [];
@@ -458,11 +461,13 @@ export default function CreateStrategyForm({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[theme?.colors?.surface || '#111827', theme?.colors?.surfaceAlt || '#0f172a']}
+        colors={isNativeForm
+          ? [theme?.colors?.surface || '#111827', theme?.colors?.surface || '#111827']
+          : [theme?.colors?.surface || '#111827', theme?.colors?.surfaceAlt || '#0f172a']}
         style={[styles.headerGradient, { paddingTop: Math.max(insets.top, 16) }]}
       >
         <TouchableOpacity onPress={handleCancelPress} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={26} color={theme?.colors?.text || '#fff'} />
+          <Ionicons name="arrow-back" size={24} color={isNativeForm ? (theme?.colors?.primary || '#1d4ed8') : (theme?.colors?.text || '#fff')} />
         </TouchableOpacity>
         <Text style={styles.title}>{editingStrategy ? (isSetPiece ? t('setPieces.edit') : t('strategy.editStrategy')) : (isSetPiece ? t('setPieces.create') : t('strategy.createStrategy'))}</Text>
       </LinearGradient>
@@ -625,8 +630,8 @@ export default function CreateStrategyForm({
                 <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
                 <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
                 <TouchableOpacity style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} onPress={handleOpenField}>
-                    <Ionicons name="pencil-outline" size={18} color={onWarningColor} style={{ marginRight: 8 }} />
-                    <Text style={[styles.saveButtonText, { color: onWarningColor }]}>{t('strategy.editGraphic')}</Text>
+                    <Ionicons name="pencil-outline" size={18} color={isNativeForm ? onPrimaryColor : onWarningColor} style={{ marginRight: 8 }} />
+                    <Text style={[styles.saveButtonText, { color: isNativeForm ? onPrimaryColor : onWarningColor }]}>{t('strategy.editGraphic')}</Text>
                   </TouchableOpacity>
               </>
             ) : (
@@ -720,49 +725,63 @@ export default function CreateStrategyForm({
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
+const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+    paddingBottom: isNativeForm ? 12 : 16,
+    paddingHorizontal: isNativeForm ? 12 : 16,
+    borderBottomWidth: isNativeForm ? 1 : 0,
+    borderBottomColor: theme?.colors?.border || '#334155',
   },
   container: {
     flex: 1,
     width: '100%',
     paddingHorizontal: 0,
-    backgroundColor: theme?.colors?.backgroundAlt || '#111a30'
+    backgroundColor: isNativeForm
+      ? (theme?.colors?.background || '#0b1220')
+      : (theme?.colors?.backgroundAlt || '#111a30')
   },
   backButton: {
-    padding: 4,
-    marginRight: 12,
+    width: isNativeForm ? 40 : undefined,
+    height: isNativeForm ? 40 : undefined,
+    padding: isNativeForm ? 0 : 4,
+    marginRight: isNativeForm ? 10 : 12,
+    borderRadius: isNativeForm ? 12 : 0,
+    backgroundColor: isNativeForm ? (theme?.colors?.primarySoft || '#dbeafe') : 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: isNativeForm ? 18 : 20,
+    fontWeight: isNativeForm ? '700' : '600',
     color: theme?.colors?.text || '#111827',
     letterSpacing: 0.2
   },
   subTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme?.colors?.textMuted || '#757575',
+    fontSize: isNativeForm ? 12 : 11,
+    fontWeight: '700',
+    color: isNativeForm
+      ? (theme?.colors?.textSecondary || '#334155')
+      : (theme?.colors?.textMuted || '#757575'),
     textTransform: 'uppercase',
-    marginBottom: 16,
-    letterSpacing: 0.5,
+    marginBottom: isNativeForm ? 12 : 16,
+    letterSpacing: isNativeForm ? 0.7 : 0.5,
   },
   formCard: {
-    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: isNativeForm
+      ? (theme?.colors?.surface || '#111827')
+      : (theme?.colors?.surfaceAlt || '#111827'),
+    padding: isNativeForm ? 16 : 20,
+    borderRadius: isNativeForm ? 16 : 12,
     shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
-    marginTop: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginTop: isNativeForm ? 12 : 16,
+    marginHorizontal: isNativeForm ? 12 : 16,
+    marginBottom: isNativeForm ? 0 : 16,
     borderWidth: 1,
     borderColor: theme?.colors?.border || '#334155',
   },
@@ -788,35 +807,37 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   input: {
     backgroundColor: theme?.colors?.inputBg || '#1f2937',
-    borderRadius: 8,
+    borderRadius: isNativeForm ? 12 : 8,
     fontSize: 15,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: isNativeForm ? 13 : 12,
+    marginBottom: isNativeForm ? 14 : 16,
+    minHeight: isNativeForm ? 48 : undefined,
     borderWidth: 1,
     borderColor: theme?.colors?.inputBorder || '#334155',
     color: theme?.colors?.text || '#e2e8f0',
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: isNativeForm ? 12 : 13,
+    fontWeight: isNativeForm ? '600' : '500',
     color: theme?.colors?.textSecondary || '#424242',
     marginBottom: 8,
   },
   textarea: {
-    minHeight: 60,
+    minHeight: isNativeForm ? 88 : 60,
     verticalAlign: "top",
   },
   inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme?.colors?.inputBg || '#1f2937',
-    borderRadius: 8,
+    borderRadius: isNativeForm ? 12 : 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: isNativeForm ? 12 : 10,
     borderWidth: 1,
     borderColor: theme?.colors?.inputBorder || '#334155',
-    marginBottom: 16,
+    marginBottom: isNativeForm ? 14 : 16,
+    minHeight: isNativeForm ? 48 : undefined,
   },
   inputField: {
     flex: 1,
@@ -826,17 +847,19 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   graphicSection: {
     alignItems: "center",
-    marginVertical: 16,
+    marginVertical: isNativeForm ? 0 : 16,
     width: '100%',
   },
   addButton: {
-    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
-    borderRadius: 12,
-    paddingVertical: 48,
+    backgroundColor: isNativeForm
+      ? (theme?.colors?.backgroundAlt || '#111a30')
+      : (theme?.colors?.surfaceAlt || '#111827'),
+    borderRadius: isNativeForm ? 14 : 12,
+    paddingVertical: isNativeForm ? 32 : 48,
     paddingHorizontal: 24,
     marginTop: 8,
-    marginBottom: 16,
-    borderWidth: 2,
+    marginBottom: isNativeForm ? 0 : 16,
+    borderWidth: isNativeForm ? 1.5 : 2,
     borderColor: theme?.colors?.primary || '#3b82f6',
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -852,8 +875,10 @@ const makeStyles = (theme) => StyleSheet.create({
     marginTop: 8,
   },
   editButton: {
-    backgroundColor: theme?.colors?.warning || '#d97706',
-    borderRadius: 8,
+    backgroundColor: isNativeForm
+      ? (theme?.colors?.primary || '#1d4ed8')
+      : (theme?.colors?.warning || '#d97706'),
+    borderRadius: isNativeForm ? 12 : 8,
     paddingVertical: 14,
     paddingHorizontal: 22,
     flexDirection: 'row',
@@ -866,7 +891,7 @@ const makeStyles = (theme) => StyleSheet.create({
   saveButton: {
     flex: 1,
     backgroundColor: theme?.colors?.primary || '#2196F3',
-    borderRadius: 8,
+    borderRadius: isNativeForm ? 12 : 8,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -896,9 +921,11 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: theme?.colors?.surfaceAlt || '#111827',
+    paddingHorizontal: isNativeForm ? 12 : 20,
+    paddingVertical: isNativeForm ? 12 : 14,
+    backgroundColor: isNativeForm
+      ? (theme?.colors?.surface || '#111827')
+      : (theme?.colors?.surfaceAlt || '#111827'),
     borderTopWidth: 1,
     borderTopColor: theme?.colors?.border || '#334155',
     gap: 12,
@@ -911,7 +938,7 @@ const makeStyles = (theme) => StyleSheet.create({
   cancelButton: {
     flex: 0.4,
     backgroundColor: theme?.colors?.surfaceAlt || '#111827',
-    borderRadius: 8,
+    borderRadius: isNativeForm ? 12 : 8,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -960,10 +987,11 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   typeSelector: {
     backgroundColor: theme?.colors?.inputBg || '#1f2937',
-    borderRadius: 8,
+    borderRadius: isNativeForm ? 12 : 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: isNativeForm ? 13 : 12,
+    marginBottom: isNativeForm ? 14 : 16,
+    minHeight: isNativeForm ? 48 : undefined,
     borderWidth: 1,
     borderColor: theme?.colors?.inputBorder || '#334155',
     flexDirection: 'row',
@@ -1065,8 +1093,8 @@ const makeStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: isNativeForm ? 14 : 12,
+    borderWidth: isNativeForm ? 1.5 : 2,
     borderColor: 'transparent',
     backgroundColor: theme?.colors?.inputBg || '#1f2937',
   },

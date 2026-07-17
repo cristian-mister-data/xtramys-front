@@ -1301,7 +1301,15 @@ const Anthropometry = ({ navigation, canMutate }) => {
           transparent
           onRequestClose={handleCancel}
         >
-          <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalOverlay,
+              {
+                paddingTop: Math.max(insets.top, IS_MOBILE ? 8 : 0),
+                paddingBottom: Math.max(insets.bottom, IS_MOBILE ? 8 : 0),
+              },
+            ]}
+          >
             <View
               style={IS_MOBILE ? styles.createModalContainerMobile : styles.createModalContainer}
             >

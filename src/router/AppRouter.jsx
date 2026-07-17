@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
 import LangSubscribe from '@/pages/LangSubscribe';
 import DemoSubscribeGate from '@/components/demo/DemoSubscribeGate';
+import { isNative } from '@/platform/capacitor';
 
 import Welcome from '@/pages/auth/Welcome';
 import Login from '@/pages/auth/Login';
@@ -71,13 +72,13 @@ const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 
 const SubscribeRoute = (
   <ProtectedRoute>
-    {lazy_(<Subscribe />)}
+    {isNative ? <Navigate to="/profile" replace /> : lazy_(<Subscribe />)}
   </ProtectedRoute>
 );
 
 const SubscribeClubRoute = (
   <ProtectedRoute>
-    {lazy_(<SubscribeClub />)}
+    {isNative ? <Navigate to="/club/dashboard" replace /> : lazy_(<SubscribeClub />)}
   </ProtectedRoute>
 );
 
@@ -89,9 +90,9 @@ export default function AppRouter() {
 
       {/* Auth */}
       <Route element={<AuthLayout />}>
-        <Route path="/auth/welcome" element={<Welcome />} />
+        <Route path="/auth/welcome" element={isNative ? <Navigate to="/auth/login" replace /> : <Welcome />} />
         <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/register" element={isNative ? <Navigate to="/auth/login" replace /> : <Register />} />
         <Route path="/auth/verify-email" element={<VerifyEmail />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
@@ -106,7 +107,6 @@ export default function AppRouter() {
       <Route path="/public/match-sheet-abp/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/friendship/accept/:token" element={lazy_(<FriendshipAccept />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
-
       {/* Subscription (auth required, no app layout) */}
       <Route path="/subscribe" element={SubscribeRoute} />
       <Route path="/suscripcion" element={<LangSubscribe lang="es" />} />

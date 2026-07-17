@@ -794,6 +794,7 @@ export default function VideoRecorder({
   }, [showPreviewScreen]);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [videoNombre, setVideoNombre] = useState(editingVideoName || '');
+  const videoNameInputRef = useRef(null);
   const [videoNombreEn, setVideoNombreEn] = useState(editingVideoEnName || '');
   const [videoDescripcion, setVideoDescripcion] = useState(editingVideoDescription || '');
 
@@ -805,6 +806,7 @@ export default function VideoRecorder({
       setVideoNombreEn((current) => current || editingVideoEnName);
     }
   }, [editingVideoName, editingVideoEnName]);
+
   const [notification, setNotification] = useState({
     visible: false,
     message: '',
@@ -1066,11 +1068,12 @@ export default function VideoRecorder({
                 snapshot.textColor = elem.textColor || '#000000';
                 snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
               }
-              if (elem.photoUrl || elem.playerData?.foto) {
-                snapshot.photoUrl = elem.photoUrl || cdnUrl(elem.playerData.foto);
-              }
+              const playerPhoto = elem.playerData?.foto
+                ? (elem.photoUrl || cdnUrl(elem.playerData.foto))
+                : '';
+              if (playerPhoto) snapshot.photoUrl = playerPhoto;
               // Añadir configuración de mostrar fotos y números
-              snapshot.showPhotos = showPhotos;
+              snapshot.showPhotos = Boolean(playerPhoto) && (elem.showPhotos ?? showPhotos);
               snapshot.playersWithNumber = playersWithNumber;
               // Añadir datos del portero
               const inferredGoalkeeper =
@@ -1689,7 +1692,8 @@ export default function VideoRecorder({
 
   // Guardar video en la base de datos (o actualizar si estamos editando)
   const saveVideoToDB = async () => {
-    if (!videoNombre.trim()) {
+    const currentVideoName = String(videoNameInputRef.current?.value ?? videoNombre).trim();
+    if (!currentVideoName) {
       showNotification(t('videoRecorder.nameRequired'), 'error');
       return;
     }
@@ -1733,7 +1737,7 @@ export default function VideoRecorder({
           extraDurationEnd: 0.5,
           playersWithNumber: playersWithNumber,
         },
-        nombre: videoNombre,
+        nombre: currentVideoName,
         descripcion: videoDescripcion,
         ...(shouldBeGlobal &&
           videoNombreEn.trim() && { translations: { en: { nombre: videoNombreEn.trim() } } }),
@@ -2453,7 +2457,12 @@ export default function VideoRecorder({
           )}
         </ScrollView>
         {IS_MOBILE && (
-          <TouchableOpacity onPress={onClose} style={styles.mobileCloseBtn} accessibilityRole="button" accessibilityLabel="Cerrar panel de video">
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.mobileCloseBtn, { right: 12 + insets.right }]}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar panel de video"
+          >
             <Feather name="x" size={22} color="#fff" />
           </TouchableOpacity>
         )}
@@ -2520,12 +2529,20 @@ export default function VideoRecorder({
                   <Feather name="edit-3" size={14} color="#666" />
                   <Text style={styles.inputLabel}>{t('videoRecorder.videoNameLabel')}</Text>
                 </View>
-                <TextInput
-                  style={styles.input}
+                <input
+                  ref={videoNameInputRef}
+                  style={{
+                    ...StyleSheet.flatten(styles.input),
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    direction: 'ltr',
+                  }}
                   placeholder={t('videoRecorder.videoNamePlaceholder')}
-                  placeholderTextColor="#999"
-                  value={videoNombre}
-                  onChangeText={setVideoNombre}
+                  defaultValue={videoNombre}
+                  onFocus={({ currentTarget }) => setTimeout(() => currentTarget.scrollIntoView({ block: 'center' }), 250)}
+                  onBlur={(event) => setVideoNombre(event.currentTarget.value)}
+                  dir="ltr"
                   maxLength={100}
                 />
               </View>
@@ -2668,10 +2685,10 @@ export default function VideoRecorder({
                 style={[
                   styles.saveModalBtn,
                   styles.saveModalBtnPrimary,
-                  (!videoNombre.trim() || isSaving) && styles.saveModalBtnDisabled,
+                  isSaving && styles.saveModalBtnDisabled,
                 ]}
                 onPress={saveVideoToDB}
-                disabled={isSaving || !videoNombre.trim()}
+                disabled={isSaving}
               >
                 <Feather name="check" size={16} color="#fff" />
                 <Text style={styles.saveModalBtnTextPrimary}>

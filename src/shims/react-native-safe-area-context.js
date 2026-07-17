@@ -22,11 +22,16 @@ function readCssInsets() {
   ].join(';');
   document.body.appendChild(probe);
   const style = getComputedStyle(probe);
+  const rootStyle = getComputedStyle(document.documentElement);
+  const inset = (side) => Math.max(
+    parseFloat(style[`padding${side}`]) || 0,
+    parseFloat(rootStyle.getPropertyValue(`--safe-area-inset-${side.toLowerCase()}`)) || 0,
+  );
   const insets = {
-    top: parseFloat(style.paddingTop) || 0,
-    right: parseFloat(style.paddingRight) || 0,
-    bottom: parseFloat(style.paddingBottom) || 0,
-    left: parseFloat(style.paddingLeft) || 0,
+    top: inset('Top'),
+    right: inset('Right'),
+    bottom: inset('Bottom'),
+    left: inset('Left'),
   };
   document.body.removeChild(probe);
   return insets;

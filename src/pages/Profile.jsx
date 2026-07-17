@@ -35,6 +35,8 @@ import { saveToken, saveUser } from '@/auth/storage';
 import { createPortalSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
+import { isNative } from '@/platform/capacitor';
+import { openExternalWeb, webAppUrl, websiteUrl } from '@/platform/externalWeb';
 import ImageCropper from '@/components/season/ImageCropper';
 import { useTutorial } from '@/components/shared/TutorialProvider';
 import { XtramysCommunityCard } from '@/components/shared/XtramysCommunityInvite';
@@ -630,6 +632,8 @@ export default function Profile() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancellingModal, setCancellingModal] = useState(false);
+  const [deletionConfirmation, setDeletionConfirmation] = useState('');
+  const [deletionRequesting, setDeletionRequesting] = useState(false);
   // Mientras hay cambio pendiente, el correo actual sigue activo y
   // únicamente al confirmar el código se sustituye el correo principal.
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false);
@@ -902,7 +906,33 @@ export default function Profile() {
     navigate('/auth/login');
   };
 
+  const handleDeletionRequest = async () => {
+    const confirmation = String(deletionConfirmation || '').trim().toLowerCase();
+    if (confirmation !== String(user.correo || '').trim().toLowerCase()) {
+      toast.error(t('profile.deleteAccountEmailMismatch', 'Introduce el correo de esta cuenta para confirmar.'));
+      return;
+    }
+    const confirmed = await confirmAction(t('profile.deleteAccountConfirm', '¿Quieres solicitar la eliminación de tu cuenta y los datos asociados?'));
+    if (!confirmed) return;
+
+    setDeletionRequesting(true);
+    try {
+      await api.post(`/user/${user._id}/deletion-request`, { confirmation });
+      toast.success(t('profile.deleteAccountRequested', 'Solicitud recibida. Te enviaremos una confirmación por correo.'));
+      await dispatch(logoutThunk());
+      navigate('/auth/login');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || t('profile.deleteAccountError', 'No se pudo registrar la solicitud.'));
+    } finally {
+      setDeletionRequesting(false);
+    }
+  };
+
   const handleManageSubscription = async () => {
+    if (isNative) {
+      openExternalWeb(webAppUrl('/profile'));
+      return;
+    }
     setPortalLoading(true);
     try {
       const data = await createPortalSession();
@@ -929,9 +959,11 @@ export default function Profile() {
   };
 
   const handleSubscribe = async () => {
+    if (isNative) return;
     navigate('/subscribe');
   };
   const handleReactivateSubscription = async () => {
+    if (isNative) return;
     setPortalLoading(true);
     try {
       const data = await reactivateSubscription(user.paymentProvider);
@@ -1339,14 +1371,16 @@ export default function Profile() {
                 {t('profile.clubManageNotice', 'Para cambiar el plan (añadir o reducir licencias), dar de baja a entrenadores o cancelar/reactivar la suscripción de tu club, accede al panel de manejo de club.')}
               </div>
 
-                            <SubActions>
-                <SubBtn
-                  type="button"
-                  $variant="primary"
-                  onClick={() => navigate('/club/dashboard')}
-                >
-                  ⚙️ {t('profile.goToClubDashboard', 'Ir al Panel de Manejo de Club')}
-                </SubBtn>
+              <SubActions>
+                {isNative ? (
+                  <SubBtn type="button" $variant="primary" onClick={handleManageSubscription}>
+                    ⚙️ {t('subscription.manage', 'Gestionar suscripción')}
+                  </SubBtn>
+                ) : (
+                  <SubBtn type="button" $variant="primary" onClick={() => navigate('/club/dashboard')}>
+                    ⚙️ {t('profile.goToClubDashboard', 'Ir al Panel de Manejo de Club')}
+                  </SubBtn>
+                )}
               </SubActions>
             </SubscriptionCard>
           </FormCard>
@@ -1355,7 +1389,11 @@ export default function Profile() {
         {user?.role !== 'club_admin' && !user?.clubId && (
         <FormCard>
           <CardHeader>
-            <CardTitle>💳 {t('subscription.titleProfile', 'Suscripción')}</CardTitle>
+            <CardTitle>
+              {isNative
+                ? `ℹ️ ${t('subscription.accountAccess', 'Acceso de cuenta')}`
+                : `💳 ${t('subscription.titleProfile', 'Suscripción')}`}
+            </CardTitle>
           </CardHeader>
           <SubscriptionCard $plan={hasPaidSubscriptionAccess(user) ? 'pro' : 'free'} $cancelled={user.subscriptionCancelAtPeriodEnd}>
             {hasPaidSubscriptionAccess(user) ? (
@@ -1408,36 +1446,44 @@ export default function Profile() {
                     )}
 
                     <SubActions>
-                      {user.paymentProvider === 'stripe' && (
-                        <SubBtn
-                          type="button"
-                          $variant="secondary"
-                          onClick={handleManageSubscription}
-                          disabled={portalLoading}
-                        >
-                          {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                      {isNative ? (
+                        <SubBtn type="button" $variant="secondary" onClick={handleManageSubscription}>
+                          ⚙️ {t('subscription.manage', 'Gestionar suscripción')}
                         </SubBtn>
-                      )}
-                      {!isCancelledActive && (
-                        <SubBtn
-                          type="button"
-                          $variant="danger"
-                          onClick={() => setCancellingModal(true)}
-                          disabled={portalLoading}
-                          style={{ background: '#ef4444', border: 'none' }}
-                        >
-                          {t('subscription.cancel', 'Cancelar suscripción')}
-                        </SubBtn>
-                      )}
-                      {isCancelledActive && (
-                        <SubBtn
-                          type="button"
-                          $variant="primary"
-                          onClick={handleReactivateSubscription}
-                          disabled={portalLoading}
-                        >
-                          {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
-                        </SubBtn>
+                      ) : (
+                        <>
+                          {user.paymentProvider === 'stripe' && (
+                            <SubBtn
+                              type="button"
+                              $variant="secondary"
+                              onClick={handleManageSubscription}
+                              disabled={portalLoading}
+                            >
+                              {portalLoading ? '⏳...' : '⚙️ ' + t('subscription.manage', 'Gestionar')}
+                            </SubBtn>
+                          )}
+                          {!isCancelledActive && (
+                            <SubBtn
+                              type="button"
+                              $variant="danger"
+                              onClick={() => setCancellingModal(true)}
+                              disabled={portalLoading}
+                              style={{ background: '#ef4444', border: 'none' }}
+                            >
+                              {t('subscription.cancel', 'Cancelar suscripción')}
+                            </SubBtn>
+                          )}
+                          {isCancelledActive && (
+                            <SubBtn
+                              type="button"
+                              $variant="primary"
+                              onClick={handleReactivateSubscription}
+                              disabled={portalLoading}
+                            >
+                              {portalLoading ? '⏳...' : '🔄 ' + t('subscription.reactivate', 'Reactivar')}
+                            </SubBtn>
+                          )}
+                        </>
                       )}
                     </SubActions>
                   </>
@@ -1445,18 +1491,20 @@ export default function Profile() {
               })()
             ) : (
               <FreeCard>
-                <FreeIcon>💳</FreeIcon>
-                <FreeTitle>{t('subscription.required', 'Suscripción necesaria')}</FreeTitle>
+                <FreeIcon>{isNative ? 'ℹ️' : '💳'}</FreeIcon>
+                <FreeTitle>
+                  {isNative
+                    ? t('subscription.demoPlan', 'Plan demo')
+                    : t('subscription.required', 'Suscripción necesaria')}
+                </FreeTitle>
                 <FreeDesc>
-                  {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
+                  {isNative
+                    ? t('subscription.demoProfileNotice', 'Este es el acceso disponible para tu cuenta.')
+                    : t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
                 </FreeDesc>
-                <FreeBtn
-                  type="button"
-                  onClick={handleSubscribe}
-                  disabled={portalLoading}
-                >
+                {!isNative && <FreeBtn type="button" onClick={handleSubscribe} disabled={portalLoading}>
                   {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
-                </FreeBtn>
+                </FreeBtn>}
               </FreeCard>
             )}
           </SubscriptionCard>
@@ -1537,6 +1585,33 @@ export default function Profile() {
             </ActionRow>
           </FormCard>
         )}
+
+        <FormCard>
+          <CardHeader>
+            <CardTitle>{t('profile.deleteAccountTitle', 'Eliminar cuenta')}</CardTitle>
+          </CardHeader>
+          <Stack style={{ gap: 12 }}>
+            <Muted>{t('profile.deleteAccountDescription', 'Solicita la eliminación de tu cuenta y de los datos asociados. La solicitud se completa en un máximo de 30 días y recibirás confirmación por correo.')}</Muted>
+            <Muted>{t('profile.deleteAccountBillingNotice', 'Si tienes una suscripción activa contratada fuera de la app, cancélala antes de eliminar la cuenta.')}</Muted>
+            <Field>
+              <Label>{t('profile.deleteAccountEmailLabel', 'Escribe tu correo para confirmar')}</Label>
+              <Input
+                type="email"
+                autoComplete="email"
+                value={deletionConfirmation}
+                onChange={(event) => setDeletionConfirmation(event.target.value)}
+              />
+            </Field>
+          </Stack>
+          <ActionRow>
+            <Button type="button" $variant="ghost" onClick={() => openExternalWeb(websiteUrl(i18n.language, '/privacidad'))}>
+              {t('legal.privacyPolicy', 'Política de privacidad')}
+            </Button>
+            <Button type="button" onClick={handleDeletionRequest} disabled={deletionRequesting} style={{ background: '#dc2626', borderColor: '#dc2626' }}>
+              {deletionRequesting ? t('common.saving', 'Guardando...') : t('profile.deleteAccountButton', 'Solicitar eliminación')}
+            </Button>
+          </ActionRow>
+        </FormCard>
 
 
       </RightColumn>

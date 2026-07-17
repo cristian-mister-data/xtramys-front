@@ -8,7 +8,7 @@ import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { applySetPieceKitsToElements } from '@/utils/kits';
 import { getPlayerRenderMetrics } from '@/utils/playerRenderMetrics';
 import { decomposeFieldId, getAspectForView, isVisibleInView, ratioToDisplay } from '@/vendor/tacticalBoard/fields';
-import { renderIconCanvas } from '@/vendor/tacticalBoard/field/icon-renderers';
+import { renderIconCanvas, renderPlayerNameLabel } from '@/vendor/tacticalBoard/field/icon-renderers';
 import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
 import { BatchLinesRenderer } from '@/vendor/tacticalBoard/field/line-renderers';
 import { BatchShapesRenderer } from '@/vendor/tacticalBoard/field/shape-renderers';
@@ -43,13 +43,13 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       return { ...element, playerData: undefined, photoUrl: undefined, matchSheetAssigned: false };
     }
     const playerData = isPlayerObject(player)
-      ? { ...player, nombre: playerName, fullName: playerName }
+      ? { ...player, fullName: playerName }
       : { nombre: playerName, fullName: playerName };
     return {
       ...element,
       number: playerData.dorsal || playerData.number || assignment?.number || element.number,
       playerData,
-      photoUrl: assignment?.photoUrl || element.photoUrl || (playerData.foto ? cdnUrl(playerData.foto) : undefined),
+      photoUrl: playerData.foto ? cdnUrl(playerData.foto) : undefined,
       matchSheetAssigned: true,
     };
   }), effectiveKitContext, showPhotos).map((element) => ({
@@ -147,7 +147,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
             {pointElements.map((element) => {
               const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
               const scale = Math.min(fieldLayout.width, fieldLayout.height) / 500;
-              const { size, nameFontSize } = getPlayerRenderMetrics(element, scale);
+              const { size } = getPlayerRenderMetrics(element, scale);
               return (
                 <View
                   key={`element-${element.id || element._id}`}
@@ -176,40 +176,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     element.showPhotos === true,
                     element.photoUrl || cdnUrl(element.playerData?.foto || ''),
                   )}
-                  {element.matchSheetAssigned && element.playerData && (
-                    <View
-                      pointerEvents="none"
-                      style={{
-                        position: 'absolute',
-                        top: size,
-                        left: -100,
-                        right: -100,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        selectable={false}
-                        numberOfLines={1}
-                        style={{
-                          fontFamily: 'Arial, Helvetica, sans-serif',
-                          fontSize: nameFontSize,
-                          lineHeight: nameFontSize,
-                          textAlign: 'center',
-                          color: element.textColor || '#000',
-                          backgroundColor:
-                            element.textBackgroundColor === 'transparent'
-                              ? 'transparent'
-                              : element.textBackgroundColor || '#fff',
-                          paddingHorizontal: element.textBackgroundColor === 'transparent' ? 0 : 1,
-                          paddingVertical: element.textBackgroundColor === 'transparent' ? 0 : 1,
-                          borderWidth: element.textBackgroundColor === 'transparent' ? 0 : 0.75,
-                          borderColor: '#ccc',
-                        }}
-                      >
-                        {getPlayerFullName(element.playerData) || element.playerData.fullName || element.playerData.name}
-                      </Text>
-                    </View>
-                  )}
+                  {element.matchSheetAssigned && renderPlayerNameLabel(element, height <= 180)}
                 </View>
               );
             })}
@@ -217,22 +184,34 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
               const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
               const scale = Math.min(fieldLayout.width, fieldLayout.height) / 500;
               return (
-                <Text
+                <View
                   key={`text-${element.id || element._id}`}
                   pointerEvents="none"
                   style={{
                     position: 'absolute',
                     left: point.x,
                     top: point.y,
-                    color: element.color || '#000',
                     backgroundColor: element.backgroundColor || 'transparent',
-                    fontSize: (element.fontSize || 18) * scale,
-                    fontWeight: element.fontWeight || 'normal',
+                    minWidth: 40 * scale,
+                    maxWidth: Math.max(40 * scale, fieldLayout.width - point.x),
+                    padding: 4 * scale,
                     transform: [{ rotate: `${element.rotation || 0}deg` }],
                   }}
                 >
-                  {element.text || ''}
-                </Text>
+                  <Text
+                    style={{
+                      color: element.color || '#000',
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      fontSize: (element.size || element.fontSize || 18) * scale,
+                      lineHeight: (element.size || element.fontSize || 18) * scale * 1.2,
+                      fontWeight: 'bold',
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {element.value ?? element.text ?? ''}
+                  </Text>
+                </View>
               );
             })}
           </View>

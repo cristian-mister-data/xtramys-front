@@ -243,7 +243,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
   ctx.save();
   applyRotation(ctx, p.x, p.y, elem.rotation);
 
-  const showPhotos = elem.showPhotos || options.showPhotos;
+  const showPhotos = elem.showPhotos ?? options.showPhotos;
   const photoKey = elem.photoUrl || elem.playerData?.foto;
   const photoImg =
     photoKey && (options.playerPhotos?.[photoKey] || options.playerPhotos?.[elem.playerData?.foto]);

@@ -1599,7 +1599,7 @@ export default function EditMatchSheetModal({
         const player = assignedPlayer || element.playerData || (assignment?.playerName ? { nombre: assignment.playerName, foto: assignment.foto || '' } : null);
         if (!player) return null;
         const name = getPlayerFullName(player);
-        const photoUrl = assignment?.photoUrl || element.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
+        const photoUrl = player.foto ? cdnUrl(player.foto) : '';
         return {
           slotId: String(element.id || element._id || `slot-${index}`),
           number: String(assignment?.number || element.number || element.playerNumber || element.numero || element.text || element.label || ''),
@@ -1627,7 +1627,7 @@ export default function EditMatchSheetModal({
       const player = getAssignedPlayer(assignment) || (assignment.playerName ? { nombre: assignment.playerName, foto: assignment.foto || '' } : null);
       if (!player) return null;
       const name = getPlayerFullName(player);
-      const photoUrl = assignment.photoUrl || (player.foto ? cdnUrl(player.foto) : '');
+      const photoUrl = player.foto ? cdnUrl(player.foto) : '';
       return {
         slotId: assignment.slotId,
         number: assignment.number,
@@ -2145,13 +2145,21 @@ export default function EditMatchSheetModal({
   };
 
   const assignSetPiecePlayer = (setPieceIndex, slotId, playerId) => {
+    const selectedPlayer = players.find((player) => String(player._id || player.id) === String(playerId));
     setSelectedSetPieces((prev) => prev.map((sp, index) => {
       if (index !== setPieceIndex) return sp;
       return {
         ...sp,
         assignments: (sp.assignments || []).map((assignment) => (
           assignment.slotId === slotId
-            ? { ...assignment, player: playerId || null, playerName: playerId ? getPlayerName(playerId) : '' }
+            ? {
+                ...assignment,
+                player: playerId || null,
+                playerName: playerId ? getPlayerName(playerId) : '',
+                foto: selectedPlayer?.foto || '',
+                photoUrl: selectedPlayer?.foto ? cdnUrl(selectedPlayer.foto) : '',
+                showPhotos: Boolean(selectedPlayer?.foto),
+              }
             : assignment
         )),
       };
@@ -2175,11 +2183,10 @@ export default function EditMatchSheetModal({
       return {
         ...element,
         number: element.number || assignment?.number || player.dorsal || '',
-        photoUrl: assignment?.photoUrl || (player.foto ? cdnUrl(player.foto) : element.photoUrl),
+        photoUrl: player.foto ? cdnUrl(player.foto) : '',
         showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false,
         playerData: {
           ...player,
-          nombre: getPlayerFullName(player),
           fullName: getPlayerFullName(player),
           foto: player.foto || assignment?.foto || '',
         },
@@ -2332,7 +2339,7 @@ export default function EditMatchSheetModal({
           player: el.playerData?._id || el.playerData?.id || null,
           playerName: getPlayerFullName(el.playerData),
           foto: el.playerData?.foto || '',
-          photoUrl: el.photoUrl || (el.playerData?.foto ? cdnUrl(el.playerData.foto) : ''),
+          photoUrl: el.playerData?.foto ? (el.photoUrl || cdnUrl(el.playerData.foto)) : '',
           showPhotos: el.showPhotos === true,
         }));
         const showPhotos = newAssignments.some((assignment) => assignment.showPhotos && assignment.photoUrl);
@@ -2361,6 +2368,7 @@ export default function EditMatchSheetModal({
           assignments: newAssignments,
         } : sp));
         boardModalGuardUntilRef.current = Date.now() + 500;
+        boardOpeningRef.current = false;
         setBoardParams(null);
       },
       onVideoSaved: (savedVideoId) => {
@@ -2383,6 +2391,7 @@ export default function EditMatchSheetModal({
       },
       onCancel: () => {
         boardModalGuardUntilRef.current = Date.now() + 500;
+        boardOpeningRef.current = false;
         setBoardParams(null);
       },
     };

@@ -13,6 +13,29 @@ coverage
 android
 ios
 
+# Keep store-policy source files versioned; generated build artifacts stay ignored below.
+!/android/
+/android/*
+!/android/app/
+/android/app/*
+!/android/app/build.gradle
+!/android/app/src/
+/android/app/src/*
+!/android/app/src/main/
+/android/app/src/main/*
+!/android/app/src/main/AndroidManifest.xml
+!/ios/
+/ios/*
+!/ios/App/
+/ios/App/*
+!/ios/App/App/
+/ios/App/App/*
+!/ios/App/App/Info.plist
+!/ios/App/App/PrivacyInfo.xcprivacy
+!/ios/App/App.xcodeproj/
+/ios/App/App.xcodeproj/*
+!/ios/App/App.xcodeproj/project.pbxproj
+
 # Reserved Windows device name accidentally created by tooling; cannot be
 # safely deleted from the working tree, must not be indexed.
 /nul

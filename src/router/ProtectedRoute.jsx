@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { getAccessMode, hasAppAccess } from '@/utils/subscriptionAccess';
+import { isNative } from '@/platform/capacitor';
 
 const SUBSCRIBE_PATHS = [
   '/subscribe',
@@ -71,7 +72,7 @@ export default function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     const isSubscribeFlow = SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p));
-    return <Navigate to={isSubscribeFlow ? '/auth/login' : '/auth/welcome'} state={{ from: location }} replace />;
+    return <Navigate to={isSubscribeFlow || isNative ? '/auth/login' : '/auth/welcome'} state={{ from: location }} replace />;
   }
   if (user?.authProvider === 'local' && user.emailVerificado === false) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;

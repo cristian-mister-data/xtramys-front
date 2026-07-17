@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNative } from '@/platform/capacitor';
 import { getNotifications } from '@/api/notification';
@@ -20,10 +21,11 @@ function getMessageForNotification(type, data) {
 
 export function useLocalNotifications() {
   const navigate = useNavigate();
+  const user = useSelector((s) => s.usuario.user);
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative || !user?._id) return;
     if (initialized.current) return;
     initialized.current = true;
 
@@ -61,10 +63,10 @@ export function useLocalNotifications() {
     };
 
     setupNotifications();
-  }, [navigate]);
+  }, [navigate, user?._id]);
 
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative || !user?._id) return;
 
     let notifiedIds = [];
     try {
@@ -134,5 +136,5 @@ export function useLocalNotifications() {
       clearTimeout(initialTimeout);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [user?._id]);
 }

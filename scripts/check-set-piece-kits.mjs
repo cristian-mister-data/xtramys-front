@@ -68,6 +68,9 @@ assert.equal(
 );
 
 const iconRenderer = readFileSync(new URL('../src/vendor/tacticalBoard/field/icon-renderers.js', import.meta.url), 'utf8');
+assert.match(iconRenderer, /export function renderPlayerNameLabel/);
+assert.match(iconRenderer, /bottom:\s*-22/);
+assert.match(iconRenderer, /fontSize:\s*isMobile \? 8 : 10/);
 for (const property of ['hasStripes', 'stripeColor', 'kitPattern', 'kitSecondaryColor']) {
   assert.match(iconRenderer, new RegExp(`icon\\.${property} !== nextIcon\\.${property}`));
 }
@@ -98,7 +101,7 @@ const matchSheetSource = readFileSync(new URL('../src/vendor/season/EditMatchShe
 assert.match(matchSheetSource, /matchVideoCopy: false/);
 assert.match(matchSheetSource, /resolveMatchSheetSetPieceVideo/);
 assert.match(matchSheetSource, /boardOpeningRef\.current = true/);
-assert.match(matchSheetSource, /finally\s*\{[\s\S]*boardOpeningRef\.current = false/);
+assert.match(matchSheetSource, /finally\s*\{\s*if \(requestId === boardOpenRequestRef\.current\) \{\s*boardOpeningRef\.current = false/);
 assert.match(matchSheetSource, /boardModalGuardUntilRef\.current = Date\.now\(\) \+ 2000/);
 assert.match(matchSheetSource, /onRequestClose=\{handleMatchSheetRequestClose\}/);
 assert.match(matchSheetSource, /loadingSetPieceVideoIndex === setPieceIndex/);
@@ -137,14 +140,12 @@ const fourKeyframes = Array.from({ length: 4 }, (_, index) => ({
 assert.equal(buildInterpolatedFrames(fourKeyframes, 30, 0.9, 0.1, 1, 0.5).length, 132);
 
 const previewSource = readFileSync(new URL('../src/vendor/matchSheet/SetPiecePreview.js', import.meta.url), 'utf8');
+assert.match(previewSource, /renderPlayerNameLabel\(element, height <= 180\)/);
 assert.match(previewSource, /assignment\?\.playerName/);
 assert.match(previewSource, /const liveBoard = elements\.length > 0;/);
 assert.match(previewSource, /decomposeFieldId\(setPiece\?\.customFieldType \|\| setPiece\?\.tipoCampo \|\| 'full'\)/);
 assert.doesNotMatch(previewSource, /halfLeft|halfRight|autoFramed/);
 assert.match(previewSource, /getPlayerRenderMetrics\(element, scale\)/);
-assert.match(previewSource, /top:\s*size/);
-assert.match(previewSource, /fontSize:\s*nameFontSize/);
-assert.match(previewSource, /element\.matchSheetAssigned && element\.playerData/);
 assert.match(previewSource, /assignment\?\.player \|\| element\.playerData/);
 assert.match(previewSource, /if \(!assignment \|\|/);
 assert.doesNotMatch(previewSource, /isOwnSetPiecePlayer/);

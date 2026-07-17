@@ -68,7 +68,6 @@ export default defineConfig(({ mode }) => {
       { find: /^react-native$/, replacement: path.resolve(__dirname, './src/shims/react-native.js') },
       // Shims (web stubs para módulos sin compat)
       { find: 'react-native-view-shot', replacement: path.resolve(__dirname, './src/shims/react-native-view-shot.js') },
-      { find: 'expo-screen-orientation', replacement: path.resolve(__dirname, './src/shims/expo-screen-orientation.js') },
       { find: /^expo-file-system(\/legacy)?$/, replacement: path.resolve(__dirname, './src/shims/expo-file-system.js') },
       { find: 'expo-asset', replacement: path.resolve(__dirname, './src/shims/expo-asset.js') },
       { find: 'react-native-fs', replacement: path.resolve(__dirname, './src/shims/react-native-fs.js') },

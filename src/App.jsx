@@ -76,6 +76,7 @@ export default function App() {
   const dispatch = useDispatch();
   const bootstrapped = useRef(false);
   const apiUnavailableRef = useRef(false);
+  const sessionReadyRef = useRef(false);
   const [apiUnavailable, setApiUnavailable] = useState(false);
   const [checkingApi, setCheckingApi] = useState(false);
 
@@ -98,7 +99,13 @@ export default function App() {
       dispatch(subscriptionRequired());
     });
     setNetworkErrorHandler((type) => {
-      if ((type === 'OFFLINE' || type === 'TIMEOUT') && !isAuthRoute()) {
+      const isVisible = typeof document === 'undefined' || document.visibilityState === 'visible';
+      if (
+        (type === 'OFFLINE' || type === 'TIMEOUT') &&
+        !isAuthRoute() &&
+        isVisible &&
+        !sessionReadyRef.current
+      ) {
         apiUnavailableRef.current = true;
         setApiUnavailable(true);
       }
@@ -125,11 +132,17 @@ export default function App() {
       dispatch(fetchMe({ force }))
         .unwrap()
         .then(() => {
+          sessionReadyRef.current = true;
           apiUnavailableRef.current = false;
           setApiUnavailable(false);
         })
         .catch((error) => {
           if (isConnectivityError(error) && !isAuthRoute()) {
+            if (sessionReadyRef.current) {
+              apiUnavailableRef.current = false;
+              setApiUnavailable(false);
+              return;
+            }
             apiUnavailableRef.current = true;
             setApiUnavailable(true);
             return;
@@ -144,7 +157,7 @@ export default function App() {
     let lastChecked = Date.now();
     const handleFocus = () => {
       const now = Date.now();
-      if (now - lastChecked < SESSION_RECHECK_INTERVAL_MS) return;
+      if (!apiUnavailableRef.current && now - lastChecked < SESSION_RECHECK_INTERVAL_MS) return;
       lastChecked = now;
       checkSession();
     };
@@ -167,6 +180,7 @@ export default function App() {
     setCheckingApi(true);
     try {
       await dispatch(fetchMe({ force: true })).unwrap();
+      sessionReadyRef.current = true;
       apiUnavailableRef.current = false;
       setApiUnavailable(false);
     } catch (error) {
