@@ -11,9 +11,8 @@ dist-ssr
 coverage
 .idea
 android
-ios
 
-# Keep store-policy source files versioned; generated build artifacts stay ignored below.
+# Keep Android store-policy source files versioned.
 !/android/
 /android/*
 !/android/app/
@@ -24,18 +23,6 @@ ios
 !/android/app/src/main/
 /android/app/src/main/*
 !/android/app/src/main/AndroidManifest.xml
-!/ios/
-/ios/*
-!/ios/App/
-/ios/App/*
-!/ios/App/App/
-/ios/App/App/*
-!/ios/App/App/Info.plist
-!/ios/App/App/PrivacyInfo.xcprivacy
-!/ios/App/App.xcodeproj/
-/ios/App/App.xcodeproj/*
-!/ios/App/App.xcodeproj/project.pbxproj
-
 # Reserved Windows device name accidentally created by tooling; cannot be
 # safely deleted from the working tree, must not be indexed.
 /nul
@@ -48,6 +35,9 @@ ios
 *.aab
 *.aar
 *.ipa
+*.p12
+*.mobileprovision
+AuthKey_*.p8
 
 # Capacitor / Native build artifacts & local configurations
 /android/.gradle
