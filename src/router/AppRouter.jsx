@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import RequireSeason from './RequireSeason';
 import AuthLayout from '@/layouts/AuthLayout';
@@ -51,7 +51,6 @@ const ClubDashboard = lazy(() => import('@/pages/club/Dashboard'));
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
 const Subscribe = lazy(() => import('@/pages/Subscribe'));
-const SubscribeClub = lazy(() => import('@/pages/SubscribeClub'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 const PayPalSuccess = lazy(() => import('@/pages/PayPalSuccess'));
 
@@ -70,17 +69,25 @@ const RouteFallback = () => (
 
 const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 
-const SubscribeRoute = (
+const SubscribeRoute = isNative ? (
   <ProtectedRoute>
-    {isNative ? <Navigate to="/profile" replace /> : lazy_(<Subscribe />)}
+    <Navigate to="/profile" replace />
   </ProtectedRoute>
-);
+) : lazy_(<Subscribe />);
 
-const SubscribeClubRoute = (
+function ClubSubscribeRedirect() {
+  const { pathname, search } = useLocation();
+  const params = new URLSearchParams(search);
+  params.set('plan', 'club');
+  const subscribePath = pathname.startsWith('/en/') ? '/en/subscribe' : '/suscripcion';
+  return <Navigate to={`${subscribePath}?${params}`} replace />;
+}
+
+const SubscribeClubRoute = isNative ? (
   <ProtectedRoute>
-    {isNative ? <Navigate to="/club/dashboard" replace /> : lazy_(<SubscribeClub />)}
+    <Navigate to="/club/dashboard" replace />
   </ProtectedRoute>
-);
+) : <ClubSubscribeRedirect />;
 
 export default function AppRouter() {
   return (
@@ -107,13 +114,13 @@ export default function AppRouter() {
       <Route path="/public/match-sheet-abp/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/friendship/accept/:token" element={lazy_(<FriendshipAccept />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
-      {/* Subscription (auth required, no app layout) */}
+      {/* Web checkout is public; native apps keep subscriptions disabled. */}
       <Route path="/subscribe" element={SubscribeRoute} />
-      <Route path="/suscripcion" element={<LangSubscribe lang="es" />} />
-      <Route path="/en/subscribe" element={<LangSubscribe lang="en" />} />
+      <Route path="/suscripcion" element={<LangSubscribe lang="es">{SubscribeRoute}</LangSubscribe>} />
+      <Route path="/en/subscribe" element={<LangSubscribe lang="en">{SubscribeRoute}</LangSubscribe>} />
       <Route path="/es/subscribe" element={<Navigate to="/suscripcion" replace />} />
       <Route path="/es/suscripcion" element={<Navigate to="/suscripcion" replace />} />
-      {/* Club plan dedicated checkout */}
+      {/* Legacy Club checkout aliases */}
       <Route path="/subscribe-club" element={SubscribeClubRoute} />
       <Route path="/en/subscribe-club" element={SubscribeClubRoute} />
       <Route

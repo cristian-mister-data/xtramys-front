@@ -386,9 +386,8 @@ const CheckIcon = () => (
 );
 
 const MIN_QUANTITY = 5;
-const MAX_QUANTITY = 500;
-const OLD_PRICE_PER_USER = 49;
-const PRICE_PER_USER = 35;
+const MAX_QUANTITY = 100;
+const PRICE_PER_USER = 49;
 
 export default function SubscribeClub() {
   const { t, i18n } = useTranslation();
@@ -538,23 +537,15 @@ export default function SubscribeClub() {
 
         {/* Price breakdown */}
         <PriceBlock>
-          <PriceRow style={{ alignItems: 'flex-start' }}>
+          <PriceRow style={{ alignItems: 'baseline' }}>
             <span>{isEs ? 'Precio unitario' : 'Unit price'}</span>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.9em', marginRight: 4 }}>
-                  {OLD_PRICE_PER_USER}€
-                </span>
-                <PriceValue style={{ fontSize: '1.15em', fontWeight: 'bold' }}>
-                  {PRICE_PER_USER}€
-                </PriceValue>
-                <span style={{ color: '#94a3b8', fontSize: '0.8em' }}>
-                  /{isEs ? 'usuario/año' : 'user/year'}
-                </span>
-              </div>
-              <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#ff6b00', marginTop: 4 }}>
-                🏆 {isEs ? 'Oferta Final del Mundial' : 'World Cup Final Offer'}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <PriceValue style={{ fontSize: '1.15em', fontWeight: 'bold' }}>
+                {PRICE_PER_USER}€
+              </PriceValue>
+              <span style={{ color: '#94a3b8', fontSize: '0.8em' }}>
+                /{isEs ? 'usuario/año' : 'user/year'}
+              </span>
             </div>
           </PriceRow>
           <PriceRow>

@@ -158,16 +158,21 @@ const fetchVideoBlob = async (url) => {
 const maybeObjectUrl = async (url, { objectUrl = true } = {}) => {
   const isCapacitor = isNativeCapacitor();
   if (isCapacitor) {
-    // WKWebView does not reliably play WebM. Convert only those files so
-    // normal MP4 playback keeps using native streaming instead of RAM.
+    // The iOS shell renders this player inside WKWebView. Fetching the media
+    // here preserves the auth header and gives WebKit a local, seekable URL;
+    // this also handles WebM responses whose URL has no .webm extension.
     if (
       platform === 'ios' &&
       objectUrl &&
       typeof URL !== 'undefined' &&
-      /\.webm(?:\?|#|$)/i.test(String(url || ''))
+      /^https?:\/\//i.test(String(url || ''))
     ) {
-      const blob = await ensureMp4Blob(await fetchVideoBlob(url));
-      return URL.createObjectURL(blob);
+      try {
+        const blob = await ensureMp4Blob(await fetchVideoBlob(url));
+        return URL.createObjectURL(blob);
+      } catch (error) {
+        console.warn('[videoPlayback:ios] No se pudo crear el recurso local del vídeo:', error);
+      }
     }
     if (isBackendApiUrl(url)) {
       const token = loadToken?.();

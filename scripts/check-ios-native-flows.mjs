@@ -4,13 +4,18 @@ import { readFileSync } from 'node:fs';
 const read = (path) => readFileSync(path, 'utf8');
 
 const playback = read('src/utils/videoPlayback.js');
-assert.match(playback, /platform === 'ios'[\s\S]*?\.webm[\s\S]*?ensureMp4Blob/);
+assert.match(playback, /platform === 'ios'[\s\S]*?https\?:[\s\S]*?ensureMp4Blob/);
 
 const videoView = read('src/shims/expo-video.js');
 assert.match(videoView, /crossOrigin=\{isNative && platform === 'ios' \? undefined/);
 
 const pdf = read('src/utils/pdfDownload.js');
-assert.match(pdf, /platform === 'ios'[\s\S]*?Downloads\/\$\{fullFileName\}[\s\S]*?Directory\.Documents/);
+assert.match(pdf, /platform === 'ios'[\s\S]*?Directory\.Cache[\s\S]*?Share\.share/);
+assert.match(pdf, /platform === 'ios'[\s\S]*?@capacitor\/share[\s\S]*?Share\.share/);
+
+const pdfDialog = read('src/ui/PdfActionDialog.jsx');
+assert.match(pdfDialog, /platform === 'android'[\s\S]*?registerPlugin\('VideoSaver'\)[\s\S]*?saveToDownloads/);
+assert.match(pdfDialog, /action === 'share'[\s\S]*?Share\.share/);
 
 const plist = read('ios/App/App/Info.plist');
 assert.match(plist, /LSSupportsOpeningDocumentsInPlace[\s\S]*?<true\/>/);

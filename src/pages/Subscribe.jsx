@@ -1,619 +1,701 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { PayPalButtons, PayPalScriptProvider, usePayPalScriptReducer } from '@paypal/react-paypal-js';
+import { FiArrowLeft, FiCheck, FiCheckCircle, FiCreditCard, FiHelpCircle, FiLock, FiRefreshCw } from 'react-icons/fi';
+import styled from 'styled-components';
+import SubscribeAccountStep from '@/components/subscription/SubscribeAccountStep';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
-import { checkSubscription, logoutThunk } from '@/store/slices/user/userThunks';
 import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
+import xtramysLogo from '@/images/xtramys.webp';
+import xtramysWhiteLogo from '@/images/xtramys_white.webp';
+import { websiteUrl } from '@/platform/externalWeb';
+import { checkSubscription, logoutThunk } from '@/store/slices/user/userThunks';
+import { useThemeMode } from '@/theme/ThemeContext';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
-import styled, { keyframes } from 'styled-components';
 
-const fadeIn = keyframes`from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}`;
+const CLUB_MIN_QUANTITY = 5;
+const INDIVIDUAL_PRICE = 59;
+const CLUB_PRICE_PER_USER = 49;
 
 const Page = styled.div`
   min-height: 100dvh;
+  padding: 0 24px 32px;
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
+
+  @media (max-width: 700px) {
+    padding: 0 14px 24px;
+  }
+`;
+
+const Header = styled.header`
+  width: min(1160px, 100%);
+  min-height: 78px;
+  margin: 0 auto 32px;
   display: grid;
-  place-items: center;
-  padding: 24px 20px;
-  background: linear-gradient(135deg, #0B0F19 0%, #1a2744 50%, #0B0F19 100%);
-  position: relative;
-  overflow: hidden;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(255,107,0,0.12) 0%, transparent 70%);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  @media (max-width: 480px) {
-    padding: 14px;
-    place-items: start center;
+  @media (max-width: 700px) {
+    min-height: 62px;
+    margin-bottom: 20px;
+    grid-template-columns: 1fr auto;
   }
 `;
 
-const Card = styled.div`
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  padding: 36px 28px 28px;
-  border-radius: 24px;
-  background: rgba(18, 26, 45, 0.85);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(24px);
-  text-align: center;
-  animation: ${fadeIn} 0.5s ease-out;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(229,90,0,0.08));
-    z-index: -1;
-  }
-
-  @media (max-width: 480px) {
-    max-width: 100%;
-    padding: 24px 18px 20px;
-    border-radius: 20px;
-  }
+const Brand = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
-const Badge = styled.div`
+const BrandLogo = styled.img`
+  display: block;
+  width: 116px;
+  height: 48px;
+  object-fit: contain;
+  object-position: left center;
+`;
+
+const SecurePayment = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #FF6B00, #E55A00);
-  color: #fff;
+  gap: 7px;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 12px;
+
+  svg { color: ${({ theme }) => theme.colors.success}; }
+
+  @media (max-width: 700px) {
+    display: none;
+  }
+`;
+
+const BackButton = styled.button`
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font: inherit;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: ${({ theme }) => theme.colors.text};
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+  }
+
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 2px;
+  }
+`;
+
+const CheckoutGrid = styled.main`
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: start;
+  gap: 28px;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+`;
+
+const Panel = styled.section`
+  width: 100%;
+  padding: 28px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  overflow: hidden;
+
+  @media (max-width: 700px) {
+    padding: 20px 18px;
+  }
+`;
+
+const SummaryPanel = styled(Panel)`
+  position: sticky;
+  top: 20px;
+
+  @media (max-width: 860px) {
+    position: static;
+  }
+`;
+
+const PanelHeader = styled.div`
+  margin: -28px -28px 22px;
+  padding: 18px 28px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+
+  @media (max-width: 700px) {
+    margin: -20px -18px 18px;
+    padding: 15px 18px;
+  }
+`;
+
+const PlanBox = styled.div`
+  margin: 0 -28px 24px;
+  padding: 24px 28px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
+
+  @media (max-width: 700px) {
+    margin-inline: -18px;
+    padding: 20px 18px;
+  }
+`;
+
+const PlanTabs = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 22px;
+  padding: 4px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+`;
+
+const PlanTab = styled.button`
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: ${({ $active, theme }) => ($active ? theme.colors.surface : 'transparent')};
+  color: ${({ $active, theme }) => ($active ? theme.colors.text : theme.colors.textSecondary)};
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: ${({ $active, theme }) => ($active ? theme.shadows.sm : 'none')};
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+
+  &:hover:not(:disabled) {
+    color: ${({ theme }) => theme.colors.text};
+    background: ${({ theme }) => theme.colors.surface};
+  }
+
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: -3px;
+  }
+`;
+
+const Badge = styled.span`
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.onPrimary || '#fff'};
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
 `;
 
-const Title = styled.h1`
+const PlanTitle = styled.h1`
   margin: 0 0 6px;
-  font-size: clamp(24px, 7vw, 28px);
+  font-size: 22px;
   font-weight: 800;
-  color: #fff;
   line-height: 1.2;
-
-  @media (max-width: 480px) {
-    margin-bottom: 8px;
-  }
 `;
 
-const Subtitle = styled.p`
-  margin: 0 0 24px;
-  font-size: 14px;
-  color: rgba(255,255,255,0.5);
+const PlanSubtitle = styled.p`
+  margin: 0 0 18px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
   line-height: 1.5;
 `;
 
 const PriceRow = styled.div`
   display: flex;
   align-items: baseline;
-  justify-content: center;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 5px;
 `;
 
 const Amount = styled.span`
-  font-size: clamp(40px, 11vw, 48px);
+  font-size: 38px;
   font-weight: 900;
-  color: #fff;
   line-height: 1;
 `;
 
-const OldAmount = styled.span`
-  font-size: clamp(18px, 5vw, 22px);
-  font-weight: 800;
-  color: rgba(255,255,255,0.38);
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-`;
-
 const Period = styled.span`
-  font-size: clamp(15px, 4.5vw, 18px);
-  color: rgba(255,255,255,0.4);
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 15px;
 `;
 
-const PriceSub = styled.p`
-  margin: 0 0 28px;
+const PriceNote = styled.p`
+  margin: 9px 0 0;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 12px;
+`;
+
+const Features = styled.div`
+  display: grid;
+  gap: 11px;
+`;
+
+const Feature = styled.div`
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
   font-size: 13px;
-  color: rgba(255,255,255,0.3);
-`;
+  line-height: 1.45;
 
-const FeatureList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 28px;
-  text-align: left;
-
-  @media (max-width: 480px) {
-    gap: 10px;
-    margin-bottom: 22px;
+  svg {
+    margin-top: 1px;
+    color: ${({ theme }) => theme.colors.success};
   }
 `;
 
-const FeatureItem = styled.div`
-  display: flex;
+const IncludedTitle = styled.p`
+  margin: 0 0 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+`;
+
+const Quantity = styled.div`
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+`;
+
+const QuantityLabel = styled.label`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+`;
+
+const QuantityControl = styled.div`
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
   align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: rgba(255,255,255,0.8);
-  line-height: 1.4;
+  padding: 3px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surface};
+`;
 
-  @media (max-width: 480px) {
-    gap: 10px;
-    font-size: 13px;
+const QuantityButton = styled.button`
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.backgroundAlt}; }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 2px;
+  }
+  &:disabled { opacity: 0.35; cursor: not-allowed; }
+`;
+
+const QuantityInput = styled.input`
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+`;
+
+const Steps = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 26px;
+`;
+
+const Step = styled.div`
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: ${({ $active, theme }) => ($active ? theme.colors.text : theme.colors.textMuted)};
+  font-size: 11px;
+  font-weight: ${({ $active }) => ($active ? 800 : 600)};
+
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 13px;
+    left: calc(50% + 16px);
+    width: calc(100% - 32px);
+    height: 2px;
+    background: ${({ $complete, theme }) => ($complete ? theme.colors.primary : theme.colors.border)};
   }
 `;
 
-const CheckCircle = styled.div`
-  width: 22px;
-  height: 22px;
+const StepNumber = styled.span`
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid ${({ $active, $complete, theme }) => ($active || $complete ? theme.colors.primary : theme.colors.border)};
   border-radius: 50%;
-  background: rgba(34,197,94,0.12);
-  display: flex;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ $active, $complete, theme }) => ($active || $complete ? theme.colors.primary : theme.colors.textMuted)};
+  font-size: 12px;
+  font-weight: 800;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0 0 6px;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+`;
+
+const SectionIntro = styled.p`
+  margin: 0 0 20px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
+const AccountInfo = styled.div`
+  margin-bottom: 18px;
+  padding: 11px 13px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+`;
+
+const PaymentArea = styled.div`
+  display: grid;
+  gap: 14px;
+`;
+
+const PrimaryButton = styled.button`
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.onPrimary || '#fff'};
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.primaryHover || theme.colors.primary};
+    box-shadow: ${({ theme }) => theme.shadows.sm};
+  }
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 3px;
+  }
+  &:disabled { cursor: not-allowed; opacity: 0.55; }
+`;
+
+const CardButton = styled(PrimaryButton)`
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  gap: 9px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.text};
 
-  svg {
-    width: 13px;
-    height: 13px;
-    color: #22c55e;
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.surface};
   }
 `;
 
-const PaymentSection = styled.div`
-  margin-top: 24px;
-
-  @media (max-width: 480px) {
-    margin-top: 20px;
-  }
-`;
-
-function PayPalButtonWrapper({ planId, locale, onApprove, onError, createSubscription }) {
-  const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (isResolved && window.paypal) {
-      setReady(true);
-    } else if (isResolved && !window.paypal) {
-      const timer = setTimeout(() => setReady(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isResolved]);
-
-  if (isPending || !ready) {
-    return (
-      <PayPalWrapper>
-        <div style={{ padding: '20px', color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-          Cargando PayPal...
-        </div>
-      </PayPalWrapper>
-    );
-  }
-
-  if (isRejected) {
-    return (
-      <PayPalWrapper>
-        <div style={{ padding: '20px', color: '#ef4444', fontSize: '14px' }}>
-          Error al cargar PayPal. Recarga la página.
-        </div>
-      </PayPalWrapper>
-    );
-  }
-
-  return (
-    <PayPalWrapper>
-      <PayPalLabel>
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.473z" />
-        </svg>
-        {locale === 'es_ES' ? 'Pagar con PayPal' : 'Pay with PayPal'}
-      </PayPalLabel>
-      <PayPalButtons
-        forceReRender={[planId, locale]}
-        style={{ layout: 'vertical', shape: 'pill', label: 'subscribe', height: 45, color: 'gold' }}
-        createSubscription={createSubscription}
-        onApprove={onApprove}
-        onError={onError}
-      />
-    </PayPalWrapper>
-  );
-}
-
-const PayPalWrapper = styled.div`
+const DemoButton = styled.button`
   width: 100%;
-  padding: 16px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  transition: border-color 0.2s;
+  margin-bottom: 18px;
+  min-height: 46px;
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.success};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.success};
+  color: ${({ theme }) => theme.colors.onSuccess || '#fff'};
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 
-  &:hover {
-    border-color: rgba(255,255,255,0.15);
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.successSoftText || theme.colors.success};
+    box-shadow: ${({ theme }) => theme.shadows.sm};
+  }
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 3px;
   }
 `;
 
-const PayPalLabel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.6);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+const Note = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
 `;
 
 const Divider = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 2px 0;
-  color: rgba(255,255,255,0.25);
+  color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
-  font-weight: 500;
 
   &::before, &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255,255,255,0.08);
+    background: ${({ theme }) => theme.colors.border};
   }
 `;
 
-const StripeButton = styled.button`
-  width: 100%;
-  padding: 14px 18px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.8);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  &:hover:not(:disabled) {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.2);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  svg { width: 18px; height: 18px; }
-
-  @media (max-width: 480px) {
-    padding: 12px 14px;
-    font-size: 14px;
-  }
+const PayPalBox = styled.div`
+  min-height: 50px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
 `;
 
-const PaymentNote = styled.p`
-  margin: 0;
-  font-size: 12px;
-  color: rgba(255,255,255,0.3);
-  line-height: 1.5;
-  text-align: center;
-`;
-
-const ErrorBox = styled.div`
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.2);
-  color: #fca5a5;
+const Message = styled.div`
+  padding: 11px 13px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  color: ${({ theme }) => theme.colors.error};
   font-size: 13px;
-  line-height: 1.4;
-  margin-bottom: 4px;
+  line-height: 1.45;
 `;
 
-const VerifyButton = styled.button`
+const SecondaryButton = styled.button`
+  display: inline-flex;
   width: 100%;
-  padding: 12px 18px;
-  border: 1px solid rgba(255,107,0,0.3);
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255,107,0,0.08), rgba(229,90,0,0.04));
-  color: #FF6B00;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 16px;
+  min-height: 40px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 
-  &:hover {
-    background: linear-gradient(135deg, rgba(255,107,0,0.15), rgba(229,90,0,0.08));
-    border-color: rgba(255,107,0,0.5);
-    color: #ff8533;
+  &:hover:not(:disabled) {
+    color: ${({ theme }) => theme.colors.text};
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.surface};
   }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  @media (max-width: 480px) {
-    margin-top: 14px;
-    padding: 11px 14px;
-    font-size: 12px;
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 3px;
   }
 `;
 
-const StatusCard = styled.div`
-  width: 100%;
+const Status = styled.div`
+  padding: 18px 0 4px;
+  text-align: center;
 `;
 
 const StatusIcon = styled.div`
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 16px;
   border-radius: 50%;
-  background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: ${({ theme }) => theme.colors.successSoft};
+  color: ${({ theme }) => theme.colors.successSoftText || theme.colors.success};
 
-  svg { width: 32px; height: 32px; color: #22c55e; }
+  svg { width: 28px; height: 28px; }
 `;
 
-const StatusTitle = styled.p`
-  margin: 0 0 4px;
+const StatusTitle = styled.h2`
+  margin: 0 0 7px;
+  color: ${({ theme }) => theme.colors.successSoftText || theme.colors.success};
   font-size: 20px;
-  font-weight: 700;
-  color: #22c55e;
 `;
 
 const StatusDate = styled.p`
-  margin: 0 0 24px;
+  margin: 0 0 22px;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
-  color: rgba(255,255,255,0.4);
 `;
 
-const ActionButton = styled.button`
-  width: 100%;
-  padding: 14px 18px;
-  border: 0;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #FF6B00, #E55A00);
-  color: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 8px 24px rgba(255,107,0,0.3);
-
-  &:hover:not(:disabled) {
-    transform: scale(1.02);
-    box-shadow: 0 12px 32px rgba(255,107,0,0.4);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  @media (max-width: 480px) {
-    padding: 12px 14px;
-    font-size: 14px;
-  }
-`;
-
-const QtyContainer = styled.div`
-  display: flex;
-  flex-direction: column;
+const TrustBar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 24px;
-  text-align: left;
+  margin: 24px -28px -28px;
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+
+  @media (max-width: 700px) {
+    margin: 22px -18px -20px;
+    padding: 14px 12px;
+  }
 `;
 
-const QtyLabel = styled.label`
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const QtySelectorRow = styled.div`
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 4px;
-`;
-
-const QtyButton = styled.button`
-  width: 38px;
-  height: 38px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
+const TrustItem = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-`;
-
-const QtyInput = styled.input`
-  flex: 1;
-  text-align: center;
-  background: transparent;
-  border: 0;
-  color: #fff;
-  font-size: 16px;
+  gap: 6px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 10px;
   font-weight: 700;
-  outline: none;
-`;
-
-const QtyNotice = styled.p`
-  margin: 0;
-  font-size: 11px;
-  color: #ff6b00;
-  font-weight: 500;
-`;
-
-const SwitchPlanLink = styled.button`
-  display: block;
-  width: 100%;
-  margin-top: 20px;
-  padding: 14px 18px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  background: transparent;
-  color: rgba(255,255,255,0.6);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
   text-align: center;
 
-  &:hover {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,255,255,0.2);
-    color: #fff;
-  }
-
-  @media (max-width: 480px) {
-    margin-top: 16px;
-    padding: 12px 14px;
-    font-size: 13px;
+  svg {
+    flex: 0 0 auto;
+    color: ${({ theme }) => theme.colors.success};
   }
 `;
 
 const LogoutButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 24px;
-  padding: 12px 24px;
-  background: transparent;
-  border: none;
-  color: #ef4444;
+  display: block;
+  min-height: 40px;
+  margin: 20px auto 0;
+  padding: 10px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.error};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.errorSoft};
+  color: ${({ theme }) => theme.colors.error};
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
 
-  &:hover {
-    opacity: 0.8;
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.error};
+    color: ${({ theme }) => theme.colors.onError || '#fff'};
   }
-
-  svg {
-    width: 18px;
-    height: 18px;
+  &:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.focusRing};
+    outline-offset: 3px;
   }
 `;
 
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+function PayPalButton({ planId, locale, onApprove, onError }) {
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
 
-const CLUB_MIN_QUANTITY = 5;
-const INDIVIDUAL_PRICE = 59;
-const INDIVIDUAL_OLD_PRICE = 59;
-const CLUB_PRICE_PER_USER = 35;
+  if (isPending) return <PayPalBox>{locale === 'es_ES' ? 'Cargando PayPal...' : 'Loading PayPal...'}</PayPalBox>;
+  if (isRejected) return <Message>{locale === 'es_ES' ? 'No se ha podido cargar PayPal.' : 'PayPal could not be loaded.'}</Message>;
+
+  return (
+    <PayPalBox>
+      <PayPalButtons
+        forceReRender={[planId, locale]}
+        style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 45, color: 'gold' }}
+        createSubscription={(_, actions) => actions.subscription.create({ plan_id: planId })}
+        onApprove={onApprove}
+        onError={onError}
+      />
+    </PayPalBox>
+  );
+}
 
 export default function Subscribe() {
   const { t, i18n } = useTranslation();
+  const { mode } = useThemeMode();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const isClubPlan = searchParams.get('plan') === 'club';
-  const initialQty = parseInt(searchParams.get('quantity') || String(CLUB_MIN_QUANTITY), 10);
-
-  const [quantity, setQuantity] = useState(initialQty >= CLUB_MIN_QUANTITY ? initialQty : CLUB_MIN_QUANTITY);
-
-  useEffect(() => {
-    const q = new URLSearchParams(location.search).get('quantity');
-    if (q) {
-      const val = parseInt(q, 10);
-      if (!isNaN(val) && val >= CLUB_MIN_QUANTITY) {
-        setQuantity(val);
-      }
-    }
-  }, [location.search]);
-
-  const user = useSelector((s) => s.usuario.user);
-  const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
+  const params = new URLSearchParams(location.search);
+  const isClubPlan = params.get('plan') === 'club';
+  const initialQuantity = Number.parseInt(params.get('quantity') || String(CLUB_MIN_QUANTITY), 10);
+  const user = useSelector((state) => state.usuario.user);
+  const authChecked = useSelector((state) => state.usuario.authChecked);
+  const subscriptionStatus = useSelector((state) => state.usuario.subscriptionStatus);
+  const [quantity, setQuantity] = useState(initialQuantity >= CLUB_MIN_QUANTITY ? initialQuantity : CLUB_MIN_QUANTITY);
+  const [activeStep, setActiveStep] = useState('account');
+  const [accountIntent, setAccountIntent] = useState('payment');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const paypalMountKey = useRef(Date.now()).current;
 
-  const isCancelling = (user?.subscriptionCancelAtPeriodEnd || subscriptionStatus === 'canceled' || subscriptionStatus === 'cancelled')
-    && user?.subscriptionCurrentPeriodEnd
-    && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
-  const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
-  const locale = i18n.language?.startsWith('es') ? 'es-ES' : 'en-US';
   const isEs = i18n.language?.startsWith('es');
+  const locale = isEs ? 'es-ES' : 'en-US';
+  const returnPath = `${location.pathname}${location.search}${location.hash}`;
+  const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
+  const isCancelling = (
+    user?.subscriptionCancelAtPeriodEnd
+    || subscriptionStatus === 'canceled'
+    || subscriptionStatus === 'cancelled'
+  ) && user?.subscriptionCurrentPeriodEnd && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
+
+  useEffect(() => {
+    const nextQuantity = Number.parseInt(new URLSearchParams(location.search).get('quantity'), 10);
+    if (nextQuantity >= CLUB_MIN_QUANTITY) setQuantity(nextQuantity);
+  }, [location.search]);
+
+  useEffect(() => {
+    if (user) setActiveStep('payment');
+  }, [user]);
 
   const handleStripeSubscribe = async () => {
+    if (!user) {
+      setActiveStep('account');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = window.location.origin;
       const data = isClubPlan
-        ? await createCheckoutSession(baseUrl, { priceType: 'club', quantity })
-        : await createCheckoutSession(baseUrl);
+        ? await createCheckoutSession(window.location.origin, { priceType: 'club', quantity })
+        : await createCheckoutSession(window.location.origin);
       if (data.url) {
         sessionStorage.setItem('xtramys:postCheckoutPath', isClubPlan ? '/club/dashboard' : '/season/create');
         window.location.href = data.url;
@@ -625,235 +707,260 @@ export default function Subscribe() {
     }
   };
 
-  const handleManage = () => {
-    navigate('/profile');
-  };
-
-  const handleRefresh = async () => {
+  const handlePayPalApprove = async (data) => {
+    setError(null);
     try {
+      await verifyPayPalSubscription(data.subscriptionID);
       await dispatch(checkSubscription()).unwrap();
-    } catch { /* ignore */ }
+      navigate('/season/create', { replace: true });
+    } catch (err) {
+      setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
+    }
   };
 
   const handleLogout = async () => {
     try {
       await dispatch(logoutThunk()).unwrap();
-      navigate('/auth/login');
-    } catch { /* ignore */ }
+      setActiveStep('account');
+      navigate(returnPath, { replace: true });
+    } catch {
+      // The checkout stays usable if remote logout fails.
+    }
   };
 
-  const features = [
+  const handleBack = () => window.location.assign(websiteUrl(i18n.language));
+
+  const handleAuthenticated = () => {
+    if (accountIntent === 'demo') {
+      navigate('/app', { replace: true });
+      return;
+    }
+    setActiveStep('payment');
+  };
+
+  const selectPlan = (plan) => {
+    const nextParams = new URLSearchParams(location.search);
+    if (plan === 'club') {
+      nextParams.set('plan', 'club');
+      setAccountIntent('payment');
+    }
+    else {
+      nextParams.delete('plan');
+      nextParams.delete('quantity');
+    }
+    const query = nextParams.toString();
+    navigate(`${location.pathname}${query ? `?${query}` : ''}`);
+  };
+
+  const features = isClubPlan ? [
+    t('subscription.clubFeatures.coaches', 'Cuentas de entrenador individuales'),
+    t('subscription.clubFeatures.library', 'Biblioteca de ejercicios compartida'),
+    t('subscription.clubFeatures.tactics', 'Recursos y vídeos tácticos compartidos'),
+    t('subscription.clubFeatures.supervision', 'Panel de supervisión del club'),
+    t('subscription.clubFeatures.billing', 'Facturación centralizada'),
+  ] : [
     t('subscription.features.tacticalBoard', 'Pizarra táctica con grabación de vídeo'),
     t('subscription.features.training', 'Planificación de entrenamientos'),
     t('subscription.features.wellness', 'Monitorización wellness'),
     t('subscription.features.rivals', 'Análisis de rivales'),
     t('subscription.features.matchSheets', 'Fichas de partido'),
     t('subscription.features.statistics', 'Estadísticas avanzadas'),
-    t('subscription.features.nutrition', 'Seguimiento nutricional'),
     t('subscription.features.injuries', 'Control de lesiones'),
     t('subscription.features.methodology', 'Metodología de juego'),
   ];
 
-  const clubFeatures = [
-    t('subscription.clubFeatures.coaches', 'Cuentas de entrenador individuales'),
-    t('subscription.clubFeatures.library', 'Biblioteca de ejercicios compartida'),
-    t('subscription.clubFeatures.tactics', 'Recursos y videos tácticos compartidos'),
-    t('subscription.clubFeatures.supervision', 'Panel de supervisión del club (modo lectura)'),
-    t('subscription.clubFeatures.billing', 'Facturación centralizada'),
-  ];
-
-  const displayFeatures = isClubPlan ? clubFeatures : features;
+  const checkoutStep = hasAccess ? 3 : user && activeStep === 'payment' ? 2 : 1;
 
   return (
     <Page>
-      <Card>
-        {hasAccess ? (
-          <StatusCard>
-            <StatusIcon><CheckIcon /></StatusIcon>
-            <StatusTitle>
-              {isCancelling
-                ? t('subscription.cancelledUntilEnd', 'Suscripción cancelada — acceso hasta el')
-                : t('subscription.active', 'Tu suscripción está activa')}
-            </StatusTitle>
-            {user?.subscriptionCurrentPeriodEnd && (
-              <StatusDate>
-                {isCancelling ? '' : t('subscription.validUntil', 'Válida hasta el')}{' '}
-                {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(
-                  locale, { year: 'numeric', month: 'long', day: 'numeric' }
-                )}
-              </StatusDate>
-            )}
-            <ActionButton onClick={handleManage} disabled={loading}>
-              {t('subscription.manage', 'Gestionar suscripción')}
-            </ActionButton>
-          </StatusCard>
-        ) : (
-          <>
-            <Badge>
-              {isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Individual')}
-            </Badge>
-            <Title>
-              {isClubPlan ? t('subscription.clubTitle', 'Plan Club') : t('subscription.title', 'Suscripción requerida')}
-            </Title>
-            <Subtitle>
+      <Header>
+        <Brand><BrandLogo src={mode === 'dark' ? xtramysWhiteLogo : xtramysLogo} alt="Xtramys" /></Brand>
+        <SecurePayment><FiLock /> {t('subscription.securePayment', 'Pago seguro · SSL')}</SecurePayment>
+        <BackButton type="button" onClick={handleBack}><FiArrowLeft /> {t('common.back', 'Volver')}</BackButton>
+      </Header>
+
+      <CheckoutGrid>
+        <SummaryPanel>
+          <PanelHeader>{t('subscription.yourOrder', 'Tu pedido')}</PanelHeader>
+          <PlanTabs role="tablist" aria-label={t('subscription.choosePlan', 'Elige tu plan')}>
+            <PlanTab type="button" role="tab" aria-selected={!isClubPlan} $active={!isClubPlan} onClick={() => selectPlan('individual')}>
+              {t('subscription.plan', 'Plan Individual')}
+            </PlanTab>
+            <PlanTab type="button" role="tab" aria-selected={isClubPlan} $active={isClubPlan} onClick={() => selectPlan('club')}>
+              {t('subscription.clubTitle', 'Plan Club')}
+            </PlanTab>
+          </PlanTabs>
+          <PlanBox>
+            <Badge>{isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Individual')}</Badge>
+            <PlanTitle>{isClubPlan ? t('subscription.clubTitle', 'Plan Club') : t('subscription.proAnnual', 'Plan PRO Anual')}</PlanTitle>
+            <PlanSubtitle>
               {isClubPlan
                 ? t('subscription.clubSubtitle', 'Administra a tus entrenadores bajo una única organización')
-                : t('subscription.subtitle', 'Activa tu suscripción para acceder a todas las funcionalidades de Xtramys')}
-            </Subtitle>
+                : t('subscription.subtitle', 'Acceso completo a todas las funcionalidades de Xtramys')}
+            </PlanSubtitle>
 
-            {isClubPlan ? (
-              <>
-                <PriceRow style={{ alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '1.2rem', fontWeight: 600 }}>
-                    49€
-                  </span>
-                  <Amount>{CLUB_PRICE_PER_USER}€</Amount>
-                  <Period>/{t('subscription.userYear', 'usuario/año')}</Period>
-                </PriceRow>
-                <div style={{ marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 6, backgroundColor: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.2)', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold', color: '#ff6b00', width: 'fit-content' }}>
-                  🏆 {isEs ? 'Descuento especial final del mundial' : 'Special World Cup final discount'}
-                </div>
-                <PriceSub style={{ marginTop: 8 }}>{t('subscription.clubAnnual', 'Facturación anual por usuario')}</PriceSub>
+            <PriceRow>
+              <Amount>
+                {isClubPlan
+                  ? `${CLUB_PRICE_PER_USER}€`
+                  : isEs ? `${INDIVIDUAL_PRICE}€` : `€${INDIVIDUAL_PRICE}`}
+              </Amount>
+              <Period>/{isClubPlan ? t('subscription.userYear', 'usuario/año') : t('subscription.year', 'año')}</Period>
+            </PriceRow>
+            <PriceNote>
+              {isClubPlan
+                ? t('subscription.clubAnnual', 'Facturación anual por usuario')
+                : t('subscription.annual', 'Facturado anualmente · Cancela cuando quieras')}
+            </PriceNote>
 
-                <QtyContainer>
-                  <QtyLabel>{t('subscription.qtyLabel', 'Número de Licencias (Entrenadores)')}</QtyLabel>
-                  <QtySelectorRow>
-                    <QtyButton
-                      type="button"
-                      onClick={() => setQuantity((q) => Math.max(CLUB_MIN_QUANTITY, q - 1))}
-                      disabled={quantity <= CLUB_MIN_QUANTITY}
-                    >
-                      -
-                    </QtyButton>
-                    <QtyInput
-                      type="number"
-                      min={CLUB_MIN_QUANTITY}
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val) && val >= CLUB_MIN_QUANTITY) setQuantity(val);
-                      }}
-                    />
-                    <QtyButton
-                      type="button"
-                      onClick={() => setQuantity((q) => q + 1)}
-                    >
-                      +
-                    </QtyButton>
-                  </QtySelectorRow>
-                  <QtyNotice style={{ marginTop: 6, fontSize: '13px', color: '#ff6b00', fontWeight: 'bold' }}>
-                    {t('subscription.totalAnnual', 'Total anual:')} {quantity * CLUB_PRICE_PER_USER}€
-                  </QtyNotice>
-                </QtyContainer>
-              </>
-            ) : (
-              <>
-                <PriceRow>
-                  <Amount>{isEs ? `${INDIVIDUAL_PRICE}€` : `€${INDIVIDUAL_PRICE}`}</Amount>
-                  <Period>/{t('subscription.year', 'año')}</Period>
-                </PriceRow>
-                <PriceSub>{t('subscription.annual', 'Facturación anual')}</PriceSub>
-              </>
-            )}
-
-            <FeatureList>
-              {displayFeatures.map((f) => (
-                <FeatureItem key={f}>
-                  <CheckCircle><CheckIcon /></CheckCircle>
-                  <span>{f}</span>
-                </FeatureItem>
-              ))}
-            </FeatureList>
-
-            {error && <ErrorBox>{error}</ErrorBox>}
-
-            <PaymentSection>
-              {isClubPlan ? (
-                <>
-                  <ActionButton onClick={handleStripeSubscribe} disabled={loading}>
-                    {loading ? t('subscription.loading', 'Procesando...') : t('subscription.subscribe', 'Suscribirme ahora')}
-                  </ActionButton>
-                  <PaymentNote style={{ marginTop: 12 }}>
-                    {t('subscription.paymentNote', 'Tras el pago, tu acceso se activará automáticamente.')}
-                  </PaymentNote>
-                </>
-              ) : PAYPAL_CLIENT_ID ? (
-                <PayPalScriptProvider key={`paypal-${locale}-${paypalMountKey}`} options={{
-                  clientId: PAYPAL_CLIENT_ID,
-                  vault: true,
-                  intent: 'subscription',
-                  locale: isEs ? 'es_ES' : 'en_US',
-                  components: 'buttons',
-                }}>
-                  <PayPalButtonWrapper
-                    planId={PAYPAL_PLAN_ID}
-                    locale={isEs ? 'es_ES' : 'en_US'}
-                    createSubscription={(data, actions) =>
-                      actions.subscription.create({ plan_id: PAYPAL_PLAN_ID })
-                    }
-                    onApprove={async (data) => {
-                      setError(null);
-                      try {
-                        await verifyPayPalSubscription(data.subscriptionID);
-                        await dispatch(checkSubscription()).unwrap();
-                        setTimeout(() => navigate('/season/create', { replace: true }), 100);
-                      } catch (err) {
-                        setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
-                      }
-                    }}
-                    onError={() => setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'))}
-                  />
-                  <Divider>{t('common.or', 'o')}</Divider>
-                  <StripeButton onClick={handleStripeSubscribe} disabled={loading}>
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.873 4.56 3.127 3.754 4.946 3.754 7.005c0 3.898 3.18 5.39 5.708 6.175 2.507.773 3.434 1.441 3.434 2.482 0 .948-.734 1.529-2.019 1.529-2.522 0-4.899-1.173-6.428-2.001l-.899 5.506c1.752.965 4.304 1.578 6.813 1.577 2.717 0 5.003-.718 6.572-2.062 1.584-1.346 2.437-3.337 2.437-5.724 0-3.816-2.957-5.347-6.258-6.336z" /></svg>
-                    {loading ? t('subscription.loading', 'Procesando...') : t('subscription.payWithCard', 'Pagar con tarjeta')}
-                  </StripeButton>
-                  <PaymentNote>
-                    {t('subscription.paymentNote', 'Tras el pago, tu acceso se activará automáticamente.')}
-                  </PaymentNote>
-                </PayPalScriptProvider>
-              ) : (
-                <ActionButton onClick={handleStripeSubscribe} disabled={loading}>
-                  {loading ? t('subscription.loading', 'Procesando...') : t('subscription.subscribe', 'Suscribirme ahora')}
-                </ActionButton>
-              )}
-            </PaymentSection>
-
-            <VerifyButton onClick={handleRefresh}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
-              {t('subscription.refresh', 'Verificar estado de suscripción')}
-            </VerifyButton>
-
-            {subscriptionStatus === 'past_due' && (
-              <ActionButton onClick={handleManage} disabled={loading} style={{ marginTop: 12 }}>
-                {t('subscription.updatePayment', 'Actualizar método de pago')}
-              </ActionButton>
-            )}
-
-            {!isClubPlan && (
-              <SwitchPlanLink onClick={() => navigate('/subscribe-club')}>
-                {t('subscription.switchToClub', '¿Gestionas un club? Conoce el Plan Club →')}
-              </SwitchPlanLink>
-            )}
             {isClubPlan && (
-              <SwitchPlanLink onClick={() => navigate('/subscribe')}>
-                {t('subscription.switchToPro', '¿Entrenas solo? Conoce el Plan Individual →')}
-              </SwitchPlanLink>
+              <Quantity>
+                <QuantityLabel htmlFor="club-quantity">{t('subscription.qtyLabel', 'Número de licencias')}</QuantityLabel>
+                <QuantityControl>
+                  <QuantityButton type="button" onClick={() => setQuantity((value) => Math.max(CLUB_MIN_QUANTITY, value - 1))} disabled={quantity <= CLUB_MIN_QUANTITY}>-</QuantityButton>
+                  <QuantityInput id="club-quantity" type="number" min={CLUB_MIN_QUANTITY} value={quantity} onChange={(event) => setQuantity(Math.max(CLUB_MIN_QUANTITY, Number.parseInt(event.target.value, 10) || CLUB_MIN_QUANTITY))} />
+                  <QuantityButton type="button" onClick={() => setQuantity((value) => value + 1)}>+</QuantityButton>
+                </QuantityControl>
+                <PriceNote>{t('subscription.totalAnnual', 'Total anual:')} {quantity * CLUB_PRICE_PER_USER}€</PriceNote>
+              </Quantity>
             )}
-          </>
-        )}
-      </Card>
-      <LogoutButton onClick={handleLogout}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        {t('menu.logout', 'Cerrar sesión')}
-      </LogoutButton>
+          </PlanBox>
+
+          <IncludedTitle>{t('subscription.includedTitle', 'Todo lo que incluye')}</IncludedTitle>
+          <Features>
+            {features.map((feature) => (
+              <Feature key={feature}><FiCheck /><span>{feature}</span></Feature>
+            ))}
+          </Features>
+        </SummaryPanel>
+
+        <Panel>
+          <Steps aria-label={t('subscription.checkoutSteps', 'Pasos de la suscripción')}>
+            <Step $active={checkoutStep === 1} $complete={checkoutStep > 1}>
+              <StepNumber $active={checkoutStep === 1} $complete={checkoutStep > 1}>1</StepNumber>
+              <span>{t('subscription.account', 'Cuenta')}</span>
+            </Step>
+            <Step $active={checkoutStep === 2} $complete={checkoutStep > 2}>
+              <StepNumber $active={checkoutStep === 2} $complete={checkoutStep > 2}>2</StepNumber>
+              <span>{t('subscription.payment', 'Pago')}</span>
+            </Step>
+            <Step $active={checkoutStep === 3}>
+              <StepNumber $active={checkoutStep === 3}>3</StepNumber>
+              <span>{t('subscription.ready', 'Listo')}</span>
+            </Step>
+          </Steps>
+
+          {hasAccess ? (
+            <Status>
+              <StatusIcon><FiCheck /></StatusIcon>
+              <StatusTitle>
+                {isCancelling
+                  ? t('subscription.cancelledUntilEnd', 'Suscripción cancelada, acceso hasta el')
+                  : t('subscription.active', 'Tu suscripción está activa')}
+              </StatusTitle>
+              {user?.subscriptionCurrentPeriodEnd && (
+                <StatusDate>
+                  {isCancelling ? '' : t('subscription.validUntil', 'Válida hasta el')}{' '}
+                  {new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(locale, {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                  })}
+                </StatusDate>
+              )}
+              <PrimaryButton type="button" onClick={() => navigate('/profile')}>
+                {t('subscription.manage', 'Gestionar suscripción')}
+              </PrimaryButton>
+            </Status>
+          ) : !authChecked && !user ? (
+            <SectionIntro>{t('common.loading', 'Cargando...')}</SectionIntro>
+          ) : !user || activeStep === 'account' ? (
+            <>
+              <SectionTitle>
+                {accountIntent === 'demo'
+                  ? t('subscription.demoAccountTitle', 'Crea tu cuenta demo')
+                  : t('subscription.checkoutAccountTitle', 'Tu cuenta')}
+              </SectionTitle>
+              <SectionIntro>
+                {accountIntent === 'demo'
+                  ? t('subscription.demoAccountSubtitle', 'Crea tu cuenta o inicia sesión para acceder directamente a la demo.')
+                  : t('subscription.checkoutAccountSubtitle', 'Crea una cuenta o inicia sesión antes de realizar ningún pago.')}
+              </SectionIntro>
+              {!isClubPlan && (
+                <DemoButton
+                  type="button"
+                  onClick={() => setAccountIntent((current) => current === 'demo' ? 'payment' : 'demo')}
+                >
+                  <FiCheckCircle aria-hidden="true" />
+                  {accountIntent === 'demo'
+                    ? t('subscription.backToSubscription', 'Quiero suscribirme')
+                    : t('subscription.tryDemo', 'Probar la demo gratis')}
+                </DemoButton>
+              )}
+              <SubscribeAccountStep returnPath={returnPath} intent={accountIntent} onAuthenticated={handleAuthenticated} />
+            </>
+          ) : (
+            <>
+              <SectionTitle>{t('subscription.paymentTitle', 'Completa el pago')}</SectionTitle>
+              <SectionIntro>{t('subscription.paymentSubtitle', 'Elige el método de pago para activar tu plan.')}</SectionIntro>
+              <AccountInfo>{t('subscription.account', 'Cuenta')}: <strong>{user.correo}</strong></AccountInfo>
+
+              {user.plan === 'demo' && !isClubPlan && (
+                <DemoButton type="button" onClick={() => navigate('/app')}>
+                  <FiCheckCircle aria-hidden="true" />
+                  {t('subscription.demoMode', 'Entrar en modo demo')}
+                </DemoButton>
+              )}
+
+              <PaymentArea>
+                {error && <Message>{error}</Message>}
+
+                {isClubPlan || !PAYPAL_CLIENT_ID ? (
+                  <PrimaryButton type="button" onClick={handleStripeSubscribe} disabled={loading}>
+                    {loading ? t('subscription.loading', 'Procesando...') : t('subscription.subscribe', 'Continuar al pago')}
+                  </PrimaryButton>
+                ) : (
+                  <PayPalScriptProvider key={`paypal-${locale}-${paypalMountKey}`} options={{
+                    clientId: PAYPAL_CLIENT_ID,
+                    vault: true,
+                    intent: 'subscription',
+                    locale: isEs ? 'es_ES' : 'en_US',
+                    components: 'buttons',
+                  }}>
+                    <PayPalButton
+                      planId={PAYPAL_PLAN_ID}
+                      locale={isEs ? 'es_ES' : 'en_US'}
+                      onApprove={handlePayPalApprove}
+                      onError={() => setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'))}
+                    />
+                    <Divider>{t('common.or', 'o')}</Divider>
+                    <CardButton type="button" onClick={handleStripeSubscribe} disabled={loading}>
+                      <FiCreditCard />
+                      {loading ? t('subscription.loading', 'Procesando...') : t('subscription.payWithCard', 'Pagar con tarjeta')}
+                    </CardButton>
+                  </PayPalScriptProvider>
+                )}
+
+                <Note>{t('subscription.paymentNote', 'Tras el pago, tu acceso se activará automáticamente.')}</Note>
+              </PaymentArea>
+
+              <SecondaryButton type="button" onClick={() => dispatch(checkSubscription())}>
+                <FiRefreshCw /> {t('subscription.refresh', 'Verificar estado de suscripción')}
+              </SecondaryButton>
+            </>
+          )}
+
+          <TrustBar>
+            <TrustItem><FiLock /> {t('subscription.encryptedPayment', 'Pago cifrado')}</TrustItem>
+            <TrustItem><FiCheckCircle /> {t('subscription.noCommitment', 'Sin permanencia')}</TrustItem>
+            <TrustItem><FiHelpCircle /> {t('subscription.support', 'Soporte Xtramys')}</TrustItem>
+          </TrustBar>
+        </Panel>
+      </CheckoutGrid>
+
+      {user && (
+        <LogoutButton type="button" onClick={handleLogout}>
+          {t('menu.logout', 'Cerrar sesión y usar otra cuenta')}
+        </LogoutButton>
+      )}
     </Page>
   );
 }

@@ -21,7 +21,7 @@ assert.doesNotMatch(nativeCode, /StoreBilling|billingclient|apps\.apple\.com\/ac
 
 const router = readFileSync('src/router/AppRouter.jsx', 'utf8');
 assert.doesNotMatch(router, /ExternalWebRedirect/);
-assert.match(router, /isNative \? <Navigate to="\/profile" replace \/>/);
+assert.match(router, /const SubscribeRoute = isNative \? \([\s\S]*?<Navigate to="\/profile" replace \/>[\s\S]*?\) : lazy_\(<Subscribe \/>\)/);
 assert.match(router, /isNative \? <Navigate to="\/auth\/login" replace \/>/);
 
 const login = readFileSync('src/pages/auth/Login.jsx', 'utf8');

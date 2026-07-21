@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import * as authApi from '@/api/auth';
@@ -32,6 +32,7 @@ import {
 export default function Register() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [form, setForm] = useState({
     nombre: '',
@@ -61,7 +62,13 @@ export default function Register() {
 
   const handleGoogleRegister = () => {
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
-    window.location.href = getGoogleOAuthURL(lang, '/');
+    const fromPath = location.state?.from?.pathname || '/subscribe';
+    const params = new URLSearchParams(location.state?.from?.search || '');
+    if (fromPath.startsWith('/subscribe') || fromPath.startsWith('/suscripcion')) {
+      params.set('checkout', '1');
+    }
+    const from = fromPath + (params.toString() ? `?${params}` : '');
+    window.location.href = getGoogleOAuthURL(lang, from);
   };
 
   const validate = () => {
@@ -97,7 +104,9 @@ export default function Register() {
         contraseña: form.contraseña,
         idioma: language,
       });
-      navigate('/auth/verify-email', { state: { correo: correoNorm } });
+      navigate('/auth/verify-email', {
+        state: { correo: correoNorm, from: location.state?.from },
+      });
     } catch (err) {
       if (err?.code === 'EMAIL_IN_USE') {
         setAlert(t('message.emailAlreadyInUse', 'Este correo electrónico ya está en uso'));

@@ -134,11 +134,20 @@ export const savePdfToDownloads = async (sourceUri, fileName) => {
     try {
       const blob = await fetchBlobFromUri(sourceUri);
       const { Filesystem, Directory } = await import('@capacitor/filesystem');
-      await Filesystem.writeFile({
-        path: `Downloads/${fullFileName}`,
-        data: await blobToBase64(blob),
-        directory: Directory.Documents,
-        recursive: true,
+      const { Share } = await import('@capacitor/share');
+      const base64Data = await blobToBase64(blob);
+
+      // iOS sandbox: el selector nativo permite elegir la carpeta global
+      // Descargas, fuera del contenedor privado de Xtramys.
+      const writeResult = await Filesystem.writeFile({
+        path: fullFileName,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        title: fullFileName,
+        url: writeResult.uri,
+        dialogTitle: fullFileName,
       });
       hidePdfLoading();
       return true;
@@ -148,7 +157,10 @@ export const savePdfToDownloads = async (sourceUri, fileName) => {
     }
   }
 
-  if (Platform.OS === 'web') {
+  // Capacitor renders the web bundle inside Android, where react-native-web
+  // still reports `web`. Keep the action dialog so Download and Share remain
+  // separate user actions on the device.
+  if (Platform.OS === 'web' || (isNative && platform === 'android')) {
     try {
       const blob = await fetchBlobFromUri(sourceUri);
       const { showPdfActions } = await import('@/ui/PdfActionDialog');

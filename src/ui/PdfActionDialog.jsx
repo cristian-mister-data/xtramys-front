@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { toast } from '@/ui/toast';
-import { isNative } from '@/platform/capacitor';
+import { isNative, platform } from '@/platform/capacitor';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -200,8 +200,8 @@ export default function PdfActionDialog({ open, fileName, onDownload, onShare, o
               </svg>
             </ActionIcon>
             <ActionLabel>
-              <ActionTitle>{t('pdfDialog.download', 'Descargar')}</ActionTitle>
-              <ActionDesc>{t('pdfDialog.downloadDesc', 'Guardar en tu dispositivo')}</ActionDesc>
+          <ActionTitle>{t('pdfDialog.download', 'Descargar')}</ActionTitle>
+          <ActionDesc>{t('pdfDialog.downloadDesc', 'Guardar en Descargas')}</ActionDesc>
             </ActionLabel>
           </ActionBtn>
           {canShare && (
@@ -216,8 +216,8 @@ export default function PdfActionDialog({ open, fileName, onDownload, onShare, o
                 </svg>
               </ActionIcon>
               <ActionLabel>
-                <ActionTitle>{t('pdfDialog.share', 'Descargar y compartir')}</ActionTitle>
-                <ActionDesc>{t('pdfDialog.shareDesc', 'Guardar y abrir opciones para enviar')}</ActionDesc>
+              <ActionTitle>{t('pdfDialog.share', 'Compartir')}</ActionTitle>
+              <ActionDesc>{t('pdfDialog.shareDesc', 'Abrir opciones para enviar')}</ActionDesc>
               </ActionLabel>
             </ActionBtn>
           )}
@@ -389,38 +389,55 @@ export function showPdfActions(blob, fileName) {
 
   const handleCapacitorPdf = async (action) => {
     try {
-      const { Filesystem, Directory } = await import('@capacitor/filesystem');
-      const { Share } = await import('@capacitor/share');
-
       const dataUrl = await blobToBase64(blob);
       const base64Data = dataUrl.split(',')[1];
 
       if (action === 'download') {
+        if (platform === 'android') {
+          const { registerPlugin } = await import('@capacitor/core');
+          const VideoSaver = registerPlugin('VideoSaver');
+          await VideoSaver.saveToDownloads({
+            data: base64Data,
+            fileName: fullFileName,
+            mimeType: 'application/pdf',
+          });
+          toast.success('El PDF se ha guardado en la carpeta Descargas del dispositivo.');
+          return true;
+        }
+
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
         try {
           await Filesystem.writeFile({
             path: fullFileName,
             data: base64Data,
             directory: Directory.Documents
           });
-          toast.success('El archivo PDF se ha descargado y guardado en la carpeta de Documentos de tu dispositivo.');
+          toast.success('El archivo PDF se ha guardado en el dispositivo.');
           return true;
         } catch (dirErr) {
-          console.warn('Failed writing to Documents directory, falling back to Share sheet:', dirErr);
+          console.warn('Failed writing PDF to the native documents directory:', dirErr);
+          return false;
         }
       }
 
-      const writeResult = await Filesystem.writeFile({
-        path: fullFileName,
-        data: base64Data,
-        directory: Directory.Cache
-      });
+      if (action === 'share') {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+        const writeResult = await Filesystem.writeFile({
+          path: fullFileName,
+          data: base64Data,
+          directory: Directory.Cache
+        });
 
-      await Share.share({
-        title: fullFileName,
-        url: writeResult.uri,
-        dialogTitle: fullFileName,
-      });
-      return true;
+        await Share.share({
+          title: fullFileName,
+          url: writeResult.uri,
+          dialogTitle: fullFileName,
+        });
+        return true;
+      }
+
+      return false;
     } catch (err) {
       console.error('Error handling PDF in Capacitor:', err);
       return false;
@@ -499,9 +516,9 @@ export function showPdfActions(blob, fileName) {
   }, {}, fullFileName));
 
   const actions = el('div', { padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '8px' });
-  actions.appendChild(createActionBtn(true, i18n.t('pdfDialog.download', 'Descargar'), i18n.t('pdfDialog.downloadDesc', 'Guardar en tu dispositivo'), 'download', downloadOnly, true));
+  actions.appendChild(createActionBtn(true, i18n.t('pdfDialog.download', 'Descargar'), i18n.t('pdfDialog.downloadDesc', 'Guardar en Descargas'), 'download', downloadOnly, true));
   if (canShare) {
-    actions.appendChild(createActionBtn(false, i18n.t('pdfDialog.share', 'Descargar y compartir'), i18n.t('pdfDialog.shareDesc', 'Guardar y abrir opciones para enviar'), 'share', downloadAndShare, false));
+    actions.appendChild(createActionBtn(false, i18n.t('pdfDialog.share', 'Compartir'), i18n.t('pdfDialog.shareDesc', 'Abrir opciones para enviar'), 'share', downloadAndShare, false));
   }
 
   const cancelBtn = el('button', {

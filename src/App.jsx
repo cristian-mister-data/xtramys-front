@@ -86,8 +86,13 @@ export default function App() {
   const userLanguage = user?.idioma;
 
   useEffect(() => {
-    if (userLanguage && i18n.language !== userLanguage) {
-      i18n.changeLanguage(userLanguage);
+    const path = window.location.pathname;
+    const routeLanguage = path === '/suscripcion' || path.startsWith('/es/subscribe')
+      ? 'es'
+      : path.startsWith('/en/subscribe') ? 'en' : null;
+    const language = routeLanguage || userLanguage;
+    if (language && i18n.language !== language) {
+      i18n.changeLanguage(language);
     }
   }, [userLanguage]);
 

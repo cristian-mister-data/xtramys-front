@@ -9,6 +9,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { isNative, platform } from '@/platform/capacitor';
 
+const isIOSNative = isNative && platform === 'ios';
+
+const sourceToUrl = (source) => typeof source === 'string' ? source : source?.uri || '';
+
+const releaseObjectUrl = (source) => {
+  const url = sourceToUrl(source);
+  if (!url.startsWith('blob:') || typeof URL === 'undefined') return;
+  try { URL.revokeObjectURL(url); } catch {}
+};
+
 function applyToEl(player) {
   const el = player._el;
   if (!el) return;
@@ -34,7 +44,8 @@ export function useVideoPlayer(source, setup) {
       set source(s) {
         this._source = s;
         if (this._el) {
-          this._el.src = typeof s === 'string' ? s : s?.uri || '';
+          this._el.src = sourceToUrl(s);
+          this._el.load?.();
         }
         this._onSourceChange?.();
       },
@@ -66,7 +77,7 @@ export function useVideoPlayer(source, setup) {
       replace(s) {
         this._source = s;
         if (this._el) {
-          this._el.src = typeof s === 'string' ? s : s?.uri || '';
+          this._el.src = sourceToUrl(s);
           this._el.load?.();
         }
         this._onSourceChange?.();
@@ -116,22 +127,47 @@ export function VideoView({
 }) {
   const elRef = useRef(null);
   const [, force] = useState(0);
+  const src = sourceToUrl(player?._source);
 
   useEffect(() => {
     if (!player) return undefined;
-    player._el = elRef.current;
+    const element = elRef.current;
+    const mountedSource = player._source;
+    player._el = element;
+    if (element) {
+      if (element.src !== src) element.src = src;
+      if (isIOSNative) element.setAttribute('webkit-playsinline', 'true');
+      // iOS needs an explicit load after a source change to expose metadata
+      // and the first frame inside a Capacitor modal.
+      if (src) element.load?.();
+    }
     applyToEl(player);
+    // iOS rejects async autoplay when audio is enabled. Start muted so the
+    // first frame is visible, then restore the requested audio state once
+    // WebKit accepts playback. Native controls remain available as fallback.
     if (player.playing) {
-      const p = elRef.current?.play?.();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
+      const autoplayMuted = isIOSNative && !player.muted;
+      if (autoplayMuted && element) element.muted = true;
+      const playPromise = element?.play?.();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            if (autoplayMuted && player._el === element) element.muted = !!player.muted;
+          })
+          .catch(() => {
+            if (autoplayMuted && player._el === element) element.muted = !!player.muted;
+            player.playing = false;
+          });
+      } else if (autoplayMuted && element) {
+        element.muted = !!player.muted;
+      }
     }
     force((x) => x + 1);
-    return () => { if (player) player._el = null; };
-  }, [player]);
-
-  const src = typeof player?._source === 'string'
-    ? player._source
-    : (player?._source?.uri || '');
+    return () => {
+      if (player?._el === element) player._el = null;
+      releaseObjectUrl(mountedSource);
+    };
+  }, [player, src]);
 
   return (
     <video
@@ -139,6 +175,7 @@ export function VideoView({
       src={src}
       controls={nativeControls}
       playsInline
+      preload="auto"
       crossOrigin={isNative && platform === 'ios' ? undefined : 'anonymous'}
       style={{ width: '100%', height: '100%', objectFit: contentFit, background: '#000', ...style }}
       {...rest}

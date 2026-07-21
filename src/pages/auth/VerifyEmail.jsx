@@ -72,7 +72,13 @@ export default function VerifyEmail() {
         dispatch({ type: RESET_STORE });
         dispatch(setUser(user));
       }
-      navigate('/app', { replace: true });
+      const from = location.state?.from;
+      const fromPath = from?.pathname || '';
+      const returnToSubscribe = fromPath.startsWith('/subscribe') || fromPath.startsWith('/suscripcion');
+      navigate(
+        returnToSubscribe ? `${fromPath}${from.search || ''}${from.hash || ''}` : '/subscribe',
+        { replace: true },
+      );
     } catch (err) {
       const codeValue = err?.code || err?.data?.code;
       let message = err?.message || t('verify.errorGeneric', 'Error al verificar el correo');

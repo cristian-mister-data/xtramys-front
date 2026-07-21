@@ -60,7 +60,9 @@ export default function Login() {
     } catch (err) {
       const code = err?.code || err?.data?.code;
       if (code === 'EMAIL_NOT_VERIFIED') {
-        navigate('/auth/verify-email', { state: { correo: err?.data?.correo || correoNorm } });
+        navigate('/auth/verify-email', {
+          state: { correo: err?.data?.correo || correoNorm, from: location.state?.from },
+        });
         return;
       }
       setLocalError(err?.message || t('login.loginError', 'Correo o contraseña incorrectos'));
@@ -70,8 +72,11 @@ export default function Login() {
   const handleGoogleLogin = () => {
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
     const fromPath = location.state?.from?.pathname || '/app';
-    const fromSearch = location.state?.from?.search || '';
-    const from = fromPath + fromSearch;
+    const params = new URLSearchParams(location.state?.from?.search || '');
+    if (fromPath.startsWith('/subscribe') || fromPath.startsWith('/suscripcion')) {
+      params.set('checkout', '1');
+    }
+    const from = fromPath + (params.toString() ? `?${params}` : '');
     window.location.href = getGoogleOAuthURL(lang, from);
   };
 
@@ -154,7 +159,9 @@ export default function Login() {
           </MutedAction>
         </>
       ) : (
-        <SecondaryLink to="/auth/register">{t('login.createAccount', 'Crear cuenta')}</SecondaryLink>
+        <SecondaryLink to="/auth/register" state={{ from: location.state?.from }}>
+          {t('login.createAccount', 'Crear cuenta')}
+        </SecondaryLink>
       )}
     </AuthFormShell>
   );
