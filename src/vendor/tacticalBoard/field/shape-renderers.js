@@ -13,8 +13,9 @@ import { ZINDEX_BASE_LINES, acquireBoardDrag, isBoardDragOwner, releaseBoardDrag
 import { TouchableOpacity, boardInteractionState } from './primitives';
 import {
   ALLOW_MULTI_ELEMENT_DRAG,
-  applyBoardDragSnapshot,
-  createBoardDragSnapshot,
+  applyBoardDragState,
+  buildBoardDragState,
+  findBoardCloneIndex,
   getDisplayBoxFromRatioPoints,
   getRatioPointsFromDisplayBox,
   getResponderLocalPoint,
@@ -24,6 +25,30 @@ import {
   isRectangleBorderTouch,
   resizeDisplayBoxFromHandle,
 } from './geometry';
+
+function moveShapeWithoutRender(id, detector, dx, dy) {
+  if (typeof document === 'undefined' || !detector?.style) return false;
+  const visual = document.getElementById(`board-shape-${id}`);
+  if (!visual) return false;
+  visual.style.willChange = 'transform';
+  visual.setAttribute('transform', `translate(${dx} ${dy})`);
+  detector.style.willChange = 'transform';
+  detector.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+  return true;
+}
+
+function finishShapeWithoutRender(id, detector) {
+  if (typeof document === 'undefined') return;
+  const visual = document.getElementById(`board-shape-${id}`);
+  if (visual) {
+    visual.removeAttribute('transform');
+    visual.style.willChange = '';
+  }
+  if (detector?.style) {
+    detector.style.transform = '';
+    detector.style.willChange = '';
+  }
+}
 export // =====================================================
 // COMPONENTES SVG MEMOIZADOS PARA CÍRCULOS Y RECTÁNGULOS
 // =====================================================
@@ -85,6 +110,7 @@ const MemoizedCircleSvg = React.memo(
     return (
       <G>
         <Ellipse
+          id={`board-shape-${id}`}
           key={`circle-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
           cx={centerX}
           cy={centerY}
@@ -190,6 +216,7 @@ const MemoizedRectangleSvg = React.memo(
     return (
       <G>
         <Rect
+          id={`board-shape-${id}`}
           key={`rect-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
           x={x}
           y={y}
@@ -265,6 +292,7 @@ const MemoizedCustomShapeSvg = React.memo(
     const dashArray = lineType === 'dotted' ? `${dotSize || 2},${dotSpacing || 4}` : null;
     return (
       <Path
+        id={`board-shape-${id}`}
         key={`cs-${id}-${lineType || 'solid'}-${dotSize || 2}-${dotSpacing || 4}`}
         d={pathData}
         stroke={isMultiSelected ? '#3498db' : color}
@@ -478,8 +506,19 @@ const BatchShapesRenderer = React.memo(
     );
   },
   (prevProps, nextProps) => {
-    if (prevProps.selectedCloneId !== nextProps.selectedCloneId) return false;
-    if (prevProps.selectedCloneIdsSet !== nextProps.selectedCloneIdsSet) return false;
+    if (prevProps.selectedCloneId !== nextProps.selectedCloneId) {
+      const wasShapeSelected = [
+        ...prevProps.circles,
+        ...prevProps.rectangles,
+        ...prevProps.customShapes,
+      ].some((shape) => shape.id === prevProps.selectedCloneId);
+      const isShapeSelected = [
+        ...nextProps.circles,
+        ...nextProps.rectangles,
+        ...nextProps.customShapes,
+      ].some((shape) => shape.id === nextProps.selectedCloneId);
+      if (wasShapeSelected || isShapeSelected) return false;
+    }
     if (prevProps.viewMode !== nextProps.viewMode) return false;
     if (prevProps.circles.length !== nextProps.circles.length) return false;
     if (prevProps.rectangles.length !== nextProps.rectangles.length) return false;
@@ -502,6 +541,8 @@ const BatchShapesRenderer = React.memo(
         prev.dotSpacing !== next.dotSpacing ||
         prev._drawProgress !== next._drawProgress ||
         prev.zIndex !== next.zIndex ||
+        prevProps.selectedCloneIdsSet?.has(prev.id) !==
+          nextProps.selectedCloneIdsSet?.has(next.id) ||
         !arraysEqual(prev.points, next.points)
       )
         return false;
@@ -520,6 +561,8 @@ const BatchShapesRenderer = React.memo(
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
         prev.zIndex !== next.zIndex ||
+        prevProps.selectedCloneIdsSet?.has(prev.id) !==
+          nextProps.selectedCloneIdsSet?.has(next.id) ||
         !arraysEqual(prev.points, next.points)
       )
         return false;
@@ -538,6 +581,8 @@ const BatchShapesRenderer = React.memo(
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
         prev.zIndex !== next.zIndex ||
+        prevProps.selectedCloneIdsSet?.has(prev.id) !==
+          nextProps.selectedCloneIdsSet?.has(next.id) ||
         !arraysEqual(prev.points, next.points)
       )
         return false;
@@ -583,6 +628,8 @@ const MemoizedCircleDetector = React.memo(
     if (isAnyDrawingMode) return null;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const detectorRef = useRef(null);
+    const imperativeDragRef = useRef(false);
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const scale = (imageWidth / originalWidth + imageHeight / originalHeight) / 2;
@@ -642,37 +689,21 @@ const MemoizedCircleDetector = React.memo(
         return;
       }
       if (!acquireBoardDrag(dragStart, icon.id)) return;
+      imperativeDragRef.current = false;
       if (
         ALLOW_MULTI_ELEMENT_DRAG &&
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isSelected
       ) {
-        const initialPositions = {};
-        selectedCloneIds.forEach((id) => {
-          const c = clones.find((cl) => cl.id === id);
-          if (!c) return;
-          if (c.points && Array.isArray(c.points)) {
-            initialPositions[id] = {
-              points: c.points.map((p) => ({
-                x: p.x,
-                y: p.y,
-              })),
-            };
-          } else {
-            initialPositions[id] = {
-              xRatio: c.xRatio,
-              yRatio: c.yRatio,
-            };
-          }
-        });
+        const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
         dragStart.current[icon.id] = {
           multiSelect: true,
           selectedIds: [...selectedCloneIds],
-          initialPositions,
           isValid: true,
           startX: e.nativeEvent.pageX,
           startY: e.nativeEvent.pageY,
+          ...dragSnapshotState,
         };
       } else {
         dragStart.current[icon.id] = {
@@ -690,37 +721,21 @@ const MemoizedCircleDetector = React.memo(
       if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id))
         return;
       const base = dragStart.current[icon.id];
+      const dxDisplay = (e.nativeEvent.pageX - base.startX) / zoomLevel;
+      const dyDisplay = (e.nativeEvent.pageY - base.startY) / zoomLevel;
       const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio(
-        (e.nativeEvent.pageX - base.startX) / zoomLevel,
-        (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        dxDisplay,
+        dyDisplay,
         viewMode,
         imageWidth,
         imageHeight,
       );
       if (base.multiSelect && base.selectedIds && base.initialPositions) {
         pendingUpdateRef.current = (prev) =>
-          prev.map((c) => {
-            if (!base.selectedIds.includes(c.id)) return c;
-            const init = base.initialPositions[c.id];
-            if (!init) return c;
-            if (init.points && Array.isArray(init.points)) {
-              return {
-                ...c,
-                points: init.points.map((pt) => ({
-                  x: pt.x + ddx,
-                  y: pt.y + ddy,
-                })),
-              };
-            }
-            return {
-              ...c,
-              xRatio: (init.xRatio || 0) + ddx,
-              yRatio: (init.yRatio || 0) + ddy,
-            };
-          });
+          applyBoardDragState(prev, base, ddx, ddy, 0, 0);
       } else {
         pendingUpdateRef.current = (prev) => {
-          const idx = prev.findIndex((c) => c.id === icon.id);
+          const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
           if (idx === -1) return prev;
           const next = [...prev];
           next[idx] = {
@@ -732,6 +747,10 @@ const MemoizedCircleDetector = React.memo(
           };
           return next;
         };
+      }
+      if (!base.multiSelect && moveShapeWithoutRender(icon.id, detectorRef.current, dxDisplay, dyDisplay)) {
+        imperativeDragRef.current = true;
+        return;
       }
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
@@ -752,11 +771,15 @@ const MemoizedCircleDetector = React.memo(
         setClones(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }
+      if (imperativeDragRef.current) {
+        requestAnimationFrame(() => finishShapeWithoutRender(icon.id, detectorRef.current));
+        imperativeDragRef.current = false;
+      }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
         setClones((prev) => {
           const remaining = prev.filter((c) => {
-            if (!base.selectedIds.includes(c.id) || c.locked) return true;
+            if (!base.selectedIdsSet.has(c.id) || c.locked) return true;
             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
               return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
             }
@@ -807,7 +830,7 @@ const MemoizedCircleDetector = React.memo(
       );
       const nextPoints = getRatioPointsFromDisplayBox(nextBox, viewMode, imageWidth, imageHeight);
       pendingUpdateRef.current = (prev) => {
-        const idx = prev.findIndex((c) => c.id === icon.id);
+        const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (idx === -1) return prev;
         const next = [...prev];
         next[idx] = {
@@ -904,6 +927,8 @@ const MemoizedCircleDetector = React.memo(
     };
     return (
       <View
+        ref={detectorRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -1078,7 +1103,7 @@ const MemoizedCircleDetector = React.memo(
     prev.icon.locked === next.icon.locked &&
     prev.icon.thickness === next.icon.thickness &&
     arraysEqual(prev.icon.points, next.icon.points) &&
-    prev.selectedCloneId === next.selectedCloneId &&
+    (prev.selectedCloneId === prev.icon.id) === (next.selectedCloneId === next.icon.id) &&
     prev.multiSelectMode === next.multiSelectMode &&
     prev.selectionInteractionMode === next.selectionInteractionMode &&
     prev.isAnyDrawingMode === next.isAnyDrawingMode &&
@@ -1117,6 +1142,8 @@ const MemoizedRectangleDetector = React.memo(
     if (isAnyDrawingMode) return null;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const detectorRef = useRef(null);
+    const imperativeDragRef = useRef(false);
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const scale = (imageWidth / originalWidth + imageHeight / originalHeight) / 2;
@@ -1169,37 +1196,21 @@ const MemoizedRectangleDetector = React.memo(
         return;
       }
       if (!acquireBoardDrag(dragStart, icon.id)) return;
+      imperativeDragRef.current = false;
       if (
         ALLOW_MULTI_ELEMENT_DRAG &&
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isSelected
       ) {
-        const initialPositions = {};
-        selectedCloneIds.forEach((id) => {
-          const c = clones.find((cl) => cl.id === id);
-          if (!c) return;
-          if (c.points && Array.isArray(c.points)) {
-            initialPositions[id] = {
-              points: c.points.map((p) => ({
-                x: p.x,
-                y: p.y,
-              })),
-            };
-          } else {
-            initialPositions[id] = {
-              xRatio: c.xRatio,
-              yRatio: c.yRatio,
-            };
-          }
-        });
+        const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
         dragStart.current[icon.id] = {
           multiSelect: true,
           selectedIds: [...selectedCloneIds],
-          initialPositions,
           isValid: true,
           startX: e.nativeEvent.pageX,
           startY: e.nativeEvent.pageY,
+          ...dragSnapshotState,
         };
       } else {
         dragStart.current[icon.id] = {
@@ -1217,37 +1228,21 @@ const MemoizedRectangleDetector = React.memo(
       if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id))
         return;
       const base = dragStart.current[icon.id];
+      const dxDisplay = (e.nativeEvent.pageX - base.startX) / zoomLevel;
+      const dyDisplay = (e.nativeEvent.pageY - base.startY) / zoomLevel;
       const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio(
-        (e.nativeEvent.pageX - base.startX) / zoomLevel,
-        (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        dxDisplay,
+        dyDisplay,
         viewMode,
         imageWidth,
         imageHeight,
       );
       if (base.multiSelect && base.selectedIds && base.initialPositions) {
         pendingUpdateRef.current = (prev) =>
-          prev.map((c) => {
-            if (!base.selectedIds.includes(c.id)) return c;
-            const init = base.initialPositions[c.id];
-            if (!init) return c;
-            if (init.points && Array.isArray(init.points)) {
-              return {
-                ...c,
-                points: init.points.map((pt) => ({
-                  x: pt.x + ddx,
-                  y: pt.y + ddy,
-                })),
-              };
-            }
-            return {
-              ...c,
-              xRatio: (init.xRatio || 0) + ddx,
-              yRatio: (init.yRatio || 0) + ddy,
-            };
-          });
+          applyBoardDragState(prev, base, ddx, ddy, 0, 0);
       } else {
         pendingUpdateRef.current = (prev) => {
-          const idx = prev.findIndex((c) => c.id === icon.id);
+          const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
           if (idx === -1) return prev;
           const next = [...prev];
           next[idx] = {
@@ -1259,6 +1254,10 @@ const MemoizedRectangleDetector = React.memo(
           };
           return next;
         };
+      }
+      if (!base.multiSelect && moveShapeWithoutRender(icon.id, detectorRef.current, dxDisplay, dyDisplay)) {
+        imperativeDragRef.current = true;
+        return;
       }
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
@@ -1279,11 +1278,15 @@ const MemoizedRectangleDetector = React.memo(
         setClones(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }
+      if (imperativeDragRef.current) {
+        requestAnimationFrame(() => finishShapeWithoutRender(icon.id, detectorRef.current));
+        imperativeDragRef.current = false;
+      }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
         setClones((prev) => {
           const remaining = prev.filter((c) => {
-            if (!base.selectedIds.includes(c.id) || c.locked) return true;
+            if (!base.selectedIdsSet.has(c.id) || c.locked) return true;
             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
               return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
             }
@@ -1334,7 +1337,7 @@ const MemoizedRectangleDetector = React.memo(
       );
       const nextPoints = getRatioPointsFromDisplayBox(nextBox, viewMode, imageWidth, imageHeight);
       pendingUpdateRef.current = (prev) => {
-        const idx = prev.findIndex((c) => c.id === icon.id);
+        const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (idx === -1) return prev;
         const next = [...prev];
         next[idx] = {
@@ -1426,6 +1429,8 @@ const MemoizedRectangleDetector = React.memo(
     const rightEdgeResponderProps = makeEdgeResponderProps(width, touchTolerance * 2);
     return (
       <View
+        ref={detectorRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -1639,7 +1644,7 @@ const MemoizedRectangleDetector = React.memo(
     prev.icon.locked === next.icon.locked &&
     prev.icon.thickness === next.icon.thickness &&
     arraysEqual(prev.icon.points, next.icon.points) &&
-    prev.selectedCloneId === next.selectedCloneId &&
+    (prev.selectedCloneId === prev.icon.id) === (next.selectedCloneId === next.icon.id) &&
     prev.multiSelectMode === next.multiSelectMode &&
     prev.selectionInteractionMode === next.selectionInteractionMode &&
     prev.isAnyDrawingMode === next.isAnyDrawingMode &&
@@ -1676,6 +1681,8 @@ const MemoizedCustomShapeDetector = React.memo(
   }) => {
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const detectorRef = useRef(null);
+    const imperativeDragRef = useRef(false);
     if (!icon.points || icon.points.length < 3 || !icon.isCustomShapeComplete) return null;
     if (isAnyDrawingMode) return null;
     const originalWidth = icon.imageWidth || imageWidth;
@@ -1724,25 +1731,21 @@ const MemoizedCustomShapeDetector = React.memo(
         return;
       }
       if (!acquireBoardDrag(dragStart, icon.id)) return;
+      imperativeDragRef.current = false;
       if (
         ALLOW_MULTI_ELEMENT_DRAG &&
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isSelected
       ) {
-        const initialPositions = {};
-        selectedCloneIds.forEach((id) => {
-          const c = clones.find((cl) => cl.id === id);
-          const snapshot = createBoardDragSnapshot(c);
-          if (snapshot) initialPositions[id] = snapshot;
-        });
+        const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
         dragStart.current[icon.id] = {
           multiSelect: true,
           selectedIds: [...selectedCloneIds],
-          initialPositions,
           isValid: true,
           startX: e.nativeEvent.pageX,
           startY: e.nativeEvent.pageY,
+          ...dragSnapshotState,
         };
       } else {
         dragStart.current[icon.id] = {
@@ -1760,24 +1763,21 @@ const MemoizedCustomShapeDetector = React.memo(
       if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id))
         return;
       const base = dragStart.current[icon.id];
+      const dxDisplay = (e.nativeEvent.pageX - base.startX) / zoomLevel;
+      const dyDisplay = (e.nativeEvent.pageY - base.startY) / zoomLevel;
       const { dxRatio: ddx, dyRatio: ddy } = deltaToRatio(
-        (e.nativeEvent.pageX - base.startX) / zoomLevel,
-        (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        dxDisplay,
+        dyDisplay,
         viewMode,
         imageWidth,
         imageHeight,
       );
       if (base.multiSelect && base.selectedIds && base.initialPositions) {
         pendingUpdateRef.current = (prev) =>
-          prev.map((c) => {
-            if (!base.selectedIds.includes(c.id)) return c;
-            const init = base.initialPositions[c.id];
-            if (!init) return c;
-            return applyBoardDragSnapshot(c, init, ddx, ddy, 0, 0);
-          });
+          applyBoardDragState(prev, base, ddx, ddy, 0, 0);
       } else {
         pendingUpdateRef.current = (prev) => {
-          const idx = prev.findIndex((c) => c.id === icon.id);
+          const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
           if (idx === -1) return prev;
           const next = [...prev];
           next[idx] = {
@@ -1789,6 +1789,10 @@ const MemoizedCustomShapeDetector = React.memo(
           };
           return next;
         };
+      }
+      if (!base.multiSelect && moveShapeWithoutRender(icon.id, detectorRef.current, dxDisplay, dyDisplay)) {
+        imperativeDragRef.current = true;
+        return;
       }
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
@@ -1809,12 +1813,16 @@ const MemoizedCustomShapeDetector = React.memo(
         setClones(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }
+      if (imperativeDragRef.current) {
+        requestAnimationFrame(() => finishShapeWithoutRender(icon.id, detectorRef.current));
+        imperativeDragRef.current = false;
+      }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
         // Multi-drag: eliminar TODOS los seleccionados que estn fuera del campo
         setClones((prev) => {
           const remaining = prev.filter((c) => {
-            if (!base.selectedIds.includes(c.id) || c.locked) return true;
+            if (!base.selectedIdsSet.has(c.id) || c.locked) return true;
             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
               return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
             }
@@ -1877,7 +1885,7 @@ const MemoizedCustomShapeDetector = React.memo(
         };
       });
       pendingUpdateRef.current = (prev) => {
-        const idx = prev.findIndex((c) => c.id === icon.id);
+        const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (idx === -1) return prev;
         const next = [...prev];
         next[idx] = {
@@ -1981,6 +1989,8 @@ const MemoizedCustomShapeDetector = React.memo(
     };
     return (
       <View
+        ref={detectorRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -2115,7 +2125,7 @@ const MemoizedCustomShapeDetector = React.memo(
     prev.icon.locked === next.icon.locked &&
     prev.icon.thickness === next.icon.thickness &&
     arraysEqual(prev.icon.points, next.icon.points) &&
-    prev.selectedCloneId === next.selectedCloneId &&
+    (prev.selectedCloneId === prev.icon.id) === (next.selectedCloneId === next.icon.id) &&
     prev.multiSelectMode === next.multiSelectMode &&
     prev.selectionInteractionMode === next.selectionInteractionMode &&
     prev.isAnyDrawingMode === next.isAnyDrawingMode &&

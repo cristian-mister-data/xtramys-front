@@ -7,6 +7,7 @@
  *  - VideoView({ player, contentFit, nativeControls, ... }) → render del <video>.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { isNative, platform } from '@/platform/capacitor';
 
 function applyToEl(player) {
   const el = player._el;
@@ -138,7 +139,7 @@ export function VideoView({
       src={src}
       controls={nativeControls}
       playsInline
-      crossOrigin="anonymous"
+      crossOrigin={isNative && platform === 'ios' ? undefined : 'anonymous'}
       style={{ width: '100%', height: '100%', objectFit: contentFit, background: '#000', ...style }}
       {...rest}
     />

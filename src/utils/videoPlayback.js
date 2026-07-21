@@ -3,7 +3,7 @@ import { ensureMp4Blob } from '@/utils/videoUtils';
 import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
-import { isNative } from '@/platform/capacitor';
+import { isNative, platform } from '@/platform/capacitor';
 import { getSetPieceVideoSignature } from '@/utils/kits';
 
 const getId = (videoOrId) => {
@@ -158,6 +158,17 @@ const fetchVideoBlob = async (url) => {
 const maybeObjectUrl = async (url, { objectUrl = true } = {}) => {
   const isCapacitor = isNativeCapacitor();
   if (isCapacitor) {
+    // WKWebView does not reliably play WebM. Convert only those files so
+    // normal MP4 playback keeps using native streaming instead of RAM.
+    if (
+      platform === 'ios' &&
+      objectUrl &&
+      typeof URL !== 'undefined' &&
+      /\.webm(?:\?|#|$)/i.test(String(url || ''))
+    ) {
+      const blob = await ensureMp4Blob(await fetchVideoBlob(url));
+      return URL.createObjectURL(blob);
+    }
     if (isBackendApiUrl(url)) {
       const token = loadToken?.();
       if (token) {

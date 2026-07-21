@@ -56,7 +56,11 @@ import {
 import FieldSelectorModal from './FieldSelectorModal';
 import { cdnUrl } from '@/config';
 
-import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
+import {
+  createVideoRenderCache,
+  renderFrameToCanvas,
+  getVideoDimensions,
+} from '@/utils/videoCanvasRenderer';
 import { getVideoForEdit, getVideosByExercise, getVideosByStrategy } from '@/utils/api';
 import { FreeTextTool, OptionsMenu, TextEditPanel, useScreenDimensions } from './field/controls';
 import {
@@ -106,8 +110,9 @@ import {
 } from './field/primitives';
 import {
   ALLOW_MULTI_ELEMENT_DRAG,
+  applyBoardDragState,
   applyBoardDragSnapshot,
-  buildBoardDragSnapshots,
+  buildBoardDragState,
   clampBoardRatio,
   findTopBoardCloneAtPoint,
   getArrowHeadForStraightLine,
@@ -142,6 +147,8 @@ import { SettingsPanel } from './field/settings-panel';
 import { LockedElementsPanel } from './field/locked-elements-panel';
 import { FormationModal } from './field/formation-modal';
 import { createFieldUiComponents } from './field/ui-components';
+import { createFieldModals } from './field/ui-modals';
+import { createFieldPalettes } from './field/ui-palettes';
 
 // Variable de m�dulo para proteger la selecci�n de deselecci�n inmediata
 // Cuando un icono es seleccionado, se guarda el timestamp para evitar
@@ -258,6 +265,19 @@ import { createFieldUiComponents } from './field/ui-components';
 // Detector memoizado para rectngulos - Solo detecta toques en los BORDES
 
 // Detector memoizado para custom shapes - Solo detecta toques en el PERÍMETRO
+
+const CLONE_POSITION_KEYS = new Set(['x', 'y', 'xRatio', 'yRatio', 'points']);
+
+function hasOnlyClonePositionChanges(previous, next) {
+  if (!previous || !next) return false;
+  const previousKeys = Object.keys(previous);
+  const nextKeys = Object.keys(next);
+  if (previousKeys.length !== nextKeys.length) return false;
+  for (const key of nextKeys) {
+    if (!CLONE_POSITION_KEYS.has(key) && !Object.is(previous[key], next[key])) return false;
+  }
+  return true;
+}
 
 export default function Field(props = {}) {
   const navigation = useNavigation();
@@ -423,9 +443,7 @@ export default function Field(props = {}) {
             if (!isMounted) return;
             const orientation = event.type || '';
             // Si detectamos orientaci�n vertical, forzar landscape de nuevo
-            if (
-              orientation.startsWith('portrait')
-            ) {
+            if (orientation.startsWith('portrait')) {
               lockToLandscape();
             }
           });
@@ -473,7 +491,8 @@ export default function Field(props = {}) {
   const dimensions = useScreenDimensions();
   const [boardLayout, setBoardLayout] = useState(null);
   const SCREEN_WIDTH = boardLayout?.width || dimensions?.width || Dimensions.get('window').width;
-  const SCREEN_HEIGHT = boardLayout?.height || dimensions?.height || Dimensions.get('window').height;
+  const SCREEN_HEIGHT =
+    boardLayout?.height || dimensions?.height || Dimensions.get('window').height;
   const insets = useSafeAreaInsets();
   const safeArea = {
     top: Math.max(insets.top || 0, 0),
@@ -508,7 +527,11 @@ export default function Field(props = {}) {
         ['icon1', 'own', t('tacticalBoard.icons.ownTeam', 'Mi equipo')],
         ['goalkeeper-1', 'ownGoalkeeper', t('tacticalBoard.icons.ownGoalkeeper', 'Mi portero')],
         ['icon2', 'rival', t('tacticalBoard.icons.rivalTeam', 'Equipo rival')],
-        ['goalkeeper-2', 'rivalGoalkeeper', t('tacticalBoard.icons.rivalGoalkeeper', 'Portero rival')],
+        [
+          'goalkeeper-2',
+          'rivalGoalkeeper',
+          t('tacticalBoard.icons.rivalGoalkeeper', 'Portero rival'),
+        ],
       ];
       const players = playerRoles.map(([id, kitRole, label]) => ({
         ...INITIAL_ICONS.find((icon) => icon.id === id),
@@ -516,10 +539,9 @@ export default function Field(props = {}) {
         label,
         showLabel: true,
       }));
-      const tools = INITIAL_ICONS.filter((icon) =>
-        icon.type !== 'player' &&
-        icon.type !== 'team-players' &&
-        icon.type !== 'coaching-staff'
+      const tools = INITIAL_ICONS.filter(
+        (icon) =>
+          icon.type !== 'player' && icon.type !== 'team-players' && icon.type !== 'coaching-staff',
       ).map((icon) => ({ ...icon }));
       return [...players, ...tools];
     }
@@ -542,11 +564,13 @@ export default function Field(props = {}) {
     return INITIAL_ICONS.map((i) => ({ ...i }));
   }, [isStrategyMode, setPieceMode, INITIAL_ICONS, t]);
 
-  const [paletteIcons, setPaletteIcons] = useState(() => applySetPieceKitsToElements(
-    filteredIcons,
-    setPieceMode ? initialConfig?.kitContext : null,
-    false,
-  ));
+  const [paletteIcons, setPaletteIcons] = useState(() =>
+    applySetPieceKitsToElements(
+      filteredIcons,
+      setPieceMode ? initialConfig?.kitContext : null,
+      false,
+    ),
+  );
   const [drawingStraightArrow, setDrawingStraightArrow] = useState(false);
   const [drawingStraightLine, setDrawingStraightLine] = useState(false);
   const [drawingCurveLine, setDrawingCurveLine] = useState(false);
@@ -557,11 +581,23 @@ export default function Field(props = {}) {
   const [straightLineEnd, setStraightLineEnd] = useState(null);
   const [temporaryLinePoints, setTemporaryLinePoints] = useState([]);
   const [curvePoints, setCurvePoints] = useState([]);
+  const straightLineEndRef = useRef(null);
+  const straightLineDrawRafRef = useRef(null);
+  const curvePointsRef = useRef([]);
+  const curveDrawRafRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingCustomShape, setDrawingCustomShape] = useState(false);
   const [eraserMode, setEraserMode] = useState(false);
   const [customShapePoints, setCustomShapePoints] = useState([]);
   const [showCloseCircle, setShowCloseCircle] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (straightLineDrawRafRef.current) cancelAnimationFrame(straightLineDrawRafRef.current);
+      if (curveDrawRafRef.current) cancelAnimationFrame(curveDrawRafRef.current);
+    },
+    [],
+  );
 
   // Container refs for measuring absolute positions
   const containerRef = useRef();
@@ -634,6 +670,14 @@ export default function Field(props = {}) {
   const [dismissedBallTrajectoryPrompts, setDismissedBallTrajectoryPrompts] = useState({});
   const [loadedEditVideoKeyframeCount, setLoadedEditVideoKeyframeCount] = useState(0);
   const boardPreviewPlaybackIdRef = useRef(0);
+  const boardPreviewCanvasRef = useRef(null);
+  const boardPreviewAssetsRef = useRef({
+    fieldSource: null,
+    fieldImage: null,
+    playerPhotos: {},
+    renderCache: null,
+  });
+  const [boardPreviewActive, setBoardPreviewActive] = useState(false);
   const [formationModalVisible, setFormationModalVisible] = useState(false);
 
   // Estado para Configuraci�n de formaciones (n�mero vs posici�n, etiquetas personalizadas, color del n�mero)
@@ -662,10 +706,12 @@ export default function Field(props = {}) {
     setTeamPlayerStyle((prev) => ({ ...prev, ...ownStyle }));
     setPaletteIcons((prev) => applySetPieceKitsToElements(prev, context, false));
     setActualClones((prev) => applySetPieceKitsToElements(prev, context, showPhotos));
-    setVideoKeyframes((prev) => prev.map((keyframe) => ({
-      ...keyframe,
-      elements: applySetPieceKitsToElements(keyframe.elements || [], context, showPhotos),
-    })));
+    setVideoKeyframes((prev) =>
+      prev.map((keyframe) => ({
+        ...keyframe,
+        elements: applySetPieceKitsToElements(keyframe.elements || [], context, showPhotos),
+      })),
+    );
     setBoardSettings((prev) => ({
       ...prev,
       teamPlayers: { ...prev.teamPlayers, ...ownStyle },
@@ -1532,11 +1578,13 @@ export default function Field(props = {}) {
     });
 
     // Resetear iconos de paleta a valores iniciales
-    setPaletteIcons(applySetPieceKitsToElements(
-      filteredIcons.map((icon) => ({ ...icon })),
-      setPieceMode ? initialConfig?.kitContext : null,
-      false,
-    ));
+    setPaletteIcons(
+      applySetPieceKitsToElements(
+        filteredIcons.map((icon) => ({ ...icon })),
+        setPieceMode ? initialConfig?.kitContext : null,
+        false,
+      ),
+    );
 
     // Resetear contadores de iconos
     iconCounters.current = {};
@@ -1907,38 +1955,133 @@ export default function Field(props = {}) {
     },
   };
 
-  const previewVideoOnBoard = useCallback(async (frames, fps = 30) => {
-    if (!Array.isArray(frames) || frames.length === 0) return;
-    const playbackId = ++boardPreviewPlaybackIdRef.current;
-    const frameMs = 1000 / Math.max(1, fps);
-    const now = () =>
-      typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
-    const startedAt = now();
-    let index = 0;
+  const previewVideoOnBoard = useCallback(
+    async (frames, fps = 30, photoSources = []) => {
+      const iterator = frames?.[Symbol.iterator]?.();
+      if (!iterator) return;
+      let next = iterator.next();
+      if (next.done) return;
 
-    while (index < frames.length && boardPreviewPlaybackIdRef.current === playbackId) {
-      const frame = frames[index];
-      await videoFrameControlRef.current?.setFrame?.(frame.elements || [], frame.connectors || []);
+      const playbackId = ++boardPreviewPlaybackIdRef.current;
+      try {
+        const canvas = boardPreviewCanvasRef.current;
+        if (!canvas) return;
 
-      const elapsed = now() - startedAt;
-      const nextIndex = Math.min(
-        frames.length - 1,
-        Math.max(index + 1, Math.floor(elapsed / frameMs) + 1),
-      );
-      if (nextIndex === index) break;
-      await sleep(startedAt + nextIndex * frameMs - now());
-      index = nextIndex;
-    }
+        const pixelRatio = Math.max(1, globalThis.devicePixelRatio || 1);
+        canvas.width = Math.max(1, Math.round(imageWidth * pixelRatio));
+        canvas.height = Math.max(1, Math.round(imageHeight * pixelRatio));
+        const ctx = canvas.getContext('2d', { alpha: false });
+        if (!ctx) return;
+        ctx.imageSmoothingEnabled = true;
+        if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
 
-    if (boardPreviewPlaybackIdRef.current === playbackId) {
-      const lastFrame = frames[frames.length - 1];
-      await videoFrameControlRef.current?.setFrame?.(
-        lastFrame.elements || [],
-        lastFrame.connectors || [],
-      );
-    }
-  }, []);
+        const assets = boardPreviewAssetsRef.current;
+        assets.renderCache ||= createVideoRenderCache();
+        let fieldSource = fieldImageForVideo;
+        if (!fieldSource) {
+          const base64 = await captureViewShotBase64(fieldBaseRef).catch(() => null);
+          if (base64) fieldSource = `data:image/png;base64,${base64}`;
+        }
+        if (fieldSource && assets.fieldSource !== fieldSource) {
+          assets.fieldSource = fieldSource;
+          assets.fieldImage = await loadCanvasImage(fieldSource).catch(() => null);
+        }
+
+        await Promise.all(
+          photoSources.map(async (source) => {
+            if (!source || assets.playerPhotos[source]) return;
+            const image = await new Promise((resolve) => {
+              const nextImage = new globalThis.Image();
+              nextImage.crossOrigin = 'anonymous';
+              nextImage.onload = () => resolve(nextImage);
+              nextImage.onerror = () => resolve(null);
+              nextImage.src = cdnUrl(source);
+            });
+            if (!image) return;
+            assets.playerPhotos[source] = image;
+            assets.playerPhotos[cdnUrl(source)] = image;
+          }),
+        );
+
+        const frameMs = 1000 / Math.max(1, fps);
+        const now = () =>
+          typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+        const renderFrame = (frame) =>
+          renderFrameToCanvas(
+            ctx,
+            canvas.width,
+            canvas.height,
+            frame.elements || [],
+            frame.connectors || [],
+            assets.fieldImage,
+            {
+              playerPhotos: assets.playerPhotos,
+              playersWithNumber,
+              showPhotos: teamPlayerStyle.showPhotos,
+              viewMode,
+              renderCache: assets.renderCache,
+            },
+          );
+
+        let lastFrame = next.value;
+        renderFrame(lastFrame);
+        if (boardPreviewPlaybackIdRef.current !== playbackId) return;
+        setBoardPreviewActive(true);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+
+        const startedAt = now();
+        let frameIndex = 1;
+        next = iterator.next();
+
+        while (!next.done && boardPreviewPlaybackIdRef.current === playbackId) {
+          const waitMs = startedAt + frameIndex * frameMs - now();
+          if (waitMs > 1) {
+            await new Promise((resolve) => setTimeout(resolve, waitMs - 1));
+          }
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+
+          const dueIndex = Math.max(frameIndex, Math.floor((now() - startedAt) / frameMs));
+          while (frameIndex < dueIndex && !next.done) {
+            lastFrame = next.value;
+            next = iterator.next();
+            frameIndex += 1;
+          }
+          if (next.done) {
+            renderFrame(lastFrame);
+            break;
+          }
+
+          lastFrame = next.value;
+          renderFrame(lastFrame);
+          next = iterator.next();
+          frameIndex += 1;
+        }
+
+        if (boardPreviewPlaybackIdRef.current === playbackId && lastFrame) {
+          setActualClones(
+            (lastFrame.elements || [])
+              .filter((element) => element.type !== 'ball-shadow')
+              .map((element) => snapshotToClone(element)),
+          );
+          setConnectors(lastFrame.connectors || []);
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+        }
+      } finally {
+        if (boardPreviewPlaybackIdRef.current === playbackId) setBoardPreviewActive(false);
+      }
+    },
+    [
+      fieldImageForVideo,
+      imageHeight,
+      imageWidth,
+      playersWithNumber,
+      snapshotToClone,
+      teamPlayerStyle.showPhotos,
+      viewMode,
+    ],
+  );
 
   // Restaurar al estado original (antes de abrir el video recorder)
   // Usado cuando se eliminan keyframes o se guarda el video
@@ -2017,7 +2160,7 @@ export default function Field(props = {}) {
           number: assigned.number ?? element.number,
           playerData: assigned.playerData,
           photoUrl: assigned.playerData?.foto
-            ? (assigned.photoUrl || cdnUrl(assigned.playerData.foto))
+            ? assigned.photoUrl || cdnUrl(assigned.playerData.foto)
             : undefined,
           preserveVisualStyle: true,
           displayLabel: assigned.displayLabel ?? element.displayLabel,
@@ -2351,6 +2494,12 @@ export default function Field(props = {}) {
 
   // Funci�n para deseleccionar cualquier herramienta de dibujo activa
   const handleDeselectDrawingTool = useCallback(() => {
+    if (straightLineDrawRafRef.current) cancelAnimationFrame(straightLineDrawRafRef.current);
+    if (curveDrawRafRef.current) cancelAnimationFrame(curveDrawRafRef.current);
+    straightLineDrawRafRef.current = null;
+    curveDrawRafRef.current = null;
+    straightLineEndRef.current = null;
+    curvePointsRef.current = [];
     setDrawingStraightArrow(false);
     setDrawingStraightLine(false);
     setDrawingCurveLine(false);
@@ -2412,6 +2561,10 @@ export default function Field(props = {}) {
 
   // Alias y wrapper para setClones
   const clones = actualClones;
+  const lockedElements = useMemo(
+    () => clones.filter((clone) => clone.locked === true),
+    [clones],
+  );
 
   // =====================================================
   // SISTEMA DE UNDO/REDO OPTIMIZADO CON DEBOUNCE (INCLUYE CONECTORES)
@@ -2639,17 +2792,6 @@ export default function Field(props = {}) {
   // =====================================================
   // FIN SISTEMA UNDO/REDO
   // =====================================================
-
-  // Map de IDs a �ndices para b�squeda O(1)
-  const cloneIndexMap = useRef(new Map());
-  useEffect(() => {
-    cloneIndexMap.current.clear();
-    clones.forEach((clone, index) => {
-      if (clone.id) {
-        cloneIndexMap.current.set(clone.id, index);
-      }
-    });
-  }, [clones]);
 
   const [selectedCloneId, setSelectedCloneId] = useState(null);
   const [leftPanelVisible, setLeftPanelVisible] = useState(false);
@@ -4035,6 +4177,8 @@ export default function Field(props = {}) {
           canvas.width = exportWidth;
           canvas.height = exportHeight;
           const ctx = canvas.getContext('2d', { alpha: false });
+          ctx.imageSmoothingEnabled = true;
+          if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
 
           const fieldBase64 = await captureViewShotBase64(fieldBaseRef);
           const fieldImage = await loadCanvasImage(fieldBase64);
@@ -4072,9 +4216,13 @@ export default function Field(props = {}) {
     }
   };
 
+  const handleGuardarGraficoRef = useRef(handleGuardarGrafico);
+  handleGuardarGraficoRef.current = handleGuardarGrafico;
+  const handleFloatingSave = useCallback((...args) => handleGuardarGraficoRef.current(...args), []);
+
   const handleCancelar = useCallback(async () => {
     // Verificar si hay cambios sin guardar
-    const hasUnsavedChanges = clones.length > 0 || videoKeyframes.length > 0;
+    const hasUnsavedChanges = actualClonesRef.current.length > 0 || videoKeyframes.length > 0;
 
     if (hasUnsavedChanges) {
       Alert.alert(
@@ -4109,7 +4257,6 @@ export default function Field(props = {}) {
     }
   }, [
     cancelCallback,
-    clones.length,
     videoKeyframes.length,
     clearBoardState,
     unlockOrientationAndGoBack,
@@ -4201,17 +4348,18 @@ export default function Field(props = {}) {
     // Seal global para que la pantalla origen muestre mensaje de xito
     global.pendingVideoEditSuccess = true;
     if (isSetPieceOrStrategy) {
-      await handleGuardarGrafico();
+      await handleGuardarGraficoRef.current();
     } else {
       clearBoardState();
       await new Promise((resolve) => setTimeout(resolve, 120));
       await unlockOrientationAndGoBack();
     }
     setIsSavingVideoEdit(false);
-  }, [clearBoardState, unlockOrientationAndGoBack, isSetPieceOrStrategy, handleGuardarGrafico]);
+  }, [clearBoardState, unlockOrientationAndGoBack, isSetPieceOrStrategy]);
 
   const handleCloseVideoRecorder = useCallback(() => {
     boardPreviewPlaybackIdRef.current += 1;
+    setBoardPreviewActive(false);
     // Mantener los elementos dibujados en el campo al cerrar
     keepVideoChangesRef.current = true;
     setVideoRecorderVisible(false);
@@ -4688,9 +4836,9 @@ export default function Field(props = {}) {
     };
   }, [multiSelectMode, selectionInteractionMode, findContainedIds]);
 
-  const openCarouselModal = () => {
+  const openCarouselModal = useCallback(() => {
     setCarouselModalVisible(true);
-  };
+  }, []);
 
   const closeCarouselModal = () => setCarouselModalVisible(false);
 
@@ -4899,6 +5047,41 @@ export default function Field(props = {}) {
   const elementDragState = useRef(null);
   // Ref para detectar taps (toque corto sin movimiento) en el campo
   const fieldTouchStartRef = useRef(null);
+  const elementDragFrameRef = useRef(null);
+  const pendingElementDragUpdateRef = useRef(null);
+
+  const scheduleElementDragUpdate = useCallback(
+    (updater) => {
+      pendingElementDragUpdateRef.current = updater;
+      if (elementDragFrameRef.current !== null) return;
+      elementDragFrameRef.current = requestAnimationFrame(() => {
+        const pendingUpdate = pendingElementDragUpdateRef.current;
+        pendingElementDragUpdateRef.current = null;
+        elementDragFrameRef.current = null;
+        if (pendingUpdate) setClones(pendingUpdate);
+      });
+    },
+    [setClones],
+  );
+
+  const flushElementDragUpdate = useCallback(() => {
+    if (elementDragFrameRef.current !== null) {
+      cancelAnimationFrame(elementDragFrameRef.current);
+      elementDragFrameRef.current = null;
+    }
+    const pendingUpdate = pendingElementDragUpdateRef.current;
+    pendingElementDragUpdateRef.current = null;
+    if (pendingUpdate) setClones(pendingUpdate);
+  }, [setClones]);
+
+  useEffect(
+    () => () => {
+      if (elementDragFrameRef.current !== null) {
+        cancelAnimationFrame(elementDragFrameRef.current);
+      }
+    },
+    [],
+  );
 
   const releaseElementDragLock = useCallback(
     (dragState = elementDragState.current) => {
@@ -4966,12 +5149,12 @@ export default function Field(props = {}) {
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isMultiSelected
-          ? selectedCloneIds.filter((id) =>
-              actualClonesRef.current.some((clone) => clone.id === id && !clone.locked),
-            )
+          ? actualClonesRef.current
+              .filter((clone) => selectedCloneIdsSet.has(clone.id) && !clone.locked)
+              .map((clone) => clone.id)
           : [hitClone.id];
-      const initialPositions = buildBoardDragSnapshots(actualClonesRef.current, selectedIds);
-      if (Object.keys(initialPositions).length === 0) {
+      const dragSnapshotState = buildBoardDragState(actualClonesRef.current, selectedIds);
+      if (dragSnapshotState.selectedIndices.length === 0) {
         elementDragState.current = null;
         setDraggingOutside(false);
         return false;
@@ -4988,7 +5171,7 @@ export default function Field(props = {}) {
         dragKey,
         primaryId: hitClone.id,
         selectedIds,
-        initialPositions,
+        ...dragSnapshotState,
         startPageX: pageX,
         startPageY: pageY,
       };
@@ -5017,14 +5200,12 @@ export default function Field(props = {}) {
   // Handler para mover elementos existentes
   const handleElementDragMove = useCallback(
     (e) => {
-      if (
-        !elementDragState.current ||
-        !isBoardDragOwner(dragStart, elementDragState.current.dragKey)
-      )
-        return;
+      const dragState = elementDragState.current;
+      if (!dragState || !isBoardDragOwner(dragStart, dragState.dragKey)) return;
 
       const { pageX, pageY } = e.nativeEvent;
-      const { selectedIds, initialPositions, startPageX, startPageY } = elementDragState.current;
+      const { selectedIds, selectedIdsSet, initialPositions, startPageX, startPageY } =
+        dragState;
       const dxDisplay = (pageX - startPageX) / zoomLevel;
       const dyDisplay = (pageY - startPageY) / zoomLevel;
       const { dxRatio, dyRatio } = deltaToRatio(
@@ -5036,10 +5217,8 @@ export default function Field(props = {}) {
       );
 
       const anyOutside = selectedIds.some((selectedId) => {
-        const clone = actualClonesRef.current.find((item) => item.id === selectedId);
-        if (!clone || clone.locked) return false;
         const candidate = applyBoardDragSnapshot(
-          clone,
+          {},
           initialPositions[selectedId],
           dxRatio,
           dyRatio,
@@ -5050,21 +5229,18 @@ export default function Field(props = {}) {
       });
       setDraggingOutside(anyOutside);
 
-      setClones((prev) =>
-        prev.map((c) => {
-          if (!selectedIds.includes(c.id) || c.locked) return c;
-          return applyBoardDragSnapshot(
-            c,
-            initialPositions[c.id],
-            dxRatio,
-            dyRatio,
-            dxDisplay,
-            dyDisplay,
-          );
-        }),
+      scheduleElementDragUpdate((prev) =>
+        applyBoardDragState(
+          prev,
+          dragState,
+          dxRatio,
+          dyRatio,
+          dxDisplay,
+          dyDisplay,
+        ),
       );
     },
-    [viewMode, imageWidth, imageHeight, zoomLevel, dragStart, setClones],
+    [viewMode, imageWidth, imageHeight, zoomLevel, dragStart, scheduleElementDragUpdate],
   );
 
   // Handler para finalizar arrastre de elementos
@@ -5075,10 +5251,12 @@ export default function Field(props = {}) {
     if (!dragState) return;
     if (!isBoardDragOwner(dragStart, dragState.dragKey)) return;
 
+    flushElementDragUpdate();
+
     setClones((prev) => {
       const deleted = [];
       const remaining = prev.filter((clone) => {
-        if (!dragState.selectedIds.includes(clone.id) || clone.locked) return true;
+        if (!dragState.selectedIdsSet.has(clone.id) || clone.locked) return true;
         if (clone.points && Array.isArray(clone.points) && clone.points.length >= 2) {
           const outside = areAllPointsOutside(clone.points, viewMode, imageWidth, imageHeight);
           if (outside) deleted.push(clone);
@@ -5114,6 +5292,7 @@ export default function Field(props = {}) {
     handleElementDeleted,
     releaseElementDragLock,
     saveClonesHistory,
+    flushElementDragUpdate,
   ]);
 
   // Funciones para dibujar lneas rectas
@@ -5123,10 +5302,10 @@ export default function Field(props = {}) {
         return;
 
       const { locationX, locationY } = e.nativeEvent;
-      setStraightLineStart(displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight));
-      setTemporaryLinePoints([
-        displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight),
-      ]);
+      const start = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
+      straightLineEndRef.current = null;
+      setStraightLineStart(start);
+      setTemporaryLinePoints([start]);
     },
     [
       drawingStraightArrow,
@@ -5156,8 +5335,17 @@ export default function Field(props = {}) {
           ? snapToHorizontalOrVertical(straightLineStart, rawEnd)
           : rawEnd;
 
-      setStraightLineEnd(finalEnd);
-      setTemporaryLinePoints([straightLineStart, finalEnd]);
+      straightLineEndRef.current = finalEnd;
+      if (!straightLineDrawRafRef.current) {
+        straightLineDrawRafRef.current = requestAnimationFrame(() => {
+          const nextEnd = straightLineEndRef.current;
+          if (nextEnd) {
+            setStraightLineEnd(nextEnd);
+            setTemporaryLinePoints([straightLineStart, nextEnd]);
+          }
+          straightLineDrawRafRef.current = null;
+        });
+      }
     },
     [
       drawingStraightArrow,
@@ -5173,11 +5361,17 @@ export default function Field(props = {}) {
 
   // 5. Reemplazar la funcin handleStraightLineDrawEnd
   const handleStraightLineDrawEnd = () => {
+    if (straightLineDrawRafRef.current) {
+      cancelAnimationFrame(straightLineDrawRafRef.current);
+      straightLineDrawRafRef.current = null;
+    }
+    const finalStraightLineEnd = straightLineEndRef.current || straightLineEnd;
     if (
       (!drawingStraightArrow && !drawingStraightLine && !drawingCircle && !drawingRectangle) ||
       !straightLineStart ||
-      !straightLineEnd
+      !finalStraightLineEnd
     ) {
+      straightLineEndRef.current = null;
       setStraightLineStart(null);
       setStraightLineEnd(null);
       setTemporaryLinePoints([]);
@@ -5192,7 +5386,7 @@ export default function Field(props = {}) {
 
     let points = [
       { x: straightLineStart.x, y: straightLineStart.y },
-      { x: straightLineEnd.x, y: straightLineEnd.y },
+      { x: finalStraightLineEnd.x, y: finalStraightLineEnd.y },
     ];
 
     // Obtener el icono de la paleta para usar su Configuracin
@@ -5224,6 +5418,7 @@ export default function Field(props = {}) {
 
     setClones((prev) => [newObj, ...prev]);
 
+    straightLineEndRef.current = null;
     setStraightLineStart(null);
     setStraightLineEnd(null);
     setTemporaryLinePoints([]);
@@ -5242,6 +5437,7 @@ export default function Field(props = {}) {
       const { locationX, locationY } = e.nativeEvent;
       const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
 
+      curvePointsRef.current = [newPoint];
       setCurvePoints([newPoint]);
       setIsDrawing(true);
     },
@@ -5255,14 +5451,26 @@ export default function Field(props = {}) {
       const { locationX, locationY } = e.nativeEvent;
       const newPoint = displayToRatio(locationX, locationY, viewMode, imageWidth, imageHeight);
 
-      setCurvePoints((prev) => [...prev, newPoint]);
+      curvePointsRef.current.push(newPoint);
+      if (!curveDrawRafRef.current) {
+        curveDrawRafRef.current = requestAnimationFrame(() => {
+          setCurvePoints([...curvePointsRef.current]);
+          curveDrawRafRef.current = null;
+        });
+      }
     },
     [drawingCurveLine, drawingCurveArrow, isDrawing, viewMode, imageWidth, imageHeight],
   );
 
   // 6. Reemplazar la funcin handleCurveDrawEnd
   const handleCurveDrawEnd = () => {
-    if ((!drawingCurveLine && !drawingCurveArrow) || !isDrawing || curvePoints.length < 2) {
+    if (curveDrawRafRef.current) {
+      cancelAnimationFrame(curveDrawRafRef.current);
+      curveDrawRafRef.current = null;
+    }
+    const finalCurvePoints = curvePointsRef.current.length ? curvePointsRef.current : curvePoints;
+    if ((!drawingCurveLine && !drawingCurveArrow) || !isDrawing || finalCurvePoints.length < 2) {
+      curvePointsRef.current = [];
       setCurvePoints([]);
       setIsDrawing(false);
       return;
@@ -5283,7 +5491,7 @@ export default function Field(props = {}) {
       dotSize: dotSize,
       dotSpacing: dotSpacing,
       size: standardSize, // Usar standardSize directamente
-      points: curvePoints,
+      points: finalCurvePoints,
       imageWidth,
       imageHeight,
       paletteIndex: paletteIndex >= 0 ? paletteIndex : undefined,
@@ -5292,6 +5500,7 @@ export default function Field(props = {}) {
 
     setClones((prev) => [newObj, ...prev]);
 
+    curvePointsRef.current = [];
     setCurvePoints([]);
     setIsDrawing(false);
   };
@@ -5822,7 +6031,16 @@ export default function Field(props = {}) {
   const { width: canvasWidth, height: canvasHeight } = { width: imageWidth, height: imageHeight };
 
   // Cache de positionedClones para evitar recalcular todo en cada cambio de posicin
-  const positionedClonesCache = useRef({ clones: [], result: [], clonesLength: 0 });
+  const positionedClonesCache = useRef({
+    clones: [],
+    result: [],
+    resultIndexById: new Map(),
+    clonesLength: 0,
+    canvasWidth: 0,
+    canvasHeight: 0,
+    viewMode: null,
+    selectedCloneId: null,
+  });
 
   // Memoizar el clculo y ordenamiento de clones para evitar recalcular en cada render
   const positionedClones = useMemo(() => {
@@ -5833,77 +6051,68 @@ export default function Field(props = {}) {
       cache.clonesLength = clones.length;
       cache.clones = [];
       cache.result = [];
+      cache.resultIndexById = new Map();
     }
 
     // Optimizacin: si solo cambi la posicin de un elemento (drag), actualizar solo ese
     // Pero si cambi ms de un elemento o propiedades distintas a posicin, recalcular todo
-    if (cache.clones.length === clones.length && cache.result.length > 0) {
-      let changedCount = 0;
-      let changedIndex = -1;
+    const hasSameLayout =
+      cache.canvasWidth === canvasWidth &&
+      cache.canvasHeight === canvasHeight &&
+      cache.viewMode === viewMode &&
+      cache.selectedCloneId === selectedCloneId;
+
+    if (hasSameLayout && cache.clones.length === clones.length && cache.result.length > 0) {
+      const changedIndices = [];
       let onlyPositionChanged = true;
 
-      for (let i = 0; i < clones.length; i++) {
-        if (cache.clones[i] !== clones[i]) {
-          changedCount++;
-          changedIndex = i;
-
-          // Verificar si solo cambi la posicin o si cambiaron otras propiedades
-          if (changedCount === 1 && cache.clones[i]) {
-            const oldClone = cache.clones[i];
-            const newClone = clones[i];
-            // Si cambiaron propiedades visuales (no solo posicin), forzar reclculo completo
-            if (
-              oldClone.color !== newClone.color ||
-              oldClone.size !== newClone.size ||
-              oldClone.thickness !== newClone.thickness ||
-              oldClone.lineType !== newClone.lineType ||
-              oldClone.fillColor !== newClone.fillColor ||
-              oldClone.dotSize !== newClone.dotSize ||
-              oldClone.dotSpacing !== newClone.dotSpacing ||
-              oldClone.numberColor !== newClone.numberColor ||
-              oldClone.textColor !== newClone.textColor ||
-              oldClone.textBackgroundColor !== newClone.textBackgroundColor ||
-              oldClone._lastUpdate !== newClone._lastUpdate
-            ) {
-              onlyPositionChanged = false;
-            }
-          }
-
-          if (changedCount > 1) {
-            onlyPositionChanged = false;
-            break;
-          }
+      for (let index = 0; index < clones.length; index++) {
+        if (cache.clones[index] === clones[index]) continue;
+        changedIndices.push(index);
+        if (!hasOnlyClonePositionChanges(cache.clones[index], clones[index])) {
+          onlyPositionChanged = false;
+          break;
         }
       }
 
-      // Si solo cambi la posicin de un elemento (drag), actualizar solo ese
-      if (changedCount === 1 && onlyPositionChanged) {
-        const clone = clones[changedIndex];
-        const coords = fromRatioCoords(
-          clone.xRatio,
-          clone.yRatio,
-          canvasWidth,
-          canvasHeight,
-          viewMode,
-        );
+      if (changedIndices.length === 0) {
+        cache.clones = clones;
+        return cache.result;
+      }
 
+      if (onlyPositionChanged) {
         const updatedResult = [...cache.result];
-        const resultIndex = updatedResult.findIndex((r) => r.id === clone.id);
-
-        if (resultIndex !== -1) {
+        for (const changedIndex of changedIndices) {
+          const clone = clones[changedIndex];
+          const resultIndex = cache.resultIndexById.get(clone.id);
+          if (resultIndex === undefined) {
+            onlyPositionChanged = false;
+            break;
+          }
+          const coords =
+            typeof clone.xRatio === 'number' && typeof clone.yRatio === 'number'
+              ? fromRatioCoords(
+                  clone.xRatio,
+                  clone.yRatio,
+                  canvasWidth,
+                  canvasHeight,
+                  viewMode,
+                )
+              : { x: updatedResult[resultIndex].x, y: updatedResult[resultIndex].y };
           updatedResult[resultIndex] = {
             ...updatedResult[resultIndex],
             ...clone,
             x: coords.x,
             y: coords.y,
           };
+        }
 
+        if (onlyPositionChanged) {
           cache.clones = clones;
           cache.result = updatedResult;
           return updatedResult;
         }
       }
-      // Si cambiaron propiedades visuales o mltiples elementos, continuar para recalcular todo
     }
 
     // Sin lmite artificial - manejar cualquier cantidad de elementos
@@ -5952,6 +6161,13 @@ export default function Field(props = {}) {
     // Guardar en cache
     positionedClonesCache.current.clones = clones;
     positionedClonesCache.current.result = sorted;
+    positionedClonesCache.current.resultIndexById = new Map(
+      sorted.map((clone, index) => [clone.id, index]),
+    );
+    positionedClonesCache.current.canvasWidth = canvasWidth;
+    positionedClonesCache.current.canvasHeight = canvasHeight;
+    positionedClonesCache.current.viewMode = viewMode;
+    positionedClonesCache.current.selectedCloneId = selectedCloneId;
 
     return sorted;
   }, [clones, selectedCloneId, canvasWidth, canvasHeight, viewMode]);
@@ -5959,22 +6175,9 @@ export default function Field(props = {}) {
   // Helper: check if a clone is visible in the current viewport
   // Elements being actively dragged are always visible (so gesture handlers survive for delete-on-drop)
   const isCloneVisible = useCallback(
-    (clone) => {
+    (clone, activelyDraggedIds) => {
       if (!viewMode || viewMode === 'entire') return true;
-      // Keep elements visible while being dragged (prevents gesture handler unmount mid-drag)
-      const isDragged =
-        Object.values(dragStart.current).some(
-          (v) =>
-            v?.id === clone.id ||
-            (v?.selectedIds && Array.isArray(v.selectedIds) && v.selectedIds.includes(clone.id)),
-        ) ||
-        dragStart.current[clone.id] !== undefined ||
-        (elementDragState.current &&
-          (elementDragState.current.primaryId === clone.id ||
-            (elementDragState.current.selectedIds &&
-              Array.isArray(elementDragState.current.selectedIds) &&
-              elementDragState.current.selectedIds.includes(clone.id))));
-      if (isDragged) return true;
+      if (activelyDraggedIds.has(clone.id)) return true;
       // Lines/shapes: visible if ANY point is in viewport
       if (clone.points && Array.isArray(clone.points) && clone.points.length >= 2) {
         return clone.points.some((p) => isVisibleInView(p.x, p.y, viewMode));
@@ -5988,101 +6191,92 @@ export default function Field(props = {}) {
     [viewMode],
   );
 
-  // Memoizar textos libres con virtualizaci�n optimizada
-  const freeTextElements = useMemo(() => {
-    const textClones = positionedClones.filter(
-      (clone) => clone.type === 'free-text' && isCloneVisible(clone),
-    );
+  // Clasificar una sola vez por frame. Antes cada grupo recorr�a toda la pizarra por separado.
+  const {
+    freeTextElements,
+    materialElements,
+    regularElements,
+    straightLines,
+    curveLines,
+    circleElements,
+    rectangleElements,
+    customShapeElements,
+  } = useMemo(() => {
+    const groups = {
+      freeTextElements: [],
+      materialElements: [],
+      regularElements: [],
+      straightLines: [],
+      curveLines: [],
+      circleElements: [],
+      rectangleElements: [],
+      customShapeElements: [],
+    };
 
-    // Si hay muy pocos elementos, retornar todos sin virtualizaci�n
-    if (textClones.length < 30) {
-      return textClones;
+    const activelyDraggedIds = new Set();
+    for (const [dragKey, drag] of Object.entries(dragStart.current)) {
+      activelyDraggedIds.add(dragKey);
+      if (drag?.id) activelyDraggedIds.add(drag.id);
+      if (drag?.selectedIdsSet) {
+        for (const id of drag.selectedIdsSet) activelyDraggedIds.add(id);
+      } else if (Array.isArray(drag?.selectedIds)) {
+        for (const id of drag.selectedIds) activelyDraggedIds.add(id);
+      }
+    }
+    const elementDrag = elementDragState.current;
+    if (elementDrag?.primaryId) activelyDraggedIds.add(elementDrag.primaryId);
+    if (elementDrag?.selectedIdsSet) {
+      for (const id of elementDrag.selectedIdsSet) activelyDraggedIds.add(id);
+    } else if (Array.isArray(elementDrag?.selectedIds)) {
+      for (const id of elementDrag.selectedIds) activelyDraggedIds.add(id);
     }
 
-    // Virtualizaci�n con c�lculo m�s r�pido
-    const MARGIN = 150;
-    const minX = -MARGIN;
-    const maxX = imageWidth + MARGIN;
-    const minY = -MARGIN;
-    const maxY = imageHeight + MARGIN;
-    const size = 100;
-
-    return textClones.filter((clone) => {
-      const display =
-        clone.xRatio !== undefined && clone.yRatio !== undefined
-          ? ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight)
-          : { x: clone.x || 0, y: clone.y || 0 };
-      const x = display.x;
-      const y = display.y;
-      return x + size >= minX && x - size <= maxX && y + size >= minY && y - size <= maxY;
+    positionedClones.forEach((clone) => {
+      if (!isCloneVisible(clone, activelyDraggedIds)) return;
+      if (clone.type === 'free-text') groups.freeTextElements.push(clone);
+      else if (MATERIAL_TYPES_SET.has(clone.type)) groups.materialElements.push(clone);
+      else if (clone.type === 'straight-line' || clone.type === 'straight-arrow') {
+        groups.straightLines.push(clone);
+      } else if (clone.type === 'curve-line' || clone.type === 'curve-arrow') {
+        groups.curveLines.push(clone);
+      } else if (clone.type === 'circle') groups.circleElements.push(clone);
+      else if (clone.type === 'rectangle') groups.rectangleElements.push(clone);
+      else if (clone.type === 'custom-shape') {
+        if (clone.isCustomShapeComplete) groups.customShapeElements.push(clone);
+      } else if (clone.type !== 'custom-shape-button') groups.regularElements.push(clone);
     });
-  }, [positionedClones, imageWidth, imageHeight, viewMode, isCloneVisible]);
 
-  // Memoizar elementos de herramientas/materiales (se renderizan en capa inferior)
-  const materialElements = useMemo(() => {
-    return positionedClones.filter(
-      (clone) => MATERIAL_TYPES_SET.has(clone.type) && isCloneVisible(clone),
-    );
-  }, [positionedClones, isCloneVisible]);
-
-  // Memoizar elementos regulares con virtualizaci�n optimizada (sin materiales ni texto)
-  const regularElements = useMemo(() => {
-    const nonTextClones = positionedClones.filter(
-      (clone) =>
-        clone.type !== 'free-text' && !MATERIAL_TYPES_SET.has(clone.type) && isCloneVisible(clone),
-    );
-
-    // Si hay pocos elementos, retornar todos sin virtualizaci�n
-    if (nonTextClones.length < 30) {
-      return nonTextClones;
+    if (groups.freeTextElements.length >= 30) {
+      groups.freeTextElements = groups.freeTextElements.filter((clone) => {
+        const display =
+          clone.xRatio !== undefined && clone.yRatio !== undefined
+            ? ratioToDisplay(clone.xRatio, clone.yRatio, viewMode, imageWidth, imageHeight)
+            : { x: clone.x || 0, y: clone.y || 0 };
+        return (
+          display.x + 100 >= -150 &&
+          display.x - 100 <= imageWidth + 150 &&
+          display.y + 100 >= -150 &&
+          display.y - 100 <= imageHeight + 150
+        );
+      });
     }
 
-    // Virtualizaci�n con c�lculo m�s r�pido
-    const MARGIN = 150;
-    const minX = -MARGIN;
-    const maxX = imageWidth + MARGIN;
-    const minY = -MARGIN;
-    const maxY = imageHeight + MARGIN;
+    if (groups.regularElements.length >= 30) {
+      groups.regularElements = groups.regularElements.filter((clone) => {
+        const size = (clone.size || standardSize) * 3;
+        const x = clone.x || 0;
+        const y = clone.y || 0;
+        return (
+          x + size >= -150 &&
+          x - size <= imageWidth + 150 &&
+          y + size >= -150 &&
+          y - size <= imageHeight + 150
+        );
+      });
+    }
 
-    return nonTextClones.filter((clone) => {
-      const x = clone.x || 0;
-      const y = clone.y || 0;
-      const size = (clone.size || standardSize) * 3;
-      return x + size >= minX && x - size <= maxX && y + size >= minY && y - size <= maxY;
-    });
-  }, [positionedClones, imageWidth, imageHeight, standardSize, isCloneVisible]);
-
-  // OPTIMIZACIÓN: Arrays separados para l�neas rectas y curvas (para BatchLinesRenderer)
-  const straightLines = useMemo(() => {
-    return positionedClones.filter(
-      (clone) =>
-        (clone.type === 'straight-line' || clone.type === 'straight-arrow') &&
-        isCloneVisible(clone),
-    );
-  }, [positionedClones, isCloneVisible]);
-
-  const curveLines = useMemo(() => {
-    return positionedClones.filter(
-      (clone) =>
-        (clone.type === 'curve-line' || clone.type === 'curve-arrow') && isCloneVisible(clone),
-    );
-  }, [positionedClones, isCloneVisible]);
-
-  // OPTIMIZACIÓN: Arrays separados para figuras geom�tricas (para BatchShapesRenderer)
-  const circleElements = useMemo(() => {
-    return positionedClones.filter((clone) => clone.type === 'circle' && isCloneVisible(clone));
-  }, [positionedClones, isCloneVisible]);
-
-  const rectangleElements = useMemo(() => {
-    return positionedClones.filter((clone) => clone.type === 'rectangle' && isCloneVisible(clone));
-  }, [positionedClones, isCloneVisible]);
-
-  const customShapeElements = useMemo(() => {
-    return positionedClones.filter(
-      (clone) =>
-        clone.type === 'custom-shape' && clone.isCustomShapeComplete && isCloneVisible(clone),
-    );
-  }, [positionedClones, isCloneVisible]);
+    return groups;
+  }, [positionedClones, isCloneVisible, imageWidth, imageHeight, viewMode, standardSize]);
 
   // OPTIMIZACIÓN: Memoizar elementos de l�nea para BatchSvgRenderer
 
@@ -6314,8 +6508,7 @@ export default function Field(props = {}) {
           bibColor: iconEdited.bibColor !== undefined ? iconEdited.bibColor : prev.bibColor,
           stripeColor:
             iconEdited.stripeColor !== undefined ? iconEdited.stripeColor : prev.stripeColor,
-          kitPattern:
-            iconEdited.kitPattern !== undefined ? iconEdited.kitPattern : prev.kitPattern,
+          kitPattern: iconEdited.kitPattern !== undefined ? iconEdited.kitPattern : prev.kitPattern,
           kitSecondaryColor:
             iconEdited.kitSecondaryColor !== undefined
               ? iconEdited.kitSecondaryColor
@@ -6547,72 +6740,192 @@ export default function Field(props = {}) {
     ? t('tacticalBoard.showControls', 'Mostrar controles')
     : t('tacticalBoard.hideControls', 'Ocultar controles');
 
+  const { FloatingButtons } = useMemo(
+    () =>
+      createFieldUiComponents({
+        Feather,
+        Ionicons,
+        MaterialCommunityIcons,
+        MaterialIcons,
+        Text,
+        TouchableOpacity,
+        View,
+        bringSelectedToFront,
+        clearSelection,
+        clonesRef: actualClonesRef,
+        deleteSelectedElements,
+        duplicateSelectedElements,
+        handleCancelar,
+        isEditingVideo,
+        rotateSelectedElements,
+        safeArea,
+        sendSelectedToBack,
+        styles,
+        t,
+        toggleLockSelected,
+      }),
+    [
+      bringSelectedToFront,
+      clearSelection,
+      deleteSelectedElements,
+      duplicateSelectedElements,
+      handleCancelar,
+      isEditingVideo,
+      rotateSelectedElements,
+      safeArea.bottom,
+      safeArea.left,
+      safeArea.right,
+      safeArea.top,
+      sendSelectedToBack,
+      t,
+      toggleLockSelected,
+    ],
+  );
+
+  const { LineStyleModal, TeamPlayerSettingsModal, TeamPlayersModal } = useMemo(
+    () =>
+      createFieldModals({
+        Alert,
+        Circle,
+        DEFAULT_PLAYER_ICON_SIZE,
+        Dimensions,
+        Feather,
+        Image,
+        Ionicons,
+        MiniColorPickerModal,
+        Modal,
+        NEUTRAL_PLAYER_COLORS,
+        Path,
+        Pressable,
+        Rect,
+        SCREEN_HEIGHT,
+        SCREEN_WIDTH,
+        SafeAreaView,
+        ScrollView,
+        StyleSheet,
+        Svg,
+        Switch,
+        Text,
+        TouchableOpacity,
+        View,
+        cdnUrl,
+        getPlayerFullName,
+        styles,
+        t,
+        useEffect,
+        useScreenDimensions,
+        useState,
+        useTranslation,
+      }),
+    [SCREEN_HEIGHT, SCREEN_WIDTH, t],
+  );
+
   const {
-    LineStyleModal,
-    TeamPlayerSettingsModal,
-    TeamPlayersModal,
-    FloatingButtons,
     SlidingPlayersPalette,
     SlidingMaterialsPalette,
     SlidingStaffPalette,
     SlidingPalette,
     SlidingZoomControls,
-  } = createFieldUiComponents({
-    Alert,
-    Animated,
-    Circle,
-    DEFAULT_PLAYER_ICON_SIZE,
-    Dimensions,
-    Feather,
-    Image,
-    Ionicons,
-    LongPressGestureHandler,
-    MaterialCommunityIcons,
-    MaterialIcons,
-    MemoizedIcon,
-    MiniColorPickerModal,
-    Modal,
-    NEUTRAL_PLAYER_COLORS,
-    Path,
-    Pressable,
-    React,
-    Rect,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
-    SafeAreaView,
-    ScrollView,
-    State,
-    StyleSheet,
-    Svg,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
-    bringSelectedToFront,
-    cdnUrl,
-    clearSelection,
-    clones,
-    deleteSelectedElements,
-    duplicateSelectedElements,
-    formationSettings,
-    getMaterialsIcons,
-    getPlayerFullName,
-    handleCancelar,
-    isEditingVideo,
-    rotateSelectedElements,
-    safeArea,
-    sendSelectedToBack,
-    styles,
-    t,
-    toggleLockSelected,
-    useEffect,
-    useMemo,
-    useRef,
-    useSafeAreaInsets,
-    useScreenDimensions,
-    useState,
-    useTranslation,
-  });
+  } = useMemo(
+    () =>
+      createFieldPalettes({
+        Animated,
+        Dimensions,
+        Feather,
+        Image,
+        Ionicons,
+        LongPressGestureHandler,
+        MaterialCommunityIcons,
+        MemoizedIcon,
+        NEUTRAL_PLAYER_COLORS,
+        Pressable,
+        React,
+        ScrollView,
+        State,
+        Text,
+        TouchableOpacity,
+        View,
+        cdnUrl,
+        formationSettings,
+        getMaterialsIcons,
+        getPlayerFullName,
+        styles,
+        t,
+        useEffect,
+        useMemo,
+        useRef,
+        useSafeAreaInsets,
+        useScreenDimensions,
+        useState,
+        useTranslation,
+      }),
+    [formationSettings, t],
+  );
+
+  const floatingButtonsNode = useMemo(
+    () =>
+      FloatingButtons({
+        visible: !controlsHidden && !shouldHideFloatingButtons,
+        hideBottomButtons: shouldHideBottomButtons,
+        sandbox,
+        isSetPieceOrStrategy,
+        onSave: handleFloatingSave,
+        onCancel: handleCancelar,
+        onSettings: () => {
+          setVideoRecorderVisible(false);
+          setSettingsPanelVisible(true);
+        },
+        onLocked: () => {
+          setVideoRecorderVisible(false);
+          setLockedElementsVisible(true);
+        },
+        onChangeField: () => {
+          setVideoRecorderVisible(false);
+          openCarouselModal();
+        },
+        onTogglePalette: () => setPaletteVisible((current) => !current),
+        onToggleZoom: () => {
+          if (!videoRecorderVisible) setZoomVisible((current) => !current);
+        },
+        onVideoRecorder: handleOpenVideoRecorder,
+        onFormations: () => setFormationModalVisible(true),
+        onToggleMultiSelect: handleToggleMultiSelect,
+        onUndo: undo,
+        onRedo: redo,
+        canUndo,
+        canRedo,
+        multiSelectMode,
+        selectedCloneIds,
+        selectionInteractionMode,
+        toggleSelectionInteractionMode,
+        lockedCount: lockedElements.length,
+        isMobile,
+      }),
+    [
+      FloatingButtons,
+      canRedo,
+      canUndo,
+      controlsHidden,
+      handleCancelar,
+      handleFloatingSave,
+      handleOpenVideoRecorder,
+      handleToggleMultiSelect,
+      isMobile,
+      isSetPieceOrStrategy,
+      lockedElements.length,
+      multiSelectMode,
+      openCarouselModal,
+      redo,
+      sandbox,
+      selectedCloneIds,
+      selectionInteractionMode,
+      shouldHideBottomButtons,
+      shouldHideFloatingButtons,
+      toggleSelectionInteractionMode,
+      undo,
+      videoRecorderVisible,
+    ],
+  );
 
   return (
     <SafeAreaView
@@ -6625,9 +6938,9 @@ export default function Field(props = {}) {
       <View
         ref={containerRef}
         onLayout={({ nativeEvent: { layout } }) => {
-          setBoardLayout((current) => (
-            current?.width === layout.width && current?.height === layout.height ? current : layout
-          ));
+          setBoardLayout((current) =>
+            current?.width === layout.width && current?.height === layout.height ? current : layout,
+          );
         }}
         style={{
           flex: 1,
@@ -6671,9 +6984,7 @@ export default function Field(props = {}) {
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 1,
-            borderColor: controlsHidden
-              ? 'rgba(255, 255, 255, 0.72)'
-              : 'rgba(255, 255, 255, 0.3)',
+            borderColor: controlsHidden ? 'rgba(255, 255, 255, 0.72)' : 'rgba(255, 255, 255, 0.3)',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 5 },
             shadowOpacity: 0.24,
@@ -6689,92 +7000,52 @@ export default function Field(props = {}) {
           />
         </TouchableOpacity>
 
-        {FloatingButtons({
-          visible: !controlsHidden && !shouldHideFloatingButtons,
-          hideBottomButtons: shouldHideBottomButtons,
-          sandbox,
-          isSetPieceOrStrategy,
-          onSave: handleGuardarGrafico,
-          onCancel: handleCancelar,
-          onSettings: () => {
-            setVideoRecorderVisible(false);
-            setSettingsPanelVisible(true);
-          },
-          onLocked: () => {
-            setVideoRecorderVisible(false);
-            setLockedElementsVisible(true);
-          },
-          onChangeField: () => {
-            setVideoRecorderVisible(false);
-            openCarouselModal();
-          },
-          onTogglePalette: () => {
-            // Permitir abrir/cerrar la paleta tambi�n con el VideoRecorder
-            // visible: el usuario quiere a�adir/seleccionar iconos sin
-            // tener que cerrar la grabadora previamente.
-            setPaletteVisible(!paletteVisible);
-          },
-          onToggleZoom: () => {
-            if (!videoRecorderVisible) setZoomVisible(!zoomVisible);
-          },
-          onVideoRecorder: handleOpenVideoRecorder,
-          onFormations: () => setFormationModalVisible(true),
-          onToggleMultiSelect: handleToggleMultiSelect,
-          onUndo: undo,
-          onRedo: redo,
-          canUndo,
-          canRedo,
-          multiSelectMode,
-          selectedCloneIds,
-          selectionInteractionMode,
-          toggleSelectionInteractionMode,
-          lockedCount: clones.filter((c) => c.locked === true).length,
-          isMobile,
-        })}
+        {floatingButtonsNode}
 
         {/* Bot�n de deseleccionar herramienta de dibujo - siempre visible */}
-        {!controlsHidden && (drawingStates.drawingStraightArrow ||
-          drawingStates.drawingStraightLine ||
-          drawingStates.drawingCurveLine ||
-          drawingStates.drawingCurveArrow ||
-          drawingStates.drawingCircle ||
-          drawingStates.drawingRectangle ||
-          drawingStates.drawingCustomShape ||
-          drawingStates.pendingPlacementAction) && (
-          <TouchableOpacity
-            onPress={handleDeselectDrawingTool}
-            style={{
-              position: 'absolute',
-              top: (isMobile ? 58 : 82) + safeArea.top,
-              right: (isMobile ? 12 : 24) + safeArea.right,
-              minWidth: isMobile ? 42 : 54,
-              height: isMobile ? 36 : 42,
-              borderRadius: 999,
-              paddingHorizontal: isMobile ? 10 : 14,
-              backgroundColor: 'rgba(15, 23, 42, 0.92)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              flexDirection: 'row',
-              zIndex: 1000,
-              shadowColor: '#000',
-              shadowOffset: {
-                width: 0,
-                height: 4,
-              },
-              shadowOpacity: 0.18,
-              shadowRadius: 8,
-              elevation: 8,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.22)',
-            }}
-          >
-            <MaterialCommunityIcons
-              name="cursor-default-click"
-              size={isMobile ? 18 : 22}
-              color="#ffffff"
-            />
-          </TouchableOpacity>
-        )}
+        {!controlsHidden &&
+          (drawingStates.drawingStraightArrow ||
+            drawingStates.drawingStraightLine ||
+            drawingStates.drawingCurveLine ||
+            drawingStates.drawingCurveArrow ||
+            drawingStates.drawingCircle ||
+            drawingStates.drawingRectangle ||
+            drawingStates.drawingCustomShape ||
+            drawingStates.pendingPlacementAction) && (
+            <TouchableOpacity
+              onPress={handleDeselectDrawingTool}
+              style={{
+                position: 'absolute',
+                top: (isMobile ? 58 : 82) + safeArea.top,
+                right: (isMobile ? 12 : 24) + safeArea.right,
+                minWidth: isMobile ? 42 : 54,
+                height: isMobile ? 36 : 42,
+                borderRadius: 999,
+                paddingHorizontal: isMobile ? 10 : 14,
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'row',
+                zIndex: 1000,
+                shadowColor: '#000',
+                shadowOffset: {
+                  width: 0,
+                  height: 4,
+                },
+                shadowOpacity: 0.18,
+                shadowRadius: 8,
+                elevation: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.22)',
+              }}
+            >
+              <MaterialCommunityIcons
+                name="cursor-default-click"
+                size={isMobile ? 18 : 22}
+                color="#ffffff"
+              />
+            </TouchableOpacity>
+          )}
 
         <View
           style={{
@@ -7103,6 +7374,21 @@ export default function Field(props = {}) {
                         imageWidth={imageWidth}
                         imageHeight={imageHeight}
                         viewMode={viewMode}
+                      />
+
+                      <canvas
+                        ref={boardPreviewCanvasRef}
+                        width={Math.max(1, Math.round(imageWidth))}
+                        height={Math.max(1, Math.round(imageHeight))}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: imageWidth,
+                          height: imageHeight,
+                          zIndex: 500,
+                          opacity: boardPreviewActive ? 1 : 0,
+                          pointerEvents: 'none',
+                        }}
                       />
 
                       {/* Contenedor para �reas de detecci�n - deshabilitado cuando se est� dibujando */}
@@ -8445,7 +8731,7 @@ export default function Field(props = {}) {
         <LockedElementsPanel
           visible={lockedElementsVisible}
           onClose={() => setLockedElementsVisible(false)}
-          lockedElements={clones.filter((c) => c.locked === true)}
+          lockedElements={lockedElements}
           onUnlock={handleUnlockFromPanel}
           scale={renderScale}
         />
@@ -8511,6 +8797,8 @@ export default function Field(props = {}) {
           <VideoRecorder
             elements={clones}
             connectors={connectors}
+            elementsRef={actualClonesRef}
+            connectorsRef={connectorsRef}
             fieldImage={fieldImageForVideo}
             onClose={handleCloseVideoRecorder}
             viewMode={viewMode}
@@ -8535,6 +8823,8 @@ export default function Field(props = {}) {
             estrategiaId={estrategiaId}
             showPhotos={teamPlayerStyle.showPhotos}
             playersWithNumber={playersWithNumber}
+            differentiateGoalkeeper={teamPlayerStyle.differentiateGoalkeeper !== false}
+            goalkeeperStripeColor={teamPlayerStyle.goalkeeperStripeColor || '#ffffff'}
             isEditingVideo={isEditingVideo}
             editingVideoId={editingVideoId}
             editingVideoName={editingVideoName}

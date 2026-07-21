@@ -1,6 +1,6 @@
 import ballImgSrc from '@/images/ball.png';
 import { ratioToDisplay } from '@/vendor/tacticalBoard/fields/fieldConfigs';
-import { getPlayerRenderMetrics } from '@/utils/playerRenderMetrics';
+import { getPlayerKitRenderState, getPlayerRenderMetrics } from '@/utils/playerRenderMetrics';
 
 const FONT_STACK = 'Arial, Helvetica, sans-serif';
 let currentViewMode = 'entire';
@@ -32,6 +32,64 @@ export function getVideoDimensions(aspectRatio) {
 
 function getScale(cw, ch) {
   return Math.min(cw, ch) / 500;
+}
+
+function getStrokeScale(elem, cw, ch) {
+  const sourceWidth = Number(elem.imageWidth || elem.sourceWidth) || 1280;
+  const sourceHeight =
+    Number(elem.imageHeight || elem.sourceHeight) || sourceWidth * (ch / Math.max(1, cw));
+  return (cw / sourceWidth + ch / sourceHeight) / 2;
+}
+
+export function createVideoRenderCache() {
+  return {
+    background: null,
+    displayPoints: new WeakMap(),
+    sampledCurves: new WeakMap(),
+    polylineMetrics: new WeakMap(),
+    paths: new WeakMap(),
+  };
+}
+
+function ensureRenderCache(cache) {
+  if (!cache) return null;
+  cache.displayPoints ||= new WeakMap();
+  cache.sampledCurves ||= new WeakMap();
+  cache.polylineMetrics ||= new WeakMap();
+  cache.paths ||= new WeakMap();
+  return cache;
+}
+
+function drawFrameBackground(ctx, cw, ch, fieldImage, cache) {
+  const cached = ensureRenderCache(cache);
+  if (cached && typeof document !== 'undefined') {
+    const previous = cached.background;
+    if (
+      !previous ||
+      previous.width !== cw ||
+      previous.height !== ch ||
+      previous.fieldImage !== fieldImage
+    ) {
+      const canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      const backgroundContext = canvas.getContext('2d', { alpha: false });
+      backgroundContext.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in backgroundContext) {
+        backgroundContext.imageSmoothingQuality = 'high';
+      }
+      backgroundContext.fillStyle = FIELD_BG;
+      backgroundContext.fillRect(0, 0, cw, ch);
+      if (fieldImage) backgroundContext.drawImage(fieldImage, 0, 0, cw, ch);
+      cached.background = { canvas, width: cw, height: ch, fieldImage };
+    }
+    ctx.drawImage(cached.background.canvas, 0, 0);
+    return;
+  }
+
+  ctx.fillStyle = FIELD_BG;
+  ctx.fillRect(0, 0, cw, ch);
+  if (fieldImage) ctx.drawImage(fieldImage, 0, 0, cw, ch);
 }
 
 function pos(elem, cw, ch) {
@@ -85,23 +143,26 @@ function drawKitPattern(ctx, cx, cy, size, pattern, color, isJersey) {
   const s = size / 100;
   ctx.fillStyle = color;
   if (pattern === 'vertical') {
-    if (isJersey) {
-      [-20, 0, 20].forEach((offset) => ctx.fillRect(cx + offset * s - 5 * s, cy - size / 2, 10 * s, size));
-    } else {
-      const r = size / 2;
-      [-0.5, -0.1, 0.3].forEach((f) => ctx.fillRect(cx + size * f, cy - r, size * 0.15, size));
-    }
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * 0.9;
+    [-0.22, 0, 0.22].forEach((offset) =>
+      ctx.fillRect(cx + size * offset - size * 0.06, cy - size / 2, size * 0.12, size),
+    );
+    ctx.globalAlpha = previousAlpha;
   } else if (pattern === 'horizontal') {
-    [-18, 0, 18].forEach((offset) => ctx.fillRect(cx - size / 2, cy + offset * s - 4 * s, size, 8 * s));
+    [0.28, 0.48, 0.68].forEach((offset) =>
+      ctx.fillRect(cx - size / 2, cy + size * (offset - 0.5), size, size * 0.08),
+    );
   } else if (pattern === 'halves') {
     ctx.fillRect(cx, cy - size / 2, size / 2, size);
-  } else if (pattern === 'diagonal' || pattern === 'sash') {
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(-Math.PI / 4);
-    const offsets = pattern === 'sash' ? [0] : [-28 * s, 0, 28 * s];
-    offsets.forEach((offset) => ctx.fillRect(-size, offset - 7 * s, size * 2, 14 * s));
-    ctx.restore();
+  } else if (pattern === 'diagonal') {
+    [
+      [[-20, 110], [120, -30], [120, 0], [-20, 140]],
+      [[10, 110], [150, -30], [150, 0], [10, 140]],
+      [[-50, 110], [90, -30], [90, 0], [-50, 140]],
+    ].forEach((points) => fillKitPolygon(ctx, cx, cy, s, points));
+  } else if (pattern === 'sash') {
+    fillKitPolygon(ctx, cx, cy, s, [[0, 15], [100, 85], [100, 100], [0, 30]]);
   }
   if (isJersey) {
     ctx.strokeStyle = color;
@@ -111,11 +172,26 @@ function drawKitPattern(ctx, cx, cy, size, pattern, color, isJersey) {
     ctx.lineTo(cx - 45 * s, cy - 8 * s);
     ctx.moveTo(cx + 32 * s, cy - 30 * s);
     ctx.lineTo(cx + 45 * s, cy - 8 * s);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, 3 * s);
+    ctx.beginPath();
     ctx.moveTo(cx - 10 * s, cy - 38 * s);
     ctx.lineTo(cx, cy - 28 * s);
     ctx.lineTo(cx + 10 * s, cy - 38 * s);
     ctx.stroke();
   }
+}
+
+function fillKitPolygon(ctx, cx, cy, scale, points) {
+  ctx.beginPath();
+  points.forEach(([x, y], index) => {
+    const targetX = cx + (x - 50) * scale;
+    const targetY = cy + (y - 50) * scale;
+    if (index === 0) ctx.moveTo(targetX, targetY);
+    else ctx.lineTo(targetX, targetY);
+  });
+  ctx.closePath();
+  ctx.fill();
 }
 
 
@@ -177,18 +253,24 @@ function sampleCurve(points) {
   return samples;
 }
 
-function partialPolyline(points, progress) {
+function partialPolyline(points, progress, cache) {
   const p = clamp01(progress);
   if (p >= 1 || points.length < 2) return points;
   if (p <= 0) return [points[0], points[0]];
 
-  let total = 0;
-  const lengths = [];
-  for (let i = 1; i < points.length; i += 1) {
-    const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-    lengths.push(length);
-    total += length;
+  let metrics = cache?.polylineMetrics?.get(points);
+  if (!metrics) {
+    let total = 0;
+    const lengths = [];
+    for (let i = 1; i < points.length; i += 1) {
+      const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      lengths.push(length);
+      total += length;
+    }
+    metrics = { lengths, total };
+    cache?.polylineMetrics?.set(points, metrics);
   }
+  const { lengths, total } = metrics;
   if (!total) return [points[0], points[0]];
 
   const target = total * p;
@@ -206,29 +288,51 @@ function partialPolyline(points, progress) {
   return out;
 }
 
-function strokePolyline(ctx, points, elem, scale) {
+function getPolylinePath(points, cache, closePath = false) {
+  const pathKey = closePath ? 'closed' : 'open';
+  const cachedPaths = cache?.paths;
+  const existing = cachedPaths?.get(points)?.[pathKey];
+  if (existing) return existing;
+
+  const path = typeof Path2D !== 'undefined' ? new Path2D() : null;
+  if (!path) return null;
+  path.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) path.lineTo(points[i].x, points[i].y);
+  if (closePath) path.closePath();
+
+  if (cachedPaths) {
+    const entry = cachedPaths.get(points) || {};
+    entry[pathKey] = path;
+    cachedPaths.set(points, entry);
+  }
+  return path;
+}
+
+function strokePolyline(ctx, points, elem, scale, cache) {
   if (!points.length) return;
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i += 1) {
-    ctx.lineTo(points[i].x, points[i].y);
-  }
   ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
+  ctx.lineWidth = thickness;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   setLineDash(ctx, elem, scale);
-  ctx.stroke();
+  const path = getPolylinePath(points, cache);
+  if (path) {
+    ctx.stroke(path);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
   ctx.restore();
 }
 
-function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
-  const p = pos(elem, cw, ch);
+function paintPlayerAt(ctx, p, elem, scale, options = {}) {
   const { size, radius: r, nameFontSize } = getPlayerRenderMetrics(elem, scale);
-  const color = elem.color || '#2176ff';
+  const color = elem.color || '#000000';
   const numberColor = elem.numberColor || '#ffffff';
   const isNeutral =
     elem.isNeutral === true ||
@@ -262,7 +366,17 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     ctx.lineWidth = 2;
     ctx.stroke();
   } else {
-    const isJersey = elem.shape === 'jersey';
+    const {
+      isJersey,
+      kitPattern,
+      kitSecondaryColor,
+      drawPattern,
+      verticalStripeColor,
+    } = getPlayerKitRenderState(elem);
+    const strokeColor =
+      elem.kitSecondaryColor && !isJersey && kitPattern !== 'solid'
+        ? kitSecondaryColor
+        : '#222';
 
     if (isJersey) {
       drawJerseyPath(ctx, p.x, p.y, size);
@@ -274,13 +388,6 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
       ctx.fillStyle = shirtColor;
       ctx.fill();
     }
-
-    const sColor = elem.kitSecondaryColor || (elem.isGoalkeeper
-      ? (elem.goalkeeperStripeColor || '#ffffff')
-      : (elem.stripeColor || ((color.toLowerCase().trim() === '#ffffff' || color.toLowerCase().trim() === '#fff' || color.toLowerCase().trim() === 'white') ? '#000000' : '#ffffff')));
-    const kitPattern = elem.kitPattern || (elem.hasStripes || elem.isGoalkeeper ? 'vertical' : 'solid');
-    const drawPattern =
-      elem.hasStripes || kitPattern !== 'solid' || elem.isGoalkeeper || (isJersey && elem.kitSecondaryColor);
 
     if (drawPattern) {
       ctx.save();
@@ -291,20 +398,30 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       }
       ctx.clip();
-      drawKitPattern(ctx, p.x, p.y, size, kitPattern, sColor, isJersey);
+      drawKitPattern(
+        ctx,
+        p.x,
+        p.y,
+        size,
+        kitPattern,
+        kitPattern === 'vertical' ? verticalStripeColor : kitSecondaryColor,
+        isJersey && Boolean(elem.kitSecondaryColor),
+      );
       ctx.restore();
+    } else if (isJersey && elem.kitSecondaryColor) {
+      drawKitPattern(ctx, p.x, p.y, size, 'solid', kitSecondaryColor, true);
     }
 
     // Draw the outline/stroke on top of the pattern
     if (isJersey) {
       drawJerseyPath(ctx, p.x, p.y, size);
-      ctx.strokeStyle = '#222';
+      ctx.strokeStyle = strokeColor;
       ctx.lineWidth = 1;
       ctx.stroke();
     } else {
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = '#222';
+      ctx.strokeStyle = strokeColor;
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -316,7 +433,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
         drawJerseyBibPath(ctx, p.x, p.y, size);
         ctx.fillStyle = bibColor;
         ctx.fill();
-      ctx.strokeStyle = elem.kitSecondaryColor && !isJersey ? elem.kitSecondaryColor : '#222';
+        ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1;
         ctx.stroke();
       } else {
@@ -340,7 +457,7 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
           ctx.arc(cutout[0], cutout[1], cutout[2], 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.strokeStyle = '#222';
+        ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1;
         for (const cutout of cutouts) {
           ctx.beginPath();
@@ -400,6 +517,10 @@ function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
     ctx.textBaseline = 'middle';
     ctx.fillText(name, p.x, ny);
   }
+}
+
+function drawPlayer(ctx, cw, ch, elem, scale, options = {}) {
+  paintPlayerAt(ctx, pos(elem, cw, ch), elem, scale, options);
 }
 
 function drawStaff(ctx, cw, ch, elem, scale) {
@@ -1016,31 +1137,30 @@ function drawWeights(ctx, cw, ch, elem, scale) {
   ctx.restore();
 }
 
-function drawStraightLine(ctx, cw, ch, elem, scale) {
-  if (!elem.pointsRatio || elem.pointsRatio.length < 2) {
-    if (elem.x1 !== undefined) {
-      const refW = elem.sourceWidth || 1280;
-      const refH = elem.sourceHeight || 720;
-      const p1 = ratioToDisplay(elem.x1 / refW, elem.y1 / refH, currentViewMode, cw, ch);
-      const p2 = ratioToDisplay(elem.x2 / refW, elem.y2 / refH, currentViewMode, cw, ch);
-      const progress = clamp01(elem._drawProgress);
-      const currentEnd = progress < 1 ? pointAtProgress(p1, p2, progress) : p2;
-      drawLineSegment(ctx, p1, currentEnd, elem, scale);
-      if (elem.type === 'straight-arrow' && progress > 0.08) {
-        drawArrowhead(ctx, p1, currentEnd, elem, scale);
-      }
-    }
-    return;
+function drawStraightLine(ctx, cw, ch, elem) {
+  let p1;
+  let p2;
+  if (elem.pointsRatio?.length >= 2) {
+    p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
+    p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
+  } else if (elem.x1 !== undefined) {
+    const refW = elem.sourceWidth || 1280;
+    const refH = elem.sourceHeight || 720;
+    p1 = ratioToDisplay(elem.x1 / refW, elem.y1 / refH, currentViewMode, cw, ch);
+    p2 = ratioToDisplay(elem.x2 / refW, elem.y2 / refH, currentViewMode, cw, ch);
   }
-  const p1 = ratioToDisplay(elem.pointsRatio[0].x, elem.pointsRatio[0].y, currentViewMode, cw, ch);
-  const p2 = ratioToDisplay(elem.pointsRatio[1].x, elem.pointsRatio[1].y, currentViewMode, cw, ch);
+  if (!p1 || !p2) return;
+
+  const scale = getStrokeScale(elem, cw, ch);
   const progress = clamp01(elem._drawProgress);
   const currentEnd = progress < 1 ? pointAtProgress(p1, p2, progress) : p2;
-  drawLineSegment(ctx, p1, currentEnd, elem, scale);
-
   if (elem.type === 'straight-arrow' && progress > 0.08) {
-    drawArrowhead(ctx, p1, currentEnd, elem, scale);
+    const arrow = getArrowGeometry(p1, currentEnd, elem, scale);
+    drawLineSegment(ctx, p1, arrow?.lineEnd || currentEnd, elem, scale);
+    if (arrow) drawArrowhead(ctx, arrow, elem);
+    return;
   }
+  drawLineSegment(ctx, p1, currentEnd, elem, scale);
 }
 
 function drawLineSegment(ctx, p1, p2, elem, scale) {
@@ -1050,7 +1170,7 @@ function drawLineSegment(ctx, p1, p2, elem, scale) {
   ctx.moveTo(p1.x, p1.y);
   ctx.lineTo(p2.x, p2.y);
   ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
+  ctx.lineWidth = thickness;
   ctx.lineCap = 'round';
   setLineDash(ctx, elem, scale);
   ctx.stroke();
@@ -1058,88 +1178,100 @@ function drawLineSegment(ctx, p1, p2, elem, scale) {
   ctx.restore();
 }
 
-function drawArrowhead(ctx, from, to, elem, scale) {
+function getArrowGeometry(from, to, elem, scale) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (!dx && !dy) return null;
   const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
-  const headLen = Math.max(8, thickness * 4);
-  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  const headLen = Math.max(8, thickness * 6);
+  const angle = Math.atan2(dy, dx);
+  return {
+    tip: to,
+    left: {
+      x: to.x - headLen * Math.cos(angle - Math.PI / 6),
+      y: to.y - headLen * Math.sin(angle - Math.PI / 6),
+    },
+    right: {
+      x: to.x - headLen * Math.cos(angle + Math.PI / 6),
+      y: to.y - headLen * Math.sin(angle + Math.PI / 6),
+    },
+    lineEnd: {
+      x: to.x - headLen * 0.85 * Math.cos(angle),
+      y: to.y - headLen * 0.85 * Math.sin(angle),
+    },
+  };
+}
+
+function drawArrowhead(ctx, arrow, elem) {
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(to.x, to.y);
-  ctx.lineTo(
-    to.x - headLen * Math.cos(angle - Math.PI / 6),
-    to.y - headLen * Math.sin(angle - Math.PI / 6),
-  );
-  ctx.lineTo(
-    to.x - headLen * Math.cos(angle + Math.PI / 6),
-    to.y - headLen * Math.sin(angle + Math.PI / 6),
-  );
+  ctx.moveTo(arrow.tip.x, arrow.tip.y);
+  ctx.lineTo(arrow.left.x, arrow.left.y);
+  ctx.lineTo(arrow.right.x, arrow.right.y);
   ctx.closePath();
   ctx.fillStyle = elem.color || '#000';
   ctx.fill();
   ctx.restore();
 }
 
-function drawCurveLine(ctx, cw, ch, elem, scale) {
+function getDisplayPoints(elem, cw, ch, cache) {
   const pts = elem.pointsRatio || elem.points;
-  if (!pts || pts.length < 2) return;
+  if (!pts || pts.length < 2) return [];
+  const sourceWidth = elem.sourceWidth || 1280;
+  const sourceHeight = elem.sourceHeight || 720;
+  const key = `${currentViewMode}:${cw}:${ch}:${elem.pointsRatio ? 'ratio' : `${sourceWidth}:${sourceHeight}`}`;
+  let entries = cache?.displayPoints?.get(pts);
+  const cachedPoints = entries?.get(key);
+  if (cachedPoints) return cachedPoints;
+
   const points = elem.pointsRatio
     ? pts.map((p) => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
     : pts.map((p) =>
         ratioToDisplay(
-          p.x / (elem.sourceWidth || 1280),
-          p.y / (elem.sourceHeight || 720),
+          p.x / sourceWidth,
+          p.y / sourceHeight,
           currentViewMode,
           cw,
           ch,
         ),
       );
+  if (cache?.displayPoints) {
+    entries ||= new Map();
+    entries.set(key, points);
+    cache.displayPoints.set(pts, entries);
+  }
+  return points;
+}
 
+function drawCurveLine(ctx, cw, ch, elem, _scale, options = {}) {
+  const cache = options.renderCache;
+  const points = getDisplayPoints(elem, cw, ch, cache);
+  if (points.length < 2) return;
+
+  const scale = getStrokeScale(elem, cw, ch);
   const progress = clamp01(elem._drawProgress);
+  let renderPoints = points;
   if (progress < 1) {
-    const visiblePoints = partialPolyline(sampleCurve(points), progress);
-    strokePolyline(ctx, visiblePoints, elem, scale);
-    if (elem.type === 'curve-arrow' && visiblePoints.length >= 2 && progress > 0.08) {
-      drawArrowhead(
-        ctx,
-        visiblePoints[visiblePoints.length - 2],
-        visiblePoints[visiblePoints.length - 1],
-        elem,
-        scale,
-      );
+    let sampled = cache?.sampledCurves?.get(points);
+    if (!sampled) {
+      sampled = sampleCurve(points);
+      cache?.sampledCurves?.set(points, sampled);
     }
-    return;
+    renderPoints = partialPolyline(sampled, progress, cache);
   }
+  strokePolyline(ctx, renderPoints, elem, scale, cache);
 
-  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  if (points.length === 2) {
-    ctx.lineTo(points[1].x, points[1].y);
-  } else if (points.length === 3) {
-    ctx.quadraticCurveTo(points[1].x, points[1].y, points[2].x, points[2].y);
-  } else {
-    for (let i = 1; i < points.length - 2; i++) {
-      const mx = (points[i].x + points[i + 1].x) / 2;
-      const my = (points[i].y + points[i + 1].y) / 2;
-      ctx.quadraticCurveTo(points[i].x, points[i].y, mx, my);
+  if (elem.type === 'curve-arrow' && renderPoints.length >= 2 && progress > 0.08) {
+    const end = renderPoints[renderPoints.length - 1];
+    let directionIndex = renderPoints.length - 2;
+    while (
+      directionIndex > 0 &&
+      Math.hypot(end.x - renderPoints[directionIndex].x, end.y - renderPoints[directionIndex].y) <= 5
+    ) {
+      directionIndex -= 1;
     }
-    const last = points[points.length - 1];
-    ctx.quadraticCurveTo(points[points.length - 2].x, points[points.length - 2].y, last.x, last.y);
-  }
-  ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  setLineDash(ctx, elem, scale);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-
-  if (elem.type === 'curve-arrow' && points.length >= 2) {
-    const end = points[points.length - 1];
-    const prev = points[points.length - 2];
-    drawArrowhead(ctx, prev, end, elem, scale);
+    const arrow = getArrowGeometry(renderPoints[directionIndex], end, elem, scale);
+    if (arrow) drawArrowhead(ctx, arrow, elem);
   }
 }
 
@@ -1194,7 +1326,8 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
   }
 
   if (!rx || rx <= 0 || !ry || ry <= 0) return;
-  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  const strokeScale = getStrokeScale(elem, cw, ch);
+  const thickness = (elem.baseThickness || elem.thickness || 1) * strokeScale * 0.7;
   const progress = clamp01(elem._drawProgress);
   const startAngle = -Math.PI / 2;
   ctx.save();
@@ -1207,8 +1340,9 @@ function drawCircleShape(ctx, cw, ch, elem, scale) {
     ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
-  setLineDash(ctx, elem, scale);
+  ctx.lineWidth = thickness;
+  if (progress < 1) ctx.setLineDash([]);
+  else setLineDash(ctx, elem, strokeScale);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -1256,7 +1390,8 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
   }
 
   if (!rw || rw <= 0 || !rh || rh <= 0) return;
-  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+  const strokeScale = getStrokeScale(elem, cw, ch);
+  const thickness = (elem.baseThickness || elem.thickness || 1) * strokeScale * 0.7;
   ctx.save();
   applyRotation(ctx, rx + rw / 2, ry + rh / 2, elem.rotation);
   if (elem.fillColor && elem.fillColor !== 'transparent') {
@@ -1266,48 +1401,42 @@ function drawRectangleShape(ctx, cw, ch, elem, scale) {
     ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
-  setLineDash(ctx, elem, scale);
+  ctx.lineWidth = thickness;
+  setLineDash(ctx, elem, strokeScale);
   ctx.strokeRect(rx, ry, rw, rh);
   ctx.setLineDash([]);
   ctx.restore();
 }
 
-function drawCustomShape(ctx, cw, ch, elem, scale) {
-  const pts = elem.pointsRatio || elem.points;
-  if (!pts || pts.length < 2) return;
-  const points = elem.pointsRatio
-    ? pts.map((p) => ratioToDisplay(p.x, p.y, currentViewMode, cw, ch))
-    : pts.map((p) =>
-        ratioToDisplay(
-          p.x / (elem.sourceWidth || 1280),
-          p.y / (elem.sourceHeight || 720),
-          currentViewMode,
-          cw,
-          ch,
-        ),
-      );
-  const thickness = (elem.baseThickness || elem.thickness || 1) * scale * 0.7;
+function drawCustomShape(ctx, cw, ch, elem, scale, options = {}) {
+  const cache = options.renderCache;
+  const points = getDisplayPoints(elem, cw, ch, cache);
+  if (points.length < 2) return;
+  const strokeScale = getStrokeScale(elem, cw, ch);
+  const thickness = (elem.baseThickness || elem.thickness || 1) * strokeScale * 0.7;
+  const closed = Boolean(elem.closed || elem.isCustomShapeComplete);
+  const path = getPolylinePath(points, cache, closed);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) {
-    ctx.lineTo(points[i].x, points[i].y);
-  }
-  if (elem.closed || elem.isCustomShapeComplete) {
-    ctx.closePath();
+  if (!path) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    if (closed) ctx.closePath();
   }
   if (elem.fillColor && elem.fillColor !== 'transparent') {
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = elem.fillColor;
-    ctx.fill();
+    if (path) ctx.fill(path);
+    else ctx.fill();
     ctx.globalAlpha = 1;
   }
   ctx.strokeStyle = elem.color || '#000';
-  ctx.lineWidth = Math.max(1, thickness);
-  setLineDash(ctx, elem, scale);
-  ctx.stroke();
+  ctx.lineWidth = thickness;
+  ctx.lineJoin = 'round';
+  setLineDash(ctx, elem, strokeScale);
+  if (path) ctx.stroke(path);
+  else ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -1409,9 +1538,9 @@ function drawFreeText(ctx, cw, ch, elem, scale) {
   ctx.restore();
 }
 
-function drawConnector(ctx, cw, ch, conn, elements) {
-  const fromEl = elements.find((e) => e.id === conn.fromId);
-  const toEl = elements.find((e) => e.id === conn.toId);
+function drawConnector(ctx, cw, ch, conn, elementsById) {
+  const fromEl = elementsById.get(conn.fromId);
+  const toEl = elementsById.get(conn.toId);
   if (!fromEl || !toEl) return;
 
   const p1 = pos(fromEl, cw, ch);
@@ -1460,19 +1589,21 @@ const LINE_DRAWERS = {
 
 export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImage, _options = {}) {
   currentViewMode = _options.viewMode || 'entire';
-  ctx.fillStyle = FIELD_BG;
-  ctx.fillRect(0, 0, cw, ch);
-
-  if (fieldImage) {
-    ctx.drawImage(fieldImage, 0, 0, cw, ch);
-  }
+  const renderCache = ensureRenderCache(_options.renderCache);
+  drawFrameBackground(ctx, cw, ch, fieldImage, renderCache);
 
   const scale = getScale(cw, ch);
-  const sorted = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+  let sorted = elements;
+  for (let index = 1; index < elements.length; index++) {
+    if ((elements[index - 1].zIndex || 0) > (elements[index].zIndex || 0)) {
+      sorted = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      break;
+    }
+  }
 
   for (const elem of sorted) {
     if (LINE_DRAWERS[elem.type]) {
-      LINE_DRAWERS[elem.type](ctx, cw, ch, elem, scale);
+      LINE_DRAWERS[elem.type](ctx, cw, ch, elem, scale, _options);
     } else if (POSITIONED_DRAWERS[elem.type]) {
       POSITIONED_DRAWERS[elem.type](ctx, cw, ch, elem, scale, _options);
     } else if (elem.type === 'free-text' || elem.text) {
@@ -1481,8 +1612,9 @@ export function renderFrameToCanvas(ctx, cw, ch, elements, connectors, fieldImag
   }
 
   if (connectors && connectors.length) {
+    const elementsById = new Map(sorted.map((element) => [element.id, element]));
     for (const conn of connectors) {
-      drawConnector(ctx, cw, ch, conn, sorted);
+      drawConnector(ctx, cw, ch, conn, elementsById);
     }
   }
 }

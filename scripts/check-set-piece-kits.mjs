@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { applySetPieceKitsToElements, applySetPiecePlayerOverlays, getSetPieceVideoSignature } from '../src/utils/kits.js';
-import { buildInterpolatedFrames } from '../src/utils/videoFrameBuilder.js';
-import { getPlayerRenderMetrics } from '../src/utils/playerRenderMetrics.js';
+import {
+  buildInterpolatedFrames,
+  getInterpolatedFrameCount,
+  iterateInterpolatedFrames,
+} from '../src/utils/videoFrameBuilder.js';
+import {
+  getPlayerKitRenderState,
+  getPlayerRenderMetrics,
+} from '../src/utils/playerRenderMetrics.js';
 
 const elements = [
   { id: 'icon1-clone-legacy', type: 'player', paletteIndex: 0, color: '#000000', showPhotos: true },
@@ -57,9 +64,34 @@ assert.notEqual(
 );
 
 const playerMetrics = getPlayerRenderMetrics({ shape: 'jersey' }, 0.5);
-assert.equal(playerMetrics.size, 13);
-assert.equal(playerMetrics.radius, 6.5);
-assert.equal(playerMetrics.nameFontSize, 4.68);
+assert.equal(playerMetrics.size, 12);
+assert.equal(playerMetrics.radius, 6);
+assert.equal(playerMetrics.nameFontSize, 4.32);
+
+assert.deepEqual(
+  getPlayerKitRenderState({
+    shape: 'jersey',
+    hasStripes: true,
+    stripeColor: '#112233',
+    kitSecondaryColor: '#445566',
+  }),
+  {
+    isJersey: true,
+    kitPattern: 'vertical',
+    kitSecondaryColor: '#445566',
+    drawPattern: true,
+    drawPlayerPattern: true,
+    drawVerticalStripes: true,
+    verticalStripeColor: '#112233',
+  },
+);
+assert.equal(
+  getPlayerKitRenderState({
+    isGoalkeeper: true,
+    differentiateGoalkeeper: false,
+  }).drawVerticalStripes,
+  false,
+);
 
 const originalRival = [{ id: 'icon2-clone-legacy', type: 'player', color: '#aa0000' }];
 assert.equal(
@@ -137,7 +169,10 @@ const fourKeyframes = Array.from({ length: 4 }, (_, index) => ({
   elements: [{ id: 'player', type: 'player', xRatio: index / 4, yRatio: 0.5 }],
   connectors: [],
 }));
-assert.equal(buildInterpolatedFrames(fourKeyframes, 30, 0.9, 0.1, 1, 0.5).length, 132);
+const interpolationArgs = [fourKeyframes, 30, 0.9, 0.1, 1, 0.5];
+assert.equal(getInterpolatedFrameCount(...interpolationArgs), 132);
+assert.equal(Array.from(iterateInterpolatedFrames(...interpolationArgs)).length, 132);
+assert.equal(buildInterpolatedFrames(...interpolationArgs).length, 132);
 
 const previewSource = readFileSync(new URL('../src/vendor/matchSheet/SetPiecePreview.js', import.meta.url), 'utf8');
 assert.match(previewSource, /renderPlayerNameLabel\(element, height <= 180\)/);

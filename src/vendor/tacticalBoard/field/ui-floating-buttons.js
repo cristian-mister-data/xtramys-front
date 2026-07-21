@@ -9,7 +9,7 @@ export function createFloatingButtons(dependencies) {
     View,
     bringSelectedToFront,
     clearSelection,
-    clones,
+    clonesRef,
     deleteSelectedElements,
     duplicateSelectedElements,
     handleCancelar,
@@ -500,7 +500,9 @@ export function createFloatingButtons(dependencies) {
               >
                 <Feather
                   name={
-                    selectedCloneIds.every((id) => (clones.find((c) => c.id === id) || {}).locked)
+                    selectedCloneIds.every(
+                      (id) => (clonesRef.current.find((c) => c.id === id) || {}).locked,
+                    )
                       ? 'unlock'
                       : 'lock'
                   }
@@ -515,7 +517,9 @@ export function createFloatingButtons(dependencies) {
                       marginTop: 4,
                     }}
                   >
-                    {selectedCloneIds.every((id) => (clones.find((c) => c.id === id) || {}).locked)
+                    {selectedCloneIds.every(
+                      (id) => (clonesRef.current.find((c) => c.id === id) || {}).locked,
+                    )
                       ? t('tacticalBoard.multiSelect.unlock', 'Desbloq.')
                       : t('tacticalBoard.multiSelect.lock', 'Bloquear')}
                   </Text>

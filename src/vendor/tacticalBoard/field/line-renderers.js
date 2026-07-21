@@ -10,11 +10,39 @@ import {
 } from '../fields';
 import {
   ALLOW_MULTI_ELEMENT_DRAG,
+  applyBoardDragState,
+  buildBoardDragState,
+  findBoardCloneIndex,
   generateCurvePath,
   getArrowHeadForStraightLine,
 } from './geometry';
 import { ZINDEX_BASE_LINES, acquireBoardDrag, isBoardDragOwner, releaseBoardDrag } from './config';
 import { TouchableOpacity, boardInteractionState, snapToHorizontalOrVertical } from './primitives';
+
+function moveLineWithoutRender(id, detector, dx, dy) {
+  if (typeof document === 'undefined' || !detector?.style) return false;
+  const visual = document.getElementById(`board-line-${id}`);
+  if (!visual) return false;
+  visual.style.willChange = 'transform';
+  visual.setAttribute('transform', `translate(${dx} ${dy})`);
+  detector.style.willChange = 'transform';
+  detector.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+  return true;
+}
+
+function finishLineWithoutRender(id, detector) {
+  if (typeof document === 'undefined') return;
+  const visual = document.getElementById(`board-line-${id}`);
+  if (visual) {
+    visual.removeAttribute('transform');
+    visual.style.willChange = '';
+  }
+  if (detector?.style) {
+    detector.style.transform = '';
+    detector.style.willChange = '';
+  }
+}
+
 export // =====================================================
 // COMPONENTES MEMOIZADOS PARA LÍNEAS - OPTIMIZACIÓN CRÍTICA
 // =====================================================
@@ -45,7 +73,7 @@ const MemoizedStraightLine = React.memo(
     const strokeColor = isMultiSelected ? '#3498db' : color;
     const strokeDasharray = lineType === 'dotted' ? `${dotSize || 2}, ${dotSpacing || 4}` : null;
     return (
-      <G>
+      <G id={`board-line-${id}`}>
         {/* Highlight para multi-selecci�n */}
         {isMultiSelected && (
           <Path
@@ -118,7 +146,7 @@ const MemoizedCurveLine = React.memo(
     const strokeColor = isMultiSelected ? '#3498db' : color;
     const strokeDasharray = lineType === 'dotted' ? `${dotSize || 2}, ${dotSpacing || 4}` : null;
     return (
-      <G>
+      <G id={`board-line-${id}`}>
         {/* Highlight para multi-selecci�n */}
         {isMultiSelected && (
           <Path
@@ -404,6 +432,7 @@ const BatchLinesRenderer = React.memo(
     if (prevProps.curveLines.length !== nextProps.curveLines.length) return false;
     if (prevProps.imageWidth !== nextProps.imageWidth) return false;
     if (prevProps.imageHeight !== nextProps.imageHeight) return false;
+    if (prevProps.viewMode !== nextProps.viewMode) return false;
     if (prevProps.multiSelectMode !== nextProps.multiSelectMode) return false;
 
     // Comparar referencias de l�neas
@@ -418,6 +447,8 @@ const BatchLinesRenderer = React.memo(
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
         prev._drawProgress !== next._drawProgress ||
+        prevProps.selectedCloneIdsSet?.has(prev.id) !==
+          nextProps.selectedCloneIdsSet?.has(next.id) ||
         !arraysEqual(prev.points, next.points)
       ) {
         return false;
@@ -434,6 +465,8 @@ const BatchLinesRenderer = React.memo(
         prev.dotSize !== next.dotSize ||
         prev.dotSpacing !== next.dotSpacing ||
         prev._drawProgress !== next._drawProgress ||
+        prevProps.selectedCloneIdsSet?.has(prev.id) !==
+          nextProps.selectedCloneIdsSet?.has(next.id) ||
         !arraysEqual(prev.points, next.points)
       ) {
         return false;
@@ -446,6 +479,7 @@ const BatchLinesRenderer = React.memo(
 // Helper para comparar arrays de puntos
 export // Helper para comparar arrays de puntos
 function arraysEqual(a, b) {
+  if (a === b) return true;
   if (!a || !b) return a === b;
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
@@ -487,6 +521,8 @@ const MemoizedStraightLineDetector = React.memo(
     if (isAnyDrawingMode) return null;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const detectorRef = useRef(null);
+    const imperativeDragRef = useRef(false);
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const widthRatio = imageWidth / originalWidth;
@@ -561,35 +597,21 @@ const MemoizedStraightLineDetector = React.memo(
         return;
       }
       if (!acquireBoardDrag(dragStart, icon.id)) return;
+      imperativeDragRef.current = false;
       if (
         ALLOW_MULTI_ELEMENT_DRAG &&
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isSelected
       ) {
-        const initialPositions = {};
-        selectedCloneIds.forEach((id) => {
-          const c = clones.find((cl) => cl.id === id);
-          if (!c) return;
-          if (c.points && Array.isArray(c.points)) {
-            initialPositions[id] = c.points.map((p) => ({
-              x: p.x,
-              y: p.y,
-            }));
-          } else {
-            initialPositions[id] = {
-              xRatio: c.xRatio,
-              yRatio: c.yRatio,
-            };
-          }
-        });
+        const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
         dragStart.current[icon.id] = {
           multiSelect: true,
           selectedIds: [...selectedCloneIds],
-          initialPositions,
           isValid: true,
           startX: e.nativeEvent.pageX,
           startY: e.nativeEvent.pageY,
+          ...dragSnapshotState,
         };
       } else {
         dragStart.current[icon.id] = {
@@ -607,34 +629,17 @@ const MemoizedStraightLineDetector = React.memo(
       if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id))
         return;
       const base = dragStart.current[icon.id];
+      const dxDisplay = (e.nativeEvent.pageX - base.startX) / zoomLevel;
+      const dyDisplay = (e.nativeEvent.pageY - base.startY) / zoomLevel;
       const { dxRatio: dx, dyRatio: dy } = deltaToRatio(
-        (e.nativeEvent.pageX - base.startX) / zoomLevel,
-        (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        dxDisplay,
+        dyDisplay,
         viewMode,
         imageWidth,
         imageHeight,
       );
       if (base.multiSelect && base.selectedIds && base.initialPositions) {
-        pendingUpdateRef.current = (prev) =>
-          prev.map((c) => {
-            if (!base.selectedIds.includes(c.id)) return c;
-            const init = base.initialPositions[c.id];
-            if (!init) return c;
-            if (Array.isArray(init)) {
-              return {
-                ...c,
-                points: init.map((pt) => ({
-                  x: pt.x + dx,
-                  y: pt.y + dy,
-                })),
-              };
-            }
-            return {
-              ...c,
-              xRatio: (init.xRatio || 0) + dx,
-              yRatio: (init.yRatio || 0) + dy,
-            };
-          });
+        pendingUpdateRef.current = (prev) => applyBoardDragState(prev, base, dx, dy, 0, 0);
         if (!rafRef.current) {
           rafRef.current = requestAnimationFrame(() => {
             if (pendingUpdateRef.current) {
@@ -647,7 +652,7 @@ const MemoizedStraightLineDetector = React.memo(
         return;
       }
       pendingUpdateRef.current = (prev) => {
-        const correctIndex = prev.findIndex((c) => c.id === icon.id);
+        const correctIndex = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (correctIndex === -1) return prev;
         const next = [...prev];
         next[correctIndex] = {
@@ -659,6 +664,10 @@ const MemoizedStraightLineDetector = React.memo(
         };
         return next;
       };
+      if (moveLineWithoutRender(icon.id, detectorRef.current, dxDisplay, dyDisplay)) {
+        imperativeDragRef.current = true;
+        return;
+      }
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
           if (pendingUpdateRef.current) {
@@ -678,12 +687,16 @@ const MemoizedStraightLineDetector = React.memo(
         setClones(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }
+      if (imperativeDragRef.current) {
+        requestAnimationFrame(() => finishLineWithoutRender(icon.id, detectorRef.current));
+        imperativeDragRef.current = false;
+      }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
         // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
         setClones((prev) => {
           const remaining = prev.filter((c) => {
-            if (!base.selectedIds.includes(c.id) || c.locked) return true;
+            if (!base.selectedIdsSet.has(c.id) || c.locked) return true;
             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
               return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
             }
@@ -741,7 +754,7 @@ const MemoizedStraightLineDetector = React.memo(
       };
       const finalNewPoint = snapToHorizontalOrVertical(staticPoint, rawNewPoint);
       pendingUpdateRef.current = (prev) => {
-        const idx = prev.findIndex((c) => c.id === icon.id);
+        const idx = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (idx === -1) return prev;
         const next = [...prev];
         const newPoints = isStartPoint
@@ -823,6 +836,8 @@ const MemoizedStraightLineDetector = React.memo(
     };
     return (
       <View
+        ref={detectorRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -962,7 +977,8 @@ const MemoizedStraightLineDetector = React.memo(
       prevProps.icon.locked === nextProps.icon.locked &&
       prevProps.icon.thickness === nextProps.icon.thickness &&
       arraysEqual(prevProps.icon.points, nextProps.icon.points) &&
-      prevProps.selectedCloneId === nextProps.selectedCloneId &&
+      (prevProps.selectedCloneId === prevProps.icon.id) ===
+        (nextProps.selectedCloneId === nextProps.icon.id) &&
       prevProps.multiSelectMode === nextProps.multiSelectMode &&
       prevProps.selectionInteractionMode === nextProps.selectionInteractionMode &&
       prevProps.isAnyDrawingMode === nextProps.isAnyDrawingMode &&
@@ -1008,6 +1024,8 @@ const MemoizedCurveLineDetector = React.memo(
     if (isAnyDrawingMode) return null;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const detectorRef = useRef(null);
+    const imperativeDragRef = useRef(false);
     const originalWidth = icon.imageWidth || imageWidth;
     const originalHeight = icon.imageHeight || imageHeight;
     const widthRatio = imageWidth / originalWidth;
@@ -1072,35 +1090,21 @@ const MemoizedCurveLineDetector = React.memo(
         return;
       }
       if (!acquireBoardDrag(dragStart, icon.id)) return;
+      imperativeDragRef.current = false;
       if (
         ALLOW_MULTI_ELEMENT_DRAG &&
         multiSelectMode &&
         selectionInteractionMode === 'move' &&
         isSelected
       ) {
-        const initialPositions = {};
-        selectedCloneIds.forEach((id) => {
-          const c = clones.find((cl) => cl.id === id);
-          if (!c) return;
-          if (c.points && Array.isArray(c.points)) {
-            initialPositions[id] = c.points.map((p) => ({
-              x: p.x,
-              y: p.y,
-            }));
-          } else {
-            initialPositions[id] = {
-              xRatio: c.xRatio,
-              yRatio: c.yRatio,
-            };
-          }
-        });
+        const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
         dragStart.current[icon.id] = {
           multiSelect: true,
           selectedIds: [...selectedCloneIds],
-          initialPositions,
           isValid: true,
           startX: e.nativeEvent.pageX,
           startY: e.nativeEvent.pageY,
+          ...dragSnapshotState,
         };
       } else {
         dragStart.current[icon.id] = {
@@ -1118,34 +1122,17 @@ const MemoizedCurveLineDetector = React.memo(
       if (!canDrag || !dragStart.current[icon.id]?.isValid || !isBoardDragOwner(dragStart, icon.id))
         return;
       const base = dragStart.current[icon.id];
+      const dxDisplay = (e.nativeEvent.pageX - base.startX) / zoomLevel;
+      const dyDisplay = (e.nativeEvent.pageY - base.startY) / zoomLevel;
       const { dxRatio: dx, dyRatio: dy } = deltaToRatio(
-        (e.nativeEvent.pageX - base.startX) / zoomLevel,
-        (e.nativeEvent.pageY - base.startY) / zoomLevel,
+        dxDisplay,
+        dyDisplay,
         viewMode,
         imageWidth,
         imageHeight,
       );
       if (base.multiSelect && base.selectedIds && base.initialPositions) {
-        pendingUpdateRef.current = (prev) =>
-          prev.map((c) => {
-            if (!base.selectedIds.includes(c.id)) return c;
-            const init = base.initialPositions[c.id];
-            if (!init) return c;
-            if (Array.isArray(init)) {
-              return {
-                ...c,
-                points: init.map((pt) => ({
-                  x: pt.x + dx,
-                  y: pt.y + dy,
-                })),
-              };
-            }
-            return {
-              ...c,
-              xRatio: (init.xRatio || 0) + dx,
-              yRatio: (init.yRatio || 0) + dy,
-            };
-          });
+        pendingUpdateRef.current = (prev) => applyBoardDragState(prev, base, dx, dy, 0, 0);
         if (!rafRef.current) {
           rafRef.current = requestAnimationFrame(() => {
             if (pendingUpdateRef.current) {
@@ -1158,7 +1145,7 @@ const MemoizedCurveLineDetector = React.memo(
         return;
       }
       pendingUpdateRef.current = (prev) => {
-        const correctIndex = prev.findIndex((c) => c.id === icon.id);
+        const correctIndex = findBoardCloneIndex(prev, icon.id, icon.originalIndex);
         if (correctIndex === -1) return prev;
         const next = [...prev];
         next[correctIndex] = {
@@ -1170,6 +1157,10 @@ const MemoizedCurveLineDetector = React.memo(
         };
         return next;
       };
+      if (moveLineWithoutRender(icon.id, detectorRef.current, dxDisplay, dyDisplay)) {
+        imperativeDragRef.current = true;
+        return;
+      }
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
           if (pendingUpdateRef.current) {
@@ -1189,12 +1180,16 @@ const MemoizedCurveLineDetector = React.memo(
         setClones(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }
+      if (imperativeDragRef.current) {
+        requestAnimationFrame(() => finishLineWithoutRender(icon.id, detectorRef.current));
+        imperativeDragRef.current = false;
+      }
       const base = dragStart.current[icon.id];
       if (base?.multiSelect && base.selectedIds) {
         // Multi-drag: eliminar TODOS los seleccionados que est�n fuera del campo
         setClones((prev) => {
           const remaining = prev.filter((c) => {
-            if (!base.selectedIds.includes(c.id) || c.locked) return true;
+            if (!base.selectedIdsSet.has(c.id) || c.locked) return true;
             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
               return !areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
             }
@@ -1250,44 +1245,49 @@ const MemoizedCurveLineDetector = React.memo(
     // Generar segmentos de toque a lo largo de la curva
     // Cada segmento es un peque�o View posicionado sobre el trazado
     const generateTouchSegments = () => {
-      const segments = [];
-      const segmentSize = touchTolerance * 2;
+      const touchPoints = [pts[0]];
+      const spacing = touchTolerance * 1.5;
+      let distanceSinceLastPoint = 0;
       for (let i = 0; i < pts.length - 1; i++) {
         const p1 = pts[i];
         const p2 = pts[i + 1];
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx);
-
-        // Crear un segmento por cada trozo del path
-        const numSegments = Math.max(1, Math.ceil(length / segmentSize));
-        for (let j = 0; j < numSegments; j++) {
-          const t = numSegments === 1 ? 0.5 : j / (numSegments - 1 || 1);
-          const x = p1.x + dx * t;
-          const y = p1.y + dy * t;
-          segments.push(
-            <View
-              key={`seg-${i}-${j}`}
-              pointerEvents="auto"
-              style={{
-                position: 'absolute',
-                left: x - minX + touchMargin - touchTolerance,
-                top: y - minY + touchMargin - touchTolerance,
-                width: touchTolerance * 2,
-                height: touchTolerance * 2,
-                backgroundColor: 'transparent',
-                borderRadius: touchTolerance,
-              }}
-              {...responderProps}
-            />,
-          );
+        const length = Math.hypot(dx, dy);
+        if (length === 0) continue;
+        for (
+          let distance = spacing - distanceSinceLastPoint;
+          distance <= length;
+          distance += spacing
+        ) {
+          const t = distance / length;
+          touchPoints.push({ x: p1.x + dx * t, y: p1.y + dy * t });
         }
+        distanceSinceLastPoint = (distanceSinceLastPoint + length) % spacing;
       }
-      return segments;
+      const lastPoint = pts[pts.length - 1];
+      if (touchPoints[touchPoints.length - 1] !== lastPoint) touchPoints.push(lastPoint);
+      return touchPoints.map((point, index) => (
+        <View
+          key={`curve-touch-${index}`}
+          pointerEvents="auto"
+          style={{
+            position: 'absolute',
+            left: point.x - minX + touchMargin - touchTolerance,
+            top: point.y - minY + touchMargin - touchTolerance,
+            width: touchTolerance * 2,
+            height: touchTolerance * 2,
+            backgroundColor: 'transparent',
+            borderRadius: touchTolerance,
+          }}
+          {...responderProps}
+        />
+      ));
     };
     return (
       <View
+        ref={detectorRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -1378,7 +1378,8 @@ const MemoizedCurveLineDetector = React.memo(
       prevProps.icon.locked === nextProps.icon.locked &&
       prevProps.icon.thickness === nextProps.icon.thickness &&
       arraysEqual(prevProps.icon.points, nextProps.icon.points) &&
-      prevProps.selectedCloneId === nextProps.selectedCloneId &&
+      (prevProps.selectedCloneId === prevProps.icon.id) ===
+        (nextProps.selectedCloneId === nextProps.icon.id) &&
       prevProps.multiSelectMode === nextProps.multiSelectMode &&
       prevProps.selectionInteractionMode === nextProps.selectionInteractionMode &&
       prevProps.isAnyDrawingMode === nextProps.isAnyDrawingMode &&

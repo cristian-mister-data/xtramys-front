@@ -1,8 +1,8 @@
 // utils/videoUtils.js — implementación web para generar vídeo táctico.
 // Los frames se guardan como data URLs en el shim de react-native-fs
 // o Blob en el shim de react-native-fs (globalThis.__rnfsFrames). La ruta
-// principal usa WebCodecs + muxing MP4, y FFmpeg/MediaRecorder quedan como
-// fallback de compatibilidad.
+// principal usa MediaRecorder MP4 o WebCodecs, y FFmpeg queda como fallback
+// de compatibilidad.
 // `outputPath` devuelto es una blob URL (`blob:http://...`). El shim de
 // RNFS la trata como entrada válida en unlink (URL.revokeObjectURL).
 
@@ -15,6 +15,7 @@ import { cdnUrl } from '@/config';
 
 let _ffmpegInstance = null;
 let _ffmpegLoading = null;
+const webCodecsConfigCache = new Map();
 
 async function getFFmpeg() {
   if (_ffmpegInstance) return _ffmpegInstance;
@@ -94,6 +95,10 @@ export async function ensureMp4Blob(blob) {
 
 export const warmUpFFmpeg = () => {
   if (isMobileBrowser()) return;
+  if (
+    typeof window !== 'undefined' &&
+    ((window.VideoEncoder && window.VideoFrame) || getMediaRecorderMp4Mime())
+  ) return;
   const run = () => getFFmpeg().catch(() => {});
   if (typeof window !== 'undefined' && window.requestIdleCallback) {
     window.requestIdleCallback(run, { timeout: 3000 });
@@ -308,6 +313,10 @@ function getVideoBitrate(width, height) {
   return Math.max(14_000_000, Math.min(52_000_000, Math.round((area / ref) * 24_000_000)));
 }
 
+function getRealtimeVideoBitrate(width, height) {
+  return Math.min(52_000_000, Math.round(getVideoBitrate(width, height) * 1.5));
+}
+
 function getFrameFileExtension(source, key = '') {
   const normalizedKey = String(key).toLowerCase();
   if (normalizedKey.endsWith('.jpg') || normalizedKey.endsWith('.jpeg')) return 'jpg';
@@ -324,6 +333,10 @@ async function getWebCodecsConfig(width, height, fps) {
   if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
     throw new Error('WebCodecs no disponible en este navegador');
   }
+
+  const cacheKey = `${width}x${height}@${fps}`;
+  const cachedConfig = webCodecsConfigCache.get(cacheKey);
+  if (cachedConfig) return cachedConfig;
 
   const baseConfig = {
     width,
@@ -346,9 +359,16 @@ async function getWebCodecsConfig(width, height, fps) {
   for (const hw of hardwareOptions) {
     for (const codec of codecCandidates) {
       const config = { ...baseConfig, hardwareAcceleration: hw, codec };
-      if (!window.VideoEncoder.isConfigSupported) return config;
+      if (!window.VideoEncoder.isConfigSupported) {
+        webCodecsConfigCache.set(cacheKey, config);
+        return config;
+      }
       const support = await window.VideoEncoder.isConfigSupported(config);
-      if (support.supported) return support.config || config;
+      if (support.supported) {
+        const supportedConfig = support.config || config;
+        webCodecsConfigCache.set(cacheKey, supportedConfig);
+        return supportedConfig;
+      }
     }
   }
 
@@ -440,7 +460,122 @@ async function generateVideoWithWebCodecs(framesDir, frameCount, speed = 1, onPr
   }
 }
 
+function getMediaRecorderMp4Mime() {
+  if (
+    typeof window === 'undefined' ||
+    !window.MediaRecorder ||
+    !window.HTMLCanvasElement?.prototype?.captureStream
+  ) {
+    return '';
+  }
+  const candidates = [
+    'video/mp4;codecs=avc1.640028',
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4;codecs=h264',
+    'video/mp4',
+  ];
+  return candidates.find((mime) => window.MediaRecorder.isTypeSupported(mime)) || '';
+}
+
+function createMediaRecorderStreamingEncoder({
+  speed,
+  frameCount,
+  onProgress,
+  mimeType,
+}) {
+  const fps = SPEED_TO_FPS[speed] || 30;
+  const frameDurationMs = 1000 / fps;
+  let recorder = null;
+  let track = null;
+  let stream = null;
+  let startedAt = 0;
+  let submittedFrameUnits = 0;
+  let recorderError = null;
+  let recorderStarted = null;
+  let stopped = null;
+  const chunks = [];
+
+  const setup = (canvas) => {
+    stream = canvas.captureStream(0);
+    track = stream.getVideoTracks()[0];
+    if (!track?.requestFrame) throw new Error('Canvas requestFrame no disponible');
+    recorder = new window.MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: getRealtimeVideoBitrate(canvas.width, canvas.height),
+    });
+    recorder.ondataavailable = (event) => {
+      if (event.data?.size) chunks.push(event.data);
+    };
+    stopped = new Promise((resolve) => {
+      recorder.onstop = resolve;
+    });
+    recorder.onerror = (event) => {
+      recorderError = event.error || new Error('MediaRecorder fallo durante la generacion');
+    };
+    recorder.start();
+    startedAt = nowMs();
+    recorderStarted = Promise.resolve();
+  };
+
+  const addFrame = async (canvas, index = submittedFrameUnits, durationFrames = 1) => {
+    if (!recorder) setup(canvas);
+    await recorderStarted;
+    if (recorderError) throw recorderError;
+
+    const targetTime = startedAt + index * frameDurationMs;
+    const waitMs = targetTime - nowMs();
+    if (waitMs > 1) await new Promise((resolve) => setTimeout(resolve, waitMs));
+    track.requestFrame();
+    await yieldToBrowser();
+
+    submittedFrameUnits = Math.max(
+      submittedFrameUnits,
+      index + Math.max(1, Math.round(durationFrames)),
+    );
+    onProgress?.(Math.min(0.99, submittedFrameUnits / Math.max(1, frameCount)));
+    if (recorderError) throw recorderError;
+  };
+
+  const finish = async () => {
+    if (!recorder) throw new Error('No hay frames para codificar');
+    const waitMs = startedAt + submittedFrameUnits * frameDurationMs - nowMs();
+    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+    track.requestFrame();
+    await yieldToBrowser();
+    recorder.stop();
+    await stopped;
+    stream.getTracks().forEach((nextTrack) => nextTrack.stop());
+    if (recorderError) throw recorderError;
+
+    const blob = new Blob(chunks, { type: recorder.mimeType || mimeType });
+    if (!blob.size) throw new Error('MediaRecorder no genero datos');
+    onProgress?.(0.995);
+    return {
+      outputPath: URL.createObjectURL(blob),
+      frameCount: submittedFrameUnits || frameCount,
+      mimeType: 'video/mp4',
+    };
+  };
+
+  const abort = () => {
+    if (recorder?.state === 'recording') recorder.stop();
+    stream?.getTracks().forEach((nextTrack) => nextTrack.stop());
+  };
+
+  return { addFrame, finish, abort };
+}
+
 export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, onProgress } = {}) {
+  const mediaRecorderMime = getMediaRecorderMp4Mime();
+  if (mediaRecorderMime) {
+    return createMediaRecorderStreamingEncoder({
+      speed,
+      frameCount,
+      onProgress,
+      mimeType: mediaRecorderMime,
+    });
+  }
+
   if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
     throw new Error('WebCodecs no disponible en este navegador');
   }
@@ -449,8 +584,8 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
   const target = new ArrayBufferTarget();
   const frameDurationUs = Math.round(1_000_000 / fps);
   const keyFrameInterval = Math.max(1, Math.round(fps));
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { alpha: false });
+  let conversionCanvas = null;
+  let conversionContext = null;
   let encoder = null;
   let muxer = null;
   let sourceWidth = 0;
@@ -458,17 +593,16 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
   let outputWidth = 0;
   let outputHeight = 0;
   let encodedCount = 0;
+  let encodedFrameUnits = 0;
   let submittedCount = 0;
+  let submittedFrameUnits = 0;
   let encoderError = null;
 
-  const setup = async (frameImage) => {
-    sourceWidth = frameImage.width;
-    sourceHeight = frameImage.height;
+  const setup = async (width, height) => {
+    sourceWidth = width;
+    sourceHeight = height;
     outputWidth = sourceWidth % 2 === 0 ? sourceWidth : sourceWidth + 1;
     outputHeight = sourceHeight % 2 === 0 ? sourceHeight : sourceHeight + 1;
-    canvas.width = outputWidth;
-    canvas.height = outputHeight;
-    applyHighQualityCanvas2D(ctx);
 
     const config = await getWebCodecsConfig(outputWidth, outputHeight, fps);
     muxer = new Muxer({
@@ -480,8 +614,12 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
       output: (chunk, meta) => {
         muxer.addVideoChunk(chunk, meta);
         encodedCount++;
-        const denominator = Math.max(1, frameCount || submittedCount);
-        onProgress?.(Math.min(0.99, encodedCount / denominator));
+        encodedFrameUnits += Math.max(
+          1,
+          Math.round((chunk.duration || frameDurationUs) / frameDurationUs),
+        );
+        const denominator = Math.max(1, frameCount || submittedFrameUnits);
+        onProgress?.(Math.min(0.99, encodedFrameUnits / denominator));
       },
       error: (error) => {
         encoderError = error;
@@ -490,28 +628,67 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
     encoder.configure(config);
   };
 
-  const addFrame = async (frameSource, index = submittedCount) => {
+  const getConversionSurface = () => {
+    if (!conversionCanvas) {
+      conversionCanvas = document.createElement('canvas');
+      conversionCanvas.width = outputWidth;
+      conversionCanvas.height = outputHeight;
+      conversionContext = conversionCanvas.getContext('2d', { alpha: false });
+      applyHighQualityCanvas2D(conversionContext);
+    }
+    return { canvas: conversionCanvas, ctx: conversionContext };
+  };
+
+  const submitFrame = async (source, index, durationFrames = 1) => {
+    const safeDurationFrames = Math.max(1, Math.round(durationFrames));
+    const frame = new window.VideoFrame(source, {
+      timestamp: index * frameDurationUs,
+      duration: safeDurationFrames * frameDurationUs,
+    });
+    encoder.encode(frame, { keyFrame: index === 0 || index % keyFrameInterval === 0 });
+    submittedCount++;
+    submittedFrameUnits += safeDurationFrames;
+    frame.close();
+
+    if (encoder.encodeQueueSize > 48) {
+      await waitForEncoderQueue(encoder, () => encodedCount, 32, 1500);
+    }
     if (encoderError) throw encoderError;
+  };
+
+  const addFrame = async (
+    frameSource,
+    index = submittedFrameUnits,
+    durationFrames = 1,
+  ) => {
+    if (encoderError) throw encoderError;
+
+    if (
+      typeof HTMLCanvasElement !== 'undefined' &&
+      frameSource instanceof HTMLCanvasElement
+    ) {
+      if (!encoder) await setup(frameSource.width, frameSource.height);
+      if (frameSource.width === outputWidth && frameSource.height === outputHeight) {
+        await submitFrame(frameSource, index, durationFrames);
+        return;
+      }
+      const surface = getConversionSurface();
+      surface.ctx.fillStyle = '#000000';
+      surface.ctx.fillRect(0, 0, outputWidth, outputHeight);
+      surface.ctx.drawImage(frameSource, 0, 0, sourceWidth, sourceHeight);
+      await submitFrame(surface.canvas, index, durationFrames);
+      return;
+    }
+
     const frameImage = await loadFrameImage(frameSource);
     try {
-      if (!encoder) await setup(frameImage);
+      if (!encoder) await setup(frameImage.width, frameImage.height);
 
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, outputWidth, outputHeight);
-      ctx.drawImage(frameImage.image, 0, 0, sourceWidth, sourceHeight);
-
-      const frame = new window.VideoFrame(canvas, {
-        timestamp: index * frameDurationUs,
-        duration: frameDurationUs,
-      });
-      encoder.encode(frame, { keyFrame: index === 0 || index % keyFrameInterval === 0 });
-      submittedCount++;
-      frame.close();
-
-      if (encoder.encodeQueueSize > 48) {
-        await waitForEncoderQueue(encoder, () => encodedCount, 32, 1500);
-      }
-      if (encoderError) throw encoderError;
+      const surface = getConversionSurface();
+      surface.ctx.fillStyle = '#000000';
+      surface.ctx.fillRect(0, 0, outputWidth, outputHeight);
+      surface.ctx.drawImage(frameImage.image, 0, 0, sourceWidth, sourceHeight);
+      await submitFrame(surface.canvas, index, durationFrames);
     } finally {
       frameImage.close();
     }
@@ -527,7 +704,7 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
 
     return {
       outputPath: URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })),
-      frameCount: submittedCount || frameCount,
+      frameCount: submittedFrameUnits || frameCount,
       mimeType: 'video/mp4',
     };
   };
@@ -661,7 +838,7 @@ async function generateVideoWithMediaRecorder(framesDir, frameCount, speed = 1, 
   // Bitrate generoso para preservar la fidelidad: ~16 Mbps base, escalado
   // por área respecto a 1080p. Suficiente para detalles de iconos pequeños
   // sobre el campo (líneas, números) sin artefactos visibles.
-  const targetBitrate = getVideoBitrate(width, height);
+  const targetBitrate = getRealtimeVideoBitrate(width, height);
 
   const recorder = new MediaRecorder(
     stream,

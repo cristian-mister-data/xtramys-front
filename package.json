@@ -10,6 +10,8 @@
     "check:lineup-positions": "node scripts/check-lineup-positions.mjs",
     "check:set-piece-kits": "node scripts/check-set-piece-kits.mjs",
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
+    "check:ios-native-flows": "node scripts/check-ios-native-flows.mjs",
+    "check:tactical-board-performance": "node scripts/check-tactical-board-performance.mjs",
     "preview": "vite preview --port 4173",
     "mobile": "npm run build && npx cap sync",
     "android": "npm run build && npx cap sync android && npx cap open android",

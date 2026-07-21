@@ -438,32 +438,24 @@ export function findTopBoardCloneAtPoint(
   standardSize,
   selectedCloneId,
 ) {
-  return (
-    clones
-      .map((clone, originalIndex) => ({
-        clone,
-        originalIndex,
-        zIndex: getCloneInteractionZIndex(clone, originalIndex, selectedCloneId),
-      }))
-      .sort(
-        (first, second) =>
-          first.zIndex - second.zIndex || first.originalIndex - second.originalIndex,
-      )
-      .reverse()
-      .find(
-        ({ clone }) =>
-          !clone.locked &&
-          isPointOnBoardClone(
-            clone,
-            pointX,
-            pointY,
-            viewMode,
-            imageWidth,
-            imageHeight,
-            standardSize,
-          ),
-      )?.clone || null
-  );
+  let topClone = null;
+  let topZIndex = -Infinity;
+  let topOriginalIndex = -1;
+
+  clones.forEach((clone, originalIndex) => {
+    if (clone.locked) return;
+    const zIndex = getCloneInteractionZIndex(clone, originalIndex, selectedCloneId);
+    if (zIndex < topZIndex || (zIndex === topZIndex && originalIndex <= topOriginalIndex)) return;
+    if (
+      isPointOnBoardClone(clone, pointX, pointY, viewMode, imageWidth, imageHeight, standardSize)
+    ) {
+      topClone = clone;
+      topZIndex = zIndex;
+      topOriginalIndex = originalIndex;
+    }
+  });
+
+  return topClone;
 }
 export function createBoardDragSnapshot(clone) {
   if (!clone) return null;
@@ -517,12 +509,46 @@ export function applyBoardDragSnapshot(clone, snapshot, dxRatio, dyRatio, dxDisp
   return clone;
 }
 export function buildBoardDragSnapshots(clones, selectedIds) {
-  return selectedIds.reduce((snapshots, selectedId) => {
-    const clone = clones.find((item) => item.id === selectedId);
+  return buildBoardDragState(clones, selectedIds).initialPositions;
+}
+export function buildBoardDragState(clones, selectedIds) {
+  const selectedIdsSet = new Set(selectedIds);
+  const initialPositions = {};
+  const selectedIndices = [];
+  clones.forEach((clone, index) => {
+    if (!selectedIdsSet.has(clone.id) || clone.locked) return;
     const snapshot = createBoardDragSnapshot(clone);
-    if (snapshot) snapshots[selectedId] = snapshot;
-    return snapshots;
-  }, {});
+    if (!snapshot) return;
+    initialPositions[clone.id] = snapshot;
+    selectedIndices.push({ id: clone.id, index });
+  });
+  return { initialPositions, selectedIdsSet, selectedIndices };
+}
+export function applyBoardDragState(clones, dragState, dxRatio, dyRatio, dxDisplay, dyDisplay) {
+  let next = null;
+  for (const selected of dragState.selectedIndices || []) {
+    let index = selected.index;
+    if (clones[index]?.id !== selected.id) {
+      index = clones.findIndex((clone) => clone.id === selected.id);
+    }
+    if (index < 0 || clones[index].locked) continue;
+    const updated = applyBoardDragSnapshot(
+      clones[index],
+      dragState.initialPositions[selected.id],
+      dxRatio,
+      dyRatio,
+      dxDisplay,
+      dyDisplay,
+    );
+    if (updated === clones[index]) continue;
+    if (!next) next = [...clones];
+    next[index] = updated;
+  }
+  return next || clones;
+}
+export function findBoardCloneIndex(clones, id, preferredIndex) {
+  if (Number.isInteger(preferredIndex) && clones[preferredIndex]?.id === id) return preferredIndex;
+  return clones.findIndex((clone) => clone.id === id);
 }
 export function isBoardCloneOutsideForDelete(clone, viewMode, imageWidth, imageHeight) {
   if (!clone) return false;

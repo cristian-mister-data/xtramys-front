@@ -13,10 +13,9 @@
 //        (Field lee `route.params` con esos campos).
 //      - un navigator no-op para que `navigation.goBack()` interno (que
 //        Field invoca después de guardar) no navegue la SPA.
-// 2. Field usa el bridge `global.fieldCallbacks` (mismo patrón que
-//    createStrategyForm / createExerciseForm). Registramos onSave/onCancel
-//    antes de montar Field y los restauramos al desmontar.
-import { useEffect, useMemo, useRef } from 'react';
+// 2. Field recibe callbacks directos para que guardar/cancelar no dependa
+//    del bridge global que usan las pantallas legacy.
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { useTheme } from 'styled-components';
 import { MdClose } from 'react-icons/md';
@@ -106,41 +105,27 @@ export default function TacticalSnapshotModal({
   const onSaveRef = useRef(onSave);
   const onCloseRef = useRef(onClose);
 
-  // Mantener refs actualizadas para que los callbacks registrados en
-  // global.fieldCallbacks vean siempre los handlers más recientes sin
-  // re-registrarlos en cada render.
+  // Mantener refs actualizadas sin recrear los callbacks de Field.
   useEffect(() => {
     onSaveRef.current = onSave;
     onCloseRef.current = onClose;
   });
 
-  // Registrar/restaurar el bridge global mientras el overlay esté abierto.
-  useEffect(() => {
-    if (!open) return undefined;
-    const previous = global.fieldCallbacks;
-    global.fieldCallbacks = {
-      onSave: (elements, fieldType, imageBase64) => {
-        const payload = {
-          imageBase64: toDataUrl(imageBase64),
-          elements,
-          fieldType,
-        };
-        try {
-          onSaveRef.current?.(payload);
-        } finally {
-          onCloseRef.current?.();
-        }
-      },
-      onCancel: () => {
-        onCloseRef.current?.();
-      },
-    };
-    return () => {
-      // Restaurar callbacks previos (si los hubiera) para no contaminar
-      // otros consumidores del bridge (createStrategyForm, etc.).
-      global.fieldCallbacks = previous;
-    };
-  }, [open]);
+  const handleFieldSave = useCallback((elements, fieldType, imageBase64) => {
+    try {
+      onSaveRef.current?.({
+        imageBase64: toDataUrl(imageBase64),
+        elements,
+        fieldType,
+      });
+    } finally {
+      onCloseRef.current?.();
+    }
+  }, []);
+
+  const handleFieldCancel = useCallback(() => {
+    onCloseRef.current?.();
+  }, []);
 
   // Contexts simulados para Field.
   // - LocationContext.location.state alimenta route.params (vía el shim
@@ -222,10 +207,8 @@ export default function TacticalSnapshotModal({
           <LocationContext.Provider value={locationContextValue}>
             <SafeAreaProvider style={fillStyle}>
               <GestureHandlerRootView style={fillStyle}>
-                {/* sandbox=false (default) → se renderiza el botón Guardar
-                    que invoca handleGuardarGrafico → saveCallback de
-                    global.fieldCallbacks (registrado arriba). */}
-                <Field />
+                {/* sandbox=false (default) muestra Guardar y Cancelar. */}
+                <Field onSave={handleFieldSave} onCancel={handleFieldCancel} />
               </GestureHandlerRootView>
             </SafeAreaProvider>
           </LocationContext.Provider>

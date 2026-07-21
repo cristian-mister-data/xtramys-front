@@ -2,20 +2,40 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import RNFS from '@/shims/react-native-fs';
 import { getTacticalVideo, getVideoForEdit, proxyUploadToR2, updateVideo } from '@/utils/api';
-import { initRecordingSession, generateVideo as encodeVideo } from '@/utils/videoUtils';
-import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
+import {
+  createStreamingVideoEncoder,
+  initRecordingSession,
+  generateVideo as encodeVideo,
+} from '@/utils/videoUtils';
+import {
+  createVideoRenderCache,
+  renderFrameToCanvas,
+  getVideoDimensions,
+} from '@/utils/videoCanvasRenderer';
 import { decomposeFieldId, getAspectForView } from '@/vendor/tacticalBoard/fields/fieldConfigs';
 import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
 import { applySetPiecePlayerOverlays } from '@/utils/kits';
 import { cdnUrl } from '@/config';
 import { SPEED_TO_FPS } from '@/constants/video';
-import { buildInterpolatedFrames as buildSharedInterpolatedFrames } from '@/utils/videoFrameBuilder';
+import {
+  getInterpolatedFrameCount,
+  iterateInterpolatedFrames as iterateSharedInterpolatedFrames,
+} from '@/utils/videoFrameBuilder';
 
 const CAPTURE_FORMAT = 'jpeg';
 const CAPTURE_EXTENSION = 'jpg';
 const CAPTURE_QUALITY = 0.97;
 
 const localRegenerationById = new Map();
+
+const yieldToBrowser = () =>
+  new Promise((resolve) => {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => resolve());
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
 
 function loadImage(src) {
   return new Promise((resolve) => {
@@ -69,16 +89,18 @@ function getRenderConfig(video) {
   };
 }
 
-async function renderFramesToDirectory(video, frames, renderConfig, onProgress) {
-  const framesDir = await initRecordingSession();
+async function createRenderSession(video, keyframes, renderConfig) {
   const canvas = document.createElement('canvas');
   canvas.width = renderConfig.dimensions.width;
   canvas.height = renderConfig.dimensions.height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) throw new Error('Canvas 2D no disponible');
+  ctx.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
   const fieldImage = await renderBoardFieldImage(video.fieldType, canvas.width, canvas.height);
   const playerPhotos = {};
   const photoSources = new Set();
-  frames.forEach((frame) => (frame.elements || []).forEach((element) => {
+  keyframes.forEach((frame) => (frame.elements || []).forEach((element) => {
     const source = element.photoUrl || element.playerData?.foto;
     if (element.type === 'player' && source) photoSources.add(source);
   }));
@@ -89,22 +111,104 @@ async function renderFramesToDirectory(video, frames, renderConfig, onProgress) 
     playerPhotos[cdnUrl(source)] = image;
   }));
 
-  for (let index = 0; index < frames.length; index++) {
-    await new Promise((resolve) => setTimeout(resolve, 1));
-    const frame = frames[index];
-    renderFrameToCanvas(ctx, canvas.width, canvas.height, frame.elements, frame.connectors, fieldImage, {
+  return { canvas, ctx, fieldImage, playerPhotos, renderCache: createVideoRenderCache() };
+}
+
+function renderSessionFrame(session, frame, renderConfig) {
+  renderFrameToCanvas(
+    session.ctx,
+    session.canvas.width,
+    session.canvas.height,
+    frame.elements,
+    frame.connectors,
+    session.fieldImage,
+    {
       playersWithNumber: renderConfig.playersWithNumber,
       showPhotos: renderConfig.showPhotos,
       viewMode: renderConfig.viewMode,
-      playerPhotos,
-    });
+      playerPhotos: session.playerPhotos,
+      renderCache: session.renderCache,
+    },
+  );
+}
+
+async function renderFramesDirectly(session, createFrames, frameCount, renderConfig, onProgress) {
+  let renderedCount = 0;
+  let encodedCount = 0;
+  let lastProgress = 15;
+  let lastYieldAt = performance.now();
+  const updateProgress = () => {
+    const nextProgress = 15 + Math.round(((renderedCount + encodedCount) / (frameCount * 2)) * 84);
+    if (nextProgress <= lastProgress) return;
+    lastProgress = Math.min(99, nextProgress);
+    onProgress?.(lastProgress, 'generationEncoding');
+  };
+  const encoder = await createStreamingVideoEncoder({
+    speed: renderConfig.speedMultiplier,
+    frameCount,
+    onProgress: (progress) => {
+      encodedCount = Math.max(encodedCount, Math.round(progress * frameCount));
+      updateProgress();
+    },
+  });
+
+  try {
+    let index = 0;
+    let pendingFrameRun = null;
+    const encodePendingFrameRun = async () => {
+      if (!pendingFrameRun) return;
+      await encoder.addFrame(
+        session.canvas,
+        pendingFrameRun.index,
+        pendingFrameRun.durationFrames,
+      );
+      pendingFrameRun = null;
+    };
+    for (const frame of createFrames()) {
+      if (frame._reusePreviousFrame && pendingFrameRun) {
+        pendingFrameRun.durationFrames += 1;
+      } else {
+        await encodePendingFrameRun();
+        renderSessionFrame(session, frame, renderConfig);
+        pendingFrameRun = { index, durationFrames: 1 };
+      }
+      renderedCount = index + 1;
+      updateProgress();
+      index += 1;
+
+      if (performance.now() - lastYieldAt >= 50) {
+        await yieldToBrowser();
+        lastYieldAt = performance.now();
+      }
+    }
+    await encodePendingFrameRun();
+    return await encoder.finish();
+  } catch (error) {
+    encoder.abort?.();
+    throw error;
+  }
+}
+
+async function renderFramesToDirectory(session, createFrames, frameCount, renderConfig, onProgress) {
+  const framesDir = await initRecordingSession();
+
+  let index = 0;
+  for (const frame of createFrames()) {
+    if (index === 0 || !frame._reusePreviousFrame) {
+      renderSessionFrame(session, frame, renderConfig);
+    }
     const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))), `image/${CAPTURE_FORMAT}`, CAPTURE_QUALITY);
+      session.canvas.toBlob(
+        (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))),
+        `image/${CAPTURE_FORMAT}`,
+        CAPTURE_QUALITY,
+      );
     });
     await RNFS.moveFile(blob, `${framesDir}/frame${String(index).padStart(4, '0')}.${CAPTURE_EXTENSION}`);
 
-    const currentProgress = 15 + Math.round((index / frames.length) * 60);
+    const currentProgress = 15 + Math.round(((index + 1) / frameCount) * 60);
     onProgress?.(currentProgress, 'generationEncoding');
+    index += 1;
   }
 
   return framesDir;
@@ -156,7 +260,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     ...keyframe,
     elements: applySetPiecePlayerOverlays(keyframe.elements || [], playerOverlays),
   }));
-  const frames = buildSharedInterpolatedFrames(
+  const interpolationArgs = [
     keyframes,
     renderConfig.fps,
     renderConfig.moveDuration,
@@ -164,20 +268,42 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     renderConfig.speedMultiplier,
     renderConfig.extraDurationEnd,
     typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 1024 ? 12 : 10,
-  );
-  if (!frames.length) throw new Error('No hay frames suficientes para regenerar el video');
+  ];
+  const frameCount = getInterpolatedFrameCount(...interpolationArgs);
+  if (!frameCount) throw new Error('No hay frames suficientes para regenerar el video');
+  const createFrames = () => iterateSharedInterpolatedFrames(...interpolationArgs);
+  const renderSession = await createRenderSession(video, keyframes, renderConfig);
 
-  const framesDir = await renderFramesToDirectory(video, frames, renderConfig, onProgress);
+  let framesDir = null;
   try {
-    const { outputPath } = await encodeVideo(
-      framesDir,
-      frames.length,
-      renderConfig.speedMultiplier,
-      (encodeProgress) => {
-        const nextProgress = 75 + Math.round(encodeProgress * 24);
-        onProgress?.(nextProgress, 'generationFinalizing');
-      }
-    );
+    let outputPath;
+    try {
+      ({ outputPath } = await renderFramesDirectly(
+        renderSession,
+        createFrames,
+        frameCount,
+        renderConfig,
+        onProgress,
+      ));
+    } catch (streamingError) {
+      console.info('[video] Codificacion directa no disponible; usando fallback', streamingError);
+      framesDir = await renderFramesToDirectory(
+        renderSession,
+        createFrames,
+        frameCount,
+        renderConfig,
+        onProgress,
+      );
+      ({ outputPath } = await encodeVideo(
+        framesDir,
+        frameCount,
+        renderConfig.speedMultiplier,
+        (encodeProgress) => {
+          const nextProgress = 75 + Math.round(encodeProgress * 24);
+          onProgress?.(nextProgress, 'generationFinalizing');
+        },
+      ));
+    }
     let persistedVideo = null;
     if (persistVideo) {
       persistedVideo = await persistGeneratedVideo(outputPath, persistVideo);
@@ -188,7 +314,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     onProgress?.(100, 'generationComplete');
     return { outputPath, persistedVideo };
   } finally {
-    RNFS.unlink(framesDir).catch(() => {});
+    if (framesDir) RNFS.unlink(framesDir).catch(() => {});
   }
 }
 

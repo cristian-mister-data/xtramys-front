@@ -17,7 +17,6 @@ import {
   MdShield,
   MdClose,
   MdImage,
-  MdGroups,
   MdDescription,
   MdAnalytics,
   MdOpenInNew,
@@ -187,8 +186,12 @@ const CardActions = styled.div`
 const IconBtn = styled.button`
   width: 28px;
   height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
   border-radius: 50%;
   border: none;
+  appearance: none;
+  -webkit-appearance: none;
   background: ${({ theme }) => theme.colors.backgroundAlt};
   color: ${({ theme, $danger }) => ($danger ? theme.colors.error : theme.colors.text)};
   display: inline-flex;
@@ -199,6 +202,18 @@ const IconBtn = styled.button`
 
   &:hover {
     background: ${({ theme, $danger }) => ($danger ? theme.colors.errorSoft : theme.colors.border)};
+  }
+
+  svg {
+    display: block;
+    flex: 0 0 auto;
+    pointer-events: none;
+  }
+
+  html[data-platform='ios'] & {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
   }
 `;
 

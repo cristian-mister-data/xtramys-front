@@ -490,10 +490,11 @@ const ConnectorsRenderer = React.memo(
   ({ connectors, clones, imageWidth, imageHeight, viewMode }) => {
     // Calcular las posiciones de las l�neas bas�ndose en las posiciones de los elementos
     const lines = useMemo(() => {
+      const clonesById = new Map(clones.map((clone) => [clone.id, clone]));
       return connectors
         .map((connector) => {
-          const fromElement = clones.find((c) => c.id === connector.fromId);
-          const toElement = clones.find((c) => c.id === connector.toId);
+          const fromElement = clonesById.get(connector.fromId);
+          const toElement = clonesById.get(connector.toId);
           if (!fromElement || !toElement) return null;
 
           // Obtener coordenadas del centro de cada elemento
@@ -566,12 +567,14 @@ const ConnectorsRenderer = React.memo(
         return false;
       }
     }
+    if (prevProps.clones === nextProps.clones) return true;
 
-    // Comparar posiciones de los clones relevantes
     const relevantIds = new Set(prevProps.connectors.flatMap((c) => [c.fromId, c.toId]));
+    const previousClonesById = new Map(prevProps.clones.map((clone) => [clone.id, clone]));
+    const nextClonesById = new Map(nextProps.clones.map((clone) => [clone.id, clone]));
     for (const id of relevantIds) {
-      const prevClone = prevProps.clones.find((c) => c.id === id);
-      const nextClone = nextProps.clones.find((c) => c.id === id);
+      const prevClone = previousClonesById.get(id);
+      const nextClone = nextClonesById.get(id);
       if (!prevClone || !nextClone) return false;
       if (prevClone.xRatio !== nextClone.xRatio || prevClone.yRatio !== nextClone.yRatio) {
         return false;

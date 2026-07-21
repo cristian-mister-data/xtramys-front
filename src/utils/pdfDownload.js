@@ -1,6 +1,7 @@
 import { Platform, NativeModules } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { isNative, platform } from '@/platform/capacitor';
 
 const { SaveToDownloads } = NativeModules;
 const PDF_LOADING_ID = 'xtramys-pdf-loading-overlay';
@@ -112,8 +113,40 @@ async function fetchBlobFromUri(sourceUri) {
   return await r.blob();
 }
 
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
+    reader.readAsDataURL(blob);
+  });
+
+const safePdfName = (fileName) => {
+  const name = String(fileName || 'Xtramys').replace(/[\\/:*?"<>|]+/g, '-').trim();
+  const safeName = name || 'Xtramys';
+  return safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
+};
+
 export const savePdfToDownloads = async (sourceUri, fileName) => {
-  const fullFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+  const fullFileName = safePdfName(fileName);
+
+  if (isNative && platform === 'ios') {
+    try {
+      const blob = await fetchBlobFromUri(sourceUri);
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      await Filesystem.writeFile({
+        path: `Downloads/${fullFileName}`,
+        data: await blobToBase64(blob),
+        directory: Directory.Documents,
+        recursive: true,
+      });
+      hidePdfLoading();
+      return true;
+    } catch (e) {
+      console.error('[savePdfToDownloads:ios]', e);
+      return false;
+    }
+  }
 
   if (Platform.OS === 'web') {
     try {

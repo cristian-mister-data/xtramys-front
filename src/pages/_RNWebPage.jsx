@@ -65,6 +65,29 @@ const Frame = styled.div`
     border-color: transparent;
     box-shadow: none;
   }
+
+  html[data-native='true'] & {
+    width: calc(100% + 48px);
+    margin-inline: -24px;
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  @media (max-width: 1280px) {
+    html[data-native='true'] & {
+      width: calc(100% + 32px);
+      margin-inline: -16px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    html[data-native='true'] & {
+      width: calc(100% + 24px);
+      margin-inline: -12px;
+    }
+  }
 `;
 
 const PageStack = styled.div`
@@ -72,6 +95,8 @@ const PageStack = styled.div`
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   gap: 16px;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
@@ -82,6 +107,7 @@ const PageStack = styled.div`
 const InvertLayer = styled.div`
   flex: 1;
   width: 100%;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;

@@ -22,7 +22,14 @@ import {
   areAllPointsOutside,
 } from '../fields';
 import { TouchableOpacity, boardInteractionState } from './primitives';
-import { ALLOW_MULTI_ELEMENT_DRAG, isBoardCloneOutsideForDelete } from './geometry';
+import {
+  ALLOW_MULTI_ELEMENT_DRAG,
+  applyBoardDragSnapshot,
+  applyBoardDragState,
+  buildBoardDragState,
+  findBoardCloneIndex,
+  isBoardCloneOutsideForDelete,
+} from './geometry';
 import { ZINDEX_BASE_ICONS, acquireBoardDrag, isBoardDragOwner, releaseBoardDrag } from './config';
 import { styles } from './styles';
 export function useScreenDimensions() {
@@ -397,6 +404,8 @@ export const FreeTextTool = React.memo(
     const scale = isMobile ? baseScale * 1.35 : baseScale;
     const rafRef = useRef(null);
     const pendingUpdateRef = useRef(null);
+    const elementRef = useRef(null);
+    const pendingWebDragPositionRef = useRef(null);
     const pointerDownHandledAtRef = useRef(0);
     const dragKey = `text-${textObj.id}`;
 
@@ -535,6 +544,8 @@ export const FreeTextTool = React.memo(
           if (e.nativeEvent.state === State.BEGAN && !textObj.locked) {
             setDraggingOutside?.(false);
             if (!acquireBoardDrag(dragStart, dragKey)) return;
+            pendingWebDragPositionRef.current = null;
+            if (elementRef.current?.style) elementRef.current.style.willChange = 'transform';
             // Multi-drag support
             if (
               ALLOW_MULTI_ELEMENT_DRAG &&
@@ -542,26 +553,11 @@ export const FreeTextTool = React.memo(
               selectionInteractionMode === 'move' &&
               isMultiSelected
             ) {
-              const initialPositions = {};
-              selectedCloneIds.forEach((id) => {
-                const c = clones.find((cl) => cl.id === id);
-                if (!c) return;
-                if (c.points && Array.isArray(c.points)) {
-                  initialPositions[id] = c.points.map((p) => ({
-                    x: p.x,
-                    y: p.y,
-                  }));
-                } else {
-                  initialPositions[id] = {
-                    xRatio: c.xRatio,
-                    yRatio: c.yRatio,
-                  };
-                }
-              });
+              const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
               dragStart.current[dragKey] = {
                 multiSelect: true,
                 selectedIds: [...selectedCloneIds],
-                initialPositions,
+                ...dragSnapshotState,
               };
             } else {
               dragStart.current[dragKey] = {
@@ -598,6 +594,31 @@ export const FreeTextTool = React.memo(
               setClones(pendingUpdateRef.current);
               pendingUpdateRef.current = null;
             }
+            const pendingWebPosition = pendingWebDragPositionRef.current;
+            if (pendingWebPosition) {
+              const element = elementRef.current;
+              if (element?.style) {
+                element.style.left = `${textDisplayX + pendingWebPosition.dxDisplay}px`;
+                element.style.top = `${textDisplayY + pendingWebPosition.dyDisplay}px`;
+                element.style.transform = '';
+                element.style.willChange = '';
+              }
+              setClones((prev) => {
+                const correctIndex = findBoardCloneIndex(prev, textObj.id, idx);
+                if (correctIndex === -1) return prev;
+                const next = [...prev];
+                next[correctIndex] = {
+                  ...next[correctIndex],
+                  xRatio: pendingWebPosition.xRatio,
+                  yRatio: pendingWebPosition.yRatio,
+                };
+                return next;
+              });
+              pendingWebDragPositionRef.current = null;
+            } else if (elementRef.current?.style) {
+              elementRef.current.style.transform = '';
+              elementRef.current.style.willChange = '';
+            }
             // Verificar si elementos est�n fuera del campo y eliminarlos
             if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
               const start = dragStart.current[dragKey];
@@ -606,7 +627,7 @@ export const FreeTextTool = React.memo(
                 setClones((prev) => {
                   const toDelete = [];
                   const remaining = prev.filter((c) => {
-                    if (!start.selectedIds.includes(c.id) || c.locked) return true;
+                    if (!start.selectedIdsSet.has(c.id) || c.locked) return true;
                     let outside = false;
                     if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
                       outside = areAllPointsOutside(c.points, viewMode, imageWidth, imageHeight);
@@ -656,9 +677,11 @@ export const FreeTextTool = React.memo(
           ) {
             const base = dragStart.current[dragKey];
             // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
+            const dxDisplay = e.nativeEvent.translationX / zoomLevel;
+            const dyDisplay = e.nativeEvent.translationY / zoomLevel;
             const { dxRatio: dx, dyRatio: dy } = deltaToRatio(
-              e.nativeEvent.translationX / zoomLevel,
-              e.nativeEvent.translationY / zoomLevel,
+              dxDisplay,
+              dyDisplay,
               viewMode,
               imageWidth,
               imageHeight,
@@ -671,41 +694,19 @@ export const FreeTextTool = React.memo(
               const anyOutside = base.selectedIds.some((id) => {
                 const init = base.initialPositions[id];
                 if (!init) return false;
-                const candidate = Array.isArray(init)
-                  ? {
-                      points: init.map((pt) => ({
-                        x: pt.x + dx,
-                        y: pt.y + dy,
-                      })),
-                    }
-                  : {
-                      xRatio: (init.xRatio || 0) + dx,
-                      yRatio: (init.yRatio || 0) + dy,
-                    };
+                const candidate = applyBoardDragSnapshot(
+                  {},
+                  init,
+                  dx,
+                  dy,
+                  dxDisplay,
+                  dyDisplay,
+                );
                 return isBoardCloneOutsideForDelete(candidate, viewMode, imageWidth, imageHeight);
               });
               setDraggingOutside?.(anyOutside);
               scheduleTextDragUpdate((prev) =>
-                prev.map((c) => {
-                  if (!base.selectedIds.includes(c.id)) return c;
-                  const init = base.initialPositions[c.id];
-                  if (!init) return c;
-                  if (Array.isArray(init)) {
-                    return {
-                      ...c,
-                      // Permitir valores fuera de 0-1 para que el elemento pueda salir del campo
-                      points: init.map((pt) => ({
-                        x: pt.x + dx,
-                        y: pt.y + dy,
-                      })),
-                    };
-                  }
-                  return {
-                    ...c,
-                    xRatio: (init.xRatio || 0) + dx,
-                    yRatio: (init.yRatio || 0) + dy,
-                  };
-                }),
+                applyBoardDragState(prev, base, dx, dy, dxDisplay, dyDisplay),
               );
               return;
             }
@@ -722,8 +723,18 @@ export const FreeTextTool = React.memo(
             if (inDeleteZone !== isNearDeleteZone) {
               setIsNearDeleteZone(inDeleteZone);
             }
+            if (Platform.OS === 'web' && elementRef.current?.style) {
+              pendingWebDragPositionRef.current = {
+                xRatio: newX,
+                yRatio: newY,
+                dxDisplay,
+                dyDisplay,
+              };
+              elementRef.current.style.transform = `translate3d(${dxDisplay}px, ${dyDisplay}px, 0)`;
+              return;
+            }
             scheduleTextDragUpdate((prev) => {
-              const correctIndex = prev.findIndex((c) => c.id === textObj.id);
+              const correctIndex = findBoardCloneIndex(prev, textObj.id, idx);
               if (correctIndex === -1) return prev;
               const next = [...prev];
               next[correctIndex] = {
@@ -737,6 +748,8 @@ export const FreeTextTool = React.memo(
         }}
       >
         <View
+          ref={elementRef}
+          dataSet={{ boardElementId: textObj.id, boardElementType: textObj.type }}
           key={textObj.id}
           onPointerDown={handleTextPointerDown}
           onMouseDown={handleTextPointerDown}

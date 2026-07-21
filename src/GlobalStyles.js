@@ -46,6 +46,12 @@ export const GlobalStyles = createGlobalStyle`
     touch-action: manipulation;
   }
 
+  html[data-platform="ios"] button svg {
+    display: block;
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
   #root {
     overflow-x: clip;
   }

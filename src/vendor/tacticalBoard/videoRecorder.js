@@ -51,10 +51,15 @@ import {
   warmUpFFmpeg,
   createStreamingVideoEncoder,
 } from '@/utils/videoUtils';
-import { renderFrameToCanvas, getVideoDimensions } from '@/utils/videoCanvasRenderer';
 import {
-  buildInterpolatedFrames as buildSharedInterpolatedFrames,
+  createVideoRenderCache,
+  renderFrameToCanvas,
+  getVideoDimensions,
+} from '@/utils/videoCanvasRenderer';
+import {
+  getInterpolatedFrameCount,
   hydrateKeyframePlayerStyles as hydrateSharedKeyframePlayerStyles,
+  iterateInterpolatedFrames as iterateSharedInterpolatedFrames,
 } from '@/utils/videoFrameBuilder';
 import { getAspectForView, ratioToDisplay } from './fields';
 import { SPEED_TO_FPS } from '@/constants/video';
@@ -89,20 +94,20 @@ const VIDEO_CAPTURE_FORMAT = 'jpg';
 const VIDEO_CAPTURE_EXTENSION = 'jpg';
 const VIDEO_CAPTURE_QUALITY = 0.97;
 const VIDEO_CAPTURE_MAX_PIXEL_RATIO = 4;
-const STREAMING_ENCODE_BACKLOG = 6;
 
-const yieldForMobilePaint = () => new Promise((resolve) => {
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    resolve();
-  };
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => setTimeout(finish, 0));
-  }
-  setTimeout(finish, 32);
-});
+const yieldForMobilePaint = () =>
+  new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => setTimeout(finish, 0));
+    }
+    setTimeout(finish, 32);
+  });
 
 const isNativeAndroid = () =>
   typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android';
@@ -125,47 +130,6 @@ const captureVideoFrame = (canvas) => {
     );
   });
 };
-
-const PLAYER_VISUAL_FIELDS = [
-  'color',
-  'numberColor',
-  'backgroundColor',
-  'isNeutral',
-  'shape',
-  'hasStripes',
-  'stripeColor',
-  'kitPattern',
-  'kitSecondaryColor',
-  'hasBib',
-  'bibColor',
-  'goalkeeperStripeColor',
-];
-
-function hydrateKeyframePlayerStyles(keyframes, currentElements = []) {
-  const stylesById = new Map(
-    currentElements
-      .filter((el) => el?.type === 'player' && el.id)
-      .map((el) => [el.id, el]),
-  );
-
-  return (keyframes || []).map((kf) => ({
-    ...kf,
-    elements: (kf.elements || []).map((el) => {
-      if (el?.type !== 'player') return el;
-      const current = stylesById.get(el.id);
-      const next = { ...el };
-      if (current) {
-        PLAYER_VISUAL_FIELDS.forEach((key) => {
-          if (next[key] === undefined && current[key] !== undefined) next[key] = current[key];
-        });
-      }
-      if (next.number === 'N' || next.id === 'neutral-player' || next.idBase === 'neutral-player') {
-        next.isNeutral = true;
-      }
-      return next;
-    }),
-  }));
-}
 
 // ============================================================
 // COMPONENTE AISLADO DE PREVIEW — React.memo + su propio player
@@ -236,377 +200,6 @@ const VideoPreviewScreen = React.memo(function VideoPreviewScreen({
 // ============================================================
 // INTERPOLACIÓN DE KEYFRAMES PARA GENERACIÓN CLIENT-SIDE
 // ============================================================
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function lerp(a, b, t) {
-  if (a === undefined || b === undefined) return b ?? a;
-  return a + (b - a) * t;
-}
-
-function lerpPoint(pA, pB, t) {
-  return { x: lerp(pA.x, pB.x, t), y: lerp(pA.y, pB.y, t) };
-}
-
-function lerpNumericProp(out, from, to, prop, t) {
-  if (typeof from[prop] === 'number' && typeof to[prop] === 'number') {
-    out[prop] = lerp(from[prop], to[prop], t);
-  }
-}
-
-function lerpPointArray(fromPoints, toPoints, t) {
-  if (!Array.isArray(fromPoints) || !Array.isArray(toPoints)) return undefined;
-  const minLen = Math.min(fromPoints.length, toPoints.length);
-  const out = [];
-  for (let i = 0; i < minLen; i++) {
-    out.push(lerpPoint(fromPoints[i], toPoints[i], t));
-  }
-  const longer = fromPoints.length >= toPoints.length ? fromPoints : toPoints;
-  for (let i = minLen; i < longer.length; i++) {
-    out.push({ ...longer[i] });
-  }
-  return out;
-}
-
-// Interpola dos snapshots de un mismo elemento
-function interpolateElement(from, to, t) {
-  const out = { ...to };
-
-  [
-    'xRatio',
-    'yRatio',
-    'x',
-    'y',
-    'x1',
-    'y1',
-    'x2',
-    'y2',
-    'width',
-    'height',
-    'radius',
-    'size',
-    'baseSize',
-    'fontSize',
-    'baseFontSize',
-    'textX',
-    'textY',
-    'textMaxWidth',
-    'thickness',
-    'baseThickness',
-    'rotation',
-  ].forEach((prop) => lerpNumericProp(out, from, to, prop, t));
-
-  const pointsRatio = lerpPointArray(from.pointsRatio, to.pointsRatio, t);
-  if (pointsRatio) out.pointsRatio = pointsRatio;
-
-  const points = lerpPointArray(from.points, to.points, t);
-  if (points) out.points = points;
-
-  return out;
-}
-
-// Aplica un efecto parabólico al balón durante el segmento aire.
-// `progress` es el progreso lineal (0..1) en el segmento. El desplazamiento
-// del balón usa ese progreso lineal y la altura usa una parábola simple.
-// Devuelve {ballArc, shadow} con la altura/escala del balón y el snapshot de
-// la sombra para renderizarla detrás. Si no es trayectoria aérea, devuelve null.
-function applyBallAirEffect(ballElement, fromBall, toBall, linearProgress) {
-  if (!ballElement || !fromBall || !toBall) return null;
-  const dx = (toBall.x || 0) - (fromBall.x || 0);
-  const dy = (toBall.y || 0) - (fromBall.y || 0);
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  const ballSize = ballElement.size || (IS_MOBILE ? 24 : 18);
-  const arcHeight = Math.max(ballSize * 0.9, Math.min(distance * 0.32, ballSize * 3.2));
-  const heightProgress = 4 * linearProgress * (1 - linearProgress);
-  const airborne = heightProgress > 0.025 && linearProgress > 0.015 && linearProgress < 0.985;
-  const scaleBoost = 1 + heightProgress * 0.08;
-
-  if (!airborne) {
-    return {
-      ballYOffset: 0,
-      ballScale: scaleBoost,
-      shadow: null,
-    };
-  }
-
-  const shadowOpacity = Math.min(0.48, 0.08 + heightProgress * 0.38);
-  const shadowScale = Math.max(0.48, 1.06 - heightProgress * 0.52);
-
-  return {
-    ballYOffset: -arcHeight * heightProgress,
-    ballScale: scaleBoost,
-    shadow: {
-      id: `${ballElement.id}__shadow`,
-      type: 'ball-shadow',
-      x: ballElement.x,
-      y: ballElement.y, // Suelo: posición real, sin levantar
-      size: ballSize,
-      opacity: shadowOpacity,
-      shadowScale,
-      zIndex: (ballElement.zIndex || 200) - 1,
-    },
-  };
-}
-
-function getBallTrajectoryForSegment(keyframe, ballId) {
-  return keyframe?.ballTrajectoryById?.[ballId] || keyframe?.ballTrajectoryType || 'ground';
-}
-
-const BALL_TRAJECTORY_MIN_MOVE = 0.006;
-const DRAW_REVEAL_TYPES = new Set(['straight-line', 'straight-arrow', 'curve-line', 'curve-arrow', 'circle']);
-
-function getBallSnapshotRatio(ball) {
-  if (!ball) return null;
-  if (typeof ball.xRatio === 'number' && typeof ball.yRatio === 'number') {
-    return { x: ball.xRatio, y: ball.yRatio };
-  }
-  return null;
-}
-
-function getBallZone(point) {
-  if (!point) return i18n.t('videoRecorder.ballZoneUnlocated', 'zona sin ubicar');
-  const sideMap = { left: 'izquierda', center: 'central', right: 'derecha' };
-  const laneMap = { high: 'alta', mid: 'media', low: 'baja' };
-  const side = point.x < 0.33 ? 'left' : point.x > 0.67 ? 'right' : 'center';
-  const lane = point.y < 0.33 ? 'high' : point.y > 0.67 ? 'low' : 'mid';
-  const fallback = `zona ${sideMap[side]} ${laneMap[lane]}`;
-  return i18n.t(`videoRecorder.ballZone.${side}_${lane}`, fallback);
-}
-
-function getBallMovementDistance(fromBall, toBall) {
-  const from = getBallSnapshotRatio(fromBall);
-  const to = getBallSnapshotRatio(toBall);
-  if (!from || !to) return 0;
-  return Math.hypot(to.x - from.x, to.y - from.y);
-}
-
-function getBallMovementTitle(fromBall, toBall) {
-  const explicitLabel = toBall?.name || toBall?.label || fromBall?.name || fromBall?.label;
-  if (explicitLabel) return explicitLabel;
-  return `${getBallZone(getBallSnapshotRatio(fromBall))} -> ${getBallZone(getBallSnapshotRatio(toBall))}`;
-}
-
-function getSegmentBallMovements(keyframes, index) {
-  const fromKf = keyframes?.[index];
-  const toKf = keyframes?.[index + 1];
-  if (!fromKf || !toKf) return [];
-  const toBalls = new Map(
-    (toKf.elements || []).filter((el) => el.type === 'ball').map((ball) => [ball.id, ball]),
-  );
-  return (fromKf.elements || [])
-    .filter((ball) => ball.type === 'ball' && toBalls.has(ball.id))
-    .map((fromBall) => {
-      const toBall = toBalls.get(fromBall.id);
-      return {
-        id: fromBall.id,
-        fromBall,
-        toBall,
-        moved: getBallMovementDistance(fromBall, toBall) >= BALL_TRAJECTORY_MIN_MOVE,
-        trajectory: getBallTrajectoryForSegment(fromKf, fromBall.id),
-      };
-    })
-    .filter((movement) => movement.moved);
-}
-
-// Genera todos los frames interpolados entre todos los keyframes
-function buildInterpolatedFrames(
-  keyframes,
-  fps,
-  moveDuration,
-  holdDuration,
-  speedMultiplier,
-  extraDurationEnd,
-) {
-  if (!keyframes || keyframes.length < 2) return [];
-
-  const framesPerTransition = Math.max(2, Math.round((fps * moveDuration) / speedMultiplier));
-  const holdFrames = Math.max(1, Math.round((fps * holdDuration) / speedMultiplier));
-  const extraFrames = Math.round(fps * extraDurationEnd);
-  const frames = [];
-
-  // Control de rotación acumulada de los balones para movimiento continuo
-  const ballRotations = new Map();
-  const firstKf = keyframes[0];
-  (firstKf.elements || []).forEach((e) => {
-    if (e.type === 'ball') {
-      ballRotations.set(e.id, e.rotation || 0);
-    }
-  });
-
-  // Hold inicial en la primera posición (misma duración que holdDuration)
-  const initialFrames = framesPerTransition;
-  for (let h = 0; h < initialFrames; h++) {
-    const initialProgress = initialFrames > 1 ? easeInOutCubic(h / (initialFrames - 1)) : 1;
-    const elementsWithUpdatedRotations = (firstKf.elements || []).map((el) => {
-      if (el.type === 'ball') {
-        return { ...el, rotation: ballRotations.get(el.id) || 0 };
-      }
-      if (DRAW_REVEAL_TYPES.has(el.type)) {
-        return { ...el, _drawProgress: initialProgress };
-      }
-      return el;
-    });
-    frames.push({ elements: elementsWithUpdatedRotations, connectors: firstKf.connectors || [] });
-  }
-
-  for (let ki = 0; ki < keyframes.length; ki++) {
-    const kf = keyframes[ki];
-
-    // Interpolate to next keyframe (movimiento fluido)
-    if (ki < keyframes.length - 1) {
-      const fromEls = kf.elements || [];
-      const toEls = keyframes[ki + 1].elements || [];
-      const toConnectors = keyframes[ki + 1].connectors || kf.connectors || [];
-
-      // Build id→element maps
-      const fromMap = new Map(fromEls.map((e) => [e.id, e]));
-      const toMap = new Map(toEls.map((e) => [e.id, e]));
-      const allIds = new Set([...fromMap.keys(), ...toMap.keys()]);
-
-      // Calcular la diferencia de rotación de cada balón en esta transición
-      const segmentBallDeltas = new Map();
-      for (const id of allIds) {
-        const fe = fromMap.get(id);
-        const te = toMap.get(id);
-        if (fe && te && fe.type === 'ball' && te.type === 'ball') {
-          const dx =
-            te.x !== undefined && fe.x !== undefined
-              ? te.x - fe.x
-              : ((te.xRatio || 0) - (fe.xRatio || 0)) * 1000;
-          const dy =
-            te.y !== undefined && fe.y !== undefined
-              ? te.y - fe.y
-              : ((te.yRatio || 0) - (fe.yRatio || 0)) * 1000;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          let sign = 1;
-          if (Math.abs(dx) > 0.01) {
-            sign = dx > 0 ? 1 : -1;
-          } else if (Math.abs(dy) > 0.01) {
-            sign = dy > 0 ? 1 : -1;
-          }
-          const factor = 1.0; // grados por píxel nominal (rotación lenta)
-          const deltaRot = dist * sign * factor;
-          segmentBallDeltas.set(id, deltaRot);
-        }
-      }
-
-      for (let f = 1; f <= framesPerTransition; f++) {
-        const linearProgress = f / framesPerTransition;
-        const t = easeInOutCubic(linearProgress);
-        const interpolated = [];
-        const airShadows = [];
-
-        for (const id of allIds) {
-          const fe = fromMap.get(id);
-          const te = toMap.get(id);
-          const isAirBall =
-            fe?.type === 'ball' &&
-            te?.type === 'ball' &&
-            getBallTrajectoryForSegment(kf, id) === 'air';
-          let interpEl;
-          if (fe && te) {
-            interpEl = interpolateElement(fe, te, isAirBall ? linearProgress : t);
-          } else if (!fe && te) {
-            interpEl = { ...te };
-            if (DRAW_REVEAL_TYPES.has(te.type)) {
-              interpEl._drawProgress = t;
-            }
-          } else {
-            continue;
-          }
-
-          // Inyectar rotación acumulada en el balón
-          if (fe && te && fe.type === 'ball' && te.type === 'ball') {
-            const startRot = ballRotations.get(id) || 0;
-            const deltaRot = segmentBallDeltas.get(id) || 0;
-            const currentProgress = isAirBall ? linearProgress : t;
-            interpEl.rotation = startRot + deltaRot * currentProgress;
-          }
-
-          if (isAirBall) {
-            const airEffect = applyBallAirEffect(interpEl, fe, te, linearProgress);
-            if (airEffect) {
-              const groundX = interpEl.x;
-              const groundY = interpEl.y;
-              const groundXRatio = interpEl.xRatio;
-              const groundYRatio = interpEl.yRatio;
-              // Calcular nuevo yRatio (snapshotToClone prioriza ratio sobre y).
-              const refH =
-                typeof groundY === 'number' &&
-                typeof groundYRatio === 'number' &&
-                groundYRatio !== 0
-                  ? groundY / groundYRatio
-                  : null;
-              const newY = (groundY || 0) + airEffect.ballYOffset;
-              const newYRatio = refH ? newY / refH : groundYRatio;
-              interpEl = {
-                ...interpEl,
-                y: newY,
-                yRatio: newYRatio,
-                size: (interpEl.size || (IS_MOBILE ? 24 : 18)) * airEffect.ballScale,
-                baseSize:
-                  (interpEl.baseSize || interpEl.size || (IS_MOBILE ? 24 : 18)) *
-                  airEffect.ballScale,
-                zIndex: (interpEl.zIndex || 200) + 50,
-                isAirborne: true,
-              };
-              if (airEffect.shadow) {
-                airEffect.shadow.x = groundX;
-                airEffect.shadow.y = groundY;
-                airEffect.shadow.xRatio = groundXRatio;
-                airEffect.shadow.yRatio = groundYRatio;
-                airEffect.shadow.baseSize = airEffect.shadow.size;
-                airShadows.push(airEffect.shadow);
-              }
-            }
-          }
-          interpolated.push(interpEl);
-        }
-
-        // Interpolar conectores: usar los del destino para la segunda mitad
-        const connectors = t < 0.5 ? kf.connectors || [] : toConnectors;
-        frames.push({ elements: [...airShadows, ...interpolated], connectors });
-      }
-
-      // Actualizar rotaciones acumuladas al final del segmento
-      for (const [id, deltaRot] of segmentBallDeltas.entries()) {
-        const prevRot = ballRotations.get(id) || 0;
-        ballRotations.set(id, prevRot + deltaRot);
-      }
-
-      // Hold: pausa breve en el punto de destino
-      const destKf = keyframes[ki + 1];
-      for (let h = 0; h < holdFrames; h++) {
-        const elementsWithUpdatedRotations = (destKf.elements || []).map((el) => {
-          if (el.type === 'ball') {
-            return { ...el, rotation: ballRotations.get(el.id) || 0 };
-          }
-          return el;
-        });
-        frames.push({
-          elements: elementsWithUpdatedRotations,
-          connectors: destKf.connectors || [],
-        });
-      }
-    }
-  }
-
-  // Extra frames al final (mantener última posición)
-  const lastKf = keyframes[keyframes.length - 1];
-  for (let e = 0; e < extraFrames; e++) {
-    const elementsWithUpdatedRotations = (lastKf.elements || []).map((el) => {
-      if (el.type === 'ball') {
-        return { ...el, rotation: ballRotations.get(el.id) || 0 };
-      }
-      return el;
-    });
-    frames.push({ elements: elementsWithUpdatedRotations, connectors: lastKf.connectors || [] });
-  }
-
-  return frames;
-}
-
 // ============================================================
 // NORMALIZACIÓN DE KEYFRAMES PARA SERVIDOR
 // ============================================================
@@ -615,7 +208,13 @@ function buildInterpolatedFrames(
 // los keyframes (viejos de BD + nuevos capturados) usen el mismo sistema
 // de coordenadas, independientemente del dispositivo donde se capturaron.
 // ============================================================
-function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidth = refWidth, textRefHeight = refHeight) {
+function normalizeKeyframesForServer(
+  keyframes,
+  refWidth,
+  refHeight,
+  textRefWidth = refWidth,
+  textRefHeight = refHeight,
+) {
   if (!keyframes || !Array.isArray(keyframes)) return [];
 
   const scaleFactor = Math.min(refWidth, refHeight) / 500;
@@ -680,8 +279,8 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidt
             x: pt.x * refWidth,
             y: pt.y * refHeight,
           }));
-          norm.imageWidth = refWidth;
-          norm.imageHeight = refHeight;
+          norm.imageWidth ||= refWidth;
+          norm.imageHeight ||= refHeight;
         }
       }
 
@@ -704,19 +303,31 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidt
           norm.textX = norm.textX * (textRefWidth / previousTextWidth);
         } else {
           norm.textX =
-            norm.xRatio !== undefined ? norm.xRatio * textRefWidth : norm.x !== undefined ? norm.x : 0;
+            norm.xRatio !== undefined
+              ? norm.xRatio * textRefWidth
+              : norm.x !== undefined
+                ? norm.x
+                : 0;
         }
         if (norm.textY !== undefined && previousTextHeight) {
           norm.textY = norm.textY * (textRefHeight / previousTextHeight);
         } else {
           norm.textY =
-            norm.yRatio !== undefined ? norm.yRatio * textRefHeight : norm.y !== undefined ? norm.y : 0;
+            norm.yRatio !== undefined
+              ? norm.yRatio * textRefHeight
+              : norm.y !== undefined
+                ? norm.y
+                : 0;
         }
         if (norm.textMaxWidth !== undefined && previousTextWidth) {
           norm.textMaxWidth = norm.textMaxWidth * (textRefWidth / previousTextWidth);
         } else {
           const textX =
-            norm.xRatio !== undefined ? norm.xRatio * textRefWidth : norm.x !== undefined ? norm.x : 0;
+            norm.xRatio !== undefined
+              ? norm.xRatio * textRefWidth
+              : norm.x !== undefined
+                ? norm.x
+                : 0;
           norm.textMaxWidth = Math.max(40, textRefWidth - textX - 8);
         }
       }
@@ -726,9 +337,11 @@ function normalizeKeyframesForServer(keyframes, refWidth, refHeight, textRefWidt
   }));
 }
 
-export default function VideoRecorder({
+function VideoRecorder({
   elements,
   connectors = [], // Conectores entre elementos
+  elementsRef = null,
+  connectorsRef = null,
   fieldImage,
   onClose,
   fieldWidth,
@@ -753,6 +366,8 @@ export default function VideoRecorder({
   estrategiaId = null, // ID de la estrategia (opcional)
   showPhotos = false, // Mostrar fotos de jugadores en lugar de números
   playersWithNumber = true, // Mostrar números en los jugadores
+  differentiateGoalkeeper = true,
+  goalkeeperStripeColor = '#ffffff',
   // Props para modo edición de video existente
   isEditingVideo = false, // Si estamos editando un video existente
   editingVideoId = null, // ID del video que estamos editando
@@ -773,6 +388,14 @@ export default function VideoRecorder({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const user = useSelector((state) => state.usuario.user);
+  const getCurrentElements = useCallback(
+    () => elementsRef?.current || elements || [],
+    [elements, elementsRef],
+  );
+  const getCurrentConnectors = useCallback(
+    () => connectorsRef?.current || connectors || [],
+    [connectors, connectorsRef],
+  );
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewingBoard, setIsPreviewingBoard] = useState(false);
@@ -921,20 +544,23 @@ export default function VideoRecorder({
 
   const getPlaybackFrames = useCallback(() => {
     const fps = SPEED_TO_FPS[videoSpeed] || 30;
-    const styledKeyframes = hydrateSharedKeyframePlayerStyles(keyframes, elements);
+    const styledKeyframes = hydrateSharedKeyframePlayerStyles(keyframes, getCurrentElements());
+    const interpolationArgs = [
+      styledKeyframes,
+      fps,
+      0.9,
+      0.1,
+      videoSpeed,
+      0.5,
+      IS_MOBILE ? 24 : 18,
+    ];
     return {
       fps,
-      frames: buildSharedInterpolatedFrames(
-        styledKeyframes,
-        fps,
-        0.9,
-        0.1,
-        videoSpeed,
-        0.5,
-        IS_MOBILE ? 24 : 18,
-      ),
+      frameCount: getInterpolatedFrameCount(...interpolationArgs),
+      createFrames: () => iterateSharedInterpolatedFrames(...interpolationArgs),
+      styledKeyframes,
     };
-  }, [elements, keyframes, videoSpeed]);
+  }, [getCurrentElements, keyframes, videoSpeed]);
 
   // Función para mostrar notificación
   const showNotification = (message, type = 'success') => {
@@ -999,7 +625,10 @@ export default function VideoRecorder({
 
           fieldImageData = `data:image/png;base64,${base64Image}`;
         } catch (captureError) {
-          console.warn('No se pudo capturar el campo base; se usará el renderer del video.', captureError);
+          console.warn(
+            'No se pudo capturar el campo base; se usará el renderer del video.',
+            captureError,
+          );
           fieldImageData = '';
         }
       }
@@ -1010,7 +639,7 @@ export default function VideoRecorder({
       }
 
       // Capturar datos de elementos para interpolación - ULTRA OPTIMIZADO
-      const elementsSnapshot = elements
+      const elementsSnapshot = getCurrentElements()
         .map((elem) => {
           // SOLO guardar propiedades esenciales mínimas
           const snapshot = {
@@ -1056,7 +685,8 @@ export default function VideoRecorder({
               if (elem.bibColor) snapshot.bibColor = elem.bibColor;
               if (elem.displayLabel) snapshot.displayLabel = elem.displayLabel;
               if (elem.ownerType) snapshot.ownerType = elem.ownerType;
-              if (elem.preserveVisualStyle !== undefined) snapshot.preserveVisualStyle = elem.preserveVisualStyle;
+              if (elem.preserveVisualStyle !== undefined)
+                snapshot.preserveVisualStyle = elem.preserveVisualStyle;
               // Añadir datos de texto para jugadores con nombre
               if (elem.playerData) {
                 snapshot.playerData = {
@@ -1069,7 +699,7 @@ export default function VideoRecorder({
                 snapshot.textBackgroundColor = elem.textBackgroundColor || '#ffffff';
               }
               const playerPhoto = elem.playerData?.foto
-                ? (elem.photoUrl || cdnUrl(elem.playerData.foto))
+                ? elem.photoUrl || cdnUrl(elem.playerData.foto)
                 : '';
               if (playerPhoto) snapshot.photoUrl = playerPhoto;
               // Añadir configuración de mostrar fotos y números
@@ -1080,11 +710,13 @@ export default function VideoRecorder({
                 elem.playerData?.posicion === 'portero' ||
                 elem.playerData?.position === 'goalkeeper' ||
                 elem.playerData?.demarcacion === 'POR';
-              snapshot.isGoalkeeper = elem.preserveVisualStyle ? elem.isGoalkeeper === true : elem.isGoalkeeper || inferredGoalkeeper;
-              if (elem.differentiateGoalkeeper !== undefined)
-                snapshot.differentiateGoalkeeper = elem.differentiateGoalkeeper;
-              if (elem.goalkeeperStripeColor)
-                snapshot.goalkeeperStripeColor = elem.goalkeeperStripeColor;
+              snapshot.isGoalkeeper = elem.preserveVisualStyle
+                ? elem.isGoalkeeper === true
+                : elem.isGoalkeeper || inferredGoalkeeper;
+              snapshot.differentiateGoalkeeper =
+                elem.differentiateGoalkeeper ?? differentiateGoalkeeper;
+              snapshot.goalkeeperStripeColor =
+                elem.goalkeeperStripeColor || goalkeeperStripeColor;
             } else if (elem.type === 'staff') {
               snapshot.staffRole = elem.staffRole;
               snapshot.displayLabel = elem.displayLabel; // Iniciales (E1, E2, PF, etc.)
@@ -1112,6 +744,8 @@ export default function VideoRecorder({
 
           // Para líneas/flechas con points, convertir a coordenadas absolutas
           if (elem.points && elem.points.length >= 2) {
+            snapshot.imageWidth = elem.imageWidth || fieldDisplayWidth || fieldWidth;
+            snapshot.imageHeight = elem.imageHeight || fieldDisplayHeight || fieldHeight;
             if (elem.type === 'straight-arrow' || elem.type === 'straight-line') {
               // Líneas rectas: solo necesitan punto inicial y final
               // Guardar ratios originales para restauración exacta
@@ -1242,9 +876,6 @@ export default function VideoRecorder({
               snapshot.lineType = elem.lineType || 'solid';
               snapshot.dotSize = elem.dotSize ?? 2;
               snapshot.dotSpacing = elem.dotSpacing ?? 4;
-              // Guardar dimensiones originales para renderizado correcto
-              snapshot.imageWidth = fieldWidth;
-              snapshot.imageHeight = fieldHeight;
             }
           }
 
@@ -1308,7 +939,10 @@ export default function VideoRecorder({
           }
           if (snapshot.type === 'circle') {
             if (
-              (!snapshot.width || snapshot.width <= 0 || !snapshot.height || snapshot.height <= 0) &&
+              (!snapshot.width ||
+                snapshot.width <= 0 ||
+                !snapshot.height ||
+                snapshot.height <= 0) &&
               (!snapshot.radius || snapshot.radius <= 0)
             ) {
               return false;
@@ -1319,7 +953,7 @@ export default function VideoRecorder({
         });
 
       // Capturar conectores - las líneas que conectan elementos
-      const connectorsSnapshot = connectors.map((connector) => ({
+      const connectorsSnapshot = getCurrentConnectors().map((connector) => ({
         id: connector.id,
         fromId: connector.fromId,
         toId: connector.toId,
@@ -1370,9 +1004,6 @@ export default function VideoRecorder({
     }
 
     let streamingEncoder = null;
-    let streamingChain = Promise.resolve();
-    let streamingBacklog = 0;
-    let streamingError = null;
 
     try {
       setIsGenerating(true);
@@ -1382,9 +1013,9 @@ export default function VideoRecorder({
       videoThumbnailRef.current = null;
       setVideoThumbnail(null);
 
-      const { fps, frames: allFrames } = getPlaybackFrames();
+      const { frameCount, createFrames, styledKeyframes } = getPlaybackFrames();
 
-      if (allFrames.length === 0) {
+      if (frameCount === 0) {
         throw new Error('No se pudieron generar frames');
       }
 
@@ -1400,6 +1031,9 @@ export default function VideoRecorder({
       canvas.width = canvasW;
       canvas.height = canvasH;
       const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+      const renderCache = createVideoRenderCache();
 
       // Cargar imagen del campo como fondo
       let fieldBgImage = null;
@@ -1428,8 +1062,8 @@ export default function VideoRecorder({
       // Cargar todas las fotos de los jugadores antes de empezar
       const playerPhotos = {};
       const uniquePhotoUrls = new Set();
-      allFrames.forEach((frame) => {
-        (frame.elements || []).forEach((elem) => {
+      styledKeyframes.forEach((keyframe) => {
+        (keyframe.elements || []).forEach((elem) => {
           const photoSource = elem.photoUrl || elem.playerData?.foto;
           if (elem.type === 'player' && photoSource) {
             uniquePhotoUrls.add(photoSource);
@@ -1466,10 +1100,16 @@ export default function VideoRecorder({
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
 
-      const totalFrames = allFrames.length;
+      const totalFrames = frameCount;
       let capturedFrames = 0;
       let encodedFrames = 0;
       let lastLinearProgress = 0;
+      let lastGenerationYieldAt = performance.now();
+      const yieldForGenerationPaint = async (force = false) => {
+        if (!force && performance.now() - lastGenerationYieldAt < 50) return;
+        await yieldForMobilePaint();
+        lastGenerationYieldAt = performance.now();
+      };
       const updateLinearProgress = () => {
         const totalWork = Math.max(1, totalFrames * 2);
         const completedWork = Math.min(totalWork, capturedFrames + encodedFrames);
@@ -1480,7 +1120,9 @@ export default function VideoRecorder({
       };
 
       const disableStreamingEncoder = (streamingErrorToReport) => {
-        if (!String(streamingErrorToReport?.message || '').includes('H.264 WebCodecs no soportado')) {
+        if (
+          !String(streamingErrorToReport?.message || '').includes('H.264 WebCodecs no soportado')
+        ) {
           console.info(
             '[videoRecorder] Streaming WebCodecs falló, se usara fallback al final',
             streamingErrorToReport,
@@ -1489,32 +1131,6 @@ export default function VideoRecorder({
         streamingEncoder?.abort?.();
         streamingEncoder = null;
         encodedFrames = 0;
-        streamingError = null;
-      };
-
-      const waitStreamingChain = (message) => Promise.race([
-        streamingChain,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(message)), 4000)),
-      ]);
-
-      const enqueueStreamingFrame = async (frameCapture, frameIndex) => {
-        if (!streamingEncoder || streamingError) return;
-        streamingBacklog += 1;
-        streamingChain = streamingChain
-          .then(() => streamingEncoder.addFrame(frameCapture, frameIndex))
-          .catch((error) => {
-            streamingError = error;
-          });
-
-        if (streamingBacklog >= STREAMING_ENCODE_BACKLOG) {
-          try {
-            await waitStreamingChain('Streaming WebCodecs bloqueado');
-          } catch (error) {
-            streamingError = error;
-          }
-          streamingBacklog = 0;
-          if (streamingError) disableStreamingEncoder(streamingError);
-        }
       };
 
       if (!isNativeAndroid()) {
@@ -1538,73 +1154,118 @@ export default function VideoRecorder({
 
       setGenerationPhase('generationCapturing');
 
-      // 4. Renderizar cada frame en canvas y capturar como blob
-      for (let i = 0; i < totalFrames; i++) {
-        if (generationCancelledRef.current) {
-          streamingEncoder?.abort?.();
-          RNFS.unlink(framesDir).catch(() => {});
-          setGenerationProgress(0);
-          return;
-        }
+      const renderVideoFrame = (frame) => {
+        renderFrameToCanvas(
+          ctx,
+          canvasW,
+          canvasH,
+          frame.elements,
+          frame.connectors,
+          fieldBgImage,
+          { playerPhotos, playersWithNumber, showPhotos, viewMode, renderCache },
+        );
+      };
 
-        // Yield to the browser every 4 frames to keep mobile WebView painting progress.
-        if (i % 4 === 0) {
-          await yieldForMobilePaint();
-        }
-
-        const frame = allFrames[i];
-
-        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, {
-          playerPhotos,
-          playersWithNumber,
-          showPhotos,
-          viewMode,
-        });
-
-        const frameCapture = await captureVideoFrame(canvas);
-
-        if (i === 0) {
-          try {
-            const firstFrameBase64 = await RNFS.readFile(frameCapture, 'base64');
-            const firstFrame = `data:image/jpeg;base64,${firstFrameBase64}`;
-            videoThumbnailRef.current = firstFrame;
-            setVideoThumbnail(firstFrame);
-          } catch (thumbnailError) {
-            console.warn('[videoRecorder] No se pudo crear miniatura:', thumbnailError);
+      const setFirstFrameThumbnail = () => {
+        if (videoThumbnailRef.current) return;
+        try {
+          const thumbnailScale = Math.min(1, 960 / canvasW);
+          const thumbnailCanvas = document.createElement('canvas');
+          thumbnailCanvas.width = Math.round(canvasW * thumbnailScale);
+          thumbnailCanvas.height = Math.round(canvasH * thumbnailScale);
+          const thumbnailContext = thumbnailCanvas.getContext('2d', { alpha: false });
+          thumbnailContext.imageSmoothingEnabled = true;
+          if ('imageSmoothingQuality' in thumbnailContext) {
+            thumbnailContext.imageSmoothingQuality = 'high';
           }
+          thumbnailContext.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
+          const firstFrame = thumbnailCanvas.toDataURL('image/jpeg', 0.92);
+          videoThumbnailRef.current = firstFrame;
+          setVideoThumbnail(firstFrame);
+        } catch (thumbnailError) {
+          console.warn('[videoRecorder] No se pudo crear miniatura:', thumbnailError);
         }
+      };
 
-        const destPath = `${framesDir}/frame${String(i).padStart(4, '0')}.${VIDEO_CAPTURE_EXTENSION}`;
-        await RNFS.moveFile(frameCapture, destPath);
+      const checkGenerationCancelled = () => {
+        if (!generationCancelledRef.current) return false;
+        streamingEncoder?.abort?.();
+        RNFS.unlink(framesDir).catch(() => {});
+        setGenerationProgress(0);
+        return true;
+      };
 
-        capturedFrames = i + 1;
+      const captureAllFramesForFallback = async () => {
+        await RNFS.unlink(framesDir).catch(() => {});
+        capturedFrames = 0;
+        let i = 0;
+        for (const frame of createFrames()) {
+          if (checkGenerationCancelled()) return false;
 
-        if (streamingEncoder) {
-          await enqueueStreamingFrame(frameCapture, i);
+          if (i === 0 || !frame._reusePreviousFrame) renderVideoFrame(frame);
+          if (i === 0) setFirstFrameThumbnail();
+          const frameCapture = await captureVideoFrame(canvas);
+          const destPath = `${framesDir}/frame${String(i).padStart(4, '0')}.${VIDEO_CAPTURE_EXTENSION}`;
+          await RNFS.moveFile(frameCapture, destPath);
+          capturedFrames = i + 1;
+          updateLinearProgress();
+          await yieldForGenerationPaint();
+          i += 1;
         }
-
-        updateLinearProgress();
-        if (i % 4 === 3) {
-          await yieldForMobilePaint();
-        }
-      }
-
-      // 5. Finalizar/codificar el vídeo
-      await yieldForMobilePaint();
-      setGenerationPhase('generationEncoding');
-      await yieldForMobilePaint();
-      let outputPath;
-      let encodedMime;
+        return true;
+      };
 
       if (streamingEncoder) {
-        try {
-          await waitStreamingChain('Streaming WebCodecs bloqueado al finalizar');
-        } catch (error) {
-          streamingError = error;
+        let i = 0;
+        let pendingFrameRun = null;
+        const encodePendingFrameRun = async () => {
+          if (!pendingFrameRun) return;
+          await streamingEncoder.addFrame(
+            canvas,
+            pendingFrameRun.index,
+            pendingFrameRun.durationFrames,
+          );
+          pendingFrameRun = null;
+        };
+        for (const frame of createFrames()) {
+          if (checkGenerationCancelled()) return;
+
+          try {
+            if (frame._reusePreviousFrame && pendingFrameRun) {
+              pendingFrameRun.durationFrames += 1;
+            } else {
+              // Snapshot the previous run before repainting the shared canvas.
+              await encodePendingFrameRun();
+              renderVideoFrame(frame);
+              if (i === 0) setFirstFrameThumbnail();
+              pendingFrameRun = { index: i, durationFrames: 1 };
+            }
+            capturedFrames = i + 1;
+            updateLinearProgress();
+          } catch (streamingError) {
+            disableStreamingEncoder(streamingError);
+            break;
+          }
+
+          await yieldForGenerationPaint();
+          i += 1;
         }
-        streamingBacklog = 0;
-        if (streamingError) disableStreamingEncoder(streamingError);
+        if (streamingEncoder) {
+          try {
+            await encodePendingFrameRun();
+          } catch (streamingError) {
+            disableStreamingEncoder(streamingError);
+          }
+        }
       }
+
+      if (!streamingEncoder && !(await captureAllFramesForFallback())) return;
+
+      // 5. Finalizar/codificar el vídeo
+      setGenerationPhase('generationEncoding');
+      await yieldForGenerationPaint(true);
+      let outputPath;
+      let encodedMime;
 
       if (streamingEncoder) {
         try {
@@ -1621,13 +1282,14 @@ export default function VideoRecorder({
           streamingEncoder.abort?.();
           streamingEncoder = null;
           encodedFrames = 0;
+          if (!(await captureAllFramesForFallback())) return;
         }
       }
 
       if (!outputPath) {
         const result = await encodeVideo(
           framesDir,
-          allFrames.length,
+          totalFrames,
           videoSpeed,
           (encodeProgress) => {
             encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
@@ -1652,7 +1314,12 @@ export default function VideoRecorder({
 
       // 7. Reproducir video local
       let fileUri = outputPath;
-      if (Platform.OS === 'android' && !outputPath.startsWith('file://') && !outputPath.startsWith('http') && !outputPath.startsWith('blob:')) {
+      if (
+        Platform.OS === 'android' &&
+        !outputPath.startsWith('file://') &&
+        !outputPath.startsWith('http') &&
+        !outputPath.startsWith('blob:')
+      ) {
         fileUri = `file://${outputPath}`;
       }
       setLocalVideoPath(outputPath);
@@ -1710,7 +1377,7 @@ export default function VideoRecorder({
       const refW = fieldWidth || 1280;
       const refH = fieldHeight || 720;
       const normalizedKeyframes = normalizeKeyframesForServer(
-        hydrateSharedKeyframePlayerStyles(keyframes, elements),
+        hydrateSharedKeyframePlayerStyles(keyframes, getCurrentElements()),
         refW,
         refH,
         fieldDisplayWidth || refW,
@@ -1935,7 +1602,10 @@ export default function VideoRecorder({
 
     try {
       setIsGenerating(true);
-      showNotification(t('videoRecorder.downloading', 'Preparando el vídeo para guardarlo...'), 'success');
+      showNotification(
+        t('videoRecorder.downloading', 'Preparando el vídeo para guardarlo...'),
+        'success',
+      );
 
       const safeName =
         (videoNombre || editingVideoName || 'video')
@@ -1944,7 +1614,11 @@ export default function VideoRecorder({
           .replace(/\s+/g, '_') || 'video';
       await triggerVideoDownload(localVideoPath, safeName);
       setTimeout(
-        () => showNotification(t('videoRecorder.downloadComplete', 'Vídeo guardado en la galería.'), 'success'),
+        () =>
+          showNotification(
+            t('videoRecorder.downloadComplete', 'Vídeo guardado en la galería.'),
+            'success',
+          ),
         150,
       );
     } catch (error) {
@@ -2157,14 +1831,24 @@ export default function VideoRecorder({
       return;
     }
     if (!onPreviewPlayback) return;
-    const { fps, frames } = getPlaybackFrames();
-    if (!frames.length) {
+    const { fps, frameCount, createFrames, styledKeyframes } = getPlaybackFrames();
+    if (!frameCount) {
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
       return;
     }
+    const photoSources = [
+      ...new Set(
+        styledKeyframes.flatMap((keyframe) =>
+          (keyframe.elements || [])
+            .filter((element) => element.type === 'player')
+            .map((element) => element.photoUrl || element.playerData?.foto)
+            .filter(Boolean),
+        ),
+      ),
+    ];
     try {
       setIsPreviewingBoard(true);
-      await onPreviewPlayback(frames, fps);
+      await onPreviewPlayback(createFrames(), fps, photoSources);
     } finally {
       setIsPreviewingBoard(false);
     }
@@ -2288,23 +1972,46 @@ export default function VideoRecorder({
           {keyframes.length >= 2 && (
             <View style={styles.videoActionRow}>
               <TouchableOpacity
-                style={[styles.btnPreviewBoard, (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled]}
+                style={[
+                  styles.btnPreviewBoard,
+                  (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled,
+                ]}
                 onPress={previewOnBoard}
                 disabled={isGenerating || isPreviewingBoard}
               >
                 {IS_MOBILE && <Feather name="play" size={VP_ICON} color="#fff" />}
                 <Text style={styles.btnPreviewBoardText} numberOfLines={1}>
-                  {isPreviewingBoard ? t('videoRecorder.previewing', 'Viendo...') : t('videoRecorder.view', 'Ver')}
+                  {isPreviewingBoard
+                    ? t('videoRecorder.previewing', 'Viendo...')
+                    : t('videoRecorder.view', 'Ver')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.btnGenerate, (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled]}
-                onPress={isDemo ? () => showNotification(t('videoRecorder.demoSaveDisabled', 'Necesitas una suscripción para guardar vídeos'), 'error') : generateVideo}
+                style={[
+                  styles.btnGenerate,
+                  (isGenerating || isPreviewingBoard) && styles.btnGenerateDisabled,
+                ]}
+                onPress={
+                  isDemo
+                    ? () =>
+                        showNotification(
+                          t(
+                            'videoRecorder.demoSaveDisabled',
+                            'Necesitas una suscripción para guardar vídeos',
+                          ),
+                          'error',
+                        )
+                    : generateVideo
+                }
                 disabled={isGenerating || isPreviewingBoard}
               >
-                {(isDemo || IS_MOBILE) && <Feather name={isDemo ? "lock" : "save"} size={VP_ICON} color="#fff" />}
+                {(isDemo || IS_MOBILE) && (
+                  <Feather name={isDemo ? 'lock' : 'save'} size={VP_ICON} color="#fff" />
+                )}
                 <Text style={styles.btnGenerateText} numberOfLines={1}>
-                  {isGenerating ? t('videoRecorder.generating') : t('videoRecorder.save', 'Guardar')}
+                  {isGenerating
+                    ? t('videoRecorder.generating')
+                    : t('videoRecorder.save', 'Guardar')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2316,25 +2023,6 @@ export default function VideoRecorder({
               <Text style={styles.kfSectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
               <View style={styles.kfList}>
                 {keyframes.map((_, index) => {
-                  const isLast = index === keyframes.length - 1;
-                  const ballMovements = getSegmentBallMovements(keyframes, index);
-                  const setTrajectory = (ballId, newType) => {
-                    onKeyframesChange(
-                      keyframes.map((kf, i) => {
-                        if (i !== index) return kf;
-                        const segmentBalls = (kf.elements || []).filter((el) => el.type === 'ball');
-                        return {
-                          ...kf,
-                          ballTrajectoryById: {
-                            ...(kf.ballTrajectoryById || {}),
-                            [ballId]: newType,
-                          },
-                          ballTrajectoryType:
-                            segmentBalls.length <= 1 ? newType : kf.ballTrajectoryType || 'ground',
-                        };
-                      }),
-                    );
-                  };
                   if (IS_MOBILE) {
                     return (
                       <TouchableOpacity
@@ -2358,97 +2046,21 @@ export default function VideoRecorder({
                         <TouchableOpacity
                           onPress={() => onSelectKeyframe && onSelectKeyframe(index)}
                           style={styles.kfViewBtn}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t('videoRecorder.view')} ${index + 1}`}
                         >
-                          <Text style={styles.kfViewBtnText}>{t('videoRecorder.view')}</Text>
+                          <Feather name="eye" size={13} color="#2563EB" />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => removeKeyframe(index)}
                           style={styles.kfRemoveBtn}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t('videoRecorder.deletePosition', 'Eliminar captura')} ${index + 1}`}
                         >
-                          <Text style={styles.kfRemoveBtnText}>×</Text>
+                          <Feather name="trash-2" size={12} color="#ef4444" />
                         </TouchableOpacity>
                       </View>
 
-                      {!isLast && ballMovements.length > 0 && (
-                        <View style={styles.trajSection}>
-                          <View style={styles.trajHeaderRow}>
-                            <Text style={styles.trajHeaderText}>
-                              {t('videoRecorder.ballMovementType', 'Movimiento del balón')}
-                            </Text>
-                            <Text style={styles.trajHeaderHint}>
-                              {t('videoRecorder.ballMovementHint', 'Tramo')} {index + 1}
-                              {' -> '}
-                              {index + 2}
-                            </Text>
-                          </View>
-                          {ballMovements.map((movement) => {
-                            const trajectory = movement.trajectory;
-                            const label = getBallMovementTitle(movement.fromBall, movement.toBall);
-                            return (
-                              <View key={movement.id} style={styles.trajCard}>
-                                <View style={styles.trajCardTextCol}>
-                                  <Text style={styles.trajLabel} numberOfLines={2}>
-                                    {label}
-                                  </Text>
-                                  <Text style={styles.trajMeta} numberOfLines={1}>
-                                    {trajectory === 'air'
-                                      ? t('videoRecorder.ballAirSelected', 'Sale por aire')
-                                      : t('videoRecorder.ballGroundSelected', 'Rueda por suelo')}
-                                  </Text>
-                                </View>
-                                <View style={styles.trajToggle}>
-                                  <TouchableOpacity
-                                    onPress={() => setTrajectory(movement.id, 'ground')}
-                                    style={[
-                                      styles.trajOpt,
-                                      trajectory === 'ground' && styles.trajOptActive,
-                                    ]}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={t('videoRecorder.ballGround', 'Suelo')}
-                                  >
-                                    <Feather
-                                      name="arrow-right"
-                                      size={10}
-                                      color={trajectory === 'ground' ? '#fff' : '#166534'}
-                                    />
-                                    <Text
-                                      style={[
-                                        styles.trajOptText,
-                                        trajectory === 'ground' && styles.trajOptTextActive,
-                                      ]}
-                                    >
-                                      {t('videoRecorder.ballGround', 'Suelo')}
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    onPress={() => setTrajectory(movement.id, 'air')}
-                                    style={[
-                                      styles.trajOpt,
-                                      trajectory === 'air' && styles.trajOptActiveAir,
-                                    ]}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={t('videoRecorder.ballAir', 'Aire')}
-                                  >
-                                    <Feather
-                                      name="trending-up"
-                                      size={10}
-                                      color={trajectory === 'air' ? '#fff' : '#92400e'}
-                                    />
-                                    <Text
-                                      style={[
-                                        styles.trajOptText,
-                                        trajectory === 'air' && styles.trajOptTextActive,
-                                      ]}
-                                    >
-                                      {t('videoRecorder.ballAir', 'Aire')}
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
                     </View>
                   );
                 })}
@@ -2540,7 +2152,9 @@ export default function VideoRecorder({
                   }}
                   placeholder={t('videoRecorder.videoNamePlaceholder')}
                   defaultValue={videoNombre}
-                  onFocus={({ currentTarget }) => setTimeout(() => currentTarget.scrollIntoView({ block: 'center' }), 250)}
+                  onFocus={({ currentTarget }) =>
+                    setTimeout(() => currentTarget.scrollIntoView({ block: 'center' }), 250)
+                  }
                   onBlur={(event) => setVideoNombre(event.currentTarget.value)}
                   dir="ltr"
                   maxLength={100}
@@ -3205,161 +2819,76 @@ const styles = StyleSheet.create({
   },
   // ── Keyframe section ──
   kfSection: {
-    marginTop: IS_MOBILE ? 0 : 1,
+    marginTop: IS_MOBILE ? 0 : 6,
     flexDirection: IS_MOBILE ? 'row' : 'column',
     alignItems: IS_MOBILE ? 'center' : 'stretch',
   },
   kfSectionTitle: {
     display: IS_MOBILE ? 'none' : 'flex',
-    fontSize: SCREEN_WIDTH < 400 ? 7 : 8,
-    fontWeight: '700',
-    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 3,
+    letterSpacing: 0.6,
+    marginBottom: 7,
   },
   kfList: {
-    maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : 320,
-    flexDirection: IS_MOBILE ? 'row' : 'column',
-    gap: IS_MOBILE ? vp(5) : 0,
-    alignItems: 'center',
+    maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : undefined,
+    flexDirection: 'row',
+    flexWrap: IS_MOBILE ? 'nowrap' : 'wrap',
+    gap: IS_MOBILE ? vp(5) : 6,
+    alignItems: 'stretch',
   },
   kfItem: {
-    backgroundColor: IS_MOBILE ? '#2563EB' : '#f8fafc',
-    borderRadius: IS_MOBILE ? VP_BTN / 2 : 10,
-    padding: IS_MOBILE ? 0 : 7,
-    marginBottom: IS_MOBILE ? 0 : 6,
-    borderLeftWidth: IS_MOBILE ? 0 : 3,
+    backgroundColor: IS_MOBILE ? '#2563EB' : '#ffffff',
+    borderRadius: IS_MOBILE ? VP_BTN / 2 : 7,
+    padding: IS_MOBILE ? 0 : 5,
+    borderWidth: IS_MOBILE ? 0 : 1,
+    borderColor: '#e2e8f0',
+    borderLeftWidth: IS_MOBILE ? 0 : 2,
     borderLeftColor: '#2563EB',
-    width: IS_MOBILE ? VP_BTN : undefined,
+    width: IS_MOBILE ? VP_BTN : '48%',
     height: IS_MOBILE ? VP_BTN : undefined,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: IS_MOBILE ? 'hidden' : 'visible',
   },
   kfItemTop: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: IS_MOBILE ? 2 : 4,
+    justifyContent: 'space-between',
+    gap: IS_MOBILE ? 2 : 3,
   },
   kfNum: {
-    width: IS_MOBILE ? 34 : 18,
-    height: IS_MOBILE ? 48 : 18,
-    borderRadius: IS_MOBILE ? 0 : 9,
+    width: IS_MOBILE ? 34 : 22,
+    height: IS_MOBILE ? 48 : 22,
+    borderRadius: IS_MOBILE ? 0 : 11,
     backgroundColor: IS_MOBILE ? '#2563EB' : '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   kfNumText: {
-    fontSize: IS_MOBILE ? 14 : 9,
+    fontSize: IS_MOBILE ? 14 : 10,
     fontWeight: '800',
     color: IS_MOBILE ? '#fff' : '#2563EB',
   },
   kfViewBtn: {
     flex: 1,
     backgroundColor: IS_MOBILE ? 'transparent' : '#eff6ff',
-    borderRadius: 4,
-    paddingVertical: IS_MOBILE ? 0 : 2,
-    paddingHorizontal: IS_MOBILE ? 8 : 4,
+    minWidth: IS_MOBILE ? undefined : 24,
+    height: IS_MOBILE ? 48 : 22,
+    borderRadius: IS_MOBILE ? 4 : 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  kfViewBtnText: {
-    fontSize: IS_MOBILE ? 11 : 9,
-    fontWeight: '600',
-    color: IS_MOBILE ? '#fff' : '#2563EB',
-  },
   kfRemoveBtn: {
-    width: IS_MOBILE ? 28 : 18,
-    height: IS_MOBILE ? 48 : 18,
-    borderRadius: IS_MOBILE ? 0 : 9,
+    width: IS_MOBILE ? 28 : 22,
+    height: IS_MOBILE ? 48 : 22,
+    borderRadius: IS_MOBILE ? 0 : 6,
     backgroundColor: IS_MOBILE ? '#ef4444' : '#fef2f2',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  kfRemoveBtnText: {
-    fontSize: IS_MOBILE ? 10 : 14,
-    fontWeight: '700',
-    color: IS_MOBILE ? '#fff' : '#ef4444',
-    lineHeight: IS_MOBILE ? 10 : 14,
-  },
-  // ── Trajectory ──
-  trajSection: {
-    marginTop: IS_MOBILE ? 2 : 7,
-    gap: IS_MOBILE ? 2 : 6,
-  },
-  trajHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: IS_MOBILE ? 3 : 6,
-    marginBottom: IS_MOBILE ? 0 : 1,
-  },
-  trajHeaderText: {
-    flex: 1,
-    fontSize: IS_MOBILE ? 6 : 10,
-    color: '#0f172a',
-    fontWeight: '800',
-  },
-  trajHeaderHint: {
-    fontSize: IS_MOBILE ? 5 : 9,
-    color: '#64748b',
-    fontWeight: '700',
-  },
-  trajCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: IS_MOBILE ? 5 : 9,
-    padding: IS_MOBILE ? 2 : 6,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    gap: IS_MOBILE ? 2 : 6,
-  },
-  trajCardTextCol: {
-    gap: 1,
-  },
-  trajLabel: {
-    fontSize: IS_MOBILE ? 6 : 10,
-    color: '#0f172a',
-    fontWeight: '800',
-    lineHeight: IS_MOBILE ? 8 : 13,
-  },
-  trajMeta: {
-    fontSize: IS_MOBILE ? 5 : 9,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  trajToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: IS_MOBILE ? 5 : 12,
-    padding: IS_MOBILE ? 1 : 2,
-    gap: IS_MOBILE ? 1 : 3,
-  },
-  trajOpt: {
-    flex: 1,
-    minHeight: IS_MOBILE ? 16 : 30,
-    paddingVertical: 1,
-    paddingHorizontal: IS_MOBILE ? 2 : 5,
-    borderRadius: IS_MOBILE ? 4 : 10,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: IS_MOBILE ? 1 : 3,
-  },
-  trajOptActive: {
-    backgroundColor: '#16a34a',
-  },
-  trajOptActiveAir: {
-    backgroundColor: '#f59e0b',
-  },
-  trajOptText: {
-    fontSize: IS_MOBILE ? 5 : 10,
-    fontWeight: '800',
-    color: '#475569',
-  },
-  trajOptTextActive: {
-    color: '#fff',
   },
   modalOverlay: {
     flex: 1,
@@ -3901,3 +3430,25 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
 });
+
+function areVideoRecorderPropsEqual(previous, next) {
+  const previousKeys = Object.keys(previous);
+  const nextKeys = Object.keys(next);
+  if (previousKeys.length !== nextKeys.length) return false;
+
+  for (const key of nextKeys) {
+    if (key === 'elements' && next.elementsRef && previous.elementsRef === next.elementsRef)
+      continue;
+    if (
+      key === 'connectors' &&
+      next.connectorsRef &&
+      previous.connectorsRef === next.connectorsRef
+    ) {
+      continue;
+    }
+    if (!Object.is(previous[key], next[key])) return false;
+  }
+  return true;
+}
+
+export default React.memo(VideoRecorder, areVideoRecorderPropsEqual);

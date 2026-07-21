@@ -10,7 +10,13 @@ const PLAYER_VISUAL_FIELDS = [
   'kitSecondaryColor',
   'hasBib',
   'bibColor',
+  'isGoalkeeper',
+  'differentiateGoalkeeper',
   'goalkeeperStripeColor',
+  'showPhotos',
+  'playersWithNumber',
+  'photoUrl',
+  'preserveVisualStyle',
 ];
 
 const DRAW_REVEAL_TYPES = new Set([
@@ -55,19 +61,46 @@ const lerp = (a, b, t) => {
   return a + (b - a) * t;
 };
 
+const INTERPOLATED_NUMBER_PROPS = [
+  'xRatio', 'yRatio', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'width', 'height',
+  'radius', 'size', 'baseSize', 'fontSize', 'baseFontSize', 'textX', 'textY',
+  'textMaxWidth', 'thickness', 'baseThickness', 'rotation',
+];
+
+const INTERPOLATED_POINT_PROPS = ['pointsRatio', 'points'];
+
+function pointsDiffer(fromPoints, toPoints) {
+  if (!Array.isArray(fromPoints) || !Array.isArray(toPoints)) {
+    return Array.isArray(fromPoints) !== Array.isArray(toPoints);
+  }
+  if (fromPoints.length !== toPoints.length) return true;
+  for (let index = 0; index < fromPoints.length; index++) {
+    if (fromPoints[index].x !== toPoints[index].x || fromPoints[index].y !== toPoints[index].y) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasInterpolatedChange(from, to) {
+  for (const prop of INTERPOLATED_NUMBER_PROPS) {
+    if (from[prop] !== to[prop]) return true;
+  }
+  for (const prop of INTERPOLATED_POINT_PROPS) {
+    if (pointsDiffer(from[prop], to[prop])) return true;
+  }
+  return false;
+}
+
 function interpolateElement(from, to, t) {
   const out = { ...to };
-  [
-    'xRatio', 'yRatio', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'width', 'height',
-    'radius', 'size', 'baseSize', 'fontSize', 'baseFontSize', 'textX', 'textY',
-    'textMaxWidth', 'thickness', 'baseThickness', 'rotation',
-  ].forEach((prop) => {
+  INTERPOLATED_NUMBER_PROPS.forEach((prop) => {
     if (typeof from[prop] === 'number' && typeof to[prop] === 'number') {
       out[prop] = lerp(from[prop], to[prop], t);
     }
   });
 
-  for (const prop of ['pointsRatio', 'points']) {
+  for (const prop of INTERPOLATED_POINT_PROPS) {
     const fromPoints = from[prop];
     const toPoints = to[prop];
     if (!Array.isArray(fromPoints) || !Array.isArray(toPoints)) continue;
@@ -85,6 +118,9 @@ function interpolateElement(from, to, t) {
 
 const getBallTrajectory = (keyframe, ballId) =>
   keyframe?.ballTrajectoryById?.[ballId] || keyframe?.ballTrajectoryType || 'ground';
+
+const sortElementsByZIndex = (elements) =>
+  [...(elements || [])].sort((left, right) => (left.zIndex || 0) - (right.zIndex || 0));
 
 function applyBallAirEffect(ball, from, to, progress, ballSize) {
   const dx = (to.x || 0) - (from.x || 0);
@@ -109,7 +145,26 @@ function applyBallAirEffect(ball, from, to, progress, ballSize) {
   };
 }
 
-export function buildInterpolatedFrames(
+export function getInterpolatedFrameCount(
+  keyframes,
+  fps,
+  moveDuration,
+  holdDuration,
+  speedMultiplier,
+  extraDurationEnd,
+) {
+  if (!keyframes || keyframes.length < 2) return 0;
+  const framesPerTransition = Math.max(2, Math.round((fps * moveDuration) / speedMultiplier));
+  const holdFrames = Math.max(1, Math.round((fps * holdDuration) / speedMultiplier));
+  const extraFrames = Math.round(fps * extraDurationEnd);
+  return (
+    framesPerTransition +
+    (keyframes.length - 1) * (framesPerTransition + holdFrames) +
+    extraFrames
+  );
+}
+
+export function* iterateInterpolatedFrames(
   keyframes,
   fps,
   moveDuration,
@@ -118,40 +173,50 @@ export function buildInterpolatedFrames(
   extraDurationEnd,
   ballSize = 18,
 ) {
-  if (!keyframes || keyframes.length < 2) return [];
+  if (!keyframes || keyframes.length < 2) return;
 
   const framesPerTransition = Math.max(2, Math.round((fps * moveDuration) / speedMultiplier));
   const holdFrames = Math.max(1, Math.round((fps * holdDuration) / speedMultiplier));
   const extraFrames = Math.round(fps * extraDurationEnd);
-  const frames = [];
   const ballRotations = new Map();
   const firstKeyframe = keyframes[0];
-  (firstKeyframe.elements || []).forEach((element) => {
+  const firstElements = sortElementsByZIndex(firstKeyframe.elements);
+  const firstFrameHasReveal = firstElements.some((element) => DRAW_REVEAL_TYPES.has(element.type));
+  firstElements.forEach((element) => {
     if (element.type === 'ball') ballRotations.set(element.id, element.rotation || 0);
   });
 
   for (let index = 0; index < framesPerTransition; index++) {
     const progress = framesPerTransition > 1 ? easeInOutCubic(index / (framesPerTransition - 1)) : 1;
-    frames.push({
-      elements: (firstKeyframe.elements || []).map((element) => {
+    yield {
+      elements: firstElements.map((element) => {
         if (element.type === 'ball') return { ...element, rotation: ballRotations.get(element.id) || 0 };
         return DRAW_REVEAL_TYPES.has(element.type) ? { ...element, _drawProgress: progress } : element;
       }),
       connectors: firstKeyframe.connectors || [],
-    });
+      _reusePreviousFrame: !firstFrameHasReveal && index > 0,
+    };
   }
 
   for (let keyframeIndex = 0; keyframeIndex < keyframes.length - 1; keyframeIndex++) {
     const fromKeyframe = keyframes[keyframeIndex];
     const toKeyframe = keyframes[keyframeIndex + 1];
-    const fromMap = new Map((fromKeyframe.elements || []).map((element) => [element.id, element]));
-    const toMap = new Map((toKeyframe.elements || []).map((element) => [element.id, element]));
-    const ids = new Set([...fromMap.keys(), ...toMap.keys()]);
+    const fromElements = sortElementsByZIndex(fromKeyframe.elements);
+    const toElements = sortElementsByZIndex(toKeyframe.elements);
+    const fromMap = new Map(fromElements.map((element) => [element.id, element]));
+    const toMap = new Map(toElements.map((element) => [element.id, element]));
+    const ids = [...new Set([...fromMap.keys(), ...toMap.keys()])].sort((leftId, rightId) => {
+      const left = toMap.get(leftId) || fromMap.get(leftId);
+      const right = toMap.get(rightId) || fromMap.get(rightId);
+      return (left?.zIndex || 0) - (right?.zIndex || 0);
+    });
     const ballDeltas = new Map();
+    const changedIds = new Set();
 
     for (const id of ids) {
       const from = fromMap.get(id);
       const to = toMap.get(id);
+      if (!from || !to || from.type === 'ball' || hasInterpolatedChange(from, to)) changedIds.add(id);
       if (from?.type !== 'ball' || to?.type !== 'ball') continue;
       const dx = to.x !== undefined && from.x !== undefined
         ? to.x - from.x
@@ -175,7 +240,9 @@ export function buildInterpolatedFrames(
         const isAirBall = from?.type === 'ball' && to?.type === 'ball' && getBallTrajectory(fromKeyframe, id) === 'air';
         let element;
         if (from && to) {
-          element = interpolateElement(from, to, isAirBall ? linearProgress : progress);
+          element = changedIds.has(id)
+            ? interpolateElement(from, to, isAirBall ? linearProgress : progress)
+            : to;
         } else if (to) {
           element = { ...to };
           if (DRAW_REVEAL_TYPES.has(to.type)) element._drawProgress = progress;
@@ -208,33 +275,41 @@ export function buildInterpolatedFrames(
         elements.push(element);
       }
 
-      frames.push({
+      yield {
         elements: [...shadows, ...elements],
         connectors: progress < 0.5
           ? fromKeyframe.connectors || []
           : toKeyframe.connectors || fromKeyframe.connectors || [],
-      });
+      };
     }
 
     for (const [id, delta] of ballDeltas) ballRotations.set(id, (ballRotations.get(id) || 0) + delta);
+    const heldFrame = {
+      elements: toElements.map((element) =>
+        element.type === 'ball' ? { ...element, rotation: ballRotations.get(element.id) || 0 } : element,
+      ),
+      connectors: toKeyframe.connectors || [],
+      _reusePreviousFrame: true,
+    };
     for (let index = 0; index < holdFrames; index++) {
-      frames.push({
-        elements: (toKeyframe.elements || []).map((element) =>
-          element.type === 'ball' ? { ...element, rotation: ballRotations.get(element.id) || 0 } : element,
-        ),
-        connectors: toKeyframe.connectors || [],
-      });
+      yield heldFrame;
     }
   }
 
   const lastKeyframe = keyframes[keyframes.length - 1];
+  const lastElements = sortElementsByZIndex(lastKeyframe.elements);
+  const lastFrame = {
+    elements: lastElements.map((element) =>
+      element.type === 'ball' ? { ...element, rotation: ballRotations.get(element.id) || 0 } : element,
+    ),
+    connectors: lastKeyframe.connectors || [],
+    _reusePreviousFrame: true,
+  };
   for (let index = 0; index < extraFrames; index++) {
-    frames.push({
-      elements: (lastKeyframe.elements || []).map((element) =>
-        element.type === 'ball' ? { ...element, rotation: ballRotations.get(element.id) || 0 } : element,
-      ),
-      connectors: lastKeyframe.connectors || [],
-    });
+    yield lastFrame;
   }
-  return frames;
+}
+
+export function buildInterpolatedFrames(...args) {
+  return Array.from(iterateInterpolatedFrames(...args));
 }

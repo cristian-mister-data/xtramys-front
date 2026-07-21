@@ -17,6 +17,7 @@ import Svg, {
 } from 'react-native-svg';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getPlayerFullName } from '@/components/player/playerHelpers';
+import { getPlayerKitRenderState } from '@/utils/playerRenderMetrics';
 import { deltaToRatio, isOutsideVisibleField, areAllPointsOutside } from '../fields';
 import { cdnUrl } from '@/config';
 import { styles } from './styles';
@@ -44,7 +45,12 @@ import {
   isValidHexColor,
   releaseBoardDrag,
 } from './config';
-import { ALLOW_MULTI_ELEMENT_DRAG, isBoardCloneOutsideForDelete } from './geometry';
+import {
+  ALLOW_MULTI_ELEMENT_DRAG,
+  applyBoardDragState,
+  buildBoardDragState,
+  isBoardCloneOutsideForDelete,
+} from './geometry';
 
 export function renderPlayerNameLabel(icon, isMobile = false) {
   if (!icon.playerData) return null;
@@ -231,26 +237,28 @@ export function renderIconCanvas(
   const hasBib = icon.hasBib !== undefined ? icon.hasBib : isNeutral;
   const bibColor = icon.bibColor || (isNeutral ? color : NEUTRAL_PLAYER_COLORS.bib);
   const neutralBackgroundColor = icon.backgroundColor || NEUTRAL_PLAYER_COLORS.background;
-  const playerShape = icon.shape || 'circle';
-  const isJersey = playerShape === 'jersey';
-  const playerStripeColor = icon.stripeColor || '#ffffff';
-  const kitPattern = icon.kitPattern || (icon.hasStripes === true ? 'vertical' : 'solid');
-  const hasPlayerStripes = icon.hasStripes === true || kitPattern !== 'solid';
-  const kitSecondaryColor = icon.kitSecondaryColor || playerStripeColor;
+  const {
+    isJersey,
+    kitPattern,
+    kitSecondaryColor,
+    drawPlayerPattern: drawPlayerVerticalStripes,
+    drawVerticalStripes,
+    verticalStripeColor,
+  } = getPlayerKitRenderState(icon, {
+    isGoalkeeper,
+    differentiateGoalkeeper,
+    goalkeeperStripeColor,
+  });
   const jerseyPath =
     'M35,10 Q50,20 65,10 L82,20 L95,42 L78,54 L70,45 L70,90 L30,90 L30,45 L22,54 L5,42 L18,20 Z';
-  const cleanId = String(icon.uniqueId || icon.id || icon.idBase || icon.paletteIndex || 'preview').replace(/[^a-zA-Z0-9_-]/g, '-');
+  const cleanId = String(
+    icon.uniqueId || icon.id || icon.idBase || icon.paletteIndex || 'preview',
+  ).replace(/[^a-zA-Z0-9_-]/g, '-');
   const clipSuffix = uniqueId ? String(uniqueId).replace(/[^a-zA-Z0-9_-]/g, '-') : 'fallback';
   const clipId = `player-shape-${cleanId}-${clipSuffix}`;
 
   // Determinar qué mostrar: displayLabel o number
   const displayText = displayLabel !== undefined ? displayLabel : isNeutral ? 'N' : number;
-  const drawGoalkeeperVerticalStripes = isGoalkeeper && differentiateGoalkeeper;
-  const drawPlayerVerticalStripes = hasPlayerStripes && !drawGoalkeeperVerticalStripes;
-  const drawVerticalStripes = drawPlayerVerticalStripes || drawGoalkeeperVerticalStripes;
-  const verticalStripeColor = drawPlayerVerticalStripes
-    ? playerStripeColor
-    : goalkeeperStripeColor || '#ffffff';
   const goalkeeperStripeColorValue = goalkeeperStripeColor || '#ffffff';
   const isPositionLabel = displayLabel !== undefined;
   const textColor = icon.numberColor || numberColor;
@@ -281,9 +289,10 @@ export function renderIconCanvas(
   switch (icon.type) {
     case 'player':
       if (!shouldShowPhoto) {
-        const strokeColor = icon.kitSecondaryColor && !isJersey && kitPattern !== 'solid'
-          ? kitSecondaryColor
-          : '#222';
+        const strokeColor =
+          icon.kitSecondaryColor && !isJersey && kitPattern !== 'solid'
+            ? kitSecondaryColor
+            : '#222';
         const strokeWidth = 1;
         const textValue = displayText === undefined ? '' : String(displayText);
         return (
@@ -332,26 +341,12 @@ export function renderIconCanvas(
                     fill={neutralBackgroundColor}
                   />
                 ) : (
-                  <Circle
-                    cx={halfSize}
-                    cy={halfSize}
-                    r={halfSize}
-                    fill={neutralBackgroundColor}
-                  />
+                  <Circle cx={halfSize} cy={halfSize} r={halfSize} fill={neutralBackgroundColor} />
                 )
               ) : isJersey ? (
-                <Path
-                  d={jerseyPath}
-                  transform={`scale(${size / 100})`}
-                  fill={color}
-                />
+                <Path d={jerseyPath} transform={`scale(${size / 100})`} fill={color} />
               ) : (
-                <Circle
-                  cx={halfSize}
-                  cy={halfSize}
-                  r={halfSize}
-                  fill={color}
-                />
+                <Circle cx={halfSize} cy={halfSize} r={halfSize} fill={color} />
               )}
 
               {/* 2. Stripes (underneath the bib and outline) */}
@@ -455,9 +450,25 @@ export function renderIconCanvas(
 
               {isJersey && icon.kitSecondaryColor && (
                 <>
-                  <Path d="M18,20 L5,42" transform={`scale(${size / 100})`} stroke={kitSecondaryColor} strokeWidth={2.5} />
-                  <Path d="M82,20 L95,42" transform={`scale(${size / 100})`} stroke={kitSecondaryColor} strokeWidth={2.5} />
-                  <Path d="M40,12 L50,24 L60,12" transform={`scale(${size / 100})`} fill="none" stroke={kitSecondaryColor} strokeWidth={3} />
+                  <Path
+                    d="M18,20 L5,42"
+                    transform={`scale(${size / 100})`}
+                    stroke={kitSecondaryColor}
+                    strokeWidth={2.5}
+                  />
+                  <Path
+                    d="M82,20 L95,42"
+                    transform={`scale(${size / 100})`}
+                    stroke={kitSecondaryColor}
+                    strokeWidth={2.5}
+                  />
+                  <Path
+                    d="M40,12 L50,24 L60,12"
+                    transform={`scale(${size / 100})`}
+                    fill="none"
+                    stroke={kitSecondaryColor}
+                    strokeWidth={3}
+                  />
                 </>
               )}
               {/* 3. Bib (Peto) on top of the base body and stripes */}
@@ -1198,6 +1209,8 @@ const DraggableIcon = React.memo(
     }
     const rafRef = useRef(null);
     const pendingDragUpdateRef = useRef(null);
+    const elementRef = useRef(null);
+    const pendingWebDragPositionRef = useRef(null);
     const lastUpdateRef = useRef({
       x: 0,
       y: 0,
@@ -1314,6 +1327,8 @@ const DraggableIcon = React.memo(
     }, []);
     return (
       <View
+        ref={elementRef}
+        dataSet={{ boardElementId: icon.id, boardElementType: icon.type }}
         pointerEvents="box-none"
         style={{
           position: 'absolute',
@@ -1414,6 +1429,10 @@ const DraggableIcon = React.memo(
                     setDraggingOutside?.(false);
                     if (!acquireBoardDrag(dragStart, dragKey)) return;
                     isDragging.current = true;
+                    pendingWebDragPositionRef.current = null;
+                    if (elementRef.current?.style) {
+                      elementRef.current.style.willChange = 'transform';
+                    }
 
                     // Si estamos en modo multi-select, cancelar el rect�ngulo de selecci�n
                     if (multiSelectMode && cancelSelection) {
@@ -1430,9 +1449,11 @@ const DraggableIcon = React.memo(
                     ) {
                       // Guardar posiciones iniciales de TODOS los elementos seleccionados
                       // Incluyendo iconos (xRatio/yRatio) y l�neas/figuras (points)
-                      const initialPositions = {};
+                      const dragSnapshotState = buildBoardDragState(clones, selectedCloneIds);
+                      const initialPositions = dragSnapshotState.initialPositions;
+                      const clonesById = new Map(clones.map((clone) => [clone.id, clone]));
                       selectedCloneIds.forEach((id) => {
-                        const clone = clones.find((c) => c.id === id);
+                        const clone = clonesById.get(id);
                         if (clone) {
                           // Para l�neas y figuras, guardar los puntos
                           if (clone.points && Array.isArray(clone.points)) {
@@ -1457,7 +1478,9 @@ const DraggableIcon = React.memo(
                         id: icon.id,
                         multiSelect: true,
                         selectedIds: [...selectedCloneIds],
+                        selectedIdsSet: new Set(selectedCloneIds),
                         initialPositions: initialPositions,
+                        selectedIndices: dragSnapshotState.selectedIndices,
                       };
                     } else {
                       dragStart.current[dragKey] = {
@@ -1488,6 +1511,35 @@ const DraggableIcon = React.memo(
                       pendingDragUpdateRef.current = null;
                     }
 
+                    const pendingWebPosition = pendingWebDragPositionRef.current;
+                    if (pendingWebPosition) {
+                      const element = elementRef.current;
+                      if (element?.style) {
+                        element.style.left = `${icon.x - elementW / 2 + pendingWebPosition.dxDisplay}px`;
+                        element.style.top = `${icon.y - elementH / 2 + pendingWebPosition.dyDisplay}px`;
+                        element.style.transform = '';
+                        element.style.willChange = '';
+                      }
+                      setClones((prev) => {
+                        const correctIndex =
+                          idx < prev.length && prev[idx].id === icon.id
+                            ? idx
+                            : prev.findIndex((clone) => clone.id === icon.id);
+                        if (correctIndex === -1) return prev;
+                        const next = [...prev];
+                        next[correctIndex] = {
+                          ...next[correctIndex],
+                          xRatio: pendingWebPosition.xRatio,
+                          yRatio: pendingWebPosition.yRatio,
+                        };
+                        return next;
+                      });
+                      pendingWebDragPositionRef.current = null;
+                    } else if (elementRef.current?.style) {
+                      elementRef.current.style.transform = '';
+                      elementRef.current.style.willChange = '';
+                    }
+
                     // Verificar si elementos est�n fuera del campo y eliminarlos
                     if (e.nativeEvent.state === State.END && dragStart.current[dragKey]) {
                       const start = dragStart.current[dragKey];
@@ -1496,7 +1548,7 @@ const DraggableIcon = React.memo(
                         setClones((prev) => {
                           const toDelete = [];
                           const remaining = prev.filter((c) => {
-                            if (!start.selectedIds.includes(c.id) || c.locked) return true;
+                            if (!start.selectedIdsSet.has(c.id) || c.locked) return true;
                             let outside = false;
                             if (c.points && Array.isArray(c.points) && c.points.length >= 2) {
                               outside = areAllPointsOutside(
@@ -1565,9 +1617,11 @@ const DraggableIcon = React.memo(
                   ) {
                     const start = dragStart.current[dragKey];
                     // Dividir translaci�n por zoomLevel para compensar la escala del contenedor
+                    const dxDisplay = e.nativeEvent.translationX / zoomLevel;
+                    const dyDisplay = e.nativeEvent.translationY / zoomLevel;
                     const { dxRatio: dx, dyRatio: dy } = deltaToRatio(
-                      e.nativeEvent.translationX / zoomLevel,
-                      e.nativeEvent.translationY / zoomLevel,
+                      dxDisplay,
+                      dyDisplay,
                       viewMode,
                       imageWidth,
                       imageHeight,
@@ -1599,37 +1653,9 @@ const DraggableIcon = React.memo(
                       });
                       setDraggingOutside?.(anyOutside);
                       // Actualizar inmediatamente para mejor respuesta
-                      scheduleDragUpdate((prev) => {
-                        const next = [...prev];
-                        start.selectedIds.forEach((selectedId) => {
-                          const cloneIndex = next.findIndex((c) => c.id === selectedId);
-                          if (cloneIndex !== -1 && !next[cloneIndex].locked) {
-                            const initialPos = start.initialPositions[selectedId];
-                            if (initialPos) {
-                              // Si tiene puntos (l�neas/figuras), mover los puntos
-                              if (initialPos.points && Array.isArray(initialPos.points)) {
-                                next[cloneIndex] = {
-                                  ...next[cloneIndex],
-                                  points: initialPos.points.map((pt) => ({
-                                    x: pt.x + dx,
-                                    y: pt.y + dy,
-                                  })),
-                                };
-                              } else {
-                                // Iconos normales: permitir valores fuera de 0-1 para que el elemento pueda salir del campo
-                                const newXRatio = initialPos.xRatio + dx;
-                                const newYRatio = initialPos.yRatio + dy;
-                                next[cloneIndex] = {
-                                  ...next[cloneIndex],
-                                  xRatio: newXRatio,
-                                  yRatio: newYRatio,
-                                };
-                              }
-                            }
-                          }
-                        });
-                        return next;
-                      });
+                      scheduleDragUpdate((prev) =>
+                        applyBoardDragState(prev, start, dx, dy, dxDisplay, dyDisplay),
+                      );
                     } else {
                       // Arrastre de un solo elemento - permitir valores fuera de 0-1
                       const newXRatio = start.xRatio + dx;
@@ -1640,6 +1666,16 @@ const DraggableIcon = React.memo(
                       setDraggingOutside?.(inDeleteZone);
                       if (inDeleteZone !== isNearDeleteZone) {
                         setIsNearDeleteZone(inDeleteZone);
+                      }
+                      if (Platform.OS === 'web' && elementRef.current?.style) {
+                        pendingWebDragPositionRef.current = {
+                          xRatio: newXRatio,
+                          yRatio: newYRatio,
+                          dxDisplay,
+                          dyDisplay,
+                        };
+                        elementRef.current.style.transform = `translate3d(${dxDisplay}px, ${dyDisplay}px, 0)`;
+                        return;
                       }
                       if (Platform.OS === 'android') {
                         scheduleDragUpdate((prev) => {
