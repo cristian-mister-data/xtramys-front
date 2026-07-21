@@ -299,7 +299,18 @@ export default function VideoRecorderPanel({
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [activeKeyframeIndex, setActiveKeyframeIndex] = useState(() => {
+    return keyframes && keyframes.length > 0 ? keyframes.length - 1 : null;
+  });
   const elementsBeforeRecordRef = useRef(null);
+
+  useEffect(() => {
+    if (!keyframes || keyframes.length === 0) {
+      setActiveKeyframeIndex(null);
+    } else if (activeKeyframeIndex === null || activeKeyframeIndex >= keyframes.length) {
+      setActiveKeyframeIndex(keyframes.length - 1);
+    }
+  }, [keyframes, activeKeyframeIndex]);
 
   useEffect(() => {
     if (showSpeed) {
@@ -314,7 +325,9 @@ export default function VideoRecorderPanel({
     let thumb = null;
     try { thumb = stage?.toDataURL({ pixelRatio: 0.3, mimeType: 'image/jpeg', quality: 0.6 }); } catch { /* ignore */ }
     const snapshot = (elements || []).filter((el) => el.type !== 'ball-shadow');
+    const newIdx = keyframes.length;
     setKeyframes((prev) => [...prev, { id: Date.now() + Math.random(), elements: JSON.parse(JSON.stringify(snapshot)), thumb }]);
+    setActiveKeyframeIndex(newIdx);
   };
 
   const clearResult = () => {
@@ -383,7 +396,17 @@ export default function VideoRecorderPanel({
           <>
             <KfGroup>
               {keyframes.map((k, i) => (
-                <KfBadge key={k.id} $active={false} title={`Posición ${i + 1}`}>
+                <KfBadge
+                  key={k.id}
+                  $active={activeKeyframeIndex === i}
+                  onClick={() => {
+                    setActiveKeyframeIndex(i);
+                    if (setFrame && k.elements) {
+                      setFrame(k.elements);
+                    }
+                  }}
+                  title={`Posición ${i + 1}`}
+                >
                   {i + 1}
                 </KfBadge>
               ))}

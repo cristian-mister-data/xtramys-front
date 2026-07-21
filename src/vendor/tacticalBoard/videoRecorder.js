@@ -402,6 +402,18 @@ function VideoRecorder({
   const [videoUrl, setVideoUrl] = useState(null);
   const [showPreviewScreen, setShowPreviewScreen] = useState(false);
 
+  const [activeKeyframeIndex, setActiveKeyframeIndex] = useState(() => {
+    return keyframes && keyframes.length > 0 ? keyframes.length - 1 : null;
+  });
+
+  useEffect(() => {
+    if (!keyframes || keyframes.length === 0) {
+      setActiveKeyframeIndex(null);
+    } else if (activeKeyframeIndex === null || activeKeyframeIndex >= keyframes.length) {
+      setActiveKeyframeIndex(keyframes.length - 1);
+    }
+  }, [keyframes, activeKeyframeIndex]);
+
   useEffect(() => {
     onGeneratingChange?.(isGenerating);
   }, [isGenerating, onGeneratingChange]);
@@ -980,7 +992,9 @@ function VideoRecorder({
         ballTrajectoryById,
       };
 
+      const newIndex = keyframes.length;
       onKeyframesChange([...keyframes, newKeyframe]);
+      setActiveKeyframeIndex(newIndex);
       showNotification(t('videoRecorder.positionCaptured'), 'success');
     } catch (error) {
       console.error('Error capturando keyframe:', error);
@@ -1644,6 +1658,7 @@ function VideoRecorder({
           if (onRestoreOriginal) {
             onRestoreOriginal();
           }
+          setActiveKeyframeIndex(null);
           onClearKeyframes();
           showNotification(
             t ? t('field.positionsDeleted') : i18n.t('field.positionsDeleted'),
@@ -1657,6 +1672,11 @@ function VideoRecorder({
 
   // Eliminar keyframe individual
   const removeKeyframe = (index) => {
+    if (activeKeyframeIndex === index) {
+      setActiveKeyframeIndex(keyframes.length > 1 ? Math.max(0, index - 1) : null);
+    } else if (activeKeyframeIndex > index) {
+      setActiveKeyframeIndex(activeKeyframeIndex - 1);
+    }
     onKeyframesChange(keyframes.filter((_, i) => i !== index));
     showNotification(t ? t('field.positionDeleted') : i18n.t('field.positionDeleted'), 'success');
   };
@@ -1664,6 +1684,9 @@ function VideoRecorder({
   // Eliminar última captura
   const removeLastKeyframe = () => {
     if (keyframes.length > 0) {
+      if (activeKeyframeIndex >= keyframes.length - 1) {
+        setActiveKeyframeIndex(keyframes.length > 1 ? keyframes.length - 2 : null);
+      }
       onKeyframesChange(keyframes.slice(0, -1));
       showNotification(t('videoRecorder.lastPositionDeleted'), 'success');
     }
@@ -1918,6 +1941,19 @@ function VideoRecorder({
               </Text>
             </View>
             <Text style={styles.counterLabel}>{t('videoRecorder.captures')}</Text>
+            {activeKeyframeIndex !== null &&
+              activeKeyframeIndex >= 0 &&
+              activeKeyframeIndex < keyframes.length && (
+                <View style={styles.activeCaptureBadge}>
+                  <Feather name="eye" size={11} color="#2563EB" style={{ marginRight: 4 }} />
+                  <Text style={styles.activeCaptureText}>
+                    {t('videoRecorder.currentCapture', 'Captura {{current}} de {{total}}', {
+                      current: activeKeyframeIndex + 1,
+                      total: keyframes.length,
+                    })}
+                  </Text>
+                </View>
+              )}
           </View>
 
           {/* Secondary actions */}
@@ -2020,31 +2056,56 @@ function VideoRecorder({
           {/* Keyframe list */}
           {keyframes.length > 0 && (
             <View style={styles.kfSection}>
-              <Text style={styles.kfSectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
+              <View style={styles.kfHeaderRow}>
+                <Text style={styles.kfSectionTitle}>{t('videoRecorder.capturedPositions')}</Text>
+                {activeKeyframeIndex !== null &&
+                  activeKeyframeIndex >= 0 &&
+                  activeKeyframeIndex < keyframes.length && (
+                    <Text style={styles.kfActiveIndicator}>
+                      {t('videoRecorder.currentCapture', 'Captura {{current}} de {{total}}', {
+                        current: activeKeyframeIndex + 1,
+                        total: keyframes.length,
+                      })}
+                    </Text>
+                  )}
+              </View>
               <View style={styles.kfList}>
                 {keyframes.map((_, index) => {
+                  const isSelected = activeKeyframeIndex === index;
+
                   if (IS_MOBILE) {
                     return (
                       <TouchableOpacity
                         key={index}
-                        onPress={() => onSelectKeyframe && onSelectKeyframe(index)}
-                        style={styles.kfItem}
+                        onPress={() => {
+                          setActiveKeyframeIndex(index);
+                          onSelectKeyframe && onSelectKeyframe(index);
+                        }}
+                        style={[styles.kfItem, isSelected && styles.kfItemActive]}
                         accessibilityRole="button"
                         accessibilityLabel={`${t('videoRecorder.view')} ${index + 1}`}
                       >
-                        <Text style={styles.kfNumText}>{index + 1}</Text>
+                        {isSelected && <View style={styles.kfActiveBadgeDot} />}
+                        <Text style={[styles.kfNumText, isSelected && styles.kfNumTextActive]}>
+                          {index + 1}
+                        </Text>
                       </TouchableOpacity>
                     );
                   }
 
                   return (
-                    <View key={index} style={styles.kfItem}>
+                    <View key={index} style={[styles.kfItem, isSelected && styles.kfItemActive]}>
                       <View style={styles.kfItemTop}>
-                        <View style={styles.kfNum}>
-                          <Text style={styles.kfNumText}>{index + 1}</Text>
+                        <View style={[styles.kfNum, isSelected && styles.kfNumActive]}>
+                          <Text style={[styles.kfNumText, isSelected && styles.kfNumTextActive]}>
+                            {index + 1}
+                          </Text>
                         </View>
                         <TouchableOpacity
-                          onPress={() => onSelectKeyframe && onSelectKeyframe(index)}
+                          onPress={() => {
+                            setActiveKeyframeIndex(index);
+                            onSelectKeyframe && onSelectKeyframe(index);
+                          }}
                           style={styles.kfViewBtn}
                           accessibilityRole="button"
                           accessibilityLabel={`${t('videoRecorder.view')} ${index + 1}`}
@@ -2055,12 +2116,14 @@ function VideoRecorder({
                           onPress={() => removeKeyframe(index)}
                           style={styles.kfRemoveBtn}
                           accessibilityRole="button"
-                          accessibilityLabel={`${t('videoRecorder.deletePosition', 'Eliminar captura')} ${index + 1}`}
+                          accessibilityLabel={`${t(
+                            'videoRecorder.deletePosition',
+                            'Eliminar captura',
+                          )} ${index + 1}`}
                         >
                           <Feather name="trash-2" size={12} color="#ef4444" />
                         </TouchableOpacity>
                       </View>
-
                     </View>
                   );
                 })}
@@ -2677,6 +2740,22 @@ const styles = StyleSheet.create({
     color: IS_MOBILE ? 'rgba(255,255,255,0.72)' : '#64748b',
     fontWeight: '500',
   },
+  activeCaptureBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: IS_MOBILE ? 'rgba(37, 99, 235, 0.25)' : '#eff6ff',
+    borderWidth: 1,
+    borderColor: IS_MOBILE ? '#3b82f6' : '#bfdbfe',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginLeft: 4,
+  },
+  activeCaptureText: {
+    fontSize: IS_MOBILE ? 11 : 11,
+    fontWeight: '700',
+    color: IS_MOBILE ? '#60a5fa' : '#1d4ed8',
+  },
   // ── Secondary actions ──
   secondaryRow: {
     flexDirection: 'row',
@@ -2823,14 +2902,26 @@ const styles = StyleSheet.create({
     flexDirection: IS_MOBILE ? 'row' : 'column',
     alignItems: IS_MOBILE ? 'center' : 'stretch',
   },
-  kfSectionTitle: {
+  kfHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 7,
     display: IS_MOBILE ? 'none' : 'flex',
+  },
+  kfSectionTitle: {
     fontSize: 10,
     fontWeight: '800',
     color: '#64748b',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
-    marginBottom: 7,
+  },
+  kfActiveIndicator: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#2563EB',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   kfList: {
     maxHeight: IS_MOBILE ? (SCREEN_HEIGHT < 720 ? 96 : 118) : undefined,
@@ -2843,15 +2934,81 @@ const styles = StyleSheet.create({
     backgroundColor: IS_MOBILE ? '#2563EB' : '#ffffff',
     borderRadius: IS_MOBILE ? VP_BTN / 2 : 7,
     padding: IS_MOBILE ? 0 : 5,
-    borderWidth: IS_MOBILE ? 0 : 1,
-    borderColor: '#e2e8f0',
-    borderLeftWidth: IS_MOBILE ? 0 : 2,
-    borderLeftColor: '#2563EB',
+    borderWidth: IS_MOBILE ? 1 : 1,
+    borderColor: IS_MOBILE ? 'transparent' : '#e2e8f0',
+    borderLeftWidth: IS_MOBILE ? 1 : 3,
+    borderLeftColor: IS_MOBILE ? 'transparent' : '#94a3b8',
     width: IS_MOBILE ? VP_BTN : '48%',
     height: IS_MOBILE ? VP_BTN : undefined,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: IS_MOBILE ? 'hidden' : 'visible',
+    position: 'relative',
+  },
+  kfItemActive: {
+    backgroundColor: IS_MOBILE ? '#1d4ed8' : '#f0f9ff',
+    borderColor: '#2563EB',
+    borderLeftColor: '#2563EB',
+    borderWidth: IS_MOBILE ? 2 : 1,
+    borderLeftWidth: IS_MOBILE ? 2 : 4,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)' }
+      : { elevation: 3 }),
+  },
+  kfActiveBadgeDot: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38bdf8',
+  },
+  kfItemTop: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: IS_MOBILE ? 2 : 3,
+  },
+  kfNum: {
+    width: IS_MOBILE ? 34 : 22,
+    height: IS_MOBILE ? 48 : 22,
+    borderRadius: IS_MOBILE ? 0 : 11,
+    backgroundColor: IS_MOBILE ? '#2563EB' : '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kfNumActive: {
+    backgroundColor: '#2563EB',
+  },
+  kfNumText: {
+    fontSize: IS_MOBILE ? 14 : 10,
+    fontWeight: '800',
+    color: IS_MOBILE ? '#fff' : '#2563EB',
+  },
+  kfNumTextActive: {
+    color: '#ffffff',
+  },
+  kfViewBtn: {
+    flex: 1,
+    backgroundColor: IS_MOBILE ? 'transparent' : '#eff6ff',
+    minWidth: IS_MOBILE ? undefined : 24,
+    height: IS_MOBILE ? 48 : 22,
+    borderRadius: IS_MOBILE ? 4 : 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 4,
+  },
+  kfViewBtnActive: {
+    backgroundColor: '#2563EB',
+  },
+  kfViewBtnActiveText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   kfItemTop: {
     width: '100%',
