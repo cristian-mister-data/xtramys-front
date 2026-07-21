@@ -690,6 +690,7 @@ export default function MatchSheetDetailModal({
         setPiece,
         availableSetPieces,
         playerOverlays,
+        preview: true,
         onSaved: canMutate === false
           ? null
           : (artifact) => persistSetPieceVideo(artifact, setPieceIndex),

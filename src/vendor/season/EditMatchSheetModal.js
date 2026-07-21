@@ -2497,6 +2497,7 @@ export default function EditMatchSheetModal({
         setPiece,
         availableSetPieces,
         playerOverlays,
+        preview: true,
         onSaved: (artifact) => persistGeneratedSetPieceVideo(artifact, setPieceIndex),
         onProgress: (progress, phase) => {
           setVideoGenerationProgress(progress);

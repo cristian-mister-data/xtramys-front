@@ -39,6 +39,7 @@ export async function resolveMatchSheetSetPieceVideo({
   playerOverlays = [],
   onProgress,
   onSaved,
+  preview = false,
 }) {
   const currentSetPiece = syncSetPieceFromSource(setPiece, availableSetPieces);
   const signature = getSetPieceVideoSignature(playerOverlays);
@@ -90,7 +91,7 @@ export async function resolveMatchSheetSetPieceVideo({
   const url = await resolvePlayableVideoUrl(sourceVideoId, {
     playerOverlays,
     fieldType,
-    persistVideo: onSaved ? {
+    persistVideo: !preview && onSaved ? {
       onSaved: (artifact) => onSaved({
         ...artifact,
         signature,
@@ -99,6 +100,9 @@ export async function resolveMatchSheetSetPieceVideo({
         sourceUpdatedAt,
       }),
     } : null,
+    renderWidth: preview ? 960 : undefined,
+    cacheVersion: sourceUpdatedAt,
+    reuseResult: preview,
     onProgress,
   });
 
@@ -277,7 +281,16 @@ const saveIOSVideo = async (path) => {
 };
 
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
-  const { playerOverlays, fieldType, onProgress, persistVideo, ...urlOptions } = options || {};
+  const {
+    playerOverlays,
+    fieldType,
+    onProgress,
+    persistVideo,
+    renderWidth,
+    cacheVersion,
+    reuseResult,
+    ...urlOptions
+  } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
@@ -286,9 +299,17 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
   if (knownUrl && !playerOverlays) return maybeObjectUrl(knownUrl, urlOptions);
   if (!videoId) return '';
 
-  if (playerOverlays?.length || persistVideo) {
+  if (playerOverlays?.length || persistVideo || renderWidth) {
     try {
-      return await regenerateVideoInBrowser(videoId, { playerOverlays, fieldType, onProgress, persistVideo });
+      return await regenerateVideoInBrowser(videoId, {
+        playerOverlays,
+        fieldType,
+        onProgress,
+        persistVideo,
+        renderWidth,
+        cacheVersion,
+        reuseResult,
+      });
     } catch (error) {
       console.warn('[videoPlayback] No se pudo recrear el vídeo personalizado en el dispositivo:', error);
       throw new Error('No se pudo recrear el vídeo con la equipación y los jugadores de la ficha');

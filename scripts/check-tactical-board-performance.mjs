@@ -75,6 +75,10 @@ assert.match(directRegeneration, /createStreamingVideoEncoder/);
 assert.match(directRegeneration, /encoder\.addFrame/);
 assert.match(directRegeneration, /pendingFrameRun\.durationFrames/);
 assert.doesNotMatch(directRegeneration, /toBlob|CAPTURE_FORMAT/);
+assert.match(localVideoRegenerator, /renderWidth/);
+assert.match(localVideoRegenerator, /localRegenerationResultCache/);
+assert.match(localVideoRegenerator, /if \(index === 0 \|\| !frame\._reusePreviousFrame\)[\s\S]*?canvas\.toBlob/);
+assert.match(videoUtils, /const encodedSources = new Map\(\)/);
 
 const canvasCurveRenderer = videoCanvasRenderer.slice(
   videoCanvasRenderer.indexOf('function drawCurveLine'),

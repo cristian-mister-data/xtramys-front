@@ -176,6 +176,7 @@ assert.match(matchSheetSource, /setPiecePreviewLoadingOverlay/);
 assert.match(matchSheetSource, /customFieldType: boardSnapshot\?\.fieldType/);
 assert.match(matchSheetSource, /showPhotos: assignment\.showPhotos,/);
 assert.match(matchSheetSource, /const playerData = matchOverlay \? matchOverlay\.playerData : element\.playerData/);
+assert.match(matchSheetSource, /playerOverlays,[\s\S]{0,80}preview: true/);
 assert.doesNotMatch(matchSheetSource, /if \(!availableVideo && getSetPieceVideoId\(setPiece\)\)/);
 assert.doesNotMatch(matchSheetSource, /Error loading set pieces for match sheet:[\s\S]{0,100}setAvailableSetPieces\(\[\]\)/);
 assert.match(matchSheetSource, /if \(!error\?\.status \|\| error\.status >= 500\) break;/);
@@ -189,6 +190,7 @@ assert.match(videoShimSource, /sourceToUrl\(player\?\._source\) !== sourceToUrl\
 const matchSheetDetailSource = readFileSync(new URL('../src/vendor/season/MatchSheetDetailModal.js', import.meta.url), 'utf8');
 assert.match(matchSheetDetailSource, /resolveMatchSheetSetPieceVideo/);
 assert.match(matchSheetDetailSource, /const playerData = matchOverlay \? matchOverlay\.playerData : element\.playerData/);
+assert.match(matchSheetDetailSource, /playerOverlays,[\s\S]{0,80}preview: true/);
 
 const loadingSpinnerSource = readFileSync(new URL('../src/vendor/shared/LoadingSpinner.js', import.meta.url), 'utf8');
 assert.match(loadingSpinnerSource, /animateTransform/);

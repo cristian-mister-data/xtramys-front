@@ -931,9 +931,16 @@ async function generateVideoWithNativeEncoder(framesDir, frameCount, speed = 1, 
   const fps = SPEED_TO_FPS[speed] || 30;
   const { store, keys } = getSortedFrameKeys(framesDir);
   const frames = [];
+  const encodedSources = new Map();
 
   for (let index = 0; index < keys.length; index++) {
-    frames.push(await RNFS.readFile(keys[index], 'base64'));
+    const source = store.get(keys[index]);
+    let encoded = encodedSources.get(source);
+    if (!encoded) {
+      encoded = await RNFS.readFile(keys[index], 'base64');
+      encodedSources.set(source, encoded);
+    }
+    frames.push(encoded);
     onProgress?.(Math.min(0.35, ((index + 1) / keys.length) * 0.35));
     if (index % 6 === 0) await yieldToBrowser();
   }

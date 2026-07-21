@@ -23,8 +23,10 @@ import {
 const CAPTURE_FORMAT = 'jpeg';
 const CAPTURE_EXTENSION = 'jpg';
 const CAPTURE_QUALITY = 0.97;
+const MAX_PREVIEW_CACHE_ENTRIES = 6;
 
 const localRegenerationById = new Map();
+const localRegenerationResultCache = new Map();
 
 const yieldToBrowser = () =>
   new Promise((resolve) => {
@@ -35,11 +37,15 @@ const yieldToBrowser = () =>
     }
   });
 
-function getRenderConfig(video) {
+function getRenderConfig(video, renderWidth) {
   const config = video.config || {};
   const speedMultiplier = config.speedMultiplier || 1;
   const { viewMode } = decomposeFieldId(video.fieldType || 'full');
   const aspect = 1 / getAspectForView(viewMode);
+  const fullDimensions = getVideoDimensions(aspect);
+  const width = Number.isFinite(renderWidth)
+    ? Math.max(2, Math.round(renderWidth / 2) * 2)
+    : fullDimensions.width;
   return {
     fps: SPEED_TO_FPS[speedMultiplier] || config.fps || 30,
     moveDuration: 0.9,
@@ -49,7 +55,12 @@ function getRenderConfig(video) {
     playersWithNumber: config.playersWithNumber !== undefined ? config.playersWithNumber : true,
     showPhotos: config.showPhotos || false,
     viewMode,
-    dimensions: getVideoDimensions(aspect),
+    dimensions: {
+      width,
+      height: Number.isFinite(renderWidth)
+        ? Math.max(2, Math.round((width / aspect) / 2) * 2)
+        : fullDimensions.height,
+    },
   };
 }
 
@@ -153,18 +164,19 @@ async function renderFramesToDirectory(session, createFrames, frameCount, render
   const framesDir = await initRecordingSession();
 
   let index = 0;
+  let frameBlob = null;
   for (const frame of createFrames()) {
     if (index === 0 || !frame._reusePreviousFrame) {
       renderSessionFrame(session, frame, renderConfig);
+      frameBlob = await new Promise((resolve, reject) => {
+        session.canvas.toBlob(
+          (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))),
+          `image/${CAPTURE_FORMAT}`,
+          CAPTURE_QUALITY,
+        );
+      });
     }
-    const blob = await new Promise((resolve, reject) => {
-      session.canvas.toBlob(
-        (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))),
-        `image/${CAPTURE_FORMAT}`,
-        CAPTURE_QUALITY,
-      );
-    });
-    await RNFS.moveFile(blob, `${framesDir}/frame${String(index).padStart(4, '0')}.${CAPTURE_EXTENSION}`);
+    await RNFS.moveFile(frameBlob, `${framesDir}/frame${String(index).padStart(4, '0')}.${CAPTURE_EXTENSION}`);
 
     const currentProgress = 15 + Math.round(((index + 1) / frameCount) * 60);
     onProgress?.(currentProgress, 'generationEncoding');
@@ -194,7 +206,7 @@ async function persistGeneratedVideo(outputPath, persistVideo) {
   return { r2Key, videoUrl: upload.videoUrl };
 }
 
-async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null, fieldTypeOverride = null) {
+async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null, fieldTypeOverride = null, renderWidth = null) {
   onProgress?.(5, 'generationPreparing');
   const response = await getVideoForEdit(videoId);
   let video = response?.success ? response.video : null;
@@ -216,7 +228,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
   if (fieldTypeOverride) video = { ...video, fieldType: fieldTypeOverride };
 
   onProgress?.(15, 'generationPreparing');
-  const renderConfig = getRenderConfig(video);
+  const renderConfig = getRenderConfig(video, renderWidth);
   const keyframes = video.keyframes.map((keyframe) => ({
     ...keyframe,
     elements: applySetPiecePlayerOverlays(keyframe.elements || [], playerOverlays),
@@ -287,9 +299,22 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
 const localRegenerationListeners = new Map();
 const localRegenerationSavedListeners = new Map();
 
-export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldType, onProgress, persistVideo } = {}) {
+export function regenerateVideoInBrowser(videoId, {
+  playerOverlays = [],
+  fieldType,
+  onProgress,
+  persistVideo,
+  renderWidth,
+  cacheVersion,
+  reuseResult = false,
+} = {}) {
   if (!videoId) throw new Error('No hay video para regenerar');
-  const cacheKey = `${videoId}:${fieldType || ''}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
+  const cacheKey = `${videoId}:${cacheVersion || ''}:${fieldType || ''}:${renderWidth || 'full'}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
+
+  if (reuseResult && localRegenerationResultCache.has(cacheKey)) {
+    onProgress?.(100, 'generationComplete');
+    return Promise.resolve(URL.createObjectURL(localRegenerationResultCache.get(cacheKey)));
+  }
 
   if (onProgress) {
     if (!localRegenerationListeners.has(cacheKey)) {
@@ -320,7 +345,7 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldTy
 
     localRegenerationById.set(
       cacheKey,
-      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo, fieldType)
+      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo, fieldType, renderWidth)
         .then(async (result) => {
           if (result.persistedVideo) {
             const listeners = localRegenerationSavedListeners.get(cacheKey) || [];
@@ -332,6 +357,17 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldTy
                 console.warn('[video] No se pudo guardar la referencia del video de la ficha:', entry.reason);
               }
             }));
+          }
+          if (reuseResult) {
+            const response = await fetch(result.outputPath);
+            const cachedBlob = await response.blob();
+            URL.revokeObjectURL(result.outputPath);
+            localRegenerationResultCache.set(cacheKey, cachedBlob);
+            while (localRegenerationResultCache.size > MAX_PREVIEW_CACHE_ENTRIES) {
+              const oldestKey = localRegenerationResultCache.keys().next().value;
+              localRegenerationResultCache.delete(oldestKey);
+            }
+            return URL.createObjectURL(cachedBlob);
           }
           return result.outputPath;
         })
@@ -347,6 +383,6 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldTy
 
 // Compatibilidad con consumidores antiguos: las URLs persistidas viven en el
 // video de la ficha, no en una caché de memoria del navegador.
-export function isCachedRegeneratedVideoUrl() {
+export function isCachedRegeneratedVideoUrl(_url) {
   return false;
 }
