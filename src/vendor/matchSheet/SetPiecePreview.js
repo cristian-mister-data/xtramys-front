@@ -29,7 +29,9 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
   const field = decomposeFieldId(setPiece?.customFieldType || setPiece?.tipoCampo || 'full');
   const fieldAspect = getAspectForView(field.viewMode);
   const effectiveKitContext = kitContext || setPiece?.pizarraConfig?.kitContext;
-  const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
+  const configuredShowPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos
+    ?? setPiece?.pizarraConfig?.showPhotos;
+  const showPhotos = configuredShowPhotos === true;
   const assignmentBySlot = new Map(assignments.map((assignment) => [String(assignment.slotId), assignment]));
   const elements = applySetPieceKitsToElements(sourceElements.map((element) => {
     if (element?.type !== 'player') return element;
@@ -39,7 +41,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
     const playerName = isPlayerObject(player)
       ? (getPlayerFullName(player) || player.fullName || player.name || assignment?.playerName)
       : assignment?.playerName;
-    if (!assignment || !(assignment.player || assignment.playerName || element.playerData) || !playerName) {
+    if (!(assignment?.player || assignment?.playerName || element.playerData) || !playerName) {
       return { ...element, playerData: undefined, photoUrl: undefined, matchSheetAssigned: false };
     }
     const playerData = isPlayerObject(player)
@@ -50,6 +52,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       number: playerData.dorsal || playerData.number || assignment?.number || element.number,
       playerData,
       photoUrl: playerData.foto ? cdnUrl(playerData.foto) : undefined,
+      showPhotos: Boolean(playerData.foto) && (assignment?.showPhotos ?? element.showPhotos ?? showPhotos),
       matchSheetAssigned: true,
     };
   }), effectiveKitContext, showPhotos).map((element) => ({
@@ -176,7 +179,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     element.showPhotos === true,
                     element.photoUrl || cdnUrl(element.playerData?.foto || ''),
                   )}
-                  {element.matchSheetAssigned && renderPlayerNameLabel(element, height <= 180)}
+                  {element.matchSheetAssigned && renderPlayerNameLabel(element, true)}
                 </View>
               );
             })}
@@ -202,8 +205,8 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     style={{
                       color: element.color || '#000',
                       fontFamily: 'Arial, Helvetica, sans-serif',
-                      fontSize: (element.size || element.fontSize || 18) * scale,
-                      lineHeight: (element.size || element.fontSize || 18) * scale * 1.2,
+                      fontSize: (element.size || element.fontSize || 18) * scale * 0.72,
+                      lineHeight: (element.size || element.fontSize || 18) * scale * 0.86,
                       fontWeight: 'bold',
                       overflowWrap: 'anywhere',
                       wordBreak: 'break-word',
@@ -236,7 +239,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
               selected && styles.markerSelected,
             ]}
           >
-            {hasPlayer && showPhotos && item.player?.foto ? (
+            {hasPlayer && (item.showPhotos ?? item.element?.showPhotos ?? showPhotos) && item.player?.foto ? (
               <Image source={{ uri: cdnUrl(item.player.foto) }} style={styles.photo} />
             ) : hasPlayer ? (
               <View style={styles.initials}>

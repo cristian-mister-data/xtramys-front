@@ -70,6 +70,10 @@ export async function captureViewShotBase64(viewShotRef, extraOptions = {}) {
       const commaIndex = captured.indexOf(',');
       return commaIndex >= 0 ? captured.slice(commaIndex + 1) : captured;
     }
+    // Web shims can return raw base64 even inside a native WebView.
+    if (!/^(file|content|blob|https?):/i.test(captured) && !captured.startsWith('/')) {
+      return captured;
+    }
     if (Platform.OS === 'web' && !/^(file|content|blob|https?):/i.test(captured)) {
       return captured;
     }

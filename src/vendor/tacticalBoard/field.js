@@ -4180,22 +4180,28 @@ export default function Field(props = {}) {
           ctx.imageSmoothingEnabled = true;
           if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
 
-          const fieldBase64 = await captureViewShotBase64(fieldBaseRef);
-          const fieldImage = await loadCanvasImage(fieldBase64);
-          renderFrameToCanvas(
-            ctx,
-            exportWidth,
-            exportHeight,
-            normalizeElementsForCanvas(savedClones),
-            connectors,
-            fieldImage,
-            {
-              playersWithNumber,
-              showPhotos: teamPlayerStyle.showPhotos,
-              viewMode,
-            },
-          );
-          imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+          const fieldBase64 = await captureViewShotBase64(fieldBaseRef).catch(() => '');
+          const fieldImage = await loadCanvasImage(fieldBase64).catch(() => null);
+          if (fieldImage) {
+            renderFrameToCanvas(
+              ctx,
+              exportWidth,
+              exportHeight,
+              normalizeElementsForCanvas(savedClones),
+              connectors,
+              fieldImage,
+              {
+                playersWithNumber,
+                showPhotos: teamPlayerStyle.showPhotos,
+                viewMode,
+              },
+            );
+            imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+          } else {
+            // If WebKit cannot rasterize the offscreen SVG, keep the complete
+            // visible board instead of silently saving the green fallback.
+            imageBase64 = await captureViewShotBase64(canvasRef).catch(() => '');
+          }
         }
 
         if (!imageBase64) {

@@ -110,6 +110,15 @@ assert.match(videoUtils, /latencyMode: 'quality'/);
 assert.match(videoUtils, /\(area \/ ref\) \* 24_000_000/);
 assert.match(videoUtils, /duration: safeDurationFrames \* frameDurationUs/);
 assert.match(videoUtils, /createMediaRecorderStreamingEncoder/);
+const streamingEncoderFactory = videoUtils.slice(
+  videoUtils.indexOf('export async function createStreamingVideoEncoder'),
+  videoUtils.indexOf('async function generateVideoWithFFmpeg'),
+);
+assert.ok(
+  streamingEncoderFactory.indexOf("typeof window === 'undefined' || !window.VideoEncoder") <
+    streamingEncoderFactory.indexOf('getMediaRecorderMp4Mime()'),
+  'WebCodecs must be preferred so render delays cannot alter frame timing',
+);
 assert.match(videoUtils, /videoBitsPerSecond: getRealtimeVideoBitrate/);
 assert.match(videoUtils, /getVideoBitrate\(width, height\) \* 1\.5/);
 assert.match(videoUtils, /track\.requestFrame\(\)/);

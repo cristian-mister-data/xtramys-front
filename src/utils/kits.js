@@ -96,7 +96,7 @@ export function applySetPieceKitsToElements(elements = [], kitContext, showPhoto
       isGoalkeeper: role.endsWith('Goalkeeper'),
       isNeutral: false,
       hasBib: false,
-      showPhotos: typeof showPhotos === 'boolean' ? showPhotos : element.showPhotos === true,
+      showPhotos: element.showPhotos ?? (showPhotos === true),
       preserveVisualStyle: true,
     };
   });
@@ -185,4 +185,28 @@ export function getSetPieceVideoSignature(overlays = []) {
       photo: media(overlay.playerData?.foto),
     },
   })));
+}
+
+const valueId = (value) => (typeof value === 'object' ? value?._id || value?.id : value);
+
+export function syncSetPieceFromSource(setPiece, availableSetPieces = []) {
+  if (!setPiece) return setPiece;
+  const strategyId = valueId(setPiece.strategyId || setPiece._id || setPiece.id);
+  const embeddedSource = typeof setPiece.strategyId === 'object' ? setPiece.strategyId : null;
+  const source = embeddedSource || availableSetPieces.find((item) =>
+    String(valueId(item?._id || item?.id) || '') === String(strategyId || ''),
+  );
+  if (!source) return setPiece;
+
+  const fieldType = source.customFieldType || source.tipoCampo;
+  const videoId = valueId(source.videoId || (Array.isArray(source.videos) ? source.videos[0] : null));
+  const currentVideoId = valueId(setPiece.videoId);
+  if ((!fieldType || fieldType === setPiece.customFieldType) && (!videoId || String(videoId) === String(currentVideoId || ''))) {
+    return setPiece;
+  }
+  return {
+    ...setPiece,
+    ...(fieldType ? { customFieldType: fieldType } : {}),
+    ...(videoId ? { videoId } : {}),
+  };
 }

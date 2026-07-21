@@ -4,7 +4,7 @@ import { regenerateVideoInBrowser } from '@/utils/localVideoRegenerator';
 import { API_URL, USE_COOKIE_AUTH } from '@/config';
 import { loadToken } from '@/auth/storage';
 import { isNative, platform } from '@/platform/capacitor';
-import { getSetPieceVideoSignature } from '@/utils/kits';
+import { getSetPieceVideoSignature, syncSetPieceFromSource } from '@/utils/kits';
 
 const getId = (videoOrId) => {
   if (!videoOrId) return null;
@@ -19,11 +19,18 @@ export const getSetPieceVideoId = (setPiece) => {
 };
 
 export const getSetPieceVideoCandidates = (setPiece, availableSetPieces = []) => {
-  const strategyId = setPiece?.strategyId || setPiece?._id || setPiece?.id;
+  const strategyId = typeof setPiece?.strategyId === 'object'
+    ? (setPiece.strategyId?._id || setPiece.strategyId?.id)
+    : (setPiece?.strategyId || setPiece?._id || setPiece?.id);
   const source = availableSetPieces.find((item) =>
     String(item?._id || item?.id || '') === String(strategyId || ''),
   );
-  return [...new Set([getSetPieceVideoId(setPiece), getSetPieceVideoId(source)].filter(Boolean).map(String))];
+  const currentSetPiece = syncSetPieceFromSource(setPiece, availableSetPieces);
+  return [...new Set([
+    getSetPieceVideoId(currentSetPiece),
+    getSetPieceVideoId(setPiece),
+    getSetPieceVideoId(source),
+  ].filter(Boolean).map(String))];
 };
 
 export async function resolveMatchSheetSetPieceVideo({
@@ -33,12 +40,15 @@ export async function resolveMatchSheetSetPieceVideo({
   onProgress,
   onSaved,
 }) {
+  const currentSetPiece = syncSetPieceFromSource(setPiece, availableSetPieces);
   const signature = getSetPieceVideoSignature(playerOverlays);
-  const requestedVideoId = getSetPieceVideoId(setPiece);
-  const config = setPiece?.pizarraConfig || {};
+  const requestedVideoId = getSetPieceVideoId(currentSetPiece);
+  const fieldType = currentSetPiece?.customFieldType || currentSetPiece?.tipoCampo || 'full';
+  const config = currentSetPiece?.pizarraConfig || {};
   const storedSourceId = config.matchVideoSourceId;
   const storedCandidate = Boolean(config.matchVideoUrl)
     && config.matchVideoCopySignature === signature
+    && config.matchVideoFieldType === fieldType
     && (!storedSourceId || !requestedVideoId || String(storedSourceId) === String(requestedVideoId));
   const requestedMetadata = storedCandidate && requestedVideoId
     ? await getVideoById(requestedVideoId, { optional: true }).catch(() => null)
@@ -79,10 +89,12 @@ export async function resolveMatchSheetSetPieceVideo({
   const sourceUpdatedAt = availableVideo.metadata?.video?.updatedAt;
   const url = await resolvePlayableVideoUrl(sourceVideoId, {
     playerOverlays,
+    fieldType,
     persistVideo: onSaved ? {
       onSaved: (artifact) => onSaved({
         ...artifact,
         signature,
+        fieldType,
         sourceVideoId,
         sourceUpdatedAt,
       }),
@@ -265,7 +277,7 @@ const saveIOSVideo = async (path) => {
 };
 
 export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
-  const { playerOverlays, onProgress, persistVideo, ...urlOptions } = options || {};
+  const { playerOverlays, fieldType, onProgress, persistVideo, ...urlOptions } = options || {};
   const knownUrl = getKnownUrl(videoOrId);
   const videoId = getId(videoOrId);
   if (videoId?.startsWith?.('job_') || videoId?.startsWith?.('preview_')) {
@@ -276,7 +288,7 @@ export async function resolvePlayableVideoUrl(videoOrId, options = {}) {
 
   if (playerOverlays?.length || persistVideo) {
     try {
-      return await regenerateVideoInBrowser(videoId, { playerOverlays, onProgress, persistVideo });
+      return await regenerateVideoInBrowser(videoId, { playerOverlays, fieldType, onProgress, persistVideo });
     } catch (error) {
       console.warn('[videoPlayback] No se pudo recrear el vídeo personalizado en el dispositivo:', error);
       throw new Error('No se pudo recrear el vídeo con la equipación y los jugadores de la ficha');

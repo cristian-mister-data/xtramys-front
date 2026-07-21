@@ -566,18 +566,17 @@ function createMediaRecorderStreamingEncoder({
 }
 
 export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, onProgress } = {}) {
-  const mediaRecorderMime = getMediaRecorderMp4Mime();
-  if (mediaRecorderMime) {
-    return createMediaRecorderStreamingEncoder({
-      speed,
-      frameCount,
-      onProgress,
-      mimeType: mediaRecorderMime,
-    });
-  }
-
   if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
-    throw new Error('WebCodecs no disponible en este navegador');
+    const mediaRecorderMime = getMediaRecorderMp4Mime();
+    if (mediaRecorderMime) {
+      return createMediaRecorderStreamingEncoder({
+        speed,
+        frameCount,
+        onProgress,
+        mimeType: mediaRecorderMime,
+      });
+    }
+    throw new Error('No hay un codificador de video compatible en este navegador');
   }
 
   const fps = SPEED_TO_FPS[speed] || 30;

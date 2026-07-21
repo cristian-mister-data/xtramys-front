@@ -42,8 +42,9 @@ import { getMatchSheet, updateMatchSheet } from '@/api/matchSheet';
 import { getScoutingReports, deleteScoutingReport } from '@/api/scouting';
 import ScoutingDetailModal from '@/components/scouting/ScoutingDetailModal';
 import MatchStatisticsModal from '@/components/season/MatchStatisticsModal';
-import { applySetPieceKitsToElements, normalizeKits, normalizeRivalKits } from '@/utils/kits';
+import { applySetPieceKitsToElements, normalizeKits, normalizeRivalKits, syncSetPieceFromSource } from '@/utils/kits';
 import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
+import { api } from '@/api/client';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -283,6 +284,7 @@ export default function MatchSheetDetailModal({
   const [activeDetailTab, setActiveDetailTab] = useState('data');
   const [statisticsMatchSheet, setStatisticsMatchSheet] = useState(matchSheet);
   const [detailSetPieces, setDetailSetPieces] = useState(() => matchSheet?.setPieces || []);
+  const [availableSetPieces, setAvailableSetPieces] = useState([]);
   const detailSetPiecesRef = useRef(matchSheet?.setPieces || []);
   const detailMatchSheetIdRef = useRef(String(matchSheet?._id || ''));
   const matchSheetSetPiecesUpdateRef = useRef(Promise.resolve());
@@ -316,6 +318,27 @@ export default function MatchSheetDetailModal({
       mounted = false;
     };
   }, [visible, matchSheet?._id]);
+
+  useEffect(() => {
+    if (!visible) return;
+    let mounted = true;
+    api.get(`/strategy/all?kind=setPiece&lang=${i18n.language || 'es'}`)
+      .then((response) => {
+        if (mounted) setAvailableSetPieces(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch(() => {
+        if (mounted) setAvailableSetPieces([]);
+      });
+    return () => { mounted = false; };
+  }, [visible, i18n.language]);
+
+  useEffect(() => {
+    if (!availableSetPieces.length || !detailSetPieces.length) return;
+    const next = detailSetPieces.map((setPiece) => syncSetPieceFromSource(setPiece, availableSetPieces));
+    if (!next.some((setPiece, index) => setPiece !== detailSetPieces[index])) return;
+    detailSetPiecesRef.current = next;
+    setDetailSetPieces(next);
+  }, [availableSetPieces, detailSetPieces]);
   
   const openExternalUrl = (url) => {
     if (!url) return;
@@ -452,12 +475,16 @@ export default function MatchSheetDetailModal({
   };
 
   const buildSetPiecePlayerOverlays = (setPiece) => {
-    const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
     const source = setPiece?.customElements?.length ? setPiece.customElements : (setPiece?.elementosCampo || []);
+    const configuredShowPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos
+      ?? setPiece?.pizarraConfig?.showPhotos;
+    const showPhotos = configuredShowPhotos === true;
     const styledPlayers = applySetPieceKitsToElements(source, getSetPieceKitContext(setPiece), showPhotos)
       .filter((element) => element?.type === 'player');
     const mergeVisuals = (overlays) => styledPlayers.map((element, index) => {
       const matchOverlay = overlays.find((overlay) => String(overlay.slotId) === String(element.id || element._id || `slot-${index}`));
+      const playerData = matchOverlay?.playerData || element.playerData;
+      const photoUrl = matchOverlay?.photoUrl || element.photoUrl || (element.playerData?.foto ? cdnUrl(element.playerData.foto) : '');
       return {
         slotId: String(element.id || element._id || `slot-${index}`),
         number: String(matchOverlay?.number || element.number || element.playerNumber || ''),
@@ -476,10 +503,10 @@ export default function MatchSheetDetailModal({
         differentiateGoalkeeper: element.differentiateGoalkeeper,
         goalkeeperStripeColor: element.goalkeeperStripeColor,
         preserveVisualStyle: true,
-        showPhotos,
+        showPhotos: Boolean(photoUrl) && (matchOverlay?.showPhotos ?? element.showPhotos ?? showPhotos),
         hasBib: false,
-        playerData: matchOverlay?.playerData,
-        photoUrl: matchOverlay?.photoUrl,
+        playerData,
+        photoUrl,
       };
     });
     const bySlot = new Map((setPiece?.assignments || []).map((assignment) => [String(assignment.slotId || ''), assignment]));
@@ -509,7 +536,7 @@ export default function MatchSheetDetailModal({
             foto: player.foto || '',
           },
           photoUrl,
-          showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? element.showPhotos === true,
+          showPhotos: Boolean(photoUrl) && (assignment?.showPhotos ?? element.showPhotos ?? showPhotos),
         };
       })
       .filter(Boolean);
@@ -536,7 +563,7 @@ export default function MatchSheetDetailModal({
           foto: player.foto || '',
         },
         photoUrl,
-        showPhotos: setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? assignment.showPhotos === true,
+        showPhotos: Boolean(photoUrl) && (assignment.showPhotos ?? showPhotos),
       };
     })
     .filter(Boolean);
@@ -544,7 +571,7 @@ export default function MatchSheetDetailModal({
   };
 
   const downloadSetPiecesPdf = async () => {
-    const setPieces = matchSheet?.setPieces || [];
+    const setPieces = detailSetPieces;
     if (!setPieces.length) return;
     await generateSetPiecesPdf(
       setPieces.map((setPiece) => ({
@@ -593,7 +620,9 @@ export default function MatchSheetDetailModal({
         customImage: sp.customImage || '',
         elementosCampo: sp.elementosCampo || [],
         customElements: sp.customElements || [],
-        customFieldType: sp.customFieldType || '',
+        customFieldType: index === setPieceIndex
+          ? (artifact.fieldType || sp.customFieldType || sp.tipoCampo || 'full')
+          : (sp.customFieldType || sp.tipoCampo || 'full'),
         pizarraConfig: {
           ...(sp.pizarraConfig || {}),
           setPieceMode: true,
@@ -604,6 +633,9 @@ export default function MatchSheetDetailModal({
           matchVideoCopySignature: index === setPieceIndex
             ? artifact.signature
             : (sp.pizarraConfig?.matchVideoCopySignature || undefined),
+          matchVideoFieldType: index === setPieceIndex
+            ? artifact.fieldType
+            : (sp.pizarraConfig?.matchVideoFieldType || undefined),
           matchVideoSourceId: index === setPieceIndex
             ? artifact.sourceVideoId
             : (sp.pizarraConfig?.matchVideoSourceId || undefined),
@@ -628,6 +660,7 @@ export default function MatchSheetDetailModal({
           y: assignment.y,
           player: assignment.player?._id || assignment.player,
           playerName: assignment.playerName || '',
+          showPhotos: assignment.showPhotos,
         })),
       }));
 
@@ -653,7 +686,7 @@ export default function MatchSheetDetailModal({
       const playerOverlays = buildSetPiecePlayerOverlays(setPiece);
       const result = await resolveMatchSheetSetPieceVideo({
         setPiece,
-        availableSetPieces: detailSetPieces,
+        availableSetPieces,
         playerOverlays,
         onSaved: canMutate === false
           ? null
@@ -706,7 +739,7 @@ export default function MatchSheetDetailModal({
       const playerOverlays = buildSetPiecePlayerOverlays(setPiece);
       const result = await resolveMatchSheetSetPieceVideo({
         setPiece,
-        availableSetPieces: detailSetPieces,
+        availableSetPieces,
         playerOverlays,
         onSaved: canMutate === false
           ? null

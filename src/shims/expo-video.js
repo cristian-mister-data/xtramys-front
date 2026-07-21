@@ -165,7 +165,9 @@ export function VideoView({
     force((x) => x + 1);
     return () => {
       if (player?._el === element) player._el = null;
-      releaseObjectUrl(mountedSource);
+      if (sourceToUrl(player?._source) !== sourceToUrl(mountedSource)) {
+        releaseObjectUrl(mountedSource);
+      }
     };
   }, [player, src]);
 

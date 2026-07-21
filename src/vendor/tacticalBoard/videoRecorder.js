@@ -43,7 +43,7 @@ function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, child
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import RNFS from 'react-native-fs';
-import { captureRef } from 'react-native-view-shot';
+import { captureViewShotBase64 } from './field/primitives';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import {
   initRecordingSession,
@@ -630,12 +630,10 @@ function VideoRecorder({
         }
 
         try {
-          const capturedUri = await fieldBaseRef.current.capture();
-
-          // Convertir la imagen capturada a base64
-          const base64Image = await RNFS.readFile(capturedUri, 'base64');
-
-          fieldImageData = `data:image/png;base64,${base64Image}`;
+          const base64Image = await captureViewShotBase64(fieldBaseRef);
+          fieldImageData = base64Image
+            ? (base64Image.startsWith('data:') ? base64Image : `data:image/png;base64,${base64Image}`)
+            : '';
         } catch (captureError) {
           console.warn(
             'No se pudo capturar el campo base; se usará el renderer del video.',
@@ -1051,7 +1049,15 @@ function VideoRecorder({
 
       // Cargar imagen del campo como fondo
       let fieldBgImage = null;
-      const fieldImgSrc = keyframes[0]?.fieldImageData || fieldImage;
+      let fieldImgSrc = keyframes[0]?.fieldImageData || fieldImage;
+      if (!fieldImgSrc && fieldBaseRef?.current) {
+        const capturedField = await captureViewShotBase64(fieldBaseRef).catch(() => '');
+        if (capturedField) {
+          fieldImgSrc = capturedField.startsWith('data:')
+            ? capturedField
+            : `data:image/png;base64,${capturedField}`;
+        }
+      }
       if (fieldImgSrc) {
         try {
           fieldBgImage = await new Promise((resolve, reject) => {
@@ -1548,8 +1554,9 @@ function VideoRecorder({
 
         // Notificar al componente padre sobre el video guardado (para asociar a ejercicio/estrategia nuevo)
         if (savedVideoId) {
-          if (onVideoSaved) onVideoSaved(savedVideoId);
-          else global.fieldCallbacks?.onVideoSaved?.(savedVideoId);
+          const boardSnapshot = { fieldType, elements: getCurrentElements() };
+          if (onVideoSaved) onVideoSaved(savedVideoId, boardSnapshot);
+          else global.fieldCallbacks?.onVideoSaved?.(savedVideoId, boardSnapshot);
         }
         window.dispatchEvent(new CustomEvent('xtramys:video-library-changed'));
 

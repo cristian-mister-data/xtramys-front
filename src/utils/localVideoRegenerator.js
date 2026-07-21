@@ -234,7 +234,7 @@ async function persistGeneratedVideo(outputPath, persistVideo) {
   return { r2Key, videoUrl: upload.videoUrl };
 }
 
-async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null) {
+async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null, fieldTypeOverride = null) {
   onProgress?.(5, 'generationPreparing');
   const response = await getVideoForEdit(videoId);
   let video = response?.success ? response.video : null;
@@ -244,7 +244,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     if (tacticalVideo?.frames?.length) {
       video = {
         ...tacticalVideo,
-        fieldType: tacticalVideo.fieldType || 'full',
+        fieldType: fieldTypeOverride || tacticalVideo.fieldType || 'full',
         keyframes: tacticalVideo.frames,
         config: tacticalVideo.config || { speedMultiplier: tacticalVideo.speed || 1 },
       };
@@ -253,6 +253,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
   if (!video?.keyframes?.length) {
     throw new Error('No se pudieron cargar los keyframes del video');
   }
+  if (fieldTypeOverride) video = { ...video, fieldType: fieldTypeOverride };
 
   onProgress?.(15, 'generationPreparing');
   const renderConfig = getRenderConfig(video);
@@ -321,9 +322,9 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
 const localRegenerationListeners = new Map();
 const localRegenerationSavedListeners = new Map();
 
-export function regenerateVideoInBrowser(videoId, { playerOverlays = [], onProgress, persistVideo } = {}) {
+export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldType, onProgress, persistVideo } = {}) {
   if (!videoId) throw new Error('No hay video para regenerar');
-  const cacheKey = `${videoId}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
+  const cacheKey = `${videoId}:${fieldType || ''}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
 
   if (onProgress) {
     if (!localRegenerationListeners.has(cacheKey)) {
@@ -354,7 +355,7 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], onProgr
 
     localRegenerationById.set(
       cacheKey,
-      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo)
+      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo, fieldType)
         .then(async (result) => {
           if (result.persistedVideo) {
             const listeners = localRegenerationSavedListeners.get(cacheKey) || [];

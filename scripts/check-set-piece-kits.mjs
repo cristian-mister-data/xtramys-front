@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applySetPieceKitsToElements, applySetPiecePlayerOverlays, getSetPieceVideoSignature } from '../src/utils/kits.js';
+import { applySetPieceKitsToElements, applySetPiecePlayerOverlays, getSetPieceVideoSignature, syncSetPieceFromSource } from '../src/utils/kits.js';
 import {
   buildInterpolatedFrames,
   getInterpolatedFrameCount,
@@ -10,6 +10,7 @@ import {
   getPlayerKitRenderState,
   getPlayerRenderMetrics,
 } from '../src/utils/playerRenderMetrics.js';
+import { composeFieldId, decomposeFieldId } from '../src/vendor/tacticalBoard/fields/fieldConfigs.js';
 
 const elements = [
   { id: 'icon1-clone-legacy', type: 'player', paletteIndex: 0, color: '#000000', showPhotos: true },
@@ -28,9 +29,26 @@ assert.equal(result[0].kitPattern, 'halves');
 assert.equal(result[0].kitSecondaryColor, '#112233');
 assert.equal(result[0].numberColor, '#ffeedd');
 assert.equal(result[0].hasBib, false);
-assert.equal(result[0].showPhotos, false);
+assert.equal(result[0].showPhotos, true);
 assert.equal(result[1].color, '#fedcba');
 assert.equal(result[1].kitRole, 'rivalGoalkeeper');
+assert.equal(result[1].showPhotos, false);
+const mixedPhotos = applySetPieceKitsToElements([
+  { id: 'icon1-with-photo', type: 'player', showPhotos: true },
+  { id: 'icon1-without-photo', type: 'player', showPhotos: false },
+], kitContext, true);
+assert.equal(mixedPhotos[0].showPhotos, true);
+assert.equal(mixedPhotos[1].showPhotos, false);
+const storedSetPiece = { strategyId: 'strategy-1', customFieldType: 'full:entire', videoId: 'old-video' };
+const sourceSetPiece = { _id: 'strategy-1', tipoCampo: 'full:halfLeft', videos: ['current-video'] };
+const syncedSetPiece = syncSetPieceFromSource(storedSetPiece, [sourceSetPiece]);
+assert.equal(syncedSetPiece.customFieldType, 'full:halfLeft');
+assert.equal(syncedSetPiece.videoId, 'current-video');
+assert.equal(syncSetPieceFromSource(syncedSetPiece, [sourceSetPiece]), syncedSetPiece);
+assert.deepEqual(decomposeFieldId(composeFieldId('full', 'halfLeft')), {
+  lineType: 'full',
+  viewMode: 'halfLeft',
+});
 
 const animatedFrame = [
   { id: 'icon1-clone-1', type: 'player', number: '8', xRatio: 0.4, yRatio: 0.5, color: '#000000' },
@@ -138,6 +156,14 @@ assert.match(matchSheetSource, /boardModalGuardUntilRef\.current = Date\.now\(\)
 assert.match(matchSheetSource, /onRequestClose=\{handleMatchSheetRequestClose\}/);
 assert.match(matchSheetSource, /loadingSetPieceVideoIndex === setPieceIndex/);
 assert.match(matchSheetSource, /setPiecePreviewLoadingOverlay/);
+assert.match(matchSheetSource, /customFieldType: boardSnapshot\?\.fieldType/);
+assert.match(matchSheetSource, /showPhotos: assignment\.showPhotos,/);
+
+const recorderSource = readFileSync(new URL('../src/vendor/tacticalBoard/videoRecorder.js', import.meta.url), 'utf8');
+assert.match(recorderSource, /const boardSnapshot = \{ fieldType, elements: getCurrentElements\(\) \}/);
+
+const videoShimSource = readFileSync(new URL('../src/shims/expo-video.js', import.meta.url), 'utf8');
+assert.match(videoShimSource, /sourceToUrl\(player\?\._source\) !== sourceToUrl\(mountedSource\)/);
 
 const matchSheetDetailSource = readFileSync(new URL('../src/vendor/season/MatchSheetDetailModal.js', import.meta.url), 'utf8');
 assert.match(matchSheetDetailSource, /resolveMatchSheetSetPieceVideo/);
@@ -175,14 +201,14 @@ assert.equal(Array.from(iterateInterpolatedFrames(...interpolationArgs)).length,
 assert.equal(buildInterpolatedFrames(...interpolationArgs).length, 132);
 
 const previewSource = readFileSync(new URL('../src/vendor/matchSheet/SetPiecePreview.js', import.meta.url), 'utf8');
-assert.match(previewSource, /renderPlayerNameLabel\(element, height <= 180\)/);
+assert.match(previewSource, /renderPlayerNameLabel\(element, true\)/);
 assert.match(previewSource, /assignment\?\.playerName/);
 assert.match(previewSource, /const liveBoard = elements\.length > 0;/);
 assert.match(previewSource, /decomposeFieldId\(setPiece\?\.customFieldType \|\| setPiece\?\.tipoCampo \|\| 'full'\)/);
 assert.doesNotMatch(previewSource, /halfLeft|halfRight|autoFramed/);
 assert.match(previewSource, /getPlayerRenderMetrics\(element, scale\)/);
-assert.match(previewSource, /assignment\?\.player \|\| element\.playerData/);
-assert.match(previewSource, /if \(!assignment \|\|/);
+assert.match(previewSource, /assignment\?\.playerName \|\| element\.playerData/);
+assert.doesNotMatch(previewSource, /if \(!assignment \|\|/);
 assert.doesNotMatch(previewSource, /isOwnSetPiecePlayer/);
 assert.doesNotMatch(previewSource, /\|\| assignments\[index\]/);
 

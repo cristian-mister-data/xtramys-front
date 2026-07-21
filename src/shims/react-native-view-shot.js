@@ -1,6 +1,8 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import html2canvas from 'html2canvas';
 
+let captureSequence = 0;
+
 function resolveNode(refOrNode) {
   if (!refOrNode) return null;
   if (refOrNode.current !== undefined && refOrNode.current !== null) {
@@ -40,6 +42,10 @@ function restoreAncestorTransforms(saved) {
 }
 
 function captureHtml2Canvas(node, options) {
+  const marker = `view-shot-${++captureSequence}`;
+  const previousMarker = node.getAttribute('data-view-shot-capture');
+  node.setAttribute('data-view-shot-capture', marker);
+
   return html2canvas(node, {
     scale: options.pixelRatio || Math.max(window.devicePixelRatio || 1, 2),
     useCORS: true,
@@ -48,6 +54,17 @@ function captureHtml2Canvas(node, options) {
     width: node.offsetWidth,
     height: node.offsetHeight,
     logging: false,
+    // iOS WebKit can skip nodes positioned outside the viewport. Move only
+    // the cloned capture target into view; the live board is untouched.
+    onclone: (clonedDocument) => {
+      const clonedNode = clonedDocument.querySelector(`[data-view-shot-capture="${marker}"]`);
+      if (!clonedNode) return;
+      clonedNode.style.position = 'fixed';
+      clonedNode.style.left = '0px';
+      clonedNode.style.top = '0px';
+      clonedNode.style.margin = '0';
+      clonedNode.style.transform = 'none';
+    },
   }).then((canvas) => {
     const isJpeg = options.format === 'jpg' || options.format === 'jpeg';
     const quality = isJpeg ? (options.quality ?? 0.92) : 1;
@@ -65,6 +82,9 @@ function captureHtml2Canvas(node, options) {
     const dataUrl = canvas.toDataURL(type, quality);
     if (options.result === 'base64') return dataUrl.split(',')[1];
     return dataUrl;
+  }).finally(() => {
+    if (previousMarker === null) node.removeAttribute('data-view-shot-capture');
+    else node.setAttribute('data-view-shot-capture', previousMarker);
   });
 }
 
