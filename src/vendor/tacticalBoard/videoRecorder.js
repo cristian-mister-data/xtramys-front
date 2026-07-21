@@ -79,6 +79,7 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cdnUrl } from '@/config';
 import { triggerVideoDownload } from '@/utils/videoPlayback';
+import { renderVideoFieldImage } from '@/utils/videoFieldImage';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
 const LINE_TYPE_ELEMENTS = new Set([
@@ -1048,7 +1049,10 @@ function VideoRecorder({
       const renderCache = createVideoRenderCache();
 
       // Cargar imagen del campo como fondo
-      let fieldBgImage = null;
+      let fieldBgImage = await renderVideoFieldImage(fieldType, canvasW, canvasH).catch((error) => {
+        console.warn('[videoRecorder] No se pudo rasterizar el campo:', error.message);
+        return null;
+      });
       let fieldImgSrc = keyframes[0]?.fieldImageData || fieldImage;
       if (!fieldImgSrc && fieldBaseRef?.current) {
         const capturedField = await captureViewShotBase64(fieldBaseRef).catch(() => '');
@@ -1058,7 +1062,7 @@ function VideoRecorder({
             : `data:image/png;base64,${capturedField}`;
         }
       }
-      if (fieldImgSrc) {
+      if (!fieldBgImage && fieldImgSrc) {
         try {
           fieldBgImage = await new Promise((resolve, reject) => {
             const img = new Image();

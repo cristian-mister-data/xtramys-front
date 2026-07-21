@@ -1,5 +1,3 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
 import RNFS from '@/shims/react-native-fs';
 import { getTacticalVideo, getVideoForEdit, proxyUploadToR2, updateVideo } from '@/utils/api';
 import {
@@ -13,8 +11,8 @@ import {
   getVideoDimensions,
 } from '@/utils/videoCanvasRenderer';
 import { decomposeFieldId, getAspectForView } from '@/vendor/tacticalBoard/fields/fieldConfigs';
-import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
 import { applySetPiecePlayerOverlays } from '@/utils/kits';
+import { renderVideoFieldImage } from '@/utils/videoFieldImage';
 import { cdnUrl } from '@/config';
 import { SPEED_TO_FPS } from '@/constants/video';
 import {
@@ -48,29 +46,6 @@ function loadImage(src) {
   });
 }
 
-async function renderBoardFieldImage(fieldType, width, height) {
-  const { lineType, viewMode } = decomposeFieldId(fieldType || 'full');
-  const host = document.createElement('div');
-  host.style.cssText = `position:fixed;left:-10000px;top:0;width:${width}px;height:${height}px`;
-  document.body.appendChild(host);
-  const root = createRoot(host);
-  try {
-    root.render(React.createElement(FieldSVGRenderer, { lineType, viewMode, width, height }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const svg = host.querySelector('svg');
-    if (!svg) return null;
-    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }));
-    try {
-      return await loadImage(url);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } finally {
-    root.unmount();
-    host.remove();
-  }
-}
-
 function getRenderConfig(video) {
   const config = video.config || {};
   const speedMultiplier = config.speedMultiplier || 1;
@@ -97,7 +72,7 @@ async function createRenderSession(video, keyframes, renderConfig) {
   if (!ctx) throw new Error('Canvas 2D no disponible');
   ctx.imageSmoothingEnabled = true;
   if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
-  const fieldImage = await renderBoardFieldImage(video.fieldType, canvas.width, canvas.height);
+  const fieldImage = await renderVideoFieldImage(video.fieldType, canvas.width, canvas.height);
   const playerPhotos = {};
   const photoSources = new Set();
   keyframes.forEach((frame) => (frame.elements || []).forEach((element) => {

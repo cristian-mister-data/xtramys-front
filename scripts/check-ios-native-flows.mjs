@@ -9,6 +9,18 @@ assert.match(playback, /platform === 'ios'[\s\S]*?https\?:[\s\S]*?ensureMp4Blob/
 const videoView = read('src/shims/expo-video.js');
 assert.match(videoView, /crossOrigin=\{isNative && platform === 'ios' \? undefined/);
 
+const videoFieldImage = read('src/utils/videoFieldImage.js');
+assert.match(videoFieldImage, /data:image\/svg\+xml;charset=utf-8/);
+assert.ok(
+  videoFieldImage.indexOf('data:image/svg+xml;charset=utf-8') <
+    videoFieldImage.indexOf('URL.createObjectURL'),
+  'iOS-safe SVG data URLs must be attempted before blob URLs',
+);
+const videoRecorder = read('src/vendor/tacticalBoard/videoRecorder.js');
+const videoRegenerator = read('src/utils/localVideoRegenerator.js');
+assert.match(videoRecorder, /renderVideoFieldImage\(fieldType, canvasW, canvasH\)/);
+assert.match(videoRegenerator, /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/);
+
 const pdf = read('src/utils/pdfDownload.js');
 assert.match(pdf, /platform === 'ios'[\s\S]*?Directory\.Cache[\s\S]*?Share\.share/);
 assert.match(pdf, /platform === 'ios'[\s\S]*?@capacitor\/share[\s\S]*?Share\.share/);
