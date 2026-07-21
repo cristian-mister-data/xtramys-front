@@ -80,6 +80,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cdnUrl } from '@/config';
 import { triggerVideoDownload } from '@/utils/videoPlayback';
 import { renderVideoFieldImage } from '@/utils/videoFieldImage';
+import { loadVideoPlayerPhotos } from '@/utils/videoPlayerPhotos';
 
 // Tipos de elementos que soportan lineType (línea punteada/continua)
 const LINE_TYPE_ELEMENTS = new Set([
@@ -1017,6 +1018,7 @@ function VideoRecorder({
     }
 
     let streamingEncoder = null;
+    let releasePlayerPhotos = null;
 
     try {
       setIsGenerating(true);
@@ -1084,42 +1086,9 @@ function VideoRecorder({
       }
 
       // Cargar todas las fotos de los jugadores antes de empezar
-      const playerPhotos = {};
-      const uniquePhotoUrls = new Set();
-      styledKeyframes.forEach((keyframe) => {
-        (keyframe.elements || []).forEach((elem) => {
-          const photoSource = elem.photoUrl || elem.playerData?.foto;
-          if (elem.type === 'player' && photoSource) {
-            uniquePhotoUrls.add(photoSource);
-          }
-        });
-      });
-
-      try {
-        await Promise.all(
-          Array.from(uniquePhotoUrls).map(async (fotoPath) => {
-            try {
-              const fullUrl = cdnUrl(fotoPath);
-              const img = await new Promise((resolve, reject) => {
-                const image = new Image();
-                image.crossOrigin = 'anonymous';
-                image.onload = () => resolve(image);
-                image.onerror = reject;
-                image.src = fullUrl;
-              });
-              playerPhotos[fotoPath] = img;
-              playerPhotos[cdnUrl(fotoPath)] = img;
-            } catch (err) {
-              console.warn(
-                `[videoRecorder] No se pudo cargar la foto del jugador ${fotoPath}:`,
-                err,
-              );
-            }
-          }),
-        );
-      } catch (e) {
-        console.warn('[videoRecorder] Error pre-cargando fotos de jugadores:', e);
-      }
+      const loadedPlayerPhotos = await loadVideoPlayerPhotos(styledKeyframes);
+      const playerPhotos = loadedPlayerPhotos.playerPhotos;
+      releasePlayerPhotos = loadedPlayerPhotos.release;
 
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
@@ -1376,6 +1345,7 @@ function VideoRecorder({
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
     } finally {
+      releasePlayerPhotos?.();
       setIsGenerating(false);
       setGenerationPhase('generationPreparing');
     }

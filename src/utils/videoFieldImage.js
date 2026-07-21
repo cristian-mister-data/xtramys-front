@@ -1,4 +1,5 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { decomposeFieldId } from '@/vendor/tacticalBoard/fields/fieldConfigs';
 import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
@@ -20,8 +21,9 @@ export async function renderVideoFieldImage(fieldType, width, height) {
   const root = createRoot(host);
 
   try {
-    root.render(React.createElement(FieldSVGRenderer, { lineType, viewMode, width, height }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    flushSync(() => {
+      root.render(React.createElement(FieldSVGRenderer, { lineType, viewMode, width, height }));
+    });
     const svg = host.querySelector('svg');
     if (!svg) throw new Error('No se pudo renderizar el campo');
     svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');

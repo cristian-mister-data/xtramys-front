@@ -13,7 +13,7 @@ import {
 import { decomposeFieldId, getAspectForView } from '@/vendor/tacticalBoard/fields/fieldConfigs';
 import { applySetPiecePlayerOverlays } from '@/utils/kits';
 import { renderVideoFieldImage } from '@/utils/videoFieldImage';
-import { cdnUrl } from '@/config';
+import { loadVideoPlayerPhotos } from '@/utils/videoPlayerPhotos';
 import { SPEED_TO_FPS } from '@/constants/video';
 import {
   getInterpolatedFrameCount,
@@ -34,17 +34,6 @@ const yieldToBrowser = () =>
       setTimeout(resolve, 0);
     }
   });
-
-function loadImage(src) {
-  return new Promise((resolve) => {
-    if (!src || typeof Image === 'undefined') return resolve(null);
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
 
 function getRenderConfig(video) {
   const config = video.config || {};
@@ -73,20 +62,16 @@ async function createRenderSession(video, keyframes, renderConfig) {
   ctx.imageSmoothingEnabled = true;
   if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
   const fieldImage = await renderVideoFieldImage(video.fieldType, canvas.width, canvas.height);
-  const playerPhotos = {};
-  const photoSources = new Set();
-  keyframes.forEach((frame) => (frame.elements || []).forEach((element) => {
-    const source = element.photoUrl || element.playerData?.foto;
-    if (element.type === 'player' && source) photoSources.add(source);
-  }));
-  await Promise.all([...photoSources].map(async (source) => {
-    const image = await loadImage(cdnUrl(source));
-    if (!image) return;
-    playerPhotos[source] = image;
-    playerPhotos[cdnUrl(source)] = image;
-  }));
+  const { playerPhotos, release } = await loadVideoPlayerPhotos(keyframes);
 
-  return { canvas, ctx, fieldImage, playerPhotos, renderCache: createVideoRenderCache() };
+  return {
+    canvas,
+    ctx,
+    fieldImage,
+    playerPhotos,
+    releasePlayerPhotos: release,
+    renderCache: createVideoRenderCache(),
+  };
 }
 
 function renderSessionFrame(session, frame, renderConfig) {
@@ -282,7 +267,11 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     }
     let persistedVideo = null;
     if (persistVideo) {
-      persistedVideo = await persistGeneratedVideo(outputPath, persistVideo);
+      try {
+        persistedVideo = await persistGeneratedVideo(outputPath, persistVideo);
+      } catch (error) {
+        console.warn('[video] El video local esta listo, pero no se pudo persistir su copia:', error);
+      }
     } else if (!playerOverlays.length) {
       const upload = await proxyUploadToR2(outputPath);
       if (upload?.r2Key) await updateVideo(videoId, { r2Key: upload.r2Key });
@@ -290,6 +279,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     onProgress?.(100, 'generationComplete');
     return { outputPath, persistedVideo };
   } finally {
+    renderSession.releasePlayerPhotos?.();
     if (framesDir) RNFS.unlink(framesDir).catch(() => {});
   }
 }
@@ -334,10 +324,14 @@ export function regenerateVideoInBrowser(videoId, { playerOverlays = [], fieldTy
         .then(async (result) => {
           if (result.persistedVideo) {
             const listeners = localRegenerationSavedListeners.get(cacheKey) || [];
-            await Promise.all([...listeners].map((listener) => listener({
-              ...result.persistedVideo,
-              url: result.outputPath,
-            })));
+            const artifact = { ...result.persistedVideo, url: result.outputPath };
+            void Promise.allSettled(
+              [...listeners].map((listener) => Promise.resolve().then(() => listener(artifact))),
+            ).then((settled) => settled.forEach((entry) => {
+              if (entry.status === 'rejected') {
+                console.warn('[video] No se pudo guardar la referencia del video de la ficha:', entry.reason);
+              }
+            }));
           }
           return result.outputPath;
         })

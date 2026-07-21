@@ -63,6 +63,17 @@ assert.equal(overlaidFrame[0].color, '#123456');
 assert.equal(overlaidFrame[0].xRatio, 0.4);
 assert.equal(overlaidFrame[1].playerData.nombre, 'Eva');
 assert.equal(overlaidFrame[1].color, '#654321');
+const selectivePhotos = applySetPiecePlayerOverlays([
+  { id: 'with-photo', type: 'player', photoUrl: 'old.webp', showPhotos: true },
+  { id: 'without-photo', type: 'player', photoUrl: 'old.webp', showPhotos: true },
+], [
+  { slotId: 'with-photo', photoUrl: 'new.webp', showPhotos: true },
+  { slotId: 'without-photo', photoUrl: '', showPhotos: false },
+]);
+assert.equal(selectivePhotos[0].photoUrl, 'new.webp');
+assert.equal(selectivePhotos[0].showPhotos, true);
+assert.equal(selectivePhotos[1].photoUrl, '');
+assert.equal(selectivePhotos[1].showPhotos, false);
 
 const signatureOverlay = {
   slotId: 'player-1',
@@ -142,10 +153,16 @@ assert.match(playbackSource, /resolveMatchSheetSetPieceVideo/);
 assert.doesNotMatch(playbackSource, /regenerateVideoWithField/);
 
 const localRegeneratorSource = readFileSync(new URL('../src/utils/localVideoRegenerator.js', import.meta.url), 'utf8');
-assert.match(localRegeneratorSource, /renderBoardFieldImage/);
+assert.match(localRegeneratorSource, /renderVideoFieldImage/);
 assert.match(localRegeneratorSource, /moveDuration:\s*0\.9/);
 assert.match(localRegeneratorSource, /holdDuration:\s*0\.1/);
 assert.match(localRegeneratorSource, /if \(!playerOverlays\.length\)/);
+assert.match(localRegeneratorSource, /Promise\.allSettled/);
+assert.match(localRegeneratorSource, /El video local esta listo/);
+
+const playerPhotoSource = readFileSync(new URL('../src/utils/videoPlayerPhotos.js', import.meta.url), 'utf8');
+assert.match(playerPhotoSource, /\/media\/image-download/);
+assert.match(playerPhotoSource, /playerPhotos\[source\] = image/);
 
 const matchSheetSource = readFileSync(new URL('../src/vendor/season/EditMatchSheetModal.js', import.meta.url), 'utf8');
 assert.match(matchSheetSource, /matchVideoCopy: false/);
@@ -158,6 +175,10 @@ assert.match(matchSheetSource, /loadingSetPieceVideoIndex === setPieceIndex/);
 assert.match(matchSheetSource, /setPiecePreviewLoadingOverlay/);
 assert.match(matchSheetSource, /customFieldType: boardSnapshot\?\.fieldType/);
 assert.match(matchSheetSource, /showPhotos: assignment\.showPhotos,/);
+assert.match(matchSheetSource, /const playerData = matchOverlay \? matchOverlay\.playerData : element\.playerData/);
+assert.doesNotMatch(matchSheetSource, /if \(!availableVideo && getSetPieceVideoId\(setPiece\)\)/);
+assert.doesNotMatch(matchSheetSource, /Error loading set pieces for match sheet:[\s\S]{0,100}setAvailableSetPieces\(\[\]\)/);
+assert.match(matchSheetSource, /if \(!error\?\.status \|\| error\.status >= 500\) break;/);
 
 const recorderSource = readFileSync(new URL('../src/vendor/tacticalBoard/videoRecorder.js', import.meta.url), 'utf8');
 assert.match(recorderSource, /const boardSnapshot = \{ fieldType, elements: getCurrentElements\(\) \}/);
@@ -167,6 +188,7 @@ assert.match(videoShimSource, /sourceToUrl\(player\?\._source\) !== sourceToUrl\
 
 const matchSheetDetailSource = readFileSync(new URL('../src/vendor/season/MatchSheetDetailModal.js', import.meta.url), 'utf8');
 assert.match(matchSheetDetailSource, /resolveMatchSheetSetPieceVideo/);
+assert.match(matchSheetDetailSource, /const playerData = matchOverlay \? matchOverlay\.playerData : element\.playerData/);
 
 const loadingSpinnerSource = readFileSync(new URL('../src/vendor/shared/LoadingSpinner.js', import.meta.url), 'utf8');
 assert.match(loadingSpinnerSource, /animateTransform/);

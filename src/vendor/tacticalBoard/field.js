@@ -30,6 +30,7 @@ import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { isNative } from '@/platform/capacitor';
 import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
@@ -391,6 +392,8 @@ export default function Field(props = {}) {
   // Forzar orientaci�n horizontal cuando la pantalla tiene el foco
   // y liberar cuando pierde el foco
   useEffect(() => {
+    if (!isNative) return undefined;
+
     let isMounted = true;
     let subscription = null;
     let reinforceInterval = null;

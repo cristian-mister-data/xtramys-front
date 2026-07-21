@@ -1,5 +1,180 @@
 import UIKit
 import Capacitor
+import AVFoundation
+
+@objc(BridgeViewController)
+class BridgeViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        bridge?.registerPluginInstance(NativeVideoEncoderPlugin())
+    }
+}
+
+@objc(NativeVideoEncoderPlugin)
+public class NativeVideoEncoderPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NativeVideoEncoderPlugin"
+    public let jsName = "NativeVideoEncoder"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "encodeFrames", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func encodeFrames(_ call: CAPPluginCall) {
+        guard let frames = call.getArray("frames", String.self), !frames.isEmpty else {
+            call.reject("No frames provided")
+            return
+        }
+        let fps = max(1, call.getInt("fps") ?? 30)
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let outputURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("xtramys_video_\(UUID().uuidString).mp4")
+            do {
+                try self.encode(frames: frames, fps: fps, outputURL: outputURL)
+                let data = try Data(contentsOf: outputURL)
+                try? FileManager.default.removeItem(at: outputURL)
+                call.resolve([
+                    "mimeType": "video/mp4",
+                    "data": data.base64EncodedString()
+                ])
+            } catch {
+                try? FileManager.default.removeItem(at: outputURL)
+                call.reject("Native video encode failed: \(error.localizedDescription)", nil, error)
+            }
+        }
+    }
+
+    private func encode(frames: [String], fps: Int, outputURL: URL) throws {
+        guard let firstImage = try decodeFrame(frames[0]).cgImage else {
+            throw encoderError("Invalid first frame")
+        }
+        let width = max(2, firstImage.width - firstImage.width % 2)
+        let height = max(2, firstImage.height - firstImage.height % 2)
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+        let areaScale = max(1.0, Double(width * height) / Double(1920 * 1080))
+        let bitrate = Int(min(28_000_000.0, max(8_000_000.0, areaScale * 14_000_000.0)))
+        let settings: [String: Any] = [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: width,
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: bitrate,
+                AVVideoMaxKeyFrameIntervalKey: fps,
+                AVVideoExpectedSourceFrameRateKey: fps
+            ]
+        ]
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+        input.expectsMediaDataInRealTime = false
+        let attributes: [String: Any] = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: width,
+            kCVPixelBufferHeightKey as String: height,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+        ]
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input,
+            sourcePixelBufferAttributes: attributes
+        )
+        guard writer.canAdd(input) else { throw encoderError("Video writer input unavailable") }
+        writer.add(input)
+        guard writer.startWriting() else {
+            throw writer.error ?? encoderError("Video writer could not start")
+        }
+        writer.startSession(atSourceTime: .zero)
+        defer {
+            if writer.status == .writing {
+                input.markAsFinished()
+                writer.cancelWriting()
+            }
+        }
+
+        for (index, frame) in frames.enumerated() {
+            while !input.isReadyForMoreMediaData {
+                if writer.status == .failed || writer.status == .cancelled {
+                    throw writer.error ?? encoderError("Video writer failed")
+                }
+                Thread.sleep(forTimeInterval: 0.002)
+            }
+            let image = try decodeFrame(frame)
+            guard let pixelBuffer = makePixelBuffer(
+                image: image,
+                width: width,
+                height: height,
+                pool: adaptor.pixelBufferPool
+            ) else {
+                throw encoderError("Could not create video frame")
+            }
+            let time = CMTime(value: CMTimeValue(index), timescale: CMTimeScale(fps))
+            guard adaptor.append(pixelBuffer, withPresentationTime: time) else {
+                throw writer.error ?? encoderError("Could not append video frame")
+            }
+        }
+
+        input.markAsFinished()
+        let finished = DispatchSemaphore(value: 0)
+        writer.finishWriting { finished.signal() }
+        finished.wait()
+        guard writer.status == .completed else {
+            throw writer.error ?? encoderError("Video writer did not finish")
+        }
+    }
+
+    private func decodeFrame(_ value: String) throws -> UIImage {
+        let payload = value.split(separator: ",", maxSplits: 1).last.map(String.init) ?? value
+        guard let data = Data(base64Encoded: payload, options: .ignoreUnknownCharacters),
+              let image = UIImage(data: data) else {
+            throw encoderError("Invalid frame data")
+        }
+        return image
+    }
+
+    private func makePixelBuffer(
+        image: UIImage,
+        width: Int,
+        height: Int,
+        pool: CVPixelBufferPool?
+    ) -> CVPixelBuffer? {
+        guard let cgImage = image.cgImage else { return nil }
+        var pixelBuffer: CVPixelBuffer?
+        let status: CVReturn
+        if let pool {
+            status = CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
+        } else {
+            status = CVPixelBufferCreate(
+                nil,
+                width,
+                height,
+                kCVPixelFormatType_32BGRA,
+                [kCVPixelBufferCGImageCompatibilityKey: true,
+                 kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary,
+                &pixelBuffer
+            )
+        }
+        guard status == kCVReturnSuccess, let pixelBuffer else { return nil }
+
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
+        guard let context = CGContext(
+            data: CVPixelBufferGetBaseAddress(pixelBuffer),
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo.byteOrder32Little.rawValue |
+                CGImageAlphaInfo.premultipliedFirst.rawValue
+        ) else { return nil }
+        context.setFillColor(UIColor.black.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.interpolationQuality = .high
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: 1, y: -1)
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return pixelBuffer
+    }
+
+    private func encoderError(_ message: String) -> NSError {
+        NSError(domain: "com.xtramys.video", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+}
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {

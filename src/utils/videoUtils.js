@@ -567,6 +567,9 @@ function createMediaRecorderStreamingEncoder({
 
 export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, onProgress } = {}) {
   if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
+    if (window?.Capacitor?.getPlatform?.() === 'ios') {
+      throw new Error('La codificacion directa se delega al encoder nativo de iOS');
+    }
     const mediaRecorderMime = getMediaRecorderMp4Mime();
     if (mediaRecorderMime) {
       return createMediaRecorderStreamingEncoder({
@@ -914,12 +917,15 @@ const isMobileBrowser = () =>
 const isNativeAndroid = () =>
   typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android';
 
+const isNativeIOS = () =>
+  typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'ios';
+
 const isNativeApp = () =>
   typeof window !== 'undefined' &&
   window.Capacitor?.getPlatform &&
   window.Capacitor.getPlatform() !== 'web';
 
-async function generateVideoWithNativeAndroid(framesDir, frameCount, speed = 1, onProgress) {
+async function generateVideoWithNativeEncoder(framesDir, frameCount, speed = 1, onProgress) {
   const { registerPlugin } = await import('@capacitor/core');
   const NativeVideoEncoder = registerPlugin('NativeVideoEncoder');
   const fps = SPEED_TO_FPS[speed] || 30;
@@ -950,8 +956,8 @@ async function generateVideoWithNativeAndroid(framesDir, frameCount, speed = 1, 
 
 export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress) => {
   let result;
-  if (isNativeAndroid()) {
-    result = await generateVideoWithNativeAndroid(framesDir, frameCount, speed, onProgress);
+  if (isNativeAndroid() || isNativeIOS()) {
+    result = await generateVideoWithNativeEncoder(framesDir, frameCount, speed, onProgress);
   } else {
     try {
       result = await generateVideoWithWebCodecs(framesDir, frameCount, speed, onProgress);

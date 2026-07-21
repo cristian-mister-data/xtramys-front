@@ -483,8 +483,10 @@ export default function MatchSheetDetailModal({
       .filter((element) => element?.type === 'player');
     const mergeVisuals = (overlays) => styledPlayers.map((element, index) => {
       const matchOverlay = overlays.find((overlay) => String(overlay.slotId) === String(element.id || element._id || `slot-${index}`));
-      const playerData = matchOverlay?.playerData || element.playerData;
-      const photoUrl = matchOverlay?.photoUrl || element.photoUrl || (element.playerData?.foto ? cdnUrl(element.playerData.foto) : '');
+      const playerData = matchOverlay ? matchOverlay.playerData : element.playerData;
+      const photoUrl = matchOverlay
+        ? (matchOverlay.photoUrl || (matchOverlay.playerData?.foto ? cdnUrl(matchOverlay.playerData.foto) : ''))
+        : (element.photoUrl || (element.playerData?.foto ? cdnUrl(element.playerData.foto) : ''));
       return {
         slotId: String(element.id || element._id || `slot-${index}`),
         number: String(matchOverlay?.number || element.number || element.playerNumber || ''),
@@ -503,7 +505,7 @@ export default function MatchSheetDetailModal({
         differentiateGoalkeeper: element.differentiateGoalkeeper,
         goalkeeperStripeColor: element.goalkeeperStripeColor,
         preserveVisualStyle: true,
-        showPhotos: Boolean(photoUrl) && (matchOverlay?.showPhotos ?? element.showPhotos ?? showPhotos),
+        showPhotos: Boolean(photoUrl) && (matchOverlay ? (matchOverlay.showPhotos ?? showPhotos) : (element.showPhotos ?? showPhotos)),
         hasBib: false,
         playerData,
         photoUrl,

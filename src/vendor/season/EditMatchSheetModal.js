@@ -1522,7 +1522,6 @@ export default function EditMatchSheetModal({
         if (mounted) setAvailableSetPieces(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
         console.error('Error loading set pieces for match sheet:', error);
-        if (mounted) setAvailableSetPieces([]);
       } finally {
         if (mounted) setLoadingSetPieces(false);
       }
@@ -1576,8 +1575,10 @@ export default function EditMatchSheetModal({
       .filter((element) => element?.type === 'player');
     const mergeVisuals = (overlays) => styledPlayers.map((element, index) => {
       const matchOverlay = overlays.find((overlay) => String(overlay.slotId) === String(element.id || element._id || `slot-${index}`));
-      const playerData = matchOverlay?.playerData || element.playerData;
-      const photoUrl = matchOverlay?.photoUrl || element.photoUrl || (element.playerData?.foto ? cdnUrl(element.playerData.foto) : '');
+      const playerData = matchOverlay ? matchOverlay.playerData : element.playerData;
+      const photoUrl = matchOverlay
+        ? (matchOverlay.photoUrl || (matchOverlay.playerData?.foto ? cdnUrl(matchOverlay.playerData.foto) : ''))
+        : (element.photoUrl || (element.playerData?.foto ? cdnUrl(element.playerData.foto) : ''));
       return {
         slotId: String(element.id || element._id || `slot-${index}`),
         number: String(matchOverlay?.number || element.number || element.playerNumber || ''),
@@ -1596,7 +1597,7 @@ export default function EditMatchSheetModal({
         differentiateGoalkeeper: element.differentiateGoalkeeper,
         goalkeeperStripeColor: element.goalkeeperStripeColor,
         preserveVisualStyle: true,
-        showPhotos: Boolean(photoUrl) && (matchOverlay?.showPhotos ?? element.showPhotos ?? showPhotos),
+        showPhotos: Boolean(photoUrl) && (matchOverlay ? (matchOverlay.showPhotos ?? showPhotos) : (element.showPhotos ?? showPhotos)),
         hasBib: false,
         playerData,
         photoUrl,
@@ -2216,7 +2217,13 @@ export default function EditMatchSheetModal({
   const findAvailableSetPieceVideo = async (setPiece) => {
     const requestedId = getSetPieceVideoId(setPiece);
     for (const candidateId of getSetPieceVideoCandidates(setPiece, availableSetPieces)) {
-      const metadata = await getVideoById(candidateId, { optional: true }).catch(() => null);
+      let metadata;
+      try {
+        metadata = await getVideoById(candidateId, { optional: true });
+      } catch (error) {
+        if (!error?.status || error.status >= 500) break;
+        continue;
+      }
       if (metadata?.video) {
         return {
           videoId: candidateId,
@@ -2259,22 +2266,6 @@ export default function EditMatchSheetModal({
     let editableVideoId = availableVideo?.videoId || null;
     let didDuplicateVideo = false;
     let videoMetadata = availableVideo?.metadata || null;
-
-    if (!availableVideo && getSetPieceVideoId(setPiece)) {
-      boardSetPiece = {
-        ...setPiece,
-        videoId: null,
-        pizarraConfig: {
-          ...(setPiece.pizarraConfig || {}),
-          matchVideoCopy: false,
-          matchVideoSourceId: undefined,
-          matchVideoSourceUpdatedAt: undefined,
-          matchVideoR2Key: undefined,
-          matchVideoUrl: undefined,
-        },
-      };
-      setSelectedSetPieces((prev) => prev.map((sp, index) => index === setPieceIndex ? boardSetPiece : sp));
-    }
 
     if (editableVideoId) {
       try {

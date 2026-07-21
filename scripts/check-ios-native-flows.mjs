@@ -10,6 +10,7 @@ const videoView = read('src/shims/expo-video.js');
 assert.match(videoView, /crossOrigin=\{isNative && platform === 'ios' \? undefined/);
 
 const videoFieldImage = read('src/utils/videoFieldImage.js');
+assert.match(videoFieldImage, /flushSync\(\(\) =>/);
 assert.match(videoFieldImage, /data:image\/svg\+xml;charset=utf-8/);
 assert.ok(
   videoFieldImage.indexOf('data:image/svg+xml;charset=utf-8') <
@@ -20,6 +21,18 @@ const videoRecorder = read('src/vendor/tacticalBoard/videoRecorder.js');
 const videoRegenerator = read('src/utils/localVideoRegenerator.js');
 assert.match(videoRecorder, /renderVideoFieldImage\(fieldType, canvasW, canvasH\)/);
 assert.match(videoRegenerator, /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/);
+
+const videoUtils = read('src/utils/videoUtils.js');
+assert.match(videoUtils, /getPlatform\?\.\(\) === 'ios'[\s\S]*?encoder nativo de iOS/);
+assert.match(videoUtils, /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?generateVideoWithNativeEncoder/);
+
+const appDelegate = read('ios/App/App/AppDelegate.swift');
+assert.match(appDelegate, /registerPluginInstance\(NativeVideoEncoderPlugin\(\)\)/);
+assert.match(appDelegate, /AVAssetWriter\(outputURL: outputURL, fileType: \.mp4\)/);
+assert.match(appDelegate, /CMTime\(value: CMTimeValue\(index\), timescale: CMTimeScale\(fps\)\)/);
+
+const storyboard = read('ios/App/App/Base.lproj/Main.storyboard');
+assert.match(storyboard, /customClass="BridgeViewController" customModule="App"/);
 
 const pdf = read('src/utils/pdfDownload.js');
 assert.match(pdf, /platform === 'ios'[\s\S]*?Directory\.Cache[\s\S]*?Share\.share/);
@@ -37,10 +50,13 @@ const snapshot = read('src/features/rivalAnalysis/TacticalSnapshotModal.jsx');
 assert.match(snapshot, /<Field onSave=\{handleFieldSave\} onCancel=\{handleFieldCancel\}/);
 assert.doesNotMatch(snapshot, /global\.fieldCallbacks\s*=/);
 
+const field = read('src/vendor/tacticalBoard/field.js');
+assert.match(field, /if \(!isNative\) return undefined;[\s\S]*?ScreenOrientation\.lock/);
+
 const nativeFrame = read('src/pages/_RNWebPage.jsx');
 assert.match(nativeFrame, /html\[data-native='true'\][\s\S]*?width: calc\(100% \+ 48px\)/);
 
 const rivals = read('src/features/rivals/Rivals.jsx');
 assert.match(rivals, /html\[data-platform='ios'\][\s\S]*?flex-basis: 32px/);
 
-console.log('iOS native video, PDF and board boundaries OK');
+console.log('iOS native video, encoder timing, PDF and board boundaries OK');
