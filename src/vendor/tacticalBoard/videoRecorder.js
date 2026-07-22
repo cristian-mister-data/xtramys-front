@@ -40,6 +40,13 @@ function TouchableOpacity({ activeOpacity = 0.2, style, onPress, disabled, child
   );
 }
 
+function keepTextInputLtr(event) {
+  const input = event.currentTarget;
+  if (input.selectionStart !== 0 || input.selectionEnd !== 0 || !input.value) return;
+  const end = input.value.length;
+  input.setSelectionRange(end, end);
+}
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import RNFS from 'react-native-fs';
@@ -2193,12 +2200,18 @@ function VideoRecorder({
                     boxSizing: 'border-box',
                     outline: 'none',
                     direction: 'ltr',
+                    textAlign: 'left',
                   }}
                   placeholder={t('videoRecorder.videoNamePlaceholder')}
                   defaultValue={videoNombre}
-                  onFocus={({ currentTarget }) =>
-                    setTimeout(() => currentTarget.scrollIntoView({ block: 'center' }), 250)
-                  }
+                  onFocus={(event) => {
+                    const input = event.currentTarget;
+                    keepTextInputLtr(event);
+                    setTimeout(() => input.scrollIntoView({ block: 'center' }), 250);
+                  }}
+                  onBeforeInput={keepTextInputLtr}
+                  onKeyDown={keepTextInputLtr}
+                  onInput={keepTextInputLtr}
                   onBlur={(event) => setVideoNombre(event.currentTarget.value)}
                   dir="ltr"
                   maxLength={100}
@@ -2212,12 +2225,22 @@ function VideoRecorder({
                     <Feather name="globe" size={14} color="#1e40af" />
                     <Text style={[styles.inputLabel, { color: '#1e40af' }]}>English Name</Text>
                   </View>
-                  <TextInput
-                    style={styles.input}
+                  <input
+                    style={{
+                      ...StyleSheet.flatten(styles.input),
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      direction: 'ltr',
+                      textAlign: 'left',
+                    }}
                     placeholder="Video name (English)"
-                    placeholderTextColor="#999"
                     value={videoNombreEn}
-                    onChangeText={setVideoNombreEn}
+                    onChange={(event) => setVideoNombreEn(event.currentTarget.value)}
+                    onBeforeInput={keepTextInputLtr}
+                    onKeyDown={keepTextInputLtr}
+                    onInput={keepTextInputLtr}
+                    dir="ltr"
                     maxLength={100}
                   />
                 </View>
@@ -2229,13 +2252,22 @@ function VideoRecorder({
                   <Feather name="align-left" size={14} color="#666" />
                   <Text style={styles.inputLabel}>{t('videoRecorder.descriptionLabel')}</Text>
                 </View>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
+                <textarea
+                  style={{
+                    ...StyleSheet.flatten([styles.input, styles.textArea]),
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    direction: 'ltr',
+                    textAlign: 'left',
+                  }}
                   placeholder={t('videoRecorder.descriptionPlaceholder')}
-                  placeholderTextColor="#999"
                   value={videoDescripcion}
-                  onChangeText={setVideoDescripcion}
-                  multiline
+                  onChange={(event) => setVideoDescripcion(event.currentTarget.value)}
+                  onBeforeInput={keepTextInputLtr}
+                  onKeyDown={keepTextInputLtr}
+                  onInput={keepTextInputLtr}
+                  dir="ltr"
                   rows={3}
                   maxLength={500}
                 />
@@ -2413,12 +2445,22 @@ function VideoRecorder({
                     {t('videoRecorder.folderNameLabel') || 'Nombre de la carpeta'}
                   </Text>
                 </View>
-                <TextInput
-                  style={styles.input}
+                <input
+                  style={{
+                    ...StyleSheet.flatten(styles.input),
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    direction: 'ltr',
+                    textAlign: 'left',
+                  }}
                   placeholder={t('videoRecorder.folderNamePlaceholder') || 'Ej: Jugadas de ataque'}
-                  placeholderTextColor="#999"
                   value={newFolderName}
-                  onChangeText={setNewFolderName}
+                  onChange={(event) => setNewFolderName(event.currentTarget.value)}
+                  onBeforeInput={keepTextInputLtr}
+                  onKeyDown={keepTextInputLtr}
+                  onInput={keepTextInputLtr}
+                  dir="ltr"
                   maxLength={50}
                   autoFocus={true}
                 />
@@ -2431,12 +2473,22 @@ function VideoRecorder({
                     <Feather name="globe" size={14} color="#1e40af" />
                     <Text style={[styles.inputLabel, { color: '#1e40af' }]}>English</Text>
                   </View>
-                  <TextInput
-                    style={styles.input}
+                  <input
+                    style={{
+                      ...StyleSheet.flatten(styles.input),
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      direction: 'ltr',
+                      textAlign: 'left',
+                    }}
                     placeholder="Folder name (English)"
-                    placeholderTextColor="#999"
                     value={newFolderNameEn}
-                    onChangeText={setNewFolderNameEn}
+                    onChange={(event) => setNewFolderNameEn(event.currentTarget.value)}
+                    onBeforeInput={keepTextInputLtr}
+                    onKeyDown={keepTextInputLtr}
+                    onInput={keepTextInputLtr}
+                    dir="ltr"
                     maxLength={50}
                   />
                 </View>

@@ -9,6 +9,8 @@ export const GlobalStyles = createGlobalStyle`
     padding: 0;
     width: 100%;
     min-width: 0;
+    direction: ltr;
+    unicode-bidi: isolate;
   }
 
   html {
@@ -38,6 +40,10 @@ export const GlobalStyles = createGlobalStyle`
     -webkit-user-select: text;
     user-select: text;
     font-size: 16px;
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: isolate !important;
+    writing-mode: horizontal-tb !important;
   }
 
   html[data-native="true"] button,
