@@ -107,7 +107,7 @@ export const getGoogleOAuthURL = (lang = 'es', nextPath = '/', redirectBase = wi
 
 export const apple = (payload) => api.post('/auth/apple', payload).then((res) => {
   clearMeCache();
-  return res;
+  return res.data;
 });
 
 export const me = ({ force = false } = {}) => {

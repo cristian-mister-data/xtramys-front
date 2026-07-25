@@ -1,11 +1,101 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import AuthenticationServices
 
 @objc(BridgeViewController)
 class BridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(NativeVideoEncoderPlugin())
+        bridge?.registerPluginInstance(AppleSignInPlugin())
+    }
+}
+
+@objc(AppleSignInPlugin)
+public class AppleSignInPlugin: CAPPlugin, CAPBridgedPlugin,
+    ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    public let identifier = "AppleSignInPlugin"
+    public let jsName = "AppleSignIn"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "signIn", returnType: CAPPluginReturnPromise)
+    ]
+
+    private var pendingCall: CAPPluginCall?
+    private var pendingNonce: String?
+
+    @objc func signIn(_ call: CAPPluginCall) {
+        guard pendingCall == nil else {
+            call.reject("Sign in with Apple is already running", "APPLE_SIGN_IN_IN_PROGRESS")
+            return
+        }
+
+        let nonce = UUID().uuidString
+        pendingCall = call
+        pendingNonce = nonce
+
+        DispatchQueue.main.async {
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [.fullName, .email]
+            request.nonce = nonce
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            controller.performRequests()
+        }
+    }
+
+    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        bridge?.viewController?.view.window ?? UIWindow()
+    }
+
+    public func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        guard
+            let call = pendingCall,
+            let nonce = pendingNonce,
+            let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+            let identityTokenData = credential.identityToken,
+            let identityToken = String(data: identityTokenData, encoding: .utf8)
+        else {
+            finishWithError("Apple did not return a valid identity token", code: "INVALID_APPLE_CREDENTIAL")
+            return
+        }
+
+        var result: JSObject = [
+            "identityToken": identityToken,
+            "user": credential.user,
+            "nonce": nonce
+        ]
+        if let code = credential.authorizationCode.flatMap({ String(data: $0, encoding: .utf8) }) {
+            result["authorizationCode"] = code
+        }
+        if let email = credential.email { result["email"] = email }
+        if let givenName = credential.fullName?.givenName { result["givenName"] = givenName }
+        if let familyName = credential.fullName?.familyName { result["familyName"] = familyName }
+
+        pendingCall = nil
+        pendingNonce = nil
+        call.resolve(result)
+    }
+
+    public func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        let code = (error as? ASAuthorizationError)?.code == .canceled
+            ? "APPLE_SIGN_IN_CANCELLED"
+            : "APPLE_SIGN_IN_FAILED"
+        finishWithError(error.localizedDescription, code: code)
+    }
+
+    private func finishWithError(_ message: String, code: String) {
+        let call = pendingCall
+        pendingCall = nil
+        pendingNonce = nil
+        call?.reject(message, code)
     }
 }
 

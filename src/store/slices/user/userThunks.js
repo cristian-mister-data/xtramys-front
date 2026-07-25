@@ -35,7 +35,9 @@ export const loginThunk = createAsyncThunk(
   'usuario/login',
   async (credentials, { dispatch, rejectWithValue }) => {
     try {
-      const data = await authApi.login(credentials);
+      const data = credentials?.provider === 'apple'
+        ? await authApi.apple(credentials.credential)
+        : await authApi.login(credentials);
       clearUserCache();
       dispatch({ type: RESET_STORE });
       // Backend returns { token, user } or similar; store regardless of mode

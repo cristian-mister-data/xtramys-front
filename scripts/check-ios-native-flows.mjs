@@ -28,8 +28,25 @@ assert.match(videoUtils, /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?genera
 
 const appDelegate = read('ios/App/App/AppDelegate.swift');
 assert.match(appDelegate, /registerPluginInstance\(NativeVideoEncoderPlugin\(\)\)/);
+assert.match(appDelegate, /registerPluginInstance\(AppleSignInPlugin\(\)\)/);
+assert.match(appDelegate, /request\.requestedScopes = \[\.fullName, \.email\]/);
+assert.match(appDelegate, /request\.nonce = nonce/);
 assert.match(appDelegate, /AVAssetWriter\(outputURL: outputURL, fileType: \.mp4\)/);
 assert.match(appDelegate, /CMTime\(value: CMTimeValue\(index\), timescale: CMTimeScale\(fps\)\)/);
+
+const entitlements = read('ios/App/App/App.entitlements');
+assert.match(entitlements, /com\.apple\.developer\.applesignin[\s\S]*?<string>Default<\/string>/);
+
+const login = read('src/pages/auth/Login.jsx');
+assert.match(login, /platform === 'ios'[\s\S]*?handleAppleLogin[\s\S]*?social\.apple/);
+assert.match(login, /\(platform === 'ios' \|\| !isNative\)/);
+
+const appleSignIn = read('src/platform/appleSignIn.js');
+assert.match(appleSignIn, /AppleID\.auth\.init/);
+assert.match(appleSignIn, /usePopup: true/);
+assert.match(appleSignIn, /identityToken: authorization\.id_token/);
+assert.match(appleSignIn, /authorization\.state !== state/);
+assert.match(read('index.html'), /appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/en_US\/appleid\.auth\.js/);
 
 const storyboard = read('ios/App/App/Base.lproj/Main.storyboard');
 assert.match(storyboard, /customClass="BridgeViewController" customModule="App"/);
