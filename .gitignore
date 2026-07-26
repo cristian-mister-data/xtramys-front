@@ -23,6 +23,23 @@ android
 !/android/app/src/main/
 /android/app/src/main/*
 !/android/app/src/main/AndroidManifest.xml
+# Launcher icons are release inputs, not disposable Gradle output.
+!/android/app/src/main/res/
+/android/app/src/main/res/*
+!/android/app/src/main/res/mipmap-anydpi-v26/
+/android/app/src/main/res/mipmap-anydpi-v26/*
+!/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher*.xml
+!/android/app/src/main/res/mipmap-*/
+/android/app/src/main/res/mipmap-*/*
+!/android/app/src/main/res/mipmap-*/ic_launcher*.png
+!/android/app/src/main/res/mipmap-anydpi-v26/
+!/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher*.xml
+!/android/app/src/main/res/drawable/
+/android/app/src/main/res/drawable/*
+!/android/app/src/main/res/drawable/ic_launcher_background.xml
+!/android/app/src/main/res/values/
+/android/app/src/main/res/values/*
+!/android/app/src/main/res/values/ic_launcher_background.xml
 # Reserved Windows device name accidentally created by tooling; cannot be
 # safely deleted from the working tree, must not be indexed.
 /nul

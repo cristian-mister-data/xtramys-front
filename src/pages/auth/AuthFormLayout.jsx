@@ -22,20 +22,28 @@ export const normalizeEmail = (value) => String(value || '').toLowerCase().repla
 export const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 const Shell = styled.div`
+  width: 100%;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: ${({ $compact }) => ($compact ? '24px 16px' : '40px 20px')};
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   color: ${({ theme }) => theme.colors.text};
   background: ${({ theme }) => theme.colors.background};
   transition: background-color 200ms ease, color 200ms ease;
 
+  &::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
   @media (max-width: 767px) {
     min-height: 100svh;
     justify-content: flex-start;
-    padding: ${({ $compact }) => ($compact ? '18px 16px' : '28px 16px')};
+    padding: ${({ $compact }) => ($compact ? '18px 16px 24px' : '24px 16px 28px')};
   }
 
   @media (max-width: 767px) and (orientation: landscape) {
@@ -46,15 +54,34 @@ const Shell = styled.div`
 const LogoHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 14px;
   margin-bottom: ${({ $compact }) => ($compact ? '16px' : '28px')};
+
+  @media (max-width: 767px) {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: ${({ $compact }) => ($compact ? '18px' : '22px')};
+  }
+`;
+
+const BrandBlock = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    gap: 6px;
+  }
 `;
 
 const LogoWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ $compact }) => ($compact ? '8px' : '14px')};
+  padding: ${({ $compact }) => ($compact ? '8px' : '10px')};
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ $compact }) => ($compact ? '18px' : '20px')};
   box-shadow: ${({ theme }) => theme.shadows.md};
@@ -67,8 +94,8 @@ const LogoImage = styled.img`
   object-fit: contain;
 
   @media (max-width: 767px) {
-    width: ${({ $compact }) => ($compact ? '58px' : '76px')};
-    height: ${({ $compact }) => ($compact ? '58px' : '76px')};
+    width: ${({ $compact }) => ($compact ? '54px' : '64px')};
+    height: ${({ $compact }) => ($compact ? '54px' : '64px')};
   }
 
   @media (max-width: 767px) and (orientation: landscape) {
@@ -78,7 +105,7 @@ const LogoImage = styled.img`
 `;
 
 const BrandName = styled.div`
-  margin-top: 12px;
+  margin-top: 0;
   color: ${({ theme }) => theme.colors.primary};
   font-size: ${({ $compact }) => ($compact ? '24px' : '28px')};
   font-weight: 800;
@@ -86,7 +113,7 @@ const BrandName = styled.div`
 
   @media (max-width: 767px) {
     font-size: ${({ $compact }) => ($compact ? '20px' : '22px')};
-    margin-top: 10px;
+    margin-top: 0;
   }
 `;
 
@@ -100,7 +127,8 @@ export const AuthCard = styled.section`
   box-shadow: ${({ theme }) => theme.shadows.lg};
 
   @media (max-width: 767px) {
-    padding: ${({ $compact }) => ($compact ? '20px' : '24px')};
+    padding: ${({ $compact }) => ($compact ? '18px' : '22px 20px')};
+    border-radius: 22px;
   }
 `;
 
@@ -119,6 +147,11 @@ const ThemeToggle = styled.button`
   &:focus-visible { box-shadow: ${({ theme }) => theme.shadows.focus}; outline: none; }
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
 export function AuthFormShell({ children, maxWidth = '480px', compact = false, showBrandName = true }) {
   const { mode, toggleTheme } = useThemeMode();
   const logoImage = mode === 'dark' ? xtramysWhiteLogo : xtramysLogo;
@@ -126,22 +159,22 @@ export function AuthFormShell({ children, maxWidth = '480px', compact = false, s
   return (
     <Shell $compact={compact}>
       <LogoHeader $compact={compact}>
-        <LogoWrapper $compact={compact}>
-          <LogoImage src={logoImage} alt="Xtramys" $compact={compact} />
-        </LogoWrapper>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <BrandBlock>
+          <LogoWrapper $compact={compact}>
+            <LogoImage src={logoImage} alt="Xtramys" $compact={compact} />
+          </LogoWrapper>
           {showBrandName && <BrandName $compact={compact}>Xtramys</BrandName>}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-            <ThemeToggle
-              type="button"
-              onClick={toggleTheme}
-              aria-label={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-              title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
-            >
-              {mode === 'dark' ? <FiSun size={16} /> : <FiMoon size={16} />}
-            </ThemeToggle>
-          </div>
-        </div>
+        </BrandBlock>
+        <HeaderActions>
+          <ThemeToggle
+            type="button"
+            onClick={toggleTheme}
+            aria-label={mode === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+            title={`${mode === 'dark' ? 'Modo claro' : 'Modo oscuro'} (Ctrl+Shift+L)`}
+          >
+            {mode === 'dark' ? <FiSun size={16} /> : <FiMoon size={16} />}
+          </ThemeToggle>
+        </HeaderActions>
       </LogoHeader>
       <AuthCard $maxWidth={maxWidth} $compact={compact}>{children}</AuthCard>
     </Shell>

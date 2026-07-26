@@ -30,8 +30,17 @@ export const GlobalStyles = createGlobalStyle`
 
   html[data-native="true"] body {
     overscroll-behavior: none;
+    scrollbar-width: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  html[data-native="true"]::-webkit-scrollbar,
+  html[data-native="true"] body::-webkit-scrollbar,
+  html[data-native="true"] #root::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   html[data-native="true"] input,
