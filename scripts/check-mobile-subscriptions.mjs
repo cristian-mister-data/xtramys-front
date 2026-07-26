@@ -29,7 +29,7 @@ assert.match(login, /!isNative && <SocialButton/);
 assert.doesNotMatch(login, /auth\/register\?source=app/);
 
 const profile = readFileSync('src/pages/Profile.jsx', 'utf8');
-assert.doesNotMatch(profile, /websiteUrl\(i18n\.language, '\/(profile|precios)'/);
+assert.match(profile, /websiteUrl\(i18n\.language, i18n\.language\?\.startsWith\('en'\) \? '\/pricing' : '\/precios'\)/);
 assert.match(profile, /deletion-request/);
 
-console.log('Mobile store-compliance boundary OK');
+console.log('Mobile subscription boundary OK');

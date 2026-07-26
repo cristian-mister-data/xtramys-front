@@ -958,8 +958,11 @@ export default function Profile() {
     }
   };
 
-  const handleSubscribe = async () => {
-    if (isNative) return;
+  const handleSubscribe = () => {
+    if (isNative) {
+      openExternalWeb(websiteUrl(i18n.language, i18n.language?.startsWith('en') ? '/pricing' : '/precios'));
+      return;
+    }
     navigate('/subscribe');
   };
   const handleReactivateSubscription = async () => {
@@ -1502,9 +1505,11 @@ export default function Profile() {
                     ? t('subscription.demoProfileNotice', 'Este es el acceso disponible para tu cuenta.')
                     : t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
                 </FreeDesc>
-                {!isNative && <FreeBtn type="button" onClick={handleSubscribe} disabled={portalLoading}>
-                  {portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
-                </FreeBtn>}
+                <FreeBtn type="button" onClick={handleSubscribe} disabled={portalLoading}>
+                  {isNative
+                    ? t('subscription.titleProfile', 'Suscripción')
+                    : portalLoading ? '⏳...' : '🚀 ' + t('subscription.subscribe', 'Suscribirme ahora')}
+                </FreeBtn>
               </FreeCard>
             )}
           </SubscriptionCard>
