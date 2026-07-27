@@ -35,5 +35,7 @@ assert.match(accountStep, /mode === 'register'/);
 assert.match(accountStep, /mode === 'login'/);
 assert.match(accountStep, /authApi\.verifyEmail/);
 assert.match(accountStep, /intent === 'demo' \? '\/app' : paymentReturnPath\(returnPath\)/);
+assert.match(accountStep, /signInWithAppleWeb/);
+assert.match(accountStep, /provider: 'apple'/);
 
 console.log('Public web checkout, embedded account flow and native subscription guard OK');

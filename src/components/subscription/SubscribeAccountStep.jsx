@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { FaApple } from 'react-icons/fa';
 import styled from 'styled-components';
 import * as authApi from '@/api/auth';
 import { getGoogleOAuthURL } from '@/api/auth';
 import { saveToken, saveUser } from '@/auth/storage';
+import { signInWithAppleWeb } from '@/platform/appleSignIn';
 import { RESET_STORE } from '@/store/actionTypes';
 import { setUser } from '@/store/slices/user/userSlice';
 import { loginThunk } from '@/store/slices/user/userThunks';
@@ -85,10 +87,6 @@ const Divider = styled(AuthDivider)`
   margin-bottom: 14px;
 `;
 
-const GoogleButton = styled(SocialButton)`
-  margin-top: 18px;
-`;
-
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -139,6 +137,32 @@ export default function SubscribeAccountStep({ returnPath, intent = 'payment', o
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
     const nextPath = intent === 'demo' ? '/app' : paymentReturnPath(returnPath);
     window.location.href = getGoogleOAuthURL(lang, nextPath);
+  };
+
+  const handleApple = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const credential = await signInWithAppleWeb();
+      const authenticatedUser = await dispatch(loginThunk({
+        provider: 'apple',
+        credential: {
+          identityToken: credential.identityToken,
+          authorizationCode: credential.authorizationCode,
+          nonce: credential.nonce,
+          nombre: credential.givenName?.trim().slice(0, 100),
+          apellido: credential.familyName?.trim().slice(0, 100),
+          idioma: i18n.language?.startsWith('en') ? 'en' : 'es',
+        },
+      })).unwrap();
+      onAuthenticated(authenticatedUser);
+    } catch (err) {
+      if (err?.code !== 'APPLE_SIGN_IN_CANCELLED') {
+        setError(err?.message || t('social.appleError', 'No se pudo iniciar sesión con Apple'));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -280,10 +304,22 @@ export default function SubscribeAccountStep({ returnPath, intent = 'payment', o
         </Tab>
       </Tabs>
 
-      <GoogleButton type="button" onClick={handleGoogle} disabled={loading}>
-        <GoogleIcon />
-        {t('login.continueWithGoogle', 'Continuar con Google')}
-      </GoogleButton>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 18 }}>
+        <SocialButton
+          type="button"
+          onClick={handleApple}
+          disabled={loading}
+          style={{ background: '#000', borderColor: '#000', color: '#fff' }}
+        >
+          <FaApple aria-hidden="true" />
+          {loading ? '...' : t('social.apple', 'Continuar con Apple')}
+        </SocialButton>
+
+        <SocialButton type="button" onClick={handleGoogle} disabled={loading}>
+          <GoogleIcon />
+          {t('login.continueWithGoogle', 'Continuar con Google')}
+        </SocialButton>
+      </div>
 
       <Divider>{t('common.or', 'o')}</Divider>
 
