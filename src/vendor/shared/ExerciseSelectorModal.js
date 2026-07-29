@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -109,6 +110,7 @@ export default function ExerciseSelectorModal({
   const s = useMemo(() => makeS(THEME), [THEME]);
   const dispatch = useDispatch();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isPortrait = height >= width;
   const isWide = width > 900;
   const isMobile = width < 500;
@@ -598,7 +600,18 @@ export default function ExerciseSelectorModal({
       onRequestClose={currentFolderId ? navigateBack : onClose}
     >
       <View style={s.backdrop}>
-        <View style={[s.container, isWide && { alignSelf: 'center', maxWidth: 1100 }]}>
+        <View
+          style={[
+            s.container,
+            {
+              paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 18 : 14),
+              paddingBottom: Math.max(insets.bottom, 14),
+              paddingLeft: 16 + Math.max(insets.left, 0),
+              paddingRight: 16 + Math.max(insets.right, 0),
+            },
+            isWide && { alignSelf: 'center', maxWidth: 1100 },
+          ]}
+        >
           {/* ─── HEADER ─── */}
           <View style={s.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -650,8 +663,8 @@ export default function ExerciseSelectorModal({
           )}
 
           {/* ─── SEARCH + FILTER BAR ─── */}
-          <View style={s.searchBar}>
-            <View style={[s.searchInputWrap, { flex: 1 }]}>
+          <View style={[s.searchBar, isMobile && s.searchBarMobile]}>
+            <View style={[s.searchInputWrap, { flex: 1 }, isMobile && s.searchInputWrapMobile]}>
               <Ionicons name="search" size={16} color="#94a3b8" style={{ marginRight: 6 }} />
               <TextInput
                 style={s.searchInput}
@@ -665,25 +678,30 @@ export default function ExerciseSelectorModal({
                 <TouchableOpacity onPress={() => setSearch('')}>
                   <Ionicons name="close-circle" size={18} color="#94a3b8" />
                 </TouchableOpacity>
+                )}
+              </View>
+            <View style={[s.searchActions, isMobile && s.searchActionsMobile]}>
+              <TouchableOpacity
+                style={[s.filterBtn, hasActiveFilters > 0 && s.filterBtnActive]}
+                onPress={() => setShowFilters(!showFilters)}
+              >
+                <MaterialIcons
+                  name="filter-list"
+                  size={18}
+                  color={hasActiveFilters > 0 ? THEME.onPrimary : THEME.primary}
+                />
+                {hasActiveFilters > 0 && <Text style={s.filterBtnBadge}>{hasActiveFilters}</Text>}
+              </TouchableOpacity>
+              {onCreateExercise && (
+                <TouchableOpacity
+                  style={[s.createExerciseBtn, isMobile && s.createExerciseBtnMobile]}
+                  onPress={onCreateExercise}
+                >
+                  <Ionicons name="add" size={18} color={THEME.onPrimary} />
+                  <Text style={s.createExerciseBtnText}>{t('exercise.createExercise')}</Text>
+                </TouchableOpacity>
               )}
             </View>
-            <TouchableOpacity
-              style={[s.filterBtn, hasActiveFilters > 0 && s.filterBtnActive]}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <MaterialIcons
-                name="filter-list"
-                size={18}
-                color={hasActiveFilters > 0 ? THEME.onPrimary : THEME.primary}
-              />
-              {hasActiveFilters > 0 && <Text style={s.filterBtnBadge}>{hasActiveFilters}</Text>}
-            </TouchableOpacity>
-            {onCreateExercise && (
-              <TouchableOpacity style={s.createExerciseBtn} onPress={onCreateExercise}>
-                <Ionicons name="add" size={18} color={THEME.onPrimary} />
-                <Text style={s.createExerciseBtnText}>{t('exercise.createExercise')}</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           {/* ─── FILTROS EXPANDIBLES ─── */}
@@ -1305,9 +1323,6 @@ const makeS = (THEME) =>
       flex: 1,
       width: '100%',
       backgroundColor: THEME.surface,
-      paddingHorizontal: 16,
-      paddingTop: Platform.OS === 'ios' ? 50 : 12,
-      paddingBottom: 12,
     },
 
     // Header
@@ -1362,6 +1377,7 @@ const makeS = (THEME) =>
 
     // Search bar
     searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+    searchBarMobile: { alignItems: 'stretch' },
     searchInputWrap: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1372,7 +1388,10 @@ const makeS = (THEME) =>
       paddingHorizontal: 12,
       height: 42,
     },
+    searchInputWrapMobile: { flexBasis: '100%' },
     searchInput: { flex: 1, fontSize: 14, color: THEME.text, paddingVertical: 0 },
+    searchActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    searchActionsMobile: { justifyContent: 'flex-end' },
     filterBtn: {
       width: 42,
       height: 42,
@@ -1395,6 +1414,7 @@ const makeS = (THEME) =>
       justifyContent: 'center',
       gap: 6,
     },
+    createExerciseBtnMobile: { flexShrink: 1 },
     createExerciseBtnText: { color: THEME.onPrimary, fontSize: 13, fontWeight: '700' },
 
     // Filters panel

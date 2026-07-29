@@ -1449,6 +1449,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const { width: screenWidth } = useWindowDimensions();
   const IS_TABLET = screenWidth > 700;
   const IS_MOBILE = screenWidth < 430;
+  const IS_FORM_MOBILE = screenWidth < 600;
   const numColumns = viewMode === "grid"
     ? (IS_TABLET ? 4 : 2)
     : 1;
@@ -2264,8 +2265,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
           setCreating(false);
           setEditingExercise(null);
         }}>
-          <View style={styles.entityFormBackdrop}>
-            <View style={[styles.entityFormModal, IS_MOBILE && styles.entityFormModalMobile]}>
+          <View style={[styles.entityFormBackdrop, IS_FORM_MOBILE && styles.entityFormBackdropMobile]}>
+            <View style={[styles.entityFormModal, IS_FORM_MOBILE && styles.entityFormModalMobile]}>
               <CreateExerciseForm
                 key={formKey}
                 navigation={navigation}
@@ -3434,6 +3435,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: isWeb ? 24 : 12,
+  },
+  entityFormBackdropMobile: {
+    padding: 0,
   },
   entityFormModal: {
     width: '94%',

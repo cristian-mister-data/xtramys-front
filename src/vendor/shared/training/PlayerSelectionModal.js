@@ -12,6 +12,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -87,6 +88,7 @@ export default function PlayerSelectionModal({
   }, [themeSC]);
   const styles = useMemo(() => makeStyles(THEME), [THEME]);
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isPortrait = height >= width;
   const isWide = width > 900;
   const isMobile = width < 500;
@@ -241,7 +243,17 @@ export default function PlayerSelectionModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.container}>
+        <View
+          style={[
+            styles.container,
+            {
+              paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 18 : 14),
+              paddingBottom: Math.max(insets.bottom, 14),
+              paddingLeft: 12 + Math.max(insets.left, 0),
+              paddingRight: 12 + Math.max(insets.right, 0),
+            },
+          ]}
+        >
           <View style={styles.header}>
             <Text style={styles.title}>{modalTitle}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -249,9 +261,9 @@ export default function PlayerSelectionModal({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.filterRow}>
+          <View style={[styles.filterRow, isMobile && styles.filterRowMobile]}>
             <TouchableOpacity
-              style={[styles.filterBtn, injuryFilter === 'todos' && styles.filterBtnActive]}
+              style={[styles.filterBtn, isMobile && styles.filterBtnMobile, injuryFilter === 'todos' && styles.filterBtnActive]}
               onPress={() => setInjuryFilter('todos')}
             >
               <Text style={[styles.filterBtnText, injuryFilter === 'todos' && styles.filterBtnTextActive]}>
@@ -259,7 +271,7 @@ export default function PlayerSelectionModal({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filterBtn, injuryFilter === 'disponibles' && styles.filterBtnActive]}
+              style={[styles.filterBtn, isMobile && styles.filterBtnMobile, injuryFilter === 'disponibles' && styles.filterBtnActive]}
               onPress={() => setInjuryFilter('disponibles')}
             >
               <Text style={[styles.filterBtnText, injuryFilter === 'disponibles' && styles.filterBtnTextActive]}>
@@ -267,7 +279,7 @@ export default function PlayerSelectionModal({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filterBtn, injuryFilter === 'lesionados' && styles.filterBtnActive]}
+              style={[styles.filterBtn, isMobile && styles.filterBtnMobile, injuryFilter === 'lesionados' && styles.filterBtnActive]}
               onPress={() => setInjuryFilter('lesionados')}
             >
               <Text style={[styles.filterBtnText, injuryFilter === 'lesionados' && styles.filterBtnTextActive]}>
@@ -276,13 +288,13 @@ export default function PlayerSelectionModal({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.searchRow}>
+          <View style={[styles.searchRow, isMobile && styles.searchRowMobile]}>
             {(() => {
               const currentFilterIds = baseList.map(p => p._id);
               const allCurrentSelected = currentFilterIds.length > 0 && currentFilterIds.every(id => currentSelected.includes(id));
               return (
                 <TouchableOpacity
-                  style={styles.selectAllBtn}
+                  style={[styles.selectAllBtn, isMobile && styles.selectAllBtnMobile]}
                   onPress={allCurrentSelected ? deselectAll : selectAll}
                 >
                   <MaterialIcons
@@ -296,9 +308,12 @@ export default function PlayerSelectionModal({
                 </TouchableOpacity>
               );
             })()}
-            <View style={{ flex: 1 }} />
+            {!isMobile && <View style={{ flex: 1 }} />}
             <TextInput
-              style={[styles.searchInput, { minWidth: isPortrait ? 140 : 220 }]}
+              style={[
+                styles.searchInput,
+                isMobile ? styles.searchInputMobile : { minWidth: isPortrait ? 140 : 220 },
+              ]}
               placeholder={t('session.searchPlayer', 'Buscar jugador...')}
               placeholderTextColor="#7b8aa5"
               value={search}
@@ -532,7 +547,6 @@ const makeStyles = (THEME) => StyleSheet.create({
     width: '100%',
     backgroundColor: THEME.surface,
     borderRadius: 0,
-    padding: Platform.OS === 'ios' ? 16 : 12,
   },
   header: {
     flexDirection: 'row',
@@ -566,6 +580,9 @@ const makeStyles = (THEME) => StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
+  filterRowMobile: {
+    flexWrap: 'wrap',
+  },
   filterBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -573,6 +590,11 @@ const makeStyles = (THEME) => StyleSheet.create({
     backgroundColor: THEME.backgroundAlt,
     borderWidth: 1,
     borderColor: THEME.border,
+  },
+  filterBtnMobile: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterBtnActive: {
     backgroundColor: THEME.primary,
@@ -592,12 +614,26 @@ const makeStyles = (THEME) => StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  searchRowMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 8,
+  },
   selectAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  selectAllBtnMobile: {
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: THEME.backgroundAlt,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   selectAllText: {
     fontSize: 13,
@@ -613,6 +649,9 @@ const makeStyles = (THEME) => StyleSheet.create({
     paddingVertical: 8,
     fontSize: 14,
     color: THEME.text,
+  },
+  searchInputMobile: {
+    width: '100%',
   },
   metaInfo: {
     fontSize: 12,

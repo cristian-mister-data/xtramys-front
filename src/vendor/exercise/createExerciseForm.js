@@ -432,16 +432,30 @@ export default function CreateExerciseForm({
         colors={isNativeForm
           ? [theme?.colors?.surface || '#111827', theme?.colors?.surface || '#111827']
           : [theme?.colors?.surface || '#111827', theme?.colors?.surfaceAlt || '#0f172a']}
-        style={[styles.headerGradient, { paddingTop: Math.max(insets.top, 16) }]}
+        style={[styles.headerGradient, {
+          paddingTop: Math.max(insets.top, 12),
+          paddingLeft: 16 + Math.max(insets.left, 0),
+          paddingRight: 16 + Math.max(insets.right, 0),
+        }]}
       >
-        <TouchableOpacity onPress={handleCancelPress} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={handleCancelPress}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.cancel')}
+        >
           <Ionicons name="arrow-back" size={24} color={isNativeForm ? (theme?.colors?.primary || '#1d4ed8') : (theme?.colors?.text || '#fff')} />
         </TouchableOpacity>
-        <Text style={styles.title}>{isNewExercise ? t('exercise.createExercise') : t('exercise.editExercise')}</Text>
+        <Text style={styles.title} numberOfLines={1}>{isNewExercise ? t('exercise.createExercise') : t('exercise.editExercise')}</Text>
       </LinearGradient>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', paddingBottom: Math.max(insets.bottom, 120) }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'flex-start',
+          paddingHorizontal: isNativeForm ? 16 + Math.max(insets.left, insets.right, 0) : 0,
+          paddingBottom: Math.max(insets.bottom, isNativeForm ? 24 : 40),
+        }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -527,6 +541,7 @@ export default function CreateExerciseForm({
 
         <View style={styles.formCard}>
           <Text style={styles.subTitle}>{t('exercise.generalData')}</Text>
+          <Text style={styles.inputLabel}>{t('exercise.name')}</Text>
           <TextInput
             style={styles.input}
             placeholder={t('exercise.examplePlaceholder')}
@@ -540,6 +555,7 @@ export default function CreateExerciseForm({
             }}
           />
           {/* Selector de carpeta */}
+          <Text style={styles.inputLabel}>{t('folders.folderLabel', 'Carpeta (opcional)')}</Text>
           <TouchableOpacity 
             style={styles.typeSelector} 
             onPress={() => setShowFolderModal(true)}
@@ -738,17 +754,25 @@ export default function CreateExerciseForm({
         )}
       </KeyboardAwareScrollView>
 
-      <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-        <TouchableOpacity 
-          style={styles.cancelButton} 
-          onPress={handleCancelPress}
-        >
-          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-        </TouchableOpacity>
+      <View style={[styles.fixedFooter, {
+        paddingBottom: Math.max(insets.bottom, 12),
+        paddingLeft: 16 + Math.max(insets.left, 0),
+        paddingRight: 16 + Math.max(insets.right, 0),
+      }]}>
+        {!isNativeForm && (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelPress}
+            accessibilityRole="button"
+          >
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity 
           style={[styles.saveButton, saving && styles.buttonDisabled]} 
           onPress={handleSave}
           disabled={saving}
+          accessibilityRole="button"
         >
           <Ionicons name="save-outline" size={18} color={onPrimaryColor} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
@@ -783,7 +807,7 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: isNativeForm ? 12 : 16,
+    paddingBottom: isNativeForm ? 10 : 16,
     paddingHorizontal: isNativeForm ? 12 : 16,
     borderBottomWidth: isNativeForm ? 1 : 0,
     borderBottomColor: theme?.colors?.border || '#334155',
@@ -807,8 +831,8 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
     borderColor: theme?.colors?.border || '#334155'
   },
   backButton: {
-    width: isNativeForm ? 40 : undefined,
-    height: isNativeForm ? 40 : undefined,
+    width: isNativeForm ? 44 : undefined,
+    height: isNativeForm ? 44 : undefined,
     padding: isNativeForm ? 0 : 4,
     marginRight: isNativeForm ? 10 : 12,
     borderRadius: isNativeForm ? 12 : 0,
@@ -817,7 +841,8 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: isNativeForm ? 18 : 20,
+    flex: 1,
+    fontSize: 20,
     fontWeight: isNativeForm ? '700' : '600',
     color: theme?.colors?.text || '#e2e8f0',
     letterSpacing: 0.2
@@ -829,24 +854,24 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
       ? (theme?.colors?.textSecondary || '#334155')
       : (theme?.colors?.textMuted || '#94a3b8'),
     textTransform: 'uppercase',
-    marginBottom: isNativeForm ? 12 : 16,
+    marginBottom: isNativeForm ? 10 : 16,
     letterSpacing: isNativeForm ? 0.7 : 0.5,
   },
   formCard: {
     backgroundColor: isNativeForm
-      ? (theme?.colors?.surface || '#111827')
+      ? 'transparent'
       : (theme?.colors?.surfaceAlt || '#111827'),
-    padding: isNativeForm ? 16 : 20,
+    padding: isNativeForm ? 0 : 20,
     borderRadius: isNativeForm ? 16 : 12,
     shadowColor: "#000",
-    shadowOpacity: 0.04,
+    shadowOpacity: isNativeForm ? 0 : 0.04,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    marginTop: isNativeForm ? 12 : 16,
-    marginHorizontal: isNativeForm ? 12 : 16,
+    elevation: isNativeForm ? 0 : 2,
+    marginTop: isNativeForm ? 20 : 16,
+    marginHorizontal: isNativeForm ? 0 : 16,
     marginBottom: isNativeForm ? 0 : 16,
-    borderWidth: 1,
+    borderWidth: isNativeForm ? 0 : 1,
     borderColor: theme?.colors?.border || '#334155',
   },
   input: {
@@ -1017,7 +1042,8 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    maxWidth: 200,
+    maxWidth: isNativeForm ? undefined : 200,
+    minHeight: isNativeForm ? 50 : undefined,
   }, 
   editButton: {
     backgroundColor: isNativeForm
@@ -1051,8 +1077,9 @@ const makeStyles = (theme, isNativeForm = false) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: isNativeForm ? 12 : 20,
-    paddingVertical: isNativeForm ? 12 : 14,
+    paddingHorizontal: isNativeForm ? 16 : 20,
+    paddingTop: isNativeForm ? 10 : 14,
+    paddingBottom: isNativeForm ? 12 : 14,
     backgroundColor: theme?.colors?.surface || '#111827',
     borderTopWidth: 1,
     borderTopColor: theme?.colors?.border || '#334155',

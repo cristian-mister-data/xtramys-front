@@ -1379,6 +1379,7 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
+  const IS_FORM_MOBILE = screenWidth < 600;
   const IS_TABLET = screenWidth > 700;
   const numColumns = viewMode === "grid"
     ? (IS_TABLET ? 4 : 2)
@@ -2182,8 +2183,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     return (
       <AppLayout>
         <Modal visible transparent animationType="fade" onRequestClose={handleCancel}>
-          <View style={styles.entityFormBackdrop}>
-            <View style={[styles.entityFormModal, IS_MOBILE && styles.entityFormModalMobile]}>
+          <View style={[styles.entityFormBackdrop, IS_FORM_MOBILE && styles.entityFormBackdropMobile]}>
+            <View style={[styles.entityFormModal, IS_FORM_MOBILE && styles.entityFormModalMobile]}>
               <CreateStrategyForm
                 navigation={navigation}
                 onSave={handleSave}
@@ -3353,6 +3354,9 @@ const makeStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Platform.OS === 'web' ? 24 : 12,
+  },
+  entityFormBackdropMobile: {
+    padding: 0,
   },
   entityFormModal: {
     width: '94%',

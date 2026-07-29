@@ -116,7 +116,6 @@ export default function FriendShareSelector({ contentType, contentId, value, onC
 function makeStyles(theme) {
   return StyleSheet.create({
     card: {
-      marginBottom: 16,
       padding: 16,
       borderRadius: 8,
       borderWidth: 1,
