@@ -85,7 +85,23 @@ export default function GestionEquipos() {
   const [equipoSeleccionado, setEquipoSeleccionado] = useState(null);
   const [seasonSelectorVisible, setSeasonSelectorVisible] = useState(false);
   const [createSeasonModalVisible, setCreateSeasonModalVisible] = useState(false);
+  const getSeasonStartYear = (seasonYear) => {
+    if (!seasonYear) return null;
+    const match = seasonYear.toString().trim().match(/^(\d{4})/);
+    if (!match) return null;
+    const startYear = Number(match[1]);
+    return Number.isFinite(startYear) ? startYear : null;
+  };
   const getDefaultSeasonString = () => {
+    const existingSeasonYears = [temporada, ...(temporadas || [])]
+      .map((seasonItem) => getSeasonStartYear(seasonItem?.año))
+      .filter((year) => Number.isFinite(year));
+
+    if (existingSeasonYears.length > 0) {
+      const latestSeasonYear = Math.max(...existingSeasonYears);
+      return `${latestSeasonYear + 1}-${latestSeasonYear + 2}`;
+    }
+
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0 = Jan, 5 = June
@@ -238,11 +254,15 @@ export default function GestionEquipos() {
   const [userClubId, setUserClubId] = useState(null);
   const [ready, setReady] = useState(false);
   const supervising = useSelector((s) => s.usuario.supervising);
+  const currentUser = useSelector((s) => s.usuario.user);
+  const allowMultiSeasonManagement = Boolean(currentUser?.allowMultiSeasonManagement);
+  const archivedSeason = Boolean(temporada?.archivada && !allowMultiSeasonManagement);
   const readOnlyClubSeason = Boolean(
     (temporada?.isClubSeason || (temporada?.usuario && idUsuario && String(temporada.usuario) !== String(idUsuario))) &&
-    !temporada?.isActiveClubSeason
+    !temporada?.isActiveClubSeason &&
+    !allowMultiSeasonManagement
   );
-  const canMutate = !supervising && !readOnlyClubSeason;
+  const canMutate = !supervising && !readOnlyClubSeason && !archivedSeason;
   const [loadingTemporada, setLoadingTemporada] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
@@ -257,7 +277,14 @@ export default function GestionEquipos() {
   }, []);
 
   const isCoach = userRole === 'user' && userClubId;
-  const canEditTeam = !supervising && (canMutate || isCoach);
+  const canCreateSeason = !supervising && (!isCoach || allowMultiSeasonManagement);
+  const canEditSeason = (season) =>
+    canCreateSeason && (allowMultiSeasonManagement || !season?.archivada);
+  const canEditTeam = canMutate;
+  const isDuplicateSeasonError = (error) => {
+    const message = `${error?.message || ''} ${error?.data?.mensaje || ''} ${error?.data?.message || ''}`.toLowerCase();
+    return error?.status === 409 || error?.code === 'DUPLICATE_ENTRY' || error?.code === 'SEASON_DUPLICATE' || message.includes('ya existe') || message.includes('already exists') || message.includes('duplic');
+  };
 
   // Reiniciar estado de nueva temporada cuando se abre el modal
   useEffect(() => {
@@ -364,7 +391,7 @@ export default function GestionEquipos() {
     
     const ejerciciosDetalle = sessionData.ejercicios?.map((e, index) => ({
       ejercicio: typeof e === 'object' ? e.ejercicio : e,
-      orden: index + 1,
+      orden: typeof e === 'object' ? (e.orden || index + 1) : index + 1,
       tiempoDescanso: typeof e === 'object' ? (e.tiempoDescanso || 0) : 0,
       teamAssignments: typeof e === 'object' ? (e.teamAssignments || []) : [],
     })) || [];
@@ -381,6 +408,7 @@ export default function GestionEquipos() {
       equipo: equipoSeleccionado._id,
       ejercicios: ejerciciosIds,
       ejerciciosDetalle,
+      tareasPersonalizadas: sessionData.tareasPersonalizadas || [],
       observaciones,
       jugadores: sessionData.jugadores || [],
       jugadoresExtras: sessionData.jugadoresExtras || [],
@@ -431,7 +459,7 @@ export default function GestionEquipos() {
     
     const ejerciciosDetalle = sessionData.ejercicios?.map((e, index) => ({
       ejercicio: typeof e === 'object' && e.ejercicio ? e.ejercicio : e,
-      orden: index + 1,
+      orden: typeof e === 'object' ? (e.orden || index + 1) : index + 1,
       tiempoDescanso: typeof e === 'object' ? (e.tiempoDescanso || 0) : 0,
       teamAssignments: typeof e === 'object' ? (e.teamAssignments || []) : [],
     })) || [];
@@ -450,6 +478,7 @@ export default function GestionEquipos() {
         observaciones,
         ejercicios: ejerciciosIds,
         ejerciciosDetalle,
+        tareasPersonalizadas: sessionData.tareasPersonalizadas || [],
         jugadores: sessionData.jugadores || [],
         jugadoresExtras: sessionData.jugadoresExtras || [],
         expectedWellness: sessionData.expectedWellness,
@@ -576,10 +605,20 @@ export default function GestionEquipos() {
 
   // Add this function to create a new season
   const handleCreateSeason = async () => {
-    if (isCoach || canMutate === false) return;
+    if (!canCreateSeason) return;
     try {
       if (!newSeason.año) {
         Alert.alert(t('message.error'), t('season.yearRequired'));
+        return;
+      }
+
+      const requestedSeason = newSeason.año.toString().trim();
+      const normalizedRequestedSeason = requestedSeason.toLowerCase();
+      const seasonAlreadyExists = [temporada, ...(temporadas || [])].some((seasonItem) => (
+        seasonItem?.año?.toString().trim().toLowerCase() === normalizedRequestedSeason
+      ));
+      if (seasonAlreadyExists) {
+        Alert.alert(t('message.error'), t('season.duplicateSeasonError'));
         return;
       }
       
@@ -598,7 +637,7 @@ export default function GestionEquipos() {
       dispatch(clearTournaments());
       
       const result = await dispatch(createTemporada({
-        año: newSeason.año.toString().trim(),
+        año: requestedSeason,
         usuario: idUsuario
       })).unwrap();
       
@@ -606,13 +645,17 @@ export default function GestionEquipos() {
       if (result?._id) {
         await AsyncStorage.setItem('selectedSeason', result._id);
         await dispatch(fetchEquiposTemporada({ season: result._id }));
+        await dispatch(fetchTemporadasUsuario({ usuario: idUsuario }));
       }
       
       setNewSeason({ año: getDefaultSeasonString(), nombre: '' });
       Alert.alert(t('message.success'), t('season.createSeasonSuccess'));
     } catch (error) {
       console.error('Error creating season:', error);
-      Alert.alert(t('message.error'), t('season.seasonCreateError'));
+      Alert.alert(
+        t('message.error'),
+        isDuplicateSeasonError(error) ? t('season.duplicateSeasonError') : t('season.seasonCreateError')
+      );
     } finally {
       setLoadingTemporada(false);
       setLoadingTeam(false);
@@ -621,6 +664,7 @@ export default function GestionEquipos() {
 
   // Abrir modal de confirmación de borrado de temporada
   const handlePromptDeleteSeason = (season) => {
+    if (!canEditSeason(season)) return;
     setSeasonToDelete(season);
     setSeasonDeleteConfirmationText('');
     setShowSeasonDeleteConfirmation(true);
@@ -628,7 +672,7 @@ export default function GestionEquipos() {
 
   // Confirmar y procesar borrado de temporada en cascada
   const handleDeleteSeasonConfirm = async () => {
-    if (canMutate === false) return;
+    if (!canEditSeason(seasonToDelete)) return;
     if (!seasonToDelete) return;
     
     // Verificar que el texto de confirmación coincida con el año formateado de la temporada
@@ -998,7 +1042,7 @@ export default function GestionEquipos() {
                     <Text style={styles.emptyStateSubtitle}>
                       {t('season.noSelectedTeamSubtitle')}
                     </Text>
-                    {!isCoach && canMutate && (
+                    {(!isCoach || allowMultiSeasonManagement) && canMutate && (
                       <TouchableOpacity
                         style={styles.createTeamButton}
                         onPress={() => handleOpenCreateTeamModal()}
@@ -1058,6 +1102,7 @@ export default function GestionEquipos() {
                   matchSheets={matchSheets}
                   trainingSessions={trainingSessions}
                   team={equipoSeleccionado}
+                  season={temporada}
                   canMutate={canMutate}
                   isCoach={isCoach}
                   onDayPress={handleDayPress}
@@ -1181,7 +1226,7 @@ export default function GestionEquipos() {
                             {t('season.training')} {session.horaInicio ? `- ${session.horaInicio}` : ''}
                           </Text>
                           <Text style={styles.eventItemSubtitle}>
-                            {t('season.exercisesCount', { count: session.ejercicios?.length || 0 })}
+                            {t('season.exercisesCount', { count: (session.ejercicios?.length || 0) + (session.tareasPersonalizadas?.length || 0) })}
                             {session.horaFin ? ` • ${t('season.until')} ${session.horaFin}` : ''}
                           </Text>
                         </View>
@@ -1228,6 +1273,8 @@ export default function GestionEquipos() {
                         style={styles.seasonItemSelectArea}
                         onPress={() => handleSelectSeason(season)}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${formatSeasonYear(season.año)}${season.archivada && !allowMultiSeasonManagement ? `, ${t('season.archivedReadOnly', 'Temporada anterior · Solo lectura')}` : ''}`}
                       >
                         <Ionicons name="calendar" size={20} color={temporada?._id === season._id ? theme.colors.primary : theme.colors.textMuted} />
                         <View style={styles.seasonItemTextContainer}>
@@ -1249,9 +1296,12 @@ export default function GestionEquipos() {
                         {temporada?._id === season._id && (
                           <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                         )}
+                        {season.archivada && !allowMultiSeasonManagement && (
+                          <Ionicons name="lock-closed" size={18} color={theme.colors.textMuted} style={{ marginRight: 8 }} />
+                        )}
                       </TouchableOpacity>
 
-                      {!isCoach && canMutate && !season.isClubSeason && (
+                      {canEditSeason(season) && !season.isClubSeason && (
                         <TouchableOpacity
                           style={styles.seasonItemDeleteButton}
                           onPress={() => handlePromptDeleteSeason(season)}
@@ -1272,7 +1322,7 @@ export default function GestionEquipos() {
               
               {/* Botón crear temporada dentro del modal */}
               <View style={styles.modalFooter}>
-                {!isCoach && canMutate && (
+                {canCreateSeason && (
                   <TouchableOpacity
                     style={styles.createSeasonInModalButton}
                     onPress={() => {
@@ -1309,6 +1359,19 @@ export default function GestionEquipos() {
               </View>
 
               <View style={[styles.modalBody, IS_MOBILE && { padding: 14 }]}>
+                {temporadas?.length > 0 && !allowMultiSeasonManagement && (
+                  <View
+                    style={styles.createSeasonNotice}
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="polite"
+                  >
+                    <Ionicons name="information-circle" size={22} color={theme.colors.warning} />
+                    <Text style={styles.createSeasonNoticeText}>
+                      {t('season.newSeasonReadOnlyNotice')}
+                    </Text>
+                  </View>
+                )}
+
                 {/* Year Input */}
                 <TextInput
                   style={styles.modalInput}
@@ -2140,7 +2203,7 @@ export default function GestionEquipos() {
                     )}
 
                     {/* Sección de eliminación */}
-                    {!isCoach && canMutate && (
+                    {(!isCoach || allowMultiSeasonManagement) && canMutate && (
                       <View style={styles.dangerZone}>
                         <View style={styles.dangerZoneHeader}>
                           <Ionicons name="warning" size={24} color={theme.colors.error} />
@@ -2985,6 +3048,23 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBody: {
     padding: 20,
+  },
+  createSeasonNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: theme.colors.warningSoft,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  createSeasonNoticeText: {
+    flex: 1,
+    color: theme.colors.warningSoftText,
+    fontSize: 14,
+    lineHeight: 20,
   },
   modalInput: {
     backgroundColor: theme.colors.inputBg,

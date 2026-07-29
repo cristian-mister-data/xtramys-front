@@ -44,6 +44,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
 import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import CustomTrainingTaskModal from './CustomTrainingTaskModal';
+import {
+  customTaskAsExercise,
+  getCustomTaskSelectionId,
+  isCustomTaskSelectionId,
+} from '@/utils/sessionCustomTasks';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -1425,6 +1431,8 @@ export default function AddEventModal({
     manualAverageWellness: '',
   });
   const [selectedExercises, setSelectedExercises] = useState([]);
+  const [customTasks, setCustomTasks] = useState([]);
+  const [customTaskModal, setCustomTaskModal] = useState({ visible: false, task: null });
   const [exerciseObservations, setExerciseObservations] = useState({});
   const [exerciseRestTimes, setExerciseRestTimes] = useState({});
   const [exerciseTeamAssignments, setExerciseTeamAssignments] = useState({});
@@ -1467,6 +1475,7 @@ export default function AddEventModal({
     setExerciseObservations(draft.exerciseObservations || {});
     setExerciseRestTimes(draft.exerciseRestTimes || {});
     setExerciseTeamAssignments(draft.exerciseTeamAssignments || {});
+    setCustomTasks(draft.customTasks || []);
     setSelectedStrengthExercises(draft.selectedStrengthExercises || []);
     setStrengthExerciseObservations(draft.strengthExerciseObservations || {});
     setStrengthExerciseRestTimes(draft.strengthExerciseRestTimes || {});
@@ -1481,6 +1490,7 @@ export default function AddEventModal({
       exerciseObservations,
       exerciseRestTimes,
       exerciseTeamAssignments,
+      customTasks,
       selectedStrengthExercises,
       strengthExerciseObservations,
       strengthExerciseRestTimes,
@@ -1653,6 +1663,7 @@ export default function AddEventModal({
       setExerciseObservations({});
       setExerciseRestTimes({});
       setExerciseTeamAssignments({});
+      setCustomTasks([]);
       setSelectedPlayers([]);
       setExtraPlayers([]);
       setExtraPlayerText('');
@@ -1682,7 +1693,7 @@ export default function AddEventModal({
       
       const availability = {};
       await Promise.all(
-        selectedExercises.map(async (exerciseId) => {
+        selectedExercises.filter((exerciseId) => !isCustomTaskSelectionId(exerciseId)).map(async (exerciseId) => {
           try {
             const videos = await getVideosByExercise(exerciseId);
             availability[exerciseId] = videos && videos.length > 0;
@@ -1961,11 +1972,18 @@ export default function AddEventModal({
     setLoading(true);
     try {
       // Preparar ejercicios con observaciones, tiempos de descanso y asignaciones de equipos
-      const ejerciciosConDatos = selectedExercises.map(exId => ({
-        ejercicio: exId,
-        observacion: exerciseObservations[exId] || '',
-        tiempoDescanso: exerciseRestTimes[exId] || 0,
-        teamAssignments: exerciseTeamAssignments[exId] || [],
+      const ejerciciosConDatos = selectedExercises.flatMap((exId, index) => (
+        isCustomTaskSelectionId(exId) ? [] : [{
+          ejercicio: exId,
+          orden: index + 1,
+          observacion: exerciseObservations[exId] || '',
+          tiempoDescanso: exerciseRestTimes[exId] || 0,
+          teamAssignments: exerciseTeamAssignments[exId] || [],
+        }]
+      ));
+      const tareasPersonalizadas = customTasks.map((task) => ({
+        ...task,
+        orden: selectedExercises.indexOf(getCustomTaskSelectionId(task)) + 1,
       }));
 
       // Preparar ejercicios de fuerza
@@ -1982,6 +2000,7 @@ export default function AddEventModal({
         horaFin: sessionData.horaFin,
         observaciones: sessionData.observaciones || undefined,
         ejercicios: ejerciciosConDatos.length > 0 ? ejerciciosConDatos : [],
+        tareasPersonalizadas,
         ejerciciosFuerza: ejerciciosFuerzaConDatos.length > 0 ? ejerciciosFuerzaConDatos : [],
         jugadores: selectedPlayers.length > 0 ? selectedPlayers : [],
         jugadoresExtras: extraPlayers.length > 0 ? extraPlayers : [],
@@ -3767,7 +3786,8 @@ export default function AddEventModal({
   // Renderizar formulario de sesión
   // Helper para obtener nombre de ejercicio
   const getExerciseName = (exId) => {
-    const ex = exercises.find(e => e._id === exId);
+    const ex = exercises.find(e => e._id === exId)
+      || customTasks.map(customTaskAsExercise).find(e => e._id === exId);
     return ex ? ex.nombre : 'Ejercicio';
   };
 
@@ -3789,12 +3809,24 @@ export default function AddEventModal({
   // Eliminar ejercicio
   const handleRemoveExercise = (exerciseId) => {
     setSelectedExercises(selectedExercises.filter(id => id !== exerciseId));
+    if (isCustomTaskSelectionId(exerciseId)) {
+      setCustomTasks((current) => current.filter((task) => getCustomTaskSelectionId(task) !== exerciseId));
+    }
     const newObs = { ...exerciseObservations };
     const newRest = { ...exerciseRestTimes };
     delete newObs[exerciseId];
     delete newRest[exerciseId];
     setExerciseObservations(newObs);
     setExerciseRestTimes(newRest);
+  };
+
+  const handleSaveCustomTask = (task) => {
+    const selectionId = getCustomTaskSelectionId(task);
+    setCustomTasks((current) => {
+      const exists = current.some((item) => item.id === task.id);
+      return exists ? current.map((item) => item.id === task.id ? task : item) : [...current, task];
+    });
+    setSelectedExercises((current) => current.includes(selectionId) ? current : [...current, selectionId]);
   };
 
   const renderSessionForm = () => (
@@ -3960,12 +3992,22 @@ export default function AddEventModal({
           <Ionicons name="add" size={22} color={theme.colors.success} />
           <Text style={styles.addExerciseBtnText}>{t('schedule.addExerciseBtn')}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.addExerciseBtn, { borderColor: theme.colors.primary, marginTop: 9 }]}
+          onPress={() => setCustomTaskModal({ visible: true, task: null })}
+        >
+          <Ionicons name="image-outline" size={21} color={theme.colors.primary} />
+          <Text style={[styles.addExerciseBtnText, { color: theme.colors.primary }]}>
+            {t('session.addCustomTask', 'Añadir tarea personalizada')}
+          </Text>
+        </TouchableOpacity>
 
         {/* Lista de ejercicios seleccionados */}
         {selectedExercises.length > 0 ? (
           <View style={styles.exercisesList}>
             {selectedExercises.map((exId, index) => {
-              const exercise = exercises.find(e => e._id === exId);
+              const exercise = exercises.find(e => e._id === exId)
+                || customTasks.map(customTaskAsExercise).find(e => e._id === exId);
               if (!exercise) return null;
               
               const handleMoveUp = () => {
@@ -3993,6 +4035,17 @@ export default function AddEventModal({
                           <Text style={styles.exerciseNumberText}>{index + 1}</Text>
                         </View>
                         <Text style={styles.exerciseItemNameMobile} numberOfLines={2}>{exercise.nombre}</Text>
+                        {exercise.isCustomTask && (
+                          <TouchableOpacity
+                            style={styles.removeExerciseBtnMobile}
+                            onPress={() => setCustomTaskModal({
+                              visible: true,
+                              task: customTasks.find((task) => getCustomTaskSelectionId(task) === exId),
+                            })}
+                          >
+                            <MaterialIcons name="edit" size={19} color={theme.colors.primary} />
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                           style={styles.removeExerciseBtnMobile}
                           onPress={() => handleRemoveExercise(exId)}
@@ -4018,6 +4071,11 @@ export default function AddEventModal({
                           {exercise.tipo && (
                             <Text style={styles.exerciseItemType}>
                               {getExerciseTypeName(exercise.tipo)}
+                            </Text>
+                          )}
+                          {exercise.isCustomTask && (
+                            <Text style={[styles.exerciseItemType, { color: theme.colors.primary }]}>
+                              {t('session.customTask', 'Tarea personalizada')}
                             </Text>
                           )}
                           {/* Controles de orden y video en móvil */}
@@ -4082,6 +4140,11 @@ export default function AddEventModal({
                               {getExerciseTypeName(exercise.tipo)}
                             </Text>
                           )}
+                          {exercise.isCustomTask && (
+                            <Text style={[styles.exerciseItemType, { color: theme.colors.primary }]}>
+                              {t('session.customTask', 'Tarea personalizada')}
+                            </Text>
+                          )}
                         </View>
                       </View>
                       
@@ -4094,6 +4157,17 @@ export default function AddEventModal({
                             onPress={() => handlePlayExerciseVideo(exercise)}
                           >
                             <Feather name="play-circle" size={18} color="#fff" />
+                          </TouchableOpacity>
+                        )}
+                        {exercise.isCustomTask && (
+                          <TouchableOpacity
+                            style={styles.orderBtn}
+                            onPress={() => setCustomTaskModal({
+                              visible: true,
+                              task: customTasks.find((task) => getCustomTaskSelectionId(task) === exId),
+                            })}
+                          >
+                            <MaterialIcons name="edit" size={18} color={theme.colors.primary} />
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity
@@ -4127,7 +4201,7 @@ export default function AddEventModal({
                   )}
                   
                   {/* Tiempo de descanso - solo si no es el último ejercicio */}
-                  {index < selectedExercises.length - 1 && (
+                  {!exercise.isCustomTask && index < selectedExercises.length - 1 && (
                     <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
                       <Text style={styles.exerciseFieldLabel}>{t('schedule.restMinutes')}:</Text>
                       <TextInput
@@ -4146,7 +4220,7 @@ export default function AddEventModal({
                   )}
                   
                   {/* Observaciones del ejercicio */}
-                  <View style={styles.exerciseObsField}>
+                  {!exercise.isCustomTask && <View style={styles.exerciseObsField}>
                     <Text style={styles.exerciseFieldLabel}>{t('schedule.exerciseObservations')}:</Text>
                     <TextInput
                       style={styles.exerciseObsInput}
@@ -4159,7 +4233,7 @@ export default function AddEventModal({
                       multiline
                       rows={2}
                     />
-                  </View>
+                  </View>}
                   
                   {/* Botón de asignación de equipos */}
                   {exercise.equipos > 0 && (
@@ -4682,6 +4756,12 @@ export default function AddEventModal({
           setShowPlayerSelectorModal(false);
         }}
         injuries={injuries}
+      />
+      <CustomTrainingTaskModal
+        visible={customTaskModal.visible}
+        initialTask={customTaskModal.task}
+        onClose={() => setCustomTaskModal({ visible: false, task: null })}
+        onSave={handleSaveCustomTask}
       />
     </>
   );

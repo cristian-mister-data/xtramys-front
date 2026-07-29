@@ -124,6 +124,10 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
   }, [user]);
 
   const isClubAdmin = user?.role === 'club_admin';
+  const isDuplicateSeasonError = (error) => {
+    const message = `${error?.message || ''} ${error?.data?.mensaje || ''} ${error?.data?.message || ''}`.toLowerCase();
+    return error?.status === 409 || error?.code === 'DUPLICATE_ENTRY' || error?.code === 'SEASON_DUPLICATE' || message.includes('ya existe') || message.includes('already exists') || message.includes('duplic');
+  };
 
   const [loading, setLoading] = useState(false);
 
@@ -194,7 +198,10 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
       }
     } catch (err) {
       console.warn('Error en creación encadenada:', err);
-      Alert.alert(t('message.error'), t('season.createSeasonError'));
+      Alert.alert(
+        t('message.error'),
+        isDuplicateSeasonError(err) ? t('season.duplicateSeasonError') : t('season.createSeasonError')
+      );
     } finally {
       setLoading(false);
     }

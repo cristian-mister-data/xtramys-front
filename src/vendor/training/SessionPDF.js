@@ -6,6 +6,7 @@ import {
 } from '@/utils/pdfDesign';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
 import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
 import api from '@/api/client';
@@ -365,11 +366,17 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     });
   }
 
-  const ejerciciosOrdenados = [...exercises].sort((a, b) => (detalleMap[a._id]?.orden || 0) - (detalleMap[b._id]?.orden || 0));
+  const ejerciciosOrdenados = mergeOrderedSessionTasks(
+    exercises,
+    detalleMap,
+    session.tareasPersonalizadas,
+  );
 
   const exerciseObservationItems = ejerciciosOrdenados.map((ejercicio) => {
     const detalle = detalleMap[ejercicio._id] || {};
-    const text = typeof detalle.observacion === 'string' ? detalle.observacion.trim() : '';
+    const text = typeof detalle.observacion === 'string'
+      ? detalle.observacion.trim()
+      : (ejercicio.observacionesPersonalizadas || []).join('\n');
     return text ? { title: ejercicio?.nombre || 'Ejercicio sin nombre', text } : null;
   }).filter(Boolean);
 
@@ -469,7 +476,7 @@ const SessionCoverPage = ({ data, title }) => {
 const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   const { detalleMap, t } = data;
   const detalle = detalleMap[ejercicio._id] || {};
-  const ordenNumero = detalle.orden || index + 1;
+  const ordenNumero = detalle.orden || ejercicio.orden || index + 1;
   const isLastExercise = index === data.ejerciciosOrdenados.length - 1;
 
   let imagenSrc = imageDataUris[`ex_${ejercicio._id}`];
@@ -482,6 +489,7 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   }
 
   const pills = [];
+  if (ejercicio.isCustomTask) pills.push(t('session.customTask', 'Tarea personalizada'));
   if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} ${t('session.players', 'Jugadores')}`);
   if (ejercicio.equipos) pills.push(`${ejercicio.equipos} ${t('session.teams', 'Equipos')}`);
   if (ejercicio.dimensiones) pills.push(ejercicio.dimensiones);
@@ -526,6 +534,14 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
           <View style={s.exSection}>
             <Text style={s.exSectionLabel}>{t('session.observation', 'Observación')}</Text>
             <Text style={s.exSectionText}>{detalle.observacion}</Text>
+          </View>
+        )}
+        {ejercicio.observacionesPersonalizadas?.length > 0 && (
+          <View style={s.exSection}>
+            <Text style={s.exSectionLabel}>{t('session.observations', 'Observaciones')}</Text>
+            <Text style={s.exSectionText}>
+              {ejercicio.observacionesPersonalizadas.map((item) => `• ${item}`).join('\n')}
+            </Text>
           </View>
         )}
         {Boolean(ejercicio.materialNecesario) && (

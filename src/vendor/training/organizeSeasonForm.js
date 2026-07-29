@@ -103,7 +103,7 @@ export default function OrganizeSeasonForm({ onSubmit, onCancel, loading }) {
       case 'fechaInicio':
         return fechaInicio;
       case 'fechaFin':
-        return fechaFin;
+        return fechaFin || fechaInicio || new Date();
       case 'horaInicio':
         return horaInicio;
       case 'horaFin':

@@ -12,6 +12,11 @@ import { checkSubscription } from '@/store/slices/user/userThunks';
 import Modal from '@/ui/Modal';
 import { isNative } from '@/platform/capacitor';
 
+const isDuplicateSeasonError = (error) => {
+  const message = `${error?.message || ''} ${error?.response?.data?.mensaje || ''} ${error?.response?.data?.message || ''}`.toLowerCase();
+  return error?.status === 409 || error?.response?.status === 409 || error?.code === 'DUPLICATE_ENTRY' || error?.code === 'SEASON_DUPLICATE' || error?.response?.data?.code === 'DUPLICATE_ENTRY' || error?.response?.data?.code === 'SEASON_DUPLICATE' || message.includes('ya existe') || message.includes('already exists') || message.includes('duplic');
+};
+
 const PaymentSpinner = styled.div`
   width: 50px;
   height: 50px;
@@ -855,7 +860,7 @@ export default function ClubDashboard() {
       setClubSeasonYear('');
       fetchClubData();
     } catch (error) {
-      toast.error(error.response?.data?.mensaje || error.message || 'No se pudo crear la temporada.');
+      toast.error(isDuplicateSeasonError(error) ? t('season.duplicateSeasonError') : (error.response?.data?.mensaje || error.message || 'No se pudo crear la temporada.'));
     } finally {
       setSeasonSaving(false);
     }

@@ -80,7 +80,7 @@ const ROUND_I18N_KEYS = {
   treintaydosavos: 'tournaments.roundRound64',
 };
 
-export default function Home({ navigation: navigationProp }) {
+export default function Home({ navigation: navigationProp, canMutate = true }) {
   // Fallback: en web la pantalla se renderiza desde una page wrapper que no
   // pasa `navigation`, así que tomamos el del shim cuando falta.
   const navigationFromHook = useNavigation();
@@ -412,6 +412,7 @@ export default function Home({ navigation: navigationProp }) {
 
   // Handler para guardar edición de ficha de partido
   const handleSaveMatchEdit = async (matchData) => {
+    if (!canMutate) return;
     if (!equipoSeleccionado?._id || !matchData._id) return;
     await dispatch(updateMatchSheet({ id: matchData._id, data: matchData })).unwrap();
     dispatch(fetchMatchSheetsByTeam(equipoSeleccionado._id));
@@ -420,6 +421,7 @@ export default function Home({ navigation: navigationProp }) {
 
   // Handler para eliminar ficha de partido
   const handleDeleteMatch = async (matchId) => {
+    if (!canMutate) return;
     if (!equipoSeleccionado?._id || !matchId) return;
     try {
       await dispatch(deleteMatchSheet(matchId)).unwrap();
@@ -435,13 +437,14 @@ export default function Home({ navigation: navigationProp }) {
 
   // Handler para guardar edición de sesión
   const handleSaveSessionEdit = async (sessionData) => {
+    if (!canMutate) return;
     if (!equipoSeleccionado?._id || !sessionData._id) return;
     const ejerciciosIds = sessionData.ejercicios?.map(e =>
       typeof e === 'object' && e.ejercicio ? e.ejercicio : e
     ) || [];
     const ejerciciosDetalle = sessionData.ejercicios?.map((e, index) => ({
       ejercicio: typeof e === 'object' && e.ejercicio ? e.ejercicio : e,
-      orden: index + 1,
+      orden: typeof e === 'object' ? (e.orden || index + 1) : index + 1,
       tiempoDescanso: typeof e === 'object' ? (e.tiempoDescanso || 0) : 0,
       teamAssignments: typeof e === 'object' ? (e.teamAssignments || []) : [],
     })) || [];
@@ -458,6 +461,7 @@ export default function Home({ navigation: navigationProp }) {
         observaciones,
         ejercicios: ejerciciosIds,
         ejerciciosDetalle,
+        tareasPersonalizadas: sessionData.tareasPersonalizadas || [],
         jugadores: sessionData.jugadores || [],
         jugadoresExtras: sessionData.jugadoresExtras || [],
         expectedWellness: sessionData.expectedWellness,
@@ -472,6 +476,7 @@ export default function Home({ navigation: navigationProp }) {
 
   // Handler para eliminar sesión
   const handleDeleteSession = async (sessionId) => {
+    if (!canMutate) return;
     if (!equipoSeleccionado?._id || !sessionId) return;
     try {
       await dispatch(deleteEntrenamiento(sessionId)).unwrap();
@@ -1198,11 +1203,12 @@ export default function Home({ navigation: navigationProp }) {
         setDetailSessionVisible(false);
         setSelectedSessionForDetail(null);
       }}
-      onEdit={(session) => {
+      onEdit={canMutate ? (session) => {
         setDetailSessionVisible(false);
         setEditSessionModalVisible(true);
-      }}
-      onDelete={() => handleDeleteSession(selectedSessionForDetail?._id)}
+      } : undefined}
+      onDelete={canMutate ? () => handleDeleteSession(selectedSessionForDetail?._id) : undefined}
+      canMutate={canMutate}
       onWellnessUpdate={() => {
         if (equipoSeleccionado?._id) {
           dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id }));
@@ -1219,11 +1225,12 @@ export default function Home({ navigation: navigationProp }) {
         setDetailMatchVisible(false);
         setSelectedMatchForDetail(null);
       }}
-      onEdit={(match) => {
+      onEdit={canMutate ? (match) => {
         setDetailMatchVisible(false);
         setEditMatchModalVisible(true);
-      }}
-      onDelete={() => handleDeleteMatch(selectedMatchForDetail?._id)}
+      } : undefined}
+      onDelete={canMutate ? () => handleDeleteMatch(selectedMatchForDetail?._id) : undefined}
+      canMutate={canMutate}
     />
 
     <EditSessionModal

@@ -46,6 +46,7 @@ import {
   saveFormDraft,
   STORAGE_KEYS,
 } from '@/utils/formPersistence';
+import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
 
 // Tema consistente con el resto de la aplicación
 // NOTE: Colores ahora vienen del ThemeProvider de styled-components.
@@ -206,12 +207,8 @@ export default function TrainingSessionDetailModal({
 
   // Ejercicios ordenados
   const orderedExercises = useMemo(() => {
-    return [...sessionExercises].sort((a, b) => {
-      const ordenA = detalleMap[a._id]?.orden || 0;
-      const ordenB = detalleMap[b._id]?.orden || 0;
-      return ordenA - ordenB;
-    });
-  }, [sessionExercises, detalleMap]);
+    return mergeOrderedSessionTasks(sessionExercises, detalleMap, session?.tareasPersonalizadas);
+  }, [sessionExercises, detalleMap, session?.tareasPersonalizadas]);
 
   // Ejercicios de fuerza de la sesión
   const sessionStrengthExercises = useMemo(() => {
@@ -283,7 +280,7 @@ export default function TrainingSessionDetailModal({
       // Usar la función compartida de SessionPDF.js
       await generateSessionPDF({
         session,
-        exercises: orderedExercises,
+        exercises: sessionExercises,
         strengthExercises: sessionStrengthExercises,
         team,
         players,
@@ -664,7 +661,7 @@ export default function TrainingSessionDetailModal({
               ) : (
                 orderedExercises.map((ejercicio, index) => {
                   const detalle = detalleMap[ejercicio._id] || {};
-                  const orden = detalle.orden || (index + 1);
+                  const orden = detalle.orden || ejercicio.orden || (index + 1);
                   const tiempoDescanso = detalle.tiempoDescanso || 0;
                   const teamAssignments = detalle.teamAssignments || [];
                   const isLast = index === orderedExercises.length - 1;
@@ -726,6 +723,14 @@ export default function TrainingSessionDetailModal({
                           
                           {/* Tags informativos - igual que en training.js */}
                           <View style={styles.exerciseTags}>
+                            {ejercicio.isCustomTask && (
+                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.primarySoft }]}>
+                                <Ionicons name="image-outline" size={14} color={theme.colors.primary} />
+                                <Text style={[styles.exerciseTagText, { color: theme.colors.primary }]}>
+                                  {t('session.customTask', 'Tarea personalizada')}
+                                </Text>
+                              </View>
+                            )}
                             {getFolderName(ejercicio) && (
                               <View style={[styles.exerciseTag, { backgroundColor: theme.colors.successSoft }]}>
                                 <Ionicons name="folder" size={14} color={theme.colors.successSoftText} />
@@ -815,6 +820,15 @@ export default function TrainingSessionDetailModal({
                               <Text style={styles.observacionText}>
                                 <Text style={{ fontWeight: 'bold' }}>{t('session.observation')}: </Text>
                                 {observacionesMap[ejercicio._id]}
+                              </Text>
+                            </View>
+                          )}
+                          {ejercicio.observacionesPersonalizadas?.length > 0 && (
+                            <View style={styles.observacionContainer}>
+                              <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.textSecondary} />
+                              <Text style={styles.observacionText}>
+                                <Text style={{ fontWeight: 'bold' }}>{t('session.observations', 'Observaciones')}: </Text>
+                                {ejercicio.observacionesPersonalizadas.map((item) => `• ${item}`).join('\n')}
                               </Text>
                             </View>
                           )}
@@ -1046,7 +1060,7 @@ export default function TrainingSessionDetailModal({
               />
             </ImageZoom>
           )}
-          {canMutate && selectedImageExercise && (
+          {canMutate && selectedImageExercise && !selectedImageExercise.isCustomTask && (
             <TouchableOpacity
               style={styles.editExerciseImageBtn}
               onPress={handleEditExerciseAsNew}

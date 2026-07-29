@@ -2,13 +2,14 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { MdClose, MdDescription, MdHome, MdPeople, MdPerson, MdShield, MdTimer, MdVisibility } from 'react-icons/md';
+import { MdClose, MdDescription, MdHome, MdLock, MdPeople, MdPerson, MdShield, MdTimer, MdVisibility } from 'react-icons/md';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 import { TutorialProvider } from '@/components/shared/TutorialProvider';
 import XtramysCommunityInvite from '@/components/shared/XtramysCommunityInvite';
 import { useTranslation } from 'react-i18next';
+import { isSeasonReadOnly } from '@/hooks/useSupervision';
 
 const Shell = styled.div`
   height: 100dvh;
@@ -146,9 +147,11 @@ export default function AppLayout() {
   const { t } = useTranslation();
   const location = useLocation();
   const dispatch = useDispatch();
-  const seasonId = useSelector((s) => s.season.season?._id);
+  const season = useSelector((s) => s.season.season);
+  const seasonId = season?._id;
   const supervising = useSelector((s) => s.usuario.supervising);
   const supervisedUser = useSelector((s) => s.usuario.user);
+  const archivedSeason = isSeasonReadOnly(season, supervisedUser);
   const userId = supervisedUser?._id || supervisedUser?.id || supervisedUser?.correo;
   const isClubAdmin = supervisedUser?.role === 'club_admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -167,6 +170,8 @@ export default function AppLayout() {
         { to: '/match-sheets', label: t('menu.matchSheetsShort', 'Partidos'), Icon: MdDescription },
         { to: '/profile', label: t('menu.profile', 'Perfil'), Icon: MdPerson },
       ];
+
+  useEffect(() => setBannerDismissed(false), [seasonId, supervising]);
 
   // Cargar equipos de la temporada actual a nivel global.
   // Antes cada página lo hacía por su cuenta (training, injuries, home,
@@ -190,13 +195,17 @@ export default function AppLayout() {
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
-        {supervising && !bannerDismissed && (
-          <SupervisionBanner>
-            <MdVisibility size={18} />
+        {(supervising || archivedSeason) && !bannerDismissed && (
+          <SupervisionBanner role="status">
+            {supervising ? <MdVisibility size={18} /> : <MdLock size={18} />}
             <span>
-              {t('supervision.supervising', 'Supervisando a')} <strong>{supervisedUser?.nombre || ''}</strong>
-              {supervisedUser?.apellido ? ` ${supervisedUser.apellido}` : ''}
-              {' — '}{t('supervision.readOnly', 'Modo solo lectura')}
+              {supervising ? (
+                <>
+                  {t('supervision.supervising', 'Supervisando a')} <strong>{supervisedUser?.nombre || ''}</strong>
+                  {supervisedUser?.apellido ? ` ${supervisedUser.apellido}` : ''}
+                  {' — '}{t('supervision.readOnly', 'Modo solo lectura')}
+                </>
+              ) : t('season.archivedReadOnly', 'Temporada anterior · Solo lectura. Puedes consultar los datos, pero no crear, editar ni eliminar nada.')}
             </span>
             <button
               onClick={() => setBannerDismissed(true)}
@@ -209,7 +218,7 @@ export default function AppLayout() {
                 marginLeft: 8,
                 opacity: 0.7,
               }}
-              aria-label="Cerrar"
+              aria-label={t('common.close', 'Cerrar')}
             >
               <MdClose size={16} />
             </button>

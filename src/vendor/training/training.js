@@ -1341,7 +1341,7 @@ export default function Training({ canMutate }) {
     const ejerciciosIds = sessionData.ejercicios.map(e => e.ejercicio);
     const ejerciciosDetalle = sessionData.ejercicios.map((e, index) => ({
       ejercicio: e.ejercicio,
-      orden: index + 1,
+      orden: e.orden || index + 1,
       tiempoDescanso: e.tiempoDescanso || 0,
       teamAssignments: e.teamAssignments || []
     }));
@@ -1358,6 +1358,7 @@ export default function Training({ canMutate }) {
       equipo: selectedTeam._id,
       ejercicios: ejerciciosIds,
       ejerciciosDetalle,
+      tareasPersonalizadas: sessionData.tareasPersonalizadas || [],
       observaciones,
       ejerciciosFuerza: sessionData.ejerciciosFuerza || [],
       jugadores: sessionData.jugadores || [],
@@ -1423,6 +1424,7 @@ export default function Training({ canMutate }) {
         ejercicios: session.ejercicios || [],
         ejerciciosDetalle: session.ejerciciosDetalle || [],
         ejerciciosFuerza: session.ejerciciosFuerza || [],
+        tareasPersonalizadas: session.tareasPersonalizadas || [],
         jugadores: session.jugadores || [],
         jugadoresExtras: session.jugadoresExtras || [],
         observaciones: session.observaciones || [],
@@ -1456,7 +1458,7 @@ export default function Training({ canMutate }) {
       const ejerciciosIds = updatedData.ejercicios?.map(e => e.ejercicio) || [];
       const ejerciciosDetalle = updatedData.ejercicios?.map((e, index) => ({
         ejercicio: e.ejercicio,
-        orden: index + 1,
+        orden: e.orden || index + 1,
         tiempoDescanso: e.tiempoDescanso || 0,
         teamAssignments: e.teamAssignments || []
       })) || [];
@@ -1477,6 +1479,7 @@ export default function Training({ canMutate }) {
           horaFin: updatedData.horaFin,
           ejercicios: ejerciciosIds,
           ejerciciosDetalle,
+          tareasPersonalizadas: updatedData.tareasPersonalizadas || [],
           observaciones,
           ejerciciosFuerza: updatedData.ejerciciosFuerza || [],
           jugadores: updatedData.jugadores || [],
@@ -1779,7 +1782,9 @@ export default function Training({ canMutate }) {
                 <View style={[styles.proStatIcon, { backgroundColor: theme.colors.warningSoft || '#fef3c7' }]}>
                   <MaterialIcons name="fitness-center" size={14} color={theme.colors.warning || '#d97706'} />
                 </View>
-                <Text style={styles.proStatValue}>{(session.ejercicios?.length || 0) + (session.ejerciciosFuerza?.length || 0)}</Text>
+                <Text style={styles.proStatValue}>
+                  {(session.ejercicios?.length || 0) + (session.tareasPersonalizadas?.length || 0) + (session.ejerciciosFuerza?.length || 0)}
+                </Text>
                 <Text style={styles.proStatLabel}>{t('session.exercises')}</Text>
               </View>
 

@@ -11,6 +11,7 @@ import {
 } from '@/data/strengthExercises';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { customTaskAsExercise } from '@/utils/sessionCustomTasks';
 
 const getId = (value) => String(value?._id || value?.id || value || '');
 const clean = (value) => String(value || '').trim();
@@ -135,7 +136,7 @@ export default function TrainingSessionShare() {
     const orderedIds = detail.map((d) => getId(d.ejercicio)).filter(Boolean);
     const ids = orderedIds.length ? orderedIds : (data.session?.ejercicios || []).map(getId);
 
-    return ids
+    const regularExercises = ids
       .map((id, index) => {
         const exercise = byId.get(id);
         if (!exercise) return null;
@@ -143,7 +144,14 @@ export default function TrainingSessionShare() {
         const videos = data.videosByExercise?.[id] || [];
         return { ...exercise, detail: itemDetail, publicVideos: videos };
       })
-      .filter(Boolean)
+      .filter(Boolean);
+    const customTasks = (data.session?.tareasPersonalizadas || []).map((task) => ({
+      ...customTaskAsExercise(task),
+      detail: { orden: task.orden || 0 },
+      publicVideos: [],
+    }));
+
+    return [...regularExercises, ...customTasks]
       .sort((a, b) => (a.detail?.orden || 0) - (b.detail?.orden || 0));
   }, [data]);
 
@@ -268,7 +276,9 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
       ? { type: 'image', title: exercise.nombre, src: img }
       : null;
   const note = detail.observacion || observations.byExercise[id];
+  const customNotes = exercise.observacionesPersonalizadas?.join('\n');
   const pills = [
+    exercise.isCustomTask && 'Tarea personalizada',
     exercise.numeroJugadores && `${exercise.numeroJugadores} jugadores`,
     exercise.equipos && `${exercise.equipos} equipos`,
     exercise.dimensiones,
@@ -306,7 +316,7 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
           [t('exercise.objective', 'Objetivo'), exercise.objetivo],
           [t('exercise.description', 'Descripcion'), exercise.descripcion],
           [t('exercise.materialNeeded', 'Material necesario'), localizedMaterial],
-          [t('exercise.observation', 'Observacion'), note],
+          [t('exercise.observation', 'Observacion'), customNotes || note],
         ]} />
 
         <TeamAssignments teams={detail.teamAssignments || []} playerById={playerById} />

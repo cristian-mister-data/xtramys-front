@@ -43,6 +43,12 @@ import {
 } from '@/utils/sessionExercises';
 import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import CustomTrainingTaskModal from './CustomTrainingTaskModal';
+import {
+  customTaskAsExercise,
+  getCustomTaskSelectionId,
+  isCustomTaskSelectionId,
+} from '@/utils/sessionCustomTasks';
 
 const IS_MOBILE_DEVICE = Dimensions.get('window').width < 430;
 
@@ -81,6 +87,8 @@ export default function EditSessionModal({
   const [observaciones, setObservaciones] = useState('');
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
+  const [customTasks, setCustomTasks] = useState([]);
+  const [customTaskModal, setCustomTaskModal] = useState({ visible: false, task: null });
   const [exerciseObservations, setExerciseObservations] = useState({});
   const [exerciseRestTimes, setExerciseRestTimes] = useState({});
   const [exerciseTeamAssignments, setExerciseTeamAssignments] = useState({});
@@ -130,7 +138,10 @@ export default function EditSessionModal({
     mergeExercises(exercises, getEmbeddedSessionExercises(session))
   ), [exercises, session]);
 
-  const exerciseMap = useMemo(() => buildExerciseMap(availableExercises), [availableExercises]);
+  const exerciseMap = useMemo(
+    () => buildExerciseMap([...availableExercises, ...customTasks.map(customTaskAsExercise)]),
+    [availableExercises, customTasks],
+  );
 
   // Cargar disponibilidad de videos para todos los ejercicios
   useEffect(() => {
@@ -139,7 +150,7 @@ export default function EditSessionModal({
 
       const availability = {};
       await Promise.all(
-        availableExercises.map(async (exercise) => {
+        availableExercises.filter((exercise) => !exercise.isCustomTask).map(async (exercise) => {
           try {
             const exerciseId = getEntityId(exercise);
             const videos = await getVideosByExercise(exerciseId);
@@ -272,7 +283,23 @@ export default function EditSessionModal({
         });
       }
 
-      setSelectedExercises(exerciseIds);
+      const sessionCustomTasks = session.tareasPersonalizadas || [];
+      const exerciseOrder = new Map(
+        (session.ejerciciosDetalle || []).map((detail, index) => [
+          getSessionExerciseId(detail),
+          Number(detail.orden) || index + 1,
+        ]),
+      );
+      const orderedSelection = [
+        ...exerciseIds.map((id, index) => ({ id, orden: exerciseOrder.get(id) || index + 1 })),
+        ...sessionCustomTasks.map((task) => ({
+          id: getCustomTaskSelectionId(task),
+          orden: Number(task.orden) || exerciseIds.length + 1,
+        })),
+      ].sort((a, b) => a.orden - b.orden).map((item) => item.id);
+
+      setCustomTasks(sessionCustomTasks);
+      setSelectedExercises(orderedSelection);
       setExerciseObservations(obs);
       setExerciseRestTimes(rest);
       setExerciseTeamAssignments(teams);
@@ -308,6 +335,7 @@ export default function EditSessionModal({
     setExerciseObservations(draft.exerciseObservations || {});
     setExerciseRestTimes(draft.exerciseRestTimes || {});
     setExerciseTeamAssignments(draft.exerciseTeamAssignments || {});
+    setCustomTasks(draft.customTasks || []);
     setSelectedStrengthExercises(draft.selectedStrengthExercises || []);
     setStrengthExerciseObservations(draft.strengthExerciseObservations || {});
     setStrengthExerciseRestTimes(draft.strengthExerciseRestTimes || {});
@@ -330,6 +358,7 @@ export default function EditSessionModal({
       exerciseObservations,
       exerciseRestTimes,
       exerciseTeamAssignments,
+      customTasks,
       selectedStrengthExercises,
       strengthExerciseObservations,
       strengthExerciseRestTimes,
@@ -473,6 +502,9 @@ export default function EditSessionModal({
   const handleRemoveExercise = (exerciseId) => {
     const id = getEntityId(exerciseId);
     setSelectedExercises(selectedExercises.filter(item => item !== id));
+    if (isCustomTaskSelectionId(id)) {
+      setCustomTasks((current) => current.filter((task) => getCustomTaskSelectionId(task) !== id));
+    }
     const newObs = { ...exerciseObservations };
     const newRest = { ...exerciseRestTimes };
     delete newObs[id];
@@ -481,16 +513,32 @@ export default function EditSessionModal({
     setExerciseRestTimes(newRest);
   };
 
+  const handleSaveCustomTask = (task) => {
+    const selectionId = getCustomTaskSelectionId(task);
+    setCustomTasks((current) => {
+      const exists = current.some((item) => item.id === task.id);
+      return exists ? current.map((item) => item.id === task.id ? task : item) : [...current, task];
+    });
+    setSelectedExercises((current) => current.includes(selectionId) ? current : [...current, selectionId]);
+  };
+
   // Guardar cambios
   const handleSave = async () => {
     setLoading(true);
     try {
       // Preparar ejercicios con observaciones, tiempos y asignaciones de equipos
-      const ejerciciosConDatos = selectedExercises.map(exId => ({
-        ejercicio: exId,
-        observacion: exerciseObservations[exId] || '',
-        tiempoDescanso: exerciseRestTimes[exId] || 0,
-        teamAssignments: exerciseTeamAssignments[exId] || [],
+      const ejerciciosConDatos = selectedExercises.flatMap((exId, index) => (
+        isCustomTaskSelectionId(exId) ? [] : [{
+          ejercicio: exId,
+          orden: index + 1,
+          observacion: exerciseObservations[exId] || '',
+          tiempoDescanso: exerciseRestTimes[exId] || 0,
+          teamAssignments: exerciseTeamAssignments[exId] || [],
+        }]
+      ));
+      const tareasPersonalizadas = customTasks.map((task) => ({
+        ...task,
+        orden: selectedExercises.indexOf(getCustomTaskSelectionId(task)) + 1,
       }));
 
       // Preparar ejercicios de fuerza
@@ -508,6 +556,7 @@ export default function EditSessionModal({
         horaFin,
         observaciones,
         ejercicios: ejerciciosConDatos,
+        tareasPersonalizadas,
         ejerciciosFuerza: ejerciciosFuerzaConDatos,
         jugadores: selectedPlayers,
         jugadoresExtras: extraPlayers,
@@ -714,6 +763,15 @@ export default function EditSessionModal({
                 <Ionicons name="add" size={22} color={theme.colors.success} />
                 <Text style={styles.addExerciseBtnText}>{t('session.addExercise')}</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addExerciseBtn, { borderColor: theme.colors.primary, marginTop: 9 }]}
+                onPress={() => setCustomTaskModal({ visible: true, task: null })}
+              >
+                <Ionicons name="image-outline" size={21} color={theme.colors.primary} />
+                <Text style={[styles.addExerciseBtnText, { color: theme.colors.primary }]}>
+                  {t('session.addCustomTask', 'Añadir tarea personalizada')}
+                </Text>
+              </TouchableOpacity>
 
               {/* Lista de ejercicios seleccionados */}
               {selectedExercises.length > 0 ? (
@@ -747,6 +805,17 @@ export default function EditSessionModal({
                                 <Text style={styles.exerciseNumberText}>{index + 1}</Text>
                               </View>
                               <Text style={styles.exerciseItemNameMobile} numberOfLines={2}>{exercise.nombre}</Text>
+                              {exercise.isCustomTask && (
+                                <TouchableOpacity
+                                  style={styles.removeExerciseBtnMobile}
+                                  onPress={() => setCustomTaskModal({
+                                    visible: true,
+                                    task: customTasks.find((task) => getCustomTaskSelectionId(task) === exId),
+                                  })}
+                                >
+                                  <MaterialIcons name="edit" size={19} color={theme.colors.primary} />
+                                </TouchableOpacity>
+                              )}
                               <TouchableOpacity
                                 style={styles.removeExerciseBtnMobile}
                                 onPress={() => handleRemoveExercise(exId)}
@@ -772,6 +841,11 @@ export default function EditSessionModal({
                                 {exercise.folder && (
                                   <Text style={styles.exerciseItemType}>
                                     {getExerciseFolderName(exercise)}
+                                  </Text>
+                                )}
+                                {exercise.isCustomTask && (
+                                  <Text style={[styles.exerciseItemType, { color: theme.colors.primary }]}>
+                                    {t('session.customTask', 'Tarea personalizada')}
                                   </Text>
                                 )}
                                 {/* Controles de orden en móvil */}
@@ -822,11 +896,27 @@ export default function EditSessionModal({
                                     {getExerciseFolderName(exercise)}
                                   </Text>
                                 )}
+                                {exercise.isCustomTask && (
+                                  <Text style={[styles.exerciseItemType, { color: theme.colors.primary }]}>
+                                    {t('session.customTask', 'Tarea personalizada')}
+                                  </Text>
+                                )}
                               </View>
                             </View>
 
                             {/* Controles de orden */}
                             <View style={styles.exerciseOrderControls}>
+                              {exercise.isCustomTask && (
+                                <TouchableOpacity
+                                  style={styles.orderBtn}
+                                  onPress={() => setCustomTaskModal({
+                                    visible: true,
+                                    task: customTasks.find((task) => getCustomTaskSelectionId(task) === exId),
+                                  })}
+                                >
+                                  <MaterialIcons name="edit" size={18} color={theme.colors.primary} />
+                                </TouchableOpacity>
+                              )}
                               <TouchableOpacity
                                 style={[styles.orderBtn, index === 0 && styles.orderBtnDisabled]}
                                 onPress={handleMoveUp}
@@ -852,7 +942,7 @@ export default function EditSessionModal({
                         )}
 
                         {/* Tiempo de descanso - solo si no es el último ejercicio */}
-                        {index < selectedExercises.length - 1 && (
+                        {!exercise.isCustomTask && index < selectedExercises.length - 1 && (
                           <View style={[styles.exerciseField, isMobile && { flexDirection: 'column', alignItems: 'stretch', gap: 4 }]}>
                             <Text style={styles.exerciseFieldLabel}>{t('session.restMinutes')}:</Text>
                             <TextInput
@@ -892,7 +982,7 @@ export default function EditSessionModal({
                         )}
 
                         {/* Observaciones del ejercicio */}
-                        <View style={styles.exerciseObsField}>
+                        {!exercise.isCustomTask && <View style={styles.exerciseObsField}>
                           <Text style={styles.exerciseFieldLabel}>{t('common.observations')}:</Text>
                           <TextInput
                             style={styles.exerciseObsInput}
@@ -905,7 +995,7 @@ export default function EditSessionModal({
                             multiline
                             numberOfLines={2}
                           />
-                        </View>
+                        </View>}
                       </View>
                     );
                   })}
@@ -1392,6 +1482,13 @@ export default function EditSessionModal({
               setShowPlayerSelectorModal(false);
             }}
             injuries={injuries}
+          />
+
+          <CustomTrainingTaskModal
+            visible={customTaskModal.visible}
+            initialTask={customTaskModal.task}
+            onClose={() => setCustomTaskModal({ visible: false, task: null })}
+            onSave={handleSaveCustomTask}
           />
 
           {/* Modal de asignación de equipos */}

@@ -137,8 +137,8 @@ export default function DayEventsModal({
                   </Title>
                   <Sub>
                     {t('season.exercisesCount', {
-                      count: s.ejercicios?.length || 0,
-                      defaultValue: `${s.ejercicios?.length || 0} ejercicios`,
+                      count: (s.ejercicios?.length || 0) + (s.tareasPersonalizadas?.length || 0),
+                      defaultValue: `${(s.ejercicios?.length || 0) + (s.tareasPersonalizadas?.length || 0)} ejercicios`,
                     })}
                     {s.horaFin ? ` • ${t('season.until', 'hasta')} ${s.horaFin}` : ''}
                   </Sub>

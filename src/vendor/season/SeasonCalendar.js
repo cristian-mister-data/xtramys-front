@@ -12,6 +12,7 @@ import {
   Image,
   FlatList,
   Animated,
+  Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
@@ -120,6 +121,7 @@ export default function SeasonCalendar({
   matchSheets = [],
   trainingSessions = [],
   team = null,
+  season = null,
   onDayPress,
   onAddEvent,
   onMatchPress,
@@ -155,6 +157,7 @@ export default function SeasonCalendar({
   const weekKey = `${calendarKey}:week`;
   const [currentDate, setCurrentDate] = useState(() => readStoredDate(monthKey, new Date()));
   const [selectedDate, setSelectedDate] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const isMobile = isMobileDevice();
   
   // Estado para vista de semana en móvil
@@ -262,6 +265,30 @@ export default function SeasonCalendar({
     
     return map;
   }, [matchSheets, trainingSessions]);
+
+  const handleExportCalendarPdf = useCallback(async () => {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const { generateSeasonCalendarPdf } = await import('./calendarPdf');
+      await generateSeasonCalendarPdf({
+        matchSheets,
+        trainingSessions,
+        team,
+        season,
+        locale: i18n.language === 'en' ? 'en-US' : 'es-ES',
+        t,
+      });
+    } catch (error) {
+      console.error('Error exporting season calendar PDF:', error);
+      Alert.alert(
+        t('message.error'),
+        error?.message || t('season.calendarPdfError', 'No se pudo generar el PDF del calendario.'),
+      );
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [exportingPdf, i18n.language, matchSheets, season, t, team, trainingSessions]);
   
   // Navegar al mes anterior
   const goToPreviousMonth = useCallback(() => {
@@ -891,6 +918,18 @@ export default function SeasonCalendar({
                   <Text style={mobileStyles.todayChipText}>{t('season.today')}</Text>
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                style={mobileStyles.pdfChip}
+                onPress={handleExportCalendarPdf}
+                disabled={exportingPdf || loading}
+                accessibilityRole="button"
+                accessibilityLabel={t('season.calendarPdfExport', 'Exportar calendario en PDF')}
+              >
+                <Ionicons name="document-text-outline" size={12} color="#fff" />
+                <Text style={mobileStyles.pdfChipText}>
+                  {exportingPdf ? t('season.calendarPdfGenerating', 'Generando...') : 'PDF'}
+                </Text>
+              </TouchableOpacity>
             </View>
             
             <TouchableOpacity
@@ -1191,6 +1230,23 @@ export default function SeasonCalendar({
           <View style={[styles.legendDot, { backgroundColor: THEME.success }]} />
           <Text style={styles.legendText}>{t('season.training')}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.pdfButton}
+          onPress={handleExportCalendarPdf}
+          disabled={exportingPdf || loading}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('season.calendarPdfExport', 'Exportar calendario en PDF')}
+        >
+          {exportingPdf ? (
+            <ActivityIndicator size="small" color={THEME.primary} />
+          ) : (
+            <Ionicons name="document-text-outline" size={18} color={THEME.primary} />
+          )}
+          <Text style={styles.pdfButtonText}>
+            {exportingPdf ? t('season.calendarPdfGenerating', 'Generando...') : 'PDF'}
+          </Text>
+        </TouchableOpacity>
         {canMutate !== false && onAddEvent && (
           <TouchableOpacity
             style={styles.addEventButton}
@@ -1364,6 +1420,20 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.primary,
     fontWeight: '600',
+  },
+  pdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: theme.colors.primarySoft,
+    borderRadius: 16,
+  },
+  pdfButtonText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   
   // Días de la semana
@@ -1863,6 +1933,20 @@ const makeMobileStyles = (theme) => StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: theme.colors.primary,
+  },
+  pdfChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  pdfChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
   
   // Selector de días
