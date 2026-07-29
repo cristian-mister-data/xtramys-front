@@ -11,6 +11,7 @@ import './i18n.js';
 import { injectVectorIconFonts } from './shims/vector-icons-fonts.js';
 import { hydrateNativeStorage } from './auth/storage.js';
 import { initNativeApp } from './platform/nativeApp.js';
+import MandatoryUpdateGate from './components/shared/MandatoryUpdateGate.jsx';
 
 injectVectorIconFonts();
 
@@ -35,7 +36,9 @@ async function bootstrap() {
               v7_relativeSplatPath: true,
             }}
           >
-            <App />
+            <MandatoryUpdateGate>
+              <App />
+            </MandatoryUpdateGate>
           </BrowserRouter>
         </ThemeProvider>
       </Provider>

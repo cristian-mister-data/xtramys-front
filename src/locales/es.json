@@ -5648,6 +5648,15 @@
     "noActiveSeason": "No se encontró una temporada activa. Contacta al administrador del club.",
     "errorConfig": "Error al configurar tu perfil"
   },
+  "mandatoryUpdate": {
+    "checking": "Comprobando la versión de la aplicación",
+    "required": "Actualización obligatoria",
+    "title": "Hay una nueva versión",
+    "description": "Para seguir usando Xtramys debes instalar la última actualización disponible.",
+    "version": "Versión instalada {{current}} · Versión mínima {{minimum}}",
+    "updateNow": "Actualizar ahora",
+    "checkAgain": "Ya he actualizado"
+  },
   "kits": {
     "title": "Equipaciones",
     "first": "Primera equipación",
