@@ -1,4 +1,21 @@
 {
+  "contentVisual": {
+    "title": "Visual content",
+    "subtitle": "Choose what appears in lists, sessions, shared links and PDFs.",
+    "board": "App graphic",
+    "boardHint": "Editable tactical board",
+    "imported": "Imported image",
+    "importedHint": "Mobile gallery or computer file",
+    "createBoard": "Create graphic",
+    "editBoard": "Edit graphic",
+    "importImage": "Import image",
+    "replaceImage": "Replace image",
+    "removeImage": "Remove image",
+    "noVisual": "No visual content yet",
+    "galleryPermission": "Gallery access permission is required.",
+    "invalidImage": "Select a valid image up to 8 MB.",
+    "importError": "The image could not be imported."
+  },
   "lang": "en",
   "login": {
     "login": "Login",

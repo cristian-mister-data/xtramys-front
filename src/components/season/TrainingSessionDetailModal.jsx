@@ -9,6 +9,7 @@ import {
 import Modal from '@/ui/Modal';
 import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage } from '@/utils/contentVisual';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 
 const HeroCard = styled.div`
@@ -506,7 +507,7 @@ export default function TrainingSessionDetailModal({
             </SectionTitle>
             <Card>
               {linkedExercises.map((ex, i) => {
-                const imageSrc = ex.imagen ? normalizeImageSource(ex.imagen) : '';
+                const imageSrc = getContentImage(ex) ? normalizeImageSource(getContentImage(ex)) : '';
                 const exerciseName = ex.nombre || ex.titulo || `#${i + 1}`;
                 return (
                 <ExerciseItem key={ex._id || i}>

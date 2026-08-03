@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'styled-components';
 import { cdnUrl } from '@/config';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
 
@@ -24,6 +25,7 @@ export default function SetPieceBoardModal({ visible, setPiece, players = [], on
     const player = players.find((p) => String(p._id) === String(playerId)) || assignment.player;
     return { ...assignment, element, player, x: element?.xRatio, y: element?.yRatio };
   }).filter(item => item.x !== undefined && item.y !== undefined);
+  const importedSelected = usesImportedImage(setPiece);
 
   const assign = (playerId) => {
     if (!activeSlotId) return;
@@ -40,7 +42,7 @@ export default function SetPieceBoardModal({ visible, setPiece, players = [], on
               <Text style={styles.title} numberOfLines={1}>{setPiece?.nombre}</Text>
             </View>
             <View style={styles.headerActions}>
-              {!!setPiece?.videoId && (
+              {!importedSelected && !!setPiece?.videoId && (
                 <TouchableOpacity style={styles.playBtn} onPress={onPlayVideo}>
                   <Ionicons name="play-circle-outline" size={18} color="#fff" />
                   <Text style={styles.playText}>Video</Text>
@@ -54,8 +56,8 @@ export default function SetPieceBoardModal({ visible, setPiece, players = [], on
 
           <View style={styles.body}>
             <View style={styles.boardWrap}>
-              {setPiece?.imagen ? (
-                <Image source={{ uri: setPiece.imagen }} style={styles.boardImage} resizeMode="contain" />
+              {getContentImage(setPiece) ? (
+                <Image source={{ uri: getContentImage(setPiece) }} style={styles.boardImage} resizeMode="contain" />
               ) : (
                 <View style={styles.empty}><Text style={styles.muted}>Sin grafico</Text></View>
               )}

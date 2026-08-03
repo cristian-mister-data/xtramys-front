@@ -11,7 +11,9 @@ import {
 } from '@/data/strengthExercises';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage } from '@/utils/contentVisual';
 import { customTaskAsExercise } from '@/utils/sessionCustomTasks';
+import ImageZoom from 'react-native-image-pan-zoom';
 
 const getId = (value) => String(value?._id || value?.id || value || '');
 const clean = (value) => String(value || '').trim();
@@ -257,7 +259,7 @@ export default function TrainingSessionShare() {
         </main>
       </section>
 
-      {media && <MediaModal media={media} onClose={() => setMedia(null)} />}
+      {media && <MediaModal key={media.src} media={media} onClose={() => setMedia(null)} />}
     </Shell>
   );
 }
@@ -268,7 +270,7 @@ function ExerciseCard({ exercise, index, isLast, observations, playerById, apiBa
   const detail = exercise.detail || {};
   const videos = exercise.publicVideos || [];
   const primaryVideo = videos.find((video) => videoUrl(video)) || null;
-  const img = assetUrl(exercise.imagen, apiBase);
+  const img = assetUrl(getContentImage(exercise), apiBase);
   const poster = assetUrl(primaryVideo?.thumbnailUrl || primaryVideo?.thumbnail, apiBase);
   const media = primaryVideo
     ? { type: 'video', title: primaryVideo.nombre || exercise.nombre, src: videoUrl(primaryVideo), poster }
@@ -503,6 +505,24 @@ function MediaModal({ media, onClose }) {
   const [resolvedSrc, setResolvedSrc] = useState(media.type === 'video' ? '' : media.src);
   const [loading, setLoading] = useState(media.type === 'video');
   const [message, setMessage] = useState('');
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+
+  useEffect(() => {
+    const updateViewport = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => { if (event.key === 'Escape') onClose(); };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('resize', updateViewport);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('resize', updateViewport);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     if (media.type !== 'video') return undefined;
@@ -534,7 +554,7 @@ function MediaModal({ media, onClose }) {
 
   return (
     <div className="mediaModal" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="mediaBox" onClick={(e) => e.stopPropagation()}>
+      <div className={`mediaBox ${media.type === 'image' ? 'imageViewer' : ''}`} onClick={(e) => e.stopPropagation()}>
         <button className="close" type="button" onClick={onClose} aria-label="Cerrar">x</button>
         <h3>{media.title}</h3>
         {media.type === 'video' ? (
@@ -559,7 +579,17 @@ function MediaModal({ media, onClose }) {
             )}
           </>
         ) : (
-          <SafeImage src={media.src} alt={media.title || ''} />
+          <ImageZoom
+            cropWidth={viewport.width}
+            cropHeight={viewport.height}
+            imageWidth={viewport.width}
+            imageHeight={viewport.height}
+            minScale={1}
+            maxScale={8}
+            showControls
+          >
+            <SafeImage src={media.src} alt={media.title || ''} />
+          </ImageZoom>
         )}
       </div>
     </div>
@@ -783,27 +813,40 @@ const css = `
     inset: 0;
     z-index: 9999;
     display: grid;
-    place-items: center;
-    padding: 18px;
+    place-items: stretch;
     background: rgba(2, 6, 23, .88);
   }
   .mediaBox {
     position: relative;
-    width: min(1120px, 96vw);
-    max-height: 94dvh;
-    overflow: auto;
+    box-sizing: border-box;
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
     padding: 18px;
-    border-radius: 26px;
     background: #020617;
     color: #fff;
-    box-shadow: 0 34px 90px rgba(0,0,0,.45);
+    display: flex;
+    flex-direction: column;
   }
   .mediaBox h3 { margin: 0 54px 14px 0; font-size: clamp(18px, 3vw, 28px); }
-  .mediaBox video, .mediaBox img { width: 100%; max-height: 80dvh; object-fit: contain; border-radius: 18px; background: #000; }
+  .mediaBox video { width: 100%; flex: 1; min-height: 0; object-fit: contain; background: #000; }
+  .mediaBox.imageViewer { padding: 0; }
+  .mediaBox.imageViewer h3 {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    left: max(18px, env(safe-area-inset-left));
+    z-index: 6;
+    max-width: calc(100vw - 100px);
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, .72);
+  }
+  .mediaBox.imageViewer img { width: 100%; height: 100%; object-fit: contain; background: #000; }
   .close {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    z-index: 10;
     width: 38px;
     height: 38px;
     border: 0;

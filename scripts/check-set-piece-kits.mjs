@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { applySetPieceKitsToElements, applySetPiecePlayerOverlays, getSetPieceVideoSignature, syncSetPieceFromSource } from '../src/utils/kits.js';
+import { applySetPieceKitsToElements, applySetPieceKitsToPalette, applySetPiecePlayerOverlays, getSetPieceVideoSignature, syncSetPieceFromSource } from '../src/utils/kits.js';
 import {
   buildInterpolatedFrames,
   getInterpolatedFrameCount,
@@ -33,6 +33,11 @@ assert.equal(result[0].showPhotos, true);
 assert.equal(result[1].color, '#fedcba');
 assert.equal(result[1].kitRole, 'rivalGoalkeeper');
 assert.equal(result[1].showPhotos, false);
+const paletteResult = applySetPieceKitsToPalette(elements, kitContext);
+assert.equal(paletteResult[0].shape, 'jersey');
+assert.equal(paletteResult[0].color, '#123456');
+assert.equal(paletteResult[1].shape, 'jersey');
+assert.equal(paletteResult[1].color, '#fedcba');
 const mixedPhotos = applySetPieceKitsToElements([
   { id: 'icon1-with-photo', type: 'player', showPhotos: true },
   { id: 'icon1-without-photo', type: 'player', showPhotos: false },
@@ -179,7 +184,32 @@ assert.match(matchSheetSource, /const playerData = matchOverlay \? matchOverlay\
 assert.match(matchSheetSource, /playerOverlays,[\s\S]{0,80}preview: true/);
 assert.doesNotMatch(matchSheetSource, /if \(!availableVideo && getSetPieceVideoId\(setPiece\)\)/);
 assert.doesNotMatch(matchSheetSource, /Error loading set pieces for match sheet:[\s\S]{0,100}setAvailableSetPieces\(\[\]\)/);
-assert.match(matchSheetSource, /if \(!error\?\.status \|\| error\.status >= 500\) break;/);
+assert.match(matchSheetSource, /const availableVideo = null;/);
+assert.match(matchSheetSource, /const applyMatchKitsToSetPiece/);
+assert.match(matchSheetSource, /elementosCampo: applySetPieceKitsToElements/);
+assert.match(matchSheetSource, /rival: matchRivalKits\[rivalKey\]/);
+assert.doesNotMatch(matchSheetSource, /se conserva la original de cada ABP/);
+assert.match(matchSheetSource, /setSelectedSetPieces\(\(current\) => current\.map/);
+assert.match(matchSheetSource, /initialConfig:\s*\{[\s\S]{0,180}kitContext: getMatchSetPieceKitContext\(boardSetPiece\)/);
+
+const boardSource = readFileSync(new URL('../src/vendor/tacticalBoard/field.js', import.meta.url), 'utf8');
+assert.match(boardSource, /setPaletteIcons\(\(prev\) => applySetPieceKitsToPalette\(prev, context\)\)/);
+assert.match(boardSource, /applySetPieceKitsToPalette\(prev\.map\(\(icon\) => \{/);
+assert.match(boardSource, /const team = equipos\.find\(\(item\) => item\.seleccionado\) \|\| equipos\[0\]/);
+assert.match(boardSource, /const ownKits = normalizeKits\(team\?\.equipaciones\)/);
+assert.match(boardSource, /setPieceKitContext \? \{ kitContext: setPieceKitContext \} : \{\}/);
+assert.doesNotMatch(boardSource, /setActualClones\(\(prev\) => applySetPieceKitsToElements/);
+assert.doesNotMatch(boardSource, /setPieceMode \? initialConfig\?\.kitContext : null/);
+
+const exerciseFormSource = readFileSync(new URL('../src/vendor/exercise/createExerciseForm.js', import.meta.url), 'utf8');
+assert.match(exerciseFormSource, /kitContext,[\s\S]{0,100}teamPlayers:/);
+
+const strategyFormSource = readFileSync(new URL('../src/vendor/strategy/createStrategyForm.js', import.meta.url), 'utf8');
+assert.match(strategyFormSource, /kitContext,[\s\S]{0,100}teamPlayers:/);
+
+const setPiecePreviewSource = readFileSync(new URL('../src/vendor/matchSheet/SetPiecePreview.js', import.meta.url), 'utf8');
+assert.match(setPiecePreviewSource, /applySetPieceKitsToElements/);
+assert.match(setPiecePreviewSource, /kitContext, showPhotos/);
 
 const recorderSource = readFileSync(new URL('../src/vendor/tacticalBoard/videoRecorder.js', import.meta.url), 'utf8');
 assert.match(recorderSource, /const boardSnapshot = \{ fieldType, elements: getCurrentElements\(\) \}/);
@@ -188,6 +218,7 @@ const videoShimSource = readFileSync(new URL('../src/shims/expo-video.js', impor
 assert.match(videoShimSource, /sourceToUrl\(player\?\._source\) !== sourceToUrl\(mountedSource\)/);
 
 const matchSheetDetailSource = readFileSync(new URL('../src/vendor/season/MatchSheetDetailModal.js', import.meta.url), 'utf8');
+assert.match(matchSheetDetailSource, /rival: matchSheet\?\.equipacionRival \|\| rivalKits\[rivalKey\]/);
 assert.match(matchSheetDetailSource, /resolveMatchSheetSetPieceVideo/);
 assert.match(matchSheetDetailSource, /const playerData = matchOverlay \? matchOverlay\.playerData : element\.playerData/);
 assert.match(matchSheetDetailSource, /playerOverlays,[\s\S]{0,80}preview: true/);

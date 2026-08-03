@@ -12,6 +12,7 @@ import { Button, Row, Stack, Muted } from '@/ui/primitives';
 import { cdnUrl } from '@/config';
 import { getPlayerFullName, getPlayerInitials } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 import { getScoutingReports } from '@/api/scouting';
 
 const HeroCard = styled.div`
@@ -584,7 +585,7 @@ export default function MatchSheetDetailModal({
             <SectionTitle>{t('setPieces.matchTab', 'ABP')}</SectionTitle>
             <SetPieceGrid>
               {data.setPieces.map((sp, i) => {
-                const image = normalizeImageSource(sp.customImage || sp.imagen || '');
+                const image = normalizeImageSource(usesImportedImage(sp) ? getContentImage(sp) : (sp.customImage || getContentImage(sp)));
                 return (
                   <Card key={`${sp.strategyId || sp.nombre || i}`}>
                     {image ? <SetPieceImage src={image} alt={sp.nombre || 'ABP'} /> : null}

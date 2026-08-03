@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { MdSearch, MdCheck, MdImage, MdStar, MdFolderShared, MdPerson } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
+import { getContentImage } from '@/utils/contentVisual';
 
 const SearchBox = styled.div`
   position: relative;
@@ -208,7 +209,7 @@ export default function ExerciseSelectorModal({
             return (
               <ItemRow key={ex._id} type="button" $sel={sel} onClick={() => toggle(ex._id)}>
                 <Thumb>
-                  {ex.imagen ? <img src={ex.imagen} alt="" /> : <MdImage size={22} />}
+                  {getContentImage(ex) ? <img src={getContentImage(ex)} alt="" /> : <MdImage size={22} />}
                 </Thumb>
                 <Body>
                   <Name>{ex.nombre || t('session.untitledExercise', 'Sin nombre')}</Name>

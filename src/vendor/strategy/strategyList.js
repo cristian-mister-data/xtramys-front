@@ -47,6 +47,7 @@ import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import { getVideosByStrategy, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromStrategy, getVideoForEdit, duplicateVideoForEdit, createSetPieceShareLink } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { downloadImageSource } from '@/utils/imageDownload';
+import { getContentImage } from '@/utils/contentVisual';
 import { getFieldById } from '@/utils/fieldTypes';
 import {
   saveFormDraft,
@@ -128,7 +129,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
   // Mostrar imagen si existe
-  const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || strategy.imagen;
+  const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || getContentImage(strategy);
   const dispatch = useDispatch();
 
   const getLocalizedName = () => {
@@ -299,11 +300,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
     try {
       // Preparar la imagen
       let imageBase64 = '';
-      if (strategy.imagen) {
-        if (strategy.imagen.startsWith('http')) {
+      if (getContentImage(strategy)) {
+        if (getContentImage(strategy).startsWith('http')) {
           // Si es URL, intentar descargar
           try {
-            const response = await fetch(strategy.imagen);
+            const response = await fetch(getContentImage(strategy));
             const blob = await response.blob();
             const reader = new FileReader();
             imageBase64 = await new Promise((resolve) => {
@@ -313,11 +314,11 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
           } catch (error) {
             console.error('Error descargando imagen:', error);
           }
-        } else if (strategy.imagen.startsWith('data:image')) {
-          imageBase64 = strategy.imagen;
+        } else if (getContentImage(strategy).startsWith('data:image')) {
+          imageBase64 = getContentImage(strategy);
         } else {
           // Es base64 sin prefijo
-          imageBase64 = `data:image/png;base64,${strategy.imagen}`;
+          imageBase64 = `data:image/png;base64,${getContentImage(strategy)}`;
         }
       }
 
@@ -331,26 +332,26 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   // Función para guardar la imagen del campo en la galería
   const saveImageToGallery = async () => {
     try {
-      if (!strategy.imagen) {
+      if (!getContentImage(strategy)) {
         Alert.alert(t('message.error'), t('strategy.imageSaveError'));
         return;
       }
 
       // Web: descargar como archivo, evitando lecturas CORS del CDN.
       if (Platform.OS === 'web') {
-        await downloadImageSource(strategy.imagen, `strategy_${strategy.nombre || 'image'}_${Date.now()}`);
+        await downloadImageSource(getContentImage(strategy), `strategy_${strategy.nombre || 'image'}_${Date.now()}`);
         return;
       }
 
       let imageUri = '';
 
-      if (strategy.imagen.startsWith('http')) {
+      if (getContentImage(strategy).startsWith('http')) {
         // Si es URL, descargar primero
         const fileName = `strategy_${strategy.nombre || 'image'}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
 
         const downloadResult = await FileSystem.downloadAsync(
-          strategy.imagen,
+          getContentImage(strategy),
           fileUri
         );
         imageUri = downloadResult.uri;
@@ -359,7 +360,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
         const fileName = `strategy_${strategy.nombre || 'image'}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
 
-        let base64Data = strategy.imagen;
+        let base64Data = getContentImage(strategy);
         if (base64Data.startsWith('data:image')) {
           base64Data = base64Data.split(',')[1];
         }
@@ -487,13 +488,13 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
               <View style={styles.detailSection}>
                 <TouchableOpacity
                   onPress={() => {
-                    setSelectedImage(strategy?.imagen);
+                    setSelectedImage(getContentImage(strategy));
                     setModalVisible(true);
                   }}
                   style={styles.fieldImageWrapper}
                 >
                   <Base64ImagePreview
-                    imageUrl={strategy?.imagen}
+                    imageUrl={getContentImage(strategy)}
                     forceWidth={IS_MOBILE ? DETAIL_FIELD_WIDTH_MOBILE : DETAIL_FIELD_WIDTH}
                     forceHeight={IS_MOBILE ? DETAIL_FIELD_HEIGHT_MOBILE : DETAIL_FIELD_HEIGHT}
                   />
@@ -1042,7 +1043,7 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
   };
 
   // Mostrar imagen si existe
-  const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || strategy.imagen;
+  const showField = (strategy.elementosCampo && strategy.elementosCampo.length > 0 && strategy.tipoCampo) || getContentImage(strategy);
 
   return (
     <View style={[
@@ -1117,7 +1118,7 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             marginBottom: isGrid ? 8 : 0,
           }}>
             <Base64ImagePreview
-              imageUrl={strategy?.imagen}
+              imageUrl={getContentImage(strategy)}
               forceWidth={forceWidth || (isGrid ? (IS_MOBILE ? 100 : 130) : (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH))}
               forceHeight={forceHeight || (isGrid ? (IS_MOBILE ? 60 : 78) : (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT))}
             />
@@ -1510,8 +1511,8 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
 
   const handleSave = async (strategy) => {
     if (canMutate === false) return;
-    if (strategy.imagen) {
-      bumpUrlVersion(strategy.imagen);
+    if (getContentImage(strategy)) {
+      bumpUrlVersion(getContentImage(strategy));
     }
     if (!strategy._id) {
       const { _id, ...strategySinId } = strategy;

@@ -102,6 +102,14 @@ export function applySetPieceKitsToElements(elements = [], kitContext, showPhoto
   });
 }
 
+export function applySetPieceKitsToPalette(elements = [], kitContext) {
+  return applySetPieceKitsToElements(elements, kitContext, false).map((element) =>
+    element?.type === 'player' && getSetPieceIconRole(element)
+      ? { ...element, shape: 'jersey' }
+      : element,
+  );
+}
+
 export function applySetPiecePlayerOverlays(elements = [], overlays = []) {
   if (!overlays.length) return elements;
 

@@ -22,6 +22,7 @@ import * as Sharing from 'expo-sharing';
 import { getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, unlinkVideoFromExercise, getVideoForEdit, duplicateVideoForEdit } from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl, revokeVideoObjectUrl } from '@/utils/videoPlayback';
 import { downloadImageSource } from '@/utils/imageDownload';
+import { getContentImage } from '@/utils/contentVisual';
 import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getFieldById } from '@/utils/fieldTypes';
 import { bumpUrlVersion } from '@/utils/imageCache';
@@ -122,7 +123,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
-  const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || exercise.imagen;
+  const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || getContentImage(exercise);
   const dispatch = useDispatch();
 
   const getLocalizedName = () => {
@@ -284,8 +285,8 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     try {
       // Preparar la imagen
       let imageBase64 = '';
-      if (exercise.imagen) {
-        const normalizedImage = normalizeImageSource(exercise.imagen, { cacheBust: false });
+      if (getContentImage(exercise)) {
+        const normalizedImage = normalizeImageSource(getContentImage(exercise), { cacheBust: false });
         if (normalizedImage.startsWith('http')) {
           // Si es URL, intentar descargar
           try {
@@ -316,7 +317,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
     if (savingImage) return;
     setSavingImage(true);
     try {
-      if (!exercise.imagen) {
+      if (!getContentImage(exercise)) {
         Alert.alert(t('message.error'), t('exercise.imageSaveError'));
         return;
       }
@@ -324,7 +325,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
       // Web: descargar como archivo, evitando lecturas CORS del CDN.
       if (Platform.OS === 'web') {
         await downloadImageSource(
-          exercise.imagen,
+          getContentImage(exercise),
           `exercise_${exercise.nombre || 'image'}_${Date.now()}`,
           { onDialogOpen: () => setSavingImage(false) },
         );
@@ -333,13 +334,13 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
       let imageUri = '';
 
-      if (exercise.imagen.startsWith('http')) {
+      if (getContentImage(exercise).startsWith('http')) {
         // Si es URL, descargar primero
         const fileName = `exercise_${exercise.nombre || t('exercise.imageLabel')}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
 
         const downloadResult = await FileSystem.downloadAsync(
-          exercise.imagen,
+          getContentImage(exercise),
           fileUri
         );
         imageUri = downloadResult.uri;
@@ -348,7 +349,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
         const fileName = `exercise_${exercise.nombre || t('exercise.imageLabel')}_${Date.now()}.png`;
         const fileUri = FileSystem.documentDirectory + fileName;
 
-        let base64Data = exercise.imagen;
+        let base64Data = getContentImage(exercise);
         if (base64Data.startsWith('data:image')) {
           base64Data = base64Data.split(',')[1];
         }
@@ -461,13 +462,13 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
               <View style={styles.detailSection}>
                 <TouchableOpacity
                   onPress={() => {
-                    setSelectedImage(exercise?.imagen);
+                    setSelectedImage(getContentImage(exercise));
                     setModalVisible(true);
                   }}
                   style={styles.fieldImageWrapper}
                 >
                   <Base64ImagePreview
-                    imageUrl={exercise?.imagen}
+                    imageUrl={getContentImage(exercise)}
                     aspect={0.6}
                     maxWidth={IS_TABLET ? 560 : IS_MOBILE ? screenWidth - 72 : 420}
                     horizontalInset={IS_MOBILE ? 72 : 96}
@@ -1060,7 +1061,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
   const theme = useTheme();
   const lang = i18n.language;
   const IS_MOBILE = screenWidth < 430;
-  const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || exercise.imagen;
+  const showField = (exercise.elementosCampo && exercise.elementosCampo.length > 0 && exercise.tipoCampo) || getContentImage(exercise);
 
   const getLocalizedName = () => {
     if (lang === 'en' && exercise.translations?.en?.nombre) {
@@ -1146,7 +1147,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             <View style={{ marginBottom: 2, alignItems: 'center', justifyContent: 'center', width: '100%', height: IS_MOBILE ? 80 : 100, backgroundColor: 'transparent' }}>
               {showField && (
                 <Base64ImagePreview
-                  imageUrl={exercise?.imagen}
+                  imageUrl={getContentImage(exercise)}
                   forceWidth={IS_MOBILE ? 110 : 140}
                   forceHeight={IS_MOBILE ? 66 : 84}
                 />
@@ -1186,7 +1187,7 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
               marginRight: 12,
             }}
           >
-            <Base64ImagePreview imageUrl={exercise?.imagen} forceWidth={forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH)} forceHeight={forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT)} />
+            <Base64ImagePreview imageUrl={getContentImage(exercise)} forceWidth={forceWidth || (IS_MOBILE ? FIELD_WIDTH_MOBILE : FIELD_WIDTH)} forceHeight={forceHeight || (IS_MOBILE ? FIELD_HEIGHT_MOBILE : FIELD_HEIGHT)} />
           </View>
         )}
 
@@ -1577,8 +1578,8 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     let savedExercise = exercise;
     let updatedSession = null;
 
-    if (exercise.imagen) {
-      bumpUrlVersion(exercise.imagen);
+    if (getContentImage(exercise)) {
+      bumpUrlVersion(getContentImage(exercise));
     }
     if (!exercise._id) {
       // Es un nuevo ejercicio

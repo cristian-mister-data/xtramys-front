@@ -66,6 +66,7 @@ import AddEventModal from '@/vendor/season/AddEventModal';
 import TrainingSessionDetailModal from '@/vendor/season/TrainingSessionDetailModal';
 import EditSessionModal from '@/vendor/season/EditSessionModal';
 import { mergeExercises } from '@/utils/sessionExercises';
+import { getContentImage } from '@/utils/contentVisual';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -737,8 +738,8 @@ function ExerciseSelectionSummary({ selectedIds, ejercicios, onOpen, disabled })
       <View style={styles.summaryThumbsRow}>
         {selected.map(e => (
           <View key={e._id} style={styles.thumbWrapper}>
-            {e.imagen
-              ? <Base64ImagePreview imageUrl={e.imagen} forceWidth={60} forceHeight={60} />
+            {getContentImage(e)
+              ? <Base64ImagePreview imageUrl={getContentImage(e)} forceWidth={60} forceHeight={60} />
               : <View style={styles.thumbPlaceholder} />
             }
           </View>
@@ -909,8 +910,8 @@ function GridPage({ items, selectedIds, onToggle, onPlayVideo }) {
                   <Feather name="play-circle" size={18} color="#fff" />
                 </TouchableOpacity>
               )}
-              {e.imagen
-                ? <Base64ImagePreview imageUrl={e.imagen} forceWidth={60} forceHeight={60} />
+              {getContentImage(e)
+                ? <Base64ImagePreview imageUrl={getContentImage(e)} forceWidth={60} forceHeight={60} />
                 : <View style={styles.exerciseImgPlaceholder} />
               }
               <Text style={[styles.exerciseName, selectedIds.includes(e._id) && styles.exerciseNameSel]} numberOfLines={2}>
@@ -1382,8 +1383,8 @@ export default function Training({ canMutate }) {
       <View style={styles.ejerciciosVistaContainer}>
         {vista.map(ej => (
           <View key={ej._id} style={styles.ejercicioVista}>
-            {ej.imagen
-              ? <Base64ImagePreview imageUrl={ej.imagen} forceWidth={48} forceHeight={48} />
+            {getContentImage(ej)
+              ? <Base64ImagePreview imageUrl={getContentImage(ej)} forceWidth={48} forceHeight={48} />
               : <View style={styles.ejercicioImgVistaPlaceholder} />
             }
             <Text style={styles.ejercicioNombreVista} numberOfLines={2}>{ej.nombre}</Text>
@@ -1816,10 +1817,10 @@ export default function Training({ canMutate }) {
                   const ejercicio = ejerciciosDisponibles.find(e => e._id === ejercicioId);
                   return (
                     <View key={`${ejercicioId}-${index}`} style={[styles.proExerciseMini, { zIndex: 4 - index, marginLeft: index > 0 ? -8 : 0 }]}>
-                      {ejercicio?.imagen ? (
+                      {getContentImage(ejercicio) ? (
                         <Image
                           source={{
-                            uri: normalizeImageSource(ejercicio.imagen, { cacheBust: true })
+                            uri: normalizeImageSource(getContentImage(ejercicio), { cacheBust: true })
                           }}
                           style={styles.proExerciseMiniImage}
                         />

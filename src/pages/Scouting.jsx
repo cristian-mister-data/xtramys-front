@@ -45,6 +45,7 @@ const SCORE_GROUPS = [
   ['tactical', 'Tactica', ['posicionamiento', 'tomaDecisiones', 'visionJuego', 'trabajoDefensivo']],
   ['mental', 'Mental', ['actitud', 'esfuerzo', 'concentracion', 'comunicacion', 'liderazgo']],
 ];
+const SCORE_VALUES = Array.from({ length: 11 }, (_, value) => value);
 
 const FIELD_LABELS = {
   juegoAereo: 'Juego aereo',
@@ -178,6 +179,14 @@ const Select = styled.select`
   background: ${({ theme }) => theme.colors.inputBg};
   color: ${({ theme }) => theme.colors.text};
   font: inherit;
+  min-height: 42px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primarySoft};
+  }
 `;
 
 const SectionTitle = styled.div`
@@ -190,6 +199,18 @@ const SectionTitle = styled.div`
 const today = () => new Date().toISOString().slice(0, 10);
 const scoreLabel = (field) => FIELD_LABELS[field] || field.charAt(0).toUpperCase() + field.slice(1);
 const cleanNumber = (value) => (value === '' || value == null ? null : Number(value));
+const normalizeScore = (value) => value !== '' && value != null && SCORE_VALUES.includes(Number(value)) ? String(value) : '';
+
+function ScoreSelect({ value, onChange, label }) {
+  return (
+    <Select value={value ?? ''} onChange={onChange} aria-label={label}>
+      <option value="">Sin valorar</option>
+      {SCORE_VALUES.map((score) => (
+        <option key={score} value={score}>{score} / 10</option>
+      ))}
+    </Select>
+  );
+}
 
 const emptyScores = () =>
   SCORE_GROUPS.reduce((acc, [group, , fields]) => {
@@ -224,7 +245,7 @@ function emptyForm(team, params = new URLSearchParams()) {
 }
 
 function normalizeForForm(report, team) {
-  return {
+  const normalized = {
     ...emptyForm(team),
     ...report,
     equipo: report.equipo?._id || report.equipo || team?._id || '',
@@ -233,9 +254,16 @@ function normalizeForForm(report, team) {
       ? new Date(report.observationDate).toISOString().slice(0, 10)
       : today(),
     age: report.age ?? '',
-    rating: report.rating ?? '',
+    rating: normalizeScore(report.rating),
     tags: report.tags || [],
   };
+  SCORE_GROUPS.forEach(([group, , fields]) => {
+    normalized[group] = fields.reduce(
+      (scores, field) => ({ ...scores, [field]: normalizeScore(report[group]?.[field]) }),
+      {},
+    );
+  });
+  return normalized;
 }
 
 function cleanPayload(form) {
@@ -575,12 +603,10 @@ export default function Scouting() {
               </Field>
               <Field>
                 <Label>Valoracion final</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="10"
+                <ScoreSelect
                   value={form.rating}
                   onChange={(e) => update({ rating: e.target.value })}
+                  label="Valoracion final"
                 />
               </Field>
             </FormGrid>
@@ -592,12 +618,10 @@ export default function Scouting() {
                   {fields.map((field) => (
                     <Field key={field}>
                       <Label>{scoreLabel(field)}</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="10"
+                      <ScoreSelect
                         value={form[group]?.[field] ?? ''}
                         onChange={(e) => updateScore(group, field, e.target.value)}
+                        label={scoreLabel(field)}
                       />
                     </Field>
                   ))}

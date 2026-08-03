@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'styled-components';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage } from '@/utils/contentVisual';
 
 // Brand gradient stops (kept literal per migration rules — brand identity).
 const BRAND_GRADIENT = ['#1a237e', '#3949ab', '#5c6bc0'];
@@ -1057,9 +1058,9 @@ export default function Home({ navigation: navigationProp, canMutate = true }) {
                     <View style={styles.sessionExercisePreview}>
                       {proximaSesionExercises.slice(0, 4).map((ejercicio, index) => (
                         <View key={getEntityId(ejercicio) + index} style={[styles.sessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
-                          {ejercicio?.imagen ? (
+                          {getContentImage(ejercicio) ? (
                             <Image
-                              source={{ uri: normalizeImageSource(ejercicio.imagen) }}
+                              source={{ uri: normalizeImageSource(getContentImage(ejercicio)) }}
                               style={styles.sessionExerciseMiniImage}
                             />
                           ) : (
@@ -1147,9 +1148,9 @@ export default function Home({ navigation: navigationProp, canMutate = true }) {
                       <View style={styles.lastSessionExercisePreview}>
                         {ultimaSesionExercises.slice(0, 4).map((ejercicio, index) => (
                           <View key={getEntityId(ejercicio) + index} style={[styles.lastSessionExerciseMini, { marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index }]}>
-                            {ejercicio?.imagen ? (
+                            {getContentImage(ejercicio) ? (
                               <Image
-                                source={{ uri: normalizeImageSource(ejercicio.imagen) }}
+                                source={{ uri: normalizeImageSource(getContentImage(ejercicio)) }}
                                 style={styles.lastSessionExerciseMiniImage}
                               />
                             ) : (

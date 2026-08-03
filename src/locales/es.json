@@ -1,4 +1,21 @@
 {
+  "contentVisual": {
+    "title": "Contenido visual",
+    "subtitle": "Elige qué se mostrará en listados, sesiones, enlaces y PDF.",
+    "board": "Gráfico de la aplicación",
+    "boardHint": "Pizarra táctica editable",
+    "imported": "Imagen importada",
+    "importedHint": "Galería del móvil o archivo del PC",
+    "createBoard": "Crear gráfico",
+    "editBoard": "Editar gráfico",
+    "importImage": "Importar imagen",
+    "replaceImage": "Cambiar imagen",
+    "removeImage": "Quitar imagen",
+    "noVisual": "Todavía no hay contenido visual",
+    "galleryPermission": "Se necesita permiso para acceder a la galería.",
+    "invalidImage": "Selecciona una imagen válida de hasta 8 MB.",
+    "importError": "No se pudo importar la imagen."
+  },
   "lang": "es",
   "login": {
     "login": "Login",

@@ -45,6 +45,7 @@ import MatchStatisticsModal from '@/components/season/MatchStatisticsModal';
 import { applySetPieceKitsToElements, normalizeKits, normalizeRivalKits, syncSetPieceFromSource } from '@/utils/kits';
 import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import { api } from '@/api/client';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 
 // Mapeo de rondas a claves i18n
 const ROUND_I18N_KEYS = {
@@ -246,7 +247,6 @@ export default function MatchSheetDetailModal({
     const original = setPiece?.pizarraConfig?.kitContext || {};
     const ownKey = matchSheet?.equipacionPropiaKey || 'first';
     const rivalKey = matchSheet?.equipacionRivalKey || 'first';
-    const hasRivalKit = Boolean(rivalEquipment || matchSheet?.equipacionRival);
     const ownGoalkeeper = matchSheet?.equipacionPorteroPropia || ownKits[ownKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'];
     return {
       ...original,
@@ -257,10 +257,8 @@ export default function MatchSheetDetailModal({
       rivalKitKey: rivalKey,
       own: ownKit,
       ownGoalkeeper,
-      rival: hasRivalKit ? (matchSheet?.equipacionRival || rivalKits[rivalKey]) : original.rival,
-      rivalGoalkeeper: hasRivalKit
-        ? (matchSheet?.equipacionPorteroRival || rivalKits[rivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'])
-        : original.rivalGoalkeeper,
+      rival: matchSheet?.equipacionRival || rivalKits[rivalKey],
+      rivalGoalkeeper: matchSheet?.equipacionPorteroRival || rivalKits[rivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
     };
   };
   const currentLang = i18n.language || 'es';
@@ -579,7 +577,7 @@ export default function MatchSheetDetailModal({
       setPieces.map((setPiece) => ({
         ...setPiece,
         kind: 'setPiece',
-        imagen: normalizeImageSource(setPiece.customImage || setPiece.imagen || ''),
+        imagen: normalizeImageSource(usesImportedImage(setPiece) ? getContentImage(setPiece) : (setPiece.customImage || getContentImage(setPiece))),
       })),
       t,
       `${matchSheet.rival || 'Ficha'} ABP`,
@@ -619,6 +617,9 @@ export default function MatchSheetDetailModal({
         nombre: sp.nombre || t('setPieces.title'),
         descripcion: sp.descripcion || '',
         imagen: sp.imagen || '',
+        importedImage: sp.importedImage || '',
+        hasImportedImage: Boolean(sp.importedImage),
+        visualSource: sp.visualSource === 'imported' && sp.importedImage ? 'imported' : 'board',
         customImage: sp.customImage || '',
         elementosCampo: sp.elementosCampo || [],
         customElements: sp.customElements || [],
@@ -678,7 +679,7 @@ export default function MatchSheetDetailModal({
   };
 
   const playSetPieceVideo = async (setPiece, setPieceIndex) => {
-    if (loadingSetPieceVideo) return;
+    if (loadingSetPieceVideo || usesImportedImage(setPiece)) return;
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
     setLoadingSetPieceVideo(true);
     setLoadingSetPieceIndex(setPieceIndex);
@@ -734,7 +735,7 @@ export default function MatchSheetDetailModal({
   };
 
   const downloadSetPieceVideo = async (setPiece, setPieceIndex) => {
-    if (loadingSetPieceVideo || downloadingSetPieceIndex !== null) return;
+    if (loadingSetPieceVideo || downloadingSetPieceIndex !== null || usesImportedImage(setPiece)) return;
     setDownloadingSetPieceIndex(setPieceIndex);
     setVideoGenerationProgress(0);
     setVideoGenerationPhase('generationPreparing');
@@ -918,7 +919,7 @@ export default function MatchSheetDetailModal({
                           <View style={{ flex: 1, minWidth: 0 }}>
                             <Text style={styles.setPieceDetailTitle} numberOfLines={1}>{setPiece.nombre}</Text>
                             {!!setPiece.descripcion && <Text style={styles.setPieceDetailDesc} numberOfLines={2}>{setPiece.descripcion}</Text>}
-                            {!!setPiece.videoUrl && (
+                            {!usesImportedImage(setPiece) && !!setPiece.videoUrl && (
                               <TouchableOpacity
                                 style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}
                                 onPress={() => openExternalUrl(setPiece.videoUrl)}
@@ -930,7 +931,7 @@ export default function MatchSheetDetailModal({
                               </TouchableOpacity>
                             )}
                           </View>
-                          {!!getVideoId(setPiece) && (
+                          {!usesImportedImage(setPiece) && !!getVideoId(setPiece) && (
                             <View style={styles.setPieceInlineActions}>
                               <TouchableOpacity
                                 style={[

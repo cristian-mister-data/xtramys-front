@@ -49,6 +49,7 @@ import {
   readFavoritePrefs,
   sameId,
 } from '@/utils/favoritePersistence';
+import { getContentImage } from '@/utils/contentVisual';
 
 const THEME_DEFAULT = {
   primary: '#2474E5',
@@ -906,10 +907,10 @@ export default function ExerciseSelectorModal({
                           <View style={[s.exCheck, sel && s.exCheckSel]}>
                             {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
                           </View>
-                          {e.imagen ? (
+                          {getContentImage(e) ? (
                             <View style={s.exThumb}>
                               <Base64ImagePreview
-                                imageUrl={e.imagen}
+                                imageUrl={getContentImage(e)}
                                 forceWidth={46}
                                 forceHeight={46}
                               />
@@ -961,10 +962,10 @@ export default function ExerciseSelectorModal({
                               color={e.favorito ? '#F59E0B' : '#94A3B8'}
                             />
                           </TouchableOpacity>
-                          {e.imagen && (
+                          {getContentImage(e) && (
                             <TouchableOpacity
                               style={s.exRowActionBtn}
-                              onPress={() => handleOpenImagePreview(e.imagen)}
+                              onPress={() => handleOpenImagePreview(getContentImage(e))}
                             >
                               <Ionicons name="image-outline" size={18} color={THEME.primary} />
                             </TouchableOpacity>
@@ -1007,9 +1008,9 @@ export default function ExerciseSelectorModal({
                         <TouchableOpacity onPress={() => deselect(e._id)} style={s.selItemRemove}>
                           <Ionicons name="close" size={12} color="#fff" />
                         </TouchableOpacity>
-                        {e.imagen ? (
+                        {getContentImage(e) ? (
                           <Base64ImagePreview
-                            imageUrl={e.imagen}
+                            imageUrl={getContentImage(e)}
                             forceWidth={36}
                             forceHeight={36}
                           />
@@ -1109,10 +1110,10 @@ export default function ExerciseSelectorModal({
                                   <Ionicons name="checkmark" size={12} color="#fff" />
                                 </View>
                               )}
-                              {e.imagen ? (
+                              {getContentImage(e) ? (
                                 <View style={s.exCardImgWrap}>
                                   <Base64ImagePreview
-                                    imageUrl={e.imagen}
+                                    imageUrl={getContentImage(e)}
                                     forceWidth={56}
                                     forceHeight={56}
                                   />
@@ -1182,10 +1183,10 @@ export default function ExerciseSelectorModal({
                                   color={e.favorito ? '#F59E0B' : '#94A3B8'}
                                 />
                               </TouchableOpacity>
-                              {e.imagen && (
+                              {getContentImage(e) && (
                                 <TouchableOpacity
                                   style={s.exCardActionBtn}
-                                  onPress={() => handleOpenImagePreview(e.imagen)}
+                                  onPress={() => handleOpenImagePreview(getContentImage(e))}
                                 >
                                   <Ionicons name="image-outline" size={13} color={THEME.primary} />
                                   <Text style={s.exCardActionTxt}>
@@ -1197,7 +1198,7 @@ export default function ExerciseSelectorModal({
                                 <TouchableOpacity
                                   style={[
                                     s.exCardActionBtn,
-                                    e.imagen ? s.exCardActionBtnSep : null,
+                                    getContentImage(e) ? s.exCardActionBtnSep : null,
                                   ]}
                                   onPress={() => handlePlayVideo(e)}
                                 >

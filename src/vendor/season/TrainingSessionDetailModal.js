@@ -21,8 +21,10 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { generateSessionPDF } from '@/vendor/training/SessionPDF';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage } from '@/utils/contentVisual';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
@@ -75,6 +77,7 @@ export default function TrainingSessionDetailModal({
   const user = useSelector(state => state.usuario.user);
   const idUsuario = user?._id || user?.id || "";
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
@@ -393,8 +396,8 @@ export default function TrainingSessionDetailModal({
     setExerciseForVideo(null);
   };
 
-  const modalImageWidth = Math.round(screenWidth * 0.95);
-  const modalImageHeight = Math.round(screenHeight * 0.72);
+  const modalImageWidth = Math.round(screenWidth);
+  const modalImageHeight = Math.round(screenHeight);
   const modalImageCenter = {
     x: Math.round(modalImageWidth / 2),
     y: Math.round(modalImageHeight / 2),
@@ -699,14 +702,14 @@ export default function TrainingSessionDetailModal({
                           <Text style={styles.exerciseOrderText}>{orden}</Text>
                         </View>
                         
-                        {ejercicio.imagen && (
+                        {getContentImage(ejercicio) && (
                           <TouchableOpacity
                             style={styles.exerciseImageContainer}
-                            onPress={() => handleImagePress(ejercicio.imagen, ejercicio)}
+                            onPress={() => handleImagePress(getContentImage(ejercicio), ejercicio)}
                           >
                             <Image
                               source={{
-                                uri: normalizeImageSource(ejercicio.imagen, { cacheBust: true })
+                                uri: normalizeImageSource(getContentImage(ejercicio), { cacheBust: true })
                               }}
                               style={styles.exerciseImage}
                               resizeMode="cover"
@@ -1021,7 +1024,9 @@ export default function TrainingSessionDetailModal({
         visible={imageModalVisible}
         transparent
         animationType="fade"
-       
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => {
           setImageModalVisible(false);
           setSelectedImageExercise(null);
@@ -1029,7 +1034,10 @@ export default function TrainingSessionDetailModal({
       >
         <View style={styles.imageModalBg}>
           <TouchableOpacity
-            style={styles.closeImageBtn}
+            style={[
+              styles.closeImageBtn,
+              { top: Math.max(insets.top, 12), right: Math.max(insets.right, 12) },
+            ]}
             onPress={() => {
               setImageModalVisible(false);
               setSelectedImageExercise(null);
@@ -1047,7 +1055,8 @@ export default function TrainingSessionDetailModal({
               enableCenterFocus={true}
               centerOn={modalImageCenter}
               minScale={1}
-              maxScale={4}
+              maxScale={8}
+              showControls
               enableSwipeDown={true}
               onSwipeDown={() => setImageModalVisible(false)}
             >
@@ -1062,7 +1071,7 @@ export default function TrainingSessionDetailModal({
           )}
           {canMutate && selectedImageExercise && !selectedImageExercise.isCustomTask && (
             <TouchableOpacity
-              style={styles.editExerciseImageBtn}
+              style={[styles.editExerciseImageBtn, { bottom: Math.max(insets.bottom, 16) }]}
               onPress={handleEditExerciseAsNew}
             >
               <Feather name="edit-3" size={18} color="#fff" />
@@ -1613,13 +1622,9 @@ const makeStyles = (theme) => StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
   },
   closeImageBtn: {
     position: 'absolute',
-    top: 20,
-    right: 20,
     zIndex: 10,
     backgroundColor: 'rgba(15, 23, 42, 0.72)',
     width: 48,
@@ -1640,18 +1645,14 @@ const makeStyles = (theme) => StyleSheet.create({
     includeFontPadding: false,
   },
   fullImage: {
-    borderRadius: 18,
     overflow: 'hidden',
   },
   imageZoomWrapper: {
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: 'rgba(15, 23, 42, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#020617',
   },
   editExerciseImageBtn: {
     position: 'absolute',

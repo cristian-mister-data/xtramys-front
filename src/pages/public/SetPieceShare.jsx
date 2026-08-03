@@ -3,6 +3,7 @@ import { useWindowDimensions } from 'react-native';
 import { useParams } from 'react-router-dom';
 import { getPublicMatchSheetSetPieces, getPublicSetPiece } from '@/utils/api';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 import SetPiecePreview from '@/vendor/matchSheet/SetPiecePreview';
 import { normalizeKits, normalizeRivalKits } from '@/utils/kits';
 
@@ -87,7 +88,7 @@ export default function SetPieceShare() {
         </section>
         <section style={styles.list}>
           {setPieces.map((setPiece, index) => {
-            const hasVideo = setPiece.video?.url || setPiece.videoUrl;
+            const hasVideo = !usesImportedImage(setPiece) && (setPiece.video?.url || setPiece.videoUrl);
             return (
               <article key={`${setPiece.strategyId || index}`} style={styles.boardCard}>
                 <button
@@ -121,7 +122,7 @@ export default function SetPieceShare() {
   }
 
   const setPiece = data.setPiece || {};
-  const image = normalizeImageSource(setPiece.imagen);
+  const image = normalizeImageSource(getContentImage(setPiece));
   const video = data.video || (data.videos || [])[0] || null;
 
   return (

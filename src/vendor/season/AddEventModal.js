@@ -44,6 +44,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from 'styled-components';
 import { clearFormDraft, loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { getContentImage } from '@/utils/contentVisual';
 import CustomTrainingTaskModal from './CustomTrainingTaskModal';
 import {
   customTaskAsExercise,
@@ -4056,9 +4057,9 @@ export default function AddEventModal({
                       
                       {/* Imagen y tipo */}
                       <View style={styles.exerciseImageRowMobile}>
-                        {exercise.imagen ? (
+                        {getContentImage(exercise) ? (
                           <Image
-                            source={{ uri: normalizeImageSource(exercise.imagen) }}
+                            source={{ uri: normalizeImageSource(getContentImage(exercise)) }}
                             style={styles.exerciseItemImageMobile}
                             resizeMode="cover"
                           />
@@ -4117,9 +4118,9 @@ export default function AddEventModal({
                     <View style={styles.exerciseItemHeader}>
                       <View style={styles.exerciseItemLeft}>
                         {/* Imagen del ejercicio */}
-                        {exercise.imagen ? (
+                        {getContentImage(exercise) ? (
                           <Image
-                            source={{ uri: normalizeImageSource(exercise.imagen) }}
+                            source={{ uri: normalizeImageSource(getContentImage(exercise)) }}
                             style={styles.exerciseItemImage}
                             resizeMode="cover"
                           />

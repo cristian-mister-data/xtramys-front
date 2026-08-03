@@ -49,7 +49,6 @@ import RivalSelector from '@/vendor/shared/RivalSelector';
 import { applySetPieceKitsToElements, kitToBoardStyle, normalizeKits, normalizeRivalKits, syncSetPieceFromSource } from '@/utils/kits';
 import { PlayerSelectionModal } from '@/vendor/shared/training';
 import {
-  getSetPieceVideoCandidates,
   getSetPieceVideoId,
   resolveMatchSheetSetPieceVideo,
   revokeVideoObjectUrl,
@@ -59,6 +58,7 @@ import { cdnUrl } from '@/config';
 import { duplicateVideoForEdit, getTacticalVideo, getVideoById, getVideoForEdit } from '@/utils/api';
 import { getMatchSheet, updateMatchSheet } from '@/api/matchSheet';
 import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
@@ -1116,22 +1116,43 @@ export default function EditMatchSheetModal({
       : null
   );
   const rivalKits = useMemo(() => normalizeRivalKits(rivalEquipment), [rivalEquipment]);
-  const getMatchSetPieceKitContext = (setPiece) => {
+  const getMatchSetPieceKitContext = (setPiece, overrides = {}) => {
     const original = setPiece?.pizarraConfig?.kitContext || {};
+    const ownKey = overrides.ownKitKey || equipacionPropiaKey;
+    const rivalKey = overrides.rivalKitKey || equipacionRivalKey;
+    const matchRivalEquipment = overrides.rivalEquipment !== undefined ? overrides.rivalEquipment : rivalEquipment;
+    const matchRivalId = overrides.rivalId !== undefined ? overrides.rivalId : rivalId;
+    const matchRivalName = overrides.rivalName !== undefined ? overrides.rivalName : rival;
+    const matchRivalKits = normalizeRivalKits(matchRivalEquipment);
     return {
       ...original,
       teamId: team?._id || null,
-      rivalId: rivalId || null,
-      rivalName: rival.trim(),
-      ownKitKey: equipacionPropiaKey,
-      rivalKitKey: equipacionRivalKey,
-      own: ownKits[equipacionPropiaKey],
-      ownGoalkeeper: ownKits[equipacionPropiaKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-      // Un rival escrito a mano no tiene equipaciones: se conserva la original de cada ABP.
-      rival: rivalEquipment ? rivalKits[equipacionRivalKey] : original.rival,
-      rivalGoalkeeper: rivalEquipment
-        ? rivalKits[equipacionRivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst']
-        : original.rivalGoalkeeper,
+      rivalId: matchRivalId || null,
+      rivalName: String(matchRivalName || '').trim(),
+      ownKitKey: ownKey,
+      rivalKitKey: rivalKey,
+      own: ownKits[ownKey],
+      ownGoalkeeper: ownKits[ownKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+      rival: matchRivalKits[rivalKey],
+      rivalGoalkeeper: matchRivalKits[rivalKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+    };
+  };
+  const applyMatchKitsToSetPiece = (setPiece, overrides = {}) => {
+    const kitContext = getMatchSetPieceKitContext(setPiece, overrides);
+    const showPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos ?? setPiece?.pizarraConfig?.showPhotos ?? false;
+    return {
+      ...setPiece,
+      elementosCampo: applySetPieceKitsToElements(setPiece.elementosCampo || [], kitContext, showPhotos),
+      customElements: applySetPieceKitsToElements(setPiece.customElements || [], kitContext, showPhotos),
+      pizarraConfig: {
+        ...(setPiece.pizarraConfig || {}),
+        setPieceMode: true,
+        kitContext,
+        teamPlayers: {
+          ...(setPiece.pizarraConfig?.teamPlayers || {}),
+          ...kitToBoardStyle(kitContext.own, kitContext.ownGoalkeeper),
+        },
+      },
     };
   };
   
@@ -1441,7 +1462,13 @@ export default function EditMatchSheetModal({
       setTarjetasRojas(matchSheet.tarjetasRojas || []);
       setCambios(matchSheet.cambios || []);
       setGolesRival(matchSheet.golesRival || []);
-      setSelectedSetPieces(matchSheet.setPieces || []);
+      setSelectedSetPieces((matchSheet.setPieces || []).map((setPiece) => applyMatchKitsToSetPiece(setPiece, {
+        ownKitKey: matchSheet.equipacionPropiaKey || 'first',
+        rivalKitKey: matchSheet.equipacionRivalKey || 'first',
+        rivalEquipment: matchSheet.rivalId?.equipaciones || rivals.find((item) => String(item._id) === String(matchSheet.rivalId?._id || matchSheet.rivalId))?.equipaciones || null,
+        rivalId: matchSheet.rivalId?._id || matchSheet.rivalId || null,
+        rivalName: matchSheet.rival || '',
+      })));
       
       // Descuento (tiempo añadido)
       setDescuentoPrimerTiempo(matchSheet.descuentoPrimerTiempo !== undefined ? String(matchSheet.descuentoPrimerTiempo) : '0');
@@ -1503,7 +1530,13 @@ export default function EditMatchSheetModal({
     getMatchSheet(matchSheet._id)
       .then((response) => {
         if (mounted && Array.isArray(response.data?.setPieces)) {
-          setSelectedSetPieces(response.data.setPieces);
+          setSelectedSetPieces(response.data.setPieces.map((setPiece) => applyMatchKitsToSetPiece(setPiece, {
+            ownKitKey: matchSheet.equipacionPropiaKey || 'first',
+            rivalKitKey: matchSheet.equipacionRivalKey || 'first',
+            rivalEquipment: matchSheet.rivalId?.equipaciones || rivals.find((item) => String(item._id) === String(matchSheet.rivalId?._id || matchSheet.rivalId))?.equipaciones || null,
+            rivalId: matchSheet.rivalId?._id || matchSheet.rivalId || null,
+            rivalName: matchSheet.rival || '',
+          })));
         }
       })
       .catch((error) => console.warn('No se pudieron actualizar las ABP de la ficha:', error));
@@ -1927,17 +1960,12 @@ export default function EditMatchSheetModal({
     nombre: sp.nombre,
     descripcion: sp.descripcion || '',
     imagen: sp.imagen || '',
+    importedImage: sp.importedImage || '',
+    hasImportedImage: Boolean(sp.importedImage),
+    visualSource: sp.visualSource === 'imported' && sp.importedImage ? 'imported' : 'board',
     customImage: sp.customImage || '',
-    elementosCampo: applySetPieceKitsToElements(
-      sp.elementosCampo || [],
-      getMatchSetPieceKitContext(sp),
-      sp.pizarraConfig?.teamPlayers?.showPhotos ?? sp.pizarraConfig?.showPhotos ?? false,
-    ),
-    customElements: applySetPieceKitsToElements(
-      sp.customElements || [],
-      getMatchSetPieceKitContext(sp),
-      sp.pizarraConfig?.teamPlayers?.showPhotos ?? sp.pizarraConfig?.showPhotos ?? false,
-    ),
+    elementosCampo: sp.elementosCampo || [],
+    customElements: sp.customElements || [],
     customFieldType: sp.customFieldType || sp.tipoCampo || 'full',
     pizarraConfig: {
       ...(sp.pizarraConfig || {}),
@@ -2141,11 +2169,14 @@ export default function EditMatchSheetModal({
     const slots = getSetPieceSlots(setPiece);
     setSelectedSetPieces((prev) => [
       ...prev,
-      {
+      applyMatchKitsToSetPiece({
         strategyId: id,
         nombre: setPiece.nombre,
         descripcion: setPiece.descripcion || '',
         imagen: setPiece.imagen || '',
+        importedImage: setPiece.importedImage || '',
+        hasImportedImage: Boolean(setPiece.importedImage),
+        visualSource: setPiece.visualSource === 'imported' && setPiece.importedImage ? 'imported' : 'board',
         customImage: setPiece.customImage || '',
         elementosCampo: setPiece.elementosCampo || [],
         customElements: setPiece.customElements || [],
@@ -2154,7 +2185,7 @@ export default function EditMatchSheetModal({
         videoId: setPiece.videoId || (Array.isArray(setPiece.videos) && setPiece.videos.length > 0 ? setPiece.videos[0] : undefined),
         videoUrl: setPiece.videoUrl || '',
         assignments: slots.map((slot) => ({ ...slot, player: null, playerName: '' })),
-      },
+      }),
     ]);
   };
 
@@ -2214,41 +2245,18 @@ export default function EditMatchSheetModal({
     });
   };
 
-  const findAvailableSetPieceVideo = async (setPiece) => {
-    const requestedId = getSetPieceVideoId(setPiece);
-    for (const candidateId of getSetPieceVideoCandidates(setPiece, availableSetPieces)) {
-      let metadata;
-      try {
-        metadata = await getVideoById(candidateId, { optional: true });
-      } catch (error) {
-        if (!error?.status || error.status >= 500) break;
-        continue;
-      }
-      if (metadata?.video) {
-        return {
-          videoId: candidateId,
-          metadata,
-          recovered: String(candidateId) !== String(requestedId || ''),
-        };
-      }
-    }
-    return null;
-  };
-
   const openSetPieceBoard = async (setPieceIndex) => {
     if (boardParams || boardOpeningRef.current) return;
     const setPiece = selectedSetPieces[setPieceIndex];
-    if (!setPiece) return;
+    if (!setPiece || usesImportedImage(setPiece)) return;
     boardOpeningRef.current = true;
     boardModalGuardUntilRef.current = Date.now() + 2000;
     const requestId = boardOpenRequestRef.current + 1;
     boardOpenRequestRef.current = requestId;
     setOpeningSetPieceBoardIndex(setPieceIndex);
     try {
-    const availableVideo = await findAvailableSetPieceVideo(setPiece).catch((error) => {
-      console.warn('No se pudo preparar la pizarra de la ABP:', error);
-      return null;
-    });
+    // La pizarra debe abrirse sin depender de preparar o duplicar el video asociado.
+    const availableVideo = null;
     if (requestId !== boardOpenRequestRef.current) return;
     let boardSetPiece = availableVideo?.recovered ? {
       ...setPiece,
@@ -2485,7 +2493,7 @@ export default function EditMatchSheetModal({
   };
 
   const playSetPieceVideo = async (setPiece, setPieceIndex) => {
-    if (isVideoGenerating) return;
+    if (isVideoGenerating || usesImportedImage(setPiece)) return;
     setSetPieceVideoTitle(setPiece.nombre || t('setPieces.title'));
     setVideoGenerationProgress(0);
     setVideoGenerationPhase('generationPreparing');
@@ -2521,7 +2529,7 @@ export default function EditMatchSheetModal({
   };
 
   const downloadSetPieceVideo = async (setPiece, setPieceIndex) => {
-    if (isVideoGenerating || downloadingSetPieceVideoIndex !== null) return;
+    if (isVideoGenerating || downloadingSetPieceVideoIndex !== null || usesImportedImage(setPiece)) return;
     setVideoGenerationProgress(0);
     setVideoGenerationPhase('generationPreparing');
     setDownloadingSetPieceVideoIndex(setPieceIndex);
@@ -2571,8 +2579,8 @@ export default function EditMatchSheetModal({
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setPiecesPicker}>
               {selectableSetPieces.map((sp) => (
                 <TouchableOpacity key={sp._id || sp.id} style={styles.setPiecePickerCard} onPress={() => addSetPieceToMatch(sp)}>
-                  {sp.imagen ? (
-                    <Image source={{ uri: sp.imagen }} style={styles.setPiecePickerImage} />
+                  {getContentImage(sp) ? (
+                    <Image source={{ uri: getContentImage(sp) }} style={styles.setPiecePickerImage} />
                   ) : (
                     <View style={styles.setPiecePickerImage}>
                       <Ionicons name="football-outline" size={26} color={theme.colors.textMuted} />
@@ -2614,7 +2622,7 @@ export default function EditMatchSheetModal({
                 </View>
               )}
             </View>
-            <TouchableOpacity
+            {!usesImportedImage(sp) && <TouchableOpacity
               style={[
                 styles.setPieceBoardBtn,
                 openingSetPieceBoardIndex === setPieceIndex && { opacity: 0.75 },
@@ -2632,8 +2640,8 @@ export default function EditMatchSheetModal({
                   ? t('common.loading', 'Cargando...')
                   : t('setPieces.openBoard')}
               </Text>
-            </TouchableOpacity>
-            {!!sp.videoId && (
+            </TouchableOpacity>}
+            {!usesImportedImage(sp) && !!sp.videoId && (
               <View style={styles.setPieceActionRow}>
                 <TouchableOpacity
                   style={[
@@ -2809,6 +2817,12 @@ export default function EditMatchSheetModal({
                   setRivalId(id);
                   setRival(nombre);
                   setRivalEscudo(escudo);
+                  const equipment = rivals.find((item) => String(item._id) === String(id))?.equipaciones || null;
+                  setSelectedSetPieces((current) => current.map((setPiece) => applyMatchKitsToSetPiece(setPiece, {
+                    rivalEquipment: equipment,
+                    rivalId: id,
+                    rivalName: nombre,
+                  })));
                 }}
                 teamId={team?._id}
                 placeholder={t('schedule.selectRival')}
@@ -2819,7 +2833,10 @@ export default function EditMatchSheetModal({
               <Text style={styles.label}>{t('matchSheet.fields.ownKit', 'Equipación propia')}</Text>
               <View style={styles.kitRow}>
                 {['first', 'second'].map((key) => (
-                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionPropiaKey === key && styles.kitOptionActive]} onPress={() => setEquipacionPropiaKey(key)}>
+                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionPropiaKey === key && styles.kitOptionActive]} onPress={() => {
+                    setEquipacionPropiaKey(key);
+                    setSelectedSetPieces((current) => current.map((setPiece) => applyMatchKitsToSetPiece(setPiece, { ownKitKey: key })));
+                  }}>
                     <View style={[styles.kitSwatch, { borderRadius: ownKits[key].shape === 'circle' ? 12 : 4, backgroundColor: ownKits[key].primaryColor, borderColor: ownKits[key].secondaryColor }]} />
                     <Text style={styles.kitOptionText}>{t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}</Text>
                   </TouchableOpacity>
@@ -2831,7 +2848,10 @@ export default function EditMatchSheetModal({
               <Text style={styles.label}>{t('matchSheet.fields.rivalKit', 'Equipación rival')}</Text>
               <View style={styles.kitRow}>
                 {['first', 'second'].map((key) => (
-                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionRivalKey === key && styles.kitOptionActive]} onPress={() => setEquipacionRivalKey(key)}>
+                  <TouchableOpacity key={key} style={[styles.kitOption, equipacionRivalKey === key && styles.kitOptionActive]} onPress={() => {
+                    setEquipacionRivalKey(key);
+                    setSelectedSetPieces((current) => current.map((setPiece) => applyMatchKitsToSetPiece(setPiece, { rivalKitKey: key })));
+                  }}>
                     <View style={[styles.kitSwatch, { borderRadius: rivalKits[key].shape === 'circle' ? 12 : 4, backgroundColor: rivalKits[key].primaryColor, borderColor: rivalKits[key].secondaryColor }]} />
                     <Text style={styles.kitOptionText}>{t(`kits.${key}`, key === 'first' ? 'Primera' : 'Segunda')}</Text>
                   </TouchableOpacity>

@@ -9,6 +9,7 @@ import { getPlayerFullName } from '@/utils/playerHelpers';
 import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
 import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
+import { getContentImage } from '@/utils/contentVisual';
 import api from '@/api/client';
 
 // ── Shared Styles ──────────────────────────────────────────────────
@@ -480,11 +481,12 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   const isLastExercise = index === data.ejerciciosOrdenados.length - 1;
 
   let imagenSrc = imageDataUris[`ex_${ejercicio._id}`];
-  if (!imagenSrc && ejercicio.imagen) {
-    if (typeof ejercicio.imagen === 'string' && (ejercicio.imagen.startsWith('http') || ejercicio.imagen.startsWith('data:'))) {
-      imagenSrc = ejercicio.imagen;
-    } else if (typeof ejercicio.imagen === 'string') {
-      imagenSrc = `data:image/png;base64,${ejercicio.imagen}`;
+  const selectedImage = getContentImage(ejercicio);
+  if (!imagenSrc && selectedImage) {
+    if (typeof selectedImage === 'string' && (selectedImage.startsWith('http') || selectedImage.startsWith('data:'))) {
+      imagenSrc = selectedImage;
+    } else if (typeof selectedImage === 'string') {
+      imagenSrc = `data:image/png;base64,${selectedImage}`;
     }
   }
 
@@ -694,8 +696,14 @@ export const generateSessionPDF = async ({
     const toDataUrl = async (url) => {
       let blob;
       try {
-        const res = await api.get('/media/image-download', { params: { url }, responseType: 'blob', timeout: 15000 });
-        blob = res.data;
+        if (/^https?:\/\//i.test(url)) {
+          const res = await api.get('/media/image-download', { params: { url }, responseType: 'blob', timeout: 15000 });
+          blob = res.data;
+        } else {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('fetch failed');
+          blob = await res.blob();
+        }
       } catch (err) {
         const res = await fetch(url);
         if (!res.ok) throw new Error('fetch failed');
@@ -744,8 +752,9 @@ export const generateSessionPDF = async ({
     if (exercises && exercises.length > 0) {
       await Promise.all(exercises.map(async (exercise) => {
         try {
-          if (exercise.imagen && typeof exercise.imagen === 'string' && exercise.imagen.startsWith('http')) {
-            imageDataUris[`ex_${exercise._id}`] = await toDataUrl(exercise.imagen);
+          const selectedImage = getContentImage(exercise);
+          if (selectedImage && typeof selectedImage === 'string' && selectedImage.startsWith('http')) {
+            imageDataUris[`ex_${exercise._id}`] = await toDataUrl(selectedImage);
           }
         } catch (e) {
           console.warn('Failed to resolve image for exercise PDF:', exercise._id, e);

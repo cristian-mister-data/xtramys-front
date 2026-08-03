@@ -4,6 +4,7 @@ import {
   Document, Page, Text, View, Image, StyleSheet,
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, renderPdf
 } from '@/utils/pdfDesign';
+import { getContentImage } from '@/utils/contentVisual';
 
 const s = StyleSheet.create({
   mainContainer: {
@@ -173,8 +174,8 @@ const SetPiecesDocument = ({ setPieces, t }) => (
             {setPiece.descripcion ? <Text style={s.setPieceDescription}>{setPiece.descripcion}</Text> : null}
           </View>
           <View style={s.fullPageDiagramWrap}>
-            {setPiece.imagen ? (
-              <Image src={setPiece.imagen} style={s.fullPageDiagram} />
+            {getContentImage(setPiece) ? (
+              <Image src={getContentImage(setPiece)} style={s.fullPageDiagram} />
             ) : (
               <Text style={s.noImageText}>{t('strategy.noImage') || 'Sin Diagrama'}</Text>
             )}

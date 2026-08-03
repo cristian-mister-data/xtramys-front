@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Base64ImagePreview from '@/vendor/tacticalBoard/imagePreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStrategyFoldersFlat, createStrategyFolder, fetchGlobalFolders } from '@/store/slices/strategy/strategyThunks';
 import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
@@ -26,7 +25,7 @@ import { linkVideoToStrategy } from '@/utils/api';
 import FolderPickerModal from '@/vendor/shared/FolderPickerModal';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
-import { fetchRivalsByTeam } from '@/store/slices/rival/rivalThunks';
+import VisualMediaSelector from '@/vendor/shared/VisualMediaSelector';
 import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import {
   saveFormDraft,
@@ -54,12 +53,10 @@ export default function CreateStrategyForm({
   const strategyFolders = useSelector(state => state.strategy.foldersFlat) || [];
   const strategyLoading = useSelector(state => state.strategy.loading);
   const selectedTeam = useSelector(state => state.team.teams?.find(team => team.seleccionado)) || null;
-  const rivals = useSelector(state => state.rival.rivals) || [];
   const placeholderColor = theme?.colors?.inputPlaceholder || '#94a3b8';
   const iconColor = theme?.colors?.textMuted || '#9e9e9e';
   const chevronColor = theme?.colors?.textSecondary || '#666';
   const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
-  const onWarningColor = theme?.colors?.onWarning || '#fff';
   
   const [name, setName] = useState(editingStrategy ? editingStrategy.nombre || '' : '');
   const [folderId, setFolderId] = useState(editingStrategy?.folder?._id || editingStrategy?.folder || '');
@@ -85,11 +82,20 @@ export default function CreateStrategyForm({
     } catch {}
     return null;
   })();
+  const __pendingDraftMatches = __pendingFormDraft
+    && (__pendingFormDraft.editingId || null) === (editingStrategy?._id || editingStrategy?.id || null)
+    && __pendingFormDraft.kind === draftKind;
 
   const [imagen, setImagen] = useState(
     __pendingFieldResult && typeof __pendingFieldResult.imagen === 'string'
       ? __pendingFieldResult.imagen
       : (editingStrategy ? editingStrategy.imagen : '')
+  );
+  const [importedImage, setImportedImage] = useState(
+    (__pendingDraftMatches ? __pendingFormDraft.importedImage : undefined) ?? editingStrategy?.importedImage ?? ''
+  );
+  const [visualSource, setVisualSource] = useState(
+    __pendingFieldResult?.visualSource ?? (__pendingDraftMatches ? __pendingFormDraft.visualSource : undefined) ?? editingStrategy?.visualSource ?? 'board'
   );
   const [showField, setShowField] = useState(false);
   const [fieldElements, setFieldElements] = useState(
@@ -107,31 +113,21 @@ export default function CreateStrategyForm({
       ? __pendingFieldResult.pizarraConfig
       : (editingStrategy ? editingStrategy.pizarraConfig || null : null)
   );
-  const existingKitContext = pizarraConfig?.kitContext || editingStrategy?.pizarraConfig?.kitContext || {};
-  const [selectedRivalId, setSelectedRivalId] = useState(existingKitContext.rivalId || '');
-  const [ownKitKey, setOwnKitKey] = useState(existingKitContext.ownKitKey || 'first');
-  const [rivalKitKey, setRivalKitKey] = useState(existingKitContext.rivalKitKey || 'first');
-
-  useEffect(() => {
-    if (isSetPiece && selectedTeam?._id) dispatch(fetchRivalsByTeam({ teamId: selectedTeam._id }));
-  }, [dispatch, isSetPiece, selectedTeam?._id]);
-
   const kitContext = useMemo(() => {
     const ownKits = normalizeKits(selectedTeam?.equipaciones);
-    const rival = rivals.find(item => item._id === selectedRivalId) || null;
-    const rivalKits = normalizeRivalKits(rival?.equipaciones);
+    const rivalKits = normalizeRivalKits();
     return {
       teamId: selectedTeam?._id || null,
-      rivalId: rival?._id || null,
-      rivalName: rival?.nombre || '',
-      ownKitKey,
-      rivalKitKey,
-      own: ownKits[ownKitKey],
-      ownGoalkeeper: ownKits[ownKitKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
-      rival: rivalKits[rivalKitKey],
-      rivalGoalkeeper: rivalKits[rivalKitKey === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'],
+      rivalId: null,
+      rivalName: '',
+      ownKitKey: 'first',
+      rivalKitKey: 'first',
+      own: ownKits.first,
+      ownGoalkeeper: ownKits.goalkeeperFirst,
+      rival: rivalKits.first,
+      rivalGoalkeeper: rivalKits.goalkeeperFirst,
     };
-  }, [selectedTeam, rivals, selectedRivalId, ownKitKey, rivalKitKey]);
+  }, [selectedTeam]);
 
   // Estados para videos pendientes de asociar (para nuevas estrategias)
   const pendingVideoIds = useRef(editingStrategy?.pendingVideoIds || []);
@@ -153,10 +149,6 @@ export default function CreateStrategyForm({
   const [objectiveEn, setObjectiveEn] = useState(editingStrategy?.translations?.en?.objetivo || '');
   const [validationErrors, setValidationErrors] = useState({});
   
-  const stableImagen = useMemo(() => imagen, [imagen]);
-  const stableFieldElements = useMemo(() => fieldElements, [fieldElements]);
-  const stableFieldType = useMemo(() => fieldType, [fieldType]);
-
   // Estados para carpetas de estrategia
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [loadingField, setLoadingField] = useState(false);
@@ -274,6 +266,8 @@ export default function CreateStrategyForm({
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
+      if (typeof draft.importedImage === 'string') setImportedImage(draft.importedImage);
+      if (typeof draft.visualSource === 'string') setVisualSource(draft.visualSource);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
       if (draft.friendSharing) setFriendSharing(draft.friendSharing);
     }
@@ -283,6 +277,7 @@ export default function CreateStrategyForm({
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
       if (fieldResult.pizarraConfig) setPizarraConfig(fieldResult.pizarraConfig);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
+      if (typeof fieldResult.visualSource === 'string') setVisualSource(fieldResult.visualSource);
       if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
 
@@ -308,7 +303,7 @@ export default function CreateStrategyForm({
       editingId,
       name, description, objective, videoUrl, folderId,
       nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
-      fieldElements, fieldType, imagen, pizarraConfig,
+      fieldElements, fieldType, imagen, importedImage, visualSource, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
       friendSharing,
     });
@@ -326,6 +321,7 @@ export default function CreateStrategyForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          visualSource: 'board',
           pizarraConfig: isSetPiece ? { ...(updatedConfig || {}), setPieceMode: true } : updatedConfig,
           pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
@@ -333,6 +329,7 @@ export default function CreateStrategyForm({
           setFieldElements(updatedElements);
           setFieldType(updatedFieldType);
           setImagen(imageBase64);
+          setVisualSource('board');
           if (updatedConfig) setPizarraConfig(isSetPiece ? { ...updatedConfig, setPieceMode: true } : updatedConfig);
           setLoadingField(false);
         } catch {}
@@ -356,7 +353,7 @@ export default function CreateStrategyForm({
             editingId,
             name, description, objective, videoUrl, folderId,
             nameEn, descriptionEn, objectiveEn, isGlobal, visibility,
-            fieldElements, fieldType, imagen, pizarraConfig,
+            fieldElements, fieldType, imagen, importedImage, visualSource, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
             friendSharing,
           });
@@ -366,7 +363,12 @@ export default function CreateStrategyForm({
     };
 
     const parsedConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
-    const safeConfig = isSetPiece ? { ...parsedConfig, setPieceMode: true, kitContext, teamPlayers: { ...(parsedConfig.teamPlayers || {}), ...kitToBoardStyle(kitContext.own, kitContext.ownGoalkeeper) } } : parsedConfig;
+    const safeConfig = {
+      ...parsedConfig,
+      ...(isSetPiece ? { setPieceMode: true } : {}),
+      kitContext,
+      teamPlayers: { ...(parsedConfig.teamPlayers || {}), ...kitToBoardStyle(kitContext.own, kitContext.ownGoalkeeper) },
+    };
     
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
@@ -420,9 +422,12 @@ export default function CreateStrategyForm({
         usuario: idUsuario,
         _id: editingStrategy ? editingStrategy._id : undefined,
         imagen: imagen,
+        importedImage,
+        hasImportedImage: Boolean(importedImage),
+        visualSource: visualSource === 'imported' && importedImage ? 'imported' : 'board',
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
-        pizarraConfig: isSetPiece ? { ...(pizarraConfig || {}), setPieceMode: true, kitContext } : (pizarraConfig || null),
+        pizarraConfig: { ...(pizarraConfig || {}), ...(isSetPiece ? { setPieceMode: true } : {}), kitContext },
         isGlobal: isAdmin ? isGlobal : false,
         kind: isSetPiece ? 'setPiece' : 'strategy',
         visibility: !isAdmin && userClubId ? visibility : (editingStrategy?.visibility || 'PRIVATE'),
@@ -640,27 +645,15 @@ export default function CreateStrategyForm({
 
 
         <View style={styles.formCard}>
-          <View style={styles.graphicSection}>
-            {(stableFieldElements && stableFieldElements.length > 0) || stableImagen ? (
-              <>
-                <Text style={styles.subTitle}>{t('strategy.graphicSaved')}</Text>
-                <Base64ImagePreview base64={stableImagen} imageUrl={stableImagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
-                <TouchableOpacity style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} onPress={handleOpenField}>
-                    <Ionicons name="pencil-outline" size={18} color={isNativeForm ? onPrimaryColor : onWarningColor} style={{ marginRight: 8 }} />
-                    <Text style={[styles.saveButtonText, { color: isNativeForm ? onPrimaryColor : onWarningColor }]}>{t('strategy.editGraphic')}</Text>
-                  </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity style={styles.addButton} onPress={handleOpenField}>
-                <Ionicons name="document-outline" size={40} color={theme?.colors?.primary || '#2196F3'} />
-                <Text style={styles.addButtonText}>{t('strategy.addGraphic')}</Text>
-                <Text style={[styles.addButtonText, { fontSize: 13, color: theme?.colors?.textMuted || '#9e9e9e', marginTop: 4 }]}>
-                  {t('strategy.touchToOpenEditor')}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
+          <VisualMediaSelector
+            boardImage={imagen}
+            boardAvailable={Boolean(imagen || fieldElements?.length)}
+            importedImage={importedImage}
+            visualSource={visualSource}
+            onOpenBoard={handleOpenField}
+            onImportedImageChange={setImportedImage}
+            onVisualSourceChange={setVisualSource}
+          />
         </View>
 
 

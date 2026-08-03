@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Base64ImagePreview, { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { fetchExerciseFoldersFlat, createExerciseFolder, fetchGlobalFolders } from '@/store/slices/exercise/exerciseThunks';
@@ -25,6 +25,8 @@ import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import FriendShareSelector from '@/components/shared/FriendShareSelector';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import VisualMediaSelector from '@/vendor/shared/VisualMediaSelector';
+import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import {
   saveFormDraft,
   loadFormDraft,
@@ -47,11 +49,11 @@ export default function CreateExerciseForm({
   const styles = useMemo(() => makeStyles(theme, isNativeForm), [theme, isNativeForm]);
   const exerciseFoldersFlat = useSelector(state => state.exercise.foldersFlat) || [];
   const exerciseLoading = useSelector(state => state.exercise.loading);
+  const selectedTeam = useSelector(state => state.team.teams?.find(team => team.seleccionado)) || null;
   const placeholderColor = theme?.colors?.inputPlaceholder || '#94a3b8';
   const iconColor = theme?.colors?.textMuted || '#9e9e9e';
   const chevronColor = theme?.colors?.textSecondary || '#666';
   const onPrimaryColor = theme?.colors?.onPrimary || '#fff';
-  const onWarningColor = theme?.colors?.onWarning || '#fff';
   const editingExerciseId = editingExercise?._id || editingExercise?.id || null;
   const formDraftId = editingExerciseId || (editingExercise?.sourceExerciseIdForVideos ? `copy:${editingExercise.sourceExerciseIdForVideos}` : null);
   const isNewExercise = !editingExerciseId;
@@ -95,11 +97,20 @@ export default function CreateExerciseForm({
     } catch {}
     return null;
   })();
+  const __pendingDraftMatches = __pendingFormDraft
+    && (__pendingFormDraft.editingId || null) === formDraftId
+    && __pendingFormDraft.kind === 'exercise';
 
   const [imagen, setImagen] = useState(
     __pendingFieldResult && typeof __pendingFieldResult.imagen === 'string'
       ? __pendingFieldResult.imagen
       : (editingExercise ? editingExercise.imagen : '')
+  );
+  const [importedImage, setImportedImage] = useState(
+    (__pendingDraftMatches ? __pendingFormDraft.importedImage : undefined) ?? editingExercise?.importedImage ?? ''
+  );
+  const [visualSource, setVisualSource] = useState(
+    __pendingFieldResult?.visualSource ?? (__pendingDraftMatches ? __pendingFormDraft.visualSource : undefined) ?? editingExercise?.visualSource ?? 'board'
   );
   const [showField, setShowField] = useState(false);
   const [fieldElements, setFieldElements] = useState(
@@ -117,6 +128,17 @@ export default function CreateExerciseForm({
       ? __pendingFieldResult.pizarraConfig
       : (editingExercise ? editingExercise.pizarraConfig || null : null)
   );
+  const kitContext = useMemo(() => {
+    const own = normalizeKits(selectedTeam?.equipaciones);
+    const rival = normalizeRivalKits();
+    return {
+      teamId: selectedTeam?._id || null,
+      own: own.first,
+      ownGoalkeeper: own.goalkeeperFirst,
+      rival: rival.first,
+      rivalGoalkeeper: rival.goalkeeperFirst,
+    };
+  }, [selectedTeam]);
 
   // Estados para videos pendientes de asociar (para nuevos ejercicios)
   const pendingVideoIds = useRef(editingExercise?.pendingVideoIds || []);
@@ -235,6 +257,8 @@ export default function CreateExerciseForm({
       if (typeof draft.fieldType === 'string') setFieldType(draft.fieldType);
       if (draft.pizarraConfig) setPizarraConfig(draft.pizarraConfig);
       if (typeof draft.imagen === 'string') setImagen(draft.imagen);
+      if (typeof draft.importedImage === 'string') setImportedImage(draft.importedImage);
+      if (typeof draft.visualSource === 'string') setVisualSource(draft.visualSource);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
       if (draft.friendSharing) setFriendSharing(draft.friendSharing);
     }
@@ -244,6 +268,7 @@ export default function CreateExerciseForm({
       if (typeof fieldResult.fieldType === 'string') setFieldType(fieldResult.fieldType);
       if (fieldResult.pizarraConfig) setPizarraConfig(fieldResult.pizarraConfig);
       if (typeof fieldResult.imagen === 'string') setImagen(fieldResult.imagen);
+      if (typeof fieldResult.visualSource === 'string') setVisualSource(fieldResult.visualSource);
       if (Array.isArray(fieldResult.pendingVideoIds)) pendingVideoIds.current = [...fieldResult.pendingVideoIds];
     }
 
@@ -266,7 +291,7 @@ export default function CreateExerciseForm({
       editingId,
       name, duration, description, objective, materialNecesario, videoUrl, dimensions, folderId,
       playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
-      fieldElements, fieldType, imagen, pizarraConfig,
+      fieldElements, fieldType, imagen, importedImage, visualSource, pizarraConfig,
       pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
       friendSharing,
     });
@@ -282,6 +307,7 @@ export default function CreateExerciseForm({
           fieldElements: updatedElements,
           fieldType: updatedFieldType,
           imagen: imageBase64,
+          visualSource: 'board',
           pizarraConfig: updatedConfig,
           pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
         });
@@ -289,6 +315,7 @@ export default function CreateExerciseForm({
           setFieldElements(updatedElements);
           setFieldType(updatedFieldType);
           setImagen(imageBase64);
+          setVisualSource('board');
           if (updatedConfig) setPizarraConfig(updatedConfig);
           setLoadingField(false);
         } catch {}
@@ -312,7 +339,7 @@ export default function CreateExerciseForm({
             editingId,
             name, duration, description, objective, materialNecesario, videoUrl, dimensions, folderId,
             playerNumbers, teams, nameEn, descriptionEn, objectiveEn, materialNecesarioEn, isGlobal, visibility,
-            fieldElements, fieldType, imagen, pizarraConfig,
+            fieldElements, fieldType, imagen, importedImage, visualSource, pizarraConfig,
             pendingVideoIds: [...pendingVideoIds.current],
             friendSharing,
           });
@@ -321,7 +348,12 @@ export default function CreateExerciseForm({
       }
     };
     
-    const safeConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    const parsedConfig = typeof pizarraConfig === 'string' ? (() => { try { return JSON.parse(pizarraConfig); } catch { return {}; } })() : (pizarraConfig || {});
+    const safeConfig = {
+      ...parsedConfig,
+      kitContext,
+      teamPlayers: { ...(parsedConfig.teamPlayers || {}), ...kitToBoardStyle(kitContext.own, kitContext.ownGoalkeeper) },
+    };
     
     navigation.navigate('Field', {
       initialElements: fieldElements || [],
@@ -387,6 +419,9 @@ export default function CreateExerciseForm({
         usuario: idUsuario,
         _id: editingExerciseId || undefined,
         imagen: normalizedImagen,
+        importedImage,
+        hasImportedImage: Boolean(importedImage),
+        visualSource: visualSource === 'imported' && importedImage ? 'imported' : 'board',
         elementosCampo: fieldElements || [],
         tipoCampo: fieldType || '',
         pizarraConfig: pizarraConfig || null,
@@ -685,31 +720,15 @@ export default function CreateExerciseForm({
         </View>
 
         <View style={styles.formCard}>
-          <View style={styles.graphicSection}>
-            {(fieldElements && fieldElements.length > 0) || imagen ? (
-              <>
-                <Text style={styles.subTitle}>{t('exercise.graphicSaved')}</Text>
-                <Base64ImagePreview base64={imagen} imageUrl={imagen} aspect={0.6} maxWidth={600} horizontalInset={112} style={{ width: '100%', alignSelf: 'stretch' }} />
-                <TouchableOpacity 
-                    style={[styles.editButton, { alignSelf: 'center', marginTop: 12 }]} 
-                    onPress={handleOpenField}
-                  >
-                    <Ionicons name="pencil-outline" size={18} color={isNativeForm ? onPrimaryColor : onWarningColor} style={{ marginRight: 8 }} />
-                    <Text style={[styles.saveButtonText, { color: isNativeForm ? onPrimaryColor : onWarningColor }]}>
-                      {t('exercise.editGraphic')}
-                    </Text>
-                  </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity style={styles.addButton} onPress={handleOpenField}>
-                <Ionicons name="document-outline" size={40} color={theme?.colors?.primary || '#2196F3'} />
-                <Text style={styles.addButtonText}>{t('exercise.addGraphic')}</Text>
-                <Text style={[styles.addButtonText, { fontSize: 13, color: theme?.colors?.textMuted || '#9e9e9e', marginTop: 4 }]}> 
-                  {t('exercise.touchToOpenEditor')}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <VisualMediaSelector
+            boardImage={imagen}
+            boardAvailable={Boolean(imagen || fieldElements?.length)}
+            importedImage={importedImage}
+            visualSource={visualSource}
+            onOpenBoard={handleOpenField}
+            onImportedImageChange={setImportedImage}
+            onVisualSourceChange={setVisualSource}
+          />
         </View>
 
 

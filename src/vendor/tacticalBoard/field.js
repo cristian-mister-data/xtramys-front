@@ -35,7 +35,12 @@ import { api } from '@/api/client';
 import { updateUsuario } from '@/store/slices/user/userThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import { applySetPieceKitsToElements, kitToBoardStyle } from '@/utils/kits';
+import {
+  applySetPieceKitsToPalette,
+  kitToBoardStyle,
+  normalizeKits,
+  normalizeRivalKits,
+} from '@/utils/kits';
 import Svg, { Path, Polygon, Rect, Circle, Ellipse, G } from 'react-native-svg';
 import ViewShot from 'react-native-view-shot';
 
@@ -325,6 +330,24 @@ export default function Field(props = {}) {
     onVideoSaved = null,
   } = mergedParams;
 
+  const setPieceKitContext = useMemo(() => {
+    if (initialConfig?.kitContext) return initialConfig.kitContext;
+    if (!setPieceMode) return null;
+    const team = equipos.find((item) => item.seleccionado) || equipos[0];
+    const ownKits = normalizeKits(team?.equipaciones);
+    const rivalKits = normalizeRivalKits();
+    return {
+      teamId: team?._id || null,
+      rivalId: null,
+      ownKitKey: 'first',
+      rivalKitKey: 'first',
+      own: ownKits.first,
+      ownGoalkeeper: ownKits.goalkeeperFirst,
+      rival: rivalKits.first,
+      rivalGoalkeeper: rivalKits.goalkeeperFirst,
+    };
+  }, [equipos, initialConfig?.kitContext, setPieceMode]);
+
   // Obtener editVideoData de global si no viene en params
   const editVideoData = editVideoDataParam || global.editVideoData || null;
 
@@ -568,10 +591,9 @@ export default function Field(props = {}) {
   }, [isStrategyMode, setPieceMode, INITIAL_ICONS, t]);
 
   const [paletteIcons, setPaletteIcons] = useState(() =>
-    applySetPieceKitsToElements(
+    applySetPieceKitsToPalette(
       filteredIcons,
-      setPieceMode ? initialConfig?.kitContext : null,
-      false,
+      setPieceKitContext,
     ),
   );
   const [drawingStraightArrow, setDrawingStraightArrow] = useState(false);
@@ -698,23 +720,15 @@ export default function Field(props = {}) {
   const appliedKitContextRef = useRef('');
 
   useEffect(() => {
-    const context = initialConfig?.kitContext;
-    if (!setPieceMode || !context?.own || !userSettingsLoaded) return;
+    const context = setPieceKitContext;
+    if (!context?.own || !userSettingsLoaded) return;
     const signature = JSON.stringify(context);
     if (appliedKitContextRef.current === signature) return;
     appliedKitContextRef.current = signature;
     const ownStyle = kitToBoardStyle(context.own, context.ownGoalkeeper);
     const rivalStyle = kitToBoardStyle(context.rival, context.rivalGoalkeeper);
-    const showPhotos = initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos;
     setTeamPlayerStyle((prev) => ({ ...prev, ...ownStyle }));
-    setPaletteIcons((prev) => applySetPieceKitsToElements(prev, context, false));
-    setActualClones((prev) => applySetPieceKitsToElements(prev, context, showPhotos));
-    setVideoKeyframes((prev) =>
-      prev.map((keyframe) => ({
-        ...keyframe,
-        elements: applySetPieceKitsToElements(keyframe.elements || [], context, showPhotos),
-      })),
-    );
+    setPaletteIcons((prev) => applySetPieceKitsToPalette(prev, context));
     setBoardSettings((prev) => ({
       ...prev,
       teamPlayers: { ...prev.teamPlayers, ...ownStyle },
@@ -739,7 +753,7 @@ export default function Field(props = {}) {
         kitSecondaryColor: rivalStyle.goalkeeperStripeColor,
       },
     }));
-  }, [initialConfig, setPieceMode, userSettingsLoaded]);
+  }, [setPieceKitContext, userSettingsLoaded]);
 
   // Estado para conectores (l�neas que conectan elementos)
   useEffect(() => {
@@ -1279,7 +1293,7 @@ export default function Field(props = {}) {
 
             // Actualizar tambi�n los iconos de la paleta y teamPlayerStyle con los valores del usuario
             setPaletteIcons((prev) =>
-              prev.map((icon) => {
+              applySetPieceKitsToPalette(prev.map((icon) => {
                 if (icon.id === 'icon1' && usuario.boardSettings.playerIcon1) {
                   const playerSettings = usuario.boardSettings.playerIcon1;
                   return {
@@ -1397,7 +1411,7 @@ export default function Field(props = {}) {
                   };
                 }
                 return icon;
-              }),
+              }), setPieceKitContext),
             );
 
             // Actualizar teamPlayerStyle con los valores del usuario
@@ -1582,10 +1596,9 @@ export default function Field(props = {}) {
 
     // Resetear iconos de paleta a valores iniciales
     setPaletteIcons(
-      applySetPieceKitsToElements(
+      applySetPieceKitsToPalette(
         filteredIcons.map((icon) => ({ ...icon })),
-        setPieceMode ? initialConfig?.kitContext : null,
-        false,
+        setPieceKitContext,
       ),
     );
 
@@ -1603,7 +1616,7 @@ export default function Field(props = {}) {
     lastSavedStateRef.current = '[]';
     setCanUndo((prev) => (prev === false ? prev : false));
     setCanRedo((prev) => (prev === false ? prev : false));
-  }, [exitDrawingMode, filteredIcons, initialConfig?.kitContext, setPieceMode]);
+  }, [exitDrawingMode, filteredIcons, setPieceKitContext, setPieceMode]);
 
   // Funci�n para cerrar el grabador de video
 
@@ -2207,11 +2220,7 @@ export default function Field(props = {}) {
       if (currentEditVideoData.keyframes && currentEditVideoData.keyframes.length > 0) {
         const loadedKeyframes = currentEditVideoData.keyframes.map((kf) => ({
           timestamp: kf.timestamp,
-          elements: applySetPieceKitsToElements(
-            applyAssignedPlayersToKeyframeElements(kf.elements || []),
-            setPieceMode ? initialConfig?.kitContext : null,
-            initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos,
-          ),
+          elements: applyAssignedPlayersToKeyframeElements(kf.elements || []),
           connectors: kf.connectors || [],
           ballTrajectoryType: kf.ballTrajectoryType || 'ground',
           ballTrajectoryById: kf.ballTrajectoryById || {},
@@ -2528,11 +2537,7 @@ export default function Field(props = {}) {
 
   // Estado real de clones
   const [actualClones, setActualClones] = useState(
-    applySetPieceKitsToElements(
-      initialElements ?? [],
-      setPieceMode ? initialConfig?.kitContext : null,
-      initialConfig?.teamPlayers?.showPhotos ?? initialConfig?.showPhotos,
-    ).map((clone) => {
+    (initialElements ?? []).map((clone) => {
       const normalizedClone = { ...clone };
       if (normalizedClone.type === 'player') {
         if (normalizedClone.playersWithNumber === undefined) {
@@ -4161,6 +4166,7 @@ export default function Field(props = {}) {
         };
         const configToSave = {
           ...initialConfig,
+          ...(setPieceKitContext ? { kitContext: setPieceKitContext } : {}),
           playersWithNumber,
           connectors,
           teamPlayers: teamPlayersConfig,

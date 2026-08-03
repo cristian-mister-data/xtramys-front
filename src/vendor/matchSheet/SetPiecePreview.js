@@ -13,6 +13,7 @@ import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
 import { BatchLinesRenderer } from '@/vendor/tacticalBoard/field/line-renderers';
 import { BatchShapesRenderer } from '@/vendor/tacticalBoard/field/shape-renderers';
 import { ConnectorsRenderer } from '@/vendor/tacticalBoard/field/connectors';
+import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
 const isPlayerObject = (value) => value !== null && typeof value === 'object';
@@ -21,14 +22,14 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme, height), [theme, height]);
   const [boardWidth, setBoardWidth] = useState(0);
-  const sourceElements = Array.isArray(setPiece?.customElements) && setPiece.customElements.length
+  const importedSelected = usesImportedImage(setPiece);
+  const sourceElements = !importedSelected && Array.isArray(setPiece?.customElements) && setPiece.customElements.length
     ? setPiece.customElements
-    : (Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : []);
+    : (!importedSelected && Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : []);
   const assignments = Array.isArray(setPiece?.assignments) ? setPiece.assignments : [];
-  const image = normalizeImageSource(setPiece?.customImage || setPiece?.imagen || '');
+  const image = normalizeImageSource(importedSelected ? getContentImage(setPiece) : (setPiece?.customImage || getContentImage(setPiece)));
   const field = decomposeFieldId(setPiece?.customFieldType || setPiece?.tipoCampo || 'full');
   const fieldAspect = getAspectForView(field.viewMode);
-  const effectiveKitContext = kitContext || setPiece?.pizarraConfig?.kitContext;
   const configuredShowPhotos = setPiece?.pizarraConfig?.teamPlayers?.showPhotos
     ?? setPiece?.pizarraConfig?.showPhotos;
   const showPhotos = configuredShowPhotos === true;
@@ -55,7 +56,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       showPhotos: Boolean(playerData.foto) && (assignment?.showPhotos ?? element.showPhotos ?? showPhotos),
       matchSheetAssigned: true,
     };
-  }), effectiveKitContext, showPhotos).map((element) => ({
+  }), kitContext, showPhotos).map((element) => ({
     ...element,
     xRatio: element.xRatio ?? (typeof element.x === 'number' ? element.x / 1280 : undefined),
     yRatio: element.yRatio ?? (typeof element.y === 'number' ? element.y / (1280 * fieldAspect) : undefined),
@@ -72,7 +73,7 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
       top: (height - fieldHeight) / 2,
     };
   }, [boardWidth, fieldAspect, height]);
-  // Los elementos vivos reflejan jugadores y equipaciones; la captura solo cubre ABP antiguas sin datos editables.
+  // En ficha de partido, kitContext adapta solo la copia visual de la ABP a las equipaciones elegidas.
   const liveBoard = elements.length > 0;
   const straightLines = elements.filter((element) => element.type === 'straight-line' || element.type === 'straight-arrow');
   const curveLines = elements.filter((element) => element.type === 'curve-line' || element.type === 'curve-arrow');
