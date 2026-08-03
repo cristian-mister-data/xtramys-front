@@ -2,12 +2,197 @@ import UIKit
 import Capacitor
 import AVFoundation
 import AuthenticationServices
+import EventKit
 
 @objc(BridgeViewController)
 class BridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(NativeVideoEncoderPlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
+        bridge?.registerPluginInstance(AppleCalendarPlugin())
+    }
+}
+
+@objc(AppleCalendarPlugin)
+public class AppleCalendarPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AppleCalendarPlugin"
+    public let jsName = "AppleCalendar"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "requestAccess", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "listCalendars", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncEvents", returnType: CAPPluginReturnPromise)
+    ]
+
+    private let eventStore = EKEventStore()
+    private let isoFormatter = ISO8601DateFormatter()
+
+    @objc func requestAccess(_ call: CAPPluginCall) {
+        let completion: (Bool, Error?) -> Void = { granted, error in
+            if let error {
+                call.reject(error.localizedDescription, "APPLE_CALENDAR_PERMISSION_FAILED", error)
+            } else {
+                call.resolve(["granted": granted])
+            }
+        }
+        if #available(iOS 17.0, *) {
+            eventStore.requestFullAccessToEvents(completion: completion)
+        } else {
+            eventStore.requestAccess(to: .event, completion: completion)
+        }
+    }
+
+    @objc func listCalendars(_ call: CAPPluginCall) {
+        guard hasFullAccess else {
+            call.reject("Calendar access is required", "APPLE_CALENDAR_PERMISSION_REQUIRED")
+            return
+        }
+        let defaultId = eventStore.defaultCalendarForNewEvents?.calendarIdentifier
+        let calendars: JSArray = eventStore.calendars(for: .event)
+            .filter(\.allowsContentModifications)
+            .map { calendar in
+                [
+                    "id": calendar.calendarIdentifier,
+                    "name": calendar.title,
+                    "source": calendar.source.title,
+                    "isDefault": calendar.calendarIdentifier == defaultId
+                ] as JSObject
+            }
+        call.resolve(["calendars": calendars])
+    }
+
+    @objc func syncEvents(_ call: CAPPluginCall) {
+        guard hasFullAccess else {
+            call.reject("Calendar access is required", "APPLE_CALENDAR_PERMISSION_REQUIRED")
+            return
+        }
+        guard
+            let calendarId = call.getString("calendarId"),
+            let calendar = eventStore.calendar(withIdentifier: calendarId),
+            calendar.allowsContentModifications,
+            let rawEvents = call.getArray("events")
+        else {
+            call.reject("A writable calendar and events are required", "APPLE_CALENDAR_INVALID_INPUT")
+            return
+        }
+
+        do {
+            let wanted = rawEvents.compactMap { $0 as? JSObject }
+            let wantedIds = Set(wanted.compactMap { $0["id"] as? String })
+            let existingByMarker = xtramysEvents(in: calendar).reduce(into: [String: EKEvent]()) { result, event in
+                if let marker = event.url?.absoluteString { result[marker] = event }
+            }
+            var results: JSArray = []
+
+            for item in wanted {
+                guard
+                    let id = item["id"] as? String,
+                    let type = item["type"] as? String,
+                    let startObject = item["start"] as? JSObject,
+                    let endObject = item["end"] as? JSObject,
+                    let start = parseDate(startObject),
+                    let end = parseDate(endObject)
+                else { continue }
+
+                let marker = markerURL(type: type, id: id)
+                let savedId = item["appleEventId"] as? String
+                let event = savedId.flatMap { eventStore.event(withIdentifier: $0) } ?? existingByMarker[marker]
+                let localUpdated = parseISO(item["updatedAt"] as? String)
+                let lastSync = parseISO(item["lastSync"] as? String)
+
+                if event == nil, lastSync != nil, localUpdated == nil || localUpdated! <= lastSync! {
+                    results.append(["id": id, "type": type, "action": "deleted"])
+                    continue
+                }
+
+                if item["forceLocal"] as? Bool != true,
+                   let event, let externalUpdated = event.lastModifiedDate, let lastSync,
+                   externalUpdated > lastSync {
+                    let localChanged = localUpdated.map { $0 > lastSync } ?? false
+                    if localChanged, let localUpdated,
+                       abs(localUpdated.timeIntervalSince(externalUpdated)) < 30 {
+                        var conflict = externalResult(event: event, id: id, type: type)
+                        conflict["action"] = "conflict"
+                        results.append(conflict)
+                        continue
+                    }
+                    if localUpdated == nil || externalUpdated > localUpdated! {
+                        results.append(externalResult(event: event, id: id, type: type))
+                        continue
+                    }
+                }
+
+                let target = event ?? EKEvent(eventStore: eventStore)
+                target.calendar = calendar
+                target.title = item["title"] as? String ?? "Xtramys"
+                target.startDate = start
+                target.endDate = max(end, start.addingTimeInterval(60))
+                target.location = item["location"] as? String
+                target.notes = item["description"] as? String
+                target.url = URL(string: marker)
+                try eventStore.save(target, span: .thisEvent, commit: true)
+                results.append([
+                    "id": id,
+                    "type": type,
+                    "action": "synced",
+                    "appleEventId": target.eventIdentifier ?? marker,
+                    "externalUpdatedAt": isoFormatter.string(from: target.lastModifiedDate ?? Date())
+                ])
+            }
+
+            for (marker, event) in existingByMarker {
+                guard let id = marker.split(separator: "/").last.map(String.init), !wantedIds.contains(id) else { continue }
+                try eventStore.remove(event, span: .thisEvent, commit: true)
+            }
+            call.resolve(["results": results])
+        } catch {
+            eventStore.reset()
+            call.reject(error.localizedDescription, "APPLE_CALENDAR_SYNC_FAILED", error)
+        }
+    }
+
+    private var hasFullAccess: Bool {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        if #available(iOS 17.0, *) { return status == .fullAccess }
+        return status == .authorized
+    }
+
+    private func markerURL(type: String, id: String) -> String {
+        "xtramys://calendar/\(type)/\(id)"
+    }
+
+    private func parseISO(_ value: String?) -> Date? {
+        value.flatMap(isoFormatter.date(from:))
+    }
+
+    private func parseDate(_ value: JSObject) -> Date? {
+        guard let raw = value["dateTime"] as? String else { return nil }
+        if let date = isoFormatter.date(from: raw) { return date }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone(identifier: value["timeZone"] as? String ?? TimeZone.current.identifier)
+        return formatter.date(from: raw)
+    }
+
+    private func xtramysEvents(in calendar: EKCalendar) -> [EKEvent] {
+        // ponytail: bounded scan keeps EventKit fast; widen it if archived seasons need reconciliation.
+        let start = Calendar.current.date(byAdding: .year, value: -2, to: Date()) ?? Date.distantPast
+        let end = Calendar.current.date(byAdding: .year, value: 3, to: Date()) ?? Date.distantFuture
+        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: [calendar])
+        return eventStore.events(matching: predicate).filter { $0.url?.scheme == "xtramys" }
+    }
+
+    private func externalResult(event: EKEvent, id: String, type: String) -> JSObject {
+        [
+            "id": id,
+            "type": type,
+            "action": "updated",
+            "appleEventId": event.eventIdentifier ?? markerURL(type: type, id: id),
+            "externalUpdatedAt": isoFormatter.string(from: event.lastModifiedDate ?? Date()),
+            "start": ["dateTime": isoFormatter.string(from: event.startDate)] as JSObject,
+            "end": ["dateTime": isoFormatter.string(from: event.endDate)] as JSObject,
+            "location": event.location ?? ""
+        ]
     }
 }
 

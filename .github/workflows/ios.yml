@@ -1,8 +1,9 @@
-name: Build and upload iOS
+name: Validate and publish iOS
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -30,21 +31,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Validate configuration
-        env:
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+      - name: Validate project
         run: |
-          set -euo pipefail
           test -f ios/App/App.xcodeproj/project.pbxproj
           test -f ios/App/CapApp-SPM/Package.swift
-          for value in APPLE_TEAM_ID BUNDLE_IDENTIFIER APPLE_CERTIFICATE_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_PROVISION_PROFILE_BASE64 APPSTORE_API_KEY_ID APPSTORE_ISSUER_ID APPSTORE_API_PRIVATE_KEY; do
-            test -n "${!value:-}" || { echo "Missing required GitHub secret: $value"; exit 1; }
-          done
 
       - name: Install dependencies
         run: npm ci
@@ -61,7 +51,33 @@ jobs:
             -project ios/App/App.xcodeproj \
             -scheme App
 
+      - name: Compile iOS without signing
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Validate publishing configuration
+        if: github.event_name != 'pull_request'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          for value in APPLE_TEAM_ID BUNDLE_IDENTIFIER APPLE_CERTIFICATE_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_PROVISION_PROFILE_BASE64 APPSTORE_API_KEY_ID APPSTORE_ISSUER_ID APPSTORE_API_PRIVATE_KEY; do
+            test -n "${!value:-}" || { echo "Missing required GitHub secret: $value"; exit 1; }
+          done
+
       - name: Install signing certificate and provisioning profile
+        if: github.event_name != 'pull_request'
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -105,6 +121,7 @@ jobs:
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Archive app
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           mkdir -p build
@@ -119,6 +136,7 @@ jobs:
             XTRAMYS_BUILD_NUMBER="$GITHUB_RUN_NUMBER.$GITHUB_RUN_ATTEMPT"
 
       - name: Prepare export options
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           cp ios/ExportOptions.plist "$RUNNER_TEMP/ExportOptions.plist"
@@ -129,6 +147,7 @@ jobs:
           plutil -lint "$RUNNER_TEMP/ExportOptions.plist"
 
       - name: Export IPA
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           xcodebuild -exportArchive \
@@ -141,6 +160,7 @@ jobs:
           echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
 
       - name: Store IPA artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: Xtramys-iOS-${{ github.run_number }}
@@ -149,6 +169,7 @@ jobs:
           retention-days: 14
 
       - name: Upload to TestFlight
+        if: github.event_name != 'pull_request'
         env:
           APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Xtramys necesita acceso para mantener tus entrenamientos y partidos sincronizados con Apple Calendar.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Xtramys necesita acceso para mantener tus entrenamientos y partidos sincronizados con Apple Calendar.</string>
     <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>

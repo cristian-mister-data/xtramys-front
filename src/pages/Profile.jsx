@@ -40,6 +40,7 @@ import { openExternalWeb, webAppUrl, websiteUrl } from '@/platform/externalWeb';
 import ImageCropper from '@/components/season/ImageCropper';
 import { useTutorial } from '@/components/shared/TutorialProvider';
 import { XtramysCommunityCard } from '@/components/shared/XtramysCommunityInvite';
+import CalendarIntegrations from '@/components/profile/CalendarIntegrations';
 import flagEs from '@/images/spain.png';
 import flagEn from '@/images/united-kingdom.png';
 
@@ -1324,6 +1325,8 @@ export default function Profile() {
               </Field>
             </Stack>
         </FormCard>
+
+        {user?.role !== 'club_admin' ? <CalendarIntegrations /> : null}
 
         {user?.role === 'club_admin' && (
           <FormCard>

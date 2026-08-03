@@ -10,6 +10,8 @@ import { TutorialProvider } from '@/components/shared/TutorialProvider';
 import XtramysCommunityInvite from '@/components/shared/XtramysCommunityInvite';
 import { useTranslation } from 'react-i18next';
 import { isSeasonReadOnly } from '@/hooks/useSupervision';
+import { App as CapacitorApp } from '@capacitor/app';
+import { isAppleCalendarAvailable, syncConnectedAppleCalendar } from '@/platform/appleCalendar';
 
 const Shell = styled.div`
   height: 100dvh;
@@ -172,6 +174,20 @@ export default function AppLayout() {
       ];
 
   useEffect(() => setBannerDismissed(false), [seasonId, supervising]);
+
+  useEffect(() => {
+    if (!isAppleCalendarAvailable) return undefined;
+    const sync = () => syncConnectedAppleCalendar().catch(() => {});
+    sync();
+    const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) sync();
+    });
+    const interval = window.setInterval(sync, 5 * 60 * 1000);
+    return () => {
+      window.clearInterval(interval);
+      listener.then((handle) => handle.remove());
+    };
+  }, []);
 
   // Cargar equipos de la temporada actual a nivel global.
   // Antes cada página lo hacía por su cuenta (training, injuries, home,

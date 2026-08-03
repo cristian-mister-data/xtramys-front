@@ -147,6 +147,7 @@ function messageFor(t, n) {
   if (n.type === 'friend_request_received') return t('notifications.friendRequestReceived', { name: d.fromUserName });
   if (n.type === 'friend_request_accepted') return t('notifications.friendRequestAccepted', { name: d.fromUserName });
   if (n.type === 'friend_request_rejected') return t('notifications.friendRequestRejected', { name: d.fromUserName });
+  if (n.type === 'calendar_event_updated') return d.message || t('notifications.calendarEventUpdated', 'Evento de calendario actualizado');
   if (d.contentType === 'exercise') return t('notifications.contentSharedExercise', { name: d.fromUserName, contentName: d.contentName });
   if (d.contentType === 'setPiece') return t('notifications.contentSharedSetPiece', { name: d.fromUserName, contentName: d.contentName });
   return t('notifications.contentSharedStrategy', { name: d.fromUserName, contentName: d.contentName });

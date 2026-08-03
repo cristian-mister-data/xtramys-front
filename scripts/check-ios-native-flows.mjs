@@ -20,15 +20,24 @@ assert.ok(
 const videoRecorder = read('src/vendor/tacticalBoard/videoRecorder.js');
 const videoRegenerator = read('src/utils/localVideoRegenerator.js');
 assert.match(videoRecorder, /renderVideoFieldImage\(fieldType, canvasW, canvasH\)/);
-assert.match(videoRegenerator, /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/);
+assert.match(
+  videoRegenerator,
+  /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/,
+);
 
 const videoUtils = read('src/utils/videoUtils.js');
 assert.match(videoUtils, /getPlatform\?\.\(\) === 'ios'[\s\S]*?encoder nativo de iOS/);
-assert.match(videoUtils, /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?generateVideoWithNativeEncoder/);
+assert.match(
+  videoUtils,
+  /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?generateVideoWithNativeEncoder/,
+);
 
 const appDelegate = read('ios/App/App/AppDelegate.swift');
 assert.match(appDelegate, /registerPluginInstance\(NativeVideoEncoderPlugin\(\)\)/);
 assert.match(appDelegate, /registerPluginInstance\(AppleSignInPlugin\(\)\)/);
+assert.match(appDelegate, /import EventKit/);
+assert.match(appDelegate, /registerPluginInstance\(AppleCalendarPlugin\(\)\)/);
+assert.match(appDelegate, /requestFullAccessToEvents/);
 assert.match(appDelegate, /request\.requestedScopes = \[\.fullName, \.email\]/);
 assert.match(appDelegate, /request\.nonce = nonce/);
 assert.match(appDelegate, /AVAssetWriter\(outputURL: outputURL, fileType: \.mp4\)/);
@@ -46,7 +55,10 @@ assert.match(appleSignIn, /AppleID\.auth\.init/);
 assert.match(appleSignIn, /usePopup: true/);
 assert.match(appleSignIn, /identityToken: authorization\.id_token/);
 assert.match(appleSignIn, /authorization\.state !== state/);
-assert.match(read('index.html'), /appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/en_US\/appleid\.auth\.js/);
+assert.match(
+  read('index.html'),
+  /appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/en_US\/appleid\.auth\.js/,
+);
 
 const storyboard = read('ios/App/App/Base.lproj/Main.storyboard');
 assert.match(storyboard, /customClass="BridgeViewController" customModule="App"/);
@@ -56,12 +68,20 @@ assert.match(pdf, /platform === 'ios'[\s\S]*?Directory\.Cache[\s\S]*?Share\.shar
 assert.match(pdf, /platform === 'ios'[\s\S]*?@capacitor\/share[\s\S]*?Share\.share/);
 
 const pdfDialog = read('src/ui/PdfActionDialog.jsx');
-assert.match(pdfDialog, /platform === 'android'[\s\S]*?registerPlugin\('VideoSaver'\)[\s\S]*?saveToDownloads/);
+assert.match(
+  pdfDialog,
+  /platform === 'android'[\s\S]*?registerPlugin\('VideoSaver'\)[\s\S]*?saveToDownloads/,
+);
 assert.match(pdfDialog, /action === 'share'[\s\S]*?Share\.share/);
 
 const plist = read('ios/App/App/Info.plist');
+assert.match(plist, /NSCalendarsFullAccessUsageDescription/);
 assert.match(plist, /LSSupportsOpeningDocumentsInPlace[\s\S]*?<true\/>/);
 assert.match(plist, /UIFileSharingEnabled[\s\S]*?<true\/>/);
+
+const iosWorkflow = read('.github/workflows/ios.yml');
+assert.match(iosWorkflow, /pull_request:/);
+assert.match(iosWorkflow, /generic\/platform=iOS Simulator[\s\S]*?CODE_SIGNING_ALLOWED=NO/);
 
 const snapshot = read('src/features/rivalAnalysis/TacticalSnapshotModal.jsx');
 assert.match(snapshot, /<Field onSave=\{handleFieldSave\} onCancel=\{handleFieldCancel\}/);
@@ -76,4 +96,4 @@ assert.match(nativeFrame, /html\[data-native='true'\][\s\S]*?width: calc\(100% \
 const rivals = read('src/features/rivals/Rivals.jsx');
 assert.match(rivals, /html\[data-platform='ios'\][\s\S]*?flex-basis: 32px/);
 
-console.log('iOS native video, encoder timing, PDF and board boundaries OK');
+console.log('iOS native calendar, video, encoder timing, PDF and board boundaries OK');
