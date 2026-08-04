@@ -12,8 +12,66 @@ import {
   View,
   renderPdf,
 } from '@/utils/pdfDesign';
+import api from '@/api/client';
 import { cdnUrl } from '@/config';
 import { getPlayerRosterName, translatePosition } from '@/components/player/playerHelpers';
+
+const toDataUrl = async (url) => {
+  if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
+
+  const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+
+  const normalizeBlob = async (blob) => {
+    if (blob?.type !== 'image/webp' || typeof window === 'undefined') return blobToDataUrl(blob);
+    return new Promise((resolve, reject) => {
+      const image = new window.Image();
+      const objectUrl = URL.createObjectURL(blob);
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        canvas.getContext('2d').drawImage(image, 0, 0);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      image.onerror = (error) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(error);
+      };
+      image.src = objectUrl;
+    });
+  };
+
+  try {
+    const response = await api.get('/media/image-download', {
+      params: { url, format: 'jpeg' },
+      responseType: 'blob',
+      timeout: 15000,
+    });
+    return normalizeBlob(response.data);
+  } catch (error) {
+    console.warn('[playerRosterPdf] No se pudo cargar la foto mediante el servidor:', error?.message || error);
+    try {
+      const response = await fetch(cdnUrl(url));
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return normalizeBlob(await response.blob());
+    } catch (fallbackError) {
+      console.warn('[playerRosterPdf] No se pudo cargar la foto:', fallbackError?.message || fallbackError);
+      return cdnUrl(url);
+    }
+  }
+};
+
+const resolvePlayerPhotos = (players) => Promise.all(
+  (players || []).map(async (player) => (
+    player?.foto ? { ...player, foto: await toDataUrl(player.foto) } : player
+  )),
+);
 
 const styles = StyleSheet.create({
   page: {
@@ -68,7 +126,7 @@ const PlayerRow = ({ player, showPhotos, t }) => (
   <View style={styles.row} wrap={false}>
     {showPhotos ? (
       <View style={[styles.cell, styles.colPhoto]}>
-        {player.foto ? <Image src={cdnUrl(player.foto)} style={styles.photo} /> : (
+        {player.foto ? <Image src={player.foto} style={styles.photo} /> : (
           <View style={styles.initials}><Text style={styles.initialsText}>{playerInitials(player)}</Text></View>
         )}
       </View>
@@ -142,8 +200,9 @@ export async function generatePlayerRosterPdf({ players, team, includeExtras, sh
   const selectedPlayers = players?.filter((player) => includeExtras || !player.extra) || [];
   if (!selectedPlayers.length) throw new Error(t('player.rosterPdfEmpty', 'No hay jugadores para exportar.'));
   const safeName = String(team?.nombre || 'plantilla').replace(/[\\/:*?"<>|]+/g, '-');
+  const preparedPlayers = showPhotos ? await resolvePlayerPhotos(selectedPlayers) : selectedPlayers;
   await renderPdf(
-    <PlayerRosterDocument players={selectedPlayers} team={team} includeExtras={includeExtras} showPhotos={showPhotos} locale={locale} t={t} />,
+    <PlayerRosterDocument players={preparedPlayers} team={team} includeExtras={includeExtras} showPhotos={showPhotos} locale={locale} t={t} />,
     `plantilla_${safeName}`,
   );
 }
