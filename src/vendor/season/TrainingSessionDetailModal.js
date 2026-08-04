@@ -69,6 +69,8 @@ export default function TrainingSessionDetailModal({
   onDelete,
   onRepeat,
   onWellnessUpdate, // Callback para cuando se actualice el wellness
+  onViewPdf,
+  onUploadPdf,
   canMutate = true,
 }) {
   const { t, i18n } = useTranslation();
@@ -227,6 +229,7 @@ export default function TrainingSessionDetailModal({
       };
     }).filter(Boolean);
   }, [session?.ejerciciosFuerza]);
+  const totalExerciseCount = orderedExercises.length + sessionStrengthExercises.length;
 
   // Estado para visor de ejercicio de fuerza
   const [strengthViewerExercise, setStrengthViewerExercise] = useState(null);
@@ -500,6 +503,41 @@ export default function TrainingSessionDetailModal({
               </View>
             </View>
 
+            <View style={styles.pdfSection}>
+              <View style={styles.pdfSectionHeader}>
+                <View style={styles.pdfSectionIcon}>
+                  <MaterialIcons name="picture-as-pdf" size={22} color={theme.colors.error} />
+                </View>
+                <View style={styles.pdfSectionInfo}>
+                  <Text style={styles.pdfSectionTitle}>{t('session.pdfSectionTitle', 'Sesión personalizada')}</Text>
+                  <Text style={styles.pdfSectionSubtitle} numberOfLines={1}>
+                    {session.pdf?.originalName || t('session.noPdf', 'Aún no hay un PDF guardado')}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.pdfSectionStatus}>
+                {session.pdf?.uploadedAt
+                  ? t('session.pdfSaved', 'PDF guardado correctamente')
+                  : t('session.pdfUploadDescription', 'Guarda aquí el documento personalizado de esta sesión')}
+              </Text>
+              <View style={styles.pdfSectionActions}>
+                {session.pdf?.key && onViewPdf && (
+                  <TouchableOpacity style={styles.pdfActionSecondary} onPress={() => onViewPdf(session)}>
+                    <MaterialIcons name="visibility" size={18} color={theme.colors.primary} />
+                    <Text style={styles.pdfActionSecondaryText}>{t('session.viewPdf', 'Ver PDF')}</Text>
+                  </TouchableOpacity>
+                )}
+                {canMutate && onUploadPdf && (
+                  <TouchableOpacity style={styles.pdfActionPrimary} onPress={() => onUploadPdf(session)}>
+                    <MaterialIcons name="upload-file" size={18} color={theme.colors.onPrimary} />
+                    <Text style={styles.pdfActionPrimaryText}>
+                      {session.pdf?.key ? t('session.replacePdf', 'Reemplazar PDF') : t('session.uploadPdf', 'Subir PDF')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
             {/* Información General - igual que training.js */}
             <View style={styles.detailSection}>
               <Text style={styles.detailSectionTitle}>{t('session.generalInformation')}</Text>
@@ -512,13 +550,15 @@ export default function TrainingSessionDetailModal({
                 </Text>
               </View>
               
-              <View style={styles.detailRow}>
-                <MaterialIcons name="fitness-center" size={20} color={theme.colors.textSecondary} />
-                <Text style={styles.detailLabel}>{t('session.exercisesLabel')}:</Text>
-                <Text style={styles.detailValue}>
-                  {t('session.exercisesCount', { count: orderedExercises.length })}
-                </Text>
-              </View>
+              {totalExerciseCount > 0 && (
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="fitness-center" size={20} color={theme.colors.textSecondary} />
+                  <Text style={styles.detailLabel}>{t('session.exercisesLabel')}:</Text>
+                  <Text style={styles.detailValue}>
+                    {t('session.exercisesCount', { count: totalExerciseCount })}
+                  </Text>
+                </View>
+              )}
               
               {(sessionPlayers.length > 0 || (session.jugadoresExtras && session.jugadoresExtras.length > 0)) && (
                 <View style={styles.detailRow}>
@@ -656,13 +696,11 @@ export default function TrainingSessionDetailModal({
             </View>
 
             {/* Sección de Ejercicios - igual que training.js */}
-            <View style={styles.detailSection}>
+            {orderedExercises.length > 0 && (
+              <View style={styles.detailSection}>
               <Text style={styles.detailSectionTitle}>{t('session.trainingExercises')}</Text>
               
-              {orderedExercises.length === 0 ? (
-                <Text style={styles.emptyText}>{t('session.noExercises')}</Text>
-              ) : (
-                orderedExercises.map((ejercicio, index) => {
+              {orderedExercises.map((ejercicio, index) => {
                   const detalle = detalleMap[ejercicio._id] || {};
                   const orden = detalle.orden || ejercicio.orden || (index + 1);
                   const tiempoDescanso = detalle.tiempoDescanso || 0;
@@ -920,9 +958,9 @@ export default function TrainingSessionDetailModal({
                       )}
                     </View>
                   );
-                })
-              )}
-            </View>
+                })}
+              </View>
+            )}
 
             {/* Sección de Ejercicios de Fuerza */}
             {sessionStrengthExercises.length > 0 && (
@@ -1250,6 +1288,82 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: theme.colors.text,
+  },
+  pdfSection: {
+    backgroundColor: theme.colors.background,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  pdfSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pdfSectionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.errorSoft,
+  },
+  pdfSectionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pdfSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  pdfSectionSubtitle: {
+    marginTop: 3,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
+  pdfSectionStatus: {
+    marginTop: 10,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
+  pdfSectionActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  pdfActionPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+  },
+  pdfActionPrimaryText: {
+    color: theme.colors.onPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  pdfActionSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  pdfActionSecondaryText: {
+    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   
   // Detail Section - igual que training.js

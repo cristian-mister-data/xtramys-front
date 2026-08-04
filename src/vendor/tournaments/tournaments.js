@@ -41,6 +41,7 @@ import AppLayout from '@/vendor/shared/appLayout';
 import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { generateTournamentPdf } from './pdf';
 
 const TOURNAMENT_TYPES = [
   { value: 'liga', label: 'tournaments.league', icon: 'format-list-numbered', color: '#3B82F6' },
@@ -714,7 +715,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
 }
 
 /* ================== Tournament Detail Modal ================== */
-function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete, IS_MOBILE, onViewMatch, onCreateMatch, visible, sanctions, loadingSanctions, canMutate }) {
+function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete, onGeneratePdf, generatingPdf, IS_MOBILE, onViewMatch, onCreateMatch, visible, sanctions, loadingSanctions, canMutate }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
@@ -1196,6 +1197,16 @@ function TournamentDetailModal({ tournament, matches, onClose, onEdit, onDelete,
                     <Text style={styles.saveButtonText}>{t('common.edit')}</Text>
                   </TouchableOpacity>
                 )}
+                <TouchableOpacity
+                  style={[styles.pdfButton, generatingPdf && { opacity: 0.55 }]}
+                  onPress={() => onGeneratePdf(tournament)}
+                  disabled={generatingPdf}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('tournaments.pdfButton', 'Descargar PDF del torneo')}
+                >
+                  {generatingPdf ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <MaterialIcons name="picture-as-pdf" size={20} color={theme.colors.primary} />}
+                  <Text style={styles.pdfButtonText}>{t('tournaments.pdfButton', 'PDF del torneo')}</Text>
+                </TouchableOpacity>
               </View>
         </View>
       </View>
@@ -1291,7 +1302,7 @@ export default function Tournaments({ canMutate }) {
   const { width: screenWidth } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const styles = useMemo(() => makeStyles(theme, IS_MOBILE), [theme, IS_MOBILE]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
 
@@ -1316,6 +1327,7 @@ export default function Tournaments({ canMutate }) {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [editingMatch, setEditingMatch] = useState(null);
   const [creatingMatch, setCreatingMatch] = useState(false);
+  const [generatingTournamentPdf, setGeneratingTournamentPdf] = useState(false);
 
   // Fetch tournaments when team changes
   useEffect(() => {
@@ -1453,6 +1465,24 @@ export default function Tournaments({ canMutate }) {
     }
   };
 
+  const handleGenerateTournamentPdf = async (tournament) => {
+    try {
+      setGeneratingTournamentPdf(true);
+      await generateTournamentPdf({
+        tournament,
+        matches: getMatchesForTournament(tournament._id),
+        team: selectedTeam,
+        locale: i18n.language === 'en' ? 'en-US' : 'es-ES',
+        t,
+      });
+      Alert.alert(t('common.success', 'Listo'), t('tournaments.pdfGenerated', 'PDF del torneo descargado'));
+    } catch (error) {
+      Alert.alert(t('common.error', 'Error'), error?.message || t('tournaments.pdfError', 'No se pudo generar el PDF'));
+    } finally {
+      setGeneratingTournamentPdf(false);
+    }
+  };
+
   // Render
   const renderTournament = ({ item }) => (
     <TournamentCard
@@ -1553,6 +1583,8 @@ export default function Tournaments({ canMutate }) {
             IS_MOBILE={IS_MOBILE}
             onViewMatch={setSelectedMatch}
             onCreateMatch={() => setCreatingMatch(true)}
+            onGeneratePdf={handleGenerateTournamentPdf}
+            generatingPdf={generatingTournamentPdf}
             visible={!selectedMatch && !editingMatch && !creatingMatch}
             sanctions={sanctions}
             loadingSanctions={loadingSanctions}
@@ -1844,6 +1876,7 @@ const makeStyles = (theme, IS_MOBILE = false) => StyleSheet.create({
   },
   modalFooter: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: 10,
     paddingHorizontal: 20,
@@ -1993,6 +2026,22 @@ const makeStyles = (theme, IS_MOBILE = false) => StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 14,
+  },
+  pdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySoft,
+  },
+  pdfButtonText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
     fontSize: 14,
   },
   deleteButton: {

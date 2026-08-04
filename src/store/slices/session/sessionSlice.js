@@ -8,6 +8,7 @@ import {
   updateEntrenamiento,
   deleteEntrenamiento,
   createEntrenamientoBulk,
+  uploadEntrenamientoPdf,
 } from './sessionThunks';
 
 const sessionSlice = createSlice({
@@ -63,6 +64,11 @@ const sessionSlice = createSlice({
       })
 
       .addCase(updateEntrenamiento.fulfilled, (state, action) => {
+        const index = state.session.findIndex((e) => e._id === action.payload._id);
+        if (index !== -1) state.session[index] = action.payload;
+      })
+
+      .addCase(uploadEntrenamientoPdf.fulfilled, (state, action) => {
         const index = state.session.findIndex((e) => e._id === action.payload._id);
         if (index !== -1) state.session[index] = action.payload;
       })

@@ -29,7 +29,8 @@ import {
   updateEntrenamiento,
   createEntrenamiento,
   deleteEntrenamiento,
-  createEntrenamientoBulk
+  createEntrenamientoBulk,
+  uploadEntrenamientoPdf,
 } from '@/store/slices/session/sessionThunks';
 import { fetchEjerciciosUsuario, fetchGlobalExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
@@ -65,6 +66,8 @@ import { PlayerSelectionModal, THEME, getPlayerInjuryStatus } from '@/vendor/sha
 import AddEventModal from '@/vendor/season/AddEventModal';
 import TrainingSessionDetailModal from '@/vendor/season/TrainingSessionDetailModal';
 import EditSessionModal from '@/vendor/season/EditSessionModal';
+import TrainingSessionPdfUploadModal from '@/components/season/TrainingSessionPdfUploadModal';
+import TrainingSessionPdfViewerModal from '@/components/season/TrainingSessionPdfViewerModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { getContentImage } from '@/utils/contentVisual';
 
@@ -995,6 +998,11 @@ export default function Training({ canMutate }) {
   const [addEventModalVisible, setAddEventModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [pdfUploadVisible, setPdfUploadVisible] = useState(false);
+  const [pdfUploadSession, setPdfUploadSession] = useState(null);
+  const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
+  const [pdfViewerSession, setPdfViewerSession] = useState(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
   const [repeatedSessionId, setRepeatedSessionId] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
   const [timeOverlayVisible, setTimeOverlayVisible] = useState(false);
@@ -1401,6 +1409,67 @@ export default function Training({ canMutate }) {
     setAddEventModalVisible(true);
   }
 
+  function openPdfUpload(session = null) {
+    setDetailModalVisible(false);
+    setPdfUploadSession(session);
+    setPdfUploadVisible(true);
+  }
+
+  function openPdfViewer(session) {
+    setDetailModalVisible(false);
+    setPdfViewerSession(session);
+    setPdfViewerVisible(true);
+  }
+
+  function closePdfViewer() {
+    const sessionToRestore = pdfViewerSession;
+    setPdfViewerVisible(false);
+    setPdfViewerSession(null);
+    if (sessionToRestore) {
+      setSelectedSession(sessionToRestore);
+      setDetailModalVisible(true);
+    }
+  }
+
+  async function handlePdfUpload({ fileData, filename, fecha, horaInicio, horaFin }) {
+    const selectedTeam = equipos.find(e => e.seleccionado === true);
+    if (!selectedTeam?._id) throw new Error(t('session.noTeamSelected'));
+
+    let createdSessionId = null;
+    try {
+      let targetSession = pdfUploadSession;
+      if (!targetSession?._id) {
+        const created = await dispatch(createEntrenamiento({
+          equipo: selectedTeam._id,
+          fecha: new Date(`${fecha}T${horaInicio || '00:00'}:00`).toISOString(),
+          horaInicio: horaInicio || null,
+          horaFin: horaFin || null,
+          ejercicios: [],
+          ejerciciosDetalle: [],
+          tareasPersonalizadas: [],
+          observaciones: [],
+          jugadores: [],
+          jugadoresExtras: [],
+        })).unwrap();
+        targetSession = Array.isArray(created) ? created[0] : created;
+        createdSessionId = targetSession?._id;
+      }
+
+      const saved = await dispatch(uploadEntrenamientoPdf({ id: targetSession._id, fileData, filename })).unwrap();
+      await dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
+      setPdfUploadVisible(false);
+      setPdfUploadSession(null);
+      setSelectedSession(saved);
+      setDetailModalVisible(true);
+      toast.success(t('session.pdfUploadSuccess', 'PDF guardado correctamente'));
+    } catch (error) {
+      if (createdSessionId) {
+        await dispatch(deleteEntrenamiento(createdSessionId)).unwrap().catch(() => {});
+      }
+      throw new Error(error?.response?.data?.message || error?.message || t('session.pdfUploadError', 'No se pudo guardar el PDF.'));
+    }
+  }
+
   // Handlers para los modales de sesión (igual que en calendario)
   function handleSessionPress(session) {
     setSelectedSession(session);
@@ -1729,6 +1798,7 @@ export default function Training({ canMutate }) {
       return `${mins}m`;
     };
     const duration = calcDuration();
+    const hasPdf = Boolean(session.pdf?.key);
 
     return (
       <TouchableOpacity
@@ -1777,7 +1847,7 @@ export default function Training({ canMutate }) {
             </View>
 
             {/* Stats row */}
-            <View style={styles.proStatsRow}>
+            {!hasPdf && <View style={styles.proStatsRow}>
               {/* Ejercicios */}
               <View style={styles.proStatItem}>
                 <View style={[styles.proStatIcon, { backgroundColor: theme.colors.warningSoft || '#fef3c7' }]}>
@@ -1808,10 +1878,10 @@ export default function Training({ canMutate }) {
                   <Text style={styles.proStatLabel}>{t('session.extrasLabel')}</Text>
                 </View>
               )}
-            </View>
+            </View>}
 
             {/* Preview de ejercicios */}
-            {session.ejercicios && session.ejercicios.length > 0 && (
+            {!hasPdf && session.ejercicios && session.ejercicios.length > 0 && (
               <View style={styles.proExercisePreview}>
                 {session.ejercicios.slice(0, 4).map((ejercicioId, index) => {
                   const ejercicio = ejerciciosDisponibles.find(e => e._id === ejercicioId);
@@ -1839,6 +1909,15 @@ export default function Training({ canMutate }) {
                 )}
               </View>
             )}
+            {hasPdf && (
+              <View style={styles.proPdfOnlyPreview}>
+                <MaterialIcons name="picture-as-pdf" size={22} color="#d32f2f" />
+                <View style={styles.proPdfOnlyText}>
+                  <Text style={styles.proPdfOnlyTitle}>{t('session.pdfSectionTitle', 'Sesión personalizada')}</Text>
+                  <Text style={styles.proPdfOnlyName} numberOfLines={1}>{session.pdf.originalName || t('session.pdfFile', 'Documento PDF')}</Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -1856,14 +1935,25 @@ export default function Training({ canMutate }) {
             </View>
           ) : <View style={styles.proHeaderTeamPillSpacer} />}
           {canMutate !== false && (
-            <TouchableOpacity
-              style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
-              onPress={openCrearModal}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
-              {!isMobile && <Text style={[styles.proCreateButtonText, { color: theme.colors.onPrimary }]}>{t('session.new')}</Text>}
-            </TouchableOpacity>
+            <View style={styles.proHeaderActions}>
+              <TouchableOpacity
+                style={[styles.proUploadButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}
+                onPress={() => openPdfUpload()}
+                activeOpacity={0.85}
+                accessibilityLabel={t('session.uploadPdf', 'Subir PDF')}
+              >
+                <MaterialIcons name="upload-file" size={20} color={theme.colors.primary} />
+                {!isMobile && <Text style={[styles.proUploadButtonText, { color: theme.colors.primary }]}>{t('session.uploadPdf', 'Subir PDF')}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
+                onPress={openCrearModal}
+                activeOpacity={0.85}
+              >
+                <MaterialIcons name="add" size={22} color={theme.colors.onPrimary} />
+                {!isMobile && <Text style={[styles.proCreateButtonText, { color: theme.colors.onPrimary }]}>{t('session.new')}</Text>}
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -2450,6 +2540,29 @@ export default function Training({ canMutate }) {
         onRepeat={canMutate !== false ? handleRepeatSession : undefined}
         onWellnessUpdate={handleWellnessUpdate}
         canMutate={canMutate}
+        onViewPdf={openPdfViewer}
+        onUploadPdf={openPdfUpload}
+      />
+
+      <TrainingSessionPdfUploadModal
+        open={pdfUploadVisible}
+        session={pdfUploadSession}
+        loading={pdfUploading}
+        onClose={() => { setPdfUploadVisible(false); setPdfUploadSession(null); }}
+        onSubmit={async (payload) => {
+          setPdfUploading(true);
+          try {
+            await handlePdfUpload(payload);
+          } finally {
+            setPdfUploading(false);
+          }
+        }}
+      />
+
+      <TrainingSessionPdfViewerModal
+        open={pdfViewerVisible}
+        session={pdfViewerSession}
+        onClose={closePdfViewer}
       />
 
       {/* Modal para editar sesión (igual que en calendario) */}
@@ -2646,6 +2759,11 @@ function getStyles(theme) {
       paddingHorizontal: isMobileDevice() ? 12 : 16,
       marginBottom: 14,
     },
+    proHeaderActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     proHeaderTitleSection: {
       flex: 1,
     },
@@ -2702,6 +2820,19 @@ function getStyles(theme) {
     proCreateButtonText: {
       color: theme.colors.onPrimary || '#ffffff',
       fontSize: 15,
+      fontWeight: '700',
+    },
+    proUploadButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 11,
+      paddingHorizontal: 13,
+      borderRadius: 14,
+      borderWidth: 1,
+      gap: 6,
+    },
+    proUploadButtonText: {
+      fontSize: 14,
       fontWeight: '700',
     },
 
@@ -3253,6 +3384,31 @@ function getStyles(theme) {
     proExercisePreview: {
       flexDirection: 'row',
       alignItems: 'center',
+    },
+    proPdfOnlyPreview: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: theme.colors.errorSoft || '#fef2f2',
+      borderWidth: 1,
+      borderColor: theme.colors.error + '40',
+    },
+    proPdfOnlyText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    proPdfOnlyTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: theme.colors.text,
+    },
+    proPdfOnlyName: {
+      marginTop: 2,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
     },
     proExerciseMini: {
       width: 36,

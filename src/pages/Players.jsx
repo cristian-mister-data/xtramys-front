@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { MdAdd, MdPeople, MdFilterList } from 'react-icons/md';
+import { MdAdd, MdPeople, MdFilterList, MdPictureAsPdf } from 'react-icons/md';
 import { Card, Button, Input, Row, Stack, Muted } from '@/ui/primitives';
 import SectionHeader from '@/ui/SectionHeader';
 import { toast } from '@/ui/toast';
@@ -14,6 +14,8 @@ import TeamRequiredCard from '@/components/shared/TeamRequiredCard';
 import PlayerCard from '@/components/player/PlayerCard';
 import PlayerFormModal from '@/components/player/PlayerFormModal';
 import PlayerDetailModal from '@/components/player/PlayerDetailModal';
+import PlayerRosterPdfModal from '@/components/player/PlayerRosterPdfModal';
+import { generatePlayerRosterPdf } from '@/vendor/playerRoster/pdf';
 import {
   POSITION_ORDER,
   getPositionOptions,
@@ -330,7 +332,7 @@ const TYPE_OPTIONS = [
 export default function Players() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { canMutate } = useSupervision();
   const equipos = useSelector((s) => s.team?.teams ?? EMPTY);
   const players = useSelector((s) => s.player?.players ?? EMPTY);
@@ -357,6 +359,8 @@ export default function Players() {
   const [editPlayer, setEditPlayer] = useState(null);
   const [detailPlayer, setDetailPlayer] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [rosterPdfOpen, setRosterPdfOpen] = useState(false);
+  const [generatingRosterPdf, setGeneratingRosterPdf] = useState(false);
 
   useEffect(() => {
     if (selectedTeam?._id) dispatch(fetchJugadoresEquipo({ team: selectedTeam._id }));
@@ -457,6 +461,26 @@ export default function Players() {
     }
   };
 
+  const handleGenerateRosterPdf = async ({ includeExtras, showPhotos }) => {
+    try {
+      setGeneratingRosterPdf(true);
+      await generatePlayerRosterPdf({
+        players,
+        team: selectedTeam,
+        includeExtras,
+        showPhotos,
+        locale: i18n.language === 'en' ? 'en-US' : 'es-ES',
+        t,
+      });
+      setRosterPdfOpen(false);
+      toast.success(t('player.rosterPdfGenerated', 'PDF de plantilla descargado'));
+    } catch (error) {
+      toast.error(error?.message || t('player.rosterPdfError', 'No se pudo generar el PDF'));
+    } finally {
+      setGeneratingRosterPdf(false);
+    }
+  };
+
   return (
     <Stack style={{ gap: 16 }}>
       <SectionHeader
@@ -464,12 +488,18 @@ export default function Players() {
         subtitle={selectedTeam?.nombre || t('player.noTeamSelected', 'Selecciona un equipo')}
         icon={MdPeople}
         actions={selectedTeam ? (
-          <CanMutate>
-            <Button onClick={() => setCreateOpen(true)}>
-              <MdAdd size={18} />
-              {t('player.createPlayer', 'Nuevo jugador')}
+          <Row $gap={8} $wrap>
+            <Button $variant="secondary" onClick={() => setRosterPdfOpen(true)}>
+              <MdPictureAsPdf size={18} />
+              {t('player.rosterPdfButton', 'PDF plantilla')}
             </Button>
-          </CanMutate>
+            <CanMutate>
+              <Button onClick={() => setCreateOpen(true)}>
+                <MdAdd size={18} />
+                {t('player.createPlayer', 'Nuevo jugador')}
+              </Button>
+            </CanMutate>
+          </Row>
         ) : null}
       />
 
@@ -679,6 +709,14 @@ export default function Players() {
         onEdit={canMutate ? (p) => { setDetailPlayer(null); setEditPlayer(p); } : undefined}
         onDelete={canMutate ? handleDelete : undefined}
         onViewProfile={(p) => { setDetailPlayer(null); navigate(`/players/${p._id}`); }}
+      />
+
+      <PlayerRosterPdfModal
+        visible={rosterPdfOpen}
+        onClose={() => setRosterPdfOpen(false)}
+        players={players}
+        onGenerate={handleGenerateRosterPdf}
+        generating={generatingRosterPdf}
       />
     </Stack>
   );

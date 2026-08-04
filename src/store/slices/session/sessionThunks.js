@@ -64,6 +64,15 @@ export const updateEntrenamiento = createAsyncThunk(
   }
 );
 
+export const uploadEntrenamientoPdf = createAsyncThunk(
+  'entrenamiento/uploadEntrenamientoPdf',
+  async ({ id, fileData, filename }) => {
+    const res = await api.post(`/session/${id}/pdf`, { fileData, filename, contentType: 'application/pdf' });
+    clearSessionCache();
+    return res.data;
+  }
+);
+
 export const deleteEntrenamiento = createAsyncThunk(
   'entrenamiento/deleteEntrenamiento',
   async (id) => {
