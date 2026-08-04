@@ -29,6 +29,7 @@ import {
   updateJugador,
   deleteJugador,
 } from '@/store/slices/player/playerThunks';
+import { fetchInjuriesByTeam } from '@/store/slices/injury/injuryThunks';
 
 const Toolbar = styled(Card)`
   display: flex;
@@ -336,6 +337,7 @@ export default function Players() {
   const { canMutate } = useSupervision();
   const equipos = useSelector((s) => s.team?.teams ?? EMPTY);
   const players = useSelector((s) => s.player?.players ?? EMPTY);
+  const injuries = useSelector((s) => s.injury?.injuries ?? EMPTY);
   const loading = useSelector((s) => s.player?.loading);
 
   const selectedTeam = useMemo(
@@ -363,7 +365,10 @@ export default function Players() {
   const [generatingRosterPdf, setGeneratingRosterPdf] = useState(false);
 
   useEffect(() => {
-    if (selectedTeam?._id) dispatch(fetchJugadoresEquipo({ team: selectedTeam._id }));
+    if (selectedTeam?._id) {
+      dispatch(fetchJugadoresEquipo({ team: selectedTeam._id }));
+      dispatch(fetchInjuriesByTeam({ team: selectedTeam._id }));
+    }
   }, [selectedTeam?._id, dispatch]);
 
   const positionOptions = useMemo(() => getPositionOptions(t), [t]);
@@ -467,6 +472,7 @@ export default function Players() {
       await generatePlayerRosterPdf({
         players,
         team: selectedTeam,
+        injuries,
         includeExtras,
         showPhotos,
         locale: i18n.language === 'en' ? 'en-US' : 'es-ES',

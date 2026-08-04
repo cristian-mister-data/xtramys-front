@@ -15,6 +15,7 @@ import {
 import api from '@/api/client';
 import { cdnUrl } from '@/config';
 import { getPlayerRosterName, translatePosition } from '@/components/player/playerHelpers';
+import { getPlayerInjuryStatus } from '@/vendor/shared/training';
 
 const toDataUrl = async (url) => {
   if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
@@ -117,12 +118,15 @@ const styles = StyleSheet.create({
   colAge: { width: '9%' },
   colHeight: { width: '11%' },
   colType: { width: '12%' },
+  colInjury: { width: '12%' },
   colStatus: { width: '12%' },
 });
 
 const playerInitials = (player) => `${player?.nombre?.[0] || ''}${player?.apellido?.[0] || ''}`.toUpperCase() || '?';
 
-const PlayerRow = ({ player, showPhotos, t }) => (
+const PlayerRow = ({ player, showPhotos, injuries, t }) => {
+  const injured = getPlayerInjuryStatus(player._id, injuries)?.status === 'injured';
+  return (
   <View style={styles.row} wrap={false}>
     {showPhotos ? (
       <View style={[styles.cell, styles.colPhoto]}>
@@ -137,11 +141,13 @@ const PlayerRow = ({ player, showPhotos, t }) => (
     <View style={[styles.cell, styles.colAge]}><Text style={styles.cellText}>{player.edad ?? '-'}</Text></View>
     <View style={[styles.cell, styles.colHeight]}><Text style={styles.cellText}>{player.altura ? `${player.altura} cm` : '-'}</Text></View>
     <View style={[styles.cell, styles.colType]}><Text style={[styles.cellText, player.extra && styles.extra]}>{player.extra ? t('player.extra', 'Extra') : t('player.roster', 'Plantilla')}</Text></View>
+    <View style={[styles.cell, styles.colInjury]}><Text style={[styles.cellText, injured && styles.extra]}>{injured ? t('player.injured', 'Lesionado') : t('player.notInjured', 'No lesionado')}</Text></View>
     <View style={[styles.cell, styles.colStatus]}><Text style={[styles.cellText, player.activo === false && styles.inactive]}>{player.activo === false ? t('player.inactive', 'De baja') : t('player.active', 'Activo')}</Text></View>
   </View>
-);
+  );
+};
 
-const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale, t }) => {
+const PlayerRosterDocument = ({ players, team, injuries, includeExtras, showPhotos, locale, t }) => {
   const filteredPlayers = players
     .filter((player) => includeExtras || !player.extra)
     .sort((a, b) => {
@@ -151,6 +157,7 @@ const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale
     });
   const active = filteredPlayers.filter((player) => player.activo !== false).length;
   const extras = filteredPlayers.filter((player) => player.extra).length;
+  const injured = filteredPlayers.filter((player) => getPlayerInjuryStatus(player._id, injuries)?.status === 'injured').length;
   const activePlayers = filteredPlayers.filter((player) => player.activo !== false);
   const inactivePlayers = filteredPlayers.filter((player) => player.activo === false);
 
@@ -167,7 +174,7 @@ const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale
           <View style={styles.summaryCard}><Text style={styles.summaryValue}>{filteredPlayers.length}</Text><Text style={styles.summaryLabel}>{t('player.players', 'Jugadores')}</Text></View>
           <View style={styles.summaryCard}><Text style={styles.summaryValue}>{active}</Text><Text style={styles.summaryLabel}>{t('player.active', 'Activos')}</Text></View>
           <View style={styles.summaryCard}><Text style={styles.summaryValue}>{extras}</Text><Text style={styles.summaryLabel}>{t('player.extraPlayers', 'Extras')}</Text></View>
-          <View style={styles.summaryCard}><Text style={styles.summaryValue}>{showPhotos ? t('common.yes', 'Sí') : t('common.no', 'No')}</Text><Text style={styles.summaryLabel}>{t('player.photos', 'Fotos')}</Text></View>
+          <View style={styles.summaryCard}><Text style={styles.summaryValue}>{injured}</Text><Text style={styles.summaryLabel}>{t('player.injuredPlayers', 'Lesionados')}</Text></View>
         </View>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]} wrap={false}>
@@ -178,9 +185,10 @@ const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale
             <View style={[styles.cell, styles.colAge]}><Text style={styles.headerText}>{t('player.age', 'Edad')}</Text></View>
             <View style={[styles.cell, styles.colHeight]}><Text style={styles.headerText}>{t('player.height', 'Altura')}</Text></View>
             <View style={[styles.cell, styles.colType]}><Text style={styles.headerText}>{t('player.type', 'Tipo')}</Text></View>
+            <View style={[styles.cell, styles.colInjury]}><Text style={styles.headerText}>{t('player.injuryStatus', 'Lesionado')}</Text></View>
             <View style={[styles.cell, styles.colStatus]}><Text style={styles.headerText}>{t('player.status', 'Estado')}</Text></View>
           </View>
-          {activePlayers.map((player) => <PlayerRow key={player._id} player={player} showPhotos={showPhotos} t={t} />)}
+          {activePlayers.map((player) => <PlayerRow key={player._id} player={player} showPhotos={showPhotos} injuries={injuries} t={t} />)}
           {inactivePlayers.length ? (
             <View style={styles.inactiveHeaderRow} wrap={false}>
               <View style={styles.inactiveHeaderCell}>
@@ -188,7 +196,7 @@ const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale
               </View>
             </View>
           ) : null}
-          {inactivePlayers.map((player) => <PlayerRow key={player._id} player={player} showPhotos={showPhotos} t={t} />)}
+          {inactivePlayers.map((player) => <PlayerRow key={player._id} player={player} showPhotos={showPhotos} injuries={injuries} t={t} />)}
         </View>
         <PdfFooter text={`Xtramys · ${team?.nombre || t('season.myTeam', 'Mi equipo')}`} />
       </Page>
@@ -196,13 +204,13 @@ const PlayerRosterDocument = ({ players, team, includeExtras, showPhotos, locale
   );
 };
 
-export async function generatePlayerRosterPdf({ players, team, includeExtras, showPhotos, locale, t }) {
+export async function generatePlayerRosterPdf({ players, team, injuries = [], includeExtras, showPhotos, locale, t }) {
   const selectedPlayers = players?.filter((player) => includeExtras || !player.extra) || [];
   if (!selectedPlayers.length) throw new Error(t('player.rosterPdfEmpty', 'No hay jugadores para exportar.'));
   const safeName = String(team?.nombre || 'plantilla').replace(/[\\/:*?"<>|]+/g, '-');
   const preparedPlayers = showPhotos ? await resolvePlayerPhotos(selectedPlayers) : selectedPlayers;
   await renderPdf(
-    <PlayerRosterDocument players={preparedPlayers} team={team} includeExtras={includeExtras} showPhotos={showPhotos} locale={locale} t={t} />,
+    <PlayerRosterDocument players={preparedPlayers} team={team} injuries={injuries} includeExtras={includeExtras} showPhotos={showPhotos} locale={locale} t={t} />,
     `plantilla_${safeName}`,
   );
 }
