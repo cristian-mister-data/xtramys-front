@@ -16,7 +16,7 @@ import { analyzeSessionPdf } from '@/api/session';
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { fileToBase64 } from './seasonHelpers';
 
-const Shell = styled.div`display: grid; gap: 16px;`;
+const Shell = styled.div`display: grid; gap: 16px; @media (max-width: 600px) { gap: 12px; }`;
 const Hero = styled.div`
   display: flex; gap: 14px; align-items: flex-start; padding: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 14px;
@@ -44,6 +44,8 @@ const HiddenInput = styled.input`position: absolute; width: 1px; height: 1px; op
 const FileRow = styled.div`
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: 12px 14px; border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 12px;
+  min-width: 0; word-break: break-word;
+  @media (max-width: 600px) { align-items: flex-start; flex-wrap: wrap; padding: 10px 12px; }
 `;
 const Warning = styled.div`
   padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5;
@@ -92,8 +94,6 @@ const PlayerChip = styled.button`
   color: ${({ $selected, theme }) => ($selected ? theme.colors.primary : theme.colors.textSecondary)};
   background: ${({ $selected, theme }) => ($selected ? theme.colors.primarySoft : theme.colors.surface)};
 `;
-const Footer = styled.div`display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;`;
-
 const todayValue = () => {
   const date = new Date();
   const pad = (value) => String(value).padStart(2, '0');
@@ -178,8 +178,20 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
     }
   };
 
+  const footer = !draft ? (
+    <>
+      <Button $variant="ghost" onClick={onClose} disabled={analyzing}>{t('common.cancel', 'Cancelar')}</Button>
+      <Button onClick={analyze} disabled={!file || analyzing}><MdAutoFixHigh />{analyzing ? t('session.importAnalyzing', 'Leyendo y reconociendo el PDF...') : t('session.importAnalyze', 'Analizar PDF')}</Button>
+    </>
+  ) : (
+    <>
+      <Button $variant="ghost" onClick={onClose} disabled={loading}>{t('common.cancel', 'Cancelar')}</Button>
+      <Button onClick={submit} disabled={loading || !selectedCount}><MdCheckCircle />{loading ? t('common.saving', 'Guardando...') : t('session.importSaveSessions', 'Guardar {{count}} sesiones', { count: selectedCount })}</Button>
+    </>
+  );
+
   return (
-    <Modal open={open} onClose={analyzing || loading ? undefined : onClose} title={t('session.importPdfTitle', 'Importar sesión desde PDF')} width={1120}>
+    <Modal open={open} onClose={analyzing || loading ? undefined : onClose} title={t('session.importPdfTitle', 'Importar sesión desde PDF')} width={1120} footer={footer}>
       <Shell>
         <Hero>
           <HeroIcon><MdAutoFixHigh size={25} /></HeroIcon>
@@ -196,7 +208,6 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
             <Picker htmlFor="training-session-import-file"><div><MdUploadFile size={34} /><div>{file ? t('session.changePdf', 'Cambiar PDF') : t('session.importChoosePdf', 'Seleccionar sesión o microciclo en PDF')}</div><Muted>{t('session.importFormatsHint', 'PDF con texto o escaneado · máximo 25 MB')}</Muted></div><HiddenInput id="training-session-import-file" type="file" accept="application/pdf,.pdf" onChange={chooseFile} /></Picker>
             {file && <FileRow><span>{file.name}</span><Muted>{fileSize(file.size)}</Muted></FileRow>}
             {error && <ErrorText role="alert">{error}</ErrorText>}
-            <Footer><Button $variant="ghost" onClick={onClose} disabled={analyzing}>{t('common.cancel', 'Cancelar')}</Button><Button onClick={analyze} disabled={!file || analyzing}><MdAutoFixHigh />{analyzing ? t('session.importAnalyzing', 'Leyendo y reconociendo el PDF...') : t('session.importAnalyze', 'Analizar PDF')}</Button></Footer>
           </>
         ) : (
           <>
@@ -233,7 +244,6 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
               </SessionPanel>}
             </Review>
             {error && <ErrorText role="alert">{error}</ErrorText>}
-            <Footer><Button $variant="ghost" onClick={onClose} disabled={loading}>{t('common.cancel', 'Cancelar')}</Button><Button onClick={submit} disabled={loading || !selectedCount}><MdCheckCircle />{loading ? t('common.saving', 'Guardando...') : t('session.importSaveSessions', 'Guardar {{count}} sesiones', { count: selectedCount })}</Button></Footer>
           </>
         )}
       </Shell>

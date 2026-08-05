@@ -16,7 +16,7 @@ export async function initNativeApp() {
   }
 
   try {
-    await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
+    await Keyboard.setResizeMode({ mode: KeyboardResize.Native });
     await Keyboard.setStyle({ style: KeyboardStyle.Default });
   } catch (_) {
     // iOS-only methods can throw on Android

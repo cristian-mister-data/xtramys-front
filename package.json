@@ -12,6 +12,7 @@
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
     "check:subscription-flow": "node scripts/check-subscription-flow.mjs",
     "check:ios-native-flows": "node scripts/check-ios-native-flows.mjs",
+    "check:training-pdf-mobile": "node scripts/check-training-pdf-mobile.mjs",
     "check:app-version": "node scripts/check-app-version.mjs",
     "check:tactical-board-performance": "node scripts/check-tactical-board-performance.mjs",
     "check:content-visuals": "node scripts/check-content-visuals.mjs",

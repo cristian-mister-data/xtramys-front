@@ -10,7 +10,7 @@
   "backgroundColor": "#000000",
   "plugins": {
     "CapacitorHttp": {
-      "enabled": true
+      "enabled": false
     },
     "SplashScreen": {
       "launchShowDuration": 1000,
@@ -27,7 +27,7 @@
       "insetsHandling": "css"
     },
     "Keyboard": {
-      "resize": "body",
+      "resize": "native",
       "resizeOnFullScreen": true
     },
     "LocalNotifications": {

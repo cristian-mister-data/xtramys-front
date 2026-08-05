@@ -81,7 +81,9 @@ const Header = styled.div`
   @media (max-width: 600px) {
     padding: 14px 16px;
     html[data-native="true"] & {
-      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+      padding-top: calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+      padding-right: calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+      padding-left: calc(16px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
     }
   }
 `;
@@ -135,6 +137,12 @@ const Body = styled.div`
 
   @media (max-width: 600px) {
     padding: 16px;
+
+    html[data-native="true"] & {
+      padding-right: calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+      padding-bottom: ${({ $hasFooter }) => $hasFooter ? '16px' : 'calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))'};
+      padding-left: calc(16px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+    }
   }
 `;
 
@@ -151,7 +159,9 @@ const Footer = styled.div`
     flex-wrap: wrap;
 
     html[data-native="true"] & {
-      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      padding-right: calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+      padding-bottom: calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+      padding-left: calc(16px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
     }
 
     > button,
@@ -254,7 +264,7 @@ export default function Modal({ open, onClose, title, children, footer, width })
             )}
           </Header>
         )}
-        <Body>{children}</Body>
+        <Body $hasFooter={Boolean(footer)}>{children}</Body>
         {footer && <Footer>{footer}</Footer>}
       </Content>
     </Overlay>,
