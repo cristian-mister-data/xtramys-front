@@ -23,7 +23,7 @@ const Overlay = styled.div`
   justify-content: center;
   z-index: ${({ theme }) => theme.zIndex.modal};
   padding: 24px;
-  overflow-y: auto;
+  overflow: hidden;
   /* Aseguramos que el overlay sea interactivo aunque algún ancestro
      (por ejemplo, un portal RN-web mal posicionado) tenga
      pointer-events: none. */

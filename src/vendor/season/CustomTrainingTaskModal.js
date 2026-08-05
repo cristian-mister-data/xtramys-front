@@ -24,6 +24,12 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
   const [nombre, setNombre] = useState('');
   const [imagen, setImagen] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [objetivo, setObjetivo] = useState('');
+  const [materialNecesario, setMaterialNecesario] = useState('');
+  const [tiempo, setTiempo] = useState('');
+  const [tiempoDescanso, setTiempoDescanso] = useState('');
+  const [dimensiones, setDimensiones] = useState('');
+  const [numeroJugadores, setNumeroJugadores] = useState('');
   const [observaciones, setObservaciones] = useState(['']);
   const [selectingImage, setSelectingImage] = useState(false);
 
@@ -32,6 +38,12 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
     setNombre(initialTask?.nombre || '');
     setImagen(initialTask?.imagen || '');
     setDescripcion(initialTask?.descripcion || '');
+    setObjetivo(initialTask?.objetivo || '');
+    setMaterialNecesario(initialTask?.materialNecesario || '');
+    setTiempo(initialTask?.tiempo || '');
+    setTiempoDescanso(initialTask?.tiempoDescanso ? String(initialTask.tiempoDescanso) : '');
+    setDimensiones(initialTask?.dimensiones || '');
+    setNumeroJugadores(initialTask?.numeroJugadores ? String(initialTask.numeroJugadores) : '');
     setObservaciones(initialTask?.observaciones?.length ? initialTask.observaciones : ['']);
   }, [visible, initialTask]);
 
@@ -77,10 +89,10 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
 
   const submit = () => {
     const cleanName = nombre.trim();
-    if (!cleanName || !imagen) {
+    if (!cleanName) {
       Alert.alert(
         t('common.error', 'Error'),
-        t('session.customTaskRequired', 'Añade un nombre y una imagen para continuar.'),
+        t('session.customTaskNameRequired', 'Añade un nombre para continuar.'),
       );
       return;
     }
@@ -91,6 +103,12 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
       nombre: cleanName,
       imagen,
       descripcion: descripcion.trim(),
+      objetivo: objetivo.trim(),
+      materialNecesario: materialNecesario.trim(),
+      tiempo: tiempo.trim(),
+      tiempoDescanso: Number(tiempoDescanso) || 0,
+      dimensiones: dimensiones.trim(),
+      numeroJugadores: Number(numeroJugadores) || 0,
       observaciones: observaciones.map((item) => item.trim()).filter(Boolean),
     });
     onClose();
@@ -134,7 +152,7 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
               autoFocus={Platform.OS === 'web'}
             />
 
-            <Text style={styles.label}>{t('session.customTaskImage', 'Imagen de la tarea')} *</Text>
+            <Text style={styles.label}>{t('session.customTaskImage', 'Imagen de la tarea')}</Text>
             <TouchableOpacity
               style={[styles.imagePicker, imagen && styles.imagePickerWithImage]}
               onPress={pickImage}
@@ -173,6 +191,49 @@ export default function CustomTrainingTaskModal({ visible, initialTask, onClose,
               placeholder={t('session.customTaskDescriptionPlaceholder', 'Explica el desarrollo, reglas y objetivo de la tarea...')}
               placeholderTextColor={theme.colors.textMuted}
             />
+
+            <Text style={styles.label}>{t('exercise.objective', 'Objetivo')}</Text>
+            <TextInput
+              style={[styles.input, styles.multilineSmall]}
+              value={objetivo}
+              onChangeText={setObjetivo}
+              maxLength={2000}
+              multiline
+              placeholder={t('exercise.objectivePlaceholder', 'Objetivo principal de la tarea')}
+              placeholderTextColor={theme.colors.textMuted}
+            />
+
+            <Text style={styles.label}>{t('exercise.material', 'Material necesario')}</Text>
+            <TextInput
+              style={styles.input}
+              value={materialNecesario}
+              onChangeText={setMaterialNecesario}
+              maxLength={1000}
+              placeholder={t('exercise.materialPlaceholder', 'Balones, conos, petos...')}
+              placeholderTextColor={theme.colors.textMuted}
+            />
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>{t('exercise.duration', 'Tiempo')}</Text>
+                <TextInput style={styles.input} value={tiempo} onChangeText={setTiempo} maxLength={100} placeholder="2x8'" placeholderTextColor={theme.colors.textMuted} />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>{t('session.restMinutes', 'Descanso (min)')}</Text>
+                <TextInput style={styles.input} value={tiempoDescanso} onChangeText={setTiempoDescanso} keyboardType="decimal-pad" maxLength={4} placeholder="0.5" placeholderTextColor={theme.colors.textMuted} />
+              </View>
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>{t('exercise.dimensions', 'Dimensiones')}</Text>
+                <TextInput style={styles.input} value={dimensiones} onChangeText={setDimensiones} maxLength={100} placeholder="30x20 m" placeholderTextColor={theme.colors.textMuted} />
+              </View>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.label}>{t('exercise.players', 'Jugadores')}</Text>
+                <TextInput style={styles.input} value={numeroJugadores} onChangeText={setNumeroJugadores} keyboardType="numeric" maxLength={3} placeholder="0" placeholderTextColor={theme.colors.textMuted} />
+              </View>
+            </View>
 
             <View style={styles.observationsHeader}>
               <Text style={[styles.label, { marginBottom: 0 }]}>{t('session.customTaskObservations', 'Observaciones')}</Text>
@@ -275,6 +336,9 @@ const makeStyles = (theme) => StyleSheet.create({
     paddingVertical: 11,
   },
   multiline: { minHeight: 100, textAlignVertical: 'top' },
+  multilineSmall: { minHeight: 72, textAlignVertical: 'top' },
+  fieldRow: { flexDirection: 'row', gap: 10 },
+  fieldHalf: { flex: 1, minWidth: 0 },
   imagePicker: {
     minHeight: 160,
     borderRadius: 14,

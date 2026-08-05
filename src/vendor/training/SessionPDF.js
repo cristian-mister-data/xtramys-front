@@ -477,6 +477,7 @@ const SessionCoverPage = ({ data, title }) => {
 const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   const { detalleMap, t } = data;
   const detalle = detalleMap[ejercicio._id] || {};
+  const tiempoDescanso = detalle.tiempoDescanso || ejercicio.tiempoDescanso || 0;
   const ordenNumero = detalle.orden || ejercicio.orden || index + 1;
   const isLastExercise = index === data.ejerciciosOrdenados.length - 1;
 
@@ -495,8 +496,8 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} ${t('session.players', 'Jugadores')}`);
   if (ejercicio.equipos) pills.push(`${ejercicio.equipos} ${t('session.teams', 'Equipos')}`);
   if (ejercicio.dimensiones) pills.push(ejercicio.dimensiones);
-  if (ejercicio.tiempo) pills.push(`${ejercicio.tiempo} min`);
-  if (!isLastExercise && detalle.tiempoDescanso > 0) pills.push(`${t('session.rest', 'Descanso')}: ${detalle.tiempoDescanso} min`);
+  if (ejercicio.tiempo) pills.push(/(?:min|['’])$/i.test(String(ejercicio.tiempo).trim()) ? ejercicio.tiempo : `${ejercicio.tiempo} min`);
+  if (!isLastExercise && tiempoDescanso > 0) pills.push(`${t('session.rest', 'Descanso')}: ${tiempoDescanso} min`);
 
   const teamAssignmentsData = (detalle.teamAssignments || [])
     .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0) || (ta.comodines || 0) > 0)

@@ -703,7 +703,7 @@ export default function TrainingSessionDetailModal({
               {orderedExercises.map((ejercicio, index) => {
                   const detalle = detalleMap[ejercicio._id] || {};
                   const orden = detalle.orden || ejercicio.orden || (index + 1);
-                  const tiempoDescanso = detalle.tiempoDescanso || 0;
+                  const tiempoDescanso = detalle.tiempoDescanso || ejercicio.tiempoDescanso || 0;
                   const teamAssignments = detalle.teamAssignments || [];
                   const isLast = index === orderedExercises.length - 1;
                   
@@ -843,7 +843,7 @@ export default function TrainingSessionDetailModal({
                             {ejercicio.tiempo && (
                               <Text style={styles.exerciseDetailText}>
                                 <Text style={styles.exerciseDetailLabel}>{t('session.duration')}: </Text>
-                                <Text>{ejercicio.tiempo} min</Text>
+                                <Text>{/(?:min|['’])$/i.test(String(ejercicio.tiempo).trim()) ? ejercicio.tiempo : `${ejercicio.tiempo} min`}</Text>
                               </Text>
                             )}
                             {ejercicio.materialNecesario && (
