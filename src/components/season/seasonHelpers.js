@@ -28,8 +28,29 @@ export const categoryOptions = (t) => [
 export const timePerHalfOptions = [10, 15, 20, 25, 30, 35, 40, 45];
 export const playersPerTeamOptions = [7, 8, 11];
 
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
+}
+
 // Convierte un File a base64 data URL (para enviar el escudo al backend igual que en mobile)
-export function fileToBase64(file) {
+export async function fileToBase64(file) {
+  if (!file) return '';
+
+  if (typeof file.arrayBuffer === 'function') {
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const mime = file.type || 'application/octet-stream';
+      return `data:${mime};base64,${bytesToBase64(bytes)}`;
+    } catch (_) {
+      // Fallback para shells donde arrayBuffer falla con archivos del sistema.
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);

@@ -14,6 +14,7 @@ import Modal from '@/ui/Modal';
 import { Button, ErrorText, Input, Label, Muted, TextArea } from '@/ui/primitives';
 import { analyzeSessionPdf } from '@/api/session';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { fileToBase64 } from './seasonHelpers';
 
 const Shell = styled.div`display: grid; gap: 16px;`;
 const Hero = styled.div`
@@ -93,13 +94,6 @@ const PlayerChip = styled.button`
 `;
 const Footer = styled.div`display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;`;
 
-const readFile = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
-
 const todayValue = () => {
   const date = new Date();
   const pad = (value) => String(value).padStart(2, '0');
@@ -154,7 +148,7 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
     if (!file) return setError(t('session.pdfRequired', 'Selecciona un PDF.'));
     setAnalyzing(true); setError('');
     try {
-      const data = await readFile(file);
+      const data = await fileToBase64(file);
       const response = await analyzeSessionPdf({ fileData: data, filename: file.name });
       const sessions = (response.data.sessions || []).map((session) => {
         const recognizedNames = normalizedName((session.playerNames || []).join(' '));
@@ -232,7 +226,7 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
                 <Card>
                   <FileRow><div><CardTitle>{t('session.exercises', 'Ejercicios')} ({activeSession.exercises.length})</CardTitle><Muted>{t('session.importExercisesHint', 'Revisa texto, tiempos e imágenes antes de guardar.')}</Muted></div><Button $variant="secondary" onClick={() => updateSession(activeSession.id, { exercises: [...activeSession.exercises, nextExercise()] })}><MdAdd />{t('exercise.add', 'Añadir')}</Button></FileRow>
                   {activeSession.exercises.map((exercise, index) => <Exercise key={exercise.id}>
-                    <div><ExerciseImage>{exercise.image ? <img src={exercise.image} alt="" /> : <MdImage size={34} />}</ExerciseImage><MiniActions><MiniButton as="label"><MdImage />{exercise.image ? t('common.change', 'Cambiar') : t('common.add', 'Añadir')}<HiddenInput type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const imageFile = event.target.files?.[0]; event.target.value = ''; if (imageFile) updateExercise(activeSession.id, exercise.id, { image: await readFile(imageFile) }); }} /></MiniButton>{exercise.image && <MiniButton type="button" onClick={() => updateExercise(activeSession.id, exercise.id, { image: '' })}>{t('common.remove', 'Quitar')}</MiniButton>}<MiniButton type="button" $danger onClick={() => updateSession(activeSession.id, { exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })}><MdDeleteOutline />{t('common.delete', 'Eliminar')}</MiniButton></MiniActions></div>
+                    <div><ExerciseImage>{exercise.image ? <img src={exercise.image} alt="" /> : <MdImage size={34} />}</ExerciseImage><MiniActions><MiniButton as="label"><MdImage />{exercise.image ? t('common.change', 'Cambiar') : t('common.add', 'Añadir')}<HiddenInput type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const imageFile = event.target.files?.[0]; event.target.value = ''; if (imageFile) updateExercise(activeSession.id, exercise.id, { image: await fileToBase64(imageFile) }); }} /></MiniButton>{exercise.image && <MiniButton type="button" onClick={() => updateExercise(activeSession.id, exercise.id, { image: '' })}>{t('common.remove', 'Quitar')}</MiniButton>}<MiniButton type="button" $danger onClick={() => updateSession(activeSession.id, { exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })}><MdDeleteOutline />{t('common.delete', 'Eliminar')}</MiniButton></MiniActions></div>
                     <ExerciseFields><Field><Label>{index + 1}. {t('exercise.name', 'Nombre')}</Label><Input value={exercise.name} onChange={(event) => updateExercise(activeSession.id, exercise.id, { name: event.target.value })} /></Field><Field><Label>{t('exercise.description', 'Descripción')}</Label><TextArea value={exercise.description || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { description: event.target.value })} /></Field><Grid $columns={2}><Field><Label>{t('exercise.objective', 'Objetivo')}</Label><TextArea value={exercise.objective || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { objective: event.target.value })} /></Field><Field><Label>{t('exercise.material', 'Material')}</Label><TextArea value={exercise.materials || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { materials: event.target.value })} /></Field></Grid><Grid $columns={4}><Field><Label>{t('exercise.duration', 'Tiempo')}</Label><Input value={exercise.duration || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { duration: event.target.value })} /></Field><Field><Label>{t('session.restMinutes', 'Descanso (min)')}</Label><Input type="number" min="0" step="0.5" value={exercise.restMinutes || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { restMinutes: Number(event.target.value) || 0 })} /></Field><Field><Label>{t('exercise.dimensions', 'Dimensiones')}</Label><Input value={exercise.dimensions || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { dimensions: event.target.value })} /></Field><Field><Label>{t('exercise.players', 'Jugadores')}</Label><Input type="number" min="0" value={exercise.playerCount || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { playerCount: Number(event.target.value) || 0 })} /></Field></Grid></ExerciseFields>
                   </Exercise>)}
                 </Card>

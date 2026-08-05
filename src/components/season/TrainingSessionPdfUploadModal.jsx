@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MdPictureAsPdf, MdUploadFile } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, ErrorText, Input, Label, Muted, Row, Stack } from '@/ui/primitives';
+import { fileToBase64 } from './seasonHelpers';
 
 const Intro = styled.div`
   display: flex;
@@ -81,13 +82,6 @@ const dateValue = (value) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-const readFile = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
-
 export default function TrainingSessionPdfUploadModal({ open, session, onClose, onSubmit, loading = false }) {
   const { t } = useTranslation();
   const isReplace = Boolean(session?._id);
@@ -134,7 +128,7 @@ export default function TrainingSessionPdfUploadModal({ open, session, onClose, 
     }
     try {
       await onSubmit({
-        fileData: await readFile(file),
+        fileData: await fileToBase64(file),
         filename: file.name,
         fecha,
         horaInicio,
