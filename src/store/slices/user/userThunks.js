@@ -3,7 +3,6 @@ import { api } from '@/api/client';
 import * as authApi from '@/api/auth';
 import * as subscriptionApi from '@/api/subscription';
 import { saveUser, saveToken, clearUser } from '@/auth/storage';
-import { USE_COOKIE_AUTH } from '@/config';
 import { RESET_STORE } from '@/store/actionTypes';
 import { createReadCache } from '@/utils/readCache';
 

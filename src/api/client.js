@@ -3,7 +3,7 @@
 // - bearer: Authorization: Bearer <token> en localStorage (legacy / móvil)
 import axios from 'axios';
 import i18n from '../i18n';
-import { API_URL, BACKEND_URL, USE_COOKIE_AUTH } from '../config';
+import { API_URL, BACKEND_URL } from '../config';
 import { loadToken, loadUser } from '../auth/storage';
 
 let _networkErrorHandler = null;
@@ -307,13 +307,14 @@ function attachInterceptors(instance) {
 const api = axios.create({
   baseURL: API_URL,
   timeout: 30000,
-  withCredentials: USE_COOKIE_AUTH,
+  // Native builds also send the legacy cookie while migrating to Bearer auth.
+  withCredentials: true,
 });
 
 const apiBase = axios.create({
   baseURL: BACKEND_URL,
   timeout: 30000,
-  withCredentials: USE_COOKIE_AUTH,
+  withCredentials: true,
 });
 
 attachInterceptors(api);
