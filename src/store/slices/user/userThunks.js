@@ -43,7 +43,7 @@ export const loginThunk = createAsyncThunk(
       // Backend returns { token, user } or similar; store regardless of mode
       // Bearer mode: persist token; cookie mode: token cookie set by backend
       if (data?.token) {
-        saveToken(data.token);
+        await saveToken(data.token);
       }
       const user = data?.usuario || data?.user || data;
       if (user) saveUser(user);
@@ -65,7 +65,7 @@ export const fetchMe = createAsyncThunk(
     try {
       const data = await authApi.me(options);
       if (data?.token) {
-        saveToken(data.token);
+        await saveToken(data.token);
       }
       const user = data?.usuario || data?.user || data;
       if (user) saveUser(user);

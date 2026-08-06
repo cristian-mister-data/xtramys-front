@@ -37,24 +37,57 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 
-// Convierte un File a base64 data URL (para enviar el escudo al backend igual que en mobile)
+function normalizeFileDataUrl(result, fallbackMime) {
+  if (typeof result !== 'string' || !result) return '';
+  return result.startsWith('data:;base64,')
+    ? result.replace('data:;base64,', `data:${fallbackMime};base64,`)
+    : result;
+}
+
+function looksLikeCompletePdf(dataUrl, file) {
+  if (!/\.pdf$/i.test(file?.name || '')) return Boolean(dataUrl);
+  const encoded = dataUrl.split(',')[1] || '';
+  try {
+    const bytes = atob(encoded);
+    return bytes.slice(0, 4) === '%PDF' && (!file.size || bytes.length === file.size);
+  } catch (_) {
+    return false;
+  }
+}
+
+function readFileWithReader(file, fallbackMime) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') return reject(new Error('FileReader unavailable'));
+    const reader = new FileReader();
+    reader.onload = () => resolve(normalizeFileDataUrl(reader.result, fallbackMime));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Convierte un File a base64 usando la misma lectura binaria en web, Android e iOS.
 export async function fileToBase64(file) {
   if (!file) return '';
+
+  const fallbackMime = /\.pdf$/i.test(file.name || '') ? 'application/pdf' : (file.type || 'application/octet-stream');
+
+  try {
+    const dataUrl = await readFileWithReader(file, fallbackMime);
+    if (looksLikeCompletePdf(dataUrl, file)) return dataUrl;
+  } catch (_) {
+    // Algunos selectores nativos no exponen FileReader.
+  }
 
   if (typeof file.arrayBuffer === 'function') {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const mime = file.type || 'application/octet-stream';
-      return `data:${mime};base64,${bytesToBase64(bytes)}`;
+      const mime = file.type && file.type !== 'application/octet-stream' ? file.type : fallbackMime;
+      const dataUrl = `data:${mime};base64,${bytesToBase64(bytes)}`;
+      if (looksLikeCompletePdf(dataUrl, file)) return dataUrl;
     } catch (_) {
       // Fallback para shells donde arrayBuffer falla con archivos del sistema.
     }
   }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  throw new Error('No se pudo leer el PDF completo');
 }

@@ -725,7 +725,7 @@ export default function Profile() {
     try {
       const data = await impersonateUser(target._id);
       const nextUser = data?.usuario;
-      if (data?.token) saveToken(data.token);
+      if (data?.token) await saveToken(data.token);
       if (nextUser) {
         saveUser(nextUser);
         dispatch({ type: RESET_STORE });

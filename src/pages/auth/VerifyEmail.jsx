@@ -66,7 +66,7 @@ export default function VerifyEmail() {
       const data = await authApi.verifyEmail(normalizeEmail(correo), fullCode);
       const token = data?.token;
       const user = data?.usuario || data?.user;
-      if (token) saveToken(token);
+      if (token) await saveToken(token);
       if (user) {
         saveUser(user);
         dispatch({ type: RESET_STORE });

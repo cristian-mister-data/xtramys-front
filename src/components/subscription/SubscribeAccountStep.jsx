@@ -230,7 +230,7 @@ export default function SubscribeAccountStep({ returnPath, intent = 'payment', o
       const data = await authApi.verifyEmail(pendingEmail, verificationCode);
       const token = data?.token;
       const authenticatedUser = data?.usuario || data?.user;
-      if (token) saveToken(token);
+      if (token) await saveToken(token);
       if (authenticatedUser) {
         saveUser(authenticatedUser);
         dispatch({ type: RESET_STORE });

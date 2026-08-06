@@ -63,7 +63,7 @@ export default function ResetPassword() {
       const jwtToken = res?.data?.token;
       if (jwtToken && user) {
         api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
-        saveToken(jwtToken);
+        await saveToken(jwtToken);
         saveUser(user);
         dispatch({ type: RESET_STORE });
         dispatch(setUser(user));

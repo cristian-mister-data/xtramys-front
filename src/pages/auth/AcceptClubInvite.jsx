@@ -33,7 +33,7 @@ export default function AcceptClubInvite() {
       const res = await authApi.acceptClubInvite({ correo: email, token });
       if (res.token && res.usuario) {
         api.defaults.headers.common.Authorization = `Bearer ${res.token}`;
-        saveToken(res.token);
+        await saveToken(res.token);
         saveUser(res.usuario);
         dispatch({ type: RESET_STORE });
         dispatch(setUser(res.usuario));

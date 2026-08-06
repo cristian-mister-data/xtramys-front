@@ -40,7 +40,7 @@ const Picker = styled.label`
   background: ${({ theme }) => theme.colors.primarySoft}; color: ${({ theme }) => theme.colors.primarySoftText};
   font-weight: 800; text-align: center; cursor: pointer;
 `;
-const HiddenInput = styled.input`position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;`;
+const HiddenInput = styled.input`position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); opacity: 0;`;
 const FileRow = styled.div`
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: 12px 14px; border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 12px;
@@ -136,17 +136,25 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
   }));
 
   const chooseFile = async (event) => {
-    const next = event.target.files?.[0];
-    event.target.value = '';
+    const input = event.currentTarget;
+    const next = input.files?.[0];
     if (!next) return;
-    if (!/\.pdf$/i.test(next.name) && next.type !== 'application/pdf') return setError(t('session.pdfOnly', 'Selecciona un archivo PDF.'));
-    if (next.size > 25 * 1024 * 1024) return setError(t('session.pdfTooLarge', 'El PDF no puede superar los 25 MB.'));
-    setError(''); setFile(next); setFileData(''); setDraft(null);
     try {
-      setFileData(await fileToBase64(next));
+      const mime = (next.type || '').toLowerCase();
+      const isPdfType = !mime || mime === 'application/pdf' || mime === 'application/x-pdf' || mime === 'application/octet-stream';
+      const isPdfName = /\.pdf$/i.test(next.name || '');
+      if (!isPdfName && !isPdfType) return setError(t('session.pdfOnly', 'Selecciona un archivo PDF.'));
+      if (next.size > 25 * 1024 * 1024) return setError(t('session.pdfTooLarge', 'El PDF no puede superar los 25 MB.'));
+      const data = await fileToBase64(next);
+      if (!data) throw new Error('empty-pdf');
+      const filename = isPdfName ? next.name : `${next.name || 'sesion'}.pdf`;
+      setError(''); setFile({ name: filename, size: next.size }); setFileData(data); setDraft(null);
     } catch {
       setFile(null);
+      setFileData('');
       setError(t('session.pdfReadError', 'No se pudo leer el PDF seleccionado.'));
+    } finally {
+      input.value = '';
     }
   };
 
@@ -241,7 +249,7 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
                 <Card>
                   <FileRow><div><CardTitle>{t('session.exercises', 'Ejercicios')} ({activeSession.exercises.length})</CardTitle><Muted>{t('session.importExercisesHint', 'Revisa texto, tiempos e imágenes antes de guardar.')}</Muted></div><Button $variant="secondary" onClick={() => updateSession(activeSession.id, { exercises: [...activeSession.exercises, nextExercise()] })}><MdAdd />{t('exercise.add', 'Añadir')}</Button></FileRow>
                   {activeSession.exercises.map((exercise, index) => <Exercise key={exercise.id}>
-                    <div><ExerciseImage>{exercise.image ? <img src={exercise.image} alt="" /> : <MdImage size={34} />}</ExerciseImage><MiniActions><MiniButton as="label"><MdImage />{exercise.image ? t('common.change', 'Cambiar') : t('common.add', 'Añadir')}<HiddenInput type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const imageFile = event.target.files?.[0]; event.target.value = ''; if (imageFile) updateExercise(activeSession.id, exercise.id, { image: await fileToBase64(imageFile) }); }} /></MiniButton>{exercise.image && <MiniButton type="button" onClick={() => updateExercise(activeSession.id, exercise.id, { image: '' })}>{t('common.remove', 'Quitar')}</MiniButton>}<MiniButton type="button" $danger onClick={() => updateSession(activeSession.id, { exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })}><MdDeleteOutline />{t('common.delete', 'Eliminar')}</MiniButton></MiniActions></div>
+                    <div><ExerciseImage>{exercise.image ? <img src={exercise.image} alt="" loading="lazy" decoding="async" /> : <MdImage size={34} />}</ExerciseImage><MiniActions><MiniButton as="label"><MdImage />{exercise.image ? t('common.change', 'Cambiar') : t('common.add', 'Añadir')}<HiddenInput type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const imageFile = event.target.files?.[0]; event.target.value = ''; if (imageFile) updateExercise(activeSession.id, exercise.id, { image: await fileToBase64(imageFile) }); }} /></MiniButton>{exercise.image && <MiniButton type="button" onClick={() => updateExercise(activeSession.id, exercise.id, { image: '' })}>{t('common.remove', 'Quitar')}</MiniButton>}<MiniButton type="button" $danger onClick={() => updateSession(activeSession.id, { exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })}><MdDeleteOutline />{t('common.delete', 'Eliminar')}</MiniButton></MiniActions></div>
                     <ExerciseFields><Field><Label>{index + 1}. {t('exercise.name', 'Nombre')}</Label><Input value={exercise.name} onChange={(event) => updateExercise(activeSession.id, exercise.id, { name: event.target.value })} /></Field><Field><Label>{t('exercise.description', 'Descripción')}</Label><TextArea value={exercise.description || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { description: event.target.value })} /></Field><Grid $columns={2}><Field><Label>{t('exercise.objective', 'Objetivo')}</Label><TextArea value={exercise.objective || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { objective: event.target.value })} /></Field><Field><Label>{t('exercise.material', 'Material')}</Label><TextArea value={exercise.materials || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { materials: event.target.value })} /></Field></Grid><Grid $columns={4}><Field><Label>{t('exercise.duration', 'Tiempo')}</Label><Input value={exercise.duration || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { duration: event.target.value })} /></Field><Field><Label>{t('session.restMinutes', 'Descanso (min)')}</Label><Input type="number" min="0" step="0.5" value={exercise.restMinutes || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { restMinutes: Number(event.target.value) || 0 })} /></Field><Field><Label>{t('exercise.dimensions', 'Dimensiones')}</Label><Input value={exercise.dimensions || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { dimensions: event.target.value })} /></Field><Field><Label>{t('exercise.players', 'Jugadores')}</Label><Input type="number" min="0" value={exercise.playerCount || ''} onChange={(event) => updateExercise(activeSession.id, exercise.id, { playerCount: Number(event.target.value) || 0 })} /></Field></Grid></ExerciseFields>
                   </Exercise>)}
                 </Card>
