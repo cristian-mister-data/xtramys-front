@@ -135,27 +135,31 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
     }),
   }));
 
-  const chooseFile = (event) => {
+  const chooseFile = async (event) => {
     const next = event.target.files?.[0];
     event.target.value = '';
     if (!next) return;
     if (!/\.pdf$/i.test(next.name) && next.type !== 'application/pdf') return setError(t('session.pdfOnly', 'Selecciona un archivo PDF.'));
     if (next.size > 25 * 1024 * 1024) return setError(t('session.pdfTooLarge', 'El PDF no puede superar los 25 MB.'));
     setError(''); setFile(next); setFileData(''); setDraft(null);
+    try {
+      setFileData(await fileToBase64(next));
+    } catch {
+      setFile(null);
+      setError(t('session.pdfReadError', 'No se pudo leer el PDF seleccionado.'));
+    }
   };
 
   const analyze = async () => {
-    if (!file) return setError(t('session.pdfRequired', 'Selecciona un PDF.'));
+    if (!file || !fileData) return setError(t('session.pdfRequired', 'Selecciona un PDF.'));
     setAnalyzing(true); setError('');
     try {
-      const data = await fileToBase64(file);
-      const response = await analyzeSessionPdf({ fileData: data, filename: file.name });
+      const response = await analyzeSessionPdf({ fileData, filename: file.name });
       const sessions = (response.data.sessions || []).map((session) => {
         const recognizedNames = normalizedName((session.playerNames || []).join(' '));
         const detectedPlayerIds = availablePlayers.filter((player) => recognizedNames.includes(normalizedName(getPlayerFullName(player)))).map((player) => String(player._id));
         return { ...session, date: session.date || todayValue(), playerIds: session.playerIds?.length ? session.playerIds : detectedPlayerIds };
       });
-      setFileData(data);
       setDraft({ ...response.data, sessions });
       setActiveId(sessions[0]?.id || '');
     } catch (requestError) {
@@ -181,7 +185,7 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
   const footer = !draft ? (
     <>
       <Button $variant="ghost" onClick={onClose} disabled={analyzing}>{t('common.cancel', 'Cancelar')}</Button>
-      <Button onClick={analyze} disabled={!file || analyzing}><MdAutoFixHigh />{analyzing ? t('session.importAnalyzing', 'Leyendo y reconociendo el PDF...') : t('session.importAnalyze', 'Analizar PDF')}</Button>
+      <Button onClick={analyze} disabled={!file || !fileData || analyzing}><MdAutoFixHigh />{analyzing ? t('session.importAnalyzing', 'Leyendo y reconociendo el PDF...') : t('session.importAnalyze', 'Analizar PDF')}</Button>
     </>
   ) : (
     <>
@@ -211,7 +215,7 @@ export default function TrainingSessionImportModal({ open, players = [], onClose
           </>
         ) : (
           <>
-            <FileRow><span><strong>{draft.source.filename}</strong><Muted style={{ display: 'block' }}>{draft.source.pageCount} {t('session.importPages', 'páginas')} · {draft.source.extraction === 'ocr' ? 'OCR' : draft.source.extraction === 'mixed' ? 'Texto + OCR' : t('session.importEmbeddedText', 'Texto integrado')}</Muted></span><Button $variant="secondary" onClick={() => { setDraft(null); setFileData(''); }}>{t('session.importAnotherPdf', 'Elegir otro PDF')}</Button></FileRow>
+            <FileRow><span><strong>{draft.source.filename}</strong><Muted style={{ display: 'block' }}>{draft.source.pageCount} {t('session.importPages', 'páginas')} · {draft.source.extraction === 'ocr' ? 'OCR' : draft.source.extraction === 'mixed' ? 'Texto + OCR' : t('session.importEmbeddedText', 'Texto integrado')}</Muted></span><Button $variant="secondary" onClick={() => { setDraft(null); setFile(null); setFileData(''); }}>{t('session.importAnotherPdf', 'Elegir otro PDF')}</Button></FileRow>
             {draft.warnings?.map((warning) => <Warning key={warning}>{warning}</Warning>)}
             <Review>
               <SessionList>

@@ -257,12 +257,7 @@ export default function GestionEquipos() {
   const currentUser = useSelector((s) => s.usuario.user);
   const allowMultiSeasonManagement = Boolean(currentUser?.allowMultiSeasonManagement);
   const archivedSeason = Boolean(temporada?.archivada && !allowMultiSeasonManagement);
-  const readOnlyClubSeason = Boolean(
-    (temporada?.isClubSeason || (temporada?.usuario && idUsuario && String(temporada.usuario) !== String(idUsuario))) &&
-    !temporada?.isActiveClubSeason &&
-    !allowMultiSeasonManagement
-  );
-  const canMutate = !supervising && !readOnlyClubSeason && !archivedSeason;
+  const canMutate = !supervising && !archivedSeason;
   const [loadingTemporada, setLoadingTemporada] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
