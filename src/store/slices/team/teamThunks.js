@@ -11,12 +11,13 @@ export const fetchEquiposTemporada = createAsyncThunk(
   'equipo/fetchEquiposTemporada',
   async ({ season, usuario }, { getState }) => {
     const state = getState();
+    const currentUserId = state.usuario.user?._id || state.usuario.user?.id;
     const supervisedUserId = state.usuario.supervising ? state.usuario.user?._id : null;
     const queryUser = usuario || supervisedUserId;
     const url = queryUser
       ? `/team/season/${season}?usuario=${encodeURIComponent(queryUser)}`
       : `/team/season/${season}`;
-    return teamCache.read(teamKey('season', { season, queryUser }), async () => {
+    return teamCache.read(teamKey('season', { season, user: queryUser || currentUserId }), async () => {
       const res = await api.get(url);
       return res.data;
     });

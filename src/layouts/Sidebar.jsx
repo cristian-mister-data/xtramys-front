@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { MdLogout, MdShield, MdPerson, MdVisibilityOff } from 'react-icons/md';
 import { logoutThunk } from '@/store/slices/user/userThunks';
 import { stopSupervision } from '@/store/slices/user/userSlice';
+import { RESET_WORKSPACE } from '@/store/actionTypes';
 import { preloadRoute } from '@/router/preload';
 import { useThemeMode } from '@/theme/ThemeContext';
 import xtramysLogo from '@/images/xtramys.webp';
@@ -292,6 +293,7 @@ export default function Sidebar({ open, onClose }) {
 
   const handleStopSupervising = () => {
     dispatch(stopSupervision());
+    dispatch({ type: RESET_WORKSPACE });
     onClose && onClose();
     navigate('/club/dashboard', { replace: true });
   };

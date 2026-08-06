@@ -156,7 +156,7 @@ export default function AppLayout() {
   const isClubAdmin = supervisedUser?.role === 'club_admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const requestedTeamsSeasonRef = useRef(null);
+  const requestedTeamsWorkspaceRef = useRef(null);
   const hideSearch = location.pathname.startsWith('/club/dashboard');
   const bottomItems = isClubAdmin
     ? [
@@ -181,14 +181,15 @@ export default function AppLayout() {
   // para que toda la app tenga el mismo comportamiento al refrescar.
   useEffect(() => {
     if (!seasonId) {
-      requestedTeamsSeasonRef.current = null;
+      requestedTeamsWorkspaceRef.current = null;
       return;
     }
-    if (requestedTeamsSeasonRef.current === seasonId) return;
+    const workspaceId = `${userId}:${seasonId}`;
+    if (requestedTeamsWorkspaceRef.current === workspaceId) return;
 
-    requestedTeamsSeasonRef.current = seasonId;
+    requestedTeamsWorkspaceRef.current = workspaceId;
     dispatch(fetchEquiposTemporada({ season: seasonId }));
-  }, [dispatch, seasonId]);
+  }, [dispatch, seasonId, userId]);
 
   return (
     <TutorialProvider>

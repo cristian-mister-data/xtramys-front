@@ -9,6 +9,7 @@ import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader
 import { toast } from '@/ui/toast';
 import { startSupervision } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
+import { RESET_WORKSPACE } from '@/store/actionTypes';
 import Modal from '@/ui/Modal';
 import { isNative } from '@/platform/capacitor';
 
@@ -1954,6 +1955,7 @@ export default function ClubDashboard() {
                               const res = await api.get(`/user/${member._id}`);
                               const coachUser = res.data?.usuario || res.data;
                               dispatch(startSupervision(coachUser));
+                              dispatch({ type: RESET_WORKSPACE });
                               navigate('/app', { replace: true });
                             } catch (err) {
                               toast.error(
