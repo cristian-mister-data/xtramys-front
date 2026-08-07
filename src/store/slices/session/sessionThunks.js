@@ -1,6 +1,7 @@
 // store/slices/session/sessionThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
+import { uploadSessionPdf } from '@/api/session';
 import { createReadCache } from '@/utils/readCache';
 
 const sessionCache = createReadCache({ ttlMs: 60000 });
@@ -66,8 +67,8 @@ export const updateEntrenamiento = createAsyncThunk(
 
 export const uploadEntrenamientoPdf = createAsyncThunk(
   'entrenamiento/uploadEntrenamientoPdf',
-  async ({ id, fileData, filename }) => {
-    const res = await api.post(`/session/${id}/pdf`, { fileData, filename, contentType: 'application/pdf' });
+  async ({ id, file, filename }) => {
+    const res = await uploadSessionPdf(id, file, filename);
     clearSessionCache();
     return res.data;
   }

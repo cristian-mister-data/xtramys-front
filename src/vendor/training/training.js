@@ -68,7 +68,6 @@ import TrainingSessionDetailModal from '@/vendor/season/TrainingSessionDetailMod
 import EditSessionModal from '@/vendor/season/EditSessionModal';
 import TrainingSessionPdfUploadModal from '@/components/season/TrainingSessionPdfUploadModal';
 import TrainingSessionPdfViewerModal from '@/components/season/TrainingSessionPdfViewerModal';
-import TrainingSessionImportModal from '@/components/season/TrainingSessionImportModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { getContentImage } from '@/utils/contentVisual';
 
@@ -1004,8 +1003,6 @@ export default function Training({ canMutate }) {
   const [pdfViewerVisible, setPdfViewerVisible] = useState(false);
   const [pdfViewerSession, setPdfViewerSession] = useState(null);
   const [pdfUploading, setPdfUploading] = useState(false);
-  const [pdfImportVisible, setPdfImportVisible] = useState(false);
-  const [pdfImportSaving, setPdfImportSaving] = useState(false);
   const [repeatedSessionId, setRepeatedSessionId] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
   const [timeOverlayVisible, setTimeOverlayVisible] = useState(false);
@@ -1434,7 +1431,7 @@ export default function Training({ canMutate }) {
     }
   }
 
-  async function handlePdfUpload({ fileData, filename, fecha, horaInicio, horaFin }) {
+  async function handlePdfUpload({ file, filename, fecha, horaInicio, horaFin }) {
     const selectedTeam = equipos.find(e => e.seleccionado === true);
     if (!selectedTeam?._id) throw new Error(t('session.noTeamSelected'));
 
@@ -1458,7 +1455,7 @@ export default function Training({ canMutate }) {
         createdSessionId = targetSession?._id;
       }
 
-      const saved = await dispatch(uploadEntrenamientoPdf({ id: targetSession._id, fileData, filename })).unwrap();
+      const saved = await dispatch(uploadEntrenamientoPdf({ id: targetSession._id, file, filename })).unwrap();
       await dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
       setPdfUploadVisible(false);
       setPdfUploadSession(null);
@@ -1470,65 +1467,6 @@ export default function Training({ canMutate }) {
         await dispatch(deleteEntrenamiento(createdSessionId)).unwrap().catch(() => {});
       }
       throw new Error(error?.response?.data?.message || error?.message || t('session.pdfUploadError', 'No se pudo guardar el PDF.'));
-    }
-  }
-
-  // Handlers para los modales de sesión (igual que en calendario)
-  async function handlePdfImport({ fileData, filename, sessions: importedSessions }) {
-    const selectedTeam = equipos.find(e => e.seleccionado === true);
-    if (!selectedTeam?._id) throw new Error(t('session.noTeamSelected'));
-
-    const createdIds = [];
-    setPdfImportSaving(true);
-    try {
-      for (const imported of importedSessions) {
-        const tareasPersonalizadas = imported.exercises.map((exercise, index) => ({
-          id: `pdf-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
-          nombre: exercise.name.trim(),
-          imagen: exercise.image || '',
-          descripcion: exercise.description || '',
-          objetivo: exercise.objective || '',
-          materialNecesario: exercise.materials || '',
-          tiempo: exercise.duration || '',
-          tiempoDescanso: Number(exercise.restMinutes) || 0,
-          dimensiones: exercise.dimensions || '',
-          numeroJugadores: Number(exercise.playerCount) || 0,
-          observaciones: [],
-          orden: index + 1,
-        }));
-        const generalObservation = [
-          imported.title,
-          imported.materials ? `${t('exercise.material', 'Material')}: ${imported.materials}` : '',
-          imported.observations,
-        ].filter(Boolean).join('\n');
-        const created = await dispatch(createEntrenamiento({
-          equipo: selectedTeam._id,
-          fecha: new Date(`${imported.date}T${imported.startTime || '00:00'}:00`).toISOString(),
-          horaInicio: imported.startTime || null,
-          horaFin: imported.endTime || null,
-          ubicacion: imported.location || '',
-          ejercicios: [],
-          ejerciciosDetalle: [],
-          tareasPersonalizadas,
-          observaciones: generalObservation ? [{ tipo: 'general', observacion: generalObservation }] : [],
-          jugadores: imported.playerIds || [],
-          jugadoresExtras: [],
-        })).unwrap();
-        const session = Array.isArray(created) ? created[0] : created;
-        createdIds.push(session._id);
-        await dispatch(uploadEntrenamientoPdf({ id: session._id, fileData, filename })).unwrap();
-      }
-
-      await dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
-      setPdfImportVisible(false);
-      toast.success(t('session.importSaveSuccess', '{{count}} sesiones importadas correctamente', { count: importedSessions.length }));
-    } catch (error) {
-      for (const id of createdIds.reverse()) {
-        await dispatch(deleteEntrenamiento(id)).unwrap().catch(() => {});
-      }
-      throw new Error(error?.response?.data?.message || error?.message || t('session.importSaveError', 'No se pudieron guardar las sesiones importadas.'));
-    } finally {
-      setPdfImportSaving(false);
     }
   }
 
@@ -1999,15 +1937,6 @@ export default function Training({ canMutate }) {
           ) : <View style={styles.proHeaderTeamPillSpacer} />}
           {canMutate !== false && (
             <View style={styles.proHeaderActions}>
-              <TouchableOpacity
-                style={[styles.proUploadButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}
-                onPress={() => setPdfImportVisible(true)}
-                activeOpacity={0.85}
-                accessibilityLabel={t('session.importPdf', 'Importar sesión')}
-              >
-                <MaterialIcons name="document-scanner" size={20} color={theme.colors.primary} />
-                {!isMobile && <Text style={[styles.proUploadButtonText, { color: theme.colors.primary }]}>{t('session.importPdf', 'Importar sesión')}</Text>}
-              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.proUploadButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}
                 onPress={() => openPdfUpload()}
@@ -2545,19 +2474,6 @@ export default function Training({ canMutate }) {
                 </TouchableOpacity>
               )}
 
-              {canMutate !== false && (
-                <TouchableOpacity
-                  style={styles.mobileMenuItem}
-                  onPress={() => {
-                    setMobileMenuVisible(false);
-                    setPdfImportVisible(true);
-                  }}
-                >
-                  <MaterialIcons name="document-scanner" size={24} color={theme.colors.primary} />
-                  <Text style={styles.mobileMenuItemText}>{t('session.importPdf', 'Importar sesión')}</Text>
-                </TouchableOpacity>
-              )}
-
               <View style={styles.mobileMenuDivider} />
 
               {/* Crear sesión */}
@@ -2648,14 +2564,6 @@ export default function Training({ canMutate }) {
         open={pdfViewerVisible}
         session={pdfViewerSession}
         onClose={closePdfViewer}
-      />
-
-      <TrainingSessionImportModal
-        open={pdfImportVisible}
-        players={jugadoresDisponibles}
-        loading={pdfImportSaving}
-        onClose={() => setPdfImportVisible(false)}
-        onImport={handlePdfImport}
       />
 
       {/* Modal para editar sesión (igual que en calendario) */}

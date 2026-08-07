@@ -65,6 +65,34 @@ function readFileWithReader(file, fallbackMime) {
   });
 }
 
+function readBytesWithReader(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') return reject(new Error('FileReader unavailable'));
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Copia el PDF mientras el selector nativo todavía mantiene válido su archivo temporal.
+export async function fileToPdfBlob(file) {
+  let buffer;
+  try {
+    buffer = await readBytesWithReader(file);
+  } catch (_) {
+    if (typeof file?.arrayBuffer !== 'function') throw new Error('No se pudo leer el PDF completo');
+    buffer = await file.arrayBuffer();
+  }
+
+  const bytes = new Uint8Array(buffer);
+  if ((!bytes.length || bytes[0] !== 0x25 || bytes[1] !== 0x50 || bytes[2] !== 0x44 || bytes[3] !== 0x46)
+    || (file.size && bytes.length !== file.size)) {
+    throw new Error('No se pudo leer el PDF completo');
+  }
+  return new Blob([bytes], { type: 'application/pdf' });
+}
+
 // Convierte un File a base64 usando la misma lectura binaria en web, Android e iOS.
 export async function fileToBase64(file) {
   if (!file) return '';

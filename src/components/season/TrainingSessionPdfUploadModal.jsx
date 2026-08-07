@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MdPictureAsPdf, MdUploadFile } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, ErrorText, Input, Label, Muted, Row, Stack } from '@/ui/primitives';
-import { fileToBase64 } from './seasonHelpers';
+import { fileToPdfBlob } from './seasonHelpers';
 
 const Intro = styled.div`
   display: flex;
@@ -103,20 +103,28 @@ export default function TrainingSessionPdfUploadModal({ open, session, onClose, 
     setHoraFin(session?.horaFin || '');
   }, [open, session]);
 
-  const handleFileChange = (event) => {
-    const next = event.target.files?.[0];
-    event.target.value = '';
+  const handleFileChange = async (event) => {
+    const input = event.currentTarget;
+    const next = input.files?.[0];
     if (!next) return;
-    if (!/\.pdf$/i.test(next.name) && next.type !== 'application/pdf') {
-      setError(t('session.pdfOnly', 'Selecciona un archivo PDF.'));
-      return;
+    try {
+      if (!/\.pdf$/i.test(next.name) && next.type !== 'application/pdf') {
+        setError(t('session.pdfOnly', 'Selecciona un archivo PDF.'));
+        return;
+      }
+      if (next.size > 25 * 1024 * 1024) {
+        setError(t('session.pdfTooLarge', 'El PDF no puede superar los 25 MB.'));
+        return;
+      }
+      const blob = await fileToPdfBlob(next);
+      setError('');
+      setFile({ blob, name: next.name, size: blob.size });
+    } catch {
+      setFile(null);
+      setError(t('session.pdfReadError', 'No se pudo leer el PDF seleccionado.'));
+    } finally {
+      input.value = '';
     }
-    if (next.size > 25 * 1024 * 1024) {
-      setError(t('session.pdfTooLarge', 'El PDF no puede superar los 25 MB.'));
-      return;
-    }
-    setError('');
-    setFile(next);
   };
 
   const handleSubmit = async (event) => {
@@ -131,7 +139,7 @@ export default function TrainingSessionPdfUploadModal({ open, session, onClose, 
     }
     try {
       await onSubmit({
-        fileData: await fileToBase64(file),
+        file: file.blob,
         filename: file.name,
         fecha,
         horaInicio,
