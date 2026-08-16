@@ -487,10 +487,10 @@ export const PdfFooter = ({ text = 'Xtramys' }) => (
 /**
  * Section with a title bar.
  */
-export const PdfSection = ({ title, children, style }) => (
-  <View style={[baseStyles.section, style]}>
+export const PdfSection = ({ title, children, style, keepTogether = false }) => (
+  <View style={[baseStyles.section, style]} wrap={!keepTogether}>
     {title ? (
-      <View style={baseStyles.sectionHeader}>
+      <View style={baseStyles.sectionHeader} minPresenceAhead={96}>
         <Text style={baseStyles.sectionTitle}>{title}</Text>
       </View>
     ) : null}

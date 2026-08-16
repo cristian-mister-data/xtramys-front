@@ -120,12 +120,14 @@ const saveStoredDate = (key, date) => {
 export default function SeasonCalendar({
   matchSheets = [],
   trainingSessions = [],
+  scoutingMatches = [],
   team = null,
   season = null,
   onDayPress,
   onAddEvent,
   onMatchPress,
   onSessionPress,
+  onScoutingMatchPress,
   loading = false,
   canMutate = true,
   isCoach = false,
@@ -143,6 +145,9 @@ export default function SeasonCalendar({
     success: theme.colors.success,
     warning: theme.colors.warning,
     danger: theme.colors.error,
+    purple: theme.colors.purple,
+    purpleSoft: theme.colors.purpleSoft,
+    purpleSoftText: theme.colors.purpleSoftText,
     background: theme.colors.background,
     surface: theme.colors.surface,
     text: theme.colors.text,
@@ -245,7 +250,7 @@ export default function SeasonCalendar({
         const date = new Date(match.fechaHora);
         const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
         if (!map[key]) {
-          map[key] = { matches: [], sessions: [] };
+          map[key] = { matches: [], sessions: [], scoutingMatches: [] };
         }
         map[key].matches.push(match);
       }
@@ -257,14 +262,25 @@ export default function SeasonCalendar({
         const date = new Date(session.fecha);
         const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
         if (!map[key]) {
-          map[key] = { matches: [], sessions: [] };
+          map[key] = { matches: [], sessions: [], scoutingMatches: [] };
         }
         map[key].sessions.push(session);
       }
     });
+
+    scoutingMatches.forEach(report => {
+      if (report.dateTime) {
+        const date = new Date(report.dateTime);
+        const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+        if (!map[key]) {
+          map[key] = { matches: [], sessions: [], scoutingMatches: [] };
+        }
+        map[key].scoutingMatches.push(report);
+      }
+    });
     
     return map;
-  }, [matchSheets, trainingSessions]);
+  }, [matchSheets, scoutingMatches, trainingSessions]);
 
   const handleExportCalendarPdf = useCallback(async () => {
     if (exportingPdf) return;
@@ -274,6 +290,7 @@ export default function SeasonCalendar({
       await generateSeasonCalendarPdf({
         matchSheets,
         trainingSessions,
+        scoutingMatches,
         team,
         season,
         locale: i18n.language === 'en' ? 'en-US' : 'es-ES',
@@ -288,7 +305,7 @@ export default function SeasonCalendar({
     } finally {
       setExportingPdf(false);
     }
-  }, [exportingPdf, i18n.language, matchSheets, season, t, team, trainingSessions]);
+  }, [exportingPdf, i18n.language, matchSheets, scoutingMatches, season, t, team, trainingSessions]);
   
   // Navegar al mes anterior
   const goToPreviousMonth = useCallback(() => {
@@ -376,7 +393,7 @@ export default function SeasonCalendar({
         date,
         dateKey,
         events,
-        hasEvents: events && (events.matches.length > 0 || events.sessions.length > 0),
+        hasEvents: events && (events.matches.length > 0 || events.sessions.length > 0 || events.scoutingMatches.length > 0),
       });
     }
   }, [eventsByDate, onDayPress]);
@@ -392,7 +409,7 @@ export default function SeasonCalendar({
       selectedMobileDate.getMonth(),
       selectedMobileDate.getDate()
     );
-    return eventsByDate[dateKey] || { matches: [], sessions: [] };
+    return eventsByDate[dateKey] || { matches: [], sessions: [], scoutingMatches: [] };
   }, [selectedMobileDate, eventsByDate]);
   
   // ============ FIN FUNCIONES MÓVIL ============
@@ -411,7 +428,7 @@ export default function SeasonCalendar({
         date: new Date(currentYear, currentMonth, day),
         dateKey,
         events,
-        hasEvents: events && (events.matches.length > 0 || events.sessions.length > 0),
+        hasEvents: events && (events.matches.length > 0 || events.sessions.length > 0 || events.scoutingMatches.length > 0),
       });
     }
   }, [currentYear, currentMonth, eventsByDate, onDayPress]);
@@ -597,6 +614,54 @@ export default function SeasonCalendar({
       </TouchableOpacity>
     );
   };
+
+  const getScoutingCompetition = (report) => report.tournamentId?.nombre
+    || report.competitionName
+    || t(`opponentMatch.competitionTypes.${report.competitionType || 'other'}`);
+
+  const getScoutingStatus = (report) => report.status === 'completed'
+    ? t('opponentMatch.calendar.completed')
+    : report.dateTime && new Date(report.dateTime) > new Date()
+      ? t('opponentMatch.calendar.scheduled')
+      : t('opponentMatch.calendar.pending');
+
+  const renderScoutingPreview = (report) => (
+    <TouchableOpacity
+      key={`scouting-preview-${report._id}`}
+      style={styles.eventPreviewCard}
+      onPress={() => onScoutingMatchPress && onScoutingMatchPress(report)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.sessionPreviewHeader}>
+        <View style={[styles.eventTypeBadge, { backgroundColor: THEME.purpleSoft }]}>
+          <Ionicons name="eye" size={12} color={THEME.purpleSoftText} />
+          <Text style={[styles.eventTypeBadgeText, { color: THEME.purpleSoftText }]}>
+            {t('opponentMatch.calendar.event')}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.sessionTitlePreview} numberOfLines={2}>
+        {report.teamA?.name || t('opponentMatch.teamA')} - {report.teamB?.name || t('opponentMatch.teamB')}
+      </Text>
+      <Text style={[styles.sessionDetailText, { color: THEME.purpleSoftText }]} numberOfLines={1}>
+        {getScoutingCompetition(report)}
+      </Text>
+      <View style={styles.sessionDetailsRow}>
+        {report.dateTime && (
+          <View style={styles.sessionDetailItem}>
+            <Ionicons name="time" size={12} color={THEME.purple} />
+            <Text style={styles.sessionDetailText}>
+              {new Date(report.dateTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+        )}
+        <View style={styles.sessionDetailItem}>
+          <Ionicons name={report.status === 'completed' ? 'checkmark-circle' : 'calendar'} size={12} color={THEME.purple} />
+          <Text style={styles.sessionDetailText}>{getScoutingStatus(report)}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
   
   // Renderizar celda del día
   const renderDayCell = (day, isCurrentMonth, index) => {
@@ -607,7 +672,8 @@ export default function SeasonCalendar({
     const events = dateKey ? eventsByDate[dateKey] : null;
     const hasMatches = events?.matches?.length > 0;
     const hasSessions = events?.sessions?.length > 0;
-    const hasEvents = hasMatches || hasSessions;
+    const hasScoutingMatches = events?.scoutingMatches?.length > 0;
+    const hasEvents = hasMatches || hasSessions || hasScoutingMatches;
     
     const isTodayDate = isCurrentMonth && isToday(currentYear, currentMonth, day);
     const isSelected = isCurrentMonth && selectedDate && 
@@ -688,6 +754,27 @@ export default function SeasonCalendar({
         </View>
       );
     };
+
+    const renderMiniScoutingCard = (report) => (
+      <View
+        key={`mini-scouting-${report._id}`}
+        style={[styles.miniSessionCard, { backgroundColor: THEME.purpleSoft }]}
+      >
+        <View style={styles.miniSessionRow}>
+          <Ionicons name="eye" size={isMobileDevice() ? 10 : 11} color={THEME.purpleSoftText} />
+          <View style={styles.miniSessionInfo}>
+            <Text style={[styles.miniSessionText, { color: THEME.purpleSoftText }]} numberOfLines={1}>
+              {report.teamA?.name || t('opponentMatch.teamA')} - {report.teamB?.name || t('opponentMatch.teamB')}
+            </Text>
+            {report.dateTime && (
+              <Text style={[styles.miniSessionTime, { color: THEME.purpleSoftText }]} numberOfLines={1}>
+                {new Date(report.dateTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            )}
+          </View>
+        </View>
+      </View>
+    );
     
     // Renderizar tarjeta grande de partido que ocupa todo el día
     const renderFullMatchCard = (match) => {
@@ -779,6 +866,11 @@ export default function SeasonCalendar({
               </Text>
             </View>
             {renderFullMatchCard(events.matches[0])}
+            {hasScoutingMatches && (
+              <View style={{ position: 'absolute', right: 5, bottom: 5, width: 22, height: 22, borderRadius: 11, backgroundColor: THEME.purple, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="eye" size={12} color="#ffffff" />
+              </View>
+            )}
           </>
         ) : (
           <>
@@ -816,15 +908,15 @@ export default function SeasonCalendar({
               </View>
             )}
 
-            {/* Mini-tarjetas de sesiones (solo si NO hay partidos) */}
-            {hasSessions && isCurrentMonth && (
+            {/* Mini-tarjetas de seguimiento y sesiones (solo si NO hay partidos propios) */}
+            {(hasScoutingMatches || hasSessions) && isCurrentMonth && (
               <View style={styles.miniEventsContainer}>
-                {events?.sessions?.slice(0, 2).map(session => renderMiniSessionCard(session))}
+                {events?.scoutingMatches?.slice(0, 2).map(report => renderMiniScoutingCard(report))}
+                {events?.sessions?.slice(0, Math.max(0, 2 - (events?.scoutingMatches?.length || 0))).map(session => renderMiniSessionCard(session))}
                 
-                {/* Indicador de más sesiones */}
-                {events?.sessions?.length > 2 && (
+                {(events.scoutingMatches.length + events.sessions.length) > 2 && (
                   <Text style={styles.moreEventsText}>
-                    +{events.sessions.length - 2}
+                    +{events.scoutingMatches.length + events.sessions.length - 2}
                   </Text>
                 )}
               </View>
@@ -960,6 +1052,7 @@ export default function SeasonCalendar({
             const dayEvents = eventsByDate[dateKey];
             const hasMatch = dayEvents?.matches?.length > 0;
             const hasSession = dayEvents?.sessions?.length > 0;
+            const hasScoutingMatch = dayEvents?.scoutingMatches?.length > 0;
             
             return (
               <TouchableOpacity
@@ -989,6 +1082,7 @@ export default function SeasonCalendar({
                 <View style={mobileStyles.eventDots}>
                   {hasMatch && <View style={[mobileStyles.eventDot, { backgroundColor: THEME.primary }]} />}
                   {hasSession && <View style={[mobileStyles.eventDot, { backgroundColor: THEME.success }]} />}
+                  {hasScoutingMatch && <View style={[mobileStyles.eventDot, { backgroundColor: THEME.purple }]} />}
                 </View>
               </TouchableOpacity>
             );
@@ -1028,7 +1122,8 @@ export default function SeasonCalendar({
               {/* Lista de eventos */}
               {(!selectedMobileDayEvents || 
                 (selectedMobileDayEvents.matches?.length === 0 && 
-                 selectedMobileDayEvents.sessions?.length === 0)) ? (
+                 selectedMobileDayEvents.sessions?.length === 0 &&
+                 selectedMobileDayEvents.scoutingMatches?.length === 0)) ? (
                 <View style={mobileStyles.emptyState}>
                   <Ionicons name="calendar-outline" size={48} color={THEME.textMuted} />
                   <Text style={mobileStyles.emptyText}>{t('season.noEvents') || 'Sin eventos'}</Text>
@@ -1117,6 +1212,49 @@ export default function SeasonCalendar({
                       </TouchableOpacity>
                     );
                   })}
+
+                  {/* Partidos de seguimiento */}
+                  {selectedMobileDayEvents?.scoutingMatches?.map((report) => (
+                    <TouchableOpacity
+                      key={`mob-scouting-${report._id}`}
+                      style={mobileStyles.eventCard}
+                      onPress={() => onScoutingMatchPress && onScoutingMatchPress(report)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[mobileStyles.eventBadge, { backgroundColor: THEME.purpleSoft }]}>
+                        <Ionicons name="eye" size={14} color={THEME.purpleSoftText} />
+                        <Text style={[mobileStyles.eventBadgeText, { color: THEME.purpleSoftText }]}>
+                          {t('opponentMatch.calendar.event')}
+                        </Text>
+                      </View>
+                      <Text style={mobileStyles.sessionTitleLarge} numberOfLines={2}>
+                        {report.teamA?.name || t('opponentMatch.teamA')} - {report.teamB?.name || t('opponentMatch.teamB')}
+                      </Text>
+                      <Text style={[mobileStyles.infoText, { color: THEME.purpleSoftText }]} numberOfLines={1}>
+                        {getScoutingCompetition(report)}
+                      </Text>
+                      <View style={mobileStyles.sessionMeta}>
+                        {report.dateTime && (
+                          <View style={mobileStyles.infoChip}>
+                            <Ionicons name="time" size={12} color={THEME.purple} />
+                            <Text style={mobileStyles.infoText}>
+                              {new Date(report.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={mobileStyles.infoChip}>
+                          <Ionicons name={report.status === 'completed' ? 'checkmark-circle' : 'calendar'} size={12} color={THEME.purple} />
+                          <Text style={mobileStyles.infoText}>{getScoutingStatus(report)}</Text>
+                        </View>
+                        {report.venue && (
+                          <View style={mobileStyles.infoChip}>
+                            <Ionicons name="location" size={12} color={THEME.textSecondary} />
+                            <Text style={mobileStyles.infoText}>{report.venue}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
                   
                   {/* Sesiones de entrenamiento */}
                   {selectedMobileDayEvents?.sessions?.map((session) => (
@@ -1230,6 +1368,10 @@ export default function SeasonCalendar({
           <View style={[styles.legendDot, { backgroundColor: THEME.success }]} />
           <Text style={styles.legendText}>{t('season.training')}</Text>
         </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: THEME.purple }]} />
+          <Text style={styles.legendText}>{t('opponentMatch.calendar.event')}</Text>
+        </View>
         <TouchableOpacity
           style={styles.pdfButton}
           onPress={handleExportCalendarPdf}
@@ -1291,7 +1433,7 @@ export default function SeasonCalendar({
       )}
       
       {/* Vista previa de eventos del día seleccionado */}
-      {selectedDayEventsPreview && (selectedDayEventsPreview.matches?.length > 0 || selectedDayEventsPreview.sessions?.length > 0) && (
+      {selectedDayEventsPreview && (selectedDayEventsPreview.matches?.length > 0 || selectedDayEventsPreview.sessions?.length > 0 || selectedDayEventsPreview.scoutingMatches?.length > 0) && (
         <View style={styles.eventsPreviewContainer}>
           <View style={styles.eventsPreviewHeader}>
             <Text style={styles.eventsPreviewTitle}>
@@ -1310,6 +1452,9 @@ export default function SeasonCalendar({
           >
             {/* Partidos */}
             {selectedDayEventsPreview.matches?.map(match => renderMatchPreview(match))}
+
+            {/* Partidos de seguimiento */}
+            {selectedDayEventsPreview.scoutingMatches?.map(report => renderScoutingPreview(report))}
             
             {/* Sesiones */}
             {selectedDayEventsPreview.sessions?.map(session => renderSessionPreview(session))}

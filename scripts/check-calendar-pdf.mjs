@@ -10,9 +10,12 @@ const months = buildActiveCalendarMonths(
     { _id: 't1', fecha: '2026-09-10', horaInicio: '17:00' },
     { _id: 'invalid', fecha: 'not-a-date' },
   ],
+  [
+    { _id: 's1', dateTime: '2026-09-10T20:00:00', teamA: { name: 'C' }, teamB: { name: 'D' } },
+  ],
 );
 
 assert.deepEqual(months.map((month) => month.key), ['2026-09', '2026-10']);
-assert.equal(months[0].days.get(10).length, 2);
+assert.deepEqual(months[0].days.get(10).map((event) => event.type), ['training', 'match', 'scouting']);
 assert.equal(months[1].days.get(2)[0].type, 'match');
 console.log('calendar PDF grouping: OK');

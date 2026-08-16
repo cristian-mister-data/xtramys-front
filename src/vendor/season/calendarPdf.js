@@ -15,6 +15,7 @@ import { buildActiveCalendarMonths } from './calendarPdfData';
 
 const MATCH_COLOR = '#2563eb';
 const TRAINING_COLOR = '#16a34a';
+const SCOUTING_COLOR = '#7c3aed';
 
 const s = StyleSheet.create({
   page: {
@@ -90,6 +91,7 @@ const s = StyleSheet.create({
   },
   matchEvent: { borderLeftColor: MATCH_COLOR, backgroundColor: '#eff6ff' },
   trainingEvent: { borderLeftColor: TRAINING_COLOR, backgroundColor: '#f0fdf4' },
+  scoutingEvent: { borderLeftColor: SCOUTING_COLOR, backgroundColor: '#faf5ff' },
   eventTitle: { fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: COLORS.text, lineHeight: 1.15 },
   eventMeta: { fontSize: 4.8, color: COLORS.textSecondary, lineHeight: 1.1, marginTop: 1 },
 });
@@ -142,6 +144,31 @@ const TrainingEvent = ({ event, t }) => {
   );
 };
 
+const ScoutingEvent = ({ event, locale, t }) => {
+  const report = event.item;
+  const home = report?.teamA?.name || t('opponentMatch.teamA');
+  const away = report?.teamB?.name || t('opponentMatch.teamB');
+  const competition = report?.tournamentId?.nombre
+    || report?.competitionName
+    || t(`opponentMatch.competitionTypes.${report?.competitionType || 'other'}`);
+  const status = report?.status === 'completed'
+    ? t('opponentMatch.calendar.completed')
+    : event.date > new Date()
+      ? t('opponentMatch.calendar.scheduled')
+      : t('opponentMatch.calendar.pending');
+
+  return (
+    <View style={[s.event, s.scoutingEvent]} wrap={false}>
+      <Text style={s.eventTitle} maxLines={1}>
+        {formatTime(event.date, locale)} · {home} - {away}
+      </Text>
+      <Text style={s.eventMeta} maxLines={1}>
+        {status} · {competition}{report?.venue ? ` · ${report.venue}` : ''}
+      </Text>
+    </View>
+  );
+};
+
 const MonthPage = ({ data, teamName, seasonName, locale, t }) => {
   const firstDay = new Date(data.year, data.month, 1).getDay();
   const mondayOffset = firstDay === 0 ? 6 : firstDay - 1;
@@ -156,7 +183,8 @@ const MonthPage = ({ data, teamName, seasonName, locale, t }) => {
     .map((day) => t(`season.weekdaysShort.${day}`).slice(0, 3).toUpperCase());
   const allEvents = [...data.days.values()].flat();
   const matchCount = allEvents.filter((event) => event.type === 'match').length;
-  const trainingCount = allEvents.length - matchCount;
+  const trainingCount = allEvents.filter((event) => event.type === 'training').length;
+  const scoutingCount = allEvents.filter((event) => event.type === 'scouting').length;
   const todayKey = dateKey(new Date());
 
   return (
@@ -172,10 +200,12 @@ const MonthPage = ({ data, teamName, seasonName, locale, t }) => {
         <View style={s.legend}>
           <View style={s.legendItem}><View style={[s.legendDot, { backgroundColor: MATCH_COLOR }]} /><Text style={s.legendText}>{t('season.match', 'Partido')}</Text></View>
           <View style={s.legendItem}><View style={[s.legendDot, { backgroundColor: TRAINING_COLOR }]} /><Text style={s.legendText}>{t('season.training', 'Entrenamiento')}</Text></View>
+          <View style={s.legendItem}><View style={[s.legendDot, { backgroundColor: SCOUTING_COLOR }]} /><Text style={s.legendText}>{t('opponentMatch.calendar.event')}</Text></View>
         </View>
         <View style={s.totals}>
           <Text style={s.totalBadge}>{matchCount} {t('season.calendarPdfMatches', 'partidos')}</Text>
           <Text style={s.totalBadge}>{trainingCount} {t('season.calendarPdfTrainings', 'entrenamientos')}</Text>
+          <Text style={s.totalBadge}>{scoutingCount} {t('opponentMatch.calendar.title').toLowerCase()}</Text>
         </View>
       </View>
 
@@ -196,7 +226,9 @@ const MonthPage = ({ data, teamName, seasonName, locale, t }) => {
                       </View>
                       {events.map((event, index) => event.type === 'match'
                         ? <MatchEvent key={`m-${index}`} event={event} locale={locale} t={t} />
-                        : <TrainingEvent key={`t-${index}`} event={event} t={t} />)}
+                        : event.type === 'scouting'
+                          ? <ScoutingEvent key={`s-${index}`} event={event} locale={locale} t={t} />
+                          : <TrainingEvent key={`t-${index}`} event={event} t={t} />)}
                     </>
                   ) : null}
                 </View>
@@ -226,8 +258,8 @@ const CalendarDocument = ({ months, teamName, seasonName, locale, t }) => (
   </Document>
 );
 
-export async function generateSeasonCalendarPdf({ matchSheets, trainingSessions, team, season, locale, t }) {
-  const months = buildActiveCalendarMonths(matchSheets, trainingSessions);
+export async function generateSeasonCalendarPdf({ matchSheets, trainingSessions, scoutingMatches, team, season, locale, t }) {
+  const months = buildActiveCalendarMonths(matchSheets, trainingSessions, scoutingMatches);
   if (!months.length) throw new Error(t('season.calendarPdfEmpty', 'No hay eventos para exportar.'));
 
   const teamName = team?.nombre || t('season.myTeam', 'Mi equipo');

@@ -5696,6 +5696,211 @@
     "updateNow": "Update now",
     "checkAgain": "I've already updated"
   },
+  "opponentMatch": {
+    "pageSubtitle": "Plan and document matches between other teams to prepare for upcoming opponents.",
+    "tabsLabel": "Match sheet types",
+    "tabs": {
+      "own": "My team",
+      "opponents": "Scouting matches"
+    },
+    "introTitle": "Match scouting and tracking",
+    "intro": "Schedule matches you want to track, then document how both teams compete, their lineups, tactical behaviours and set pieces. Mark the target opponent and prepare the plan for facing them.",
+    "teamA": "Team A",
+    "teamB": "Team B",
+    "bothTeams": "Both teams",
+    "focus": "Target opponent",
+    "createTitle": "New scouting match",
+    "editTitle": "Edit scouting match",
+    "detailTitle": "Scouting match report",
+    "formProgress": "Report progress",
+    "pageTitle": "Scouting matches",
+    "confirmDeleteTitle": "Delete scouting report",
+    "removePlayerTitle": "Remove player",
+    "confirmRemovePlayer": "Remove {{name}} from this lineup?",
+    "removeEventTitle": "Remove event",
+    "confirmRemoveEvent": "Remove this event: {{event}}?",
+    "manualCompetition": "Other competition or manual match",
+    "noDate": "No date",
+    "noFormation": "Formation not recorded",
+    "noLineup": "Lineup not recorded",
+    "loading": "Loading scouting matches…",
+    "emptyTitle": "No scouting matches yet",
+    "emptyDescription": "Schedule the first match you want to track. It will appear in the calendar and you can complete the report before, during, or after it.",
+    "emptyTimeline": "No key events. Add only the moments that help explain the match.",
+    "noResults": "No reports match these filters",
+    "noResultsHint": "Try another team, competition, or status.",
+    "searchPlaceholder": "Search team, competition, or venue…",
+    "searchLabel": "Search scouting matches",
+    "statusFilter": "Filter by status",
+    "reportCount": "{{count}} reports",
+    "openReport": "Open report for {{home}} versus {{away}}",
+    "confirmDelete": "Permanently delete the report for {{match}}?",
+    "steps": {
+      "match": "Match",
+      "lineups": "Lineups and data",
+      "tactics": "Tactical analysis",
+      "setPieces": "Set pieces and conclusions"
+    },
+    "actions": {
+      "create": "New scouting match",
+      "createFirst": "Create first report",
+      "addEvent": "Add event",
+      "removeEvent": "Remove event",
+      "pdfShare": "Download / share PDF",
+      "openVideo": "Open match video",
+      "addPlayer": "Add player",
+      "removePlayer": "Remove player",
+      "back": "Back",
+      "next": "Next"
+    },
+    "fields": {
+      "teamName": "Team name",
+      "coach": "Coach",
+      "focusTeam": "Which team are you preparing to face?",
+      "focusTeamHelp": "The selected team will be highlighted as the priority in the report and PDF.",
+      "dateTime": "Date and time",
+      "venue": "Ground / location",
+      "watchedVia": "Scouting method",
+      "tournament": "Tournament from your season",
+      "matchType": "Match type",
+      "competitionName": "Competition or context",
+      "stage": "Matchday, stage, or round",
+      "teamScore": "{{team}} goals",
+      "halfTimeScore": "Half-time score (optional)",
+      "teamHalfTimeScore": "{{team}} half-time goals",
+      "formation": "Starting formation",
+      "lineup": "Lineup",
+      "shirtNumber": "Shirt no.",
+      "playerName": "Name",
+      "lineupHelp": "Fill the starting XI with shirt number and name. Shirt number is optional.",
+      "minute": "Minute",
+      "eventTeam": "Event team",
+      "eventType": "Event type",
+      "player": "Player",
+      "eventNote": "Event detail",
+      "summary": "Executive summary",
+      "gamePlan": "Plan for competing against the target opponent",
+      "videoUrl": "Video link",
+      "status": "Report status",
+      "statusHelp": "Use draft for scheduled matches or while taking notes, and completed when the report is ready to share."
+    },
+    "sections": {
+      "matchContext": "Match context",
+      "score": "Score",
+      "stats": "Side-by-side statistics",
+      "timeline": "Key timeline",
+      "lineupTeam": "Lineup · {{team}}",
+      "tacticsTeam": "Tactical behaviour · {{team}}",
+      "setPiecesTeam": "Set pieces · {{team}}",
+      "conclusions": "Conclusions for the coaching staff"
+    },
+    "competitionTypes": {
+      "league": "League",
+      "cup": "Cup",
+      "tournament": "Tournament",
+      "friendly": "Friendly",
+      "training": "Training match",
+      "other": "Other"
+    },
+    "watchedVia": {
+      "live": "Live at the ground",
+      "video": "Video",
+      "tv": "Broadcast",
+      "other": "Other"
+    },
+    "status": {
+      "draft": "Draft",
+      "completed": "Completed"
+    },
+    "calendar": {
+      "title": "Scouting matches",
+      "event": "Scouting",
+      "scheduled": "Scheduled",
+      "pending": "Analysis pending",
+      "completed": "Report completed"
+    },
+    "stats": {
+      "possession": "Possession",
+      "shots": "Shots",
+      "shotsOnTarget": "Shots on target",
+      "corners": "Corners",
+      "fouls": "Fouls",
+      "offsides": "Offsides"
+    },
+    "tactics": {
+      "inPossession": "In possession",
+      "outOfPossession": "Out of possession",
+      "transitions": "Transitions",
+      "pressing": "Pressing and playing through pressure",
+      "keyPlayers": "Key players",
+      "strengths": "Strengths",
+      "weaknesses": "Exploitable weaknesses"
+    },
+    "setPieces": {
+      "corners": "Attacking and defensive corners",
+      "freeKicks": "Wide and central free kicks",
+      "throwIns": "Throw-ins",
+      "penalties": "Penalties and takers"
+    },
+    "eventTypes": {
+      "goal": "Goal",
+      "chance": "Chance",
+      "card": "Card",
+      "substitution": "Substitution",
+      "injury": "Injury",
+      "tactical": "Tactical adjustment",
+      "set_piece": "Set piece",
+      "other": "Other"
+    },
+    "placeholders": {
+      "competition": "E.g. Premier Division, friendly…",
+      "stage": "E.g. Matchday 12, semi-final, Group B…",
+      "shirtNumber": "No.",
+      "playerName": "Player name",
+      "lineup": "1. Name · GK\n2. Name · RB\n3. Name · CB",
+      "player": "Name or shirt number",
+      "eventNote": "What happened and why it matters",
+      "summary": "What defined the match and what the coach needs to know in under a minute.",
+      "gamePlan": "How to hurt them, what to avoid, matchups, areas to target and in-game adjustment cues.",
+      "tactics": {
+        "inPossession": "Build-up, progression, structure, width, and chance creation…",
+        "outOfPossession": "Block, height, distances, cover, and box defending…",
+        "transitions": "What they do after losing and regaining possession…",
+        "pressing": "Triggers, who jumps, spaces conceded, and goalkeeper build-up…",
+        "keyPlayers": "Number, position, dominant foot, and why they matter…",
+        "strengths": "Behaviours they repeat successfully…",
+        "weaknesses": "Spaces, profiles, or situations we can exploit…"
+      },
+      "setPieces": {
+        "corners": "Shape, taker, blocks, target zones, and defensive setup…",
+        "freeKicks": "Routines, takers, movements, and defensive scheme…",
+        "throwIns": "Routines in their own half and final third…",
+        "penalties": "Takers, usual direction, and goalkeeper behaviour…"
+      }
+    },
+    "validation": {
+      "teamsRequired": "Enter both teams to continue.",
+      "differentTeams": "The two teams must be different."
+    },
+    "success": {
+      "created": "Scouting match created successfully",
+      "updated": "Scouting match updated successfully",
+      "deleted": "Scouting match deleted"
+    },
+    "errors": {
+      "load": "Reports could not be loaded",
+      "save": "The report could not be saved",
+      "delete": "The report could not be deleted",
+      "pdf": "The PDF could not be generated"
+    },
+    "pdf": {
+      "title": "SCOUTING MATCH REPORT",
+      "lineups": "Lineups and starting shape",
+      "comparison": "Comparison",
+      "fileName": "scouting_match_report",
+      "generatedWith": "Technical report generated with Xtramys"
+    }
+  },
   "kits": {
     "title": "Kits",
     "first": "First kit",

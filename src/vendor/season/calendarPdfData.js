@@ -9,7 +9,7 @@ export const parseCalendarDate = (value) => {
 
 const monthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-export const buildActiveCalendarMonths = (matchSheets = [], trainingSessions = []) => {
+export const buildActiveCalendarMonths = (matchSheets = [], trainingSessions = [], scoutingMatches = []) => {
   const months = new Map();
 
   const addEvent = (type, item, rawDate) => {
@@ -27,6 +27,7 @@ export const buildActiveCalendarMonths = (matchSheets = [], trainingSessions = [
 
   matchSheets.forEach((match) => addEvent('match', match, match?.fechaHora));
   trainingSessions.forEach((session) => addEvent('training', session, session?.fecha || session?.fechaHora));
+  scoutingMatches.forEach((match) => addEvent('scouting', match, match?.dateTime));
 
   return [...months.values()]
     .sort((a, b) => a.key.localeCompare(b.key))

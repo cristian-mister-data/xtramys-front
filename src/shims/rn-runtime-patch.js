@@ -73,7 +73,7 @@ function ensureToastStyles() {
       align-items: center;
       justify-content: center;
       gap: 10px;
-      padding: 16px;
+      padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
       pointer-events: none;
       background: rgba(15, 23, 42, 0);
       transition: background 140ms ease;
@@ -325,7 +325,9 @@ function ensureToastStyles() {
       }
       .xtramys-toast__button {
         flex: 1;
+        min-height: 44px;
       }
+      .xtramys-toast__close { width: 44px; height: 44px; }
     }
   `;
   document.head.appendChild(style);

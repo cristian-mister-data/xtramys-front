@@ -46,6 +46,9 @@ import TrainingSessionDetailModal from './TrainingSessionDetailModal';
 import AddEventModal from './AddEventModal';
 import EditMatchSheetModal from './EditMatchSheetModal';
 import EditSessionModal from './EditSessionModal';
+import { getOpponentMatchReports, updateOpponentMatchReport } from '@/api/opponentMatchReport';
+import OpponentMatchReportDetailModal from '@/features/opponentMatchReports/OpponentMatchReportDetailModal';
+import OpponentMatchReportFormModal from '@/features/opponentMatchReports/OpponentMatchReportFormModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { loadFormDraft, saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { toast } from '@/ui/toast';
@@ -145,9 +148,11 @@ export default function GestionEquipos() {
   );
   const exerciseTypes = useSelector(state => state.exercise.exerciseTypes) || [];
   const rivals = useSelector(state => state.rival.rivals) || [];
+  const tournaments = useSelector(state => state.tournament.tournaments) || [];
   const injuries = useSelector(state => state.injury.injuries) || [];
   const sanctions = useSelector(state => state.tournament.sanctions) || [];
   const [calendarLoading, setCalendarLoading] = useState(false);
+  const [scoutingMatches, setScoutingMatches] = useState([]);
   const [selectedDayEvents, setSelectedDayEvents] = useState(null);
   const [dayEventsModalVisible, setDayEventsModalVisible] = useState(false);
   
@@ -156,6 +161,10 @@ export default function GestionEquipos() {
   const [matchDetailVisible, setMatchDetailVisible] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionDetailVisible, setSessionDetailVisible] = useState(false);
+  const [selectedScoutingMatch, setSelectedScoutingMatch] = useState(null);
+  const [scoutingDetailVisible, setScoutingDetailVisible] = useState(false);
+  const [scoutingEditReport, setScoutingEditReport] = useState(null);
+  const [scoutingEditVisible, setScoutingEditVisible] = useState(false);
   
   // Estado para modal de añadir evento
   const [addEventModalVisible, setAddEventModalVisible] = useState(false);
@@ -329,6 +338,7 @@ export default function GestionEquipos() {
 
   // Cargar eventos del calendario cuando se seleccione un equipo
   useEffect(() => {
+    let active = true;
     if (equipoSeleccionado && equipoSeleccionado._id && idUsuario) {
       setCalendarLoading(true);
       Promise.all([
@@ -340,11 +350,21 @@ export default function GestionEquipos() {
         dispatch(fetchExerciseFolders()),
         dispatch(fetchRivalsByTeam({ teamId: equipoSeleccionado._id })),
         dispatch(fetchInjuriesByTeam({ team: equipoSeleccionado._id })),
-        dispatch(fetchTournamentsByTeam(equipoSeleccionado._id))
+        dispatch(fetchTournamentsByTeam(equipoSeleccionado._id)),
+        getOpponentMatchReports(equipoSeleccionado._id)
+          .then((response) => {
+            if (active) setScoutingMatches(response.data || []);
+          })
+          .catch(() => {
+            if (active) setScoutingMatches([]);
+          })
       ]).finally(() => {
-        setCalendarLoading(false);
+        if (active) setCalendarLoading(false);
       });
+    } else {
+      setScoutingMatches([]);
     }
+    return () => { active = false; };
   }, [equipoSeleccionado, idUsuario, dispatch]);
 
   // Handler para cuando se selecciona un día en el calendario
@@ -354,9 +374,26 @@ export default function GestionEquipos() {
         date: dayData.date,
         matches: dayData.events?.matches || [],
         sessions: dayData.events?.sessions || [],
+        scoutingMatches: dayData.events?.scoutingMatches || [],
       });
       setDayEventsModalVisible(true);
     }
+  };
+
+  const handleEditScoutingMatch = (report) => {
+    setScoutingDetailVisible(false);
+    setScoutingEditReport(report);
+    setScoutingEditVisible(true);
+  };
+
+  const handleSaveScoutingMatch = async (payload, id) => {
+    const response = await updateOpponentMatchReport(id, payload);
+    const saved = response.data;
+    setScoutingMatches((current) => current.map((report) => report._id === id ? saved : report));
+    setSelectedScoutingMatch(saved);
+    setScoutingEditVisible(false);
+    setScoutingDetailVisible(true);
+    toast.success(t('opponentMatch.success.updated'));
   };
 
   // Handler para crear ficha de partido desde calendario
@@ -1096,6 +1133,7 @@ export default function GestionEquipos() {
                 <SeasonCalendar
                   matchSheets={matchSheets}
                   trainingSessions={trainingSessions}
+                  scoutingMatches={scoutingMatches}
                   team={equipoSeleccionado}
                   season={temporada}
                   canMutate={canMutate}
@@ -1108,6 +1146,10 @@ export default function GestionEquipos() {
                   onSessionPress={(session) => {
                     setSelectedSession(session);
                     setSessionDetailVisible(true);
+                  }}
+                  onScoutingMatchPress={(report) => {
+                    setSelectedScoutingMatch(report);
+                    setScoutingDetailVisible(true);
                   }}
                   onAddEvent={(date) => {
                     setAddEventSelectedDate(date || new Date());
@@ -1190,6 +1232,54 @@ export default function GestionEquipos() {
                         <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
                       </TouchableOpacity>
                     ))}
+                  </View>
+                )}
+
+                {/* Partidos de seguimiento */}
+                {selectedDayEvents?.scoutingMatches?.length > 0 && (
+                  <View style={styles.eventSection}>
+                    <View style={styles.eventSectionHeader}>
+                      <Ionicons name="eye" size={20} color={theme.colors.purple} />
+                      <Text style={styles.eventSectionTitle}>
+                        {t('opponentMatch.calendar.title')} ({selectedDayEvents.scoutingMatches.length})
+                      </Text>
+                    </View>
+                    {selectedDayEvents.scoutingMatches.map((report, index) => {
+                      const competition = report.tournamentId?.nombre
+                        || report.competitionName
+                        || t(`opponentMatch.competitionTypes.${report.competitionType || 'other'}`);
+                      const status = report.status === 'completed'
+                        ? t('opponentMatch.calendar.completed')
+                        : report.dateTime && new Date(report.dateTime) > new Date()
+                          ? t('opponentMatch.calendar.scheduled')
+                          : t('opponentMatch.calendar.pending');
+                      return (
+                        <TouchableOpacity
+                          key={report._id || index}
+                          style={styles.eventItem}
+                          onPress={() => {
+                            setDayEventsModalVisible(false);
+                            setSelectedScoutingMatch(report);
+                            setScoutingDetailVisible(true);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.eventItemIcon, { backgroundColor: theme.colors.purpleSoft }]}>
+                            <Ionicons name="eye" size={18} color={theme.colors.purpleSoftText} />
+                          </View>
+                          <View style={styles.eventItemContent}>
+                            <Text style={styles.eventItemTitle}>
+                              {report.teamA?.name || t('opponentMatch.teamA')} - {report.teamB?.name || t('opponentMatch.teamB')}
+                            </Text>
+                            <Text style={styles.eventItemSubtitle}>
+                              {competition} • {status}
+                              {report.dateTime ? ` • ${new Date(report.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                            </Text>
+                          </View>
+                          <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
 
@@ -2059,6 +2149,32 @@ export default function GestionEquipos() {
             if (equipoSeleccionado?._id) {
               dispatch(fetchEntrenamientosPorEquipo({ team: equipoSeleccionado._id }));
             }
+          }}
+        />
+
+        {/* Scouting Match Detail Modal */}
+        <OpponentMatchReportDetailModal
+          open={scoutingDetailVisible}
+          report={selectedScoutingMatch}
+          canMutate={false}
+          canEdit={canMutate}
+          onEdit={handleEditScoutingMatch}
+          onClose={() => {
+            setScoutingDetailVisible(false);
+            setSelectedScoutingMatch(null);
+          }}
+        />
+
+        <OpponentMatchReportFormModal
+          open={scoutingEditVisible}
+          report={scoutingEditReport}
+          selectedTeam={equipoSeleccionado}
+          tournaments={tournaments}
+          rivals={rivals}
+          onSave={handleSaveScoutingMatch}
+          onClose={() => {
+            setScoutingEditVisible(false);
+            setScoutingEditReport(null);
           }}
         />
 

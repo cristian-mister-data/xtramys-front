@@ -5703,6 +5703,211 @@
     "updateNow": "Actualizar ahora",
     "checkAgain": "Ya he actualizado"
   },
+  "opponentMatch": {
+    "pageSubtitle": "Planifica y documenta partidos entre otros equipos para preparar a tus próximos rivales.",
+    "tabsLabel": "Tipos de ficha de partido",
+    "tabs": {
+      "own": "Mi equipo",
+      "opponents": "Seguimiento de partidos"
+    },
+    "introTitle": "Scouting y seguimiento de partidos",
+    "intro": "Programa partidos que quieras seguir y documenta después cómo compiten ambos equipos, sus alineaciones, comportamientos tácticos y ABP. Marca el rival objetivo y prepara el plan para enfrentarte a él.",
+    "teamA": "Equipo A",
+    "teamB": "Equipo B",
+    "bothTeams": "Ambos equipos",
+    "focus": "Rival objetivo",
+    "createTitle": "Nuevo seguimiento de partido",
+    "editTitle": "Editar seguimiento de partido",
+    "detailTitle": "Informe de seguimiento de partido",
+    "formProgress": "Progreso del informe",
+    "pageTitle": "Seguimiento de partidos",
+    "confirmDeleteTitle": "Eliminar seguimiento",
+    "removePlayerTitle": "Eliminar jugador",
+    "confirmRemovePlayer": "¿Quieres eliminar a {{name}} de esta alineación?",
+    "removeEventTitle": "Eliminar acción",
+    "confirmRemoveEvent": "¿Quieres eliminar esta acción: {{event}}?",
+    "manualCompetition": "Otra competición o partido manual",
+    "noDate": "Sin fecha",
+    "noFormation": "Formación sin registrar",
+    "noLineup": "Alineación sin registrar",
+    "loading": "Cargando partidos de seguimiento…",
+    "emptyTitle": "Aún no hay partidos de seguimiento",
+    "emptyDescription": "Programa el primer partido que quieras seguir. Aparecerá en el calendario y podrás completar el informe antes, durante o después.",
+    "emptyTimeline": "No hay acciones clave. Añade solo los momentos que ayuden a entender el partido.",
+    "noResults": "No hay informes con estos filtros",
+    "noResultsHint": "Prueba con otro equipo, competición o estado.",
+    "searchPlaceholder": "Buscar equipo, competición o campo…",
+    "searchLabel": "Buscar partidos de seguimiento",
+    "statusFilter": "Filtrar por estado",
+    "reportCount": "{{count}} informes",
+    "openReport": "Abrir informe de {{home}} contra {{away}}",
+    "confirmDelete": "¿Eliminar definitivamente el informe de {{match}}?",
+    "steps": {
+      "match": "Partido",
+      "lineups": "Alineaciones y datos",
+      "tactics": "Análisis táctico",
+      "setPieces": "ABP y conclusiones"
+    },
+    "actions": {
+      "create": "Nuevo partido de seguimiento",
+      "createFirst": "Crear primer informe",
+      "addEvent": "Añadir acción",
+      "removeEvent": "Eliminar acción",
+      "pdfShare": "Descargar / compartir PDF",
+      "openVideo": "Abrir vídeo del partido",
+      "addPlayer": "Añadir jugador",
+      "removePlayer": "Eliminar jugador",
+      "back": "Atrás",
+      "next": "Siguiente"
+    },
+    "fields": {
+      "teamName": "Nombre del equipo",
+      "coach": "Entrenador",
+      "focusTeam": "¿Qué equipo vas a preparar como rival?",
+      "focusTeamHelp": "El equipo marcado aparecerá como prioridad en el informe y en el PDF.",
+      "dateTime": "Fecha y hora",
+      "venue": "Campo / ubicación",
+      "watchedVia": "Canal de observación",
+      "tournament": "Torneo de tu temporada",
+      "matchType": "Tipo de partido",
+      "competitionName": "Competición o contexto",
+      "stage": "Jornada, fase o ronda",
+      "teamScore": "Goles de {{team}}",
+      "halfTimeScore": "Resultado al descanso (opcional)",
+      "teamHalfTimeScore": "Goles al descanso de {{team}}",
+      "formation": "Sistema inicial",
+      "lineup": "Alineación",
+      "shirtNumber": "Dorsal",
+      "playerName": "Nombre",
+      "lineupHelp": "Rellena el once inicial con dorsal y nombre. El dorsal es opcional.",
+      "minute": "Minuto",
+      "eventTeam": "Equipo de la acción",
+      "eventType": "Tipo de acción",
+      "player": "Jugador",
+      "eventNote": "Detalle de la acción",
+      "summary": "Resumen ejecutivo",
+      "gamePlan": "Plan para competir contra el rival objetivo",
+      "videoUrl": "Enlace al vídeo",
+      "status": "Estado del informe",
+      "statusHelp": "Usa borrador para partidos programados o mientras tomas notas, y finalizado cuando el informe esté listo para compartir."
+    },
+    "sections": {
+      "matchContext": "Contexto del partido",
+      "score": "Resultado",
+      "stats": "Estadísticas comparadas",
+      "timeline": "Cronología clave",
+      "lineupTeam": "Alineación · {{team}}",
+      "tacticsTeam": "Comportamiento táctico · {{team}}",
+      "setPiecesTeam": "ABP · {{team}}",
+      "conclusions": "Conclusiones para el cuerpo técnico"
+    },
+    "competitionTypes": {
+      "league": "Liga",
+      "cup": "Copa",
+      "tournament": "Torneo",
+      "friendly": "Amistoso",
+      "training": "Partido de entrenamiento",
+      "other": "Otro"
+    },
+    "watchedVia": {
+      "live": "En directo",
+      "video": "Vídeo",
+      "tv": "Retransmisión",
+      "other": "Otro"
+    },
+    "status": {
+      "draft": "Borrador",
+      "completed": "Finalizado"
+    },
+    "calendar": {
+      "title": "Partidos de seguimiento",
+      "event": "Seguimiento",
+      "scheduled": "Programado",
+      "pending": "Pendiente de análisis",
+      "completed": "Informe finalizado"
+    },
+    "stats": {
+      "possession": "Posesión",
+      "shots": "Tiros",
+      "shotsOnTarget": "Tiros a puerta",
+      "corners": "Córneres",
+      "fouls": "Faltas",
+      "offsides": "Fueras de juego"
+    },
+    "tactics": {
+      "inPossession": "Con balón",
+      "outOfPossession": "Sin balón",
+      "transitions": "Transiciones",
+      "pressing": "Presión y salida de presión",
+      "keyPlayers": "Jugadores clave",
+      "strengths": "Fortalezas",
+      "weaknesses": "Debilidades atacables"
+    },
+    "setPieces": {
+      "corners": "Córneres ofensivos y defensivos",
+      "freeKicks": "Faltas laterales y frontales",
+      "throwIns": "Saques de banda",
+      "penalties": "Penaltis y lanzadores"
+    },
+    "eventTypes": {
+      "goal": "Gol",
+      "chance": "Ocasión",
+      "card": "Tarjeta",
+      "substitution": "Cambio",
+      "injury": "Lesión",
+      "tactical": "Ajuste táctico",
+      "set_piece": "ABP",
+      "other": "Otra"
+    },
+    "placeholders": {
+      "competition": "Ej. Liga Preferente, amistoso…",
+      "stage": "Ej. Jornada 12, semifinal, grupo B…",
+      "shirtNumber": "Nº",
+      "playerName": "Nombre del jugador",
+      "lineup": "1. Nombre · POR\n2. Nombre · LD\n3. Nombre · DFC",
+      "player": "Nombre o dorsal",
+      "eventNote": "Qué ocurrió y por qué importa",
+      "summary": "Qué define el partido y qué debe saber el entrenador en menos de un minuto.",
+      "gamePlan": "Cómo hacerles daño, qué evitar, emparejamientos, zonas a atacar y señales para ajustar durante el partido.",
+      "tactics": {
+        "inPossession": "Inicio, progresión, estructura, amplitud y forma de llegar…",
+        "outOfPossession": "Bloque, altura, distancias, coberturas y defensa del área…",
+        "transitions": "Qué hacen tras pérdida y tras recuperación…",
+        "pressing": "Disparadores, jugadores que saltan, espacios que conceden y salida del portero…",
+        "keyPlayers": "Dorsal, posición, pie dominante y por qué es determinante…",
+        "strengths": "Comportamientos que repiten con éxito…",
+        "weaknesses": "Espacios, perfiles o situaciones que podemos explotar…"
+      },
+      "setPieces": {
+        "corners": "Estructura, lanzador, bloqueos, zonas de remate y cómo defienden…",
+        "freeKicks": "Rutinas, golpeadores, movimientos y tipo de defensa…",
+        "throwIns": "Rutinas en campo propio y último tercio…",
+        "penalties": "Lanzadores, dirección habitual y comportamiento del portero…"
+      }
+    },
+    "validation": {
+      "teamsRequired": "Indica los dos equipos para continuar.",
+      "differentTeams": "Los dos equipos deben ser distintos."
+    },
+    "success": {
+      "created": "Seguimiento creado correctamente",
+      "updated": "Seguimiento actualizado correctamente",
+      "deleted": "Seguimiento eliminado"
+    },
+    "errors": {
+      "load": "No se pudieron cargar los informes",
+      "save": "No se pudo guardar el informe",
+      "delete": "No se pudo eliminar el informe",
+      "pdf": "No se pudo generar el PDF"
+    },
+    "pdf": {
+      "title": "INFORME DE SEGUIMIENTO DE PARTIDO",
+      "lineups": "Alineaciones y estructura inicial",
+      "comparison": "Comparativa",
+      "fileName": "seguimiento_partido_rivales",
+      "generatedWith": "Informe técnico generado con Xtramys"
+    }
+  },
   "kits": {
     "title": "Equipaciones",
     "first": "Primera equipación",
