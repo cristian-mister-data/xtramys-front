@@ -5481,6 +5481,7 @@
     "next": "Siguiente →",
     "adminPanel": "Panel de administración",
     "licensesUsed": "{{used}} / {{total}} licencias usadas",
+    "activeAccountLicenses": "Licencias de cuentas activas",
     "clubTotal": "Total del club",
     "sharedLibrary": "Biblioteca compartida",
     "sharedTactics": "Táctica compartida",

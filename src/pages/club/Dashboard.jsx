@@ -1458,7 +1458,7 @@ export default function ClubDashboard() {
       <StatsGrid>
         <StatCard $color="linear-gradient(90deg, #10b981, #34d399)">
           <StatIcon><MdShield /></StatIcon>
-          <StatLabel>{t('clubTeamManager.activeTeamLicenses')}</StatLabel>
+          <StatLabel>{club.permissionsModel === 'legacy' ? t('clubDashboard.activeAccountLicenses') : t('clubTeamManager.activeTeamLicenses')}</StatLabel>
           <StatNumber>{activeCount} / {maxCount}</StatNumber>
                     <Muted style={{ fontSize: 12 }}>{t('clubDashboard.freeLicensesCount', '{{count}} libres', { count: availableSlots })}</Muted>
         </StatCard>
